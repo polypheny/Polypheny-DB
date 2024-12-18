@@ -91,6 +91,8 @@ public class EnumerableRules {
 
     public static final EnumerableLpgIdentifierRule ENUMERABLE_LPG_IDENTIFIER_RULE = new EnumerableLpgIdentifierRule();
 
+    public static final EnumerableLpgIdentifierRule ENUMERABLE_LPG_IDENTIFIER_RULE = new EnumerableLpgIdentifierRule();
+
     public static final EnumerableConditionalExecuteRule ENUMERABLE_CONDITIONAL_EXECUTE_RULE = new EnumerableConditionalExecuteRule();
 
     public static final EnumerableConditionalExecuteTrueRule ENUMERABLE_CONDITIONAL_EXECUTE_TRUE_RULE = new EnumerableConditionalExecuteTrueRule();
