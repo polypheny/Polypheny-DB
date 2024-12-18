@@ -35,17 +35,6 @@ public enum DeployMode {
     }
 
 
-    public static DeployMode fromString( String mode ) {
-        if ( mode.equals( "remote" ) ) {
-            return REMOTE;
-        } else if ( mode.equals( "docker" ) ) {
-            return DOCKER;
-        } else {
-            return EMBEDDED;
-        }
-    }
-
-
     public enum DeploySetting {
         REMOTE( DeployMode.REMOTE ),
         DOCKER( DeployMode.DOCKER ),
@@ -81,6 +70,11 @@ public enum DeployMode {
             } else {
                 return Collections.singletonList( mode );
             }
+        }
+
+
+        boolean appliesTo( DeployMode mode ) {
+            return usedByAll || this.mode.equals( mode );
         }
 
     }
