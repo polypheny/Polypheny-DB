@@ -122,7 +122,8 @@ public class HttpServer implements Runnable {
         }
 
         File uiZip = copyResourceToTempFile( uiResourceUrl, "polypheny-ui", ".zip" );
-
+        
+        log.warn( "Unzip {} into {}", uiZip.getAbsolutePath(), uiPath.getAbsolutePath() );
         PolyphenyHomeDirManager.getInstance().unzipInto( uiZip, uiPath );
 
         Optional<File> globalUiPath = PolyphenyHomeDirManager.getInstance().getGlobalFile( "ui" );
