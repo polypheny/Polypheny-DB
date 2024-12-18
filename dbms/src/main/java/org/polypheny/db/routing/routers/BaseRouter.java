@@ -196,10 +196,26 @@ public abstract class BaseRouter implements Router {
                 break;
             case 2:
                 builders.forEach(
-                        builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) ), 2 )
+                        builder -> builder.replaceTop(
+                                node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) )
+                                , 2 )
                 );
                 break;
             default:
+                if ( node instanceof LogicalRelUnion l ) {
+                    builders.forEach(
+                            builder -> {
+                                List<AlgNode> inputs = new ArrayList<>();
+                                for ( int i = 0; i < node.getInputs().size(); i++ ) {
+                                    inputs.add( builder.peek( i ) );
+                                }
+                                builder.replaceTop(
+                                        node.copy( node.getTraitSet(), inputs )
+                                        , l.getInputs().size() );
+                            }
+                    );
+                    break;
+                }
                 throw new GenericRuntimeException( "Unexpected number of input elements: " + node.getInputs().size() );
         }
         return builders;
