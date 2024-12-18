@@ -113,6 +113,7 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
@@ -290,12 +291,21 @@ public class Functions {
     }
 
     @SuppressWarnings("unused")
-    public static Enumerable<PolyValue[]> addIdentifiers(final Enumerable<PolyValue[]> input) {
+    public static Enumerable<PolyValue[]> addRelIdentifiers(final Enumerable<PolyValue[]> input) {
         return input.select( oldRow -> {
             PolyValue[] newRow = new PolyValue[oldRow.length + 1];
             newRow[0] = IdentifierUtils.getIdentifierAsPolyLong();
             System.arraycopy( oldRow, 0, newRow, 1, oldRow.length );
             return newRow;
+        } );
+    }
+
+    @SuppressWarnings("unused")
+    public static Enumerable<PolyValue[]> addDocIdentifiers(final Enumerable<PolyValue[]> input) {
+        return input.select( oldRow -> {
+            PolyDocument document = (PolyDocument) oldRow[0];
+            document.put( IdentifierUtils.getIdentifierKeyAsPolyString(), IdentifierUtils.getIdentifierAsPolyLong() );
+            return new PolyValue[]{document};
         } );
     }
 
