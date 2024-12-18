@@ -110,6 +110,7 @@ public class HttpServer implements Runnable {
 
     private @NotNull File handleUiFiles() {
         File uiPath = PolyphenyHomeDirManager.getInstance().registerNewFolder( "ui" );
+        log.warn("uiPath={}", uiPath.getAbsolutePath() );
         if ( uiPath.delete() ) {
             uiPath = PolyphenyHomeDirManager.getInstance().registerNewFolder( "ui" );
         }
