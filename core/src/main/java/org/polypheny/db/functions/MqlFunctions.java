@@ -782,6 +782,7 @@ public class MqlFunctions {
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docGeoWithin( PolyValue input, PolyValue geometry, PolyValue distance ) {
         try {
+            // TODO: Do PolyString -> PolyGeometry conversion here
             PolyGeometry geometryFilter = geometry.asGeometry();
             PolyGeometry inputGeometry = convertInputToPolyGeometry( input, geometryFilter.getSRID() );
             double distanceValue;
