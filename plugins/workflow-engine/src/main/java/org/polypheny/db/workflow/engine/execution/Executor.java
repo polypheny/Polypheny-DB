@@ -26,6 +26,7 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
@@ -42,13 +43,15 @@ public abstract class Executor implements Callable<Void> {
 
     final StorageManager sm;
     final Workflow workflow;
+    final ExecutionInfo info;
     boolean isInterrupted;
 
 
     // TODO: add reference to monitor for monitoring the progress of activities
-    protected Executor( StorageManager sm, Workflow workflow ) {
+    protected Executor( StorageManager sm, Workflow workflow, ExecutionInfo info ) {
         this.sm = sm;
         this.workflow = workflow;
+        this.info = info;
     }
 
 

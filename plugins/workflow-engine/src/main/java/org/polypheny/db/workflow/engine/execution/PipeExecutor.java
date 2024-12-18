@@ -31,7 +31,6 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
@@ -46,6 +45,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.CheckpointOutputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.QueuePipe;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
@@ -56,12 +56,14 @@ import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
  * Data is moved between threads using pipes.
  * Checkpoints are read and written in the activity thread that uses them, using special checkpoint pipes.
  */
-@Slf4j
 public class PipeExecutor extends Executor {
 
     private final AttributedDirectedGraph<UUID, ExecutionEdge> execTree;
     private final UUID rootId;
+    private final Map<UUID, AlgDataType> outTypes = new HashMap<>(); // maps activities to their (only!) output type
+    private final Map<UUID, Long> outCounts = new HashMap<>(); // maps activities to the estimated number of tuples they produce, or -1 if no estimation is possible
     private final Map<UUID, QueuePipe> outQueues = new HashMap<>(); // maps activities to their (only!) output queue
+    private final Map<UUID, ExecutionContextImpl> contexts = new HashMap<>();
     private final Map<UUID, Settings> settingsSnapshot = new HashMap<>();
     private final int queueCapacity;
 
@@ -69,8 +71,8 @@ public class PipeExecutor extends Executor {
     private ExecutorService executor;
 
 
-    public PipeExecutor( StorageManager sm, Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execTree, UUID rootId, int queueCapacity ) {
-        super( sm, workflow );
+    public PipeExecutor( StorageManager sm, Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execTree, UUID rootId, int queueCapacity, ExecutionInfo info ) {
+        super( sm, workflow, info );
         this.execTree = execTree;
         this.rootId = rootId;
         this.queueCapacity = queueCapacity;
@@ -93,7 +95,6 @@ public class PipeExecutor extends Executor {
         CompletionService<Void> completionService = new ExecutorCompletionService<>( executor );
         List<Future<Void>> futures = new ArrayList<>();
         for ( Callable<Void> callable : callables ) {
-            log.info( "1. Pipe submits callable " + callable );
             futures.add( completionService.submit( callable ) );
         }
         this.executor = executor; // store in field for manual interrupt
@@ -104,13 +105,11 @@ public class PipeExecutor extends Executor {
             try {
                 Future<Void> f = completionService.take();
                 futures.remove( f );
-                log.info( "3.1 Processing next completed pipe activity " );
 
                 try {
                     f.get();
                 } catch ( ExecutionException e ) {
                     if ( !hasDetectedAbort ) {
-                        log.warn( "First pipe has detected abort, cancelling all" );
                         // At this point, we cannot be sure if there are multiple failed tasks.
                         // This is not a problem, we just handle the first one we encounter and use it as a reason for the abort.
                         hasDetectedAbort = true;
@@ -119,19 +118,16 @@ public class PipeExecutor extends Executor {
                     }
                     // only the first task to throw an exception is relevant
                 } catch ( CancellationException ignored ) {
-                    log.warn( "Another pipe has detected abort" );
                     assert hasDetectedAbort; // we already cancelled the other tasks and don't have to do anything
                 }
-                log.info( "3.2 Pipe activity processing finished" );
 
             } catch ( InterruptedException ignored ) {
-                // THe PipeExecutor thread itself should never be interrupted
+                // The PipeExecutor thread itself should never be interrupted
             }
 
         }
 
         executor.shutdownNow();
-        log.info( "4. All threads have finished" );
 
         if ( abortReason != null ) {
             throw abortReason; // we only throw now to ensure threads are all shut down.
@@ -154,15 +150,17 @@ public class PipeExecutor extends Executor {
     }
 
 
-    private AlgDataType registerOutputPipes( UUID root ) throws Exception {
+    private AlgDataType registerOutputTypes( UUID root ) throws Exception {
         ActivityWrapper wrapper = workflow.getActivity( root );
 
         List<ExecutionEdge> inEdges = execTree.getInwardEdges( root );
         AlgDataType[] inTypes = new AlgDataType[wrapper.getDef().getInPorts().length];
+        Long[] inCounts = new Long[inTypes.length];
         boolean isInnerNode = false;
         for ( ExecutionEdge edge : inEdges ) {
             assert !edge.isControl() : "Execution tree for pipelining must not contain control edges";
-            inTypes[edge.getToPort()] = registerOutputPipes( edge.getSource() );
+            inTypes[edge.getToPort()] = registerOutputTypes( edge.getSource() );
+            inCounts[edge.getToPort()] = outCounts.get( edge.getSource() );
             isInnerNode = true;
         }
         for ( int i = 0; i < inTypes.length; i++ ) {
@@ -170,6 +168,7 @@ public class PipeExecutor extends Executor {
                 // existing checkpoint
                 CheckpointReader reader = getReader( wrapper, i );
                 inTypes[i] = reader == null ? null : reader.getTupleType(); // null implies inactive data edge
+                inCounts[i] = reader == null ? null : reader.getTupleCount();
             }
         }
         if ( isInnerNode ) { // leaf nodes already have correct variables from scheduler
@@ -180,9 +179,14 @@ public class PipeExecutor extends Executor {
         settingsSnapshot.put( root, settings ); // store current state of settings for later use
         Pipeable activity = (Pipeable) wrapper.getActivity();
 
-        AlgDataType outType = activity.lockOutputType( Arrays.asList( inTypes ), settings );
+        List<AlgDataType> inTypesList = Arrays.asList( inTypes );
+        List<Long> inCountsList = Arrays.asList( inCounts );
+        AlgDataType outType = activity.lockOutputType( inTypesList, settings );
+        ExecutionContextImpl ctx = new ExecutionContextImpl( wrapper, sm, info, inCountsList );
+        contexts.put( root, ctx );
+        outCounts.put( root, activity.estimateTupleCount( inTypesList, settings, inCountsList, ctx::getTransaction ) );
         if ( outType != null ) {
-            outQueues.put( root, new QueuePipe( queueCapacity, outType ) ); // TODO: adapt queue capacity to tuple size?
+            outTypes.put( root, outType );
             wrapper.setOutTypePreview( List.of( Optional.of( outType ) ) );
         } else {
             // we are at the actual root of the tree, and it's an activity with no outputs.
@@ -203,23 +207,23 @@ public class PipeExecutor extends Executor {
 
         System.out.println( "creating CheckpointWriterPipe for model " + model );
         CheckpointWriter writer = sm.createCheckpoint( rootId, 0, rootType, true, store, model );
-        return new CheckpointOutputPipe( rootType, writer );
+        return new CheckpointOutputPipe( rootType, writer, contexts.get( rootId ), outCounts.get( rootId ) );
     }
 
 
     private List<Callable<Void>> getCallables() throws Exception {
 
-        AlgDataType rootType = registerOutputPipes( rootId );
+        AlgDataType rootType = registerOutputTypes( rootId );
 
         List<Callable<Void>> callables = new ArrayList<>();
         for ( UUID currentId : TopologicalOrderIterator.of( execTree ) ) {
             ActivityWrapper wrapper = workflow.getActivity( currentId );
             List<ExecutionEdge> inEdges = execTree.getInwardEdges( currentId );
-
             InputPipe[] inPipesArr = new InputPipe[wrapper.getDef().getInPorts().length];
             for ( ExecutionEdge edge : inEdges ) {
                 assert !edge.isControl() : "Execution tree for pipelining must not contain control edges";
-                inPipesArr[edge.getToPort()] = outQueues.get( edge.getSource() );
+                QueuePipe inPipe = outQueues.get( edge.getSource() );
+                inPipesArr[edge.getToPort()] = inPipe;
             }
             for ( int i = 0; i < inPipesArr.length; i++ ) {
                 if ( inPipesArr[i] == null ) {
@@ -230,7 +234,13 @@ public class PipeExecutor extends Executor {
             }
 
             List<InputPipe> inPipes = Arrays.asList( inPipesArr );
-            OutputPipe outPipe = currentId.equals( rootId ) ? getCheckpointWriterPipe( rootId, rootType ) : outQueues.get( wrapper.getId() );
+            OutputPipe outPipe;
+            if ( currentId.equals( rootId ) ) {
+                outPipe = getCheckpointWriterPipe( rootId, rootType );
+            } else {
+                outPipe = new QueuePipe( queueCapacity, outTypes.get( currentId ), contexts.get( currentId ), outCounts.get( currentId ) ); // TODO: adapt queue capacity to tuple size?
+                outQueues.put( currentId, (QueuePipe) outPipe );
+            }
             callables.add( getCallable( wrapper, inPipes, outPipe ) );
         }
         return callables;
@@ -240,9 +250,8 @@ public class PipeExecutor extends Executor {
     private Callable<Void> getCallable( ActivityWrapper wrapper, List<InputPipe> inPipes, OutputPipe outPipe ) {
         Settings settings = settingsSnapshot.get( wrapper.getId() );
         Pipeable activity = (Pipeable) wrapper.getActivity();
-        ExecutionContextImpl ctx = new ExecutionContextImpl( wrapper, sm );
+        ExecutionContextImpl ctx = contexts.get( wrapper.getId() );
         return () -> {
-            log.info( "2.1 Starting execution of " + wrapper );
             try {
                 if ( outPipe != null ) {
                     try ( outPipe ) { // try-with-resource to close pipe (in case of the CheckpointOutputPipe, this closes the checkpoint writer)
@@ -264,7 +273,6 @@ public class PipeExecutor extends Executor {
                 ctx.updateProgress( 1 );
                 ctx.close();
             }
-            log.info( "2.2 Finished execution of " + wrapper );
             return null;
         };
     }

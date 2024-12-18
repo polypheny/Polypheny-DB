@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.workflow.dag.Workflow;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionMonitor;
 import org.polypheny.db.workflow.engine.scheduler.GlobalScheduler;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
@@ -91,7 +92,7 @@ public abstract class AbstractSession {
 
         // TODO: implement correct error handling when execution cannot be started
         try {
-            GlobalScheduler.getInstance().startExecution( wf, sm, targetActivity );
+            ExecutionMonitor executionMonitor = GlobalScheduler.getInstance().startExecution( wf, sm, targetActivity );
         } catch ( Exception e ) {
             throw new RuntimeException( e );
         }

@@ -18,7 +18,9 @@ package org.polypheny.db.workflow.dag.activities;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
@@ -71,10 +73,12 @@ public interface Pipeable extends Activity {
         List<InputPipe> inPipes = inputs.stream().map( reader -> (InputPipe) new CheckpointInputPipe( reader ) ).toList();
         PipeExecutionContext pipeCtx = (ExecutionContextImpl) ctx;
 
+        List<Long> inCounts = inputs.stream().map( reader -> reader == null ? null : reader.getTupleCount() ).toList();
+        long tupleCount = estimateTupleCount( inputTypes, settings, inCounts, pipeCtx::getTransaction );
         CheckpointWriter writer = ctx.createWriter( 0, type, true );
 
         try {
-            OutputPipe outPipe = new CheckpointOutputPipe( type, writer );
+            OutputPipe outPipe = new CheckpointOutputPipe( type, writer, ctx, tupleCount );
             pipe( inPipes, outPipe, settings, pipeCtx );
         } catch ( PipeInterruptedException e ) {
             throw new ExecutorException( "Activity execution was interrupted" );
@@ -91,6 +95,11 @@ public interface Pipeable extends Activity {
      */
     AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception;
 
+
+    default long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
+        return Activity.computeTupleCountSum( inCounts );
+    }
+
     /**
      * Successively consumes the tuples of the input pipe(s) and forwards produced tuples to the output pipe.
      * There does not have to be a 1:1 relationship between input and output tuples.
@@ -100,7 +109,7 @@ public interface Pipeable extends Activity {
      * @param inputs the InputPipes to iterate over. For inactive edges, the pipe is null (important for non-default DataStateMergers).
      * @param output the output pipe for sending output tuples to that respect the locked output type, or null if this activity has no output
      * @param settings the resolved settings
-     * @param ctx ExecutionContext to be used for updating progress (interrupt checking is done automatically by the pipes)
+     * @param ctx ExecutionContext to be used for access to the transaction (interrupt checking is done automatically by the pipes)
      * @throws PipeInterruptedException if thread gets interrupted during execution (used for prematurely stopping execution)
      * @throws Exception if some other problem occurs during execution that requires the execution of the pipe to stop
      */

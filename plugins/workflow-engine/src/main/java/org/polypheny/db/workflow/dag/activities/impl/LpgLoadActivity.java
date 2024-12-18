@@ -72,7 +72,7 @@ public class LpgLoadActivity implements Activity, Pipeable {
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         LogicalGraph graph = getEntity( settings.get( GRAPH_KEY, EntityValue.class ) );
         LpgReader reader = (LpgReader) inputs.get( 0 );
-        write( graph, ctx.getTransaction(), reader.getIterable(), ctx, reader.getNodeCount() + reader.getEdgeCount() );
+        write( graph, ctx.getTransaction(), reader.getIterable(), ctx, null, reader.getTupleCount() );
     }
 
 
@@ -84,8 +84,9 @@ public class LpgLoadActivity implements Activity, Pipeable {
 
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
+        long estimatedTupleCount = estimateTupleCount( inputs.stream().map( InputPipe::getType ).toList(), settings, ctx.getEstimatedInCounts(), ctx::getTransaction );
         LogicalGraph graph = getEntity( settings.get( GRAPH_KEY, EntityValue.class ) );
-        write( graph, ctx.getTransaction(), inputs.get( 0 ), null, 1 );
+        write( graph, ctx.getTransaction(), inputs.get( 0 ), null, ctx, estimatedTupleCount );
     }
 
 
@@ -99,8 +100,11 @@ public class LpgLoadActivity implements Activity, Pipeable {
     }
 
 
-    private void write( LogicalGraph graph, Transaction transaction, Iterable<List<PolyValue>> tuples, ExecutionContext ctx, long totalTuples ) throws Exception {
+    private void write( LogicalGraph graph, Transaction transaction, Iterable<List<PolyValue>> tuples, ExecutionContext ctx, PipeExecutionContext pipeCtx, long totalTuples ) throws Exception {
+        assert ctx != null || pipeCtx != null;
+
         long count = 0;
+        long countDelta = Math.max( totalTuples / 100, 1 );
         try ( LpgBatchWriter writer = new LpgBatchWriter( graph, transaction ) ) {
             for ( List<PolyValue> tuple : tuples ) {
                 PolyValue value = tuple.get( 0 );
@@ -113,9 +117,14 @@ public class LpgLoadActivity implements Activity, Pipeable {
                 }
 
                 count++;
-                if ( ctx != null && count % 1024 == 0 ) {
-                    ctx.updateProgress( (double) count / totalTuples );
-                    ctx.checkInterrupted();
+                if ( count % countDelta == 0 ) {
+                    double progress = (double) count / totalTuples;
+                    if ( ctx != null ) {
+                        ctx.updateProgress( progress );
+                        ctx.checkInterrupted();
+                    } else {
+                        pipeCtx.updateProgress( progress );
+                    }
                 }
             }
         }

@@ -72,7 +72,7 @@ public class DocLoadActivity implements Activity, Pipeable {
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         LogicalCollection collection = getEntity( settings.get( COLL_KEY, EntityValue.class ) );
         DocReader reader = (DocReader) inputs.get( 0 );
-        write( collection, ctx.getTransaction(), reader.getIterable(), ctx, reader.getDocCount() );
+        write( collection, ctx.getTransaction(), reader.getIterable(), ctx, null, reader.getDocCount() );
     }
 
 
@@ -84,8 +84,10 @@ public class DocLoadActivity implements Activity, Pipeable {
 
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
+        long estimatedTupleCount = estimateTupleCount( inputs.stream().map( InputPipe::getType ).toList(), settings, ctx.getEstimatedInCounts(), ctx::getTransaction );
+
         LogicalCollection collection = getEntity( settings.get( COLL_KEY, EntityValue.class ) );
-        write( collection, ctx.getTransaction(), inputs.get( 0 ), null, 1 );
+        write( collection, ctx.getTransaction(), inputs.get( 0 ), null, ctx, estimatedTupleCount );
     }
 
 
@@ -99,17 +101,24 @@ public class DocLoadActivity implements Activity, Pipeable {
     }
 
 
-    private void write( LogicalCollection collection, Transaction transaction, Iterable<List<PolyValue>> tuples, ExecutionContext ctx, long totalTuples ) throws Exception {
+    private void write( LogicalCollection collection, Transaction transaction, Iterable<List<PolyValue>> tuples, ExecutionContext ctx, PipeExecutionContext pipeCtx, long totalTuples ) throws Exception {
+        assert ctx != null || pipeCtx != null;
+
         long count = 0;
+        long countDelta = Math.max( totalTuples / 100, 1 );
         try ( DocBatchWriter writer = new DocBatchWriter( collection, transaction ) ) {
             for ( List<PolyValue> tuple : tuples ) {
-                System.out.println( "Loading value " + tuple.get( 0 ).asDocument() );
                 writer.write( tuple.get( 0 ).asDocument() );
 
                 count++;
-                if ( ctx != null && count % 1024 == 0 ) {
-                    ctx.updateProgress( (double) count / totalTuples );
-                    ctx.checkInterrupted();
+                if ( count % countDelta == 0 ) {
+                    double progress = (double) count / totalTuples;
+                    if ( ctx != null ) {
+                        ctx.updateProgress( progress );
+                        ctx.checkInterrupted();
+                    } else {
+                        pipeCtx.updateProgress( progress );
+                    }
                 }
             }
         }

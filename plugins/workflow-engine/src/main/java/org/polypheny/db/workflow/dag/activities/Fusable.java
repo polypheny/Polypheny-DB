@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -28,6 +29,7 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
@@ -63,7 +65,8 @@ public interface Fusable extends Activity {
         ).orElseThrow() : "Cannot use the default execute implementation of Fusable if canFuse returns false.";
 
         // Imitates the fusion executor
-        Statement statement = ctx.getTransaction().createStatement();
+        Transaction transaction = ctx.getTransaction();
+        Statement statement = transaction.createStatement();
         AlgCluster cluster = AlgCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ),
@@ -71,6 +74,12 @@ public interface Fusable extends Activity {
                 statement.getDataContext().getSnapshot() );
 
         List<AlgNode> inNodes = inputs.stream().map( reader -> reader.getAlgNode( cluster ) ).toList();
+        long estimatedTupleCount = estimateTupleCount(
+                inNodes.stream().map( AlgNode::getTupleType ).toList(),
+                settings,
+                inputs.stream().map( CheckpointReader::getTupleCount ).toList(),
+                () -> transaction );
+
         AlgRoot root = AlgRoot.of( fuse( inNodes, settings, cluster ), Kind.SELECT );
 
         if ( !QueryUtils.validateAlg( root, false, null ) ) {
@@ -82,11 +91,17 @@ public interface Fusable extends Activity {
             throw new ExecutorException( "An error occurred while executing the fused activities." );
         }
 
+        long countDelta = Math.max( estimatedTupleCount / 100, 1 );
+        long count = 0;
         Iterator<PolyValue[]> iterator = executedContext.getIterator().getIterator();
         CheckpointWriter writer = ctx.createWriter( 0, root.validatedRowType, true );
         try {
             while ( iterator.hasNext() ) {
                 writer.write( Arrays.asList( iterator.next() ) );
+                count++;
+                if ( estimatedTupleCount > 0 && count % countDelta == 0 ) {
+                    ctx.updateProgress( (double) count / estimatedTupleCount );
+                }
             }
         } catch ( Exception e ) {
             throw new ExecutorException( e );
@@ -104,5 +119,11 @@ public interface Fusable extends Activity {
      * @return The created logical AlgNode. In case of a relational result, its tuple type has the first column reserved for the primary key. It can be left empty.
      */
     AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception;
+
+
+    @Override
+    default long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
+        return Activity.computeTupleCountSum( inCounts );
+    }
 
 }

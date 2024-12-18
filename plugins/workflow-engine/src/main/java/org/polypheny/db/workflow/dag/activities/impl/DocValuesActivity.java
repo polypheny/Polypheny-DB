@@ -25,12 +25,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -100,8 +102,13 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
         for ( int i = 0; i < n; i++ ) {
             PolyDocument doc = getValue( random );
             output.put( doc );
-            log.info( "Value pipe inserted " + doc );
         }
+    }
+
+
+    @Override
+    public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
+        return settings.get( "count", IntValue.class ).getValue();
     }
 
 

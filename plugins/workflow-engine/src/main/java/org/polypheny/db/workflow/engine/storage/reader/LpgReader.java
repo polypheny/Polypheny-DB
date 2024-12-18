@@ -130,6 +130,12 @@ public class LpgReader extends CheckpointReader {
     }
 
 
+    @Override
+    public long getTupleCount() {
+        return getNodeCount() + getEdgeCount();
+    }
+
+
     private Iterator<PolyValue[]> executeCypherQuery( String query ) {
         ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery(
                 query, "cypher", getGraph().getNamespaceId(), transaction );
@@ -141,7 +147,6 @@ public class LpgReader extends CheckpointReader {
 
     private long getCount( String countQuery ) {
         Iterator<PolyValue[]> it = executeCypherQuery( countQuery );
-        registerIterator( it );
         try {
             return it.next()[0].asLong().longValue();
         } catch ( NoSuchElementException | IndexOutOfBoundsException | NullPointerException ignored ) {

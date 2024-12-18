@@ -69,6 +69,12 @@ public class RelReader extends CheckpointReader {
     }
 
 
+    @Override
+    public long getTupleCount() {
+        return getRowCount();
+    }
+
+
     private LogicalTable getTable() {
         return (LogicalTable) entity;
     }

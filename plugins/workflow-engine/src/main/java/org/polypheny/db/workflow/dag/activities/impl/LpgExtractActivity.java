@@ -20,7 +20,9 @@ import static org.polypheny.db.workflow.dag.activities.impl.LpgExtractActivity.G
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -106,6 +108,23 @@ public class LpgExtractActivity implements Activity, Pipeable {
 
 
     @Override
+    public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
+        LogicalGraph graph = settings.get( GRAPH_KEY, EntityValue.class ).getGraph();
+        Transaction transaction = transactionSupplier.get();
+
+        long nodeCount = getCount( graph, "MATCH (n) RETURN COUNT(n)", transaction );
+        if ( nodeCount < 0 ) {
+            return -1;
+        }
+        long edgeCount = getCount( graph, "MATCH ()-[r]->() RETURN COUNT(r)", transaction );
+        if ( edgeCount < 0 ) {
+            return -1;
+        }
+        return nodeCount + edgeCount;
+    }
+
+
+    @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         LogicalGraph graph = settings.get( GRAPH_KEY, EntityValue.class ).getGraph();
         try ( ResultIterator nodes = getResultIterator( ctx.getTransaction(), graph, false ) ) {
@@ -134,6 +153,17 @@ public class LpgExtractActivity implements Activity, Pipeable {
         ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery( query, "cypher", graph.namespaceId, transaction );
         System.out.println( "After exec (isEdges: " + isEdges + ", " + (System.currentTimeMillis() - start) + " ms)" );
         return executedContext.getIterator();
+    }
+
+
+    private long getCount( LogicalGraph graph, String countQuery, Transaction transaction ) {
+        ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery(
+                countQuery, "cypher", graph.getNamespaceId(), transaction );
+        try ( ResultIterator resultIterator = executedContext.getIterator() ) {
+            return resultIterator.getIterator().next()[0].asLong().longValue();
+        } catch ( NoSuchElementException | IndexOutOfBoundsException | NullPointerException ignored ) {
+            return -1;
+        }
     }
 
 }

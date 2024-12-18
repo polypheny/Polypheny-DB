@@ -25,6 +25,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
@@ -32,12 +33,14 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
@@ -57,8 +60,8 @@ public class FusionExecutor extends Executor {
     private final UUID rootId;
 
 
-    public FusionExecutor( StorageManager sm, Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execTree, UUID rootId ) {
-        super( sm, workflow );
+    public FusionExecutor( StorageManager sm, Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execTree, UUID rootId, ExecutionInfo info ) {
+        super( sm, workflow, info );
         this.execTree = execTree;
         this.rootId = rootId;
     }
@@ -77,8 +80,11 @@ public class FusionExecutor extends Executor {
                 statement.getDataContext().getSnapshot() );
 
         AlgRoot root;
+        long estimatedTupleCount;
         try {
-            root = AlgRoot.of( constructAlgNode( rootId, cluster ), Kind.SELECT );
+            Pair<AlgNode, Long> pair = constructAlgNode( rootId, cluster, transaction );
+            root = AlgRoot.of( pair.left, Kind.SELECT );
+            estimatedTupleCount = pair.right;
         } catch ( Exception e ) {
             throw new ExecutorException( e );
         }
@@ -97,11 +103,18 @@ public class FusionExecutor extends Executor {
             throw new ExecutorException( "An error occurred while executing the fused activities: " + execTree );
         }
 
+        long countDelta = Math.max( estimatedTupleCount / 100, 1 );
+        long count = 0;
         Iterator<PolyValue[]> iterator = executedContext.getIterator().getIterator();
         try ( CheckpointWriter writer = sm.createCheckpoint( rootId, 0, root.validatedRowType, true, rootWrapper.getConfig().getPreferredStore( 0 ), model ) ) {
             while ( iterator.hasNext() ) {
                 writer.write( Arrays.asList( iterator.next() ) );
+                count++;
+                if ( estimatedTupleCount > 0 && count % countDelta == 0 ) {
+                    info.setProgress( (double) count / estimatedTupleCount ); // we estimate progress only by number of produced output tuples -> the true progress would be higher
+                }
             }
+            info.setProgress( 1 );
         } catch ( Exception e ) {
             throw new ExecutorException( e );
         } finally {
@@ -124,23 +137,28 @@ public class FusionExecutor extends Executor {
     }
 
 
-    private AlgNode constructAlgNode( UUID root, AlgCluster cluster ) throws Exception {
+    private Pair<AlgNode, Long> constructAlgNode( UUID root, AlgCluster cluster, Transaction transaction ) throws Exception {
         ActivityWrapper wrapper = workflow.getActivity( root );
         List<ExecutionEdge> inEdges = execTree.getInwardEdges( root );
         AlgNode[] inputsArr = new AlgNode[wrapper.getDef().getInPorts().length];
+        Long[] inCountsArr = new Long[inputsArr.length];
         for ( ExecutionEdge edge : inEdges ) {
             assert !edge.isControl() : "Execution tree for fusion must not contain control edges";
-            inputsArr[edge.getToPort()] = constructAlgNode( edge.getSource(), cluster );
+            Pair<AlgNode, Long> pair = constructAlgNode( edge.getSource(), cluster, transaction );
+            inputsArr[edge.getToPort()] = pair.left;
+            inCountsArr[edge.getToPort()] = pair.right;
         }
         for ( int i = 0; i < inputsArr.length; i++ ) {
             if ( inputsArr[i] == null ) {
                 // add remaining inputs for existing checkpoints
                 try ( CheckpointReader reader = getReader( wrapper, i ) ) {
                     inputsArr[i] = reader == null ? null : reader.getAlgNode( cluster );
+                    inCountsArr[i] = reader == null ? null : reader.getTupleCount();
                 }
             }
         }
         List<AlgNode> inputs = Arrays.asList( inputsArr );
+        List<AlgDataType> inTypes = inputs.stream().map( AlgNode::getTupleType ).toList();
 
         if ( !inEdges.isEmpty() ) {
             workflow.recomputeInVariables( root ); // inner nodes should get their variables merged
@@ -149,10 +167,10 @@ public class FusionExecutor extends Executor {
         Settings settings = wrapper.resolveSettings();
         Fusable activity = (Fusable) wrapper.getActivity();
 
+        long tupleCount = activity.estimateTupleCount( inTypes, settings, Arrays.asList( inCountsArr ), () -> transaction );
         AlgNode fused = activity.fuse( inputs, settings, cluster );
-        System.out.println( "fused type of " + wrapper.getType() + " is: " + fused.getTupleType() );
         wrapper.setOutTypePreview( List.of( Optional.of( fused.getTupleType() ) ) );
-        return fused;
+        return Pair.of( fused, tupleCount );
     }
 
 }

@@ -22,6 +22,7 @@ import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.VariableWriter;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
@@ -31,8 +32,8 @@ public class VariableWriterExecutor extends Executor {
     private ExecutionContextImpl ctx;
 
 
-    public VariableWriterExecutor( StorageManager sm, Workflow workflow, UUID activityId ) {
-        super( sm, workflow );
+    public VariableWriterExecutor( StorageManager sm, Workflow workflow, UUID activityId, ExecutionInfo info ) {
+        super( sm, workflow, info );
         this.wrapper = workflow.getActivity( activityId );
     }
 
@@ -42,7 +43,7 @@ public class VariableWriterExecutor extends Executor {
         List<CheckpointReader> inputs = getReaders( wrapper );
 
         try ( CloseableList ignored = new CloseableList( inputs );
-                ExecutionContextImpl ctx = new ExecutionContextImpl( wrapper, sm ) ) {
+                ExecutionContextImpl ctx = new ExecutionContextImpl( wrapper, sm, info ) ) {
             this.ctx = ctx;
             VariableWriter activity = (VariableWriter) wrapper.getActivity();
             activity.execute( inputs, wrapper.resolveSettings(), ctx, wrapper.getVariables() );

@@ -97,6 +97,12 @@ public class DocReader extends CheckpointReader {
     }
 
 
+    @Override
+    public long getTupleCount() {
+        return getDocCount();
+    }
+
+
     private LogicalCollection getCollection() {
         return (LogicalCollection) entity;
     }

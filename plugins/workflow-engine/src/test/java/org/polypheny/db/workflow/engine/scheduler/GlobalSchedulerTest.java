@@ -35,6 +35,7 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.WorkflowUtils;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionMonitor;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
 import org.polypheny.db.workflow.engine.storage.StorageUtils;
@@ -377,6 +378,27 @@ class GlobalSchedulerTest {
         executeAllAndCheck( workflow, List.of( ids.get( 0 ), ids.get( 2 ) ) );
 
         assertEquals( StorageUtils.readCheckpoint( sm, ids.get( 0 ), 0 ), StorageUtils.readCheckpoint( sm, ids.get( 2 ), 0 ) );
+    }
+
+
+    @Test
+    void executionMonitorTest() throws Exception {
+        int delay = 1000;
+        int n = 5; // number of intermediary checks
+        Workflow workflow = WorkflowUtils.getLongRunningPipe( delay );
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        System.out.println( "ids: " + ids );
+        ExecutionMonitor monitor = scheduler.startExecution( workflow, sm, null );
+
+        for ( int i = 0; i < n; i++ ) {
+            System.out.println( "\nProgress " + i );
+            System.out.println( monitor.getAllProgress() );
+            Thread.sleep( delay / (n - 1) );
+        }
+
+        scheduler.awaitResultProcessor( 5000 );
+        System.out.println( monitor.getAllProgress() );
+
     }
 
 

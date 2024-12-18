@@ -20,7 +20,9 @@ import static org.polypheny.db.workflow.dag.activities.impl.DocExtractActivity.C
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
@@ -32,7 +34,9 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
@@ -112,6 +116,25 @@ public class DocExtractActivity implements Activity, Fusable, Pipeable {
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
         lockedEntity = settings.get( COLL_KEY, EntityValue.class ).getCollection();
         return getOutputType( lockedEntity );
+    }
+
+
+    @Override
+    public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
+        LogicalCollection collection = settings.get( COLL_KEY, EntityValue.class ).getCollection();
+        String query = "db.\"" + collection.getName() + "\".count({})";
+
+        ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery(
+                query, "MQL", collection.getNamespaceId(), transactionSupplier.get() );
+
+        try ( ResultIterator resultIterator = executedContext.getIterator() ) {
+            try {
+                PolyDocument doc = resultIterator.getIterator().next()[0].asDocument();
+                return doc.get( PolyString.of( "count" ) ).asNumber().longValue();
+            } catch ( NoSuchElementException | IndexOutOfBoundsException | NullPointerException ignored ) {
+                return -1;
+            }
+        }
     }
 
 

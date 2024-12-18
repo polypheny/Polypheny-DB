@@ -115,7 +115,7 @@ public class WorkflowManager {
                 ) );
 
                 long start = System.currentTimeMillis();
-                wrapper.getActivity().execute( List.of(), wrapper.resolveSettings(), new ExecutionContextImpl( wrapper, sm ) );
+                wrapper.getActivity().execute( List.of(), wrapper.resolveSettings(), new ExecutionContextImpl( wrapper, sm, null ) );
 
                 sm.commitTransaction( activityId );
                 long extractTimeMs = System.currentTimeMillis() - start;
@@ -133,7 +133,7 @@ public class WorkflowManager {
 
                 start = System.currentTimeMillis();
                 try ( CheckpointReader reader = sm.readCheckpoint( activityId, 0 ) ) {
-                    loadWrapper.getActivity().execute( List.of( reader ), loadWrapper.resolveSettings(), new ExecutionContextImpl( loadWrapper, sm ) );
+                    loadWrapper.getActivity().execute( List.of( reader ), loadWrapper.resolveSettings(), new ExecutionContextImpl( loadWrapper, sm, null ) );
                 }
                 sm.commitTransaction( activityId2 );
                 long loadTimeMs = System.currentTimeMillis() - start;

@@ -28,10 +28,14 @@ public interface InputPipe extends Iterable<List<PolyValue>> {
 
     /**
      * For performance reasons, the returned iterator must be used carefully.
-     * It is recommended to always use an enhanced for loop.
-     * If the iterator is used directly, make sure to only call {@code next()} if {@code hasNext()} has been called immediately before and returned true.
-     * Calls to {@code hasNext()} must be separated by exactly one call to {@code next()}.
-     * Otherwise, you risk skipping over elements, as some implementations retrieve the actual next element during hasNext().
+     * It is recommended to use a single enhanced for loop for iterating over all input values.
+     * Please note the following restrictions:
+     * <ul>
+     *     <li>Only a single iterator can ever be returned.</li>
+     *     <li>For graphs, the convention is that first all nodes are piped, followed by all edges.</li>
+     *     <li>If the iterator is used directly, make sure to only call {@code next()} if {@code hasNext()} has been called immediately before and returned true.</li>
+     *     <li>Calls to {@code hasNext()} must be separated by exactly one call to {@code next()}. Otherwise, you risk skipping over elements, as some implementations retrieve the actual next element during hasNext().</li>
+     * </ul>
      */
     @NotNull
     @Override

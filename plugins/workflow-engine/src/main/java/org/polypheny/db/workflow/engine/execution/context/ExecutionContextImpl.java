@@ -19,7 +19,7 @@ package org.polypheny.db.workflow.engine.execution.context;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import lombok.Getter;
+import javax.annotation.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
@@ -28,6 +28,7 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
@@ -39,26 +40,31 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
 
     private final StorageManager sm;
     private final ActivityWrapper activityWrapper;
+    private final ExecutionInfo info;
     private final PortType[] remainingOutPorts; // contains the PortType for each outPort or null after the checkpoint was created to avoid duplicate checkpoints
     private final List<CheckpointWriter> writers = new ArrayList<>();
+    private final List<Long> inCounts; // a PipeExecutionContext provides access to estimated number of input tuples
 
     private volatile boolean interrupt = false;  // can be set by external thread to indicate that the activity should stop its execution
-    @Getter
-    private volatile double progress = 0; // 1 => 100%, can only be updated by activity thread, external thread is only allowed to read
 
 
-    public ExecutionContextImpl( ActivityWrapper activityWrapper, StorageManager storageManager ) {
+    public ExecutionContextImpl( ActivityWrapper activityWrapper, StorageManager storageManager, ExecutionInfo info ) {
+        this( activityWrapper, storageManager, info, null );
+    }
+
+
+    public ExecutionContextImpl( ActivityWrapper activityWrapper, StorageManager storageManager, ExecutionInfo info, @Nullable List<Long> inCounts ) {
         this.sm = storageManager;
         this.activityWrapper = activityWrapper;
+        this.info = info;
         this.remainingOutPorts = activityWrapper.getDef().getOutPortTypes();
+        this.inCounts = inCounts;
     }
 
 
     @Override
     public void updateProgress( double value ) {
-        if ( value > progress ) {
-            progress = Math.min( 1, value );
-        }
+        info.setProgress( activityWrapper.getId(), value );
     }
 
 
@@ -128,6 +134,13 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
             throw new IllegalStateException( "Only EXTRACT or LOAD or fusable activities have access to transactions" );
         }
         return sm.getTransaction( activityWrapper.getId(), activityWrapper.getConfig().getCommonType() );
+    }
+
+
+    @Override
+    public List<Long> getEstimatedInCounts() {
+        assert inCounts != null;
+        return inCounts;
     }
 
 

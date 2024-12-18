@@ -27,13 +27,12 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 public class CheckpointInputPipe implements InputPipe, AutoCloseable {
 
     private final CheckpointReader reader;
-    private final Iterator<List<PolyValue>> checkpointIterator;
+    private Iterator<List<PolyValue>> checkpointIterator;
     private final AlgDataType type;
 
 
     public CheckpointInputPipe( CheckpointReader reader ) {
         this.reader = reader;
-        this.checkpointIterator = reader.getIterator();
         this.type = reader.getTupleType();
     }
 
@@ -47,6 +46,10 @@ public class CheckpointInputPipe implements InputPipe, AutoCloseable {
     @NotNull
     @Override
     public Iterator<List<PolyValue>> iterator() {
+        if ( this.checkpointIterator != null ) {
+            throw new IllegalStateException( "Cannot iterate more than once over the values of this pipe." );
+        }
+        this.checkpointIterator = reader.getIterator();
         return new Iterator<>() {
             @Override
             public boolean hasNext() {

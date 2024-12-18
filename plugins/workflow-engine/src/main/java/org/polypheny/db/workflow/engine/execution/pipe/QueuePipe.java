@@ -24,18 +24,30 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Pipeable.PipeInterruptedException;
+import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 
 public class QueuePipe implements InputPipe, OutputPipe {
 
     private final BlockingQueue<List<PolyValue>> queue;
     private final AlgDataType type;
+    private final ExecutionContext ctx;
     private boolean hasNext = true; // whether all tuples to ever be produced have been consumed
     private List<PolyValue> nextValue;
+    private boolean startedIteration;
+
+    private final long totalCount; // the estimated total number of tuples to be piped, or -1 if no estimation is possible
+    private final long countDelta; // the number of tuples to be taken between updates to the progress;
+    private final boolean canEstimateProgress;
+    private long count;
 
 
-    public QueuePipe( int capacity, AlgDataType type ) {
+    public QueuePipe( int capacity, AlgDataType type, ExecutionContext sourceCtx, long estimatedTotalCount ) {
         this.queue = new LinkedBlockingQueue<>( capacity );
         this.type = type;
+        this.ctx = sourceCtx;
+        this.totalCount = estimatedTotalCount;
+        this.canEstimateProgress = totalCount > 0;
+        this.countDelta = canEstimateProgress ? Math.max( totalCount / 100, 1 ) : -1;
     }
 
 
@@ -49,12 +61,20 @@ public class QueuePipe implements InputPipe, OutputPipe {
     public void put( List<PolyValue> value ) throws InterruptedException {
         assert !value.isEmpty() : "Cannot pipe empty list, as it is used as an end marker.";
         queue.put( value );
+        count++;
+        if ( canEstimateProgress && count % countDelta == 0 ) {
+            ctx.updateProgress( getEstimatedProgress() );
+        }
     }
 
 
     @NotNull
     @Override
     public Iterator<List<PolyValue>> iterator() {
+        if ( startedIteration ) {
+            throw new IllegalStateException( "Cannot iterate more than once over the values of this pipe." );
+        }
+        startedIteration = true;
         return new Iterator<>() {
             @Override
             public boolean hasNext() {
@@ -80,6 +100,12 @@ public class QueuePipe implements InputPipe, OutputPipe {
                 return nextValue; // important: hasNext must be called to load the next value
             }
         };
+    }
+
+
+    @Override
+    public double getEstimatedProgress() {
+        return canEstimateProgress ? (double) count / totalCount : -1;
     }
 
 

@@ -16,17 +16,17 @@
 
 package org.polypheny.db.workflow.engine.scheduler;
 
-import java.util.Set;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Value;
+import lombok.experimental.Delegate;
+import org.polypheny.db.workflow.engine.execution.Executor;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
-import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 
 @Value
 @AllArgsConstructor
 public class ExecutionResult {
 
+    @Delegate(excludes = Exclude.class)
     ExecutionSubmission submission;
     ExecutorException exception;
 
@@ -37,28 +37,15 @@ public class ExecutionResult {
     }
 
 
-    public Set<UUID> getActivities() {
-        return submission.getActivities();
-    }
-
-
-    public UUID getSessionId() {
-        return submission.getSessionId();
-    }
-
-
-    public UUID getRootId() {
-        return submission.getRootId();
-    }
-
-
-    public CommonType getCommonType() {
-        return submission.getCommonType();
-    }
-
-
     public boolean isSuccess() {
         return exception == null;
+    }
+
+
+    private interface Exclude {
+
+        Executor getExecutor();
+
     }
 
 }

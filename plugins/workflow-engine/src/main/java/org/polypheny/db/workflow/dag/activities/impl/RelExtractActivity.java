@@ -22,7 +22,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
@@ -151,6 +153,24 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
             Iterator<List<PolyValue>> it = CheckpointReader.arrayToListIterator( result.getIterator(), true );
             while ( it.hasNext() ) {
                 output.put( it.next() );
+            }
+        }
+    }
+
+
+    @Override
+    public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
+        LogicalTable table = settings.get( TABLE_KEY, EntityValue.class ).getTable();
+        String query = "SELECT COUNT(*) FROM " + QueryUtils.quotedIdentifier( table );
+
+        ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery(
+                query, "SQL", table.getNamespaceId(), transactionSupplier.get() );
+
+        try ( ResultIterator resultIterator = executedContext.getIterator() ) {
+            try {
+                return resultIterator.getIterator().next()[0].asNumber().longValue();
+            } catch ( NoSuchElementException | IndexOutOfBoundsException | NullPointerException ignored ) {
+                return -1;
             }
         }
     }

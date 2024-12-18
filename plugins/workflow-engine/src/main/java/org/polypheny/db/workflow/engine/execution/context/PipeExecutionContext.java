@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.engine.execution.context;
 
+import java.util.List;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.workflow.dag.activities.Activity;
 
@@ -24,6 +25,14 @@ public interface PipeExecutionContext {
     // no checkInterrupted(), since we use actual Interrupts. This is required to be able to interrupt
     // activities blocked by a pipe.
 
+    /**
+     * Manually update the progress of this activity.
+     * It should only be used by activities that have no output and thus only perform side effects.
+     * Any activity that pipes its tuples to an output pipe must not call this method, as the progress is updated
+     * automatically by the pipe.
+     *
+     * @param value the updated progress value
+     */
     void updateProgress( double value );
 
     /**
@@ -34,5 +43,7 @@ public interface PipeExecutionContext {
      * @return A transaction to be used for either reading or writing arbitrary entities in this Polypheny instance.
      */
     Transaction getTransaction();
+
+    List<Long> getEstimatedInCounts();
 
 }

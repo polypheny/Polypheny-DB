@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
@@ -34,8 +35,8 @@ public class DefaultExecutor extends Executor {
     private ExecutionContextImpl ctx;
 
 
-    public DefaultExecutor( StorageManager sm, Workflow wf, UUID activityId ) {
-        super( sm, wf );
+    public DefaultExecutor( StorageManager sm, Workflow wf, UUID activityId, ExecutionInfo info ) {
+        super( sm, wf, info );
         this.wrapper = wf.getActivity( activityId );
     }
 
@@ -45,7 +46,7 @@ public class DefaultExecutor extends Executor {
         List<CheckpointReader> inputs = getReaders( wrapper );
 
         try ( CloseableList ignored = new CloseableList( inputs );
-                ExecutionContextImpl ctx = new ExecutionContextImpl( wrapper, sm ) ) {
+                ExecutionContextImpl ctx = new ExecutionContextImpl( wrapper, sm, info ) ) {
             this.ctx = ctx;
             wrapper.getActivity().execute( inputs, wrapper.resolveSettings(), ctx );
             wrapper.setOutTypePreview( sm.getOptionalCheckpointTypes( wrapper.getId() ) );

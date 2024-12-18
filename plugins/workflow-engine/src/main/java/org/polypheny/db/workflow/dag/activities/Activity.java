@@ -21,9 +21,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
@@ -54,6 +57,21 @@ public interface Activity {
         return List.of( Optional.ofNullable( type ) );
     }
 
+    /**
+     * Estimates the total output tuple count based on input types and their respective counts.
+     * If no estimation is available for an input, the input count is -1.
+     * If the output count of this Activity cannot be estimated, -1 should be returned.
+     *
+     * @param inTypes the types of the inputs. For inactive edges, the entry is null (important for non-default DataStateMergers).
+     * @param settings the resolved settings
+     * @param inCounts the list of input tuple counts. -1 if the estimation is not possible and null for inactive edges.
+     * @param transactionSupplier to be used for access to a transaction
+     * @return the estimated output tuple count of this Activity, or -1 if no estimation is possible
+     */
+    default long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
+        throw new NotImplementedException(); // currently not used by non Fusable / Pipable activities
+    }
+
 
     /**
      * Execute this activity.
@@ -82,6 +100,26 @@ public interface Activity {
 
     default ControlStateMerger overrideControlStateMerger() {
         return null; // typically depends on the activity config -> we return null
+    }
+
+    /**
+     * Returns the sum of all active input counts, or -1 if one of them is -1.
+     */
+    static long computeTupleCountSum( List<Long> inCounts ) {
+        if ( inCounts.isEmpty() ) {
+            return -1;
+        }
+        long sum = 0;
+        for ( Long count : inCounts ) {
+            if ( count == null ) {
+                continue;
+            }
+            if ( count < 0 ) {
+                return -1;
+            }
+            sum += count;
+        }
+        return sum;
     }
 
     enum PortType {

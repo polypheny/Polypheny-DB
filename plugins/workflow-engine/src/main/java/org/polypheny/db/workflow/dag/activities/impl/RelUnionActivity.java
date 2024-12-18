@@ -18,11 +18,13 @@ package org.polypheny.db.workflow.dag.activities.impl;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
@@ -70,12 +72,10 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
-        int i = 0;
         for ( InputPipe input : inputs ) {
             for ( List<PolyValue> tuple : input ) {
                 output.put( tuple );
             }
-            ctx.updateProgress( ((double) ++i) / inputs.size() );
         }
     }
 
@@ -89,6 +89,12 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
     @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
         return LogicalRelUnion.create( inputs, true );
+    }
+
+
+    @Override
+    public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
+        return Activity.computeTupleCountSum( inCounts );
     }
 
 

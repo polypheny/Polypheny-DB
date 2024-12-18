@@ -64,10 +64,6 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
             determinePipes( subDag, nodeColors, edgeColors );
         }
 
-        System.out.print( "\nSub-DAG: " + subDag );
-        System.out.print( ", Node Colors: " + nodeColors );
-        System.out.println( ", Edge Colors: " + edgeColors );
-
         return createFactories( subDag, getFirstConnectedComponents( subDag, nodeColors, edgeColors ), commonType );
     }
 

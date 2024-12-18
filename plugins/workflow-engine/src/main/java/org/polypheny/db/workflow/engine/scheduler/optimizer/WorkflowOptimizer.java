@@ -34,6 +34,7 @@ import org.polypheny.db.workflow.engine.execution.Executor.ExecutorType;
 import org.polypheny.db.workflow.engine.execution.FusionExecutor;
 import org.polypheny.db.workflow.engine.execution.PipeExecutor;
 import org.polypheny.db.workflow.engine.execution.VariableWriterExecutor;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge.ExecutionEdgeFactory;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionSubmission;
@@ -161,14 +162,15 @@ public abstract class WorkflowOptimizer {
 
         public ExecutionSubmission create( StorageManager sm, Workflow wf ) {
             UUID root = getRootActivity(); // root of inverted tree
+            ExecutionInfo info = new ExecutionInfo( activities, executorType );
             Executor executor = switch ( executorType ) {
-                case DEFAULT -> new DefaultExecutor( sm, wf, root );
-                case FUSION -> new FusionExecutor( sm, wf, tree, root );
-                case PIPE -> new PipeExecutor( sm, wf, tree, root, wf.getConfig().getPipelineQueueCapacity() );
-                case VARIABLE_WRITER -> new VariableWriterExecutor( sm, wf, getRootActivity() );
+                case DEFAULT -> new DefaultExecutor( sm, wf, root, info );
+                case FUSION -> new FusionExecutor( sm, wf, tree, root, info );
+                case PIPE -> new PipeExecutor( sm, wf, tree, root, wf.getConfig().getPipelineQueueCapacity(), info );
+                case VARIABLE_WRITER -> new VariableWriterExecutor( sm, wf, getRootActivity(), info );
             };
 
-            return new ExecutionSubmission( executor, activities, root, commonType, sm.getSessionId() );
+            return new ExecutionSubmission( executor, activities, root, commonType, sm.getSessionId(), info );
         }
 
 

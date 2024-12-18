@@ -60,6 +60,8 @@ public abstract class CheckpointReader implements AutoCloseable {
      */
     public abstract Iterator<PolyValue[]> getArrayIterator();
 
+    public abstract long getTupleCount();
+
 
     /**
      * Get a new iterator for this checkpoint that transforms the raw PolyValue array into a

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
@@ -30,6 +31,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -97,6 +99,12 @@ public class RelValuesActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
+    public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
+        return settings.get( "rowCount", IntValue.class ).getValue();
+    }
+
+
+    @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         int n = settings.get( "rowCount", IntValue.class ).getValue();
         boolean fixSeed = settings.get( "fixSeed", BoolValue.class ).getValue();
@@ -105,7 +113,6 @@ public class RelValuesActivity implements Activity, Fusable, Pipeable {
         for ( int i = 0; i < n; i++ ) {
             List<PolyValue> tuple = getValue( random );
             output.put( tuple );
-            log.info( "Value pipe inserted " + tuple );
         }
     }
 
@@ -164,12 +171,9 @@ public class RelValuesActivity implements Activity, Fusable, Pipeable {
         for ( final List<PolyValue> row : rows ) {
             final List<RexLiteral> record = new ArrayList<>();
             for ( int i = 0; i < row.size(); ++i ) {
-                // TODO: fix creation of RexLiteral
                 PolyValue value = row.get( i );
                 AlgDataType type = fieldTypes.get( i );
                 record.add( new RexLiteral( value, type, type.getPolyType() ) );
-
-                //record.add( builder.makeLiteral( value, type, type.getPolyType() ) );
             }
             records.add( ImmutableList.copyOf( record ) );
         }

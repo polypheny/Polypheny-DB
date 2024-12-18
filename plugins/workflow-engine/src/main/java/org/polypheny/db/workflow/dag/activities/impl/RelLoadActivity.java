@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -82,7 +83,7 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         LogicalTable table = getEntity( settings.get( TABLE_KEY, EntityValue.class ) );
-        write( table, ctx.getTransaction(), inputs.get( 0 ).getIterable(), ctx, ((RelReader) inputs.get( 0 )).getRowCount() );
+        write( table, ctx.getTransaction(), inputs.get( 0 ).getIterable(), ctx, null, ((RelReader) inputs.get( 0 )).getRowCount() );
     }
 
 
@@ -94,14 +95,22 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
+        long estimatedTupleCount = estimateTupleCount( inputs.stream().map( InputPipe::getType ).toList(), settings, ctx.getEstimatedInCounts(), ctx::getTransaction );
+
         LogicalTable table = getEntity( settings.get( TABLE_KEY, EntityValue.class ) );
-        write( table, ctx.getTransaction(), inputs.get( 0 ), null, 1 ); // we do not know the number of rows
+        write( table, ctx.getTransaction(), inputs.get( 0 ), null, ctx, estimatedTupleCount ); // we do not know the number of rows
     }
 
 
     @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
         throw new NotImplementedException();
+    }
+
+
+    @Override
+    public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
+        return Activity.computeTupleCountSum( inCounts );
     }
 
 
@@ -115,7 +124,8 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
     }
 
 
-    private void write( LogicalTable table, Transaction transaction, Iterable<List<PolyValue>> rows, ExecutionContext ctx, long totalRows ) throws Exception {
+    private void write( LogicalTable table, Transaction transaction, Iterable<List<PolyValue>> rows, ExecutionContext ctx, PipeExecutionContext pipeCtx, long totalRows ) throws Exception {
+        assert ctx != null || pipeCtx != null;
 
         Map<Long, AlgDataType> paramTypes = new HashMap<>();
         StringJoiner joiner = new StringJoiner( ", ", "(", ")" );
@@ -130,6 +140,7 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
 
         int mapCapacity = (int) Math.ceil( table.getTupleType().getFieldCount() / 0.75 );
         long rowCount = 0;
+        long countDelta = Math.max( totalRows / 100, 1 );
         try ( BatchWriter writer = new BatchWriter( context, transaction.createStatement(), paramTypes ) ) {
             for ( List<PolyValue> row : rows ) {
                 Map<Long, PolyValue> map = new HashMap<>( mapCapacity );
@@ -139,9 +150,15 @@ public class RelLoadActivity implements Activity, Fusable, Pipeable {
                 writer.write( map );
 
                 rowCount++;
-                if ( ctx != null && rowCount % 1024 == 0 ) {
-                    ctx.updateProgress( (double) rowCount / totalRows );
-                    ctx.checkInterrupted();
+
+                if ( rowCount % countDelta == 0 ) {
+                    double progress = (double) rowCount / totalRows;
+                    if ( ctx != null ) {
+                        ctx.updateProgress( progress );
+                        ctx.checkInterrupted();
+                    } else {
+                        pipeCtx.updateProgress( progress );
+                    }
                 }
             }
         }

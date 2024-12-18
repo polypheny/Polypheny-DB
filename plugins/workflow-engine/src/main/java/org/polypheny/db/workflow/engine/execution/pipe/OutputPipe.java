@@ -24,10 +24,27 @@ public interface OutputPipe extends AutoCloseable {
 
     void put( List<PolyValue> value ) throws InterruptedException;
 
+    /**
+     * Puts the specified value into this pipe, possibly waiting for the pipe to have sufficient free capacity.
+     * <p>
+     * For graphs, the convention is that first all nodes are piped, followed by all edges.
+     *
+     * @param value the single value to insert
+     * @throws InterruptedException if the thread was interrupted while waiting
+     */
     default void put( PolyValue value ) throws InterruptedException {
         put( List.of( value ) );
     }
 
     AlgDataType getType();
+
+
+    /**
+     * Returns an estimation for the proportion of all tuples already put into the pipe.
+     * If no estimation is possible, -1 is returned.
+     *
+     * @return the estimated progress, guaranteed to be larger than 0 if estimation is possible. If the estimated total was too low, a progress larger than 1 might be returned.
+     */
+    double getEstimatedProgress();
 
 }

@@ -34,6 +34,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo.ExecutionState;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionMonitor;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 
@@ -68,13 +71,14 @@ public class GlobalScheduler {
     }
 
 
-    public synchronized void startExecution( Workflow workflow, StorageManager sm, @Nullable UUID targetActivity ) throws Exception {
+    public synchronized ExecutionMonitor startExecution( Workflow workflow, StorageManager sm, @Nullable UUID targetActivity ) throws Exception {
         UUID sessionId = sm.getSessionId();
         if ( schedulers.containsKey( sessionId ) ) {
             throw new GenericRuntimeException( "Cannot execute a workflow that is already being executed." );
         }
         interruptedSessions.remove( sessionId );
-        WorkflowScheduler scheduler = new WorkflowScheduler( workflow, sm, GLOBAL_WORKERS, targetActivity );
+        ExecutionMonitor monitor = new ExecutionMonitor();
+        WorkflowScheduler scheduler = new WorkflowScheduler( workflow, sm, monitor, GLOBAL_WORKERS, targetActivity );
         List<ExecutionSubmission> submissions = scheduler.startExecution();
         if ( submissions.isEmpty() ) {
             throw new GenericRuntimeException( "At least one activity needs to be executable when submitting a workflow for execution" );
@@ -86,7 +90,7 @@ public class GlobalScheduler {
         if ( resultProcessor == null || !resultProcessor.isAlive() ) {
             resultProcessor = startResultProcessor();
         }
-
+        return monitor;
     }
 
 
@@ -121,6 +125,9 @@ public class GlobalScheduler {
 
 
     public void awaitResultProcessor( long millis ) throws InterruptedException {
+        if ( resultProcessor == null ) {
+            return;
+        }
         resultProcessor.join( millis );
     }
 
@@ -131,7 +138,7 @@ public class GlobalScheduler {
             UUID sessionId = submission.getSessionId();
 
             completionService.submit( () -> {
-                log.info( "Starting actual execution {}", submission );
+                submission.getInfo().setState( ExecutionState.EXECUTING );
                 if ( interruptedSessions.contains( sessionId ) ) {
                     return new ExecutionResult( submission, new ExecutorException( "Execution was interrupted before it started" ) );
                 }
@@ -151,7 +158,7 @@ public class GlobalScheduler {
                     result = new ExecutionResult( submission, new ExecutorException( "Unexpected exception", e ) );
                 }
                 activeSubmissions.get( sessionId ).remove( submission );
-                log.info( "Finished actual execution with result {}", result );
+                submission.getInfo().setState( ExecutionState.AWAIT_PROCESSING );
                 return result;
             } );
         }
@@ -160,12 +167,13 @@ public class GlobalScheduler {
 
     private Thread startResultProcessor() {
         Thread t = new Thread( () -> {
-            log.info( "Started ResultProcessor thread" );
             while ( true ) {
                 List<ExecutionSubmission> nextSubmissions;
+                ExecutionInfo info = null;
                 try {
                     ExecutionResult result = completionService.take().get();
-                    log.info( "Processing result: {}", result );
+                    info = result.getInfo();
+                    info.setState( ExecutionState.PROCESSING_RESULT );
                     WorkflowScheduler scheduler = schedulers.get( result.getSessionId() );
                     nextSubmissions = scheduler.handleExecutionResult( result );
 
@@ -177,6 +185,11 @@ public class GlobalScheduler {
                 } catch ( ExecutionException e ) {
                     log.warn( "Scheduler result processor has encountered an unhandled exception: ", e );
                     throw new RuntimeException( e );
+                } finally {
+                    if ( info != null ) {
+                        info.setState( ExecutionState.DONE );
+                        log.info( info.toString() );
+                    }
                 }
 
                 if ( nextSubmissions == null || nextSubmissions.isEmpty() ) {

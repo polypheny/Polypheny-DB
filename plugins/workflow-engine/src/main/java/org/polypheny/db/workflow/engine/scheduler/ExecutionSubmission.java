@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.Value;
 import org.polypheny.db.workflow.engine.execution.Executor;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 
 @Value
@@ -30,6 +31,7 @@ public class ExecutionSubmission {
     UUID rootId;
     CommonType commonType;
     UUID sessionId;
+    ExecutionInfo info;
 
 
     public String toString() {

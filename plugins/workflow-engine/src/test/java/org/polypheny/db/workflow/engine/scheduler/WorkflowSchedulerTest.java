@@ -30,6 +30,7 @@ import org.polypheny.db.workflow.WorkflowUtils;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionMonitor;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
 import org.polypheny.db.workflow.engine.storage.StorageUtils;
@@ -76,7 +77,7 @@ class WorkflowSchedulerTest {
         assertEquals( WorkflowState.IDLE, workflow.getState() );
         assertEquals( ActivityState.IDLE, workflow.getActivity( ids.get( 0 ) ).getState() );
 
-        WorkflowScheduler scheduler = new WorkflowScheduler( workflow, sm, globalWorkers, ids.get( 0 ) );
+        WorkflowScheduler scheduler = new WorkflowScheduler( workflow, sm, new ExecutionMonitor(), globalWorkers, ids.get( 0 ) );
         assertEquals( WorkflowState.EXECUTING, workflow.getState() );
         assertEquals( ActivityState.QUEUED, workflow.getActivity( ids.get( 0 ) ).getState() );
         assertEquals( ActivityState.IDLE, workflow.getActivity( ids.get( 1 ) ).getState() );

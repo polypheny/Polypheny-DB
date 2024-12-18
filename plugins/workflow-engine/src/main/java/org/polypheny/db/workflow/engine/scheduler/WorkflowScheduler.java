@@ -42,6 +42,7 @@ import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionMonitor;
 import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizer;
 import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizer.SubmissionFactory;
 import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizerImpl;
@@ -65,6 +66,7 @@ public class WorkflowScheduler {
     private final int maxWorkers;
     private final AttributedDirectedGraph<UUID, ExecutionEdge> execDag;
     private final WorkflowOptimizer optimizer;
+    private final ExecutionMonitor executionMonitor;
 
     // TODO: define overall success or failure of workflow execution, e.g. with "mustSucceed" flag in activity
     private boolean isAborted; // by interruption
@@ -76,11 +78,12 @@ public class WorkflowScheduler {
     private Partition activePartition;
 
 
-    public WorkflowScheduler( Workflow workflow, StorageManager sm, int globalWorkers, @Nullable UUID targetActivity ) throws Exception {
+    public WorkflowScheduler( Workflow workflow, StorageManager sm, ExecutionMonitor monitor, int globalWorkers, @Nullable UUID targetActivity ) throws Exception {
         log.info( "Instantiating WorkflowScheduler with target: {}", targetActivity );
         workflow.setState( WorkflowState.EXECUTING );
         this.workflow = workflow;
         this.sm = sm;
+        this.executionMonitor = monitor;
         this.maxWorkers = Math.min( workflow.getConfig().getMaxWorkers(), globalWorkers );
 
         if ( targetActivity != null && workflow.getActivity( targetActivity ).getState() == ActivityState.SAVED ) {
@@ -270,6 +273,7 @@ public class WorkflowScheduler {
         List<ExecutionSubmission> submissions = factories.stream().map( f -> f.create( sm, workflow ) ).toList();
         for ( ExecutionSubmission submission : submissions ) {
             setStates( submission.getActivities(), ActivityState.EXECUTING );
+            executionMonitor.addInfo( submission.getInfo() );
         }
 
         return submissions;
