@@ -45,6 +45,7 @@ import org.polypheny.db.algebra.enumerable.common.EnumerableContextSwitcherRule;
 import org.polypheny.db.algebra.enumerable.common.EnumerableModifyCollectRule;
 import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentUnwindRule;
 import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentValuesRule;
+import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgIdentifierRule;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgMatchRule;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgTransformerRule;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgValuesRule;
@@ -87,6 +88,8 @@ public class EnumerableRules {
     public static final EnumerableIdCollectorRule ENUMERABLE_DOC_ID_COLLECTOR_RULE = EnumerableIdCollectorRule.DOC_INSTANCE;
 
     public static final EnumerableIdCollectorRule ENUMERABLE_LPG_ID_COLLECTOR_RULE = EnumerableIdCollectorRule.GRAPH_INSTANCE;
+
+    public static final EnumerableLpgIdentifierRule ENUMERABLE_LPG_IDENTIFIER_RULE = new EnumerableLpgIdentifierRule();
 
     public static final EnumerableConditionalExecuteRule ENUMERABLE_CONDITIONAL_EXECUTE_RULE = new EnumerableConditionalExecuteRule();
 
