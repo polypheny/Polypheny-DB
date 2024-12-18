@@ -63,6 +63,7 @@ import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
 import org.polypheny.db.algebra.logical.common.LogicalStreamer;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocIdentifier;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
@@ -73,6 +74,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentUnwind;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgIdentifier;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
@@ -185,6 +187,8 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
                 put( LogicalRelValues.class, a -> rewriteAlg( (LogicalRelValues) a ) );
                 put( LogicalRelProject.class, a -> rewriteAlg( (LogicalRelProject) a ) );
                 put( LogicalRelIdentifier.class, a -> rewriteAlg( (LogicalRelIdentifier) a ) );
+                put( LogicalDocIdentifier.class, a -> rewriteAlg( (LogicalDocIdentifier) a ) );
+                put( LogicalLpgIdentifier.class, a -> rewriteAlg( (LogicalLpgIdentifier) a ) );
                 put( LogicalCalc.class, a -> rewriteAlg( (LogicalCalc) a ) );
                 put( LogicalRelMatch.class, a -> rewriteAlg( (LogicalRelMatch) a ) );
                 put( LogicalChi.class, a -> rewriteAlg( (LogicalChi) a ) );
@@ -719,6 +723,14 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
 
 
     public void rewriteAlg( LogicalRelIdentifier alg ) {
+        rewriteGeneric( alg );
+    }
+
+    public void rewriteAlg( LogicalDocIdentifier alg ) {
+        rewriteGeneric( alg );
+    }
+
+    public void rewriteAlg( LogicalLpgIdentifier alg ) {
         rewriteGeneric( alg );
     }
 

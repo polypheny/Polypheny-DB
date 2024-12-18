@@ -137,6 +137,7 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_RULE,
                     EnumerableRules.ENUMERABLE_REL_IDENTIFIER_RULE,
                     EnumerableRules.ENUMERABLE_DOC_IDENTIFIER_RULE,
+                    EnumerableRules.ENUMERABLE_LPG_IDENTIFIER_RULE,
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_TRUE_RULE,
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_FALSE_RULE,
                     EnumerableRules.ENUMERABLE_STREAMER_RULE,

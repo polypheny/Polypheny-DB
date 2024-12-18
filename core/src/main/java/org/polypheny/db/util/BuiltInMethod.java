@@ -157,6 +157,7 @@ public enum BuiltInMethod {
     STREAM_RIGHT( Functions.class, "streamRight", DataContext.class, Enumerable.class, Function0.class, List.class ),
     ADD_REL_IDENTIFIERS(Functions.class, "addRelIdentifiers", Enumerable.class),
     ADD_DOC_IDENTIFIERS(Functions.class, "addDocIdentifiers", Enumerable.class),
+    ADD_LPG_IDENTIFIERS(Functions.class, "addLpgIdentifiers", Enumerable.class),
     ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", DataContext.class, Function0.class, Function0.class, List.class, List.class ),
     PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
