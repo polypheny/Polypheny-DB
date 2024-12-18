@@ -126,6 +126,7 @@ public class HttpServer implements Runnable {
 
         Optional<File> globalUiPath = PolyphenyHomeDirManager.getInstance().getGlobalFile( "ui" );
 
+        log.warn( "Using global UI path: {}", globalUiPath.get().getAbsolutePath() );
         if ( globalUiPath.isPresent() && globalUiPath.get().isDirectory() && Objects.requireNonNull( globalUiPath.get().list() ).length != 0 ) {
             log.warn( "Using global UI path: {}", globalUiPath.get().getAbsolutePath() );
             uiPath = globalUiPath.get();
