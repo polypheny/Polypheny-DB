@@ -18,12 +18,12 @@ package org.polypheny.db.transaction.locking;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
+import org.polypheny.db.algebra.logical.document.LogicalDocIdentifier;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
@@ -34,6 +34,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgIdentifier;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
@@ -61,7 +62,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.type.entity.document.PolyDocument;
 
 public class AlgTreeRewriter extends AlgShuttleImpl {
 
@@ -249,7 +249,17 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgModify modify ) {
-        return visitChildren( modify );
+        switch ( modify.getOperation() ) {
+            case INSERT:
+                AlgNode input = modify.getInput();
+                LogicalLpgIdentifier identifier = LogicalLpgIdentifier.create(
+                        modify.getEntity(),
+                        input
+                );
+                return modify.copy( modify.getTraitSet(), List.of( identifier ) );
+            default:
+                return visitChildren( modify );
+        }
     }
 
 
@@ -261,8 +271,11 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgValues values ) {
+        /*
         values.getNodes().forEach( n -> n.getProperties().put( IdentifierUtils.getIdentifierKeyAsPolyString(), IdentifierUtils.getIdentifierAsPolyLong() ) );
         values.getEdges().forEach( n -> n.getProperties().put( IdentifierUtils.getIdentifierKeyAsPolyString(), IdentifierUtils.getIdentifierAsPolyLong() ) );
+        return values;
+        */
         return values;
     }
 
@@ -314,10 +327,9 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         switch ( modify.getOperation() ) {
             case INSERT:
                 AlgNode input = modify.getInput();
-                LogicalRelIdentifier identifier = LogicalRelIdentifier.create(
+                LogicalDocIdentifier identifier = LogicalDocIdentifier.create(
                         modify.getEntity(),
-                        input,
-                        input.getTupleType()
+                        input
                 );
                 return modify.copy( modify.getTraitSet(), List.of( identifier ) );
             case UPDATE:
