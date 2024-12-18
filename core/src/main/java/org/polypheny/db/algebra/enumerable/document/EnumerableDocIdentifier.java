@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.enumerable.common;
+package org.polypheny.db.algebra.enumerable.document;
 
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -33,9 +33,9 @@ import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
-public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
+public class EnumerableDocIdentifier extends Identifier implements EnumerableAlg {
 
-    protected EnumerableIdentifier( AlgCluster cluster, AlgTraitSet traits, Entity entity, AlgNode input ) {
+    protected EnumerableDocIdentifier( AlgCluster cluster, AlgTraitSet traits, Entity entity, AlgNode input ) {
         super( cluster, traits, entity, input );
         assert getConvention() instanceof EnumerableConvention;
     }
@@ -54,11 +54,9 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
         final PhysType physType = result.physType();
 
         Expression input_ = builder.append( "input", result.block() );
-        Expression identification_ = builder.append( "identification", Expressions.call( input_, BuiltInMethod.ADD_IDENTIFIERS.method ) );
+        Expression identification_ = builder.append( "identification", Expressions.call( input_, BuiltInMethod.ADD_DOC_IDENTIFIERS.method ) );
 
         builder.add( Expressions.return_( null, identification_ ) );
         return implementor.result( physType, builder.toBlock() );
-
     }
-
 }

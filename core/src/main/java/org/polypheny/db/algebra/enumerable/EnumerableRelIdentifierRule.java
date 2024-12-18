@@ -14,34 +14,27 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.enumerable.common;
+package org.polypheny.db.algebra.enumerable;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.core.common.Identifier;
-import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifier;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
-public class EnumerableIdentifierRule extends ConverterRule {
-
-    public static final EnumerableIdentifierRule REL_INSTANCE = new EnumerableIdentifierRule( LogicalRelIdentifier.class );
-
-    public static final EnumerableIdentifierRule DOC_INSTANCE = new EnumerableIdentifierRule( LogicalRelIdentifier.class );
-
-
-    private EnumerableIdentifierRule( Class<? extends Identifier> identifier ) {
-        super( identifier, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableIdentifierRule" );
+public class EnumerableRelIdentifierRule extends ConverterRule {
+    
+    EnumerableRelIdentifierRule() {
+        super( LogicalRelIdentifier.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableRelIdentifierRule" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final Identifier identifier = (Identifier) alg;
+        final LogicalRelIdentifier identifier = (LogicalRelIdentifier) alg;
         final AlgTraitSet traits = identifier.getTraitSet().replace( EnumerableConvention.INSTANCE );
         final AlgNode input = identifier.getInput();
-        return new EnumerableIdentifier( identifier.getCluster(), traits, identifier.getEntity(), input );
+        return new EnumerableRelIdentifier( identifier.getCluster(), traits, identifier.getEntity(), input );
     }
 
 }

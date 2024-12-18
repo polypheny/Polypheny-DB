@@ -42,8 +42,8 @@ import org.polypheny.db.algebra.enumerable.common.EnumerableConditionalExecuteRu
 import org.polypheny.db.algebra.enumerable.common.EnumerableConditionalExecuteTrueRule;
 import org.polypheny.db.algebra.enumerable.common.EnumerableConstraintEnforcerRule;
 import org.polypheny.db.algebra.enumerable.common.EnumerableContextSwitcherRule;
-import org.polypheny.db.algebra.enumerable.common.EnumerableIdentifierRule;
 import org.polypheny.db.algebra.enumerable.common.EnumerableModifyCollectRule;
+import org.polypheny.db.algebra.enumerable.document.EnumerableDocIdentifierRule;
 import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentUnwindRule;
 import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentValuesRule;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgMatchRule;
@@ -74,9 +74,10 @@ public class EnumerableRules {
     private EnumerableRules() {
     }
 
-    public static final EnumerableIdentifierRule ENUMERABLE_REL_IDENTIFIER_RULE = EnumerableIdentifierRule.REL_INSTANCE;
 
-    public static final EnumerableIdentifierRule ENUMERABLE_DOC_IDENTIFIER_RULE = EnumerableIdentifierRule.DOC_INSTANCE;
+    public static final EnumerableRelIdentifierRule ENUMERABLE_REL_IDENTIFIER_RULE = new EnumerableRelIdentifierRule();
+
+    public static final EnumerableDocIdentifierRule ENUMERABLE_DOC_IDENTIFIER_RULE = new EnumerableDocIdentifierRule();
 
     public static final EnumerableConditionalExecuteRule ENUMERABLE_CONDITIONAL_EXECUTE_RULE = new EnumerableConditionalExecuteRule();
 
