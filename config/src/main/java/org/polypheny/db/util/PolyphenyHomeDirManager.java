@@ -179,6 +179,7 @@ public class PolyphenyHomeDirManager {
 
 
     public @NotNull Optional<File> getGlobalFile( String path ) {
+        log.warn("getGlobalFile root={}, path={}", this.root, path);
         return new File( this.root, path ).exists() ? Optional.of( new File( this.root, path ) ) : Optional.empty();
     }
 
