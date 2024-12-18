@@ -159,9 +159,6 @@ public class Neo4jPlugin extends PolyPlugin {
         @Getter
         private NeoNamespace currentNamespace;
 
-        @Getter
-        private NeoGraph currentGraph;
-
         private final TransactionProvider transactionProvider;
         private String host;
 
