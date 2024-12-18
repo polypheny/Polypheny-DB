@@ -309,6 +309,14 @@ public class Functions {
         } );
     }
 
+    @SuppressWarnings("unused")
+    public static Enumerable<PolyValue[]> addLpgIdentifiers(final Enumerable<PolyValue[]> input) {
+        return input.select( oldRow -> {
+            // ToDo: find out what has to be done here
+            return oldRow;
+        } );
+    }
+
 
     @SuppressWarnings("unused")
     public static Enumerable<PolyValue[]> streamRight( final DataContext context, final Enumerable<PolyValue[]> input, final Function0<Enumerable<PolyValue[]>> executorCall, final List<PolyType> polyTypes ) {
