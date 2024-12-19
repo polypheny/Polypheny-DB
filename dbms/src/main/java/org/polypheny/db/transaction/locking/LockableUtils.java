@@ -122,9 +122,9 @@ public class LockableUtils {
         return getMapOfLockableFromObject( namespace, lockType );
     }
 
-    public static Map<Lockable, LockType> getMapOfCollectionLockableFromContext(Context context, ParsedQueryContext parsedQueryContext, LockType lockType) {
-        long namespaceId = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
-        LogicalCollection collection = context.getSnapshot().doc().getCollection( namespaceId ).orElseThrow();
+    public static Map<Lockable, LockType> getMapOfCollectionLockableFromContext(Context context, ParsedQueryContext parsedQueryContext, String collectionName, LockType lockType) {
+        long namespaceId = parsedQueryContext.getNamespaceId();
+        LogicalCollection collection = context.getSnapshot().doc().getCollection( namespaceId, collectionName ).orElseThrow();
         return getMapOfLockableFromObject( collection, lockType );
     }
 
