@@ -1312,4 +1312,31 @@ public class BasicMaterializedViewTest {
         }
     }
 
+
+    @Test
+    public void testMaterializedViewRollback() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+
+                try {
+                    statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
+                    statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp1 AS SELECT * FROM viewTestEmpTable" );
+                    statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+
+                    // Force a rollback of the catalog
+                    connection.rollback();
+
+                    // Drop the materialized views
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp1" );
+                } finally {
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    dropTables( statement );
+                }
+            }
+        }
+    }
+
 }
