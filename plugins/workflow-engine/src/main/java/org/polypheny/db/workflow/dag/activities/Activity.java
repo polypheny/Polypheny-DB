@@ -23,7 +23,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.transaction.Transaction;
@@ -61,6 +60,8 @@ public interface Activity {
      * Estimates the total output tuple count based on input types and their respective counts.
      * If no estimation is available for an input, the input count is -1.
      * If the output count of this Activity cannot be estimated, -1 should be returned.
+     * <p>
+     * Currently, this method is only used to estimate the progress for fusion or pipelining activities.
      *
      * @param inTypes the types of the inputs. For inactive edges, the entry is null (important for non-default DataStateMergers).
      * @param settings the resolved settings
@@ -69,7 +70,7 @@ public interface Activity {
      * @return the estimated output tuple count of this Activity, or -1 if no estimation is possible
      */
     default long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
-        throw new NotImplementedException(); // currently not used by non Fusable / Pipable activities
+        return Activity.computeTupleCountSum( inCounts );
     }
 
 

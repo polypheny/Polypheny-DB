@@ -18,9 +18,7 @@ package org.polypheny.db.workflow.dag.activities;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
@@ -94,11 +92,6 @@ public interface Pipeable extends Activity {
      * @return the compulsory output type of this instance until the next call to reset(), or null if this activity has no outputs.
      */
     AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception;
-
-
-    default long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
-        return Activity.computeTupleCountSum( inCounts );
-    }
 
     /**
      * Successively consumes the tuples of the input pipe(s) and forwards produced tuples to the output pipe.

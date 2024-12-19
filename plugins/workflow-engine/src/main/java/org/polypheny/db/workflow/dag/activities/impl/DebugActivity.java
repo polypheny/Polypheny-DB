@@ -18,13 +18,11 @@ package org.polypheny.db.workflow.dag.activities.impl;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgCluster;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
@@ -103,12 +101,6 @@ public class DebugActivity implements Activity, Pipeable, Fusable {
     @Override
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
         return inTypes.get( 0 );
-    }
-
-
-    @Override
-    public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
-        return Activity.computeTupleCountSum( inCounts );
     }
 
 

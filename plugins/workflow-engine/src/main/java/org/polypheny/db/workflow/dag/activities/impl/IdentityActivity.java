@@ -18,12 +18,10 @@ package org.polypheny.db.workflow.dag.activities.impl;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
@@ -101,12 +99,6 @@ public class IdentityActivity implements Activity, Fusable, Pipeable {
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
         // to make it more interesting, we add a project activity that doesn't change the tupleType
         return LogicalRelProject.identity( inputs.get( 0 ) );
-    }
-
-
-    @Override
-    public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
-        return Activity.computeTupleCountSum( inCounts );
     }
 
 

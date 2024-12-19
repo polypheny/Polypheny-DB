@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -119,11 +118,5 @@ public interface Fusable extends Activity {
      * @return The created logical AlgNode. In case of a relational result, its tuple type has the first column reserved for the primary key. It can be left empty.
      */
     AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception;
-
-
-    @Override
-    default long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
-        return Activity.computeTupleCountSum( inCounts );
-    }
 
 }
