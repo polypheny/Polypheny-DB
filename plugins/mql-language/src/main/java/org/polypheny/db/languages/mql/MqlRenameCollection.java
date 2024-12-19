@@ -48,16 +48,13 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        long namespaceId = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
-
-        LogicalCollection collection = context.getSnapshot().doc().getCollection( namespaceId, getCollection() ).orElseThrow();
+        LogicalCollection collection = context.getSnapshot().doc().getCollection( parsedQueryContext.getNamespaceId(), getCollection() ).orElseThrow();
 
         if ( dropTarget ) {
             DdlManager.getInstance().dropCollection( collection, statement );
         }
 
         DdlManager.getInstance().renameCollection( collection, newName, statement );
-
     }
 
 

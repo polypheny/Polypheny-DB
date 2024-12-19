@@ -52,9 +52,7 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        long database = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
-
-        long namespaceId = context.getSnapshot().getNamespace( database ).orElseThrow().id;
+        long namespaceId = context.getSnapshot().getNamespace( parsedQueryContext.getNamespaceId() ).orElseThrow().id;
 
         QueryContext queryContext = QueryContext.builder()
                 .query( buildQuery() )
