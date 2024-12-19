@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -39,6 +40,7 @@ import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo.ExecutionState;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionMonitor;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
+import org.polypheny.db.workflow.models.responses.WsResponse;
 
 @Slf4j
 public class GlobalScheduler {
@@ -71,13 +73,18 @@ public class GlobalScheduler {
     }
 
 
-    public synchronized ExecutionMonitor startExecution( Workflow workflow, StorageManager sm, @Nullable UUID targetActivity ) throws Exception {
+    public synchronized void startExecution( Workflow workflow, StorageManager sm, @Nullable UUID targetActivity ) throws Exception {
+        startExecution( workflow, sm, targetActivity, null );
+    }
+
+
+    public synchronized ExecutionMonitor startExecution( Workflow workflow, StorageManager sm, @Nullable UUID targetActivity, Consumer<WsResponse> monitoringCallback ) throws Exception {
         UUID sessionId = sm.getSessionId();
         if ( schedulers.containsKey( sessionId ) ) {
             throw new GenericRuntimeException( "Cannot execute a workflow that is already being executed." );
         }
         interruptedSessions.remove( sessionId );
-        ExecutionMonitor monitor = new ExecutionMonitor();
+        ExecutionMonitor monitor = new ExecutionMonitor( workflow, targetActivity, monitoringCallback );
         WorkflowScheduler scheduler = new WorkflowScheduler( workflow, sm, monitor, GLOBAL_WORKERS, targetActivity );
         List<ExecutionSubmission> submissions = scheduler.startExecution();
         if ( submissions.isEmpty() ) {

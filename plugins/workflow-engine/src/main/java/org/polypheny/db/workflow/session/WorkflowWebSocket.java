@@ -27,9 +27,16 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.polypheny.db.workflow.models.websocket.CreateActivityRequest;
-import org.polypheny.db.workflow.models.websocket.DeleteActivityRequest;
-import org.polypheny.db.workflow.models.websocket.WsRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.CreateActivityRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.CreateEdgeRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.DeleteActivityRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.DeleteEdgeRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.ExecuteRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.InterruptRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.ResetRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.UpdateConfigRequest;
 
 @WebSocket
 public class WorkflowWebSocket implements Consumer<WsConfig> {
@@ -59,7 +66,14 @@ public class WorkflowWebSocket implements Consumer<WsConfig> {
 
         switch ( baseRequest.type ) {
             case CREATE_ACTIVITY -> session.handleRequest( ctx.messageAsClass( CreateActivityRequest.class ) );
+            case UPDATE_ACTIVITY -> session.handleRequest( ctx.messageAsClass( UpdateActivityRequest.class ) );
             case DELETE_ACTIVITY -> session.handleRequest( ctx.messageAsClass( DeleteActivityRequest.class ) );
+            case CREATE_EDGE -> session.handleRequest( ctx.messageAsClass( CreateEdgeRequest.class ) );
+            case DELETE_EDGE -> session.handleRequest( ctx.messageAsClass( DeleteEdgeRequest.class ) );
+            case EXECUTE -> session.handleRequest( ctx.messageAsClass( ExecuteRequest.class ) );
+            case INTERRUPT -> session.handleRequest( ctx.messageAsClass( InterruptRequest.class ) );
+            case RESET -> session.handleRequest( ctx.messageAsClass( ResetRequest.class ) );
+            case UPDATE_CONFIG -> session.handleRequest( ctx.messageAsClass( UpdateConfigRequest.class ) );
             default -> throw new IllegalArgumentException( "Received request with unknown type!" );
         }
     }

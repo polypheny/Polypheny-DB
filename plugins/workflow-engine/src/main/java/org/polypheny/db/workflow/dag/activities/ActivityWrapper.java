@@ -79,6 +79,12 @@ public class ActivityWrapper {
     }
 
 
+    public void resetSettings() {
+        serializableSettings.clear();
+        serializableSettings.putAll( ActivityRegistry.getSerializableDefaultSettings( type ) );
+    }
+
+
     public Settings resolveSettings() throws InvalidSettingException {
         return ActivityRegistry.buildSettingValues( type, variables.resolveVariables( serializableSettings ) );
     }
@@ -156,7 +162,7 @@ public class ActivityWrapper {
 
     public static ActivityWrapper fromModel( ActivityModel model ) {
         String type = model.getType();
-        // ensure the default value is used for missing settings
+        // ensuring the default value is used for missing settings
         Map<String, JsonNode> settings = new HashMap<>( ActivityRegistry.getSerializableDefaultSettings( type ) );
         settings.putAll( model.getSettings() );
         return new ActivityWrapper( model.getId(), ActivityRegistry.activityFromType( type ), type, settings, model.getConfig(), model.getRendering() );

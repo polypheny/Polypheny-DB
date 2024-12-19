@@ -77,7 +77,7 @@ class WorkflowSchedulerTest {
         assertEquals( WorkflowState.IDLE, workflow.getState() );
         assertEquals( ActivityState.IDLE, workflow.getActivity( ids.get( 0 ) ).getState() );
 
-        WorkflowScheduler scheduler = new WorkflowScheduler( workflow, sm, new ExecutionMonitor(), globalWorkers, ids.get( 0 ) );
+        WorkflowScheduler scheduler = new WorkflowScheduler( workflow, sm, new ExecutionMonitor( workflow, ids.get( 0 ), null ), globalWorkers, ids.get( 0 ) );
         assertEquals( WorkflowState.EXECUTING, workflow.getState() );
         assertEquals( ActivityState.QUEUED, workflow.getActivity( ids.get( 0 ) ).getState() );
         assertEquals( ActivityState.IDLE, workflow.getActivity( ids.get( 1 ) ).getState() );

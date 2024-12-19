@@ -23,11 +23,55 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import javax.annotation.Nullable;
+import lombok.Getter;
+import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.workflow.dag.Workflow;
+import org.polypheny.db.workflow.models.responses.WsResponse;
+import org.polypheny.db.workflow.models.responses.WsResponse.ProgressUpdateResponse;
+import org.polypheny.db.workflow.models.responses.WsResponse.StateUpdateResponse;
 
 public class ExecutionMonitor {
 
+    private static final int UPDATE_PROGRESS_DELAY = 2000;
+    private static final int STATE_UPDATE_DEFER_DELAY = 200;
+
     private final List<ExecutionInfo> infos = new CopyOnWriteArrayList<>();
     private final Map<UUID, ExecutionInfo> activityToInfoMap = new ConcurrentHashMap<>();
+    private final StopWatch workflowDuration;
+
+    private final Workflow workflow;
+    @Getter
+    private final UUID targetActivity;
+    private final Consumer<WsResponse> callback; // used to send updates to clients
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private volatile StateUpdateResponse scheduledUpdate; // Reduce number of state updates we send to the clients
+
+
+    public ExecutionMonitor( Workflow workflow, @Nullable UUID targetActivity, @Nullable Consumer<WsResponse> callback ) {
+        this.workflow = workflow;
+        this.targetActivity = targetActivity;
+        this.workflowDuration = StopWatch.createStarted();
+        this.callback = callback;
+        if ( callback != null ) {
+            startPeriodicUpdates();
+        }
+    }
+
+
+    private void startPeriodicUpdates() {
+        scheduler.scheduleAtFixedRate( () -> {
+            try {
+                callback.accept( new ProgressUpdateResponse( null, getAllProgress() ) );
+            } catch ( Exception e ) {
+                e.printStackTrace(); // Log any exceptions
+            }
+        }, 500, UPDATE_PROGRESS_DELAY, TimeUnit.MILLISECONDS );
+    }
 
 
     public void addInfo( ExecutionInfo info ) {
@@ -56,6 +100,32 @@ public class ExecutionMonitor {
             progressMap.putAll( info.getProgressSnapshot() );
         }
         return Collections.unmodifiableMap( progressMap );
+    }
+
+
+    public void stop() {
+        workflowDuration.stop();
+        forwardStates();
+        scheduler.shutdown();
+    }
+
+
+    public long getWorkflowDurationMillis() {
+        return workflowDuration.getDuration().toMillis();
+    }
+
+
+    public synchronized void forwardStates() {
+        if ( callback != null ) {
+            boolean isScheduled = scheduledUpdate != null;
+            scheduledUpdate = new StateUpdateResponse( null, workflow );
+            if ( !isScheduled ) {
+                scheduler.schedule( () -> {
+                    callback.accept( scheduledUpdate );
+                    scheduledUpdate = null;
+                }, STATE_UPDATE_DEFER_DELAY, TimeUnit.MILLISECONDS );
+            }
+        }
     }
 
 }

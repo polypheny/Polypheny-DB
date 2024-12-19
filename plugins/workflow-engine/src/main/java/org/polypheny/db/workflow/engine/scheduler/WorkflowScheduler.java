@@ -102,6 +102,7 @@ public class WorkflowScheduler {
 
 
     public List<ExecutionSubmission> startExecution() {
+        executionMonitor.forwardStates();
         return computeNextSubmissions();
     }
 
@@ -223,21 +224,19 @@ public class WorkflowScheduler {
 
         updateGraph( result.isSuccess(), result.getActivities(), result.getRootId(), execDag );
         updatePartitions();
+        executionMonitor.forwardStates();
 
         log.warn( "Remaining activities: " + remainingActivities );
 
         if ( remainingActivities.isEmpty() ) {
             assert pendingCount == 0;
-
-            isFinished = true;
-            workflow.setState( WorkflowState.IDLE );
+            setFinished();
             return null;
         }
 
         if ( isAborted ) {
             if ( pendingCount == 0 ) {
-                isFinished = true;
-                workflow.setState( WorkflowState.IDLE );
+                setFinished();
             }
             return null;
         }
@@ -383,6 +382,13 @@ public class WorkflowScheduler {
             };
             activePartition.start();
         }
+    }
+
+
+    private void setFinished() {
+        workflow.setState( WorkflowState.IDLE );
+        executionMonitor.stop();
+        isFinished = true;
     }
 
 

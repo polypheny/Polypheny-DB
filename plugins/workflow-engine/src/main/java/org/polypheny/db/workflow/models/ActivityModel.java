@@ -40,12 +40,12 @@ public class ActivityModel {
 
 
     public ActivityModel( String type ) {
-        this( type, UUID.randomUUID() );
+        this( type, RenderModel.of() );
     }
 
 
-    public ActivityModel( String type, UUID id ) {
-        this( type, id, ActivityRegistry.getSerializableDefaultSettings( type ), ActivityConfigModel.of(), RenderModel.of(), null );
+    public ActivityModel( String type, RenderModel renderModel ) {
+        this( type, UUID.randomUUID(), ActivityRegistry.getSerializableDefaultSettings( type ), ActivityConfigModel.of(), renderModel, null );
     }
 
 

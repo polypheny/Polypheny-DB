@@ -96,7 +96,7 @@ public class SessionManager {
             // TODO: handle invalid sId
             return null;
         }
-        return session.getWf().toModel( true );
+        return session.getWorkflow().toModel( true );
     }
 
 
@@ -117,7 +117,7 @@ public class SessionManager {
             // TODO: handle invalid sId
             return;
         }
-        int version = repo.writeVersion( session.getWId(), versionDesc, session.getWf().toModel( false ) );
+        int version = repo.writeVersion( session.getWId(), versionDesc, session.getWorkflow().toModel( false ) );
         session.setOpenedVersion( version );
     }
 

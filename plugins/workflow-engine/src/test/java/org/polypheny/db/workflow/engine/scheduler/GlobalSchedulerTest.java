@@ -388,7 +388,7 @@ class GlobalSchedulerTest {
         Workflow workflow = WorkflowUtils.getLongRunningPipe( delay );
         List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
         System.out.println( "ids: " + ids );
-        ExecutionMonitor monitor = scheduler.startExecution( workflow, sm, null );
+        ExecutionMonitor monitor = scheduler.startExecution( workflow, sm, null, null );
 
         for ( int i = 0; i < n; i++ ) {
             System.out.println( "\nProgress " + i );

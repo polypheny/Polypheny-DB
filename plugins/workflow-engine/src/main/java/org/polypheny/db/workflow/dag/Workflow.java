@@ -16,9 +16,13 @@
 
 package org.polypheny.db.workflow.dag;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
@@ -28,7 +32,9 @@ import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
+import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.EdgeModel;
+import org.polypheny.db.workflow.models.RenderModel;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 
@@ -77,6 +83,8 @@ public interface Workflow {
     DataEdge getDataEdge( UUID to, int toPort );
 
     WorkflowConfigModel getConfig();
+
+    void setConfig( WorkflowConfigModel config );
 
     WorkflowState getState();
 
@@ -144,11 +152,28 @@ public interface Workflow {
 
     int getInPortCount( UUID activityId );
 
-    void addActivity( ActivityWrapper activity );
 
-    void deleteActivity( UUID activityId );
+    Set<UUID> getReachableActivities( UUID rootId, boolean includeRoot );
 
-    void deleteEdge( EdgeModel model );
+    /**
+     * Resets the activity and all activities reachable from it.
+     *
+     * @param activityId target activity, or null if all activities should be reset
+     * @param sm the StorageManager to be used to delete any existing checkpoints for activities being reset
+     */
+    void reset( UUID activityId, StorageManager sm );
+
+    void reset( StorageManager sm );
+
+    ActivityWrapper addActivity( String activityType, RenderModel renderModel );
+
+    void deleteActivity( UUID activityId, StorageManager sm );
+
+    void addEdge( EdgeModel model, StorageManager sm );
+
+    void deleteEdge( EdgeModel model, StorageManager sm );
+
+    ActivityWrapper updateActivity( UUID activityId, @Nullable Map<String, JsonNode> settings, @Nullable ActivityConfigModel config, @Nullable RenderModel rendering, StorageManager sm );
 
     AttributedDirectedGraph<UUID, ExecutionEdge> toDag();
 

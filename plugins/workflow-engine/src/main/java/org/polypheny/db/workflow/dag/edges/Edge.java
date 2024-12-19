@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.dag.edges;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -43,8 +44,8 @@ public abstract class Edge {
 
 
     public static Edge fromModel( EdgeModel model, Map<UUID, ActivityWrapper> activities ) {
-        ActivityWrapper from = activities.get( model.getFromId() );
-        ActivityWrapper to = activities.get( model.getToId() );
+        ActivityWrapper from = Objects.requireNonNull( activities.get( model.getFromId() ), "Cannot create edge from an unknown source activity" );
+        ActivityWrapper to = Objects.requireNonNull( activities.get( model.getToId() ), "Cannot create edge to an unknown target activity" );
         if ( model.isControl() ) {
             return new ControlEdge( from, to, model.getFromPort() );
         } else {
@@ -81,6 +82,11 @@ public abstract class Edge {
 
     public boolean isIgnored() {
         return false;
+    }
+
+
+    public void resetExecution() {
+        state = EdgeState.IDLE;
     }
 
 
