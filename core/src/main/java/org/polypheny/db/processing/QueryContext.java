@@ -107,7 +107,7 @@ public class QueryContext {
             long namespaceId = context.namespaceId;
 
             if ( queryNode != null && queryNode.getNamespaceName() != null ) {
-                namespaceId = Catalog.snapshot().getNamespace( queryNode.getNamespaceName() ).map( n -> n.id ).orElse( queryNode.getNamespaceId() );
+                namespaceId = Catalog.snapshot().getNamespace( queryNode.getNamespaceName() ).map( n -> n.id ).orElse( namespaceId );
             }
 
             if ( context.transactions.stream().anyMatch( t -> !t.isActive() ) ) {
