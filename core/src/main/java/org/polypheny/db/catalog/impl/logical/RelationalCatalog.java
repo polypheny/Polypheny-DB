@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeClass;
 import java.beans.PropertyChangeSupport;
 import java.sql.Timestamp;
 import java.util.HashSet;
@@ -80,13 +81,14 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Serialize
     @JsonProperty
-    public Map<Long, LogicalTable> tables;
+    public Map<Long, @SerializeClass(subclasses = { LogicalView.class, LogicalTable.class, LogicalMaterializedView.class }) LogicalTable> tables;
 
     @Serialize
     @JsonProperty
     public Map<Long, LogicalColumn> columns;
 
     public Map<Long, AlgNode> nodes;
+    public Map<Long, AlgCollation> collations;
 
 
     @Serialize
@@ -127,6 +129,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         this.keys = new ConcurrentHashMap<>( keys );
         this.constraints = new ConcurrentHashMap<>( constraints );
         this.nodes = new ConcurrentHashMap<>();
+        this.collations = new ConcurrentHashMap<>();
         listeners.addPropertyChangeListener( Catalog.getInstance().getChangeListener() );
     }
 
@@ -162,10 +165,11 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     public LogicalView addView( String name, long namespaceId, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, List<Long> connectedViews, AlgDataType fieldList, String query, QueryLanguage language ) {
         long id = idBuilder.getNewLogicalId();
 
-        LogicalView view = new LogicalView( id, name, namespaceId, EntityType.VIEW, query, algCollation, underlyingTables, language );
+        LogicalView view = new LogicalView( id, name, namespaceId, EntityType.VIEW, query, underlyingTables, language );
 
         tables.put( id, view );
         nodes.put( id, definition );
+        collations.put( id, algCollation );
         change( CatalogEvent.VIEW_CREATED, null, id );
         return view;
     }
@@ -180,7 +184,6 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
                 name,
                 namespaceId,
                 query,
-                algCollation,
                 underlyingTables,
                 language,
                 materializedCriteria,
@@ -189,6 +192,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
         tables.put( id, materializedViewTable );
         nodes.put( id, definition );
+        collations.put( id, algCollation );
         change( CatalogEvent.MATERIALIZED_VIEW_CREATED, null, id );
         return materializedViewTable;
     }
@@ -587,6 +591,12 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Override
     public boolean isTableFlaggedForDeletion( long tableId ) {
         return tablesFlaggedForDeletion.contains( tableId );
+    }
+
+
+    public void setNodeAndCollation( long id, AlgNode node, AlgCollation collation ) {
+        this.nodes.put( id, node );
+        this.collations.put( id, collation );
     }
 
 }

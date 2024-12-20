@@ -46,6 +46,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.Function5;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.java.AdapterTemplate;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
@@ -62,6 +63,7 @@ import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocDocCatalog;
@@ -71,13 +73,19 @@ import org.polypheny.db.catalog.impl.logical.DocumentCatalog;
 import org.polypheny.db.catalog.impl.logical.GraphCatalog;
 import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.persistance.FilePersister;
 import org.polypheny.db.catalog.persistance.InMemoryPersister;
 import org.polypheny.db.catalog.persistance.Persister;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
 import org.polypheny.db.catalog.util.ConstraintCondition;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
@@ -534,6 +542,31 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         } );
 
         updateSnapshot();
+
+        restoreViews( transaction );
+
+        updateSnapshot();
+    }
+
+
+    private void restoreViews( Transaction transaction ) {
+        Statement statement = transaction.createStatement();
+        snapshot.rel().getTables( (Pattern) null, null ).forEach( table -> {
+            if ( table instanceof LogicalView view ) {
+                Processor sqlProcessor = statement.getTransaction().getProcessor( view.language );
+                Node node = sqlProcessor.parse( view.query ).get( 0 );
+                AlgRoot algRoot = sqlProcessor.translate( statement,
+                        ParsedQueryContext.builder()
+                                .query( view.query )
+                                .language( view.language )
+                                .queryNode( sqlProcessor.validate(
+                                        statement.getTransaction(), node, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left )
+                                .origin( statement.getTransaction().getOrigin() )
+                                .build() );
+                getLogicalRel( view.namespaceId ).setNodeAndCollation( view.id, algRoot.alg, algRoot.collation );
+            }
+        } );
+        transaction.commit();
     }
 
 

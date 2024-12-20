@@ -26,6 +26,7 @@ import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.plan.AlgCluster;
@@ -63,7 +64,7 @@ public class LogicalRelViewScan extends RelScan<Entity> {
                                 } );
 
         LogicalView logicalView = entity.unwrap( LogicalView.class ).orElseThrow();
-        AlgCollation algCollation = logicalView.getAlgCollation();
+        AlgCollation algCollation = Catalog.snapshot().rel().getCollationInfo( entity.id );
 
         return new LogicalRelViewScan( cluster, traitSet, entity, logicalView.prepareView( cluster ), algCollation );
     }
