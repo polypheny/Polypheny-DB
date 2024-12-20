@@ -1,8 +1,14 @@
+import org.javacc.plugin.gradle.javacc.CompileJavaccTask
+
 buildscript {
     dependencies {
         // Protobuf
         classpath group: "com.google.protobuf", name: "protobuf-gradle-plugin", version: protobuf_plugin_version
     }
+}
+
+plugins {
+    id "org.javacc.javacc" version "$javacc_plugin_version"
 }
 
 group "org.polypheny"
@@ -63,6 +69,8 @@ dependencies {
 
     api group: "io.activej", name: "activej-serializer", version: activej_serializer_version
 
+
+    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
     // GIS
     api group: "org.locationtech.jts", name: "jts-core", version: jts_version // Eclipse Public License 2.0 && Eclipse Distribution License 1.0 (BSD-3 Clause)
     api group: "org.locationtech.jts.io", name: "jts-io-common", version: jts_version // Eclipse Public License 2.0 && Eclipse Distribution License 1.0 (BSD-3 Clause)
@@ -82,11 +90,18 @@ protobuf {
     }
 }
 
+tasks.register('generateParser', CompileJavaccTask) {
+    getConventionMapping().map("classpath", { configurations.javacc })
+    arguments = [static: "false"]
+    inputDirectory = file("src/main/codegen")
+    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/algebra/polyalg/parser")
+}
+
 
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java", "build/generated/source/proto/main/java"] //  "build/generated/sources/annotationProcessor"
+            srcDirs = ["src/main/java", "build/generated/source/proto/main/java", files("${buildDir}/generated-sources").builtBy(generateParser)] //  "build/generated/sources/annotationProcessor"
         }
         resources {
             srcDirs = ["src/main/resources"]
@@ -116,6 +131,7 @@ tasks.register('generateVersionProperties', Copy) {
 
 compileJava {
     dependsOn("generateVersionProperties")
+    dependsOn("generateParser")
     dependsOn(":config:processResources")
     dependsOn(":information:processResources")
     dependsOn("generateProto")
