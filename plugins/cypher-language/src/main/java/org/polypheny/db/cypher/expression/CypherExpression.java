@@ -139,11 +139,6 @@ public class CypherExpression extends CypherNode {
 
 
     public PolyValue getComparable() {
-        if (this instanceof CypherFunctionInvocation func){
-            if (func.getOperatorName() == OperatorName.CYPHER_POINT){
-                // TODO: Call function to return PolyGeometry?
-            }
-        }
         throw new UnsupportedOperationException();
     }
 

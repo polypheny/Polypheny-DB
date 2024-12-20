@@ -24,6 +24,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
@@ -38,10 +42,12 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyPoint;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -114,7 +120,15 @@ public class CypherLiteral extends CypherExpression {
                 yield new PolyList<>( list );
             }
             case MAP -> {
-                Map<PolyString, PolyValue> map = mapValue.entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), e -> e.getValue().getComparable() ) );
+                Map<PolyString, PolyValue> map = mapValue.entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), e -> {
+                    if (e.getValue() instanceof CypherFunctionInvocation func && func.getOperatorName() == OperatorName.CYPHER_POINT ){
+                        if (func.getArguments().get( 0 ) instanceof CypherLiteral literal){
+                            // TODO: get real values based on key-names. 
+                            return handlePoint( new PolyDouble( 1.1 ), new PolyDouble( 1.1 ) );
+                        }
+                    }
+                    return e.getValue().getComparable();
+                } ) );
                 yield new PolyDictionary( map );
             }
             case STRING, HEX, OCTAL -> PolyString.of( (String) value );
@@ -128,6 +142,13 @@ public class CypherLiteral extends CypherExpression {
         };
     }
 
+    public PolyGeometry handlePoint( PolyNumber latitude, PolyNumber longitude ){
+        GeometryFactory geometryFactory = new GeometryFactory( new PrecisionModel(), 4326 );
+        Coordinate coordinate = new Coordinate();
+        coordinate.setX( latitude.doubleValue() );
+        coordinate.setY( longitude.doubleValue() );
+        return PolyGeometry.of( geometryFactory.createPoint( coordinate ) );
+    }
 
     @Override
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
