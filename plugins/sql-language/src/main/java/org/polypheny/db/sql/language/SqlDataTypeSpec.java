@@ -74,6 +74,8 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
      */
     private Boolean nullable;
 
+    private Boolean autoIncrement = false;
+
 
     /**
      * Creates a type specification representing a regular, non-collection type.
@@ -151,6 +153,48 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
         this.nullable = nullable;
     }
 
+    public SqlDataTypeSpec(
+            SqlIdentifier collectionsTypeName,
+            SqlIdentifier typeName,
+            SqlIdentifier baseTypeName,
+            int precision,
+            int scale,
+            int dimension,
+            int cardinality,
+            String charSetName,
+            TimeZone timeZone,
+            Boolean nullable,
+            ParserPos pos,
+            boolean autoIncrement) {
+        super( pos );
+        this.collectionsTypeName = collectionsTypeName;
+        this.typeName = typeName;
+        this.baseTypeName = baseTypeName;
+        this.precision = precision;
+        this.scale = scale;
+        this.dimension = dimension;
+        this.cardinality = cardinality;
+        this.charSetName = charSetName;
+        this.timeZone = timeZone;
+        this.nullable = nullable;
+        this.autoIncrement = autoIncrement;
+    }
+
+    public SqlDataTypeSpec(
+            SqlIdentifier collectionsTypeName,
+            SqlIdentifier typeName,
+            int precision,
+            int scale,
+            int dimension,
+            int cardinality,
+            String charSetName,
+            TimeZone timeZone,
+            Boolean nullable,
+            ParserPos pos,
+            boolean autoIncrement) {
+        this( collectionsTypeName, typeName, typeName, precision, scale, dimension, cardinality, charSetName, timeZone, nullable, pos, autoIncrement );
+    }
+
 
     @Override
     public SqlNode clone( ParserPos pos ) {
@@ -196,6 +240,13 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
             return this;
         }
         return new SqlDataTypeSpec( collectionsTypeName, typeName, precision, scale, dimension, cardinality, charSetName, timeZone, nullable, getPos() );
+    }
+
+    public SqlDataTypeSpec withAutoIncrement( boolean autoIncrement ) {
+        if ( Objects.equals( autoIncrement, this.autoIncrement ) ) {
+            return this;
+        }
+        return new SqlDataTypeSpec( collectionsTypeName, typeName, precision, scale, dimension, cardinality, charSetName, timeZone, nullable, getPos(), autoIncrement );
     }
 
 

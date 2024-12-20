@@ -131,6 +131,11 @@ public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily {
         return false;
     }
 
+    @Override
+    public boolean isAutoIncrement() {
+        return false;
+    }
+
 
     @Override
     public AlgDataType getComponentType() {
