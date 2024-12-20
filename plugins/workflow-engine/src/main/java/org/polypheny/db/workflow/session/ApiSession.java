@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.session;
 
 import java.util.UUID;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.models.SessionModel;
 import org.polypheny.db.workflow.models.SessionModel.SessionModelType;
@@ -31,7 +32,7 @@ public class ApiSession extends AbstractSession {
 
     @Override
     public void terminate() {
-
+        throw new NotImplementedException();
     }
 
 

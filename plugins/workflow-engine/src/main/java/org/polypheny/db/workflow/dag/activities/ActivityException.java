@@ -23,7 +23,7 @@ import lombok.Setter;
 public class ActivityException extends Exception {
 
     @Setter
-    private ActivityWrapper activity = null; // should be set by the corresponding executor
+    private ActivityWrapper activity = null;
 
 
     public ActivityException( String message ) {

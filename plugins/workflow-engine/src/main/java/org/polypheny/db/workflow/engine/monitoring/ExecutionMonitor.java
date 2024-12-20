@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.workflow.dag.Workflow;
+import org.polypheny.db.workflow.engine.execution.Executor.ExecutorType;
 import org.polypheny.db.workflow.models.responses.WsResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.ProgressUpdateResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.StateUpdateResponse;
@@ -100,6 +101,16 @@ public class ExecutionMonitor {
             progressMap.putAll( info.getProgressSnapshot() );
         }
         return Collections.unmodifiableMap( progressMap );
+    }
+
+
+    public Map<ExecutorType, Integer> getActivityCounts() {
+        Map<ExecutorType, Integer> activityCounts = new HashMap<>();
+        for ( ExecutionInfo info : infos ) {
+            ExecutorType type = info.getExecutorType();
+            activityCounts.put( type, activityCounts.getOrDefault( type, 0 ) + info.getActivities().size() );
+        }
+        return Collections.unmodifiableMap( activityCounts );
     }
 
 

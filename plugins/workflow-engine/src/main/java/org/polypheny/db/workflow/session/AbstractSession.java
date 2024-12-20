@@ -25,16 +25,17 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.eclipse.jetty.websocket.api.Session;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionMonitor;
 import org.polypheny.db.workflow.engine.scheduler.GlobalScheduler;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
+import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.SessionModel;
+import org.polypheny.db.workflow.models.WorkflowConfigModel;
+import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.models.requests.WsRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.CreateActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.CreateEdgeRequest;
@@ -50,13 +51,14 @@ import org.polypheny.db.workflow.models.responses.WsResponse;
 @Slf4j
 public abstract class AbstractSession {
 
-    @Getter
     final Workflow workflow;
+    @Getter
     final UUID sessionId;
     final StorageManager sm;
     final ObjectMapper mapper = new ObjectMapper();
     private final Set<Session> subscribers = new HashSet<>();
     final GlobalScheduler scheduler;
+    ExecutionMonitor executionMonitor; // corresponds to the last started execution
 
 
     protected AbstractSession( Workflow workflow, UUID sessionId ) {
@@ -87,12 +89,22 @@ public abstract class AbstractSession {
     }
 
 
-    public UUID getId() {
-        return sessionId;
+    public abstract SessionModel toModel();
+
+
+    public ActivityModel getActivityModel( UUID activityId ) {
+        return workflow.getActivity( activityId ).toModel( true );
     }
 
 
-    public abstract SessionModel toModel();
+    public WorkflowModel getWorkflowModel( boolean includeState ) {
+        return workflow.toModel( includeState );
+    }
+
+
+    public WorkflowConfigModel getWorkflowConfig() {
+        return workflow.getConfig();
+    }
 
 
     void broadcastMessage( WsResponse msg ) {
@@ -113,17 +125,22 @@ public abstract class AbstractSession {
 
 
     void startExecution( @Nullable UUID targetActivity ) {
-        // TODO: add execution request
-
-        // TODO: implement correct error handling when execution cannot be started
-        // TODO: reset the activity and all its successors
         throwIfNotIdle();
-        try {
-            ExecutionMonitor executionMonitor = GlobalScheduler.getInstance().startExecution( workflow, sm, targetActivity, this::broadcastMessage );
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
+        if ( targetActivity != null ) {
+            workflow.reset( targetActivity, sm );
         }
-        throw new NotImplementedException();
+        try {
+            executionMonitor = GlobalScheduler.getInstance().startExecution( workflow, sm, targetActivity, this::broadcastMessage );
+        } catch ( Exception e ) {
+            // TODO: implement correct error handling when execution cannot be started
+            throw new IllegalStateException( "Unable to start workflow execution", e );
+        }
+    }
+
+
+    void interruptExecution() {
+        throwIfNotExecuting();
+        scheduler.interruptExecution( sessionId );
     }
 
 
@@ -172,22 +189,16 @@ public abstract class AbstractSession {
     }
 
 
-    void interruptExecution() {
-        throwIfNotExecuting();
-        scheduler.interruptExecution( sessionId );
-    }
-
-
     void throwIfNotIdle() {
         if ( workflow.getState() != WorkflowState.IDLE ) {
-            throw new GenericRuntimeException( "Workflow is currently not in an idle state." );
+            throw new IllegalStateException( "Workflow is currently not in an idle state." );
         }
     }
 
 
     void throwIfNotExecuting() {
         if ( workflow.getState() != WorkflowState.EXECUTING ) {
-            throw new GenericRuntimeException( "Workflow is currently not being executed." );
+            throw new IllegalStateException( "Workflow is currently not being executed." );
         }
     }
 

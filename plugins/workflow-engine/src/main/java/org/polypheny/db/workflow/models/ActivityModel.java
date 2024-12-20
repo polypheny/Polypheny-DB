@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -35,8 +36,13 @@ public class ActivityModel {
     ActivityConfigModel config;
     RenderModel rendering;
 
-    @JsonInclude(JsonInclude.Include.NON_NULL) // do not serialize in static version
+    // the following fields are not serialized in the static version -> not used for deserializing an ActivityWrapper
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     ActivityState state;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    List<TypePreviewModel> inTypePreview;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    String invalidReason; // null if not invalid
 
 
     public ActivityModel( String type ) {
@@ -45,12 +51,12 @@ public class ActivityModel {
 
 
     public ActivityModel( String type, RenderModel renderModel ) {
-        this( type, UUID.randomUUID(), ActivityRegistry.getSerializableDefaultSettings( type ), ActivityConfigModel.of(), renderModel, null );
+        this( type, UUID.randomUUID(), ActivityRegistry.getSerializableDefaultSettings( type ), ActivityConfigModel.of(), renderModel );
     }
 
 
     public ActivityModel( String type, Map<String, JsonNode> settings ) {
-        this( type, UUID.randomUUID(), settings, ActivityConfigModel.of(), RenderModel.of(), null );
+        this( type, UUID.randomUUID(), settings, ActivityConfigModel.of(), RenderModel.of() );
     }
 
 
@@ -61,6 +67,8 @@ public class ActivityModel {
         this.config = config;
         this.rendering = rendering;
         this.state = null;
+        this.inTypePreview = null;
+        this.invalidReason = null;
     }
 
 }

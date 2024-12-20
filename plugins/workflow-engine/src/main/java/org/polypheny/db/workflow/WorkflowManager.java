@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
@@ -36,7 +37,6 @@ import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
-import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
@@ -110,8 +110,7 @@ public class WorkflowManager {
                         activityId,
                         Map.of( "table", setting ),
                         ActivityConfigModel.of(),
-                        RenderModel.of(),
-                        ActivityState.IDLE
+                        RenderModel.of()
                 ) );
 
                 long start = System.currentTimeMillis();
@@ -127,8 +126,7 @@ public class WorkflowManager {
                         activityId2,
                         Map.of( "table", setting ),
                         ActivityConfigModel.of(),
-                        RenderModel.of(),
-                        ActivityState.IDLE
+                        RenderModel.of()
                 ) );
 
                 start = System.currentTimeMillis();
@@ -171,7 +169,10 @@ public class WorkflowManager {
         server.addSerializedRoute( PATH + "/sessions", this::getSessions, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}", this::getSession, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow", this::getActiveWorkflow, HandlerType.GET );
-        server.addSerializedRoute( PATH + "/workflows", this::getWorkflows, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/config", this::getWorkflowConfig, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/{activityId}", this::getActivity, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/{activityId}/{outIndex}", this::getIntermediaryResult, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/workflows", this::getWorkflowDefs, HandlerType.GET );
 
         server.addSerializedRoute( PATH + "/sessions", this::createSession, HandlerType.POST );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/save", this::saveSession, HandlerType.POST );
@@ -193,11 +194,33 @@ public class WorkflowManager {
 
     private void getActiveWorkflow( final Context ctx ) {
         UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
-        process( ctx, () -> sessionManager.getActiveWorkflowModel( sessionId ) );
+        process( ctx, () -> sessionManager.getSessionOrThrow( sessionId ).getWorkflowModel( true ) );
     }
 
 
-    private void getWorkflows( final Context ctx ) {
+    private void getWorkflowConfig( final Context ctx ) {
+        UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
+        process( ctx, () -> sessionManager.getSessionOrThrow( sessionId ).getWorkflowConfig() );
+    }
+
+
+    private void getActivity( final Context ctx ) {
+        UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
+        UUID activityId = UUID.fromString( ctx.pathParam( "activityId" ) );
+        process( ctx, () -> sessionManager.getSessionOrThrow( sessionId ).getActivityModel( activityId ) );
+    }
+
+
+    private void getIntermediaryResult( final Context ctx ) {
+        UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
+        UUID activityId = UUID.fromString( ctx.pathParam( "activityId" ) );
+        int outIndex = Integer.parseInt( ctx.pathParam( "outIndex" ) );
+        throw new NotImplementedException();
+        //process( ctx, () -> sessionManager.getSessionOrThrow( sessionId ) );
+    }
+
+
+    private void getWorkflowDefs( final Context ctx ) {
         process( ctx, repo::getWorkflowDefs );
     }
 

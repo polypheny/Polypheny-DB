@@ -81,43 +81,19 @@ public class SessionManager {
 
 
     public SessionModel getSessionModel( UUID sId ) {
-        AbstractSession session = getSession( sId );
-        if ( session == null ) {
-            // TODO: handle invalid sId
-            return null;
-        }
-        return session.toModel();
-    }
-
-
-    public WorkflowModel getActiveWorkflowModel( UUID sId ) {
-        AbstractSession session = getSession( sId );
-        if ( session == null ) {
-            // TODO: handle invalid sId
-            return null;
-        }
-        return session.getWorkflow().toModel( true );
+        return getSessionOrThrow( sId ).toModel();
     }
 
 
     public void terminateSession( UUID sId ) {
-        AbstractSession session = getSession( sId );
-        if ( session == null ) {
-            // TODO: handle invalid sId
-            return;
-        }
-        session.terminate();
+        getSessionOrThrow( sId ).terminate();
         removeSession( sId );
     }
 
 
     public void saveUserSession( UUID sId, String versionDesc ) throws WorkflowRepoException {
-        UserSession session = userSessions.get( sId );
-        if ( session == null ) {
-            // TODO: handle invalid sId
-            return;
-        }
-        int version = repo.writeVersion( session.getWId(), versionDesc, session.getWorkflow().toModel( false ) );
+        UserSession session = getUserSessionOrThrow( sId );
+        int version = repo.writeVersion( session.getWId(), versionDesc, session.getWorkflowModel( false ) );
         session.setOpenedVersion( version );
     }
 
@@ -129,6 +105,24 @@ public class SessionManager {
             return apiSessions.get( sId );
         }
         return null;
+    }
+
+
+    public AbstractSession getSessionOrThrow( UUID sId ) {
+        AbstractSession session = getSession( sId );
+        if ( session == null ) {
+            throw new IllegalArgumentException( "Unknown session with id: " + sId );
+        }
+        return session;
+    }
+
+
+    public UserSession getUserSessionOrThrow( UUID sId ) {
+        UserSession session = userSessions.get( sId );
+        if ( session == null ) {
+            throw new IllegalArgumentException( "Unknown user session with id: " + sId );
+        }
+        return session;
     }
 
 

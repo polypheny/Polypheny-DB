@@ -39,6 +39,7 @@ import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.RenderModel;
+import org.polypheny.db.workflow.models.TypePreviewModel;
 
 @Getter
 public class ActivityWrapper {
@@ -62,6 +63,7 @@ public class ActivityWrapper {
     private List<Optional<AlgDataType>> inTypePreview; // contains the (possibly not yet known) input type
     @Setter
     private SettingsPreview settingsPreview; // contains the (possibly not yet known) settings
+    private ActivityException invalidStateReason; // null if the state of this activity is not invalid
 
 
     protected ActivityWrapper( UUID id, Activity activity, String type, Map<String, JsonNode> settings, ActivityConfigModel config, RenderModel rendering ) {
@@ -107,9 +109,16 @@ public class ActivityWrapper {
      * @throws ActivityException if an error occurs during the preview resolution.
      */
     public SettingsPreview updateOutTypePreview( List<Optional<AlgDataType>> inTypePreviews, boolean hasStableVariables ) throws ActivityException {
-        SettingsPreview settings = resolveAvailableSettings( hasStableVariables );
-        outTypePreview = activity.previewOutTypes( inTypePreviews, settings );
-        return settings;
+        try {
+            SettingsPreview settings = resolveAvailableSettings( hasStableVariables );
+            outTypePreview = activity.previewOutTypes( inTypePreviews, settings );
+            invalidStateReason = null;
+            return settings;
+        } catch ( ActivityException e ) {
+            e.setActivity( this );
+            invalidStateReason = e;
+            throw e;
+        }
     }
 
 
@@ -119,8 +128,15 @@ public class ActivityWrapper {
 
 
     public ActivityModel toModel( boolean includeState ) {
-        ActivityState state = includeState ? this.state : null;
-        return new ActivityModel( type, id, serializableSettings, config, rendering, state );
+        if ( includeState ) {
+            List<TypePreviewModel> inTypeModels = inTypePreview.stream().map(
+                    inType -> inType.map( TypePreviewModel::of ).orElse( null ) ).toList();
+            return new ActivityModel( type, id, serializableSettings, config, rendering, this.state, inTypeModels, invalidStateReason.toString() );
+
+        } else {
+            return new ActivityModel( type, id, serializableSettings, config, rendering );
+
+        }
     }
 
 
@@ -157,6 +173,19 @@ public class ActivityWrapper {
         activity.reset();
         variables.clear();
         state = ActivityState.IDLE;
+    }
+
+
+    /**
+     * Every time the outTypePreview is updated, the activity determines if the inTypePreviews
+     * and the SettingsPreview would result in an invalid state.
+     * In this case, this method returns false and the reason can be retrieved with {@code getInvalidStateReason()}.
+     * If it returns true, this only means that during the last update, no contradictory state was observed.
+     *
+     * @return true if the last {@code updateOutTypePreview()} succeeded.
+     */
+    public boolean isValid() {
+        return invalidStateReason == null;
     }
 
 

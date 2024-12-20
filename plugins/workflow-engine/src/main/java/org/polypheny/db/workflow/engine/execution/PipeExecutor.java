@@ -202,7 +202,7 @@ public class PipeExecutor extends Executor {
             return null;
         }
         ActivityWrapper wrapper = workflow.getActivity( rootId );
-        DataModel model = wrapper.getDef().getOutPortTypes()[0].getDataModel(); // TODO: handle ANY DataModel
+        DataModel model = wrapper.getDef().getOutPortTypes()[0].getDataModel( rootType );
         String store = wrapper.getConfig().getPreferredStore( 0 );
 
         System.out.println( "creating CheckpointWriterPipe for model " + model );

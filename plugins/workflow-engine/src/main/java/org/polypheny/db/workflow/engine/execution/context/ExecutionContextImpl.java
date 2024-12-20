@@ -120,7 +120,7 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
     public CheckpointWriter createWriter( int idx, AlgDataType tupleType, boolean resetPk ) {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
-        CheckpointWriter writer = sm.createCheckpoint( activityWrapper.getId(), idx, tupleType, resetPk, getStore( idx ), type.getDataModel() );
+        CheckpointWriter writer = sm.createCheckpoint( activityWrapper.getId(), idx, tupleType, resetPk, getStore( idx ), type.getDataModel( tupleType ) );
         writers.add( writer );
         return writer;
     }

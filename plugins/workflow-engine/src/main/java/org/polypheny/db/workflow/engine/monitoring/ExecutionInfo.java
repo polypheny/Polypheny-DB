@@ -33,6 +33,7 @@ public class ExecutionInfo {
     private final Map<ExecutionState, StopWatch> durations = new HashMap<>();
     @Getter
     private final Set<UUID> activities;
+    @Getter
     private final ExecutorType executorType;
 
     @Getter

@@ -155,6 +155,19 @@ public interface Activity {
         }
 
 
+        public DataModel getDataModel( AlgDataType type ) {
+            if ( this != ANY || type == null ) {
+                return getDataModel();
+            }
+
+            return switch ( type.getPolyType() ) {
+                case DOCUMENT -> DataModel.DOCUMENT;
+                case GRAPH -> DataModel.GRAPH;
+                default -> DataModel.RELATIONAL;
+            };
+        }
+
+
         public static PortType fromDataModel( DataModel model ) {
             return switch ( model ) {
                 case RELATIONAL -> REL;

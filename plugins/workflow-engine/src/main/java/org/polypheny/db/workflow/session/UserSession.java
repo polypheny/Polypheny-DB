@@ -59,6 +59,9 @@ public class UserSession extends AbstractSession {
 
     @Override
     public void terminate() {
+        if ( workflow.getState() == WorkflowState.EXECUTING ) {
+            scheduler.interruptExecution( sessionId );
+        }
         throw new NotImplementedException();
     }
 
@@ -84,7 +87,7 @@ public class UserSession extends AbstractSession {
         throwIfNotEditable();
         ActivityWrapper activity = workflow.updateActivity( request.targetId, request.settings, request.config, request.rendering, sm );
 
-        if (request.rendering != null && request.settings == null && request.config == null) {
+        if ( request.rendering != null && request.settings == null && request.config == null ) {
             broadcastMessage( new RenderingUpdateResponse( request.msgId, activity ) );
             return;
         }
