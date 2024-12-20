@@ -26,8 +26,6 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SerializerFactory;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -47,7 +45,6 @@ public interface PolySerializable {
                 .create( CLASS_LOADER, clazz );
     }
 
-    Map<Class<?>, BinarySerializer<?>> cache = new HashMap<>();
     int BUFFER_SIZE = RuntimeConfig.SERIALIZATION_BUFFER_SIZE.getInteger();
     Charset CHARSET = Util.getDefaultCharset();
 
