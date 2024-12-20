@@ -313,7 +313,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         DataMigrator dataMigrator = transaction.getDataMigrator();
         for ( AllocationEntity allocation : transaction.getSnapshot().alloc().getFromLogical( materializedView.id ) ) {
             Statement sourceStatement = transaction.createStatement();
-            prepareSourceAlg( sourceStatement, materializedView.getAlgCollation(), algRoot.alg );
+            prepareSourceAlg( sourceStatement, Catalog.snapshot().rel().getCollationInfo( materializedView.id ), algRoot.alg );
             Statement targetStatement = transaction.createStatement();
 
             if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {
