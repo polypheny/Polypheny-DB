@@ -26,7 +26,6 @@ import java.util.Comparator;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
@@ -119,24 +118,6 @@ public class LogicalTable extends LogicalEntity {
 
     public List<Long> getConstraintIds() {
         return List.of();
-    }
-
-
-    @RequiredArgsConstructor
-    public static class PrimitiveCatalogTable {
-
-        public final String tableCat;
-        public final String tableSchem;
-        public final String tableName;
-        public final String tableType;
-        public final String remarks;
-        public final String typeCat;
-        public final String typeSchem;
-        public final String typeName;
-        public final String selfReferencingColName;
-        public final String refGeneration;
-        public final String owner;
-
     }
 
 

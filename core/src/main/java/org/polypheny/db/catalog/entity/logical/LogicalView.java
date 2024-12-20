@@ -102,17 +102,17 @@ public class LogicalView extends LogicalTable {
 
 
     public void prepareView( AlgNode viewLogicalRoot, AlgCluster algCluster ) {
-        if ( viewLogicalRoot instanceof AbstractAlgNode ) {
-            ((AbstractAlgNode) viewLogicalRoot).setCluster( algCluster );
+        if ( viewLogicalRoot instanceof AbstractAlgNode algNode ) {
+            algNode.setCluster( algCluster );
         }
-        if ( viewLogicalRoot instanceof BiAlg ) {
-            prepareView( ((BiAlg) viewLogicalRoot).getLeft(), algCluster );
-            prepareView( ((BiAlg) viewLogicalRoot).getRight(), algCluster );
-        } else if ( viewLogicalRoot instanceof SingleAlg ) {
-            prepareView( ((SingleAlg) viewLogicalRoot).getInput(), algCluster );
+        if ( viewLogicalRoot instanceof BiAlg biAlg ) {
+            prepareView( biAlg.getLeft(), algCluster );
+            prepareView( biAlg.getRight(), algCluster );
+        } else if ( viewLogicalRoot instanceof SingleAlg singleAlg ) {
+            prepareView( singleAlg.getInput(), algCluster );
         }
-        if ( viewLogicalRoot instanceof LogicalRelViewScan ) {
-            prepareView( ((LogicalRelViewScan) viewLogicalRoot).getAlgNode(), algCluster );
+        if ( viewLogicalRoot instanceof LogicalRelViewScan logicalRelViewScan ) {
+            prepareView( logicalRelViewScan.getAlgNode(), algCluster );
         }
     }
 
