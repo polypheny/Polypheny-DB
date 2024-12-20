@@ -309,13 +309,13 @@ public class MonetdbStore extends AbstractJdbcStore {
     public List<IndexMethodModel> getAvailableIndexMethods() {
         // According to the MonetDB documentation, MonetDB takes create index statements only as an advice and often freely
         // neglects them. Indexes are created and removed automatically.
-        return ImmutableList.of( new IndexMethodModel( "index", "index" ) );
+        return ImmutableList.of( new IndexMethodModel( "advisory", "ADVISORY ONLY" ) );
     }
 
 
     @Override
     public IndexMethodModel getDefaultIndexMethod() {
-        return new IndexMethodModel( "index", "index" );
+        return getAvailableIndexMethods().get( 0 );
     }
 
 
