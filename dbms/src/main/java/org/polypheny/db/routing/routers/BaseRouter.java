@@ -36,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
@@ -43,6 +44,7 @@ import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -431,6 +433,25 @@ public abstract class BaseRouter implements Router {
             builder.push( handleDocScan( (DocumentScan<?>) alg, statement, null ) );
             return alg;
         } else if ( alg instanceof DocumentValues ) {
+            return alg;
+        } else if ( alg.getModel() != DataModel.DOCUMENT ) {
+            // cross model
+            if( alg instanceof Scan<?> scan ) {
+                switch ( alg.getModel() ) {
+                    case RELATIONAL -> {
+                        handleRelScan( builder, statement, scan.entity );
+                    }
+                    case DOCUMENT -> {
+                        throw new GenericRuntimeException( "Error while routing graph query." );
+                    }
+                    case GRAPH -> {
+                        handleGraphScan( (LogicalLpgScan) alg, statement, (AllocationEntity) scan.entity, List.of() );
+                    }
+                }
+            }else {
+                this.handleGeneric( alg, builder );
+            }
+
             return alg;
         }
         throw new UnsupportedOperationException();

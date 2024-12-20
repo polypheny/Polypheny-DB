@@ -97,6 +97,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.nodes.JsonAgg;
+import org.polypheny.db.nodes.LangFunctionOperator;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.rex.RexCall;
@@ -2010,6 +2011,9 @@ public class RexImpTable {
             }
 
             final Type returnType = typeFactory.getJavaClass( call.getType() );
+            if ( returnType == null && call.op instanceof LangFunctionOperator op ){
+                return expression;
+            }
             return Types.castIfNecessary( returnType, expression );
         }
 
