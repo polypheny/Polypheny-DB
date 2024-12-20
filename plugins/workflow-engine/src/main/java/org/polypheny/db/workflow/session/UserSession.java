@@ -145,7 +145,7 @@ public class UserSession extends AbstractSession {
 
     @Override
     public SessionModel toModel() {
-        return new SessionModel( SessionModelType.USER_SESSION, sessionId, wId, openedVersion );
+        return new SessionModel( SessionModelType.USER_SESSION, sessionId, getSubscriberCount(), wId, openedVersion );
     }
 
 

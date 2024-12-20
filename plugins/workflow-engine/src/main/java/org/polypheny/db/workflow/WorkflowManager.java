@@ -17,11 +17,15 @@
 package org.polypheny.db.workflow;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import io.javalin.http.HttpCode;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +47,10 @@ import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityModel;
+import org.polypheny.db.workflow.models.EdgeModel;
 import org.polypheny.db.workflow.models.RenderModel;
+import org.polypheny.db.workflow.models.WorkflowConfigModel;
+import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.models.requests.CreateSessionRequest;
 import org.polypheny.db.workflow.models.requests.SaveSessionRequest;
 import org.polypheny.db.workflow.repo.WorkflowRepo;
@@ -73,6 +80,7 @@ public class WorkflowManager {
                     @Override
                     public void run() {
                         registerAdapter(); // TODO: only register adapter when the first workflow is opened
+                        addSampleWorkflows();
                     }
                 },
                 1000
@@ -146,6 +154,44 @@ public class WorkflowManager {
     }
 
 
+    private void addSampleWorkflows() {
+        try {
+            UUID id = repo.createWorkflow( "Test Workflow" );
+            repo.writeVersion( id, "Initial Version", getWorkflow1() );
+
+        } catch ( WorkflowRepoException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    // TODO: replace with workflows in resource directory
+    private WorkflowModel getWorkflow( List<ActivityModel> activities, List<EdgeModel> edges, boolean fusionEnabled, boolean pipelineEnabled, int maxWorkers ) {
+        WorkflowConfigModel config = new WorkflowConfigModel(
+                Map.of( DataModel.RELATIONAL, "hsqldb", DataModel.DOCUMENT, "hsqldb", DataModel.GRAPH, "hsqldb" ),
+                fusionEnabled,
+                pipelineEnabled,
+                maxWorkers,
+                10 // low on purpose to observe blocking
+        );
+        Map<String, JsonNode> variables = Map.of( "creationTime", TextNode.valueOf( LocalDateTime.now().format( DateTimeFormatter.ISO_DATE_TIME ) ) );
+        return new WorkflowModel( activities, edges, config, variables );
+    }
+
+
+    // TODO: replace with workflows in resource directory
+    private WorkflowModel getWorkflow1() {
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "relValues" ),
+                new ActivityModel( "debug" )
+        );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 1 ) )
+        );
+        return getWorkflow( activities, edges, false, false, 1 );
+    }
+
+
     private void registerAdapter() {
         if ( PolyphenyDb.mode == RunMode.TEST || Catalog.getInstance().getAdapters().values().stream().anyMatch( a -> a.adapterName.equals( "hsqldb_disk" ) ) ) {
             return;
@@ -164,7 +210,7 @@ public class WorkflowManager {
     private void registerEndpoints() {
         HttpServer server = HttpServer.getInstance();
 
-        server.addWebsocketRoute( PATH + "/websocket/{sessionId}", new WorkflowWebSocket() );
+        server.addWebsocketRoute( PATH + "/webSocket/{sessionId}", new WorkflowWebSocket() );
 
         server.addSerializedRoute( PATH + "/sessions", this::getSessions, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}", this::getSession, HandlerType.GET );
@@ -176,6 +222,7 @@ public class WorkflowManager {
 
         server.addSerializedRoute( PATH + "/sessions", this::createSession, HandlerType.POST );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/save", this::saveSession, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/workflows/{workflowId}/{version}", this::openWorkflow, HandlerType.POST );
 
         server.addSerializedRoute( PATH + "/sessions/{sessionId}", this::terminateSession, HandlerType.DELETE );
     }
@@ -231,6 +278,14 @@ public class WorkflowManager {
     }
 
 
+    private void openWorkflow( final Context ctx ) {
+        UUID workflowId = UUID.fromString( ctx.pathParam( "workflowId" ) );
+        int version = Integer.parseInt( ctx.pathParam( "version" ) );
+        // TODO: combine with CreateSessionRequest into createSession endpoint?
+        process( ctx, () -> sessionManager.createUserSession( workflowId, version ) );
+    }
+
+
     private void saveSession( final Context ctx ) {
         UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
         SaveSessionRequest request = ctx.bodyAsClass( SaveSessionRequest.class );
@@ -253,10 +308,11 @@ public class WorkflowManager {
     private void process( Context ctx, ResultSupplier s ) {
         try {
             sendResult( ctx, s.get() );
-        } catch ( WorkflowRepoException e ) {
+        } catch ( Exception e ) {
             // TODO: better error handling
             ctx.status( HttpCode.INTERNAL_SERVER_ERROR );
             ctx.json( e );
+            e.printStackTrace();
         }
     }
 

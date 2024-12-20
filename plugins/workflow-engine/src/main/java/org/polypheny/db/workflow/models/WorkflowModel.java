@@ -48,4 +48,13 @@ public class WorkflowModel {
         variables = Map.of();
     }
 
+
+    public WorkflowModel( List<ActivityModel> activities, List<EdgeModel> edges, WorkflowConfigModel config, Map<String, JsonNode> variables ) {
+        this.activities = activities;
+        this.edges = edges;
+        this.config = config;
+        this.variables = variables;
+        this.state = null;
+    }
+
 }

@@ -88,6 +88,10 @@ public abstract class AbstractSession {
         subscribers.remove( session );
     }
 
+    public int getSubscriberCount() {
+        return subscribers.size();
+    }
+
 
     public abstract SessionModel toModel();
 

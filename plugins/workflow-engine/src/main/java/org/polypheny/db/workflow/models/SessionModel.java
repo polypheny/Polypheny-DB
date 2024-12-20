@@ -26,15 +26,17 @@ public class SessionModel {
 
     SessionModelType type;
     UUID sessionId; // TODO: remove redundant session id, since it's already the map key? Or send list
+    int connectionCount;
 
     // USER_SESSION fields:
     UUID workflowId;
     Integer version;
 
 
-    public SessionModel( SessionModelType type, UUID sId ) {
+    public SessionModel( SessionModelType type, UUID sId, int connectionCount ) {
         this.type = type;
         this.sessionId = sId;
+        this.connectionCount = connectionCount;
         this.workflowId = null;
         this.version = null;
 

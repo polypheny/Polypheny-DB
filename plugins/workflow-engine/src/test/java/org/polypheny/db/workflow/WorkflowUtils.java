@@ -62,7 +62,7 @@ public class WorkflowUtils {
                 10 // low on purpose to observe blocking
         );
         Map<String, JsonNode> variables = Map.of( "creationTime", TextNode.valueOf( LocalDateTime.now().format( DateTimeFormatter.ISO_DATE_TIME ) ) );
-        return WorkflowImpl.fromModel( new WorkflowModel( activities, edges, config, variables, null ) );
+        return WorkflowImpl.fromModel( new WorkflowModel( activities, edges, config, variables ) );
     }
 
 

@@ -38,7 +38,7 @@ public class ApiSession extends AbstractSession {
 
     @Override
     public SessionModel toModel() {
-        return new SessionModel( SessionModelType.API_SESSION, sessionId );
+        return new SessionModel( SessionModelType.API_SESSION, sessionId, getSubscriberCount() );
     }
 
 }
