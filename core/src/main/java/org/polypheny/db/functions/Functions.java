@@ -96,12 +96,12 @@ import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.functions.util.ProductPolyListEnumerator;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.Like;
-import org.polypheny.db.transaction.locking.IdentifierRegistry;
 import org.polypheny.db.transaction.locking.IdentifierUtils;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -291,20 +291,20 @@ public class Functions {
     }
 
     @SuppressWarnings("unused")
-    public static Enumerable<PolyValue[]> addRelIdentifiers(final Enumerable<PolyValue[]> input) {
+    public static Enumerable<PolyValue[]> addRelIdentifiers(final Enumerable<PolyValue[]> input, Entity entity) {
         return input.select( oldRow -> {
             PolyValue[] newRow = new PolyValue[oldRow.length + 1];
-            newRow[0] = IdentifierUtils.getIdentifierAsPolyLong();
+            newRow[0] = entity.getEntryIdentifiers().getNextEntryIdentifierAsPolyLong();
             System.arraycopy( oldRow, 0, newRow, 1, oldRow.length );
             return newRow;
         } );
     }
 
     @SuppressWarnings("unused")
-    public static Enumerable<PolyValue[]> addDocIdentifiers(final Enumerable<PolyValue[]> input) {
+    public static Enumerable<PolyValue[]> addDocIdentifiers(final Enumerable<PolyValue[]> input, Entity entity) {
         return input.select( oldRow -> {
             PolyDocument document = (PolyDocument) oldRow[0];
-            document.put( IdentifierUtils.getIdentifierKeyAsPolyString(), IdentifierUtils.getIdentifierAsPolyLong() );
+            document.put( IdentifierUtils.getIdentifierKeyAsPolyString(), entity.getEntryIdentifiers().getNextEntryIdentifierAsPolyLong() );
             return new PolyValue[]{document};
         } );
     }
