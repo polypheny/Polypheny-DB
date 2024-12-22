@@ -24,21 +24,21 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class IdentifierRegistryTest {
+public class EntityIdentifierRegistryTest {
 
-    private IdentifierRegistry registry;
+    private EntityIdentifierRegistry registry;
 
 
     @BeforeEach
     void setUp() {
-        registry = new IdentifierRegistry( 100 );
+        registry = new EntityIdentifierRegistry( 100 );
     }
 
 
     @Test
-    void testGetEntryIdentifierSequential() {
-        long firstId = registry.getEntryIdentifier();
-        long secondId = registry.getEntryIdentifier();
+    void testGetNextEntryIdentifierSequential() {
+        long firstId = registry.getNextEntryIdentifier();
+        long secondId = registry.getNextEntryIdentifier();
 
         assertEquals( 1, firstId );
         assertEquals( 2, secondId );
@@ -46,36 +46,36 @@ public class IdentifierRegistryTest {
 
 
     @Test
-    void testGetEntryIdentifierUntilOverflow() {
+    void testGetNextEntryIdentifierUntilOverflow() {
         for ( int i = 0; i < 99; i++ ) {
-            registry.getEntryIdentifier();
+            registry.getNextEntryIdentifier();
         }
-        Exception exception = assertThrows( IllegalStateException.class, registry::getEntryIdentifier );
+        Exception exception = assertThrows( IllegalStateException.class, registry::getNextEntryIdentifier );
         assertEquals( "No identifiers available", exception.getMessage() );
     }
 
 
     @Test
     void testReleaseSingleIdentifierBeginning() {
-        long firstIdentifier = registry.getEntryIdentifier();
-        registry.getEntryIdentifier();
+        long firstIdentifier = registry.getNextEntryIdentifier();
+        registry.getNextEntryIdentifier();
 
         registry.releaseEntryIdentifiers( Set.of( firstIdentifier ) );
-        assertEquals( 1, registry.getEntryIdentifier() );
+        assertEquals( 1, registry.getNextEntryIdentifier() );
     }
 
 
     @Test
     void testReleaseSingleIdentifierMiddle() {
         for ( int i = 0; i < 25; i++ ) {
-            registry.getEntryIdentifier();
+            registry.getNextEntryIdentifier();
         }
-        long middleIdentifier = registry.getEntryIdentifier();
+        long middleIdentifier = registry.getNextEntryIdentifier();
         for ( int i = 0; i < 25; i++ ) {
-            registry.getEntryIdentifier();
+            registry.getNextEntryIdentifier();
         }
         registry.releaseEntryIdentifiers( Set.of( middleIdentifier ) );
-        assertEquals( 26, registry.getEntryIdentifier() );
+        assertEquals( 26, registry.getNextEntryIdentifier() );
     }
 
 
@@ -83,17 +83,17 @@ public class IdentifierRegistryTest {
     void testReleaseMultipleIdentifiersConsequtive() {
         Set<Long> identifiers = new HashSet<>();
         for ( int i = 0; i < 20; i++ ) {
-            registry.getEntryIdentifier();
+            registry.getNextEntryIdentifier();
         }
         for ( int i = 0; i < 20; i++ ) {
-            identifiers.add( registry.getEntryIdentifier() );
+            identifiers.add( registry.getNextEntryIdentifier() );
         }
         for ( int i = 0; i < 20; i++ ) {
-            registry.getEntryIdentifier();
+            registry.getNextEntryIdentifier();
         }
         registry.releaseEntryIdentifiers( identifiers );
         for ( int i = 21; i < 40; i++ ) {
-            assertEquals( i, registry.getEntryIdentifier() );
+            assertEquals( i, registry.getNextEntryIdentifier() );
         }
     }
 
@@ -104,7 +104,7 @@ public class IdentifierRegistryTest {
         Set<Long> oddIdentifiers = new HashSet<>();
 
         for ( int i = 0; i < 60; i++ ) {
-            long id = registry.getEntryIdentifier();
+            long id = registry.getNextEntryIdentifier();
             if ( id % 2 == 0 ) {
                 evenIdentifiers.add( id );
                 continue;
@@ -115,7 +115,7 @@ public class IdentifierRegistryTest {
         registry.releaseEntryIdentifiers( evenIdentifiers );
 
         for ( int i = 0; i < 30; i++ ) {
-            long id = registry.getEntryIdentifier();
+            long id = registry.getNextEntryIdentifier();
             assertEquals( 0, id % 2);
         }
     }

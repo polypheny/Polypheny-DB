@@ -20,14 +20,11 @@ import java.util.Collections;
 import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
-import org.bson.BsonInt64;
 import org.bson.BsonValue;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
-import org.polypheny.db.transaction.locking.IdentifierRegistry;
-import org.polypheny.db.transaction.locking.IdentifierUtils;
 
 
 @Getter
