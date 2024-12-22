@@ -20,6 +20,7 @@ import java.util.HashMap;
 
 public class CommitInstantsLog {
 
+    public static final long NO_COMMIT_INSTANT = 0;
     private static HashMap<VersionedEntryIdentifier, Long> lastCommit = new HashMap<>();
 
 
@@ -36,7 +37,7 @@ public class CommitInstantsLog {
 
     public long getLastCommit( long entryIdentifier, long version ) {
         VersionedEntryIdentifier identifier = getIdentifier( entryIdentifier, version );
-        return lastCommit.get( identifier );
+        return lastCommit.getOrDefault(identifier, NO_COMMIT_INSTANT);
     }
 
 
