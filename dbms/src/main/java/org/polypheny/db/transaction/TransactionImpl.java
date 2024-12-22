@@ -140,6 +140,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private Set<Entity> writtenEntities = new HashSet<>();
 
+    @Getter
+    private Set<Long> readSet = new HashSet<>();
+
 
     TransactionImpl(
             PolyXid xid,

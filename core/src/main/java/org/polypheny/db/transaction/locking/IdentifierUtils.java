@@ -16,7 +16,6 @@
 
 package org.polypheny.db.transaction.locking;
 
-import java.math.BigDecimal;
 import java.text.MessageFormat;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,11 +23,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyString;
@@ -59,16 +57,12 @@ public class IdentifierUtils {
             1
     );
 
-    private static final RexBuilder REX_BUILDER = new RexBuilder( AlgDataTypeFactoryImpl.DEFAULT );
 
 
-    public static RexLiteral getIdentifierAsLiteral() {
-        return REX_BUILDER.makeExactLiteral( BigDecimal.valueOf( IdentifierRegistry.INSTANCE.getEntryIdentifier() ) );
-    }
 
 
-    public static PolyLong getIdentifierAsPolyLong() {
-        return PolyLong.of( IdentifierRegistry.INSTANCE.getEntryIdentifier() );
+    public static PolyLong getIdentifierAsPolyLong( Entity entity) {
+        return PolyLong.of( entity.getEntryIdentifiers().getNextEntryIdentifier() );
     }
 
 

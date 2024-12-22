@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.enumerable;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifier;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -25,7 +26,7 @@ import org.polypheny.db.plan.Convention;
 public class EnumerableRelIdentifierRule extends ConverterRule {
     
     EnumerableRelIdentifierRule() {
-        super( LogicalRelIdentifier.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableRelIdentifierRule" );
+        super( LogicalRelIdentifier.class, operand -> true, Convention.NONE, EnumerableConvention.INSTANCE, AlgFactories.LOGICAL_BUILDER,"EnumerableRelIdentifierRule" );
     }
 
 
