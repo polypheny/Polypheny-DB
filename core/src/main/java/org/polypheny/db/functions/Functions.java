@@ -295,7 +295,7 @@ public class Functions {
     public static Enumerable<PolyValue[]> addRelIdentifiers(final Enumerable<PolyValue[]> input, LogicalEntity entity) {
         return input.select( oldRow -> {
             PolyValue[] newRow = new PolyValue[oldRow.length + 1];
-            newRow[0] = entity.getEntryIdentifiers().getNextEntryIdentifierAsPolyLong();
+            newRow[0] = entity.getEntryIdentifiers().getNextEntryIdentifier().getEntryIdentifierAsPolyLong();
             System.arraycopy( oldRow, 0, newRow, 1, oldRow.length );
             return newRow;
         } );
@@ -305,7 +305,7 @@ public class Functions {
     public static Enumerable<PolyValue[]> addDocIdentifiers(final Enumerable<PolyValue[]> input, LogicalEntity entity) {
         return input.select( oldRow -> {
             PolyDocument document = (PolyDocument) oldRow[0];
-            document.put( IdentifierUtils.getIdentifierKeyAsPolyString(), entity.getEntryIdentifiers().getNextEntryIdentifierAsPolyLong() );
+            document.put( IdentifierUtils.getIdentifierKeyAsPolyString(), entity.getEntryIdentifiers().getNextEntryIdentifier().getEntryIdentifierAsPolyLong());
             return new PolyValue[]{document};
         } );
     }

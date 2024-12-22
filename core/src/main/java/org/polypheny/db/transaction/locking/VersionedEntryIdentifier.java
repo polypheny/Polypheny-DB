@@ -18,32 +18,48 @@ package org.polypheny.db.transaction.locking;
 
 import java.util.Objects;
 import lombok.Getter;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
 @Getter
 public class VersionedEntryIdentifier {
+
     private final long entryIdentifier;
     private final long version;
 
-    public VersionedEntryIdentifier(long entryIdentifier, long version) {
+
+    public VersionedEntryIdentifier( long entryIdentifier, long version ) {
         this.entryIdentifier = entryIdentifier;
         this.version = version;
     }
 
-    public VersionedEntryIdentifier(long entryIdentifier) {
+
+    public VersionedEntryIdentifier( long entryIdentifier ) {
         this.entryIdentifier = entryIdentifier;
         this.version = 0;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(entryIdentifier, version);
-    }
 
     @Override
-    public boolean equals(Object other) {
-        if (this == other) return true;
-        if (other == null || getClass() != other.getClass()) return false;
+    public int hashCode() {
+        return Objects.hash( entryIdentifier, version );
+    }
+
+
+    @Override
+    public boolean equals( Object other ) {
+        if ( this == other ) {
+            return true;
+        }
+        if ( other == null || getClass() != other.getClass() ) {
+            return false;
+        }
         VersionedEntryIdentifier that = (VersionedEntryIdentifier) other;
         return entryIdentifier == that.entryIdentifier && version == that.version;
     }
+
+
+    public PolyLong getEntryIdentifierAsPolyLong() {
+        return PolyLong.of( entryIdentifier );
+    }
+
 }
