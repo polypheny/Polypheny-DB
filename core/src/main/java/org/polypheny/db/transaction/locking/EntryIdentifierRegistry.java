@@ -8,19 +8,19 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
-public class EntityIdentifierRegistry {
+public class EntryIdentifierRegistry {
 
     private static final Long MAX_IDENTIFIER_VALUE = Long.MAX_VALUE;
     private static final RexBuilder REX_BUILDER = new RexBuilder( AlgDataTypeFactoryImpl.DEFAULT );
     private final TreeSet<IdentifierInterval> availableIdentifiers;
 
 
-    public EntityIdentifierRegistry() {
+    public EntryIdentifierRegistry() {
         this.availableIdentifiers = new TreeSet<>();
         this.availableIdentifiers.add( new IdentifierInterval( IdentifierUtils.MISSING_IDENTIFIER + 1, MAX_IDENTIFIER_VALUE ) );
     }
 
-    public EntityIdentifierRegistry(long maxIdentifierValue) {
+    public EntryIdentifierRegistry(long maxIdentifierValue) {
         this.availableIdentifiers = new TreeSet<>();
         this.availableIdentifiers.add( new IdentifierInterval( IdentifierUtils.MISSING_IDENTIFIER + 1, maxIdentifierValue ) );
     }
