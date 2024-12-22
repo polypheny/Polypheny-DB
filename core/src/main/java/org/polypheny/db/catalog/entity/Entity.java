@@ -38,7 +38,7 @@ import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.schema.types.Typed;
-import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.EntityIdentifierRegistry;
 import org.polypheny.db.transaction.locking.LockableObject;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Wrapper;
@@ -72,6 +72,8 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
     @JsonProperty
     public boolean modifiable;
 
+    public EntityIdentifierRegistry entryIdentifiers;
+
 
     public Entity(
             long id,
@@ -86,6 +88,7 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
         this.entityType = type;
         this.dataModel = dataModel;
         this.modifiable = modifiable;
+        this.entryIdentifiers = new EntityIdentifierRegistry();
     }
 
 
@@ -97,7 +100,8 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
         };
     }
 
-    public AlgDataType getTupleType(boolean hideIdentifier) {
+
+    public AlgDataType getTupleType( boolean hideIdentifier ) {
         return switch ( dataModel ) {
             case RELATIONAL -> throw new UnsupportedOperationException( "Should be overwritten by child" );
             //TODO TH: adjust where necessary
@@ -171,6 +175,7 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
         }
         return Long.compare( this.id, o.id );
     }
+
 
     public ObjectType getLockableObjectType() {
         throw new UnsupportedOperationException( "Should be overwritten by child" );

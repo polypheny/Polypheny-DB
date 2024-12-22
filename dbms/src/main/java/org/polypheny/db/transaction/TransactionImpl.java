@@ -124,6 +124,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Getter
     private Set<Lockable> lockedEntities = new HashSet<>();
 
+    @Getter
+    private Set<Long> readSet = new HashSet<>();
+
 
     TransactionImpl(
             PolyXid xid,
