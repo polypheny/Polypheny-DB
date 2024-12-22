@@ -61,6 +61,7 @@ import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.VersionedEntryIdentifier;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
@@ -125,7 +126,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private Set<Lockable> lockedEntities = new HashSet<>();
 
     @Getter
-    private Set<Long> readSet = new HashSet<>();
+    private Set<VersionedEntryIdentifier> readSet = new HashSet<>();
 
 
     TransactionImpl(
