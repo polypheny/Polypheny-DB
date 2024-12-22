@@ -18,7 +18,7 @@ package org.polypheny.db.transaction.locking;
 
 import java.util.HashMap;
 
-public class CommitLog {
+public class CommitInstantsLog {
 
     private static HashMap<VersionedEntryIdentifier, Long> lastCommit = new HashMap<>();
 
@@ -28,7 +28,7 @@ public class CommitLog {
     }
 
 
-    public void updateLastCommit( long entryIdentifier, long version, long instant ) {
+    public void setOrUpdateLastCommit( long entryIdentifier, long version, long instant ) {
         VersionedEntryIdentifier identifier = getIdentifier( entryIdentifier, version );
         lastCommit.put( identifier, instant );
     }

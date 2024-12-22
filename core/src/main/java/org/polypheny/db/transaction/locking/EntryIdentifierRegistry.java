@@ -1,17 +1,11 @@
 package org.polypheny.db.transaction.locking;
 
-import java.math.BigDecimal;
 import java.util.Set;
 import java.util.TreeSet;
-import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.type.entity.numerical.PolyLong;
 
 public class EntryIdentifierRegistry {
 
     private static final Long MAX_IDENTIFIER_VALUE = Long.MAX_VALUE;
-    private static final RexBuilder REX_BUILDER = new RexBuilder( AlgDataTypeFactoryImpl.DEFAULT );
     private final TreeSet<IdentifierInterval> availableIdentifiers;
 
 
@@ -20,29 +14,22 @@ public class EntryIdentifierRegistry {
         this.availableIdentifiers.add( new IdentifierInterval( IdentifierUtils.MISSING_IDENTIFIER + 1, MAX_IDENTIFIER_VALUE ) );
     }
 
-    public EntryIdentifierRegistry(long maxIdentifierValue) {
+
+    public EntryIdentifierRegistry( long maxIdentifierValue ) {
         this.availableIdentifiers = new TreeSet<>();
         this.availableIdentifiers.add( new IdentifierInterval( IdentifierUtils.MISSING_IDENTIFIER + 1, maxIdentifierValue ) );
     }
 
 
-    public long getNextEntryIdentifier() {
+    public VersionedEntryIdentifier getNextEntryIdentifier() {
         while ( !availableIdentifiers.first().hasNextIdentifier() ) {
             availableIdentifiers.pollFirst();
             if ( availableIdentifiers.isEmpty() ) {
                 throw new IllegalStateException( "No identifiers available" );
             }
         }
-        return availableIdentifiers.first().getNextIdentifier();
-    }
-
-    public RexLiteral getNextEntryIdentifierAsLiteral() {
-        return REX_BUILDER.makeExactLiteral( BigDecimal.valueOf( getNextEntryIdentifier() ) );
-    }
-
-
-    public PolyLong getNextEntryIdentifierAsPolyLong() {
-        return PolyLong.of( getNextEntryIdentifier() );
+        long nextIdentifier = availableIdentifiers.first().getNextIdentifier();
+        return new VersionedEntryIdentifier( nextIdentifier );
     }
 
 
