@@ -56,10 +56,11 @@ public class EnumerableLpgIdentifier extends Identifier implements EnumerableAlg
         final PhysType physType = result.physType();
 
         Expression input_ = builder.append( "input", result.block() );
-        Expression entity_ = Expressions.constant(entity);
-        Expression identification_ = builder.append( "identification", Expressions.call(BuiltInMethod.ADD_REL_IDENTIFIERS.method, input_, entity_ ) );
+        Expression entity_ = Expressions.constant( entity );
+        Expression identification_ = builder.append( "identification", Expressions.call( BuiltInMethod.ADD_REL_IDENTIFIERS.method, input_, entity_ ) );
 
         builder.add( Expressions.return_( null, identification_ ) );
         return implementor.result( physType, builder.toBlock() );
     }
+
 }

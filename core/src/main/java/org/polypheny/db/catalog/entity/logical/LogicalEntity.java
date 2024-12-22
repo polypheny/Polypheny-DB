@@ -23,13 +23,15 @@ import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.transaction.locking.LockableObject;
+import org.polypheny.db.transaction.locking.EntryIdentifierRegistry;
 
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(toBuilder = true)
 @Value
 @NonFinal
 public abstract class LogicalEntity extends Entity {
+
+    public EntryIdentifierRegistry entryIdentifiers;
 
 
     public LogicalEntity(
@@ -40,6 +42,7 @@ public abstract class LogicalEntity extends Entity {
             DataModel dataModel,
             boolean modifiable ) {
         super( id, name, namespaceId, type, dataModel, modifiable );
+        this.entryIdentifiers = new EntryIdentifierRegistry();
     }
 
 
