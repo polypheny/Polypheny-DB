@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
-import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
@@ -58,14 +57,6 @@ public class IdentifierUtils {
     );
 
 
-
-
-
-    public static PolyLong getIdentifierAsPolyLong( Entity entity) {
-        return PolyLong.of( entity.getEntryIdentifiers().getNextEntryIdentifier() );
-    }
-
-
     public static PolyString getIdentifierKeyAsPolyString() {
         return PolyString.of( IDENTIFIER_KEY );
     }
@@ -90,30 +81,35 @@ public class IdentifierUtils {
         return newFields;
     }
 
-    public static void throwIfIsIdentifierKey(String string) {
-        if (IDENTIFIER_KEY.equals(string)) {
+
+    public static void throwIfIsIdentifierKey( String string ) {
+        if ( IDENTIFIER_KEY.equals( string ) ) {
             throwIllegalFieldName();
         }
     }
 
-    public static void throwIfContainsIdentifierKey(Set<String> fieldNames) {
-        if (fieldNames.contains(IDENTIFIER_KEY)) {
+
+    public static void throwIfContainsIdentifierKey( Set<String> fieldNames ) {
+        if ( fieldNames.contains( IDENTIFIER_KEY ) ) {
             throwIllegalFieldName();
         }
     }
 
-    public static void throwIfContainsIdentifierKey(List<PolyDocument> documents) {
+
+    public static void throwIfContainsIdentifierKey( List<PolyDocument> documents ) {
         Set<String> fieldNames = documents.stream()
-                .flatMap(v -> v.map.keySet().stream())
-                .map(PolyString::getValue)
-                .collect(Collectors.toSet());
+                .flatMap( v -> v.map.keySet().stream() )
+                .map( PolyString::getValue )
+                .collect( Collectors.toSet() );
         throwIfContainsIdentifierKey( fieldNames );
     }
 
-    public static void throwIfContainsIdentifierField(List<FieldInformation> fields) {
+
+    public static void throwIfContainsIdentifierField( List<FieldInformation> fields ) {
         Set<String> fieldNames = fields.stream()
-                .map(FieldInformation::name)
-                .collect(Collectors.toSet());
+                .map( FieldInformation::name )
+                .collect( Collectors.toSet() );
         throwIfContainsIdentifierKey( fieldNames );
     }
+
 }
