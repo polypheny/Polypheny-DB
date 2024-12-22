@@ -97,6 +97,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.functions.util.ProductPolyListEnumerator;
 import org.polypheny.db.interpreter.Row;
@@ -291,7 +292,7 @@ public class Functions {
     }
 
     @SuppressWarnings("unused")
-    public static Enumerable<PolyValue[]> addRelIdentifiers(final Enumerable<PolyValue[]> input, Entity entity) {
+    public static Enumerable<PolyValue[]> addRelIdentifiers(final Enumerable<PolyValue[]> input, LogicalEntity entity) {
         return input.select( oldRow -> {
             PolyValue[] newRow = new PolyValue[oldRow.length + 1];
             newRow[0] = entity.getEntryIdentifiers().getNextEntryIdentifierAsPolyLong();
@@ -301,7 +302,7 @@ public class Functions {
     }
 
     @SuppressWarnings("unused")
-    public static Enumerable<PolyValue[]> addDocIdentifiers(final Enumerable<PolyValue[]> input, Entity entity) {
+    public static Enumerable<PolyValue[]> addDocIdentifiers(final Enumerable<PolyValue[]> input, LogicalEntity entity) {
         return input.select( oldRow -> {
             PolyDocument document = (PolyDocument) oldRow[0];
             document.put( IdentifierUtils.getIdentifierKeyAsPolyString(), entity.getEntryIdentifiers().getNextEntryIdentifierAsPolyLong() );
@@ -310,7 +311,7 @@ public class Functions {
     }
 
     @SuppressWarnings("unused")
-    public static Enumerable<PolyValue[]> addLpgIdentifiers(final Enumerable<PolyValue[]> input) {
+    public static Enumerable<PolyValue[]> addLpgIdentifiers(final Enumerable<PolyValue[]> input, LogicalEntity entity) {
         return input.select( oldRow -> {
             // ToDo: find out what has to be done here
             return oldRow;
