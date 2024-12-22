@@ -24,14 +24,14 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class EntityIdentifierRegistryTest {
+public class EntryIdentifierRegistryTest {
 
-    private EntityIdentifierRegistry registry;
+    private EntryIdentifierRegistry registry;
 
 
     @BeforeEach
     void setUp() {
-        registry = new EntityIdentifierRegistry( 100 );
+        registry = new EntryIdentifierRegistry( 100 );
     }
 
 
