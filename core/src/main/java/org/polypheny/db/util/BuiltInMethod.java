@@ -105,6 +105,7 @@ import org.polypheny.db.algebra.metadata.BuiltInMetadata.TableReferences;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.TupleCount;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.UniqueKeys;
 import org.polypheny.db.algebra.metadata.Metadata;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.functions.CrossModelFunctions;
 import org.polypheny.db.functions.CypherFunctions;
@@ -155,9 +156,9 @@ public enum BuiltInMethod {
     SWITCH_CONTEXT( DataContext.class, "switchContext" ),
     BATCH( Functions.class, "batch", DataContext.class, Enumerable.class ),
     STREAM_RIGHT( Functions.class, "streamRight", DataContext.class, Enumerable.class, Function0.class, List.class ),
-    ADD_REL_IDENTIFIERS(Functions.class, "addRelIdentifiers", Enumerable.class),
-    ADD_DOC_IDENTIFIERS(Functions.class, "addDocIdentifiers", Enumerable.class),
-    ADD_LPG_IDENTIFIERS(Functions.class, "addLpgIdentifiers", Enumerable.class),
+    ADD_REL_IDENTIFIERS(Functions.class, "addRelIdentifiers", Enumerable.class, Entity.class),
+    ADD_DOC_IDENTIFIERS(Functions.class, "addDocIdentifiers", Enumerable.class, Entity.class),
+    ADD_LPG_IDENTIFIERS(Functions.class, "addLpgIdentifiers", Enumerable.class, Entity.class),
     ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", DataContext.class, Function0.class, Function0.class, List.class, List.class ),
     PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
