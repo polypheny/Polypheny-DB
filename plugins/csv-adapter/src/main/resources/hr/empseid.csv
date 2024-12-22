@@ -1,0 +1,5 @@
+_eid,empid,deptno,name,salary,commission
+1,100,10,Bill,10000,1000
+2,110,10,Theodore,11500,250
+3,150,20,Sebastian,7000,400
+4,200,30,Eric,8000,500
