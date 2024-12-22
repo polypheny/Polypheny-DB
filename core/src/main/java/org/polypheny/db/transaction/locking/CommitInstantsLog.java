@@ -21,28 +21,19 @@ import java.util.HashMap;
 public class CommitInstantsLog {
 
     public static final long NO_COMMIT_INSTANT = 0;
-    private static HashMap<VersionedEntryIdentifier, Long> lastCommit = new HashMap<>();
+    private static final HashMap<VersionedEntryIdentifier, Long> lastCommit = new HashMap<>();
 
-
-    private VersionedEntryIdentifier getIdentifier( long entryIdentifier, long version ) {
-        return new VersionedEntryIdentifier( entryIdentifier, version );
-    }
-
-
-    public void setOrUpdateLastCommit( long entryIdentifier, long version, long instant ) {
-        VersionedEntryIdentifier identifier = getIdentifier( entryIdentifier, version );
+    public void setOrUpdateLastCommit(VersionedEntryIdentifier identifier, long instant ) {
         lastCommit.put( identifier, instant );
     }
 
 
-    public long getLastCommit( long entryIdentifier, long version ) {
-        VersionedEntryIdentifier identifier = getIdentifier( entryIdentifier, version );
+    public long getLastCommit( VersionedEntryIdentifier identifier ) {
         return lastCommit.getOrDefault(identifier, NO_COMMIT_INSTANT);
     }
 
 
-    public void removeEntry( long entryIdentifier, long version ) {
-        VersionedEntryIdentifier identifier = getIdentifier( entryIdentifier, version );
+    public void removeEntry( VersionedEntryIdentifier identifier ) {
         lastCommit.remove( identifier );
     }
 
