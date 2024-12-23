@@ -96,6 +96,7 @@ import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -292,26 +293,26 @@ public class Functions {
     }
 
     @SuppressWarnings("unused")
-    public static Enumerable<PolyValue[]> addRelIdentifiers(final Enumerable<PolyValue[]> input, LogicalEntity entity) {
-        return input.select( oldRow -> {
-            PolyValue[] newRow = new PolyValue[oldRow.length + 1];
-            newRow[0] = entity.getEntryIdentifiers().getNextEntryIdentifier().getEntryIdentifierAsPolyLong();
-            System.arraycopy( oldRow, 0, newRow, 1, oldRow.length );
-            return newRow;
+    public static Enumerable<PolyValue[]> addRelIdentifiers(final Enumerable<PolyValue[]> input, long logicalId) {
+        return input.select( row -> {
+            LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( logicalId ).orElseThrow();
+            row[0] = entity.getEntryIdentifiers().getNextEntryIdentifier().getEntryIdentifierAsPolyLong();
+            return row;
         } );
     }
 
     @SuppressWarnings("unused")
-    public static Enumerable<PolyValue[]> addDocIdentifiers(final Enumerable<PolyValue[]> input, LogicalEntity entity) {
+    public static Enumerable<PolyValue[]> addDocIdentifiers(final Enumerable<PolyValue[]> input, long logicalId) {
         return input.select( oldRow -> {
             PolyDocument document = (PolyDocument) oldRow[0];
+            LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( logicalId ).orElseThrow();
             document.put( IdentifierUtils.getIdentifierKeyAsPolyString(), entity.getEntryIdentifiers().getNextEntryIdentifier().getEntryIdentifierAsPolyLong());
             return new PolyValue[]{document};
         } );
     }
 
     @SuppressWarnings("unused")
-    public static Enumerable<PolyValue[]> addLpgIdentifiers(final Enumerable<PolyValue[]> input, LogicalEntity entity) {
+    public static Enumerable<PolyValue[]> addLpgIdentifiers(final Enumerable<PolyValue[]> input, long logicalId) {
         return input.select( oldRow -> {
             // ToDo: find out what has to be done here
             return oldRow;
