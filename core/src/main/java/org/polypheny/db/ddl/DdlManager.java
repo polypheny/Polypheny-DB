@@ -45,6 +45,7 @@ import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -116,6 +117,7 @@ public abstract class DdlManager {
     /**
      * Adds a new data source(adapter)
      *
+     * @param transaction current transaction
      * @param uniqueName unique name of the newly created source
      * @param adapterName name of source, which is used to create the source
      * @param namespace the target namespace for the adapter
@@ -123,7 +125,7 @@ public abstract class DdlManager {
      * @param config configuration for the source
      * @param mode the deploy mode
      */
-    public abstract void createSource( String uniqueName, String adapterName, long namespace, AdapterType adapterType, Map<String, String> config, DeployMode mode );
+    public abstract void createSource( Transaction transaction, String uniqueName, String adapterName, long namespace, AdapterType adapterType, Map<String, String> config, DeployMode mode );
 
 
     /**
@@ -157,6 +159,7 @@ public abstract class DdlManager {
     /**
      * Add a column to an existing table
      *
+     * @param transaction current transaction
      * @param columnName the name of the new column
      * @param table the table
      * @param beforeColumnName the column before which the new column should be positioned; can be null
@@ -166,7 +169,7 @@ public abstract class DdlManager {
      * @param defaultValue a default value for the column; can be null
      * @param statement the query statement
      */
-    public abstract void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement );
+    public abstract void createColumn( Transaction transaction, String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement );
 
     /**
      * Add a foreign key to a table
@@ -248,10 +251,11 @@ public abstract class DdlManager {
     /**
      * Drop a specific constraint from a table
      *
+     * @param transaction current transaction
      * @param table the table
      * @param constraintName the name of the constraint to be dropped
      */
-    public abstract void dropConstraint( LogicalTable table, String constraintName );
+    public abstract void dropConstraint( Transaction transaction, LogicalTable table, String constraintName );
 
     /**
      * Drop a foreign key of a table
