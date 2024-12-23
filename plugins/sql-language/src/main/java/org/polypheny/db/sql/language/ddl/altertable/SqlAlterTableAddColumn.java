@@ -141,7 +141,6 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         }
 
         DdlManager.getInstance().createColumn(
-                statement.getTransaction(),
                 column.getSimple(),
                 logicalTable,
                 beforeColumnName == null ? null : beforeColumnName.getSimple(),

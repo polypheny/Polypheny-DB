@@ -159,7 +159,6 @@ public abstract class DdlManager {
     /**
      * Add a column to an existing table
      *
-     * @param transaction current transaction
      * @param columnName the name of the new column
      * @param table the table
      * @param beforeColumnName the column before which the new column should be positioned; can be null
@@ -169,7 +168,7 @@ public abstract class DdlManager {
      * @param defaultValue a default value for the column; can be null
      * @param statement the query statement
      */
-    public abstract void createColumn( Transaction transaction, String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement );
+    public abstract void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement );
 
     /**
      * Add a foreign key to a table

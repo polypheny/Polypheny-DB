@@ -456,7 +456,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createColumn( Transaction transaction, String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement ) {
+    public void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement ) {
         columnName = adjustNameIfNeeded( columnName, table.namespaceId );
         // Check if the column either allows null values or has a default value defined.
         if ( defaultValue == null && !nullable ) {
@@ -495,7 +495,7 @@ public class DdlManagerImpl extends DdlManager {
         List<DataStore<?>> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewRelField( addedColumn );
 
         // Add column on underlying data stores and insert default value
-        transaction.attachCommitAction( () -> {
+        statement.getTransaction().attachCommitAction( () -> {
             for ( DataStore<?> store : stores ) {
                 AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( store.getAdapterId(), table.id ).orElseThrow();
 
