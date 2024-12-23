@@ -175,7 +175,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 .toList();
 
         if ( !fails.isEmpty() ) {
-            commitConstraints.clear();
             return Pair.of( false, "DDL constraints not met: \n" + fails.stream().map( f -> f.right ).collect( Collectors.joining( ",\n " ) ) + "." );
         }
         return Pair.of( true, null );
@@ -269,7 +268,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         // Handover information about commit to Materialized Manager
         MaterializedViewManager.getInstance().updateCommittedXid( xid );
-
     }
 
 
@@ -458,7 +456,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         // If nothing else has matched so far. It's safe to simply use the input
         this.accessMode = accessModeCandidate;
-
     }
 
 
@@ -483,6 +480,5 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     public DataMigrator getDataMigrator() {
         return new DataMigratorImpl();
     }
-
 
 }
