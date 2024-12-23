@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.enumerable;
 
+import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -45,6 +46,13 @@ public class EnumerableRelIdentifier extends Identifier implements EnumerableAlg
 
 
     @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new EnumerableRelIdentifier( inputs.get(0).getCluster(), traitSet, entity, inputs.get( 0 ) );
+    }
+
+
+
+    @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
         final EnumerableAlg input = (EnumerableAlg) getInput();
@@ -52,7 +60,7 @@ public class EnumerableRelIdentifier extends Identifier implements EnumerableAlg
         final PhysType physType = result.physType();
 
         Expression input_ = builder.append( "input", result.block() );
-        Expression entity_ = Expressions.constant( entity );
+        Expression entity_ = Expressions.constant(entity.getId());
         Expression identification_ = builder.append( "identification", Expressions.call( BuiltInMethod.ADD_REL_IDENTIFIERS.method, input_, entity_ ) );
 
         builder.add( Expressions.return_( null, identification_ ) );
