@@ -166,7 +166,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     }
 
 
-    public Pair<@NotNull Boolean, @Nullable String> checkIntegrity() {
+    private Pair<@NotNull Boolean, @Nullable String> checkIntegrity() {
         // check constraints e.g. primary key constraints
         List<Pair<Boolean, String>> fails = commitConstraints
                 .stream()
