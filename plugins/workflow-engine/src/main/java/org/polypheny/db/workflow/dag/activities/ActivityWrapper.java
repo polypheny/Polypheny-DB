@@ -131,7 +131,8 @@ public class ActivityWrapper {
         if ( includeState ) {
             List<TypePreviewModel> inTypeModels = inTypePreview.stream().map(
                     inType -> inType.map( TypePreviewModel::of ).orElse( null ) ).toList();
-            return new ActivityModel( type, id, serializableSettings, config, rendering, this.state, inTypeModels, invalidStateReason.toString() );
+            String invalidReason = invalidStateReason == null ? null : invalidStateReason.toString();
+            return new ActivityModel( type, id, serializableSettings, config, rendering, this.state, inTypeModels, invalidReason );
 
         } else {
             return new ActivityModel( type, id, serializableSettings, config, rendering );

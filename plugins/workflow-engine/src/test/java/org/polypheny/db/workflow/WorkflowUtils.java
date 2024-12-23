@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.BooleanNode;
@@ -363,6 +364,36 @@ public class WorkflowUtils {
             list.add( n );
         }
         return list;
+    }
+
+
+    /**
+     * Used for exporting the workflows to use them in a non-test setting
+     */
+    public static void exportWorkflows() { // TODO: delete when no longer required
+        List<Workflow> workflows = List.of(
+                getUnionWorkflow(),
+                getMergeWorkflow( false ),
+                getSimpleFusion(),
+                getAdvancedFusion().left,
+                getSimplePipe(),
+                getLongRunningPipe( 10000 ),
+                getCombinedFuseAndPipe().left,
+                getVariableWritingWorkflow(),
+                getParallelBranchesWorkflow( 10, 1000, 10 ),
+                getCommonTransactionsWorkflow( false ).left,
+                getCommonExtractSkipActivityWorkflow().left,
+                getCommonLoadGetsSkippedWorkflow().left,
+                getDocumentWorkflow( 5 ),
+                getLpgWorkflow( 5, 0.5, false )
+        );
+        for (Workflow wf : workflows) {
+            try {
+                System.out.println(mapper.writeValueAsString( wf.toModel( false ) ));
+            } catch ( JsonProcessingException e ) {
+                throw new RuntimeException( e );
+            }
+        }
     }
 
 

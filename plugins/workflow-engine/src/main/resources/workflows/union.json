@@ -1,0 +1,99 @@
+{
+    "activities": [
+        {
+            "type": "relValues",
+            "id": "fa5fa54b-3b9b-40bf-9f69-13cf1434fe71",
+            "settings": {
+                "fixSeed": false,
+                "rowCount": 3
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relUnion",
+            "id": "ff737d1f-6f94-4ccd-90ad-6c6977625060",
+            "settings": {},
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relValues",
+            "id": "0eca366d-d395-448c-b3d6-26d1183025d0",
+            "settings": {
+                "fixSeed": false,
+                "rowCount": 3
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        }
+    ],
+    "edges": [
+        {
+            "fromId": "fa5fa54b-3b9b-40bf-9f69-13cf1434fe71",
+            "toId": "ff737d1f-6f94-4ccd-90ad-6c6977625060",
+            "fromPort": 0,
+            "toPort": 1,
+            "isControl": false
+        },
+        {
+            "fromId": "0eca366d-d395-448c-b3d6-26d1183025d0",
+            "toId": "ff737d1f-6f94-4ccd-90ad-6c6977625060",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "0eca366d-d395-448c-b3d6-26d1183025d0",
+            "toId": "fa5fa54b-3b9b-40bf-9f69-13cf1434fe71",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": true
+        }
+    ],
+    "config": {
+        "preferredStores": {
+            "GRAPH": "hsqldb",
+            "DOCUMENT": "hsqldb",
+            "RELATIONAL": "hsqldb"
+        },
+        "fusionEnabled": false,
+        "pipelineEnabled": false,
+        "maxWorkers": 1,
+        "pipelineQueueCapacity": 10
+    },
+    "variables": {
+        "creationTime": "2024-12-23T17:23:46.8633395"
+    },
+    "format_version": "0.0.1"
+}

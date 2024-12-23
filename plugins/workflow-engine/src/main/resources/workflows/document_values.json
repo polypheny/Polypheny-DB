@@ -1,0 +1,65 @@
+{
+    "activities": [
+        {
+            "type": "docIdentity",
+            "id": "2c0cade8-b5ac-4a28-8a85-93d3ca14eec1",
+            "settings": {},
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "docValues",
+            "id": "5b052184-754f-4f04-bc36-e80ff91f74c5",
+            "settings": {
+                "count": 5,
+                "fixSeed": false
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        }
+    ],
+    "edges": [
+        {
+            "fromId": "5b052184-754f-4f04-bc36-e80ff91f74c5",
+            "toId": "2c0cade8-b5ac-4a28-8a85-93d3ca14eec1",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        }
+    ],
+    "config": {
+        "preferredStores": {
+            "DOCUMENT": "hsqldb",
+            "GRAPH": "hsqldb",
+            "RELATIONAL": "hsqldb"
+        },
+        "fusionEnabled": false,
+        "pipelineEnabled": false,
+        "maxWorkers": 1,
+        "pipelineQueueCapacity": 10
+    },
+    "variables": {
+        "creationTime": "2024-12-23T16:18:37.3097338"
+    },
+    "format_version": "0.0.1"
+}

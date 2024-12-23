@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.repo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.javalin.http.HttpCode;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -86,7 +87,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
         File dir = getWorkflowDir( id );
         File defFile = new File( dir, DEF_FILE );
         if ( !defFile.exists() ) {
-            throw new WorkflowRepoException( DEF_FILE + " not found for workflow ID: " + id );
+            throw new WorkflowRepoException( DEF_FILE + " not found for workflow ID: " + id, HttpCode.NOT_FOUND );
         }
         try {
             return mapper.readValue( defFile, WorkflowDefModel.class );
@@ -99,7 +100,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
     @Override
     public UUID createWorkflow( String name ) throws WorkflowRepoException {
         if ( doesNameExist( name ) ) {
-            throw new WorkflowRepoException( "Name already exists: " + name );
+            throw new WorkflowRepoException( "Name already exists: " + name, HttpCode.CONFLICT );
         }
 
         UUID id = UUID.randomUUID();
@@ -124,7 +125,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
         File file = new File( dir, version + ".json" );
 
         if ( !doesExist( id, version ) || !file.exists() ) {
-            throw new WorkflowRepoException( "Workflow " + id + ", v" + version + " does not exist." );
+            throw new WorkflowRepoException( "Workflow " + id + ", v" + version + " does not exist.", HttpCode.NOT_FOUND );
         }
 
         try {
@@ -151,7 +152,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
     @Override
     public void deleteWorkflow( UUID id ) throws WorkflowRepoException {
         if ( !doesExist( id ) ) {
-            throw new WorkflowRepoException( "Unable to delete non-existent workflow " + id );
+            throw new WorkflowRepoException( "Unable to delete non-existent workflow " + id, HttpCode.NOT_FOUND );
         }
         if ( !phm.recursiveDeleteFolder( WORKFLOWS_PATH + "/" + id.toString() ) ) {
             throw new WorkflowRepoException( "Failed to delete workflow " + id );
@@ -162,13 +163,13 @@ public class WorkflowRepoImpl implements WorkflowRepo {
     @Override
     public void deleteVersion( UUID id, int version ) throws WorkflowRepoException {
         if ( !doesExist( id, version ) ) {
-            throw new WorkflowRepoException( "Unable to delete non-existent workflow version " + id + " v" + version );
+            throw new WorkflowRepoException( "Unable to delete non-existent workflow version " + id + " v" + version, HttpCode.NOT_FOUND );
         }
 
         File dir = getWorkflowDir( id );
         File versionFile = new File( dir, version + ".json" );
         if ( !versionFile.exists() ) {
-            throw new WorkflowRepoException( "Version file " + versionFile.getName() + " not found for workflow " + id );
+            throw new WorkflowRepoException( "Version file " + versionFile.getName() + " not found for workflow " + id, HttpCode.NOT_FOUND );
         }
         if ( !versionFile.delete() ) {
             throw new WorkflowRepoException( "Failed to delete version file: " + versionFile.getAbsolutePath() );
@@ -187,7 +188,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
             return; // same name as before
         }
         if ( doesNameExist( name ) ) {
-            throw new WorkflowRepoException( "A workflow with name " + name + " already exists" );
+            throw new WorkflowRepoException( "A workflow with name " + name + " already exists", HttpCode.CONFLICT );
         }
         def.setName( name );
         serializeToFile( new File( getWorkflowDir( id ), DEF_FILE ), def );  // updated definition

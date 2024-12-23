@@ -28,9 +28,8 @@ import java.util.Random;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
@@ -143,7 +142,7 @@ public class LpgValuesActivity implements Activity, Pipeable {
 
 
     private static AlgDataType getType() {
-        return AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.NODE );
+        return GraphType.of();
     }
 
 

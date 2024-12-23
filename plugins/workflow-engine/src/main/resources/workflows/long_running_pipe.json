@@ -1,0 +1,102 @@
+{
+    "activities": [
+        {
+            "type": "identity",
+            "id": "bb3807f7-8ae7-4986-a668-6b8140799b6b",
+            "settings": {
+                "I1": 2,
+                "I2": [],
+                "S1": "",
+                "S2": [
+                    "test"
+                ]
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relValues",
+            "id": "44f24dbe-1550-4adb-9440-142410e75cb9",
+            "settings": {
+                "fixSeed": false,
+                "rowCount": 100
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "debug",
+            "id": "bc58a265-5dcb-4051-b9a6-7dd2afddc060",
+            "settings": {
+                "pipeDelay": 101,
+                "delay": 50,
+                "isSuccessful": true,
+                "canPipe": true,
+                "canFuse": false
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        }
+    ],
+    "edges": [
+        {
+            "fromId": "44f24dbe-1550-4adb-9440-142410e75cb9",
+            "toId": "bc58a265-5dcb-4051-b9a6-7dd2afddc060",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "bc58a265-5dcb-4051-b9a6-7dd2afddc060",
+            "toId": "bb3807f7-8ae7-4986-a668-6b8140799b6b",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        }
+    ],
+    "config": {
+        "preferredStores": {
+            "DOCUMENT": "hsqldb",
+            "GRAPH": "hsqldb",
+            "RELATIONAL": "hsqldb"
+        },
+        "fusionEnabled": false,
+        "pipelineEnabled": true,
+        "maxWorkers": 1,
+        "pipelineQueueCapacity": 10
+    },
+    "variables": {
+        "creationTime": "2024-12-23T16:18:37.3064344"
+    },
+    "format_version": "0.0.1"
+}

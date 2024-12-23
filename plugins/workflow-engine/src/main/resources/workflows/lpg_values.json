@@ -1,0 +1,66 @@
+{
+    "activities": [
+        {
+            "type": "lpgIdentity",
+            "id": "ddbe6369-0799-458e-bce7-72ad715a7ae3",
+            "settings": {},
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "lpgValues",
+            "id": "86722e95-88f6-4917-a11f-8a504a7914e6",
+            "settings": {
+                "count": 5,
+                "edgeDensity": 0.5,
+                "fixSeed": false
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        }
+    ],
+    "edges": [
+        {
+            "fromId": "86722e95-88f6-4917-a11f-8a504a7914e6",
+            "toId": "ddbe6369-0799-458e-bce7-72ad715a7ae3",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        }
+    ],
+    "config": {
+        "preferredStores": {
+            "DOCUMENT": "hsqldb",
+            "GRAPH": "hsqldb",
+            "RELATIONAL": "hsqldb"
+        },
+        "fusionEnabled": false,
+        "pipelineEnabled": false,
+        "maxWorkers": 1,
+        "pipelineQueueCapacity": 10
+    },
+    "variables": {
+        "creationTime": "2024-12-23T16:18:37.310737"
+    },
+    "format_version": "0.0.1"
+}

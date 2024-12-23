@@ -1,0 +1,94 @@
+{
+    "activities": [
+        {
+            "type": "relValues",
+            "id": "e6a30a3d-a7ff-475a-adcd-52f1baee5108",
+            "settings": {
+                "fixSeed": false,
+                "rowCount": 3
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "varToRow",
+            "id": "0c960101-f909-4ae3-8a33-c3c515e787fb",
+            "settings": {
+                "allJson": false
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "fieldNameToVar",
+            "id": "6e35a701-95ef-447a-88fc-b6f353fa4afc",
+            "settings": {
+                "fields": [],
+                "variableName": "field_names"
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        }
+    ],
+    "edges": [
+        {
+            "fromId": "e6a30a3d-a7ff-475a-adcd-52f1baee5108",
+            "toId": "6e35a701-95ef-447a-88fc-b6f353fa4afc",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "6e35a701-95ef-447a-88fc-b6f353fa4afc",
+            "toId": "0c960101-f909-4ae3-8a33-c3c515e787fb",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": true
+        }
+    ],
+    "config": {
+        "preferredStores": {
+            "GRAPH": "hsqldb",
+            "DOCUMENT": "hsqldb",
+            "RELATIONAL": "hsqldb"
+        },
+        "fusionEnabled": false,
+        "pipelineEnabled": false,
+        "maxWorkers": 1,
+        "pipelineQueueCapacity": 10
+    },
+    "variables": {
+        "creationTime": "2024-12-23T17:23:46.871076"
+    },
+    "format_version": "0.0.1"
+}

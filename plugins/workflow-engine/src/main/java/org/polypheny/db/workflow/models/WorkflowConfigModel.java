@@ -29,6 +29,7 @@ public class WorkflowConfigModel {
     boolean pipelineEnabled;
     int maxWorkers;
     int pipelineQueueCapacity;
+    // TODO: config value for changing behavior of deleting created checkpoints
 
 
     public static WorkflowConfigModel of() {

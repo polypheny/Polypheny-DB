@@ -1,0 +1,103 @@
+{
+    "activities": [
+        {
+            "type": "relValues",
+            "id": "f27af3e1-0ade-411c-9c6b-6252571cb38d",
+            "settings": {
+                "fixSeed": false,
+                "rowCount": 20
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "identity",
+            "id": "0f1d3a63-37e1-4a10-ad12-7bdf2ee3096f",
+            "settings": {
+                "I1": 2,
+                "I2": [],
+                "S1": "",
+                "S2": [
+                    "test"
+                ]
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "identity",
+            "id": "cef57a93-1438-44ee-bf43-fc6a5e0dda5b",
+            "settings": {
+                "I1": 2,
+                "I2": [],
+                "S1": "",
+                "S2": [
+                    "test"
+                ]
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        }
+    ],
+    "edges": [
+        {
+            "fromId": "cef57a93-1438-44ee-bf43-fc6a5e0dda5b",
+            "toId": "0f1d3a63-37e1-4a10-ad12-7bdf2ee3096f",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "f27af3e1-0ade-411c-9c6b-6252571cb38d",
+            "toId": "cef57a93-1438-44ee-bf43-fc6a5e0dda5b",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        }
+    ],
+    "config": {
+        "preferredStores": {
+            "DOCUMENT": "hsqldb",
+            "GRAPH": "hsqldb",
+            "RELATIONAL": "hsqldb"
+        },
+        "fusionEnabled": false,
+        "pipelineEnabled": true,
+        "maxWorkers": 1,
+        "pipelineQueueCapacity": 10
+    },
+    "variables": {
+        "creationTime": "2024-12-23T16:18:37.3054323"
+    },
+    "format_version": "0.0.1"
+}

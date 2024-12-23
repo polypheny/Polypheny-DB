@@ -56,7 +56,7 @@ public class EntitySettingDef extends SettingDef {
                     case GRAPH -> entityValue.getGraph();
                 };
                 if ( entity == null ) {
-                    throw new InvalidSettingException( "Entity does not exist", getKey() );
+                    throw new InvalidSettingException( "Entity " + entityValue.getNamespace() + "." + entityValue.getName() + " does not exist", getKey() );
                 }
             }
             return;

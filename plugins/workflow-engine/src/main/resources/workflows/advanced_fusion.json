@@ -1,0 +1,157 @@
+{
+    "activities": [
+        {
+            "type": "debug",
+            "id": "d6318f1b-577f-4732-a359-3d0614cb6022",
+            "settings": {
+                "pipeDelay": 1,
+                "delay": 50,
+                "isSuccessful": true,
+                "canPipe": false,
+                "canFuse": false
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relExtract",
+            "id": "5137a1e0-a6a6-4863-82e3-eeb6e2183366",
+            "settings": {
+                "table": {
+                    "namespace": "public",
+                    "name": "emps"
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relExtract",
+            "id": "bd8eb759-422f-4e16-90a3-fb0188d96458",
+            "settings": {
+                "table": {
+                    "namespace": "public",
+                    "name": "emps"
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relUnion",
+            "id": "591cc187-1736-49c9-a478-c49d3d3aae25",
+            "settings": {},
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "identity",
+            "id": "9f93aece-473e-4743-9cb4-2c956a53740d",
+            "settings": {
+                "I1": 2,
+                "I2": [],
+                "S1": "",
+                "S2": [
+                    "test"
+                ]
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        }
+    ],
+    "edges": [
+        {
+            "fromId": "591cc187-1736-49c9-a478-c49d3d3aae25",
+            "toId": "9f93aece-473e-4743-9cb4-2c956a53740d",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "bd8eb759-422f-4e16-90a3-fb0188d96458",
+            "toId": "591cc187-1736-49c9-a478-c49d3d3aae25",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "5137a1e0-a6a6-4863-82e3-eeb6e2183366",
+            "toId": "d6318f1b-577f-4732-a359-3d0614cb6022",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "d6318f1b-577f-4732-a359-3d0614cb6022",
+            "toId": "591cc187-1736-49c9-a478-c49d3d3aae25",
+            "fromPort": 0,
+            "toPort": 1,
+            "isControl": false
+        }
+    ],
+    "config": {
+        "preferredStores": {
+            "DOCUMENT": "hsqldb",
+            "GRAPH": "hsqldb",
+            "RELATIONAL": "hsqldb"
+        },
+        "fusionEnabled": true,
+        "pipelineEnabled": false,
+        "maxWorkers": 1,
+        "pipelineQueueCapacity": 10
+    },
+    "variables": {
+        "creationTime": "2024-12-23T16:18:37.3043767"
+    },
+    "format_version": "0.0.1"
+}

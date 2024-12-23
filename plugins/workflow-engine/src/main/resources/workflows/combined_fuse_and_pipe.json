@@ -1,0 +1,188 @@
+{
+    "activities": [
+        {
+            "type": "relUnion",
+            "id": "e3a54917-5b29-40e0-871e-8e67d974d026",
+            "settings": {},
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "identity",
+            "id": "64339166-711d-4b88-8e59-506cfed28b06",
+            "settings": {
+                "I1": 2,
+                "I2": [],
+                "S1": "",
+                "S2": [
+                    "test"
+                ]
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "identity",
+            "id": "c2451002-ffc3-4e32-9b25-83db0198c071",
+            "settings": {
+                "I1": 2,
+                "I2": [],
+                "S1": "",
+                "S2": [
+                    "test"
+                ]
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "debug",
+            "id": "5b186583-6912-42b4-aac4-0d4a117d52e8",
+            "settings": {
+                "pipeDelay": 1,
+                "delay": 50,
+                "isSuccessful": true,
+                "canPipe": true,
+                "canFuse": false
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relExtract",
+            "id": "42be7e3f-51be-408f-9e49-37999a0c9110",
+            "settings": {
+                "table": {
+                    "namespace": "public",
+                    "name": "emps"
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relExtract",
+            "id": "8b313e9a-aa91-48e3-8e09-35bd09f8f5a9",
+            "settings": {
+                "table": {
+                    "namespace": "public",
+                    "name": "emps"
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 0,
+                "posY": 0,
+                "name": null,
+                "notes": null
+            }
+        }
+    ],
+    "edges": [
+        {
+            "fromId": "64339166-711d-4b88-8e59-506cfed28b06",
+            "toId": "e3a54917-5b29-40e0-871e-8e67d974d026",
+            "fromPort": 0,
+            "toPort": 1,
+            "isControl": false
+        },
+        {
+            "fromId": "e3a54917-5b29-40e0-871e-8e67d974d026",
+            "toId": "c2451002-ffc3-4e32-9b25-83db0198c071",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "5b186583-6912-42b4-aac4-0d4a117d52e8",
+            "toId": "64339166-711d-4b88-8e59-506cfed28b06",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "8b313e9a-aa91-48e3-8e09-35bd09f8f5a9",
+            "toId": "5b186583-6912-42b4-aac4-0d4a117d52e8",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "42be7e3f-51be-408f-9e49-37999a0c9110",
+            "toId": "e3a54917-5b29-40e0-871e-8e67d974d026",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        }
+    ],
+    "config": {
+        "preferredStores": {
+            "DOCUMENT": "hsqldb",
+            "GRAPH": "hsqldb",
+            "RELATIONAL": "hsqldb"
+        },
+        "fusionEnabled": true,
+        "pipelineEnabled": true,
+        "maxWorkers": 1,
+        "pipelineQueueCapacity": 10
+    },
+    "variables": {
+        "creationTime": "2024-12-23T16:18:37.3064344"
+    },
+    "format_version": "0.0.1"
+}

@@ -28,6 +28,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.type.entity.PolyValue;
@@ -399,6 +400,13 @@ class GlobalSchedulerTest {
         scheduler.awaitResultProcessor( 5000 );
         System.out.println( monitor.getAllProgress() );
 
+    }
+
+    @Test
+    @Disabled
+        // TODO: delete when no longer required
+    void exportTestWorkflows() throws Exception {
+        WorkflowUtils.exportWorkflows();
     }
 
 

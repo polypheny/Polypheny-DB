@@ -52,6 +52,8 @@ public class SessionManager {
 
     public UUID createUserSession( String newWorkflowName ) throws WorkflowRepoException {
         UUID wId = repo.createWorkflow( newWorkflowName );
+        UUID sessionId = registerUserSession( new WorkflowImpl(), wId, 0 );
+        saveUserSession( sessionId, "Initial Save" ); // TODO: remove initial save, delete workflow if its session is stopped without a saved version
         return registerUserSession( new WorkflowImpl(), wId, 0 );
     }
 

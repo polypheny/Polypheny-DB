@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.repo;
 
+import io.javalin.http.HttpCode;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
@@ -207,13 +208,27 @@ public interface WorkflowRepo {
     @Getter
     class WorkflowRepoException extends IOException {
 
+        private final HttpCode errorCode;
+
+
+        WorkflowRepoException( String message, Throwable cause, HttpCode errorCode ) {
+            super( message, cause );
+            this.errorCode = errorCode;
+        }
+
+
         WorkflowRepoException( String message ) {
-            super( message );
+            this( message, null, HttpCode.INTERNAL_SERVER_ERROR );
+        }
+
+
+        WorkflowRepoException( String message, HttpCode errorCode ) {
+            this( message, null, errorCode );
         }
 
 
         WorkflowRepoException( String message, Throwable cause ) {
-            super( message, cause );
+            this( message, cause, HttpCode.INTERNAL_SERVER_ERROR );
         }
 
 

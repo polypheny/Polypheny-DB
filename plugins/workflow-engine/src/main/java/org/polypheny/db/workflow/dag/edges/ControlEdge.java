@@ -46,7 +46,7 @@ public class ControlEdge extends Edge {
 
     public EdgeModel toModel( boolean includeState ) {
         EdgeState state = includeState ? getState() : null;
-        return new EdgeModel( from.getId(), to.getId(), getControlPort(), 0, false, state );
+        return new EdgeModel( from.getId(), to.getId(), getControlPort(), 0, true, state );
     }
 
 
