@@ -138,7 +138,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final Thread executor;
 
     @Getter
-    private Set<VersionedEntryIdentifier> readSet = new HashSet<>();
+    private Set<VersionedEntryIdentifier> readSet = new HashSet<>(); // This only contains entries if the transaction involves entities in MVCC mode
 
 
     TransactionImpl(

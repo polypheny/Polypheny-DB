@@ -34,7 +34,7 @@ public class EnumerableRelIdentifierRule extends ConverterRule {
     public AlgNode convert( AlgNode alg ) {
         final LogicalRelIdentifier identifier = (LogicalRelIdentifier) alg;
         final AlgTraitSet traits = identifier.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        final AlgNode input = identifier.getInput();
+        final AlgNode input = convert(identifier.getInput(), identifier.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ));
         return new EnumerableRelIdentifier( identifier.getCluster(), traits, identifier.getEntity(), input );
     }
 
