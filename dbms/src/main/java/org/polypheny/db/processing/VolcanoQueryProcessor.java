@@ -114,6 +114,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_CONTEXT_SWITCHER_RULE,
                     EnumerableRules.ENUMERABLE_VALUES_RULE,
                     EnumerableRules.ENUMERABLE_DOCUMENT_VALUES_RULE,
+                    EnumerableRules.ENUMERABLE_LPG_VALUES_RULE,
                     EnumerableRules.ENUMERABLE_WINDOW_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
                     EnumerableRules.ENUMERABLE_TRANSFORMER_RULE,

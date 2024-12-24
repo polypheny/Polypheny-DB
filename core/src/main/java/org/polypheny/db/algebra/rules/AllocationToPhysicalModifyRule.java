@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.rules;
 
 import java.util.Optional;
 import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.common.Modify;
@@ -55,7 +56,8 @@ public class AllocationToPhysicalModifyRule extends AlgOptRule {
             return;
         }
 
-        AlgNode newAlg = AdapterManager.getInstance().getStore( oAlloc.get().adapterId ).orElseThrow().getModify( oAlloc.get().id, modify, call.builder() );
+        DataStore<?> store = AdapterManager.getInstance().getStore( oAlloc.get().adapterId ).orElseThrow();
+        AlgNode newAlg = store.getModify( oAlloc.get().id, modify, call.builder() );
 
         if ( newAlg != null ) {
             call.transformTo( newAlg );
