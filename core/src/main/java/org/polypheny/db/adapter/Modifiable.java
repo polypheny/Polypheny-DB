@@ -33,6 +33,7 @@ import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
 import org.polypheny.db.algebra.logical.common.LogicalStreamer;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgIdentifier;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
@@ -440,6 +441,10 @@ public interface Modifiable extends Scannable {
                     inputs.addAll( values.getRelationalEquivalent( List.of(), List.of( nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable ), Catalog.snapshot() ) );
                 }
                 if ( raw instanceof LpgProject ) {
+                    return attachRelationalRelatedInsert( modifiable, raw, (LogicalLpgModify) alg, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
+                }
+                if( raw instanceof LogicalLpgIdentifier) {
+                    // TOOO TH: let's see if this works
                     return attachRelationalRelatedInsert( modifiable, raw, (LogicalLpgModify) alg, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable );
                 }
 
