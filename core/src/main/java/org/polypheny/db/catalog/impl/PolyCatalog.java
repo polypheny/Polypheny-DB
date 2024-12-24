@@ -26,20 +26,15 @@ import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeListener;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
@@ -79,7 +74,6 @@ import org.polypheny.db.catalog.persistance.InMemoryPersister;
 import org.polypheny.db.catalog.persistance.Persister;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
-import org.polypheny.db.catalog.util.ConstraintCondition;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.nodes.Node;
@@ -108,12 +102,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Getter
     private final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
-
-    /**
-     * Constraints which have to be met before a commit can be executed.
-     */
-    private final Collection<ConstraintCondition> commitConstraints = new ConcurrentLinkedDeque<>();
-    private final Collection<Runnable> commitActions = new ConcurrentLinkedDeque<>();
 
     // indicates if the state has advanced and the snapshot has to be recreated or can be reused // trx without ddl
     private long lastCommitSnapshotId = 0;
@@ -243,19 +231,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     }
 
 
-    @Override
-    public void executeCommitActions() {
-        // execute physical changes
-        commitActions.forEach( Runnable::run );
-    }
-
-
-    @Override
-    public void clearCommitActions() {
-        commitActions.clear();
-    }
-
-
     public synchronized void commit() {
         if ( !this.dirty.get() ) {
             log.debug( "Nothing changed" );
@@ -275,33 +250,12 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         updateSnapshot();
         persister.write( backup );
         this.dirty.set( false );
-        this.commitConstraints.clear();
-        this.commitActions.clear();
 
         this.lastCommitSnapshotId = snapshot.id();
     }
 
 
-    @Override
-    public Pair<@NotNull Boolean, @Nullable String> checkIntegrity() {
-        // check constraints e.g. primary key constraints
-        List<Pair<Boolean, String>> fails = commitConstraints
-                .stream()
-                .map( c -> Pair.of( c.condition().get(), c.errorMessage() ) )
-                .filter( c -> !c.left )
-                .toList();
-
-        if ( !fails.isEmpty() ) {
-            commitConstraints.clear();
-            return Pair.of( false, "DDL constraints not met: \n" + fails.stream().map( f -> f.right ).collect( Collectors.joining( ",\n " ) ) + "." );
-        }
-        return Pair.of( true, null );
-    }
-
-
     public void rollback() {
-        commitActions.clear();
-        commitConstraints.clear();
 
         restoreLastState();
 
@@ -567,18 +521,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             }
         } );
         transaction.commit();
-    }
-
-
-    @Override
-    public void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description ) {
-        commitConstraints.add( new ConstraintCondition( constraintChecker, description ) );
-    }
-
-
-    @Override
-    public void attachCommitAction( Runnable action ) {
-        commitActions.add( action );
     }
 
 

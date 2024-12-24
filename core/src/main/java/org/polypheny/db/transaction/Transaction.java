@@ -20,6 +20,7 @@ package org.polypheny.db.transaction;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -43,6 +44,10 @@ public interface Transaction {
     Statement createStatement();
 
     LogicalUser getUser();
+
+    void attachCommitAction( Runnable action );
+
+    void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description );
 
     void commit() throws TransactionException;
 

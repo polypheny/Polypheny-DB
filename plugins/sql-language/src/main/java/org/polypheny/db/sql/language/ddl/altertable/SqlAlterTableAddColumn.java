@@ -152,4 +152,3 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
     }
 
 }
-

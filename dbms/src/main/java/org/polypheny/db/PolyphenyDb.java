@@ -559,7 +559,7 @@ public class PolyphenyDb {
 
         Catalog.defaultStore = AdapterTemplate.fromString( defaultStoreName, AdapterType.STORE );
         Catalog.defaultSource = AdapterTemplate.fromString( defaultSourceName, AdapterType.SOURCE );
-        restoreDefaults( catalog, mode );
+        restoreDefaults( trx, catalog, mode );
 
         QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
 
@@ -585,9 +585,9 @@ public class PolyphenyDb {
      * @param catalog the current catalog
      * @param mode the current mode
      */
-    private static void restoreDefaults( Catalog catalog, RunMode mode ) {
+    private static void restoreDefaults( Transaction transaction, Catalog catalog, RunMode mode ) {
         catalog.updateSnapshot();
-        DefaultInserter.resetData( DdlManager.getInstance(), mode );
+        DefaultInserter.resetData( transaction, DdlManager.getInstance(), mode );
         DefaultInserter.restoreInterfacesIfNecessary( catalog );
     }
 

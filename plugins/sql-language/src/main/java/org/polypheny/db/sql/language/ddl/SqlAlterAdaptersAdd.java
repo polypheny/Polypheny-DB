@@ -106,7 +106,7 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
         if ( type == AdapterType.STORE ) {
             DdlManager.getInstance().createStore( uniqueName, adapterName, type, configMap, mode );
         } else if ( type == AdapterType.SOURCE ) {
-            DdlManager.getInstance().createSource( uniqueName, adapterName, Catalog.defaultNamespaceId, type, configMap, mode );
+            DdlManager.getInstance().createSource( statement.getTransaction(), uniqueName, adapterName, Catalog.defaultNamespaceId, type, configMap, mode );
         } else {
             log.error( "Unknown adapter type: {}", type );
             throw new GenericRuntimeException( "Unknown adapter type: " + type );

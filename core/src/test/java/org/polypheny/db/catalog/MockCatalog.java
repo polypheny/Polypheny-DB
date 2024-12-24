@@ -20,10 +20,7 @@ import java.beans.PropertyChangeListener;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.function.Supplier;
 import org.apache.commons.lang3.NotImplementedException;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
@@ -37,7 +34,6 @@ import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.util.Pair;
 
 
 /**
@@ -210,36 +206,6 @@ public abstract class MockCatalog extends Catalog {
     @Override
     public void clear() {
         throw new NotImplementedException();
-    }
-
-
-    @Override
-    public void executeCommitActions() {
-        this.commitActions.forEach( Runnable::run );
-    }
-
-
-    @Override
-    public void clearCommitActions() {
-        this.commitActions.clear();
-    }
-
-
-    @Override
-    public void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description ) {
-        // empty on purpose
-    }
-
-
-    @Override
-    public void attachCommitAction( Runnable action ) {
-        commitActions.add( action );
-    }
-
-
-    @Override
-    public Pair<@NotNull Boolean, @Nullable String> checkIntegrity() {
-        return Pair.of( true, null );
     }
 
 }

@@ -18,6 +18,7 @@ package org.polypheny.db.catalog;
 
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
@@ -25,6 +26,8 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -219,6 +222,70 @@ public class CatalogTest {
                     connection.getMetaData().getExportedKeys( "APP", "schema1", "table1" ),
                     ImmutableList.of( foreignKeys ) );
         }
+    }
+
+
+    @Test
+    public void testConcurrentTableOperations() throws InterruptedException, SQLException {
+        CountDownLatch startLatch = new CountDownLatch( 1 );
+        AtomicBoolean thread1Success = new AtomicBoolean( false );
+        AtomicBoolean thread2Success = new AtomicBoolean( false );
+
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE concurrent_test(id INTEGER PRIMARY KEY)" );
+                statement.executeUpdate( "CREATE TABLE concurrent_test2(id INTEGER PRIMARY KEY)" );
+            }
+        }
+
+        Thread insertThread = new Thread( () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+                Connection connection = jdbcConnection.getConnection();
+
+                try ( Statement statement = connection.createStatement() ) {
+                    statement.executeUpdate( "INSERT INTO concurrent_test2 (id) VALUES (1)" );
+                    startLatch.countDown();
+                    Thread.sleep( 100 ); // Give the other Thread a chance to lock concurrent_test
+                    connection.commit();
+                    thread1Success.set( true );
+                }
+            } catch ( SQLException | InterruptedException e ) {
+                throw new RuntimeException( e );
+            }
+        } );
+
+        Thread dropThread = new Thread( () -> {
+            try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+                Connection connection = jdbcConnection.getConnection();
+
+                try ( Statement statement = connection.createStatement() ) {
+                    startLatch.await(); // Wait for signal to start
+                    statement.executeUpdate( "DROP TABLE IF EXISTS concurrent_test" );
+                    thread2Success.set( true );
+                }
+            } catch ( SQLException | InterruptedException e ) {
+                throw new RuntimeException( e );
+            }
+        } );
+
+        insertThread.start();
+        dropThread.start();
+
+        insertThread.join();
+        dropThread.join();
+
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "DROP TABLE concurrent_test2" );
+            }
+        }
+
+        assertTrue( thread1Success.get() );
+        assertTrue( thread2Success.get() );
     }
 
 }

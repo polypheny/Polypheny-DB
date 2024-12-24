@@ -82,8 +82,7 @@ public class SqlAlterTableDropConstraint extends SqlAlterTable {
             throw new GenericRuntimeException( "Not possible to use ALTER TABLE because " + logicalTable.name + " is not a table." );
         }
 
-        DdlManager.getInstance().dropConstraint( logicalTable, constraintName.getSimple() );
+        DdlManager.getInstance().dropConstraint( statement.getTransaction(), logicalTable, constraintName.getSimple() );
     }
 
 }
-
