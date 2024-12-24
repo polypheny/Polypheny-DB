@@ -16,26 +16,26 @@
 
 package org.polypheny.db.algebra.enumerable.lpg;
 
+import java.util.function.Predicate;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
-import org.polypheny.db.algebra.logical.lpg.LogicalLpgIdentifier;
-import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
-public class EnumerableLpgIdentifierRule extends ConverterRule {
+public class EnumerableLpgValuesRule extends ConverterRule {
 
-    public EnumerableLpgIdentifierRule() {
-        super( LogicalLpgIdentifier.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableLpgIdentifierRule" );
+    public EnumerableLpgValuesRule( AlgBuilderFactory algBuilderFactory ) {
+        super( LogicalLpgValues.class, (Predicate<AlgNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableLpgValuesRule" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalLpgIdentifier identifier = (LogicalLpgIdentifier) alg;
-        final AlgTraitSet traits = identifier.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        final AlgNode input = convert( identifier.getInput(), identifier.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
-        return new EnumerableLpgIdentifier( identifier.getCluster(), traits, identifier.getEntity(), input );
+        LpgValues values = (LpgValues) alg;
+        return EnumerableLpgValues.create(values);
     }
 
 }
