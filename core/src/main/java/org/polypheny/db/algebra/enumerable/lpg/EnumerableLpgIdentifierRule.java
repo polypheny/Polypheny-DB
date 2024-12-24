@@ -20,7 +20,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgIdentifier;
-import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifier;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
@@ -33,9 +32,9 @@ public class EnumerableLpgIdentifierRule extends ConverterRule {
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalRelIdentifier identifier = (LogicalRelIdentifier) alg;
+        final LogicalLpgIdentifier identifier = (LogicalLpgIdentifier) alg;
         final AlgTraitSet traits = identifier.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        final AlgNode input = convert(identifier.getInput(), identifier.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ));
+        final AlgNode input = convert( identifier.getInput(), identifier.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         return new EnumerableLpgIdentifier( identifier.getCluster(), traits, identifier.getEntity(), input );
     }
 
