@@ -202,6 +202,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         Pair<Boolean, String> isValid = checkIntegrity();
         if ( !isValid.left ) {
+            rollback( "Constraint violation" );
             throw new TransactionException( isValid.right + "\nThere are violated constraints, the transaction was rolled back!" );
         }
 
