@@ -30,6 +30,7 @@ import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -59,7 +60,7 @@ public class EnumerableLpgValues extends LpgValues implements EnumerableAlg {
         final PhysType physType = PhysTypeImpl.of(
                 implementor.getTypeFactory(),
                 getTupleType(),
-                pref.preferCustom()
+                pref.prefer( JavaTupleFormat.SCALAR)
         );
         final List<Expression> expressions = Stream.concat(
                 nodes.stream().map( n -> Expressions.newArrayInit( PolyNode.class, n.asExpression() ) ),
