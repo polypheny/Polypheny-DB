@@ -26,7 +26,7 @@ import org.polypheny.db.plan.Convention;
 public class EnumerableRelIdentifierRule extends ConverterRule {
     
     EnumerableRelIdentifierRule() {
-        super( LogicalRelIdentifier.class, operand -> true, Convention.NONE, EnumerableConvention.INSTANCE, AlgFactories.LOGICAL_BUILDER,"EnumerableRelIdentifierRule" );
+        super( LogicalRelIdentifier.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableRelIdentifierRule" );
     }
 
 
