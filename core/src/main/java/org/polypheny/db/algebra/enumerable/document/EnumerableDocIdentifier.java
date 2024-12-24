@@ -25,7 +25,6 @@ import org.polypheny.db.algebra.core.common.Identifier;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
-import org.polypheny.db.algebra.enumerable.EnumerableRelIdentifier;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.catalog.entity.Entity;
@@ -49,9 +48,10 @@ public class EnumerableDocIdentifier extends Identifier implements EnumerableAlg
         return planner.getCostFactory().makeCost( dRows, 0, 0 );
     }
 
+
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new EnumerableDocIdentifier( inputs.get(0).getCluster(), traitSet, entity, inputs.get( 0 ) );
+        return new EnumerableDocIdentifier( inputs.get( 0 ).getCluster(), traitSet, entity, inputs.get( 0 ) );
     }
 
 
@@ -63,8 +63,8 @@ public class EnumerableDocIdentifier extends Identifier implements EnumerableAlg
         final PhysType physType = result.physType();
 
         Expression input_ = builder.append( "input", result.block() );
-        Expression entity_ = Expressions.constant(entity.getId());
-        Expression identification_ = builder.append( "identification", Expressions.call( BuiltInMethod.ADD_REL_IDENTIFIERS.method, input_, entity_ ) );
+        Expression entity_ = Expressions.constant( entity.getId() );
+        Expression identification_ = builder.append( "identification", Expressions.call( BuiltInMethod.ADD_DOC_IDENTIFIERS.method, input_, entity_ ) );
 
         builder.add( Expressions.return_( null, identification_ ) );
         return implementor.result( physType, builder.toBlock() );
