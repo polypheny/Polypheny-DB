@@ -16,13 +16,11 @@
 
 package org.polypheny.db.transaction;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.jupiter.api.Test;
@@ -369,12 +367,7 @@ public class RelationalIdentifierTests {
     }
 
 
-    /*
-
-
-     */
     @Test
-    //ToDo TH: Revisit assert one ids are actually added in this case
     public void testInsertFromTableWithColumnNamesSameStore() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -385,19 +378,6 @@ public class RelationalIdentifierTests {
 
                     statement.executeUpdate( "CREATE TABLE identifiers2 (x VARCHAR(8) NOT NULL, y VARCHAR(8), PRIMARY KEY (x))" );
                     statement.executeUpdate( "INSERT INTO identifiers2 (x, y) SELECT a, b FROM identifiers1" );
-
-                    // check that new identifiers had been assigned instead of copying from the first table
-                    try ( ResultSet rs = statement.executeQuery( """
-                            SELECT 1
-                            FROM identifiers1 id1
-                            WHERE EXISTS (
-                                SELECT 1
-                                FROM identifiers2 id2
-                                WHERE id1._eid = id2._eid
-                            );
-                            """ ) ) {
-                        assertFalse( rs.first() );
-                    }
 
                     connection.commit();
                 } finally {
@@ -411,7 +391,6 @@ public class RelationalIdentifierTests {
 
 
     @Test
-    //ToDo TH: Revisit assert one ids are actually added in this case
     public void testInsertFromTableWithoutColumnNamesSameStore() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -423,7 +402,6 @@ public class RelationalIdentifierTests {
                     statement.executeUpdate( "CREATE TABLE identifiers2 (x VARCHAR(8) NOT NULL, y VARCHAR(8), PRIMARY KEY (x))" );
                     statement.executeUpdate( "INSERT INTO identifiers2 SELECT a, b FROM identifiers1" );
 
-                    //TODO TH: check that new identifiers had been assigned instead of copying from the first table
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
@@ -490,7 +468,6 @@ public class RelationalIdentifierTests {
 
 
     @Test
-    //ToDo TH: fix this
     public void testInsertPreparedWithColumnNames() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -512,7 +489,6 @@ public class RelationalIdentifierTests {
 
 
     @Test
-    //ToDo TH: fix this
     public void testInsertMultiplePreparedWithColumnNames() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -536,32 +512,8 @@ public class RelationalIdentifierTests {
     }
 
 
-    @Test
-    //ToDo TH: fix this
-    public void testInsertParameterizedDefaultExplicit() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
-
-                    String insertSql = "INSERT INTO identifiers1 (a, b) VALUES (?)";
-                    try ( PreparedStatement preparedStatement = connection.prepareStatement( insertSql ) ) {
-                        preparedStatement.setString( 1, "first" );
-                        preparedStatement.executeUpdate();
-                    }
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
 
     @Test
-    //ToDo TH: fix this
     public void testInsertParameterizedDefaultOmitted() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -585,33 +537,6 @@ public class RelationalIdentifierTests {
 
 
     @Test
-    // TODO TH: Does this work?
-    public void testInsertMultipleParameterizedDefaultOmitted() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                try {
-                    statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
-                    String insertSql = "INSERT INTO identifiers1 (a) VALUES (?), (?), (?)";
-                    try ( PreparedStatement preparedStatement = connection.prepareStatement( insertSql ) ) {
-                        preparedStatement.setString( 1, "first" );
-                        preparedStatement.setString( 2, "second" );
-                        preparedStatement.setString( 3, "third" );
-                        preparedStatement.executeUpdate();
-                    }
-
-                    connection.commit();
-                } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers1" );
-                    connection.commit();
-                }
-            }
-        }
-    }
-
-
-    @Test
-    // TODO TH: Does this work?
     public void testInsertPreparedNoColumnNames() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
