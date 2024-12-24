@@ -49,6 +49,7 @@ import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentValuesRule
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgIdentifierRule;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgMatchRule;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgTransformerRule;
+import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgValuesRule;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
@@ -119,6 +120,8 @@ public class EnumerableRules {
     public static final EnumerableValuesRule ENUMERABLE_VALUES_RULE = new EnumerableValuesRule( AlgFactories.LOGICAL_BUILDER );
 
     public static final EnumerableDocumentValuesRule ENUMERABLE_DOCUMENT_VALUES_RULE = new EnumerableDocumentValuesRule( AlgFactories.LOGICAL_BUILDER );
+
+    public static final EnumerableLpgValuesRule ENUMERABLE_LPG_VALUES_RULE = new EnumerableLpgValuesRule( AlgFactories.LOGICAL_BUILDER );
 
     public static final EnumerableWindowRule ENUMERABLE_WINDOW_RULE = new EnumerableWindowRule();
 

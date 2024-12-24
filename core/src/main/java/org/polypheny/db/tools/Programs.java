@@ -158,6 +158,7 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_MINUS_RULE,
                     EnumerableRules.ENUMERABLE_VALUES_RULE,
                     EnumerableRules.ENUMERABLE_DOCUMENT_VALUES_RULE,
+                    EnumerableRules.ENUMERABLE_LPG_VALUES_RULE,
                     EnumerableRules.ENUMERABLE_WINDOW_RULE,
                     EnumerableRules.ENUMERABLE_CALC_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_TO_CALC_RULE,
