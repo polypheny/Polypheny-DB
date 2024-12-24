@@ -16,28 +16,12 @@
 
 package org.polypheny.db.algebra.enumerable.document;
 
-import org.apache.calcite.linq4j.tree.BlockBuilder;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.enumerable.EnumerableAlg;
-import org.polypheny.db.algebra.enumerable.EnumerableAlg.Prefer;
-import org.polypheny.db.algebra.enumerable.EnumerableAlg.Result;
-import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
-import org.polypheny.db.algebra.enumerable.EnumerableRelIdentifier;
-import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.logical.document.LogicalDocIdentifier;
-import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifier;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.plan.AlgCluster;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.util.BuiltInMethod;
 
 
 
@@ -61,14 +45,15 @@ import org.polypheny.db.util.BuiltInMethod;
 public class EnumerableDocIdentifierRule extends ConverterRule {
 
     public EnumerableDocIdentifierRule() {
-        super( LogicalRelIdentifier.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableDocIdentifierRule" );
+        super( LogicalDocIdentifier.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableDocIdentifierRule" );
     }
+
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalRelIdentifier identifier = (LogicalRelIdentifier) alg;
+        final LogicalDocIdentifier identifier = (LogicalDocIdentifier) alg;
         final AlgTraitSet traits = identifier.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        final AlgNode input = convert(identifier.getInput(), identifier.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ));
+        final AlgNode input = convert( identifier.getInput(), identifier.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         return new EnumerableDocIdentifier( identifier.getCluster(), traits, identifier.getEntity(), input );
     }
 
