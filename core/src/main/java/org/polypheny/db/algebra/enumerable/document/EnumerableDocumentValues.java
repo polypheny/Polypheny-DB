@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.functions.CrossModelFunctions;
@@ -65,7 +66,7 @@ public class EnumerableDocumentValues extends DocumentValues implements Enumerab
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
                         getTupleType(),
-                        pref.preferCustom() );
+                        pref.prefer( JavaTupleFormat.SCALAR) );
 
         final List<Expression> expressions = new ArrayList<>();
 
