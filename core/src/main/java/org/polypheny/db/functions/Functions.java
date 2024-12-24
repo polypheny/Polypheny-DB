@@ -116,6 +116,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
@@ -294,8 +295,8 @@ public class Functions {
 
     @SuppressWarnings("unused")
     public static Enumerable<PolyValue[]> addRelIdentifiers(final Enumerable<PolyValue[]> input, long logicalId) {
+        LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( logicalId ).orElseThrow();
         return input.select( row -> {
-            LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( logicalId ).orElseThrow();
             row[0] = entity.getEntryIdentifiers().getNextEntryIdentifier().getEntryIdentifierAsPolyLong();
             return row;
         } );
@@ -303,19 +304,25 @@ public class Functions {
 
     @SuppressWarnings("unused")
     public static Enumerable<PolyValue[]> addDocIdentifiers(final Enumerable<PolyValue[]> input, long logicalId) {
-        return input.select( oldRow -> {
-            PolyDocument document = (PolyDocument) oldRow[0];
-            LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( logicalId ).orElseThrow();
-            document.put( IdentifierUtils.getIdentifierKeyAsPolyString(), entity.getEntryIdentifiers().getNextEntryIdentifier().getEntryIdentifierAsPolyLong());
-            return new PolyValue[]{document};
+        LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( logicalId ).orElseThrow();
+        return input.select( row -> {
+            for ( PolyValue value : row ) {
+                PolyLong entryIdentifier = entity.getEntryIdentifiers().getNextEntryIdentifier().getEntryIdentifierAsPolyLong();
+                ((PolyDocument) value).put( IdentifierUtils.getIdentifierKeyAsPolyString(), entryIdentifier );
+            }
+            return row;
         } );
     }
 
     @SuppressWarnings("unused")
     public static Enumerable<PolyValue[]> addLpgIdentifiers(final Enumerable<PolyValue[]> input, long logicalId) {
-        return input.select( oldRow -> {
-
-            return oldRow;
+        LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( logicalId ).orElseThrow();
+        return input.select( row -> {
+            for ( PolyValue value : row ) {
+                PolyLong entryIdentifier = entity.getEntryIdentifiers().getNextEntryIdentifier().getEntryIdentifierAsPolyLong();
+                ((GraphPropertyHolder) value).getProperties().put( IdentifierUtils.getIdentifierKeyAsPolyString(), entryIdentifier );
+            }
+            return row;
         } );
     }
 
