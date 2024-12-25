@@ -866,6 +866,10 @@ public class MqlFunctions {
      * - A document that adheres to the GeoJSON specification.
      */
     public static PolyGeometry convertInputToPolyGeometry( PolyValue input, Integer srid ) {
+        if (input.isGeometry()){
+            return input.asGeometry();
+        }
+
         GeometryFactory geoFactory = new GeometryFactory(new PrecisionModel(), srid );
 
         // Legacy Coordinates
