@@ -782,8 +782,18 @@ public class MqlFunctions {
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docGeoWithin( PolyValue input, PolyValue geometry, PolyValue distance ) {
         try {
-            // TODO: Do PolyString -> PolyGeometry conversion here
-            PolyGeometry geometryFilter = geometry.asGeometry();
+            PolyGeometry geometryFilter;
+            if (geometry.isString()){
+                geometryFilter = PolyGeometry.of(geometry.asString().getValue());
+                if (geometryFilter == null){
+                    throw new GenericRuntimeException( "Cannot parse geometry string %s to type Geometry", distance);
+                }
+            } else if (geometry.isGeometry()){
+                geometryFilter = geometry.asGeometry();
+            }
+            else {
+                throw new GenericRuntimeException( "Cannot parse geometry %s to type Geometry", distance);
+            }
             PolyGeometry inputGeometry = convertInputToPolyGeometry( input, geometryFilter.getSRID() );
             double distanceValue;
             if (distance.isBigDecimal()){
