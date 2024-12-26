@@ -39,6 +39,7 @@ import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.locking.AlgTreeRewriter;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;

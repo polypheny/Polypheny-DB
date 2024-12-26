@@ -14,36 +14,39 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.logical.document;
+package org.polypheny.db.algebra.logical.lpg;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.common.Identifier;
-import org.polypheny.db.algebra.core.document.DocumentAlg;
+import org.polypheny.db.algebra.core.common.IdentifierCollector;
+import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.transaction.Transaction;
 
-public class LogicalDocIdentifier extends Identifier implements DocumentAlg {
-    protected LogicalDocIdentifier( Entity entitiy, AlgCluster cluster, AlgTraitSet traits, AlgNode input) {
-        super(cluster, traits, entitiy, input);
+public class LogicalLpgIdCollector extends IdentifierCollector implements LpgAlg {
+
+    protected LogicalLpgIdCollector( AlgCluster cluster, AlgTraitSet traits, Transaction transaction, AlgNode input ) {
+        super( cluster, traits, transaction, input );
     }
 
-    public static LogicalDocIdentifier create(Entity document, final AlgNode input) {
+
+    public static LogicalLpgIdCollector create( Transaction transaction, final AlgNode input ) {
         final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traits = input.getTraitSet();
-        return new LogicalDocIdentifier( document, cluster, traits, input );
+        return new LogicalLpgIdCollector( cluster, traits, transaction, input );
     }
 
 
     @Override
-    public DocType getDocType() {
-        // ToDo TH: is this correct?
-        return DocType.VALUES;
+    public NodeType getNodeType() {
+        // ToDo: Is this the proper type here?
+        return NodeType.VALUES;
     }
+
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
@@ -51,10 +54,10 @@ public class LogicalDocIdentifier extends Identifier implements DocumentAlg {
         return planner.getCostFactory().makeCost( dRows, 0, 0 );
     }
 
-    @Override
-    public AlgNode copy(AlgTraitSet traitSet, List<AlgNode> inputs) {
-        return new LogicalDocIdentifier(entity, getCluster(), traitSet, sole(inputs) );
-    }
 
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new LogicalLpgIdCollector( getCluster(), traitSet, transaction, sole( inputs ) );
+    }
 
 }
