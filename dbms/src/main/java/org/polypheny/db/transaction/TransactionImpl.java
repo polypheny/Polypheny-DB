@@ -125,7 +125,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Getter
     private Set<Lockable> lockedEntities = new HashSet<>();
 
-    @Getter
     private Set<VersionedEntryIdentifier> readSet = new HashSet<>(); // This only contains entries if the transaction involves entities in MVCC mode
 
 
@@ -392,6 +391,11 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     public void acquireLockable( Lockable lockable, Lockable.LockType lockType ) {
         lockable.acquire( this, lockType );
         lockedEntities.add( lockable );
+    }
+    
+    @Override
+    public void addReadEntity( VersionedEntryIdentifier identifier ) {
+        readSet.add( identifier );
     }
 
 

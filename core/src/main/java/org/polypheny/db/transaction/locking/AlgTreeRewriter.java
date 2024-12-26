@@ -62,12 +62,17 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.transaction.Transaction;
 
 public class AlgTreeRewriter extends AlgShuttleImpl {
+    private final Transaction transaction;
 
+    public AlgTreeRewriter( Transaction transaction) {
+        this.transaction = transaction;
+    }
 
-    public static AlgRoot process( AlgRoot root ) {
-        return root.withAlg( root.alg.accept( new AlgTreeRewriter() ) );
+    public AlgRoot process( AlgRoot root ) {
+        return root.withAlg( root.alg.accept( this ) );
     }
 
 

@@ -185,7 +185,7 @@ public class LanguageManager {
                     }
 
                     AlgRoot root = processor.translate( statement, parsed );
-                    root = AlgTreeRewriter.process( root );
+                    root = new AlgTreeRewriter( transaction ).process( root );
 
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Translation" );
