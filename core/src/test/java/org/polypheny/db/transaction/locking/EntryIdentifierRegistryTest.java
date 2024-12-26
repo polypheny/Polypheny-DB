@@ -31,7 +31,7 @@ public class EntryIdentifierRegistryTest {
     
     @BeforeEach
     void setUp() {
-        registry = new EntryIdentifierRegistry( 100 );
+        registry = new EntryIdentifierRegistry(0, 100 );
     }
 
 
