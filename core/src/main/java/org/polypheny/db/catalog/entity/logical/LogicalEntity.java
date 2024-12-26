@@ -44,7 +44,7 @@ public abstract class LogicalEntity extends Entity {
             DataModel dataModel,
             boolean modifiable ) {
         super( id, name, namespaceId, type, dataModel, modifiable );
-        this.entryIdentifiers = new EntryIdentifierRegistry();
+        this.entryIdentifiers = new EntryIdentifierRegistry(id);
         this.entryCommitInstantsLog = new CommitInstantsLog();
     }
 
