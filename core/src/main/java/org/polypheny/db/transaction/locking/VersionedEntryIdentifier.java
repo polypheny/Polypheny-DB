@@ -23,17 +23,20 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 @Getter
 public class VersionedEntryIdentifier {
 
+    private final long entityId;
     private final long entryIdentifier;
     private final long version;
 
 
-    public VersionedEntryIdentifier( long entryIdentifier, long version ) {
+    public VersionedEntryIdentifier(long entityId, long entryIdentifier, long version ) {
+        this.entityId = entityId;
         this.entryIdentifier = entryIdentifier;
         this.version = version;
     }
 
 
-    public VersionedEntryIdentifier( long entryIdentifier ) {
+    public VersionedEntryIdentifier(long entityId, long entryIdentifier ) {
+        this.entityId = entityId;
         this.entryIdentifier = entryIdentifier;
         this.version = 0;
     }

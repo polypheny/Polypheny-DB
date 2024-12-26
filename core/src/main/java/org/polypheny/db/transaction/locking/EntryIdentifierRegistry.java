@@ -8,16 +8,20 @@ public class EntryIdentifierRegistry {
     private static final Long MAX_IDENTIFIER_VALUE = Long.MAX_VALUE;
     private final TreeSet<IdentifierInterval> availableIdentifiers;
 
+    private final long entityId;
 
-    public EntryIdentifierRegistry() {
+
+    public EntryIdentifierRegistry(long entityId) {
         this.availableIdentifiers = new TreeSet<>();
         this.availableIdentifiers.add( new IdentifierInterval( IdentifierUtils.MISSING_IDENTIFIER + 1, MAX_IDENTIFIER_VALUE ) );
+        this.entityId = entityId;
     }
 
 
-    public EntryIdentifierRegistry( long maxIdentifierValue ) {
+    public EntryIdentifierRegistry(long entityId, long maxIdentifierValue ) {
         this.availableIdentifiers = new TreeSet<>();
         this.availableIdentifiers.add( new IdentifierInterval( IdentifierUtils.MISSING_IDENTIFIER + 1, maxIdentifierValue ) );
+        this.entityId = entityId;
     }
 
 
@@ -29,7 +33,7 @@ public class EntryIdentifierRegistry {
             }
         }
         long nextIdentifier = availableIdentifiers.first().getNextIdentifier();
-        return new VersionedEntryIdentifier( nextIdentifier );
+        return new VersionedEntryIdentifier(entityId, nextIdentifier );
     }
 
 
