@@ -53,8 +53,8 @@ public class LogicalLpgIdentifier extends Identifier implements LpgAlg {
     }
 
     @Override
-    public AlgNode copy(AlgTraitSet traitSete, List<AlgNode> inputs) {
-        return new LogicalLpgIdentifier(entity, getCluster(), traitSete, sole(inputs) );
+    public AlgNode copy(AlgTraitSet traitSet, List<AlgNode> inputs) {
+        return new LogicalLpgIdentifier(entity, getCluster(), traitSet, sole(inputs) );
     }
 
 }

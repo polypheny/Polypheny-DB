@@ -18,24 +18,26 @@ package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.common.Identifier;
+import org.polypheny.db.algebra.core.common.IdentifierCollector;
 import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.transaction.Transaction;
 
-public class LogicalDocIdentifier extends Identifier implements DocumentAlg {
-    protected LogicalDocIdentifier( Entity entitiy, AlgCluster cluster, AlgTraitSet traits, AlgNode input) {
-        super(cluster, traits, entitiy, input);
+public class LogicalDocumentIdCollector extends IdentifierCollector implements DocumentAlg {
+
+    protected LogicalDocumentIdCollector( AlgCluster cluster, AlgTraitSet traits, Transaction transaction, AlgNode input ) {
+        super( cluster, traits, transaction, input );
     }
 
-    public static LogicalDocIdentifier create(Entity document, final AlgNode input) {
+
+    public static LogicalDocumentIdCollector create( Transaction transaction, final AlgNode input ) {
         final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traits = input.getTraitSet();
-        return new LogicalDocIdentifier( document, cluster, traits, input );
+        return new LogicalDocumentIdCollector( cluster, traits, transaction, input );
     }
 
 
@@ -45,16 +47,17 @@ public class LogicalDocIdentifier extends Identifier implements DocumentAlg {
         return DocType.VALUES;
     }
 
+
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         double dRows = mq.getTupleCount( getInput() );
         return planner.getCostFactory().makeCost( dRows, 0, 0 );
     }
 
-    @Override
-    public AlgNode copy(AlgTraitSet traitSet, List<AlgNode> inputs) {
-        return new LogicalDocIdentifier(entity, getCluster(), traitSet, sole(inputs) );
-    }
 
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new LogicalDocumentIdCollector( getCluster(), traitSet, transaction, sole( inputs ) );
+    }
 
 }

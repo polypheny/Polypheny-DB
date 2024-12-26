@@ -103,32 +103,6 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalRelValues values ) {
         return values;
-        /*
-            Inserts can be divided into two categories according to the nature of their input:
-            1) Values as input
-            2) Inputs that are not values.
-
-            In case 1, we already add the identifiers here by modifying the values.
-            Case 2 is handled using rules in the planner.
-
-        ImmutableList<ImmutableList<RexLiteral>> newValues = values.tuples.stream()
-                .map(row -> ImmutableList.<RexLiteral>builder()
-                        .add(IdentifierUtils.getIdentifierAsLiteral())
-                        .addAll(row)
-                        .build())
-                .collect(ImmutableList.toImmutableList());
-
-        List<AlgDataTypeField> newFields = new ArrayList<>();
-        newFields.add(new AlgDataTypeFieldImpl(0L, "_eid", "_eid", 0, IdentifierUtils.IDENTIFIER_ALG_TYPE ));
-        values.getRowType().getFields().stream()
-                .map(f -> new AlgDataTypeFieldImpl(f.getId(), f.getName(), f.getPhysicalName(), f.getIndex() + 1, f.getType()))
-                .forEach(newFields::add);
-
-        AlgDataType newRowType = new AlgRecordType( StructKind.FULLY_QUALIFIED, newFields );
-
-        return LogicalRelValues.create( values.getCluster(), newRowType, newValues );
-        */
-
     }
 
 
@@ -141,19 +115,6 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalRelProject project ) {
         return visitChildren( project );
-
-        //AlgNode input = project.getInput();
-        //if (! (input instanceof LogicalRelValues oldValues)) {
-        //    return project;
-        //}
-         /*
-            When values are used for an insert, they are modified.
-            The project has to be adjusted accordingly.
-         */
-        //LogicalRelValues newValues = (LogicalRelValues) visit(oldValues);
-        //List<RexNode> newProjects = createNewProjects(project, newValues);
-        //return project.copy(project.getTraitSet(), newValues, newProjects, project.getRowType());
-
     }
 
 
@@ -276,11 +237,6 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgValues values ) {
-        /*
-        values.getNodes().forEach( n -> n.getProperties().put( IdentifierUtils.getIdentifierKeyAsPolyString(), IdentifierUtils.getIdentifierAsPolyLong() ) );
-        values.getEdges().forEach( n -> n.getProperties().put( IdentifierUtils.getIdentifierKeyAsPolyString(), IdentifierUtils.getIdentifierAsPolyLong() ) );
-        return values;
-        */
         return values;
     }
 
@@ -384,13 +340,6 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentValues values ) {
-        /*
-        IdentifierUtils.throwIfContainsIdentifierKey( values.getDocuments() );
-        List<PolyDocument> newDocuments = values.getDocuments().stream()
-                .peek( d -> d.put( IdentifierUtils.getIdentifierKeyAsPolyString(), IdentifierUtils.getIdentifierAsPolyLong() ) )
-                .collect( Collectors.toCollection( LinkedList::new ) );
-        return LogicalDocumentValues.create( values.getCluster(), newDocuments );
-         */
         return values;
     }
 
