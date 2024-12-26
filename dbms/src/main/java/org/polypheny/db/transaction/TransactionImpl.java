@@ -392,7 +392,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         lockable.acquire( this, lockType );
         lockedEntities.add( lockable );
     }
-    
+
+
     @Override
     public void addReadEntity( VersionedEntryIdentifier identifier ) {
         readSet.add( identifier );
