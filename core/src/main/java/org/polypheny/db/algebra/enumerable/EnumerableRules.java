@@ -76,11 +76,10 @@ public class EnumerableRules {
 
     public static final EnumerableIdentifierInjectionRule ENUMERABLE_IDENTIFIER_INJECTION_RULE = new EnumerableIdentifierInjectionRule();
 
+
     public static final EnumerableIdentifierRule ENUMERABLE_REL_IDENTIFIER_RULE = EnumerableIdentifierRule.REL_INSTANCE;
 
-    public static final EnumerableRelIdentifierRule ENUMERABLE_REL_IDENTIFIER_RULE = new EnumerableRelIdentifierRule();
-
-    public static final EnumerableDocIdentifierRule ENUMERABLE_DOC_IDENTIFIER_RULE = new EnumerableDocIdentifierRule();
+    public static final EnumerableIdentifierRule ENUMERABLE_DOC_IDENTIFIER_RULE = EnumerableIdentifierRule.DOC_INSTANCE;
 
     public static final EnumerableIdentifierRule ENUMERABLE_LPG_IDENTIFIER_RULE = EnumerableIdentifierRule.GRAPH_INSTANCE;
 
