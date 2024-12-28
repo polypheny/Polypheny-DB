@@ -18,24 +18,30 @@ package org.polypheny.db.algebra.enumerable;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.common.Identifier;
+import org.polypheny.db.algebra.logical.document.LogicalDocIdentifier;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgIdentifier;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifier;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
-public class EnumerableRelIdentifierRule extends ConverterRule {
-    
-    EnumerableRelIdentifierRule() {
-        super( LogicalRelIdentifier.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableRelIdentifierRule" );
-    }
+public class EnumerableIdentifierRule extends ConverterRule {
 
+    public static final EnumerableIdentifierRule REL_INSTANCE = new EnumerableIdentifierRule( LogicalRelIdentifier.class );
+    public static final EnumerableIdentifierRule DOC_INSTANCE = new EnumerableIdentifierRule( LogicalDocIdentifier.class );
+    public static final EnumerableIdentifierRule GRAPH_INSTANCE = new EnumerableIdentifierRule( LogicalLpgIdentifier.class );
+
+
+    private EnumerableIdentifierRule( Class<? extends Identifier> identifier ) {
+        super( identifier, Convention.NONE, EnumerableConvention.INSTANCE, "Enumerable" + identifier.getSimpleName() + "Rule" );
+    }
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalRelIdentifier identifier = (LogicalRelIdentifier) alg;
+        final Identifier identifier = (Identifier) alg;
         final AlgTraitSet traits = identifier.getTraitSet().replace( EnumerableConvention.INSTANCE );
         final AlgNode input = convert(identifier.getInput(), identifier.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ));
-        return new EnumerableRelIdentifier( identifier.getCluster(), traits, identifier.getEntity(), input );
+        return new EnumerableIdentifier( identifier.getCluster(), traits, identifier.getEntity(), input );
     }
 
 }

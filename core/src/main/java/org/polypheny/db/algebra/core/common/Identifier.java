@@ -20,17 +20,20 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @Getter
 public abstract class Identifier extends SingleAlg {
+
     protected final Entity entity;
 
     protected Identifier( AlgCluster cluster, AlgTraitSet traits, Entity entity, AlgNode input ) {
         super( cluster, traits, input );
         this.entity = entity;
     }
+
 
     public String algCompareString() {
         return this.getClass().getSimpleName() + "$" +

@@ -23,6 +23,7 @@ import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
 import com.fasterxml.jackson.core.JsonParser.Feature;
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
@@ -293,39 +294,9 @@ public class Functions {
         return Linq4j.asEnumerable( results );
     }
 
-    @SuppressWarnings("unused")
-    public static Enumerable<PolyValue[]> addRelIdentifiers(final Enumerable<PolyValue[]> input, long logicalId) {
-        LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( logicalId ).orElseThrow();
-        return input.select( row -> {
-            row[0] = entity.getEntryIdentifiers().getNextEntryIdentifier().getEntryIdentifierAsPolyLong();
-            return row;
-        } );
+    public static Enumerable<PolyValue[]> processAndStreamRight(final Enumerable<PolyValue[]> input, final Function1<Enumerable<PolyValue[]>, Enumerable<PolyValue[]>> processing){
+        return processing.apply(input);
     }
-
-    @SuppressWarnings("unused")
-    public static Enumerable<PolyValue[]> addDocIdentifiers(final Enumerable<PolyValue[]> input, long logicalId) {
-        LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( logicalId ).orElseThrow();
-        return input.select( row -> {
-            for ( PolyValue value : row ) {
-                PolyLong entryIdentifier = entity.getEntryIdentifiers().getNextEntryIdentifier().getEntryIdentifierAsPolyLong();
-                ((PolyDocument) value).put( IdentifierUtils.getIdentifierKeyAsPolyString(), entryIdentifier );
-            }
-            return row;
-        } );
-    }
-
-    @SuppressWarnings("unused")
-    public static Enumerable<PolyValue[]> addLpgIdentifiers(final Enumerable<PolyValue[]> input, long logicalId) {
-        LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( logicalId ).orElseThrow();
-        return input.select( row -> {
-            for ( PolyValue value : row ) {
-                PolyLong entryIdentifier = entity.getEntryIdentifiers().getNextEntryIdentifier().getEntryIdentifierAsPolyLong();
-                ((GraphPropertyHolder) value).getProperties().put( IdentifierUtils.getIdentifierKeyAsPolyString(), entryIdentifier );
-            }
-            return row;
-        } );
-    }
-
 
     @SuppressWarnings("unused")
     public static Enumerable<PolyValue[]> streamRight( final DataContext context, final Enumerable<PolyValue[]> input, final Function0<Enumerable<PolyValue[]>> executorCall, final List<PolyType> polyTypes ) {
