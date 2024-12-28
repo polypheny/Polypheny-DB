@@ -35,6 +35,8 @@ public interface DataTypeSpec extends Visitable {
 
     Boolean getNullable();
 
+    Boolean getAutoIncrement();
+
     Identifier getCollectionsTypeName();
 
     PolyType getCollectionsType();

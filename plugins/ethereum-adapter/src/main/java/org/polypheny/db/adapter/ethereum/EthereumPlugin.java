@@ -188,7 +188,8 @@ public class EthereumPlugin extends PolyPlugin {
                         "block",
                         blockCol,
                         position,
-                        position == 0 ) );
+                        position == 0,
+                        false) );
                 position++;
 
             }
@@ -209,7 +210,8 @@ public class EthereumPlugin extends PolyPlugin {
                         "transaction",
                         transactCol,
                         position,
-                        position == 0 ) );
+                        position == 0,
+                        false) );
                 position++;
             }
             map.put( "transaction", transactCols );

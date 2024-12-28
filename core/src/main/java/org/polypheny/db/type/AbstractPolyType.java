@@ -50,6 +50,7 @@ public abstract class AbstractPolyType extends AlgDataTypeImpl implements Clonea
 
     protected final PolyType typeName;
     protected boolean isNullable;
+    protected boolean isAutoIncrement;
 
 
     /**
@@ -77,6 +78,11 @@ public abstract class AbstractPolyType extends AlgDataTypeImpl implements Clonea
     @Override
     public boolean isNullable() {
         return isNullable;
+    }
+
+    @Override
+    public boolean isAutoIncrement() {
+        return isAutoIncrement;
     }
 
 
