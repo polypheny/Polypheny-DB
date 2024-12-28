@@ -34,6 +34,7 @@ import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.VersionedEntryIdentifier;
 
 public class MockTransaction implements Transaction {
 
@@ -241,6 +242,12 @@ public class MockTransaction implements Transaction {
     public void acquireLockable( Lockable lockable, LockType lockType ) {
         lockable.acquire( this, lockType );
         locks.add( lockable );
+    }
+
+
+    @Override
+    public void addReadEntity( VersionedEntryIdentifier entryIdentifier ) {
+
     }
 
 }
