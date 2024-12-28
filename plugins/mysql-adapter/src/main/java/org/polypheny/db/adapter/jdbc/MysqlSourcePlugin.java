@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
@@ -140,6 +141,12 @@ public class MysqlSourcePlugin extends PolyPlugin {
         @Override
         protected boolean requiresSchema() {
             return false;
+        }
+
+
+        @Override
+        public RelationalDataSource asRelationalDataSource() {
+            return this;
         }
 
     }
