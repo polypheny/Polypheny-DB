@@ -20,7 +20,6 @@ import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter;
@@ -102,12 +101,6 @@ public class MqlMockCatalog extends MockCatalog {
 
     @Override
     public void restore( Transaction transaction ) {
-
-    }
-
-
-    @Override
-    public void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description ) {
 
     }
 
