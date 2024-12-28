@@ -46,7 +46,7 @@ public abstract class SqlAggFunction extends SqlFunction implements Context, Agg
 
     /**
      * Creates a built-in or user-defined SqlAggFunction or window function.
-     *
+     * <p>
      * A user-defined function will have a value for {@code sqlIdentifier}; for a built-in function it will be null.
      */
     protected SqlAggFunction(
