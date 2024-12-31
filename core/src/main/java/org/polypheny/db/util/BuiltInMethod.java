@@ -156,9 +156,6 @@ public enum BuiltInMethod {
     BATCH( Functions.class, "batch", DataContext.class, Enumerable.class ),
     STREAM_RIGHT( Functions.class, "streamRight", DataContext.class, Enumerable.class, Function0.class, List.class ),
     PROCESS_AND_STREAM_RIGHT(Functions.class, "processAndStreamRight", Enumerable.class, Function1.class),
-    ADD_REL_IDENTIFIERS(Functions.class, "addRelIdentifiers", Enumerable.class, long.class),
-    ADD_DOC_IDENTIFIERS(Functions.class, "addDocIdentifiers", Enumerable.class, long.class),
-    ADD_LPG_IDENTIFIERS(Functions.class, "addLpgIdentifiers", Enumerable.class, long.class),
     ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", DataContext.class, Function0.class, Function0.class, List.class, List.class ),
     PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
@@ -170,12 +167,10 @@ public enum BuiltInMethod {
     BATCH_ITERATOR_GET_ENUM( BatchIteratorEnumerable.class, "getEnumerable" ),
     INTO( ExtendedEnumerable.class, "into", Collection.class ),
     REMOVE_ALL( ExtendedEnumerable.class, "removeAll", Collection.class ),
-
     SCHEMA_PLUS_UNWRAP( SchemaPlus.class, "unwrapOrThrow", Class.class ),
     DATA_CONTEXT_GET( DataContext.class, "get", String.class ),
     DATA_CONTEXT_GET_PARAMETER_VALUE( DataContext.class, "getParameterValue", long.class ),
     DATA_CONTEXT_GET_ROOT_SCHEMA( DataContext.class, "getSnapshot" ),
-
     ROW_VALUE( Row.class, "getObject", int.class ),
     ROW_AS_COPY( Row.class, "asCopy", Object[].class ),
     JOIN( ExtendedEnumerable.class, "hashJoin", Enumerable.class, Function1.class, Function1.class, Function2.class, EqualityComparer.class, boolean.class,

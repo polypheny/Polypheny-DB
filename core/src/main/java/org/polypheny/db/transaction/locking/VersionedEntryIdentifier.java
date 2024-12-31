@@ -65,4 +65,9 @@ public class VersionedEntryIdentifier {
         return PolyLong.of( entryIdentifier );
     }
 
+    @Override
+    public String toString() {
+        return "VersionedEntryIdentifier{entity=" + entityId + ", entryIdentifier=" + entryIdentifier + ", version=" + version + '}';
+    }
+
 }

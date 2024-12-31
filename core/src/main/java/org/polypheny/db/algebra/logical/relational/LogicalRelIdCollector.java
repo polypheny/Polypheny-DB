@@ -20,23 +20,25 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.IdentifierCollector;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+
 import org.polypheny.db.transaction.Transaction;
 
 public class LogicalRelIdCollector extends IdentifierCollector {
 
-    protected LogicalRelIdCollector( AlgCluster cluster, AlgTraitSet traits, Transaction transaction, AlgNode input ) {
-        super( cluster, traits, transaction, input );
+    protected LogicalRelIdCollector( AlgCluster cluster, AlgTraitSet traits, Transaction transaction, Entity entity, AlgNode input ) {
+        super( cluster, traits, transaction, entity, input );
     }
 
 
-    public static LogicalRelIdCollector create( AlgNode input, Transaction transaction ) {
+    public static LogicalRelIdCollector create( AlgNode input, Transaction transaction, Entity entity ) {
         final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traits = input.getTraitSet();
-        return new LogicalRelIdCollector( cluster, traits, transaction, input );
+        return new LogicalRelIdCollector( cluster, traits, transaction, entity, input );
     }
 
 
@@ -49,7 +51,7 @@ public class LogicalRelIdCollector extends IdentifierCollector {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalRelIdCollector( getCluster(), traitSet, transaction, sole( inputs ) );
+        return new LogicalRelIdCollector( getCluster(), traitSet, transaction, entity, sole( inputs ) );
     }
 
 }
