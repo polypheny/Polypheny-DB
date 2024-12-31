@@ -59,6 +59,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.transaction.Transaction;
 
 public class AlgTreeRewriter extends AlgShuttleImpl {
@@ -116,13 +117,24 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     public AlgNode visit( LogicalRelProject project ) {
         AlgNode input = project.getInput();
         if ( input instanceof LogicalRelScan || input instanceof LogicalRelFilter ) {
-            //TODO TH: some inputs might not have an entity and thus return null here...
-            LogicalRelIdCollector collector = LogicalRelIdCollector.create( input, transaction, input.getEntity() );
+            Entity entity = findEntity( project );
+            LogicalRelIdCollector collector = LogicalRelIdCollector.create( input, transaction, entity );
             return project.copy( project.getTraitSet(), List.of(collector) );
         }
         return visitChildren( project );
     }
 
+    public Entity findEntity(AlgNode node) {
+        Entity entity = null;
+        while (entity == null && node != null) {
+            entity = node.getEntity();
+            if (node.getInputs().isEmpty()) {
+                continue;
+            }
+            node = node.getInput( 0 );
+        }
+        return entity;
+    }
 
     @Override
     public AlgNode visit( LogicalRelJoin join ) {
