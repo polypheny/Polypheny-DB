@@ -143,6 +143,13 @@ public final class LogicalRelCorrelate extends Correlate implements RelAlg {
         return new LogicalRelCorrelate( getCluster(), traitSet, left, right, correlationId, requiredColumns, joinType );
     }
 
+    public LogicalRelCorrelate copy(
+            AlgNode left,
+            AlgNode right) {
+        assert traitSet.containsIfApplicable( Convention.NONE );
+        return new LogicalRelCorrelate( getCluster(), traitSet, left, right, correlationId, requiredColumns, joinType );
+    }
+
 
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {

@@ -84,4 +84,21 @@ public class LogicalConditionalExecute extends ConditionalExecute {
         return lce;
     }
 
+    public AlgNode copy( List<AlgNode> inputs ) {
+        final LogicalConditionalExecute lce = new LogicalConditionalExecute(
+                inputs.get( 0 ).getCluster(),
+                traitSet,
+                inputs.get( 0 ),
+                inputs.get( 1 ),
+                condition,
+                exceptionClass,
+                exceptionMessage );
+        lce.setCheckDescription( checkDescription );
+        lce.setLogicalNamespace( logicalNamespace );
+        lce.setCatalogTable( catalogTable );
+        lce.setCatalogColumns( catalogColumns );
+        lce.setValues( values );
+        return lce;
+    }
+
 }

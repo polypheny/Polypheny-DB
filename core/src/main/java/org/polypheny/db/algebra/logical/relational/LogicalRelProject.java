@@ -128,6 +128,11 @@ public final class LogicalRelProject extends Project implements RelAlg {
     }
 
 
+    public LogicalRelProject copy( AlgNode input ) {
+        return new LogicalRelProject( getCluster(), traitSet, input, exps, rowType );
+    }
+
+
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );

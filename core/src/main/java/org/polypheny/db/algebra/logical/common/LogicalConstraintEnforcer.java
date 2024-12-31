@@ -393,6 +393,16 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 this.getExceptionMessages() );
     }
 
+    public AlgNode copy( List<AlgNode> inputs ) {
+        return new LogicalConstraintEnforcer(
+                inputs.get( 0 ).getCluster(),
+                traitSet,
+                inputs.get( 0 ),
+                inputs.get( 1 ),
+                this.getExceptionClasses(),
+                this.getExceptionMessages() );
+    }
+
 
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
