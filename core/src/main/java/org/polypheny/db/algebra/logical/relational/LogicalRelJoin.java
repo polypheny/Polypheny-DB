@@ -122,6 +122,11 @@ public final class LogicalRelJoin extends Join implements RelAlg {
         return new LogicalRelJoin( getCluster(), getCluster().traitSetOf( Convention.NONE ).replace( ModelTrait.RELATIONAL ), left, right, conditionExpr, variablesSet, joinType, semiJoinDone );
     }
 
+    public LogicalRelJoin copy( AlgNode left, AlgNode right) {
+        assert traitSet.containsIfApplicable( Convention.NONE );
+        return new LogicalRelJoin( getCluster(), getCluster().traitSetOf( Convention.NONE ).replace( ModelTrait.RELATIONAL ), left, right, condition, variablesSet, joinType, semiJoinDone );
+    }
+
 
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {

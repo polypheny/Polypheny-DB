@@ -35,7 +35,7 @@ public class LogicalLpgIdCollector extends IdentifierCollector implements LpgAlg
     }
 
 
-    public static LogicalLpgIdCollector create( Transaction transaction, Entity entity, final AlgNode input ) {
+    public static LogicalLpgIdCollector create(  final AlgNode input, Transaction transaction, Entity entity ) {
         final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traits = input.getTraitSet();
         return new LogicalLpgIdCollector( cluster, traits, transaction, entity, input );

@@ -66,9 +66,9 @@ import org.polypheny.db.rex.RexShuttle;
  */
 public abstract class RelTableFunctionScan extends AbstractAlgNode {
 
-    private final RexNode rexCall;
+    protected final RexNode rexCall;
 
-    private final Type elementType;
+    protected final Type elementType;
 
     private ImmutableList<AlgNode> inputs;
 

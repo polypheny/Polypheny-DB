@@ -74,6 +74,10 @@ public final class LogicalRelIntersect extends Intersect implements RelAlg {
         return new LogicalRelIntersect( getCluster(), traitSet, inputs, all );
     }
 
+    public LogicalRelIntersect copy(List<AlgNode> inputs) {
+        return new LogicalRelIntersect( getCluster(), traitSet, inputs, all );
+    }
+
 
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {

@@ -130,6 +130,9 @@ public abstract class Sort extends SingleAlg {
         return copy( traitSet, sole( inputs ), collation, fieldExps, offset, fetch );
     }
 
+    public final Sort copy( List<AlgNode> inputs ) {
+        return copy( traitSet, sole( inputs ), collation, fieldExps, offset, fetch );
+    }
 
     public abstract Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> fieldExps, RexNode offset, RexNode fetch );
 

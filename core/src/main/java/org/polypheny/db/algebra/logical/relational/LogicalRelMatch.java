@@ -100,6 +100,11 @@ public class LogicalRelMatch extends Match implements RelAlg {
         return new LogicalRelMatch( getCluster(), traitSet, input, rowType, pattern, strictStart, strictEnd, patternDefinitions, measures, after, subsets, allRows, partitionKeys, orderKeys, interval );
     }
 
+    public Match copy( AlgNode input ) {
+        final AlgTraitSet traitSet = getCluster().traitSetOf( Convention.NONE );
+        return new LogicalRelMatch( getCluster(), traitSet, input, rowType, pattern, strictStart, strictEnd, patternDefinitions, measures, after, subsets, allRows, partitionKeys, orderKeys, interval );
+    }
+
 
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {

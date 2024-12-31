@@ -93,6 +93,11 @@ public abstract class SetOp extends AbstractAlgNode {
     }
 
 
+    public SetOp copy( List<AlgNode> inputs ) {
+        return copy( traitSet, inputs, all );
+    }
+
+
     @Override
     public void replaceInput( int ordinalInParent, AlgNode p ) {
         final List<AlgNode> newInputs = new ArrayList<>( inputs );
@@ -144,6 +149,7 @@ public abstract class SetOp extends AbstractAlgNode {
         }
         return true;
     }
+
 
     @Override
     public boolean isDataModifying() {

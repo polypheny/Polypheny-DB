@@ -104,6 +104,11 @@ public final class LogicalRelAggregate extends Aggregate implements RelAlg {
         return new LogicalRelAggregate( getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
     }
 
+    public LogicalRelAggregate copy( AlgNode input) {
+        assert traitSet.containsIfApplicable( Convention.NONE );
+        return new LogicalRelAggregate( getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
+    }
+
 
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {

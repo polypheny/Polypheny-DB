@@ -35,7 +35,7 @@ public class LogicalDocIdCollector extends IdentifierCollector implements Docume
     }
 
 
-    public static LogicalDocIdCollector create( Transaction transaction, Entity entity, final AlgNode input ) {
+    public static LogicalDocIdCollector create( final AlgNode input, Transaction transaction, Entity entity ) {
         final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traits = input.getTraitSet();
         return new LogicalDocIdCollector( cluster, traits, transaction, entity, input );
