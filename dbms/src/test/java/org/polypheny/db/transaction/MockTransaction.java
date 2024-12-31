@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -249,5 +250,4 @@ public class MockTransaction implements Transaction {
     public void addReadEntity( VersionedEntryIdentifier entryIdentifier ) {
 
     }
-
 }

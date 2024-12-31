@@ -16,21 +16,26 @@
 
 package org.polypheny.db.algebra.core.common;
 
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.transaction.Transaction;
 
 
+@Getter
 public class IdentifierCollector extends SingleAlg {
 
     protected final Transaction transaction;
+    protected final Entity entity;
 
 
-    protected IdentifierCollector( AlgCluster cluster, AlgTraitSet traits, Transaction transaction, AlgNode input ) {
+    protected IdentifierCollector( AlgCluster cluster, AlgTraitSet traits, Transaction transaction, Entity entity, AlgNode input ) {
         super( cluster, traits, input );
         this.transaction = transaction;
+        this.entity = entity;
     }
 
 

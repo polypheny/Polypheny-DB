@@ -34,6 +34,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.Adapter;
@@ -170,6 +172,10 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         if ( !isActive() ) {
             log.trace( "This transaction has already been finished!" );
             return;
+        }
+
+        if (!readSet.isEmpty()) {
+            readSet.forEach( System.out::println );
         }
 
         Pair<Boolean, String> isValid = catalog.checkIntegrity();
@@ -416,6 +422,5 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     public DataMigrator getDataMigrator() {
         return new DataMigratorImpl();
     }
-
 
 }
