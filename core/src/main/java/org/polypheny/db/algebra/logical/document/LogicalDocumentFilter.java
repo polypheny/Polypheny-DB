@@ -49,6 +49,11 @@ public class LogicalDocumentFilter extends DocumentFilter {
     }
 
 
+    public LogicalDocumentFilter copy(List<AlgNode> inputs  ) {
+        return new LogicalDocumentFilter( getCluster(), getTraitSet(), inputs.get(0), condition );
+    }
+
+
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
