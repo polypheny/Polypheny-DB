@@ -83,6 +83,9 @@ public abstract class Exchange extends SingleAlg {
         return copy( traitSet, sole( inputs ), distribution );
     }
 
+    public final Exchange copy(List<AlgNode> inputs ) {
+        return copy( traitSet, sole( inputs ), distribution );
+    }
 
     public abstract Exchange copy( AlgTraitSet traitSet, AlgNode newInput, AlgDistribution newDistribution );
 
