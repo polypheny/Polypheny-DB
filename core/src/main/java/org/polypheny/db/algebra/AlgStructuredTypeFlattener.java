@@ -66,6 +66,7 @@ import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocIdentifier;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocIdCollector;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
@@ -74,6 +75,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentUnwind;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgIdCollector;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgIdentifier;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
@@ -87,6 +89,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIdCollector;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifier;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
@@ -189,6 +192,9 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
                 put( LogicalRelIdentifier.class, a -> rewriteAlg( (LogicalRelIdentifier) a ) );
                 put( LogicalDocIdentifier.class, a -> rewriteAlg( (LogicalDocIdentifier) a ) );
                 put( LogicalLpgIdentifier.class, a -> rewriteAlg( (LogicalLpgIdentifier) a ) );
+                put( LogicalRelIdCollector.class, a -> rewriteAlg( (LogicalRelIdCollector) a ) );
+                put( LogicalDocIdCollector.class, a -> rewriteAlg( (LogicalDocIdCollector) a ) );
+                put( LogicalLpgIdCollector.class, a -> rewriteAlg( (LogicalLpgIdCollector) a ) );
                 put( LogicalCalc.class, a -> rewriteAlg( (LogicalCalc) a ) );
                 put( LogicalRelMatch.class, a -> rewriteAlg( (LogicalRelMatch) a ) );
                 put( LogicalChi.class, a -> rewriteAlg( (LogicalChi) a ) );
@@ -731,6 +737,18 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
     }
 
     public void rewriteAlg( LogicalLpgIdentifier alg ) {
+        rewriteGeneric( alg );
+    }
+
+    public void rewriteAlg( LogicalRelIdCollector alg ) {
+        rewriteGeneric( alg );
+    }
+
+    public void rewriteAlg( LogicalDocIdCollector alg ) {
+        rewriteGeneric( alg );
+    }
+
+    public void rewriteAlg( LogicalLpgIdCollector alg ) {
         rewriteGeneric( alg );
     }
 

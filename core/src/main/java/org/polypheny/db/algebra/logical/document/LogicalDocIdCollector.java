@@ -21,23 +21,24 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.IdentifierCollector;
 import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.transaction.Transaction;
 
-public class LogicalDocumentIdCollector extends IdentifierCollector implements DocumentAlg {
+public class LogicalDocIdCollector extends IdentifierCollector implements DocumentAlg {
 
-    protected LogicalDocumentIdCollector( AlgCluster cluster, AlgTraitSet traits, Transaction transaction, AlgNode input ) {
-        super( cluster, traits, transaction, input );
+    protected LogicalDocIdCollector( AlgCluster cluster, AlgTraitSet traits, Transaction transaction, Entity entity, AlgNode input ) {
+        super( cluster, traits, transaction, entity, input );
     }
 
 
-    public static LogicalDocumentIdCollector create( Transaction transaction, final AlgNode input ) {
+    public static LogicalDocIdCollector create( Transaction transaction, Entity entity, final AlgNode input ) {
         final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traits = input.getTraitSet();
-        return new LogicalDocumentIdCollector( cluster, traits, transaction, input );
+        return new LogicalDocIdCollector( cluster, traits, transaction, entity, input );
     }
 
 
@@ -57,7 +58,7 @@ public class LogicalDocumentIdCollector extends IdentifierCollector implements D
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalDocumentIdCollector( getCluster(), traitSet, transaction, sole( inputs ) );
+        return new LogicalDocIdCollector( getCluster(), traitSet, transaction, entity, sole( inputs ) );
     }
 
 }

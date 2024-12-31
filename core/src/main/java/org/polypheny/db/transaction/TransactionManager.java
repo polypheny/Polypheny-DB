@@ -22,18 +22,20 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 
 public interface TransactionManager {
 
-    Transaction startTransaction( long userId, long defaultNamespaceId, boolean analyze, String origin );
+     Transaction startTransaction( long userId, long defaultNamespaceId, boolean analyze, String origin );
 
-    Transaction startTransaction( long userId, long defaultNamespaceId, boolean analyze, String origin, MultimediaFlavor flavor );
+     Transaction startTransaction( long userId, long defaultNamespaceId, boolean analyze, String origin, MultimediaFlavor flavor );
 
-    Transaction startTransaction( long userId, boolean analyze, String origin );
+     Transaction startTransaction( long userId, boolean analyze, String origin );
 
-    void removeTransaction( PolyXid xid );
+     void removeTransaction( PolyXid xid );
 
-    boolean isActive( PolyXid xid );
+     boolean isActive( PolyXid xid );
 
-    long getNumberOfActiveTransactions();
+     long getNumberOfActiveTransactions();
 
-    long getNumberOfTotalTransactions();
+     long getNumberOfTotalTransactions();
+
+     Transaction getTransactionById( long transactionId );
 
 }

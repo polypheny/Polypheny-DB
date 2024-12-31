@@ -41,6 +41,7 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 public class TransactionManagerImpl implements TransactionManager {
 
     private final ConcurrentHashMap<PolyXid, Transaction> transactions = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, PolyXid> xidById = new ConcurrentHashMap<>();
 
     private final AtomicLong totalTransactions = new AtomicLong( 0 );
 
@@ -70,9 +71,7 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     private static final class InstanceHolder {
-
-        private static final TransactionManager INSTANCE = new TransactionManagerImpl();
-
+        private static final TransactionManager INSTANCE =  TransactionManagerProvider.setAndGetInstance(new TransactionManagerImpl());
     }
 
 
@@ -86,7 +85,9 @@ public class TransactionManagerImpl implements TransactionManager {
         final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: use real user id
         final ConnectionId connectionId = (ConnectionId) PUID.randomPUID( Type.CONNECTION ); // TODO
         PolyXid xid = generateNewTransactionId( nodeId, userId, connectionId );
-        transactions.put( xid, new TransactionImpl( xid, this, user, defaultNamespace, analyze, origin, flavor ) );
+        Transaction newTransaction = new TransactionImpl( xid, this, user, defaultNamespace, analyze, origin, flavor );
+        transactions.put( xid, newTransaction );
+        xidById.put(newTransaction.getId(), newTransaction.getXid());
         totalTransactions.incrementAndGet();
         log.debug( "open {}", xid );
         return transactions.get( xid );
@@ -152,6 +153,12 @@ public class TransactionManagerImpl implements TransactionManager {
     @Override
     public long getNumberOfTotalTransactions() {
         return totalTransactions.get();
+    }
+
+
+    @Override
+    public Transaction getTransactionById( long transactionId ) {
+        return transactions.get(xidById.get(transactionId));
     }
 
 }
