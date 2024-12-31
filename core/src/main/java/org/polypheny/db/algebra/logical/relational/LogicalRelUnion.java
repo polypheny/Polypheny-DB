@@ -84,6 +84,11 @@ public final class LogicalRelUnion extends Union implements RelAlg {
         return new LogicalRelUnion( getCluster(), traitSet, inputs, all );
     }
 
+    public LogicalRelUnion copy( List<AlgNode> inputs) {
+        assert traitSet.containsIfApplicable( Convention.NONE );
+        return new LogicalRelUnion( getCluster(), traitSet, inputs, all );
+    }
+
 
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {

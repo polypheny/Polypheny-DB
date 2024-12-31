@@ -86,6 +86,12 @@ public final class LogicalRelModify extends RelModify<Entity> {
     }
 
 
+    public LogicalRelModify copy( List<AlgNode> inputs ) {
+        assert traitSet.containsIfApplicable( Convention.NONE );
+        return (LogicalRelModify) new LogicalRelModify( getCluster(), traitSet, entity, sole( inputs ), getOperation(), getUpdateColumns(), getSourceExpressions(), isFlattened() ).streamed( streamed );
+    }
+
+
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );

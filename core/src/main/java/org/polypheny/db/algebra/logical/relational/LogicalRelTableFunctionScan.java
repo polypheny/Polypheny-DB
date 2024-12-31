@@ -86,6 +86,11 @@ public class LogicalRelTableFunctionScan extends RelTableFunctionScan implements
         return new LogicalRelTableFunctionScan( getCluster(), traitSet, inputs, rexCall, elementType, rowType, columnMappings );
     }
 
+    public LogicalRelTableFunctionScan copy( List<AlgNode> inputs) {
+        assert traitSet.containsIfApplicable( Convention.NONE );
+        return new LogicalRelTableFunctionScan( getCluster(), traitSet, inputs, rexCall, elementType, rowType, columnMappings );
+    }
+
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
