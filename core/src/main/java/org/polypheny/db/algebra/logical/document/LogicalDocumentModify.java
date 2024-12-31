@@ -49,6 +49,10 @@ public class LogicalDocumentModify extends DocumentModify<Entity> implements Rel
         return new LogicalDocumentModify( traitSet, entity, inputs.get( 0 ), operation, updates, removes, renames );
     }
 
+    public LogicalDocumentModify copy(List<AlgNode> inputs ) {
+        return new LogicalDocumentModify( traitSet, entity, inputs.get( 0 ), operation, updates, removes, renames );
+    }
+
 
     @Override
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<Entity> entities, Snapshot snapshot ) {

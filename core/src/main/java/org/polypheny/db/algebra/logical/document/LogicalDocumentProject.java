@@ -53,6 +53,10 @@ public class LogicalDocumentProject extends DocumentProject {
         return new LogicalDocumentProject( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), includes, excludes );
     }
 
+    public LogicalDocumentProject copy( List<AlgNode> inputs ) {
+        return new LogicalDocumentProject( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), includes, excludes );
+    }
+
 
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
