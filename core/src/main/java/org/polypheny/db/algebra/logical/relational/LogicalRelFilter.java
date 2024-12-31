@@ -145,6 +145,11 @@ public final class LogicalRelFilter extends RelFilter implements RelAlg, Filter 
         return new LogicalRelFilter( getCluster(), traitSet, input, condition, variablesSet, isMvccLhsScopeFilter );
     }
 
+    public LogicalRelFilter copy( AlgNode input) {
+        assert traitSet.containsIfApplicable( Convention.NONE );
+        return new LogicalRelFilter( getCluster(), traitSet, input, condition, variablesSet );
+    }
+
 
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
