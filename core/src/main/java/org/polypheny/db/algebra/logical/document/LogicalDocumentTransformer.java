@@ -41,6 +41,11 @@ public class LogicalDocumentTransformer extends DocumentTransformer {
     }
 
 
+    public LogicalDocumentTransformer copy( List<AlgNode> inputs ) {
+        return new LogicalDocumentTransformer( inputs.get( 0 ).getCluster(), inputs, traitSet, rowType );
+    }
+
+
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );

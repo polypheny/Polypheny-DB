@@ -70,6 +70,10 @@ public class LogicalDocumentAggregate extends DocumentAggregate {
         return new LogicalDocumentAggregate( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), getGroup().orElse( null ), aggCalls );
     }
 
+    public LogicalDocumentAggregate copy(List<AlgNode> inputs ) {
+        return new LogicalDocumentAggregate( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), getGroup().orElse( null ), aggCalls );
+    }
+
 
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
