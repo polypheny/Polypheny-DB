@@ -71,6 +71,11 @@ public class LogicalDocumentSort extends DocumentSort implements DocumentAlg {
     }
 
 
+    public LogicalDocumentSort copy( List<AlgNode> inputs ) {
+        return new LogicalDocumentSort( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), collation, fieldExps, offset, fetch );
+    }
+
+
     @Override
     public DocType getDocType() {
         return DocType.SORT;
