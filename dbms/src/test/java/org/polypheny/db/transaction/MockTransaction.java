@@ -260,5 +260,4 @@ public class MockTransaction implements Transaction {
     public void addWrittenEntity( VersionedEntryIdentifier entryIdentifier ) {
 
     }
-
 }
