@@ -16,12 +16,18 @@
 
 package org.polypheny.db.transaction.locking;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
+import org.polypheny.db.algebra.logical.document.LogicalDocIdCollector;
 import org.polypheny.db.algebra.logical.document.LogicalDocIdentifier;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
@@ -33,6 +39,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgIdCollector;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgIdentifier;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
@@ -65,39 +72,152 @@ import org.polypheny.db.transaction.Transaction;
 public class AlgTreeRewriter extends AlgShuttleImpl {
 
     private final Transaction transaction;
+    private AlgNode collectorInsertPosition;
 
 
     public AlgTreeRewriter( Transaction transaction ) {
         this.transaction = transaction;
+        this.collectorInsertPosition = null;
+    }
+
+
+    public void reset() {
+        collectorInsertPosition = null;
     }
 
 
     public AlgRoot process( AlgRoot root ) {
-        return root.withAlg( root.alg.accept( this ) );
+        AlgNode rootAlg = root.alg.accept( this );
+
+        if ( collectorInsertPosition == null ) {
+            reset();
+            return root.withAlg( rootAlg );
+        }
+        if (!collectorInsertPosition.equals( rootAlg ) ) {
+            throw new RuntimeException("Should never throw!");
+        }
+        AlgNode newRootAlg = null;
+        switch ( rootAlg.getModel() ) {
+            case RELATIONAL -> newRootAlg = LogicalRelIdCollector.create( rootAlg, transaction, findEntity( rootAlg ) );
+            case DOCUMENT -> newRootAlg = LogicalDocIdCollector.create( rootAlg, transaction, findEntity( rootAlg ) );
+            case GRAPH -> newRootAlg = LogicalLpgIdCollector.create( rootAlg, transaction, findEntity( rootAlg ) );
+        }
+        assert newRootAlg != null;
+        reset();
+        return root.withAlg( newRootAlg );
+    }
+
+
+    private List<AlgNode> getLastNNodes( int count ) {
+        List<AlgNode> result = new ArrayList<>();
+        for ( Iterator<AlgNode> it = stack.descendingIterator(); it.hasNext(); ) {
+            AlgNode node = it.next();
+            if ( count-- <= 0 ) {
+                break;
+            }
+            result.add( 0, node );
+        }
+        return result;
+    }
+
+
+    private void updateCollectorInsertPosition() {
+        List<AlgNode> trace = getLastNNodes( 2 );
+        switch ( trace.size() ) {
+            case 1:
+                // add collector in front of this node
+                collectorInsertPosition = trace.get(0);
+                break;
+            case 2:
+                // if previous node is a filter place collector in front of filter
+                if ( trace.get( 1 ) instanceof Filter) {
+                    collectorInsertPosition = trace.get( 1 );
+                    return;
+                }
+                // else place in front of this
+                collectorInsertPosition = trace.get( 0 );
+                break;
+        }
+    }
+
+
+    private boolean isTarget( AlgNode node ) {
+        return node.getInputs().contains( collectorInsertPosition );
+    }
+
+    private List<AlgNode> modifyInputs(List<AlgNode> inputs) {
+        return inputs.stream().map( current -> {
+            if (!current.equals( collectorInsertPosition )) {
+                return current;
+            }
+            return modifyInput( current );
+        } ).collect( Collectors.toCollection( LinkedList::new ));
+    }
+
+    private AlgNode modifyInput(AlgNode input) {
+            collectorInsertPosition = null;
+            switch ( input.getModel() ) {
+                case RELATIONAL -> {
+                    return LogicalRelIdCollector.create( input, transaction, findEntity( input ) );
+                }
+                case DOCUMENT -> {
+                    return LogicalDocIdCollector.create( input, transaction, findEntity( input ) );
+                }
+                case GRAPH -> {
+                    return LogicalLpgIdCollector.create( input, transaction, findEntity( input ) );
+                }
+            }
+            return input;
+    }
+
+    public Entity findEntity( AlgNode node ) {
+        Entity entity = null;
+        while ( entity == null && node != null ) {
+            entity = node.getEntity();
+            if ( node.getInputs().isEmpty() ) {
+                continue;
+            }
+            node = node.getInput( 0 );
+        }
+        return entity;
     }
 
 
     @Override
     public AlgNode visit( LogicalRelAggregate aggregate ) {
-        return visitChild( aggregate, 0, aggregate.getInput() );
+        LogicalRelAggregate aggregate1 = visitChild( aggregate, 0, aggregate.getInput() );
+        if ( isTarget( aggregate1 ) ) {
+            return aggregate1.copy( modifyInput( aggregate1.getInput() ) );
+        }
+        return aggregate1;
     }
 
 
     @Override
     public AlgNode visit( LogicalRelMatch match ) {
-        return visitChild( match, 0, match.getInput() );
+        LogicalRelMatch match1 = visitChild( match, 0, match.getInput() );
+        if ( isTarget( match1 ) ) {
+            return match1.copy( modifyInput(match1.getInput()) );
+        }
+        return match1;
     }
 
 
     @Override
     public AlgNode visit( LogicalRelScan scan ) {
+        updateCollectorInsertPosition();
         return scan;
     }
 
 
     @Override
     public AlgNode visit( LogicalRelTableFunctionScan scan ) {
-        return visitChildren( scan );
+        LogicalRelTableFunctionScan tableFunctionScan1 = visitChildren( scan );
+        if ( isTarget( tableFunctionScan1 ) ) {
+            List<AlgNode> newInputs = modifyInputs( tableFunctionScan1.getInputs() );
+            return tableFunctionScan1.copy( newInputs );
+        }
+        return tableFunctionScan1;
     }
 
 
@@ -109,101 +229,137 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalRelFilter filter ) {
-        return visitChild( filter, 0, filter.getInput() );
+        LogicalRelFilter filter1 = visitChild( filter, 0, filter.getInput() );
+        if ( isTarget( filter1 ) ) {
+            return filter1.copy( modifyInput( filter1.getInput() ) );
+        }
+        return filter1;
     }
 
 
     @Override
     public AlgNode visit( LogicalRelProject project ) {
-        AlgNode input = project.getInput();
-        if ( input instanceof LogicalRelScan || input instanceof LogicalRelFilter ) {
-            Entity entity = findEntity( project );
-            LogicalRelIdCollector collector = LogicalRelIdCollector.create( input, transaction, entity );
-            return project.copy( project.getTraitSet(), List.of(collector) );
+        LogicalRelProject project1 = visitChildren( project );
+        if (isTarget( project1 )) {
+            return project1.copy( modifyInput( project1.getInput() ) );
         }
-        return visitChildren( project );
+        return project1;
     }
 
-    public Entity findEntity(AlgNode node) {
-        Entity entity = null;
-        while (entity == null && node != null) {
-            entity = node.getEntity();
-            if (node.getInputs().isEmpty()) {
-                continue;
-            }
-            node = node.getInput( 0 );
-        }
-        return entity;
-    }
+
 
     @Override
     public AlgNode visit( LogicalRelJoin join ) {
-        return visitChildren( join );
+        LogicalRelJoin join1 = visitChildren( join );
+        if (isTarget( join1 )) {
+            AlgNode left = modifyInput( join1.getLeft() );
+            AlgNode right = modifyInput( join1.getRight() );
+            return join1.copy( left, right );
+        }
+        return join1;
     }
 
 
     @Override
     public AlgNode visit( LogicalRelCorrelate correlate ) {
-        return visitChildren( correlate );
+        LogicalRelCorrelate correlate1 = visitChildren( correlate );
+        if (isTarget( correlate1 )) {
+            AlgNode left = modifyInput( correlate1.getLeft() );
+            AlgNode right = modifyInput( correlate1.getRight() );
+            return correlate.copy( left, right );
+        }
+        return correlate1;
     }
 
 
     @Override
     public AlgNode visit( LogicalRelUnion union ) {
-        return visitChildren( union );
+        LogicalRelUnion union1 = visitChildren( union );
+        if (isTarget( union1 )) {
+            return union1.copy( modifyInputs( union1.getInputs() ));
+        }
+        return union1;
     }
 
 
     @Override
     public AlgNode visit( LogicalRelIntersect intersect ) {
-        return visitChildren( intersect );
+        LogicalRelIntersect intersect1 = visitChildren( intersect );
+        if (isTarget( intersect1 )) {
+            return intersect1.copy( modifyInputs( intersect1.getInputs() ));
+        }
+        return intersect1;
     }
 
 
     @Override
     public AlgNode visit( LogicalRelMinus minus ) {
-        return visitChildren( minus );
+        LogicalRelMinus minus1 = visitChildren( minus );
+        if (isTarget( minus1 )) {
+            return minus1.copy( modifyInputs( minus1.getInputs() ));
+        }
+        return minus1;
     }
 
 
     @Override
     public AlgNode visit( LogicalRelSort sort ) {
-        return visitChildren( sort );
+        LogicalRelSort sort1 = visitChildren( sort );
+        if (isTarget( sort1 )) {
+            return sort1.copy( modifyInputs( sort1.getInputs() ));
+        }
+        return sort1;
     }
 
 
     @Override
     public AlgNode visit( LogicalRelExchange exchange ) {
-        return visitChildren( exchange );
+        LogicalRelExchange exchange1 = visitChildren( exchange );
+        if (isTarget( exchange1 )) {
+            return exchange1.copy( modifyInputs( exchange1.getInputs() ));
+        }
+        return exchange1;
     }
 
 
     @Override
     public AlgNode visit( LogicalConditionalExecute lce ) {
-        return visitChildren( lce );
+        LogicalConditionalExecute lce1 = visitChildren( lce );
+        if (isTarget( lce1 )) {
+            return lce1.copy( modifyInputs( lce1.getInputs() ));
+        }
+        return lce1;
     }
 
 
     @Override
     public AlgNode visit( LogicalRelModify modify ) {
-        switch ( modify.getOperation() ) {
+        LogicalRelModify modify1 = visitChildren( modify );
+        if ( isTarget( modify1 ) ) {
+            modify1 = modify1.copy( modifyInputs(modify1.getInputs()) );
+        }
+        switch ( modify1.getOperation() ) {
             case INSERT:
                 AlgNode input = modify.getInput();
                 LogicalRelIdentifier identifier = LogicalRelIdentifier.create(
-                        modify.getEntity(),
+                        modify1.getEntity(),
                         input,
                         input.getTupleType()
                 );
-                return modify.copy( modify.getTraitSet(), List.of( identifier ) );
+                return modify1.copy( modify1.getTraitSet(), List.of( identifier ) );
             default:
-                return visitChildren( modify );
+                return modify1;
         }
     }
 
 
     @Override
     public AlgNode visit( LogicalConstraintEnforcer enforcer ) {
-        return visitChildren( enforcer );
+        LogicalConstraintEnforcer enforcer1 = visitChildren( enforcer );
+        if (isTarget( enforcer1 )) {
+            return enforcer1.copy( modifyInputs( enforcer1.getInputs() ));
+        }
+        return enforcer1;
     }
 
 
