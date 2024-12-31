@@ -25,7 +25,7 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @Getter
-public abstract class Identifier extends SingleAlg {
+public class Identifier extends SingleAlg {
 
     protected final Entity entity;
 

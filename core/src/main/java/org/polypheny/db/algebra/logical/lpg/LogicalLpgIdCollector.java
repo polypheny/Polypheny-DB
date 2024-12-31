@@ -21,6 +21,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.IdentifierCollector;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
@@ -29,15 +30,15 @@ import org.polypheny.db.transaction.Transaction;
 
 public class LogicalLpgIdCollector extends IdentifierCollector implements LpgAlg {
 
-    protected LogicalLpgIdCollector( AlgCluster cluster, AlgTraitSet traits, Transaction transaction, AlgNode input ) {
-        super( cluster, traits, transaction, input );
+    protected LogicalLpgIdCollector( AlgCluster cluster, AlgTraitSet traits, Transaction transaction, Entity entity,  AlgNode input ) {
+        super( cluster, traits, transaction, entity,  input );
     }
 
 
-    public static LogicalLpgIdCollector create( Transaction transaction, final AlgNode input ) {
+    public static LogicalLpgIdCollector create( Transaction transaction, Entity entity, final AlgNode input ) {
         final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traits = input.getTraitSet();
-        return new LogicalLpgIdCollector( cluster, traits, transaction, input );
+        return new LogicalLpgIdCollector( cluster, traits, transaction, entity, input );
     }
 
 
@@ -57,7 +58,7 @@ public class LogicalLpgIdCollector extends IdentifierCollector implements LpgAlg
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalLpgIdCollector( getCluster(), traitSet, transaction, sole( inputs ) );
+        return new LogicalLpgIdCollector( getCluster(), traitSet, transaction, entity, sole( inputs ) );
     }
 
 }

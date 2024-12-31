@@ -16,7 +16,6 @@
 
 package org.polypheny.db.transaction.locking;
 
-import java.util.LinkedList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -47,6 +46,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import org.polypheny.db.algebra.logical.relational.LogicalRelIdCollector;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifier;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
@@ -59,17 +59,17 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
-import org.polypheny.db.rex.RexIndexRef;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Transaction;
 
 public class AlgTreeRewriter extends AlgShuttleImpl {
+
     private final Transaction transaction;
 
-    public AlgTreeRewriter( Transaction transaction) {
+
+    public AlgTreeRewriter( Transaction transaction ) {
         this.transaction = transaction;
     }
+
 
     public AlgRoot process( AlgRoot root ) {
         return root.withAlg( root.alg.accept( this ) );
@@ -114,31 +114,13 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalRelProject project ) {
-        return visitChildren( project );
-    }
-
-
-    private List<RexNode> createNewProjects( LogicalRelProject project, LogicalRelValues inputValues ) {
-        List<RexNode> newProjects = new LinkedList<>();
-        long fieldCount = project.getRowType().getFieldCount();
-        long inputFieldCount = inputValues.tuples.get( 0 ).size();
-
-        for ( int position = 0; position < fieldCount; position++ ) {
-            if ( position < inputFieldCount ) {
-                newProjects.add( new RexIndexRef(
-                        position,
-                        project.getRowType().getFields().get( position ).getType()
-                ) );
-            } else {
-                newProjects.add( new RexLiteral(
-                        null,
-                        project.getRowType().getFields().get( position ).getType(),
-                        project.getRowType().getFields().get( position ).getType().getPolyType()
-                ) );
-            }
+        AlgNode input = project.getInput();
+        if ( input instanceof LogicalRelScan || input instanceof LogicalRelFilter ) {
+            //TODO TH: some inputs might not have an entity and thus return null here...
+            LogicalRelIdCollector collector = LogicalRelIdCollector.create( input, transaction, input.getEntity() );
+            return project.copy( project.getTraitSet(), List.of(collector) );
         }
-
-        return newProjects;
+        return visitChildren( project );
     }
 
 
