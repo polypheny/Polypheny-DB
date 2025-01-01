@@ -42,7 +42,7 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Aggregate.Group;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptRule;
@@ -59,7 +59,7 @@ import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
 
 /**
- * Planner rule that matches an {@link Aggregate} on a {@link Filter} and transposes them, pushing the aggregate below the filter.
+ * Planner rule that matches an {@link Aggregate} on a {@link RelFilter} and transposes them, pushing the aggregate below the filter.
  *
  * In some cases, it is necessary to split the aggregate.
  *
@@ -74,7 +74,7 @@ public class AggregateFilterTransposeRule extends AlgOptRule {
 
 
     private AggregateFilterTransposeRule() {
-        this( operand( Aggregate.class, operand( Filter.class, any() ) ), AlgFactories.LOGICAL_BUILDER );
+        this( operand( Aggregate.class, operand( RelFilter.class, any() ) ), AlgFactories.LOGICAL_BUILDER );
     }
 
 
@@ -89,7 +89,7 @@ public class AggregateFilterTransposeRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         final Aggregate aggregate = call.alg( 0 );
-        final Filter filter = call.alg( 1 );
+        final RelFilter filter = call.alg( 1 );
 
         // Do the columns used by the filter appear in the output of the aggregate?
         final ImmutableBitSet filterColumns = AlgOptUtil.InputFinder.bits( filter.getCondition() );
@@ -116,7 +116,7 @@ public class AggregateFilterTransposeRule extends AlgOptRule {
                 newGroupSet.cardinality() );
         final RexNode newCondition =
                 RexUtil.apply( mapping, filter.getCondition() );
-        final Filter newFilter = filter.copy( filter.getTraitSet(),
+        final RelFilter newFilter = filter.copy( filter.getTraitSet(),
                 newAggregate, newCondition );
         if ( allColumnsInAggregate && aggregate.getGroupType() == Group.SIMPLE ) {
             // Everything needed by the filter is returned by the aggregate.

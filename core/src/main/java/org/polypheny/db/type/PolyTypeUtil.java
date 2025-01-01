@@ -89,7 +89,7 @@ public abstract class PolyTypeUtil {
         assert argTypes != null;
         assert argTypes.size() >= 2;
 
-        // Filter out ANY elements.
+        // RelFilter out ANY elements.
         List<AlgDataType> argTypes2 = argTypes.stream().filter( t -> !isAny( t ) ).toList();
 
         if ( argTypes2.isEmpty() ) {

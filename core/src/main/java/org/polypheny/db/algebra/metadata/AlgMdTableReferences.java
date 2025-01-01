@@ -46,7 +46,7 @@ import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Exchange;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
@@ -206,9 +206,9 @@ public class AlgMdTableReferences implements MetadataHandler<BuiltInMetadata.Tab
 
 
     /**
-     * Table references from Filter.
+     * Table references from RelFilter.
      */
-    public Set<AlgTableRef> getTableReferences( Filter alg, AlgMetadataQuery mq ) {
+    public Set<AlgTableRef> getTableReferences( RelFilter alg, AlgMetadataQuery mq ) {
         return mq.getTableReferences( alg.getInput() );
     }
 

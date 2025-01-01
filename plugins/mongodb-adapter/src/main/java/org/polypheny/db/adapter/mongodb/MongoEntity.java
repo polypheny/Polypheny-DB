@@ -183,7 +183,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
      * <code>zipsTable.find("{state: 'OR'}", "{city: 1, zipcode: 1}")</code>
      *
      * @param mongoDb MongoDB connection
-     * @param filterJson Filter JSON string, or null
+     * @param filterJson RelFilter JSON string, or null
      * @param projectJson Project JSON string, or null
      * @param tupleType List of fields to project; or null to return map
      * @return Enumerator of results
@@ -418,7 +418,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         /**
          * Called via code-generation.
          *
-         * @param filterJson Filter document
+         * @param filterJson RelFilter document
          * @param projectJson Projection document
          * @param tupleType List of expected fields (and their types)
          * @return result of mongo query

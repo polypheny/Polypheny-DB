@@ -828,7 +828,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      * Compute a WHERE condition from a filter that only consists of the PK column WHERE clauses
      * There WHERE clause contains a space at the beginning, for convenience
      *
-     * @param filter Filter. Key: column name, value: the value of the entry, e.g. 1 or abc or [1,2,3] or {@code null}
+     * @param filter RelFilter. Key: column name, value: the value of the entry, e.g. 1 or abc or [1,2,3] or {@code null}
      */
     private String computeWherePK( final LogicalTable table, final Map<String, String> filter ) {
         StringJoiner joiner = new StringJoiner( " AND ", "", "" );

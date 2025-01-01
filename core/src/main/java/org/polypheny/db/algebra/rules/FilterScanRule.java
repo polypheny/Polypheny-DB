@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.rules;
 
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.enumerable.EnumerableInterpreter;
 import org.polypheny.db.interpreter.Bindables.BindableScan;
@@ -53,7 +53,7 @@ import org.polypheny.db.util.mapping.Mappings;
 
 /**
  * Planner rule that converts
- * a {@link Filter}
+ * a {@link RelFilter}
  * on a {@link RelScan}
  * of a {@link FilterableEntity}
  * to a {@link BindableScan}.
@@ -63,28 +63,28 @@ import org.polypheny.db.util.mapping.Mappings;
 public abstract class FilterScanRule extends AlgOptRule {
 
     /**
-     * Rule that matches Filter on Scan.
+     * Rule that matches RelFilter on Scan.
      */
     public static final FilterScanRule INSTANCE =
             new FilterScanRule(
-                    operand( Filter.class, operand( RelScan.class, null, FilterScanRule::test, none() ) ),
+                    operand( RelFilter.class, operand( RelScan.class, null, FilterScanRule::test, none() ) ),
                     AlgFactories.LOGICAL_BUILDER,
                     "FilterScanRule" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
-                    final Filter filter = call.alg( 0 );
+                    final RelFilter filter = call.alg( 0 );
                     final RelScan scan = call.alg( 1 );
                     apply( call, filter, scan );
                 }
             };
 
     /**
-     * Rule that matches Filter on EnumerableInterpreter on Scan.
+     * Rule that matches RelFilter on EnumerableInterpreter on Scan.
      */
     public static final FilterScanRule INTERPRETER =
             new FilterScanRule(
                     operand(
-                            Filter.class,
+                            RelFilter.class,
                             operand(
                                     EnumerableInterpreter.class,
                                     operand(
@@ -94,7 +94,7 @@ public abstract class FilterScanRule extends AlgOptRule {
                     "FilterScanRule:interpreter" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
-                    final Filter filter = call.alg( 0 );
+                    final RelFilter filter = call.alg( 0 );
                     final RelScan<?> scan = call.alg( 2 );
                     apply( call, filter, scan );
                 }
@@ -115,7 +115,7 @@ public abstract class FilterScanRule extends AlgOptRule {
     }
 
 
-    protected void apply( AlgOptRuleCall call, Filter filter, RelScan<?> scan ) {
+    protected void apply( AlgOptRuleCall call, RelFilter filter, RelScan<?> scan ) {
         final ImmutableList<Integer> projects;
         final ImmutableList.Builder<RexNode> filters = ImmutableList.builder();
         if ( scan instanceof BindableScan bindableScan ) {

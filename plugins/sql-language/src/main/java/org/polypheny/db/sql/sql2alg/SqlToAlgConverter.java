@@ -90,7 +90,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.AlgFactories.FilterFactory;
 import org.polypheny.db.algebra.core.Collect;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
@@ -828,8 +828,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final AlgNode r;
         final CorrelationUse p = getCorrelationUse( bb, filter );
         if ( p != null ) {
-            assert p.r instanceof Filter;
-            Filter f = (Filter) p.r;
+            assert p.r instanceof RelFilter;
+            RelFilter f = (RelFilter) p.r;
             r = LogicalRelFilter.create( f.getInput(), f.getCondition(), ImmutableSet.of( p.id ) );
         } else {
             r = filter;

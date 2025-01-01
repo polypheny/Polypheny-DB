@@ -80,13 +80,13 @@ public abstract class ValuesReduceRule extends AlgOptRule {
     private static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
 
     /**
-     * Instance of this rule that applies to the pattern Filter(Values).
+     * Instance of this rule that applies to the pattern RelFilter(Values).
      */
     public static final ValuesReduceRule FILTER_INSTANCE =
             new ValuesReduceRule(
                     operand( LogicalRelFilter.class, operand( LogicalRelValues.class, null, Values::isNotEmpty, none() ) ),
                     AlgFactories.LOGICAL_BUILDER,
-                    "ValuesReduceRule(Filter)" ) {
+                    "ValuesReduceRule(RelFilter)" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
                     LogicalRelFilter filter = call.alg( 0 );
@@ -112,7 +112,7 @@ public abstract class ValuesReduceRule extends AlgOptRule {
             };
 
     /**
-     * Singleton instance of this rule that applies to the pattern Project(Filter(Values)).
+     * Singleton instance of this rule that applies to the pattern Project(RelFilter(Values)).
      */
     public static final ValuesReduceRule PROJECT_FILTER_INSTANCE =
             new ValuesReduceRule(
@@ -122,7 +122,7 @@ public abstract class ValuesReduceRule extends AlgOptRule {
                                     LogicalRelFilter.class,
                                     operand( LogicalRelValues.class, null, Values::isNotEmpty, none() ) ) ),
                     AlgFactories.LOGICAL_BUILDER,
-                    "ValuesReduceRule(Project-Filter)" ) {
+                    "ValuesReduceRule(Project-RelFilter)" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
                     LogicalRelProject project = call.alg( 0 );
@@ -151,7 +151,7 @@ public abstract class ValuesReduceRule extends AlgOptRule {
      *
      * @param call Rule call
      * @param project Project, may be null
-     * @param filter Filter, may be null
+     * @param filter RelFilter, may be null
      * @param values Values alg to be reduced
      */
     protected void apply( AlgOptRuleCall call, LogicalRelProject project, LogicalRelFilter filter, LogicalRelValues values ) {
@@ -235,7 +235,7 @@ public abstract class ValuesReduceRule extends AlgOptRule {
             final AlgNode newRel = LogicalRelValues.create( values.getCluster(), rowType, tuplesBuilder.build() );
             call.transformTo( newRel );
         } else {
-            // Filter had no effect, so we can say that Filter(Values) == Values.
+            // RelFilter had no effect, so we can say that RelFilter(Values) == Values.
             call.transformTo( values );
         }
 

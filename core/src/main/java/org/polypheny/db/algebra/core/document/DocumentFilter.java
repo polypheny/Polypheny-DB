@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.core.common.Filter;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -33,7 +34,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 @EqualsAndHashCode(callSuper = true)
 @Value
 @NonFinal
-public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
+public abstract class DocumentFilter extends SingleAlg implements DocumentAlg, Filter {
 
     @NotNull
     public RexNode condition;

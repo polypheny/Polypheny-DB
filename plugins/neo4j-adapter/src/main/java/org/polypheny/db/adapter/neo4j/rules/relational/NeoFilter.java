@@ -19,12 +19,12 @@ package org.polypheny.db.adapter.neo4j.rules.relational;
 import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoRelAlg;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
-public class NeoFilter extends Filter implements NeoRelAlg {
+public class NeoFilter extends RelFilter implements NeoRelAlg {
 
     public NeoFilter( AlgCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
         super( cluster, traits, child, condition );
@@ -32,7 +32,7 @@ public class NeoFilter extends Filter implements NeoRelAlg {
 
 
     @Override
-    public Filter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
+    public RelFilter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         return new NeoFilter( input.getCluster(), input.getTraitSet(), input, condition );
     }
 

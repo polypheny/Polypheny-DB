@@ -85,16 +85,16 @@
  *
  * The rules are:
  * <ol>
- * <li><code>PushFilterThroughProjectRule</code>. Operands: <blockquote><pre>Filter Project</pre></blockquote></li>
+ * <li><code>PushFilterThroughProjectRule</code>. Operands: <blockquote><pre>RelFilter Project</pre></blockquote></li>
  * <li><code>CombineProjectsRule</code>. Operands: <blockquote><pre>Project Project</pre></blockquote></li>
  * </ol>
  *
- * A rule can be triggered by a change to any of its operands. Consider the rule to combine two filters into one. It would have operands [Filter [Filter]].  If I register a new Filter, it will trigger the rule in 2 places.
+ * A rule can be triggered by a change to any of its operands. Consider the rule to combine two filters into one. It would have operands [RelFilter [RelFilter]].  If I register a new RelFilter, it will trigger the rule in 2 places.
  * Consider:
  *
  * <blockquote>
  * <pre>Project (deptno)                              [exp 1, subset A]
- *   Filter (gender='F')                         [exp 2, subset B]
+ *   RelFilter (gender='F')                         [exp 2, subset B]
  *     Project (deptno, gender, empno)           [exp 3, subset C]
  *       Project (deptno, gender, empno, salary) [exp 4, subset D]
  *         Scan (emp)                       [exp 0, subset X]</pre>
@@ -104,7 +104,7 @@
  * <blockquote>
  * <pre>Project (deptno)                              [exp 1, subset A]
  *   Project (deptno, gender, empno)             [exp 5, subset B]
- *     Filter (gender='F')                       [exp 6, subset E]
+ *     RelFilter (gender='F')                       [exp 6, subset E]
  *       Project (deptno, gender, empno, salary) [exp 4, subset D]
  *         Scan (emp)                       [exp 0, subset X]</pre>
  * </blockquote>
@@ -118,7 +118,7 @@
  *
  * <blockquote>
  * <pre>Project (deptno)                              [exp 7, subset A]
- *   Filter (gender='F')                         [exp 6, subset E]
+ *   RelFilter (gender='F')                         [exp 6, subset E]
  *     Project (deptno, gender, empno, salary)   [exp 4, subset D]
  *       Scan (emp)                         [exp 0, subset X]</pre>
  * </blockquote>
@@ -130,7 +130,7 @@
  * <pre>Project (deptno)                              [exp 1, subset A]
  *   Project (deptno, gender, empno)             [exp 5, subset B]
  *     Project (deptno, gender, empno, salary)   [exp 8, subset E]
- *       Filter (gender='F')                     [exp 9, subset F]
+ *       RelFilter (gender='F')                     [exp 9, subset F]
  *         Scan (emp)                       [exp 0, subset X]</pre>
  * </blockquote>
  * </li>
@@ -141,7 +141,7 @@
  *
  * <blockquote>
  * <pre>Project (deptno)                          [exp 10, subset A]
- *   Filter (gender='F')                     [exp 9, subset F]
+ *   RelFilter (gender='F')                     [exp 9, subset F]
  *     Scan (emp)                       [exp 0, subset X]</pre>
  * </blockquote>
  *

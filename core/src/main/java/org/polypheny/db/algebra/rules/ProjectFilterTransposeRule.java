@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
@@ -49,7 +49,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that pushes a {@link org.polypheny.db.algebra.core.Project} past a {@link org.polypheny.db.algebra.core.Filter}.
+ * Planner rule that pushes a {@link org.polypheny.db.algebra.core.Project} past a {@link RelFilter}.
  */
 public class ProjectFilterTransposeRule extends AlgOptRule {
 
@@ -66,7 +66,7 @@ public class ProjectFilterTransposeRule extends AlgOptRule {
      *
      * @param preserveExprCondition Condition for expressions that should be preserved in the projection
      */
-    public ProjectFilterTransposeRule( Class<? extends Project> projectClass, Class<? extends Filter> filterClass, AlgBuilderFactory algBuilderFactory, PushProjector.ExprCondition preserveExprCondition ) {
+    public ProjectFilterTransposeRule( Class<? extends Project> projectClass, Class<? extends RelFilter> filterClass, AlgBuilderFactory algBuilderFactory, PushProjector.ExprCondition preserveExprCondition ) {
         this( operand( projectClass, operand( filterClass, any() ) ), preserveExprCondition, algBuilderFactory );
     }
 
@@ -81,7 +81,7 @@ public class ProjectFilterTransposeRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         Project origProj;
-        Filter filter;
+        RelFilter filter;
         if ( call.algs.length >= 2 ) {
             origProj = call.alg( 0 );
             filter = call.alg( 1 );

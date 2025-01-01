@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.Exchange;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
@@ -135,7 +135,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
 
 
     @SuppressWarnings("unused")
-    public List<Double> averageColumnSizes( Filter alg, AlgMetadataQuery mq ) {
+    public List<Double> averageColumnSizes( RelFilter alg, AlgMetadataQuery mq ) {
         return mq.getAverageColumnSizes( alg.getInput() );
     }
 

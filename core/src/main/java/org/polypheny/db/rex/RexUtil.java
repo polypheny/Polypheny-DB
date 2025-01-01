@@ -55,7 +55,7 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.fun.AggFunction;
@@ -2489,9 +2489,9 @@ public class RexUtil {
 
 
         /**
-         * Returns whether a {@link Filter} contains a sub-query.
+         * Returns whether a {@link RelFilter} contains a sub-query.
          */
-        public static boolean containsSubQuery( Filter filter ) {
+        public static boolean containsSubQuery( RelFilter filter ) {
             try {
                 filter.getCondition().accept( INSTANCE );
                 return false;

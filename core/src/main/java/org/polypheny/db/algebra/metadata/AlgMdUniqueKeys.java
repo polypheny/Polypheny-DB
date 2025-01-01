@@ -43,7 +43,7 @@ import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Correlate;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.Project;
@@ -74,7 +74,7 @@ public class AlgMdUniqueKeys implements MetadataHandler<BuiltInMetadata.UniqueKe
     }
 
 
-    public Set<ImmutableBitSet> getUniqueKeys( Filter alg, AlgMetadataQuery mq, boolean ignoreNulls ) {
+    public Set<ImmutableBitSet> getUniqueKeys( RelFilter alg, AlgMetadataQuery mq, boolean ignoreNulls ) {
         return mq.getUniqueKeys( alg.getInput(), ignoreNulls );
     }
 

@@ -29,7 +29,7 @@ import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelModify;
@@ -128,7 +128,7 @@ public interface NeoRules {
 
     class NeoFilterRule extends NeoConverterRule {
 
-        public static NeoFilterRule INSTANCE = new NeoFilterRule( Filter.class, NeoUtil::supports, "NeoFilterRule" );
+        public static NeoFilterRule INSTANCE = new NeoFilterRule( RelFilter.class, NeoUtil::supports, "NeoFilterRule" );
 
 
         private <R extends AlgNode> NeoFilterRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
@@ -138,7 +138,7 @@ public interface NeoRules {
 
         @Override
         public NeoFilter convert( AlgNode alg ) {
-            Filter filter = (Filter) alg;
+            RelFilter filter = (RelFilter) alg;
             return new NeoFilter(
                     filter.getCluster(),
                     filter.getTraitSet().replace( NeoConvention.INSTANCE ),

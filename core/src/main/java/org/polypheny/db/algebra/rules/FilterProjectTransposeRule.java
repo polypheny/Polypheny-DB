@@ -38,7 +38,7 @@ import java.util.function.Predicate;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Correlate;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -52,19 +52,19 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that pushes a {@link Filter} past a {@link Project}.
+ * Planner rule that pushes a {@link RelFilter} past a {@link Project}.
  */
 public class FilterProjectTransposeRule extends AlgOptRule {
 
     /**
      * The default instance of {@link org.polypheny.db.algebra.rules.FilterProjectTransposeRule}.
      *
-     * It matches any kind of {@link org.polypheny.db.algebra.core.Join} or {@link Filter}, and generates the same kind of Join and Filter.
+     * It matches any kind of {@link org.polypheny.db.algebra.core.Join} or {@link RelFilter}, and generates the same kind of Join and RelFilter.
      *
-     * It does not allow a Filter to be pushed past the Project if {@link RexUtil#containsCorrelation there is a correlation condition}) anywhere in the Filter, since in some cases it can
+     * It does not allow a RelFilter to be pushed past the Project if {@link RexUtil#containsCorrelation there is a correlation condition}) anywhere in the RelFilter, since in some cases it can
      * prevent a {@link Correlate} from being de-correlated.
      */
-    public static final FilterProjectTransposeRule INSTANCE = new FilterProjectTransposeRule( Filter.class, Project.class, true, true, AlgFactories.LOGICAL_BUILDER );
+    public static final FilterProjectTransposeRule INSTANCE = new FilterProjectTransposeRule( RelFilter.class, Project.class, true, true, AlgFactories.LOGICAL_BUILDER );
 
     private final boolean copyFilter;
     private final boolean copyProject;
@@ -76,7 +76,7 @@ public class FilterProjectTransposeRule extends AlgOptRule {
      * Equivalent to the rule created by {@link #FilterProjectTransposeRule(Class, Predicate, Class, Predicate, boolean, boolean, AlgBuilderFactory)} with some default predicates that do not allow a filter to be pushed
      * past the project if there is a correlation condition anywhere in the filter (since in some cases it can prevent a {@link Correlate} from being de-correlated).
      */
-    public FilterProjectTransposeRule( Class<? extends Filter> filterClass, Class<? extends Project> projectClass, boolean copyFilter, boolean copyProject, AlgBuilderFactory algBuilderFactory ) {
+    public FilterProjectTransposeRule( Class<? extends RelFilter> filterClass, Class<? extends Project> projectClass, boolean copyFilter, boolean copyProject, AlgBuilderFactory algBuilderFactory ) {
         this( filterClass,
                 filter -> !RexUtil.containsCorrelation( filter.getCondition() ),
                 projectClass, project -> true,
@@ -89,12 +89,12 @@ public class FilterProjectTransposeRule extends AlgOptRule {
     /**
      * Creates a FilterProjectTransposeRule.
      *
-     * If {@code copyFilter} is true, creates the same kind of Filter as matched in the rule, otherwise it creates a Filter using the{@link AlgBuilder}  obtained by the {@code algBuilderFactory}.
+     * If {@code copyFilter} is true, creates the same kind of RelFilter as matched in the rule, otherwise it creates a RelFilter using the{@link AlgBuilder}  obtained by the {@code algBuilderFactory}.
      * Similarly for {@code copyProject}.
      *
-     * Defining predicates for the Filter (using {@code filterPredicate}) and/or the Project (using {@code projectPredicate} allows making the rule more restrictive.
+     * Defining predicates for the RelFilter (using {@code filterPredicate}) and/or the Project (using {@code projectPredicate} allows making the rule more restrictive.
      */
-    public <F extends Filter, P extends Project> FilterProjectTransposeRule( Class<F> filterClass, Predicate<? super F> filterPredicate, Class<P> projectClass, Predicate<? super P> projectPredicate, boolean copyFilter, boolean copyProject, AlgBuilderFactory algBuilderFactory ) {
+    public <F extends RelFilter, P extends Project> FilterProjectTransposeRule( Class<F> filterClass, Predicate<? super F> filterPredicate, Class<P> projectClass, Predicate<? super P> projectPredicate, boolean copyFilter, boolean copyProject, AlgBuilderFactory algBuilderFactory ) {
         this(
                 operand( filterClass, null, filterPredicate, operand( projectClass, null, projectPredicate, any() ) ),
                 copyFilter, copyProject, algBuilderFactory );
@@ -110,7 +110,7 @@ public class FilterProjectTransposeRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        final Filter filter = call.alg( 0 );
+        final RelFilter filter = call.alg( 0 );
         final Project project = call.alg( 1 );
 
         if ( RexOver.containsOver( project.getProjects(), null ) ) {

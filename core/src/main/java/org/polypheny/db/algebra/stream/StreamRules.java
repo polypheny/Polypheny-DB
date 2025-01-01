@@ -41,7 +41,7 @@ import java.util.Optional;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
@@ -116,7 +116,7 @@ public class StreamRules {
 
 
     /**
-     * Planner rule that pushes a {@link Delta} through a {@link Filter}.
+     * Planner rule that pushes a {@link Delta} through a {@link RelFilter}.
      */
     public static class DeltaFilterTransposeRule extends AlgOptRule {
 
@@ -127,7 +127,7 @@ public class StreamRules {
          */
         public DeltaFilterTransposeRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operand( Delta.class, operand( Filter.class, any() ) ),
+                    operand( Delta.class, operand( RelFilter.class, any() ) ),
                     algBuilderFactory, null );
         }
 
@@ -136,7 +136,7 @@ public class StreamRules {
         public void onMatch( AlgOptRuleCall call ) {
             final Delta delta = call.alg( 0 );
             Util.discard( delta );
-            final Filter filter = call.alg( 1 );
+            final RelFilter filter = call.alg( 1 );
             final LogicalDelta newDelta = LogicalDelta.create( filter.getInput() );
             final LogicalRelFilter newFilter = LogicalRelFilter.create( newDelta, filter.getCondition() );
             call.transformTo( newFilter );

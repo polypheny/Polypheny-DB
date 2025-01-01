@@ -43,7 +43,7 @@ import java.util.Objects;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.EquiJoin;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -69,7 +69,7 @@ public abstract class FilterJoinRule extends AlgOptRule {
     public static final Predicate TRUE_PREDICATE = ( join, joinType, exp ) -> true;
 
     /**
-     * Rule that pushes predicates from a Filter into the Join below them.
+     * Rule that pushes predicates from a RelFilter into the Join below them.
      */
     public static final FilterJoinRule FILTER_ON_JOIN = new FilterIntoJoinRule( true, AlgFactories.LOGICAL_BUILDER, TRUE_PREDICATE );
 
@@ -104,7 +104,7 @@ public abstract class FilterJoinRule extends AlgOptRule {
     }
 
 
-    protected void perform( AlgOptRuleCall call, Filter filter, Join join ) {
+    protected void perform( AlgOptRuleCall call, RelFilter filter, Join join ) {
         final List<RexNode> joinFilters = AlgOptUtil.conjunctions( join.getCondition() );
         final List<RexNode> origJoinFilters = ImmutableList.copyOf( joinFilters );
 
@@ -233,7 +233,7 @@ public abstract class FilterJoinRule extends AlgOptRule {
      *
      * The default implementation does nothing; i.e. the join can handle all conditions.
      *
-     * @param aboveFilters Filter above Join
+     * @param aboveFilters RelFilter above Join
      * @param joinFilters Filters in join condition
      * @param join Join
      * @param joinType JoinRelType could be different from type in Join due to outer join simplification.
@@ -276,7 +276,7 @@ public abstract class FilterJoinRule extends AlgOptRule {
 
         public FilterIntoJoinRule( boolean smart, AlgBuilderFactory algBuilderFactory, Predicate predicate ) {
             super(
-                    operand( Filter.class, operand( Join.class, AlgOptRule.any() ) ),
+                    operand( RelFilter.class, operand( Join.class, AlgOptRule.any() ) ),
                     "FilterJoinRule:filter",
                     smart,
                     algBuilderFactory,
@@ -286,7 +286,7 @@ public abstract class FilterJoinRule extends AlgOptRule {
 
         @Override
         public void onMatch( AlgOptRuleCall call ) {
-            Filter filter = call.alg( 0 );
+            RelFilter filter = call.alg( 0 );
             Join join = call.alg( 1 );
             perform( call, filter, join );
         }

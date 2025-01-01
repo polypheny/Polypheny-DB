@@ -47,6 +47,10 @@ public class LogicalLpgFilter extends LpgFilter {
         return copy( traitSet, inputs.get( 0 ), getCondition() );
     }
 
+    public LogicalLpgFilter copy( List<AlgNode> inputs ) {
+        return new LogicalLpgFilter( getCluster(), traitSet, inputs.get( 0 ), getCondition() );
+    }
+
 
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {

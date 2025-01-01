@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.logical.lpg;
 
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -58,6 +59,12 @@ public class LogicalLpgSort extends LpgSort {
         return new LogicalLpgSort( newInput.getCluster(), traitSet, collation, newInput,
                 offset == null ? null : ((RexLiteral) offset).value.asNumber().intValue(),
                 fetch == null ? null : ((RexLiteral) fetch).value.asNumber().intValue() );
+    }
+
+    public LogicalLpgSort copy( List<AlgNode> inputs) {
+            return new LogicalLpgSort(getCluster(), traitSet, collation, inputs.get(0),
+                    offset == null ? null : ((RexLiteral) offset).value.asNumber().intValue(),
+                    fetch == null ? null : ((RexLiteral) fetch).value.asNumber().intValue() );
     }
 
 

@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.metadata.AlgMdPredicates;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -49,7 +49,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that infers predicates from on a {@link Join} and creates {@link Filter}s if those predicates can be pushed to its inputs.
+ * Planner rule that infers predicates from on a {@link Join} and creates {@link RelFilter}s if those predicates can be pushed to its inputs.
  *
  * Uses {@link AlgMdPredicates} to infer the predicates, returns them in a {@link AlgOptPredicateList} and applies them appropriately.
  */

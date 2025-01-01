@@ -62,6 +62,10 @@ public class LogicalLpgProject extends LpgProject {
         return new LogicalLpgProject( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), projects, names );
     }
 
+    public LogicalLpgProject copy( List<AlgNode> inputs ) {
+        return new LogicalLpgProject( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), projects, names );
+    }
+
 
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {

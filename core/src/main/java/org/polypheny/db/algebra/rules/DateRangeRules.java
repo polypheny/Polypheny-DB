@@ -58,7 +58,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
@@ -105,7 +105,7 @@ public abstract class DateRangeRules {
     }
 
 
-    private static final Predicate<Filter> FILTER_PREDICATE =
+    private static final Predicate<RelFilter> FILTER_PREDICATE =
             filter -> {
                 try ( ExtractFinder finder = ExtractFinder.THREAD_INSTANCES.get() ) {
                     assert finder.timeUnits.isEmpty() && finder.opKinds.isEmpty() : "previous user did not clean up";
@@ -177,19 +177,19 @@ public abstract class DateRangeRules {
 
 
     /**
-     * Rule that converts EXTRACT, FLOOR and CEIL in a {@link Filter} into a date range.
+     * Rule that converts EXTRACT, FLOOR and CEIL in a {@link RelFilter} into a date range.
      */
     @SuppressWarnings("WeakerAccess")
     public static class FilterDateRangeRule extends AlgOptRule {
 
         public FilterDateRangeRule( AlgBuilderFactory algBuilderFactory ) {
-            super( operand( Filter.class, null, FILTER_PREDICATE, any() ), algBuilderFactory, "FilterDateRangeRule" );
+            super( operand( RelFilter.class, null, FILTER_PREDICATE, any() ), algBuilderFactory, "FilterDateRangeRule" );
         }
 
 
         @Override
         public void onMatch( AlgOptRuleCall call ) {
-            final Filter filter = call.alg( 0 );
+            final RelFilter filter = call.alg( 0 );
             final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
             final String timeZone = TimeZone.getDefault().getID();
             final RexNode condition = replaceTimeUnits( rexBuilder, filter.getCondition(), timeZone );

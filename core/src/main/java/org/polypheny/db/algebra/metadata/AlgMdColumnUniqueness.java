@@ -44,7 +44,7 @@ import org.polypheny.db.algebra.convert.Converter;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.Exchange;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinInfo;
@@ -93,7 +93,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
     }
 
 
-    public Boolean areColumnsUnique( Filter alg, AlgMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls ) {
+    public Boolean areColumnsUnique( RelFilter alg, AlgMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls ) {
         return mq.areColumnsUnique( alg.getInput(), columns, ignoreNulls );
     }
 
@@ -320,7 +320,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
         int nullCount = 0;
         for ( AlgNode alg2 : alg.getAlgs() ) {
             if ( alg2 instanceof Aggregate
-                    || alg2 instanceof Filter
+                    || alg2 instanceof RelFilter
                     || alg2 instanceof Values
                     || alg2 instanceof RelScan
                     || simplyProjects( alg2, columns ) ) {
