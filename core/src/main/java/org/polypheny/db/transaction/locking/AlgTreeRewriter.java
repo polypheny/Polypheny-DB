@@ -24,7 +24,10 @@ import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
+import org.polypheny.db.algebra.core.common.Filter;
+import org.polypheny.db.algebra.core.document.DocumentFilter;
+import org.polypheny.db.algebra.core.lpg.LpgFilter;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocIdCollector;
@@ -92,8 +95,8 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
             reset();
             return root.withAlg( rootAlg );
         }
-        if (!collectorInsertPosition.equals( rootAlg )) {
-            throw new RuntimeException("Should never throw!");
+        if ( !collectorInsertPosition.equals( rootAlg ) ) {
+            throw new RuntimeException( "Should never throw!" );
         }
         AlgNode newRootAlg = null;
         switch ( rootAlg.getModel() ) {
@@ -120,7 +123,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     }
 
 
-    private void updateCollectorInsertPosition(AlgNode current) {
+    private void updateCollectorInsertPosition( AlgNode current ) {
         List<AlgNode> trace = getLastNNodes( 1 );
         switch ( trace.size() ) {
             case 0:
@@ -129,7 +132,8 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
                 break;
             case 1:
                 // if previous node is a filter place collector in front of filter
-                if ( trace.get( 0 ) instanceof Filter) {
+                AlgNode first = trace.get( 0 );
+                if ( first instanceof Filter ) {
                     collectorInsertPosition = trace.get( 0 );
                     return;
                 }
@@ -144,30 +148,33 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         return node.getInputs().contains( collectorInsertPosition );
     }
 
-    private List<AlgNode> modifyInputs(List<AlgNode> inputs) {
+
+    private List<AlgNode> modifyInputs( List<AlgNode> inputs ) {
         return inputs.stream().map( current -> {
-            if (!current.equals( collectorInsertPosition )) {
+            if ( !current.equals( collectorInsertPosition ) ) {
                 return current;
             }
             return modifyInput( current );
-        } ).collect( Collectors.toCollection( LinkedList::new ));
+        } ).collect( Collectors.toCollection( LinkedList::new ) );
     }
 
-    private AlgNode modifyInput(AlgNode input) {
-            collectorInsertPosition = null;
-            switch ( input.getModel() ) {
-                case RELATIONAL -> {
-                    return LogicalRelIdCollector.create( input, transaction, findEntity( input ) );
-                }
-                case DOCUMENT -> {
-                    return LogicalDocIdCollector.create( input, transaction, findEntity( input ) );
-                }
-                case GRAPH -> {
-                    return LogicalLpgIdCollector.create( input, transaction, findEntity( input ) );
-                }
+
+    private AlgNode modifyInput( AlgNode input ) {
+        collectorInsertPosition = null;
+        switch ( input.getModel() ) {
+            case RELATIONAL -> {
+                return LogicalRelIdCollector.create( input, transaction, findEntity( input ) );
             }
-            return input;
+            case DOCUMENT -> {
+                return LogicalDocIdCollector.create( input, transaction, findEntity( input ) );
+            }
+            case GRAPH -> {
+                return LogicalLpgIdCollector.create( input, transaction, findEntity( input ) );
+            }
+        }
+        return input;
     }
+
 
     public Entity findEntity( AlgNode node ) {
         Entity entity = null;
@@ -196,7 +203,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     public AlgNode visit( LogicalRelMatch match ) {
         LogicalRelMatch match1 = visitChild( match, 0, match.getInput() );
         if ( isTarget( match1 ) ) {
-            return match1.copy( modifyInput(match1.getInput()) );
+            return match1.copy( modifyInput( match1.getInput() ) );
         }
         return match1;
     }
@@ -204,7 +211,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalRelScan scan ) {
-        updateCollectorInsertPosition(scan);
+        updateCollectorInsertPosition( scan );
         return scan;
     }
 
@@ -239,18 +246,17 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalRelProject project ) {
         LogicalRelProject project1 = visitChildren( project );
-        if (isTarget( project1 )) {
+        if ( isTarget( project1 ) ) {
             return project1.copy( modifyInput( project1.getInput() ) );
         }
         return project1;
     }
 
 
-
     @Override
     public AlgNode visit( LogicalRelJoin join ) {
         LogicalRelJoin join1 = visitChildren( join );
-        if (isTarget( join1 )) {
+        if ( isTarget( join1 ) ) {
             AlgNode left = modifyInput( join1.getLeft() );
             AlgNode right = modifyInput( join1.getRight() );
             return join1.copy( left, right );
@@ -262,7 +268,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalRelCorrelate correlate ) {
         LogicalRelCorrelate correlate1 = visitChildren( correlate );
-        if (isTarget( correlate1 )) {
+        if ( isTarget( correlate1 ) ) {
             AlgNode left = modifyInput( correlate1.getLeft() );
             AlgNode right = modifyInput( correlate1.getRight() );
             return correlate.copy( left, right );
@@ -274,8 +280,8 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalRelUnion union ) {
         LogicalRelUnion union1 = visitChildren( union );
-        if (isTarget( union1 )) {
-            return union1.copy( modifyInputs( union1.getInputs() ));
+        if ( isTarget( union1 ) ) {
+            return union1.copy( modifyInputs( union1.getInputs() ) );
         }
         return union1;
     }
@@ -284,8 +290,8 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalRelIntersect intersect ) {
         LogicalRelIntersect intersect1 = visitChildren( intersect );
-        if (isTarget( intersect1 )) {
-            return intersect1.copy( modifyInputs( intersect1.getInputs() ));
+        if ( isTarget( intersect1 ) ) {
+            return intersect1.copy( modifyInputs( intersect1.getInputs() ) );
         }
         return intersect1;
     }
@@ -294,8 +300,8 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalRelMinus minus ) {
         LogicalRelMinus minus1 = visitChildren( minus );
-        if (isTarget( minus1 )) {
-            return minus1.copy( modifyInputs( minus1.getInputs() ));
+        if ( isTarget( minus1 ) ) {
+            return minus1.copy( modifyInputs( minus1.getInputs() ) );
         }
         return minus1;
     }
@@ -304,8 +310,8 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalRelSort sort ) {
         LogicalRelSort sort1 = visitChildren( sort );
-        if (isTarget( sort1 )) {
-            return sort1.copy( modifyInputs( sort1.getInputs() ));
+        if ( isTarget( sort1 ) ) {
+            return sort1.copy( modifyInputs( sort1.getInputs() ) );
         }
         return sort1;
     }
@@ -314,8 +320,8 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalRelExchange exchange ) {
         LogicalRelExchange exchange1 = visitChildren( exchange );
-        if (isTarget( exchange1 )) {
-            return exchange1.copy( modifyInputs( exchange1.getInputs() ));
+        if ( isTarget( exchange1 ) ) {
+            return exchange1.copy( modifyInputs( exchange1.getInputs() ) );
         }
         return exchange1;
     }
@@ -324,8 +330,8 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalConditionalExecute lce ) {
         LogicalConditionalExecute lce1 = visitChildren( lce );
-        if (isTarget( lce1 )) {
-            return lce1.copy( modifyInputs( lce1.getInputs() ));
+        if ( isTarget( lce1 ) ) {
+            return lce1.copy( modifyInputs( lce1.getInputs() ) );
         }
         return lce1;
     }
@@ -335,7 +341,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     public AlgNode visit( LogicalRelModify modify ) {
         LogicalRelModify modify1 = visitChildren( modify );
         if ( isTarget( modify1 ) ) {
-            modify1 = modify1.copy( modifyInputs(modify1.getInputs()) );
+            modify1 = modify1.copy( modifyInputs( modify1.getInputs() ) );
         }
         switch ( modify1.getOperation() ) {
             case INSERT:
@@ -355,8 +361,8 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalConstraintEnforcer enforcer ) {
         LogicalConstraintEnforcer enforcer1 = visitChildren( enforcer );
-        if (isTarget( enforcer1 )) {
-            return enforcer1.copy( modifyInputs( enforcer1.getInputs() ));
+        if ( isTarget( enforcer1 ) ) {
+            return enforcer1.copy( modifyInputs( enforcer1.getInputs() ) );
         }
         return enforcer1;
     }
@@ -380,7 +386,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgScan scan ) {
-        updateCollectorInsertPosition(scan);
+        updateCollectorInsertPosition( scan );
         return scan;
     }
 
@@ -393,43 +399,71 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgFilter filter ) {
-        return visitChildren( filter );
+        LogicalLpgFilter filter1 = visitChildren( filter );
+        if ( isTarget( filter1 ) ) {
+            filter1 = filter1.copy( modifyInputs( filter1.getInputs() ) );
+        }
+        return filter1;
     }
 
 
     @Override
     public AlgNode visit( LogicalLpgMatch match ) {
-        return visitChildren( match );
+        LogicalLpgMatch match1 = visitChildren( match );
+        if ( isTarget( match1 ) ) {
+            match1 = match1.copy( modifyInputs( match1.getInputs() ) );
+        }
+        return match1;
     }
 
 
     @Override
     public AlgNode visit( LogicalLpgProject project ) {
-        return visitChildren( project );
+        LogicalLpgProject project1 = visitChildren( project );
+        if ( isTarget( project1 ) ) {
+            project1 = project1.copy( modifyInputs( project1.getInputs() ) );
+        }
+        return project1;
     }
 
 
     @Override
     public AlgNode visit( LogicalLpgAggregate aggregate ) {
-        return visitChildren( aggregate );
+        LogicalLpgAggregate aggregate1 = visitChildren( aggregate );
+        if ( isTarget( aggregate1 ) ) {
+            aggregate1 = aggregate1.copy( modifyInputs( aggregate1.getInputs() ) );
+        }
+        return aggregate1;
     }
 
 
     @Override
     public AlgNode visit( LogicalLpgSort sort ) {
-        return visitChildren( sort );
+        LogicalLpgSort sort1 = visitChildren( sort );
+        if ( isTarget( sort1 ) ) {
+            sort1 = sort1.copy( modifyInputs( sort1.getInputs() ) );
+        }
+        return sort1;
     }
 
 
     @Override
     public AlgNode visit( LogicalLpgUnwind unwind ) {
-        return visitChildren( unwind );
+        LogicalLpgUnwind unwind1 = visitChildren( unwind );
+        if ( isTarget( unwind1 ) ) {
+            unwind1 = unwind1.copy( modifyInputs( unwind1.getInputs() ) );
+        }
+        return unwind1;
     }
 
 
     @Override
     public AlgNode visit( LogicalLpgTransformer transformer ) {
-        return visitChildren( transformer );
+        LogicalLpgTransformer unwind1 = visitChildren( transformer );
+        if ( isTarget( unwind1 ) ) {
+            unwind1 = unwind1.copy( modifyInputs( unwind1.getInputs() ) );
+        }
+        return unwind1;
     }
 
 
@@ -437,7 +471,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     public AlgNode visit( LogicalDocumentModify modify ) {
         LogicalDocumentModify modify1 = visitChildren( modify );
         if ( isTarget( modify1 ) ) {
-            modify1 = modify1.copy( modifyInputs(modify1.getInputs()) );
+            modify1 = modify1.copy( modifyInputs( modify1.getInputs() ) );
         }
         switch ( modify1.getOperation() ) {
             case INSERT:
@@ -459,7 +493,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     public AlgNode visit( LogicalDocumentAggregate aggregate ) {
         LogicalDocumentAggregate aggregate1 = visitChildren( aggregate );
         if ( isTarget( aggregate1 ) ) {
-            aggregate1 = aggregate1.copy( modifyInputs(aggregate1.getInputs()) );
+            aggregate1 = aggregate1.copy( modifyInputs( aggregate1.getInputs() ) );
         }
         return aggregate1;
     }
@@ -469,7 +503,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     public AlgNode visit( LogicalDocumentFilter filter ) {
         LogicalDocumentFilter filter1 = visitChildren( filter );
         if ( isTarget( filter1 ) ) {
-            filter1 = filter1.copy( modifyInputs(filter1.getInputs()) );
+            filter1 = filter1.copy( modifyInputs( filter1.getInputs() ) );
         }
         return filter1;
     }
@@ -479,7 +513,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     public AlgNode visit( LogicalDocumentProject project ) {
         LogicalDocumentProject project1 = visitChildren( project );
         if ( isTarget( project1 ) ) {
-            project1 = project1.copy( modifyInputs(project1.getInputs()) );
+            project1 = project1.copy( modifyInputs( project1.getInputs() ) );
         }
         return project1;
     }
@@ -487,7 +521,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentScan scan ) {
-        updateCollectorInsertPosition(scan);
+        updateCollectorInsertPosition( scan );
         return visitChildren( scan );
     }
 
@@ -496,7 +530,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     public AlgNode visit( LogicalDocumentSort sort ) {
         LogicalDocumentSort sort1 = visitChildren( sort );
         if ( isTarget( sort1 ) ) {
-            sort1 = sort1.copy( modifyInputs(sort1.getInputs()) );
+            sort1 = sort1.copy( modifyInputs( sort1.getInputs() ) );
         }
         return sort1;
     }
@@ -506,7 +540,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     public AlgNode visit( LogicalDocumentTransformer transformer ) {
         LogicalDocumentTransformer sort1 = visitChildren( transformer );
         if ( isTarget( sort1 ) ) {
-            sort1 = sort1.copy( modifyInputs(sort1.getInputs()) );
+            sort1 = sort1.copy( modifyInputs( sort1.getInputs() ) );
         }
         return sort1;
     }
