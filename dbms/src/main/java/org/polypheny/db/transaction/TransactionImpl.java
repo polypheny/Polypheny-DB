@@ -50,6 +50,7 @@ import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.Enforce
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.LogicalUser;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -78,6 +79,8 @@ import org.polypheny.db.view.MaterializedViewManager;
 public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private static final AtomicLong TRANSACTION_COUNTER = new AtomicLong();
+
+    private long transactionTimestamp;
 
     @Getter
     private final long id;
@@ -156,6 +159,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         this.analyze = analyze;
         this.origin = origin;
         this.flavor = flavor;
+        // ToDo TH: temporary dummy to get some values to work with
+        this.transactionTimestamp = System.nanoTime();
         this.executor = Thread.currentThread();
     }
 
@@ -211,7 +216,13 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             log.trace( "This transaction has already been finished!" );
             return;
         }
+        boolean okToCommit = true;
 
+        if ( !readSet.isEmpty() ) {
+            okToCommit &= validateReadSet();
+        }
+
+        Pair<Boolean, String> isValid = catalog.checkIntegrity();
         Pair<Boolean, String> isValid = checkIntegrity();
         if ( !isValid.left ) {
             rollback( "Constraint violation" );
@@ -222,7 +233,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         commitActions.forEach( Runnable::run );
 
         // Prepare to commit changes on all involved adapters and the catalog
-        boolean okToCommit = true;
         if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
             for ( Adapter<?> adapter : involvedAdapters ) {
                 okToCommit &= adapter.prepare( xid );
@@ -274,6 +284,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // Free resources hold by statements
         statements.forEach( Statement::close );
 
+        updateCommitInstantLog();
+
         // Release locks
         releaseAllLocks();
         // Remove transaction
@@ -281,6 +293,23 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         // Handover information about commit to Materialized Manager
         MaterializedViewManager.getInstance().updateCommittedXid( xid );
+    }
+
+    private boolean validateReadSet() {
+        for ( VersionedEntryIdentifier identifier : readSet ) {
+            LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( identifier.getEntityId() ).orElseThrow();
+            if (entity.getEntryCommitInstantsLog().getLastCommit( identifier ) > transactionTimestamp) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void updateCommitInstantLog() {
+        for (VersionedEntryIdentifier identifier : readSet ) {
+            LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( identifier.getEntityId() ).orElseThrow();
+            entity.getEntryCommitInstantsLog().setOrUpdateLastCommit( identifier, transactionTimestamp );
+        }
     }
 
 
