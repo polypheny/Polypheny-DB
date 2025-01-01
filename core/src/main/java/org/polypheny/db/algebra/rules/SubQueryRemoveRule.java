@@ -46,7 +46,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
@@ -524,15 +524,15 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
 
         public SubQueryFilterRemoveRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operand( Filter.class, null, RexUtil.SubQueryFinder::containsSubQuery, any() ),
+                    operand( RelFilter.class, null, RexUtil.SubQueryFinder::containsSubQuery, any() ),
                     algBuilderFactory,
-                    "SubQueryRemoveRule:Filter" );
+                    "SubQueryRemoveRule:RelFilter" );
         }
 
 
         @Override
         public void onMatch( AlgOptRuleCall call ) {
-            final Filter filter = call.alg( 0 );
+            final RelFilter filter = call.alg( 0 );
             final AlgBuilder builder = call.builder();
             builder.push( filter.getInput() );
             int count = 0;

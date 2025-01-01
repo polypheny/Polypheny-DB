@@ -67,7 +67,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.AlgFactories.FilterFactory;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
@@ -2454,9 +2454,9 @@ public abstract class AlgOptUtil {
 
 
     /**
-     * Predicate for whether a {@link Filter} contains multisets or windowed aggregates.
+     * Predicate for whether a {@link RelFilter} contains multisets or windowed aggregates.
      */
-    public static boolean containsMultisetOrWindowedAgg( Filter filter ) {
+    public static boolean containsMultisetOrWindowedAgg( RelFilter filter ) {
         return !(B && RexMultisetUtil.containsMultiset( filter.getCondition(), true ) || RexOver.containsOver( filter.getCondition() ));
     }
 

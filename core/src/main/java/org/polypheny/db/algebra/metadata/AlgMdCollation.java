@@ -56,7 +56,7 @@ import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.Correlate;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Minus;
@@ -129,7 +129,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
     }
 
 
-    public ImmutableList<AlgCollation> collations( Filter alg, AlgMetadataQuery mq ) {
+    public ImmutableList<AlgCollation> collations( RelFilter alg, AlgMetadataQuery mq ) {
         return mq.collations( alg.getInput() );
     }
 
@@ -217,7 +217,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
 
 
     /**
-     * Helper method to determine a {@link org.polypheny.db.algebra.core.Filter}'s collation.
+     * Helper method to determine a {@link RelFilter}'s collation.
      */
     public static List<AlgCollation> filter( AlgMetadataQuery mq, AlgNode input ) {
         return mq.collations( input );

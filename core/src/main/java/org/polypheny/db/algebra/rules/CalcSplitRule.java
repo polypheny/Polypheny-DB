@@ -37,7 +37,7 @@ package org.polypheny.db.algebra.rules;
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Calc;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -48,9 +48,9 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * Planner rule that converts a {@link Calc} to a {@link Project} and {@link Filter}.
+ * Planner rule that converts a {@link Calc} to a {@link Project} and {@link RelFilter}.
  *
- * Not enabled by default, as it works against the usual flow, which is to convert {@code Project} and {@code Filter} to {@code Calc}. But useful for specific tasks,
+ * Not enabled by default, as it works against the usual flow, which is to convert {@code Project} and {@code RelFilter} to {@code Calc}. But useful for specific tasks,
  * such as optimizing before calling an {@link org.polypheny.db.interpreter.Interpreter}.
  */
 public class CalcSplitRule extends AlgOptRule {

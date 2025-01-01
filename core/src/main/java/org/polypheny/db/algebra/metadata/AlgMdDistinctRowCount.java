@@ -39,7 +39,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Exchange;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
@@ -130,7 +130,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
     }
 
 
-    public Double getDistinctRowCount( Filter alg, AlgMetadataQuery mq, ImmutableBitSet groupKey, RexNode predicate ) {
+    public Double getDistinctRowCount( RelFilter alg, AlgMetadataQuery mq, ImmutableBitSet groupKey, RexNode predicate ) {
         if ( predicate == null || predicate.isAlwaysTrue() ) {
             if ( groupKey.isEmpty() ) {
                 return 1D;

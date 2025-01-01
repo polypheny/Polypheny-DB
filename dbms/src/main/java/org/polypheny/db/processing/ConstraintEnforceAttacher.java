@@ -175,7 +175,7 @@ public class ConstraintEnforceAttacher {
      *
      *                                   ConditionalExecute
      *     TableModify                    /             \
-     *          |              ->     Filter           TableModify
+     *          |              ->     RelFilter           TableModify
      *       Values                     |                  |
      *                                Scan               Values
      * </code></pre>

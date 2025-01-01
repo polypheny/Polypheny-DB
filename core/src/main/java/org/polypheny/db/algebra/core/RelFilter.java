@@ -67,7 +67,7 @@ import org.polypheny.db.util.Litmus;
  * @see LogicalRelFilter
  */
 @Getter
-public abstract class Filter extends SingleAlg {
+public abstract class RelFilter extends SingleAlg {
 
     protected final RexNode condition;
 
@@ -80,7 +80,7 @@ public abstract class Filter extends SingleAlg {
      * @param child input relational expression
      * @param condition boolean expression which determines whether a row is allowed to pass
      */
-    protected Filter( AlgCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
+    protected RelFilter( AlgCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
         super( cluster, traits, child );
         assert condition != null;
         assert RexUtil.isFlat( condition ) : condition;
@@ -96,7 +96,7 @@ public abstract class Filter extends SingleAlg {
     }
 
 
-    public abstract Filter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition );
+    public abstract RelFilter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition );
 
 
     @Override

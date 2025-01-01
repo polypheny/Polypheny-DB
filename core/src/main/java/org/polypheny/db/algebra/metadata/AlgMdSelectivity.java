@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
@@ -107,7 +107,7 @@ public class AlgMdSelectivity implements MetadataHandler<BuiltInMetadata.Selecti
     }
 
 
-    public Double getSelectivity( Filter alg, AlgMetadataQuery mq, RexNode predicate ) {
+    public Double getSelectivity( RelFilter alg, AlgMetadataQuery mq, RexNode predicate ) {
         // Take the difference between the predicate passed in and the predicate in the filter's condition, so we don't apply the selectivity of the filter twice.
         // If no predicate is passed in, use the filter's condition.
         if ( predicate != null ) {

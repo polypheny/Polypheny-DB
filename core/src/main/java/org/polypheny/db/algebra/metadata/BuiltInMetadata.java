@@ -474,7 +474,7 @@ public abstract class BuiltInMetadata {
          * Given the input expression applied on the given {@link AlgNode}, this provider returns the expression with its lineage resolved.
          * <p>
          * In particular, the result will be a set of nodes which might contain references to columns in Scan operators ({@link RexTableIndexRef}). An expression can have more than one lineage expression due to
-         * Union operators. However, we do not check column equality in Filter predicates. Each Scan operator below the node is identified uniquely by its qualified name and its entity number.
+         * Union operators. However, we do not check column equality in RelFilter predicates. Each Scan operator below the node is identified uniquely by its qualified name and its entity number.
          * <p>
          * For example, if the expression is {@code $0 + 2} and {@code $0} originated from column {@code $3} in the {@code 0} occurrence of table {@code A} in the plan, result will be: {@code A.#0.$3 + 2}.
          * Occurrences are generated in no particular order, but it is guaranteed that if two expressions referred to the same table, the qualified name + occurrence will be the same.

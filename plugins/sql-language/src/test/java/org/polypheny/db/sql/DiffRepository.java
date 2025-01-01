@@ -154,7 +154,7 @@ public class DiffRepository {
      * @param refFile Reference file
      * @param logFile Log file
      * @param baseRepository Parent repository or null
-     * @param filter Filter or null
+     * @param filter RelFilter or null
      */
     private DiffRepository( URL refFile, File logFile, DiffRepository baseRepository, Filter filter ) {
         this.baseRepository = baseRepository;

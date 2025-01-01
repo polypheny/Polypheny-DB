@@ -59,7 +59,7 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
@@ -122,7 +122,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
     private ImmutableMap<Class<? extends AlgNode>, Function<AlgNode, Result>> handlers = ImmutableMap.copyOf(
             new HashMap<>() {{
                 put( Join.class, a -> visit( (Join) a ) );
-                put( Filter.class, a -> visit( (Filter) a ) );
+                put( RelFilter.class, a -> visit( (RelFilter) a ) );
                 put( Project.class, a -> visit( (Project) a ) );
                 put( Aggregate.class, a -> visit( (Aggregate) a ) );
                 put( Values.class, a -> visit( (Values) a ) );
@@ -196,7 +196,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
     }
 
 
-    public Result visit( Filter e ) {
+    public Result visit( RelFilter e ) {
         final AlgNode input = e.getInput();
         Result x = visitChild( 0, input );
         parseCorrelTable( e, x );

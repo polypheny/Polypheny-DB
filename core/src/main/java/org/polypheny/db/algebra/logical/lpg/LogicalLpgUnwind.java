@@ -59,6 +59,11 @@ public class LogicalLpgUnwind extends LpgUnwind {
     }
 
 
+    public LogicalLpgUnwind copy( List<AlgNode> inputs ) {
+        return new LogicalLpgUnwind( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), index, alias );
+    }
+
+
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );

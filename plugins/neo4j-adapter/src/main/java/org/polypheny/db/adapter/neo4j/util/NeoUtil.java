@@ -42,7 +42,7 @@ import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
 import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -394,7 +394,7 @@ public interface NeoUtil {
         return adjusted;
     }
 
-    static boolean supports( Filter r ) {
+    static boolean supports( RelFilter r ) {
         if ( r.getTraitSet().contains( ModelTrait.GRAPH ) ) {
             return false;
         }

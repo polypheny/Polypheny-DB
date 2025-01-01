@@ -250,7 +250,7 @@ public interface SqlValidator extends Validator {
      * Validates parameters for aggregate function.
      *
      * @param aggCall Call to aggregate function
-     * @param filter Filter ({@code FILTER (WHERE)} clause), or null
+     * @param filter RelFilter ({@code FILTER (WHERE)} clause), or null
      * @param orderList Ordering specification ({@code WITHING GROUP} clause), or null
      * @param scope Syntactic scope
      */

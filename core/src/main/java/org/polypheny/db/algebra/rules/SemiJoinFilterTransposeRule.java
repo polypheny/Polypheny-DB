@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.plan.AlgOptRule;
@@ -45,7 +45,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that pushes {@link SemiJoin}s down in a tree past a {@link Filter}.
+ * Planner rule that pushes {@link SemiJoin}s down in a tree past a {@link RelFilter}.
  *
  * The intention is to trigger other rules that will convert {@code SemiJoin}s.
  *

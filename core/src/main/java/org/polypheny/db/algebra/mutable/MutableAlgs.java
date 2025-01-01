@@ -45,7 +45,7 @@ import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.Collect;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.Exchange;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
@@ -333,7 +333,7 @@ public abstract class MutableAlgs {
             final MutableAlg input = toMutable( project.getInput() );
             return MutableProject.of( input, project.getProjects(), project.getTupleType().getFieldNames() );
         }
-        if ( alg instanceof Filter filter ) {
+        if ( alg instanceof RelFilter filter ) {
             final MutableAlg input = toMutable( filter.getInput() );
             return MutableFilter.of( input, filter.getCondition() );
         }

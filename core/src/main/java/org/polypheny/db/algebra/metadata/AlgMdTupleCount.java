@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Calc;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
@@ -115,7 +115,7 @@ public class AlgMdTupleCount implements MetadataHandler<TupleCount> {
     }
 
 
-    public Double getTupleCount( Filter alg, AlgMetadataQuery mq ) {
+    public Double getTupleCount( RelFilter alg, AlgMetadataQuery mq ) {
         return AlgMdUtil.estimateFilteredRows( alg.getInput(), alg.getCondition(), mq );
     }
 

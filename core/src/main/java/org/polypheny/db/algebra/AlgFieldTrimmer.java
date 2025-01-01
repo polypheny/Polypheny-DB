@@ -56,7 +56,7 @@ import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
@@ -131,7 +131,7 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
     private final ImmutableMap<Class<? extends AlgNode>, Function3<AlgNode, ImmutableBitSet, Set<AlgDataTypeField>, TrimResult>> handlers = ImmutableMap.copyOf(
             new HashMap<>() {{
                 put( Aggregate.class, ( a, i, s ) -> trimFields( (Aggregate) a, i, s ) );
-                put( Filter.class, ( a, i, s ) -> trimFields( (Filter) a, i, s ) );
+                put( RelFilter.class, ( a, i, s ) -> trimFields( (RelFilter) a, i, s ) );
                 put( Join.class, ( a, i, s ) -> trimFields( (Join) a, i, s ) );
                 put( Project.class, ( a, i, s ) -> trimFields( (Project) a, i, s ) );
                 put( RelScan.class, ( a, i, s ) -> trimFields( (RelScan<?>) a, i, s ) );
@@ -397,7 +397,7 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
     /**
      * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalRelFilter}.
      */
-    public TrimResult trimFields( Filter filter, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
+    public TrimResult trimFields( RelFilter filter, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         final AlgDataType rowType = filter.getTupleType();
         final int fieldCount = rowType.getFieldCount();
         final RexNode conditionExpr = filter.getCondition();

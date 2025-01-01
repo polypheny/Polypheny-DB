@@ -38,7 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptRule;
@@ -51,7 +51,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that pushes a {@link org.polypheny.db.algebra.core.Filter} past a {@link org.polypheny.db.algebra.core.SetOp}.
+ * Planner rule that pushes a {@link RelFilter} past a {@link org.polypheny.db.algebra.core.SetOp}.
  */
 public class FilterSetOpTransposeRule extends AlgOptRule {
 
@@ -63,7 +63,7 @@ public class FilterSetOpTransposeRule extends AlgOptRule {
      */
     public FilterSetOpTransposeRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                operand( Filter.class, operand( SetOp.class, any() ) ),
+                operand( RelFilter.class, operand( SetOp.class, any() ) ),
                 algBuilderFactory, null );
     }
 
@@ -71,7 +71,7 @@ public class FilterSetOpTransposeRule extends AlgOptRule {
     // implement AlgOptRule
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        Filter filterAlg = call.alg( 0 );
+        RelFilter filterAlg = call.alg( 0 );
         SetOp setOp = call.alg( 1 );
 
         RexNode condition = filterAlg.getCondition();

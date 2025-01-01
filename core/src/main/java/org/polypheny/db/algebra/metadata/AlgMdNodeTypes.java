@@ -39,7 +39,7 @@ import com.google.common.collect.Multimap;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Calc;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
@@ -107,8 +107,8 @@ public class AlgMdNodeTypes implements MetadataHandler<BuiltInMetadata.NodeTypes
     }
 
 
-    public Multimap<Class<? extends AlgNode>, AlgNode> getNodeTypes( Filter alg, AlgMetadataQuery mq ) {
-        return getNodeTypes( alg, Filter.class, mq );
+    public Multimap<Class<? extends AlgNode>, AlgNode> getNodeTypes( RelFilter alg, AlgMetadataQuery mq ) {
+        return getNodeTypes( alg, RelFilter.class, mq );
     }
 
 

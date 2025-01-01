@@ -40,7 +40,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Correlate;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -53,7 +53,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that pushes a {@link Filter} above a {@link Correlate} into the inputs of the Correlate.
+ * Planner rule that pushes a {@link RelFilter} above a {@link Correlate} into the inputs of the Correlate.
  */
 public class FilterCorrelateRule extends AlgOptRule {
 
@@ -65,14 +65,14 @@ public class FilterCorrelateRule extends AlgOptRule {
      */
     public FilterCorrelateRule( AlgBuilderFactory builderFactory ) {
         super(
-                operand( Filter.class, operand( Correlate.class, AlgOptRule.any() ) ),
+                operand( RelFilter.class, operand( Correlate.class, AlgOptRule.any() ) ),
                 builderFactory, "FilterCorrelateRule" );
     }
 
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        final Filter filter = call.alg( 0 );
+        final RelFilter filter = call.alg( 0 );
         final Correlate corr = call.alg( 1 );
 
         final List<RexNode> aboveFilters = AlgOptUtil.conjunctions( filter.getCondition() );
@@ -115,7 +115,7 @@ public class FilterCorrelateRule extends AlgOptRule {
             call.getPlanner().onCopy( filter, rightRel );
         }
 
-        // Create a Filter on top of the join if needed
+        // Create a RelFilter on top of the join if needed
         algBuilder.push( newCorrRel );
         algBuilder.filter( RexUtil.fixUp( rexBuilder, aboveFilters, AlgOptUtil.getFieldTypeList( algBuilder.peek().getTupleType() ) ) );
 
