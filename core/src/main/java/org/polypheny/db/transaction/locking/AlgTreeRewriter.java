@@ -24,10 +24,8 @@ import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.common.Filter;
-import org.polypheny.db.algebra.core.document.DocumentFilter;
-import org.polypheny.db.algebra.core.lpg.LpgFilter;
+import org.polypheny.db.algebra.core.lpg.LpgMatch;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocIdCollector;
@@ -112,7 +110,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     private List<AlgNode> getLastNNodes( int count ) {
         List<AlgNode> result = new ArrayList<>();
-        for ( Iterator<AlgNode> it = stack.iterator(); it.hasNext(); ) {
+        for ( Iterator<AlgNode> it = stack.descendingIterator(); it.hasNext(); ) {
             AlgNode node = it.next();
             if ( count-- <= 0 ) {
                 break;
@@ -124,23 +122,25 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
 
     private void updateCollectorInsertPosition( AlgNode current ) {
-        List<AlgNode> trace = getLastNNodes( 1 );
-        switch ( trace.size() ) {
-            case 0:
-                // add collector in front of this node
-                collectorInsertPosition = current;
-                break;
-            case 1:
-                // if previous node is a filter place collector in front of filter
-                AlgNode first = trace.get( 0 );
-                if ( first instanceof Filter ) {
-                    collectorInsertPosition = trace.get( 0 );
-                    return;
-                }
-                // else place in front of this
-                collectorInsertPosition = current;
-                break;
+        List<AlgNode> trace = getLastNNodes( 2 );
+
+        if ( trace.isEmpty() ) {
+            collectorInsertPosition = current;
+            return;
         }
+
+        AlgNode first = trace.get( 0 );
+        if (first instanceof Filter) {
+            collectorInsertPosition = first;
+            return;
+        }
+        if ( trace.size() == 1 ) {
+            collectorInsertPosition = (first instanceof LpgMatch) ? first : current;
+            return;
+        }
+
+        AlgNode second = trace.get(1);
+        collectorInsertPosition = (second instanceof Filter) ? second : current;
     }
 
 
