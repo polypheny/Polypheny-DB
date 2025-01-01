@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.models;
 import java.util.Map;
 import lombok.Value;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.workflow.WorkflowManager;
 
 
 @Value
@@ -34,7 +35,9 @@ public class WorkflowConfigModel {
 
     public static WorkflowConfigModel of() {
         return new WorkflowConfigModel(
-                Map.of( DataModel.RELATIONAL, "hsqldb", DataModel.DOCUMENT, "hsqldb", DataModel.GRAPH, "hsqldb" ),
+                Map.of( DataModel.RELATIONAL, WorkflowManager.DEFAULT_CHECKPOINT_ADAPTER,
+                        DataModel.DOCUMENT, WorkflowManager.DEFAULT_CHECKPOINT_ADAPTER,
+                        DataModel.GRAPH, WorkflowManager.DEFAULT_CHECKPOINT_ADAPTER ),
                 true,
                 true,
                 1,

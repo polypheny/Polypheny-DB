@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.models.responses;
 
 import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.ACTIVITY_UPDATE;
+import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.ERROR;
 import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.PROGRESS_UPDATE;
 import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.RENDERING_UPDATE;
 import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.STATE_UPDATE;
@@ -35,6 +36,7 @@ import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.EdgeModel;
 import org.polypheny.db.workflow.models.RenderModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
+import org.polypheny.db.workflow.models.requests.WsRequest.RequestType;
 
 /**
  * The structure of workflows is modified with requests sent over the websocket.
@@ -59,6 +61,7 @@ public class WsResponse {
         RENDERING_UPDATE, // only renderModel of an activity
         STATE_UPDATE, // all edge and activity states
         PROGRESS_UPDATE,
+        ERROR
     }
 
 
@@ -131,6 +134,24 @@ public class WsResponse {
         public ProgressUpdateResponse( @Nullable UUID parentId, Map<UUID, Double> progress ) {
             super( PROGRESS_UPDATE, parentId );
             this.progress = progress;
+        }
+
+    }
+
+
+    public static class ErrorResponse extends WsResponse {
+
+        public final String reason;
+        public final String cause; // null if there is no cause
+        public final RequestType parentType;
+
+
+        public ErrorResponse( @Nullable UUID parentId, Throwable error, RequestType parentType ) {
+            super( ERROR, parentId );
+            this.reason = error.getMessage();
+            Throwable cause = error.getCause();
+            this.cause = cause == null ? null : cause.getMessage();
+            this.parentType = parentType;
         }
 
     }

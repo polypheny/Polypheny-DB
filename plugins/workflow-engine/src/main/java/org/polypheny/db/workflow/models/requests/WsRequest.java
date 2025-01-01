@@ -43,7 +43,8 @@ public class WsRequest {
         EXECUTE,
         INTERRUPT,
         RESET,
-        UPDATE_CONFIG // workflow config
+        UPDATE_CONFIG, // workflow config
+        KEEPALIVE
     }
 
 

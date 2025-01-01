@@ -62,7 +62,8 @@ public class WorkflowManager {
 
     private final SessionManager sessionManager;
     private final WorkflowRepo repo;
-    public final String PATH = "/workflows";
+    public static final String PATH = "/workflows";
+    public static final String DEFAULT_CHECKPOINT_ADAPTER = "hsqldb_disk";
     private final ObjectMapper mapper = new ObjectMapper();
 
 
@@ -154,19 +155,20 @@ public class WorkflowManager {
 
 
     private void addSampleWorkflows() {
-        if ( PolyphenyDb.mode == RunMode.TEST) {
+        if ( PolyphenyDb.mode == RunMode.TEST ) {
             return;
         }
         URL workflowDir = this.getClass().getClassLoader().getResource( "workflows/" );
         File[] files = Sources.of( workflowDir )
                 .file()
                 .listFiles( ( d, name ) -> name.endsWith( ".json" ) );
-        if (files == null) {
+        if ( files == null ) {
             return;
         }
 
-        for (File file : files) {
+        for ( File file : files ) {
             String fileName = file.getName();
+            fileName = fileName.substring( 0, fileName.length() - ".json".length() );
             try {
                 WorkflowModel workflow = mapper.readValue( file, WorkflowModel.class );
                 UUID wId = repo.createWorkflow( fileName );
@@ -179,7 +181,7 @@ public class WorkflowManager {
 
 
     private void registerAdapter() {
-        if ( PolyphenyDb.mode == RunMode.TEST || Catalog.getInstance().getAdapters().values().stream().anyMatch( a -> a.adapterName.equals( "hsqldb_disk" ) ) ) {
+        if ( PolyphenyDb.mode == RunMode.TEST || Catalog.getInstance().getAdapters().values().stream().anyMatch( a -> a.adapterName.equals( DEFAULT_CHECKPOINT_ADAPTER ) ) ) {
             return;
         }
 
@@ -189,7 +191,7 @@ public class WorkflowManager {
         settings.put( "type", "File" );
         settings.put( "tableType", "Cached" );
 
-        DdlManager.getInstance().createStore( "hsqldb_disk", storeTemplate.getAdapterName(), AdapterType.STORE, settings, storeTemplate.getDefaultMode() );
+        DdlManager.getInstance().createStore( DEFAULT_CHECKPOINT_ADAPTER, storeTemplate.getAdapterName(), AdapterType.STORE, settings, storeTemplate.getDefaultMode() );
     }
 
 

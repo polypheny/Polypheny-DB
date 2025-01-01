@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.dag.variables;
 
+import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -150,8 +151,16 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
         if ( node.isObject() ) {
             ObjectNode objectNode = (ObjectNode) node;
             if ( objectNode.size() == 1 && objectNode.has( VARIABLE_REF_FIELD ) ) {
-                String variableRef = objectNode.get( VARIABLE_REF_FIELD ).asText();
+                String refString = objectNode.get( VARIABLE_REF_FIELD ).asText();
+                if ( refString.startsWith( "/" ) ) {
+                    refString = refString.substring( 1 );
+                }
+                String[] refSplit = refString.split( "/", 2 );
+                String variableRef = refSplit[0].replace( JsonPointer.ESC_SLASH, "/" ).replace( JsonPointer.ESC_TILDE, "~" );
                 JsonNode replacement = variables.get( variableRef );
+                if ( refSplit.length == 2 && !refSplit[1].isEmpty() ) {
+                    replacement = replacement.at( "/" + refSplit[1] ); // resolve JsonPointer
+                }
 
                 // Replace the entire object with the value from the map, if it exists
                 if ( replacement == null ) {

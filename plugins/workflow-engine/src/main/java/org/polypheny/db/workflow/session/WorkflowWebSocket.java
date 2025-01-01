@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -34,10 +35,13 @@ import org.polypheny.db.workflow.models.requests.WsRequest.DeleteActivityRequest
 import org.polypheny.db.workflow.models.requests.WsRequest.DeleteEdgeRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.ExecuteRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.InterruptRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.RequestType;
 import org.polypheny.db.workflow.models.requests.WsRequest.ResetRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateConfigRequest;
+import org.polypheny.db.workflow.models.responses.WsResponse.ErrorResponse;
 
+@Slf4j
 @WebSocket
 public class WorkflowWebSocket implements Consumer<WsConfig> {
 
@@ -62,24 +66,34 @@ public class WorkflowWebSocket implements Consumer<WsConfig> {
     public void onMessage( final WsMessageContext ctx ) {
         AbstractSession session = sessions.get( ctx.session );
         WsRequest baseRequest = ctx.messageAsClass( WsRequest.class );
-        System.out.println( "Received message with id: " + baseRequest.msgId );
+        try {
+            if ( baseRequest.type != RequestType.KEEPALIVE ) {
+                System.out.println( "Received message with id: " + baseRequest.msgId );
+            }
 
-        switch ( baseRequest.type ) {
-            case CREATE_ACTIVITY -> session.handleRequest( ctx.messageAsClass( CreateActivityRequest.class ) );
-            case UPDATE_ACTIVITY -> session.handleRequest( ctx.messageAsClass( UpdateActivityRequest.class ) );
-            case DELETE_ACTIVITY -> session.handleRequest( ctx.messageAsClass( DeleteActivityRequest.class ) );
-            case CREATE_EDGE -> session.handleRequest( ctx.messageAsClass( CreateEdgeRequest.class ) );
-            case DELETE_EDGE -> session.handleRequest( ctx.messageAsClass( DeleteEdgeRequest.class ) );
-            case EXECUTE -> session.handleRequest( ctx.messageAsClass( ExecuteRequest.class ) );
-            case INTERRUPT -> session.handleRequest( ctx.messageAsClass( InterruptRequest.class ) );
-            case RESET -> session.handleRequest( ctx.messageAsClass( ResetRequest.class ) );
-            case UPDATE_CONFIG -> session.handleRequest( ctx.messageAsClass( UpdateConfigRequest.class ) );
-            default -> throw new IllegalArgumentException( "Received request with unknown type!" );
+            switch ( baseRequest.type ) {
+                case KEEPALIVE -> {
+                }
+                case CREATE_ACTIVITY -> session.handleRequest( ctx.messageAsClass( CreateActivityRequest.class ) );
+                case UPDATE_ACTIVITY -> session.handleRequest( ctx.messageAsClass( UpdateActivityRequest.class ) );
+                case DELETE_ACTIVITY -> session.handleRequest( ctx.messageAsClass( DeleteActivityRequest.class ) );
+                case CREATE_EDGE -> session.handleRequest( ctx.messageAsClass( CreateEdgeRequest.class ) );
+                case DELETE_EDGE -> session.handleRequest( ctx.messageAsClass( DeleteEdgeRequest.class ) );
+                case EXECUTE -> session.handleRequest( ctx.messageAsClass( ExecuteRequest.class ) );
+                case INTERRUPT -> session.handleRequest( ctx.messageAsClass( InterruptRequest.class ) );
+                case RESET -> session.handleRequest( ctx.messageAsClass( ResetRequest.class ) );
+                case UPDATE_CONFIG -> session.handleRequest( ctx.messageAsClass( UpdateConfigRequest.class ) );
+                default -> throw new IllegalArgumentException( "Received request with unknown type!" );
+            }
+        } catch ( Exception e ) {
+            // catch any exception that has no specific error handling already
+            session.broadcastMessage( new ErrorResponse( baseRequest.msgId, e, baseRequest.type ) );
         }
     }
 
 
     public void closed( WsCloseContext ctx ) {
+        System.out.println( "closed websocket: " + ctx.reason() );
         sessions.get( ctx.session ).unsubscribe( ctx.session );
         sessions.remove( ctx.session );
     }

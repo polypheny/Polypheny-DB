@@ -34,6 +34,7 @@ import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.workflow.dag.Workflow;
+import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo.ExecutionState;
@@ -85,7 +86,14 @@ public class GlobalScheduler {
         }
         interruptedSessions.remove( sessionId );
         ExecutionMonitor monitor = new ExecutionMonitor( workflow, targetActivity, monitoringCallback );
-        WorkflowScheduler scheduler = new WorkflowScheduler( workflow, sm, monitor, GLOBAL_WORKERS, targetActivity );
+        WorkflowScheduler scheduler;
+        try {
+            scheduler = new WorkflowScheduler( workflow, sm, monitor, GLOBAL_WORKERS, targetActivity );
+        } catch ( Exception e ) {
+            monitor.stop();
+            workflow.setState( WorkflowState.IDLE );
+            throw e;
+        }
         List<ExecutionSubmission> submissions = scheduler.startExecution();
         if ( submissions.isEmpty() ) {
             throw new GenericRuntimeException( "At least one activity needs to be executable when submitting a workflow for execution" );
@@ -145,6 +153,7 @@ public class GlobalScheduler {
             UUID sessionId = submission.getSessionId();
 
             completionService.submit( () -> {
+                log.info( "Begin actual execution {}", submission );
                 submission.getInfo().setState( ExecutionState.EXECUTING );
                 if ( interruptedSessions.contains( sessionId ) ) {
                     return new ExecutionResult( submission, new ExecutorException( "Execution was interrupted before it started" ) );
@@ -179,6 +188,7 @@ public class GlobalScheduler {
                 ExecutionInfo info = null;
                 try {
                     ExecutionResult result = completionService.take().get();
+                    log.info( "processing next result: " + result );
                     info = result.getInfo();
                     info.setState( ExecutionState.PROCESSING_RESULT );
                     WorkflowScheduler scheduler = schedulers.get( result.getSessionId() );

@@ -24,7 +24,21 @@ import java.util.Optional;
 
 public interface ReadableVariableStore {
 
-    String VARIABLE_REF_FIELD = "_variableRef";
+    /**
+     * A variable reference is given as an object with a VARIABLE_REF_FIELD key and the reference as a string value.
+     * A reference corresponds to a JsonPointer (https://datatracker.ietf.org/doc/html/rfc6901).
+     * Note that "/" and "~" in variable names need to be escaped as ~1 and ~0 respectively.
+     * The leading "/" is optional, as the first referenced object must always correspond to a variable name.
+     * Examples of valid references:
+     * <ul>
+     *     <li>{@code "myVariable"}</li>
+     *     <li>{@code "/myVariable"}</li>
+     *     <li>{@code "myVariable/names"}</li>
+     *     <li>{@code "myVariable/names/0"}</li>
+     *     <li>{@code "my~1escaped~0variable~1example"}</li>
+     * </ul>
+     */
+    String VARIABLE_REF_FIELD = "$ref";
 
     boolean contains( String key );
 

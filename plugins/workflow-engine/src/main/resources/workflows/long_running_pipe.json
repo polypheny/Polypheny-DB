@@ -86,9 +86,9 @@
     ],
     "config": {
         "preferredStores": {
-            "DOCUMENT": "hsqldb",
-            "GRAPH": "hsqldb",
-            "RELATIONAL": "hsqldb"
+            "DOCUMENT": "hsqldb_disk",
+            "GRAPH": "hsqldb_disk",
+            "RELATIONAL": "hsqldb_disk"
         },
         "fusionEnabled": false,
         "pipelineEnabled": true,

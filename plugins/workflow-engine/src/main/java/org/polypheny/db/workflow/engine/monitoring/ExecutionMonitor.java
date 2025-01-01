@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorType;
@@ -36,6 +37,7 @@ import org.polypheny.db.workflow.models.responses.WsResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.ProgressUpdateResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.StateUpdateResponse;
 
+@Slf4j
 public class ExecutionMonitor {
 
     private static final int UPDATE_PROGRESS_DELAY = 2000;
@@ -69,9 +71,9 @@ public class ExecutionMonitor {
             try {
                 callback.accept( new ProgressUpdateResponse( null, getAllProgress() ) );
             } catch ( Exception e ) {
-                e.printStackTrace(); // Log any exceptions
+                log.error( "An error occurred while sending a workflow progress update", e );
             }
-        }, 500, UPDATE_PROGRESS_DELAY, TimeUnit.MILLISECONDS );
+        }, 0, UPDATE_PROGRESS_DELAY, TimeUnit.MILLISECONDS );
     }
 
 

@@ -21,8 +21,8 @@ import lombok.Value;
 @Value
 public class RenderModel {
 
-    int posX;
-    int posY;
+    double posX;
+    double posY;
     String name;  // the display name of an element
     String notes;  // add additional notes to an element
 

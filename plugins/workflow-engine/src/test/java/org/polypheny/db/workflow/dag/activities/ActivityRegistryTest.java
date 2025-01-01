@@ -170,11 +170,10 @@ class ActivityRegistryTest {
 
     @Test
     public void intVariableResolveTest() throws InvalidSettingException {
-        // TODO: make test independent of a specific activity
         int newValue = 42;
         String varName = "intVariable";
-        String activity = "identity";
-        String settingKey = "I1";
+        String activity = "debug";
+        String settingKey = "delay";
 
         ObjectMapper mapper = new ObjectMapper();
         VariableStore vStore = new VariableStore();
@@ -187,7 +186,30 @@ class ActivityRegistryTest {
         settings.put( settingKey, variable );
         Settings setttings = ActivityRegistry.buildSettingValues( activity, vStore.resolveVariables( settings ) );
         assertEquals( newValue, setttings.get( settingKey, IntValue.class ).getValue() );
+    }
 
+
+    @Test
+    public void jsonPointerVariableResolveTest() throws InvalidSettingException {
+        int newValue = 42;
+        String varName = "intVariable";
+        String activity = "debug";
+        String settingKey = "delay";
+
+        ObjectMapper mapper = new ObjectMapper();
+        VariableStore vStore = new VariableStore();
+
+        ObjectNode variableValue = mapper.createObjectNode();
+        variableValue.set( "data", mapper.createArrayNode().add( 12345 ).add( newValue ) );
+        vStore.setVariable( varName, variableValue );
+
+        assertNotEquals( newValue, ActivityRegistry.getDefaultSettings( activity ).get( settingKey ).unwrapOrThrow( IntValue.class ).getValue() );
+        Map<String, JsonNode> settings = new HashMap<>( ActivityRegistry.getSerializableDefaultSettings( activity ) );
+
+        ObjectNode variable = mapper.createObjectNode().put( ReadableVariableStore.VARIABLE_REF_FIELD, varName + "/data/1" ); // reference to second object in array
+        settings.put( settingKey, variable );
+        Settings setttings = ActivityRegistry.buildSettingValues( activity, vStore.resolveVariables( settings ) );
+        assertEquals( newValue, setttings.get( settingKey, IntValue.class ).getValue() );
     }
 
 

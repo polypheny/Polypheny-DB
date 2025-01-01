@@ -47,6 +47,7 @@ import org.polypheny.db.workflow.models.requests.WsRequest.ResetRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateConfigRequest;
 import org.polypheny.db.workflow.models.responses.WsResponse;
+import org.polypheny.db.workflow.models.responses.WsResponse.ResponseType;
 
 @Slf4j
 public abstract class AbstractSession {
@@ -88,6 +89,7 @@ public abstract class AbstractSession {
         subscribers.remove( session );
     }
 
+
     public int getSubscriberCount() {
         return subscribers.size();
     }
@@ -114,7 +116,9 @@ public abstract class AbstractSession {
     void broadcastMessage( WsResponse msg ) {
         try {
             String json = mapper.writeValueAsString( msg );
-            log.info( "Broadcasting message: " + json );
+            if ( msg.type != ResponseType.PROGRESS_UPDATE ) {
+                log.info( "Broadcasting message: " + json );
+            }
             for ( Session subscriber : subscribers ) {
                 try {
                     subscriber.getRemote().sendString( json );

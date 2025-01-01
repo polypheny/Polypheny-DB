@@ -80,7 +80,6 @@ public class WorkflowScheduler {
 
     public WorkflowScheduler( Workflow workflow, StorageManager sm, ExecutionMonitor monitor, int globalWorkers, @Nullable UUID targetActivity ) throws Exception {
         log.info( "Instantiating WorkflowScheduler with target: {}", targetActivity );
-        workflow.setState( WorkflowState.EXECUTING );
         this.workflow = workflow;
         this.sm = sm;
         this.executionMonitor = monitor;
@@ -96,14 +95,16 @@ public class WorkflowScheduler {
         workflow.validateStructure( sm, this.execDag );
         log.info( "Structure is valid" );
 
+        workflow.setState( WorkflowState.EXECUTING );
         this.optimizer = new WorkflowOptimizerImpl( workflow, execDag );
 
     }
 
 
     public List<ExecutionSubmission> startExecution() {
+        List<ExecutionSubmission> submissions = computeNextSubmissions();
         executionMonitor.forwardStates();
-        return computeNextSubmissions();
+        return submissions;
     }
 
 
@@ -147,6 +148,7 @@ public class WorkflowScheduler {
 
 
     private AttributedDirectedGraph<UUID, ExecutionEdge> prepareExecutionDag( List<UUID> targets ) throws Exception {
+        System.out.println( "targets: " + targets );
         if ( targets.isEmpty() ) {
             throw new GenericRuntimeException( "Cannot prepare executionDag for empty targets" );
         }
