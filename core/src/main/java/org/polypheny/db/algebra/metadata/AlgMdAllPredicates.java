@@ -48,7 +48,7 @@ import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Exchange;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
@@ -128,9 +128,9 @@ public class AlgMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPr
 
 
     /**
-     * Add the Filter condition to the list obtained from the input.
+     * Add the RelFilter condition to the list obtained from the input.
      */
-    public AlgOptPredicateList getAllPredicates( Filter filter, AlgMetadataQuery mq ) {
+    public AlgOptPredicateList getAllPredicates( RelFilter filter, AlgMetadataQuery mq ) {
         final AlgNode input = filter.getInput();
         final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
         final RexNode pred = filter.getCondition();
@@ -141,7 +141,7 @@ public class AlgMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPr
             return null;
         }
 
-        // Extract input fields referenced by Filter condition
+        // Extract input fields referenced by RelFilter condition
         final Set<AlgDataTypeField> inputExtraFields = new LinkedHashSet<>();
         final AlgOptUtil.InputFinder inputFinder = new AlgOptUtil.InputFinder( inputExtraFields );
         pred.accept( inputFinder );

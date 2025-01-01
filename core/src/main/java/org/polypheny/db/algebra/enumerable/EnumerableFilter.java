@@ -37,7 +37,7 @@ package org.polypheny.db.algebra.enumerable;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -47,9 +47,9 @@ import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Implementation of {@link Filter} in {@link EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link RelFilter} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableFilter extends Filter implements EnumerableAlg {
+public class EnumerableFilter extends RelFilter implements EnumerableAlg {
 
     /**
      * Creates an EnumerableFilter.

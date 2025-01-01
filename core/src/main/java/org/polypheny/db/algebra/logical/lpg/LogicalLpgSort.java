@@ -85,6 +85,12 @@ public class LogicalLpgSort extends LpgSort {
                 fetch == null ? null : ((RexLiteral) fetch).value.asNumber().intValue() );
     }
 
+    public LogicalLpgSort copy( List<AlgNode> inputs) {
+            return new LogicalLpgSort(getCluster(), traitSet, collation, inputs.get(0),
+                    offset == null ? null : ((RexLiteral) offset).value.asNumber().intValue(),
+                    fetch == null ? null : ((RexLiteral) fetch).value.asNumber().intValue() );
+    }
+
 
     public RexNode getRexLimit() {
         return this.fetch;

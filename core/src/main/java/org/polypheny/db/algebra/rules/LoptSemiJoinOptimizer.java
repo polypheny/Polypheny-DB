@@ -186,7 +186,7 @@ public class LoptSemiJoinOptimizer {
             return -1;
         }
 
-        // Filter is suitable if each side of the filter only contains a single factor reference and one side references the fact table and the other references the dimension table;
+        // RelFilter is suitable if each side of the filter only contains a single factor reference and one side references the fact table and the other references the dimension table;
         // since we know this is a join filter and we've already verified that the operands are RexInputRefs, verify that the factors belong to the fact and dimension table
         ImmutableBitSet joinRefs = multiJoin.getFactorsRefByJoinFilter( joinFilter );
         assert joinRefs.cardinality() == 2;

@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptRule;
@@ -52,7 +52,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that replaces {@code IS NOT DISTINCT FROM} in a {@link Filter} with logically equivalent operations.
+ * Planner rule that replaces {@code IS NOT DISTINCT FROM} in a {@link RelFilter} with logically equivalent operations.
  *
  * @see OperatorRegistry IS_NOT_DISTINCT_FROM
  */
@@ -70,13 +70,13 @@ public final class FilterRemoveIsNotDistinctFromRule extends AlgOptRule {
      * @param algBuilderFactory Builder for relational expressions
      */
     public FilterRemoveIsNotDistinctFromRule( AlgBuilderFactory algBuilderFactory ) {
-        super( operand( Filter.class, any() ), algBuilderFactory, null );
+        super( operand( RelFilter.class, any() ), algBuilderFactory, null );
     }
 
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        Filter oldFilter = call.alg( 0 );
+        RelFilter oldFilter = call.alg( 0 );
         RexNode oldFilterCond = oldFilter.getCondition();
 
         if ( RexUtil.findOperatorCall( OperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ), oldFilterCond ) == null ) {

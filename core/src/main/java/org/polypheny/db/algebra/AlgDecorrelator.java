@@ -69,7 +69,7 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
@@ -240,7 +240,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
                 .addRuleInstance( new AdjustProjectForCountAggregateRule( false, f ) )
                 .addRuleInstance( new AdjustProjectForCountAggregateRule( true, f ) )
                 .addRuleInstance( new FilterJoinRule.FilterIntoJoinRule( true, f, FilterJoinRule.TRUE_PREDICATE ) )
-                .addRuleInstance( new FilterProjectTransposeRule( Filter.class, Project.class, true, true, f ) )
+                .addRuleInstance( new FilterProjectTransposeRule( RelFilter.class, Project.class, true, true, f ) )
                 .addRuleInstance( new FilterCorrelateRule( f ) )
                 .build();
 
@@ -841,7 +841,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
 
         // Try to populate correlation variables using local fields.
         // This means that we do not need a value generator.
-        if ( alg instanceof Filter ) {
+        if ( alg instanceof RelFilter ) {
             SortedMap<CorDef, Integer> map = new TreeMap<>();
             List<RexNode> projects = new ArrayList<>();
             for ( CorRef correlation : corVarList ) {
@@ -850,7 +850,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
                     continue;
                 }
                 try {
-                    findCorrelationEquivalent( correlation, ((Filter) alg).getCondition() );
+                    findCorrelationEquivalent( correlation, ((RelFilter) alg).getCondition() );
                 } catch ( Util.FoundOne e ) {
                     if ( e.getNode() instanceof RexIndexRef ) {
                         map.put( def, ((RexIndexRef) e.getNode()).getIndex() );
@@ -881,7 +881,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
 
         AlgNode join = LogicalRelJoin.create( frame.r, valueGen, algBuilder.literal( true ), ImmutableSet.of(), JoinAlgType.INNER );
 
-        // Join or Filter does not change the old input ordering. All input fields from newLeftInput (i.e. the original input to the old Filter) are in the output and in the same position.
+        // Join or RelFilter does not change the old input ordering. All input fields from newLeftInput (i.e. the original input to the old RelFilter) are in the output and in the same position.
         return register( alg.getInput( 0 ), join, frame.oldToNewOutputs, corDefOutputs );
     }
 
@@ -954,13 +954,13 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
         //
         // Rewrite logic:
         //
-        // 1. If a Filter references a correlated field in its filter condition, rewrite the Filter to be
-        //   Filter
+        // 1. If a RelFilter references a correlated field in its filter condition, rewrite the RelFilter to be
+        //   RelFilter
         //     Join(cross product)
         //       originalFilterInput
         //       ValueGenerator(produces distinct sets of correlated variables) and rewrite the correlated fieldAccess in the filter condition to reference the Join output.
         //
-        // 2. If Filter does not reference correlated variables, simply rewrite the filter condition using new input.
+        // 2. If RelFilter does not reference correlated variables, simply rewrite the filter condition using new input.
         //
 
         final AlgNode oldInput = alg.getInput();
@@ -970,7 +970,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
             return null;
         }
 
-        // If this Filter has correlated reference, create value generator and produce the correlated variables in the new output.
+        // If this RelFilter has correlated reference, create value generator and produce the correlated variables in the new output.
         frame = maybeAddValueGenerator( alg, frame );
 
         final CorelMap cm2 = new CorelMapBuilder().build( alg );
@@ -978,8 +978,8 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
         // Replace the filter expression to reference output of the join Map filter to the new filter over join
         algBuilder.push( frame.r ).filter( decorrelateExpr( currentAlg, map, cm2, alg.getCondition() ) );
 
-        // Filter does not change the input ordering.
-        // Filter alg does not permute the input.
+        // RelFilter does not change the input ordering.
+        // RelFilter alg does not permute the input.
         // All corVars produced by filter will have the same output positions in the input alg.
         return register( alg, algBuilder.build(), frame.oldToNewOutputs, frame.corDefOutputs );
     }
@@ -1271,7 +1271,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
      *
      * @param correlate Correlate
      * @param project The original Project as the RHS input of the join
-     * @param filter Filter
+     * @param filter RelFilter
      * @param correlatedJoinKeys Correlated join keys
      * @return true if filter and proj only references corVar provided by corRel
      */
@@ -1721,7 +1721,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
             if ( (right instanceof LogicalRelFilter) && cm.mapRefRelToCorRef.containsKey( right ) ) {
                 // rightInput has this shape:
                 //
-                //       Filter (references corVar)
+                //       RelFilter (references corVar)
                 //         filterInput
 
                 // If rightInput is a filter and contains correlated reference, make sure the correlated keys in the filter condition forms a unique key of the RHS.
@@ -1912,7 +1912,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
             if ( (right instanceof LogicalRelFilter) && cm.mapRefRelToCorRef.containsKey( right ) ) {
                 // rightInput has this shape:
                 //
-                //       Filter (references corVar)
+                //       RelFilter (references corVar)
                 //         filterInput
                 LogicalRelFilter filter = (LogicalRelFilter) right;
                 right = filter.getInput();
@@ -1968,7 +1968,7 @@ public class AlgDecorrelator implements AlgProducingVisitor<Frame> {
                 //   Project-A (a RexNode)
                 //     Aggregate (groupby(0), agg0(),agg1()...)
                 //       Project-B (may reference corVar)
-                //         Filter (references corVar)
+                //         RelFilter (references corVar)
                 //           rightInput (no correlated reference)
                 //
 

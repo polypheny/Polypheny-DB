@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Aggregate;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
@@ -93,9 +93,9 @@ public class AlgNodeModel {
         if ( Project.class.isAssignableFrom( nodeClass ) ) {
             model.symbol = "&pi;";
             model.type = Project.class.getSimpleName();
-        } else if ( Filter.class.isAssignableFrom( nodeClass ) ) {
+        } else if ( RelFilter.class.isAssignableFrom( nodeClass ) ) {
             model.symbol = "&sigma;";
-            model.type = Filter.class.getSimpleName();
+            model.type = RelFilter.class.getSimpleName();
         } else if ( Scan.class.isAssignableFrom( nodeClass ) ) {
             model.icon = "fa fa-database";
             model.type = Scan.class.getSimpleName();

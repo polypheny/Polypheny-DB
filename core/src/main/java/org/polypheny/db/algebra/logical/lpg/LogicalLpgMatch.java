@@ -58,6 +58,10 @@ public class LogicalLpgMatch extends LpgMatch {
         return new LogicalLpgMatch( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), matches, names );
     }
 
+    public LogicalLpgMatch copy( List<AlgNode> inputs ) {
+        return new LogicalLpgMatch( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), matches, names );
+    }
+
 
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {

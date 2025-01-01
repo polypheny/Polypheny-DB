@@ -26,7 +26,7 @@ import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Filter comparing two columns.
+ * RelFilter comparing two columns.
  */
 @Slf4j
 public class ColumnFilter implements Filter {

@@ -40,7 +40,7 @@ import java.util.function.Consumer;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
@@ -73,7 +73,7 @@ public class Nodes {
                     .putAll( super.getHandlers() )
                     .put( Join.class, a -> visit( (Join) a ) )
                     .put( Aggregate.class, a -> visit( (Aggregate) a ) )
-                    .put( Filter.class, a -> visit( (Filter) a ) )
+                    .put( RelFilter.class, a -> visit( (RelFilter) a ) )
                     .put( Project.class, a -> visit( (Project) a ) )
                     .put( Values.class, a -> visit( (Values) a ) )
                     .put( RelScan.class, a -> visit( (RelScan<?>) a ) )
@@ -90,7 +90,7 @@ public class Nodes {
         }
 
 
-        public void visit( Filter filter ) {
+        public void visit( RelFilter filter ) {
             node = new FilterNode( this, filter );
         }
 

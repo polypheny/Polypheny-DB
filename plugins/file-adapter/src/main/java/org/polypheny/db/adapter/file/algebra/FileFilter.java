@@ -20,7 +20,7 @@ package org.polypheny.db.adapter.file.algebra;
 import org.polypheny.db.adapter.file.Condition;
 import org.polypheny.db.adapter.file.FileAlg;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -30,7 +30,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 
-public class FileFilter extends Filter implements FileAlg {
+public class FileFilter extends RelFilter implements FileAlg {
 
     protected FileFilter( AlgCluster cluster, AlgTraitSet traits, AlgNode child, RexNode condition ) {
         super( cluster, traits.replace( ModelTrait.RELATIONAL ), child, condition );
@@ -38,7 +38,7 @@ public class FileFilter extends Filter implements FileAlg {
 
 
     @Override
-    public Filter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
+    public RelFilter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         return new FileFilter( getCluster(), traitSet, input, condition );
     }
 

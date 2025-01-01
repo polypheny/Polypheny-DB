@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.enumerable;
 
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -38,6 +39,7 @@ import org.polypheny.db.transaction.locking.VersionedEntryIdentifier;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -140,17 +142,16 @@ public class EnumerableIdCollector extends IdentifierCollector implements Enumer
     public static Function3<Enumerable<PolyValue[]>, Transaction, Long, Enumerable<PolyValue[]>> collectLpgIdentifiers() {
         return ( input, transaction, logicalId ) -> {
             input.forEach( row -> {
-                for ( PolyValue value : row ) {
-                    if ( !(value instanceof GraphPropertyHolder) ) {
-                        continue;
-                    }
-                    PolyValue identifier = ((GraphPropertyHolder) value).getProperties()
-                            .get( IdentifierUtils.getIdentifierKeyAsPolyString() );
-                    if ( !(identifier instanceof PolyLong entryIdentifier) ) {
-                        continue;
-                    }
-                    transaction.addReadEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier.getValue() ) );
-                }
+                PolyGraph graph = (PolyGraph) row[0];
+                Stream.concat(
+                        graph.getNodes().values().stream().map( n -> (GraphPropertyHolder) n ),
+                        graph.getEdges().values().stream().map( n -> (GraphPropertyHolder) n )
+                ).forEach( p -> {
+                    PolyValue identifier = p.getProperties().get( IdentifierUtils.getIdentifierKeyAsPolyString() );
+                    // TODO TH: Are those always strings?
+                    long entryIdentifier = Long.parseLong( identifier.asString().getValue() );
+                    transaction.addReadEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier ) );
+                } );
             } );
             return input;
         };

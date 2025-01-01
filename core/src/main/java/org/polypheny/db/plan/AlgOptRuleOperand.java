@@ -46,9 +46,9 @@ import org.polypheny.db.algebra.AlgNode;
 /**
  * Operand that determines whether a {@link AlgOptRule} can be applied to a particular expression.
  *
- * For example, the rule to pull a filter up from the left side of a join takes operands: <code>Join(Filter, Any)</code>.
+ * For example, the rule to pull a filter up from the left side of a join takes operands: <code>Join(RelFilter, Any)</code>.
  *
- * Note that <code>children</code> means different things if it is empty or it is <code>null</code>: <code>Join(Filter <b>()</b>, Any)</code> means that, to match the rule, <code>Filter</code> must have no operands.</p>
+ * Note that <code>children</code> means different things if it is empty or it is <code>null</code>: <code>Join(RelFilter <b>()</b>, Any)</code> means that, to match the rule, <code>RelFilter</code> must have no operands.</p>
  */
 public class AlgOptRuleOperand {
 

@@ -35,7 +35,7 @@ package org.polypheny.db.algebra.rules;
 
 
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.plan.AlgOptRule;
@@ -46,7 +46,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Rule to convert an {@link Join inner join} to a {@link Filter filter} on top of a {@link Join cartesian inner join}.
+ * Rule to convert an {@link Join inner join} to a {@link RelFilter filter} on top of a {@link Join cartesian inner join}.
  * <p>
  * One benefit of this transformation is that after it, the join condition can be combined with conditions and expressions above the join. It also makes the <code>FennelCartesianJoinRule</code> applicable.
  * <p>

@@ -71,7 +71,7 @@ import org.polypheny.db.util.Litmus;
 /**
  * A <code>AlgNode</code> is a relational expression.
  * <p>
- * Relational expressions process data, so their names are typically verbs: Sort, Join, Project, Filter, Scan, Sample.
+ * Relational expressions process data, so their names are typically verbs: Sort, Join, Project, RelFilter, Scan, Sample.
  * <p>
  * A relational expression is not a scalar expression; see {@link AlgNode} and {@link RexNode}.
  * <p>

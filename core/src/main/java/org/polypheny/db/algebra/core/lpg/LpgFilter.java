@@ -20,6 +20,7 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.core.common.Filter;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -27,7 +28,7 @@ import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 
-public abstract class LpgFilter extends SingleAlg implements LpgAlg {
+public abstract class LpgFilter extends SingleAlg implements LpgAlg, Filter {
 
     @Getter
     @NotNull

@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.metadata;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
@@ -96,7 +96,7 @@ public class AlgMdMaxRowCount implements MetadataHandler<BuiltInMetadata.MaxRowC
     }
 
 
-    public Double getMaxRowCount( Filter alg, AlgMetadataQuery mq ) {
+    public Double getMaxRowCount( RelFilter alg, AlgMetadataQuery mq ) {
         if ( alg.getCondition().isAlwaysFalse() ) {
             return 0D;
         }

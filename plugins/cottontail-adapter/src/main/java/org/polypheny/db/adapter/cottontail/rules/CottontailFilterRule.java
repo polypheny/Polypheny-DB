@@ -21,7 +21,7 @@ import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailFilter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -34,13 +34,13 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 public class CottontailFilterRule extends CottontailConverterRule {
 
     CottontailFilterRule( AlgBuilderFactory algBuilderFactory ) {
-        super( Filter.class, r -> !DocumentRules.containsDocument( r ), Convention.NONE, CottontailConvention.INSTANCE, algBuilderFactory, "CottontailFilterRule" );
+        super( RelFilter.class, r -> !DocumentRules.containsDocument( r ), Convention.NONE, CottontailConvention.INSTANCE, algBuilderFactory, "CottontailFilterRule" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        Filter filter = (Filter) alg;
+        RelFilter filter = (RelFilter) alg;
         final AlgTraitSet traitSet = filter.getTraitSet().replace( out );
 
         return new CottontailFilter(
@@ -53,7 +53,7 @@ public class CottontailFilterRule extends CottontailConverterRule {
 
     @Override
     public boolean matches( AlgOptRuleCall call ) {
-        Filter filter = call.alg( 0 );
+        RelFilter filter = call.alg( 0 );
         RexNode condition = filter.getCondition();
 
         return this.isValidCondition( condition );

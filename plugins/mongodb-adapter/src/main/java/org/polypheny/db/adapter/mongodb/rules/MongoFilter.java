@@ -45,7 +45,7 @@ import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
 import org.polypheny.db.adapter.mongodb.bson.BsonKeyValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -69,10 +69,10 @@ import org.polypheny.db.util.JsonBuilder;
 
 
 /**
- * Implementation of a {@link org.polypheny.db.algebra.core.Filter}
+ * Implementation of a {@link RelFilter}
  * relational expression in MongoDB.
  */
-public class MongoFilter extends Filter implements MongoAlg {
+public class MongoFilter extends RelFilter implements MongoAlg {
 
     public MongoFilter( AlgCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition ) {
         super( cluster, traitSet, child, condition );

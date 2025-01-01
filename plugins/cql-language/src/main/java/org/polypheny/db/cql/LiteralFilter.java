@@ -28,7 +28,7 @@ import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Filter comparing a column with a value.
+ * RelFilter comparing a column with a value.
  */
 @Slf4j
 public class LiteralFilter implements Filter {

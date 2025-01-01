@@ -31,7 +31,7 @@ import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -58,7 +58,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
-public class CottontailFilter extends Filter implements CottontailAlg {
+public class CottontailFilter extends RelFilter implements CottontailAlg {
 
     public static final Method CREATE_ATOMIC_PREDICATE_METHOD = Types.lookupMethod(
             Linq4JFixer.class,
@@ -101,7 +101,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
 
 
     @Override
-    public Filter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
+    public RelFilter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         return new CottontailFilter( getCluster(), traitSet, input, condition );
     }
 

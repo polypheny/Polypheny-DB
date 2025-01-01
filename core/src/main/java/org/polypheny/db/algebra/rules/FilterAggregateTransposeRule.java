@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Aggregate.Group;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -55,7 +55,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 
 
 /**
- * Planner rule that pushes a {@link Filter} past a {@link org.polypheny.db.algebra.core.Aggregate}.
+ * Planner rule that pushes a {@link RelFilter} past a {@link org.polypheny.db.algebra.core.Aggregate}.
  *
  * @see org.polypheny.db.algebra.rules.AggregateFilterTransposeRule
  */
@@ -66,7 +66,7 @@ public class FilterAggregateTransposeRule extends AlgOptRule {
      *
      * It matches any kind of agg. or filter
      */
-    public static final FilterAggregateTransposeRule INSTANCE = new FilterAggregateTransposeRule( Filter.class, AlgFactories.LOGICAL_BUILDER, Aggregate.class );
+    public static final FilterAggregateTransposeRule INSTANCE = new FilterAggregateTransposeRule( RelFilter.class, AlgFactories.LOGICAL_BUILDER, Aggregate.class );
 
 
     /**
@@ -74,7 +74,7 @@ public class FilterAggregateTransposeRule extends AlgOptRule {
      *
      * If {@code filterFactory} is null, creates the same kind of filter as matched in the rule. Similarly {@code aggregateFactory}.
      */
-    public FilterAggregateTransposeRule( Class<? extends Filter> filterClass, AlgBuilderFactory builderFactory, Class<? extends Aggregate> aggregateClass ) {
+    public FilterAggregateTransposeRule( Class<? extends RelFilter> filterClass, AlgBuilderFactory builderFactory, Class<? extends Aggregate> aggregateClass ) {
         this( operand( filterClass, operand( aggregateClass, any() ) ), builderFactory );
     }
 
@@ -86,7 +86,7 @@ public class FilterAggregateTransposeRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        final Filter filterRel = call.alg( 0 );
+        final RelFilter filterRel = call.alg( 0 );
         final Aggregate aggRel = call.alg( 1 );
 
         final List<RexNode> conditions = AlgOptUtil.conjunctions( filterRel.getCondition() );

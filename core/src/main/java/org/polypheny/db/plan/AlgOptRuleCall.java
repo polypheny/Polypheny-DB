@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -176,7 +176,7 @@ public abstract class AlgOptRuleCall {
 
     /**
      * Creates a {@link AlgBuilder} to be used by code within the call. The {@link AlgOptRule#algBuilderFactory} argument contains policies such as what
-     * implementation of {@link Filter} to create.
+     * implementation of {@link RelFilter} to create.
      */
     public AlgBuilder builder() {
         return rule.algBuilderFactory.create( alg( 0 ).getCluster(), null );

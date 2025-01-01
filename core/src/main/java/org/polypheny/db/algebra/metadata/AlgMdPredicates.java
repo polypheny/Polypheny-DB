@@ -56,7 +56,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Exchange;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
@@ -117,7 +117,7 @@ import org.polypheny.db.util.mapping.Mappings;
  *
  * <li> There are several restrictions on Joins:
  * <ul>
- * <li>We only pullUp inferred predicates for now. Pulling up existing predicates causes an explosion of duplicates. The existing predicates are pushed back down as new predicates. Once we have rules to eliminate duplicate Filter conditions, we should pullUp all predicates.</li>
+ * <li>We only pullUp inferred predicates for now. Pulling up existing predicates causes an explosion of duplicates. The existing predicates are pushed back down as new predicates. Once we have rules to eliminate duplicate RelFilter conditions, we should pullUp all predicates.</li>
  * <li>For Left Outer: we infer new predicates from the left and set them as applicable on the Right side. No predicates are pulledUp.</li>
  * <li>Right Outer Joins are handled in an analogous manner.</li>
  * <li>For Full Outer Joins no predicates are pulledUp or inferred.</li>
@@ -259,10 +259,10 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
 
 
     /**
-     * Add the Filter condition to the pulledPredicates list from the input.
+     * Add the RelFilter condition to the pulledPredicates list from the input.
      */
     @SuppressWarnings("unused")
-    public AlgOptPredicateList getPredicates( Filter filter, AlgMetadataQuery mq ) {
+    public AlgOptPredicateList getPredicates( RelFilter filter, AlgMetadataQuery mq ) {
         final AlgNode input = filter.getInput();
         final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
         final AlgOptPredicateList inputInfo = mq.getPulledUpPredicates( input );
@@ -524,7 +524,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
         /**
          * The PullUp Strategy is sound but not complete.
          * <ol>
-         * <li>We only pullUp inferred predicates for now. Pulling up existing predicates causes an explosion of duplicates. The existing predicates are pushed back down as new predicates. Once we have rules to eliminate duplicate Filter conditions, we should pullUp all predicates.</li>
+         * <li>We only pullUp inferred predicates for now. Pulling up existing predicates causes an explosion of duplicates. The existing predicates are pushed back down as new predicates. Once we have rules to eliminate duplicate RelFilter conditions, we should pullUp all predicates.</li>
          * <li>For Left Outer: we infer new predicates from the left and set them as applicable on the Right side. No predicates are pulledUp.</li>
          * <li>Right Outer Joins are handled in an analogous manner.</li>
          * <li>For Full Outer Joins no predicates are pulledUp or inferred.</li>
@@ -620,7 +620,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
                 }
                 for ( Mapping m : mappings( r ) ) {
                     RexNode tr = r.accept( new RexPermuteInputsShuttle( m, joinAlg.getInput( 0 ), joinAlg.getInput( 1 ) ) );
-                    // Filter predicates can be already simplified, so we should work with simplified RexNode versions as well. It also allows prevent of having some duplicates in in result pulledUpPredicates
+                    // RelFilter predicates can be already simplified, so we should work with simplified RexNode versions as well. It also allows prevent of having some duplicates in in result pulledUpPredicates
                     RexNode simplifiedTarget = simplify.simplifyFilterPredicates( AlgOptUtil.conjunctions( tr ) );
                     if ( checkTarget( inferringFields, allExprs, tr ) && checkTarget( inferringFields, allExprs, simplifiedTarget ) ) {
                         inferredPredicates.add( simplifiedTarget );

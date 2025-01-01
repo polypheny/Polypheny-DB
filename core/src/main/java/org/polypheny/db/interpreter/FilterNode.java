@@ -35,20 +35,20 @@ package org.polypheny.db.interpreter;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
- * Interpreter node that implements a {@link org.polypheny.db.algebra.core.Filter}.
+ * Interpreter node that implements a {@link RelFilter}.
  */
-public class FilterNode extends AbstractSingleNode<Filter> {
+public class FilterNode extends AbstractSingleNode<RelFilter> {
 
     private final Scalar condition;
     private final Context<PolyValue> context;
 
 
-    public FilterNode( Compiler compiler, Filter alg ) {
+    public FilterNode( Compiler compiler, RelFilter alg ) {
         super( compiler, alg );
         this.condition = compiler.compile( ImmutableList.of( alg.getCondition() ), alg.getTupleType() );
         this.context = compiler.createContext();

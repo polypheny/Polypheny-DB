@@ -38,7 +38,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Exchange;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
@@ -71,7 +71,7 @@ public class AlgMdPopulationSize implements MetadataHandler<BuiltInMetadata.Popu
     }
 
 
-    public Double getPopulationSize( Filter alg, AlgMetadataQuery mq, ImmutableBitSet groupKey ) {
+    public Double getPopulationSize( RelFilter alg, AlgMetadataQuery mq, ImmutableBitSet groupKey ) {
         return mq.getPopulationSize( alg.getInput(), groupKey );
     }
 

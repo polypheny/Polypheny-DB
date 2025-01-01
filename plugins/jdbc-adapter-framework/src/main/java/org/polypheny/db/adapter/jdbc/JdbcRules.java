@@ -57,7 +57,7 @@ import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
@@ -667,7 +667,7 @@ public class JdbcRules {
 
 
     /**
-     * Rule to convert a {@link Filter} to an {@link org.polypheny.db.adapter.jdbc.JdbcRules.JdbcFilter}.
+     * Rule to convert a {@link RelFilter} to an {@link org.polypheny.db.adapter.jdbc.JdbcRules.JdbcFilter}.
      */
     public static class JdbcFilterRule extends JdbcConverterRule {
 
@@ -676,7 +676,7 @@ public class JdbcRules {
          * Creates a JdbcFilterRule.
          */
         public JdbcFilterRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Filter.class,
+            super( RelFilter.class,
                     filter -> (
                             !userDefinedFunctionInFilter( filter )
                                     && !containUnsupportedArray( filter, out )
@@ -691,7 +691,7 @@ public class JdbcRules {
         }
 
 
-        private static boolean containUnsupportedArray( Filter filter, JdbcConvention out ) {
+        private static boolean containUnsupportedArray( RelFilter filter, JdbcConvention out ) {
             if ( out.dialect.supportsNestedArrays() ) {
                 return false;
             }
@@ -701,14 +701,14 @@ public class JdbcRules {
         }
 
 
-        private static boolean userDefinedFunctionInFilter( Filter filter ) {
+        private static boolean userDefinedFunctionInFilter( RelFilter filter ) {
             CheckingUserDefinedFunctionVisitor visitor = new CheckingUserDefinedFunctionVisitor();
             filter.getCondition().accept( visitor );
             return visitor.containsUserDefinedFunction();
         }
 
 
-        private static boolean knnFunctionInFilter( Filter filter ) {
+        private static boolean knnFunctionInFilter( RelFilter filter ) {
             CheckingKnnFunctionVisitor visitor = new CheckingKnnFunctionVisitor();
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );
@@ -720,7 +720,7 @@ public class JdbcRules {
         }
 
 
-        private static boolean multimediaFunctionInFilter( Filter filter ) {
+        private static boolean multimediaFunctionInFilter( RelFilter filter ) {
             CheckingMultimediaFunctionVisitor visitor = new CheckingMultimediaFunctionVisitor();
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );
@@ -732,7 +732,7 @@ public class JdbcRules {
         }
 
 
-        private static boolean geoFunctionInFilter( Filter filter ) {
+        private static boolean geoFunctionInFilter( RelFilter filter ) {
             CheckingGeoFunctionVisitor visitor = new CheckingGeoFunctionVisitor();
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );
@@ -744,7 +744,7 @@ public class JdbcRules {
         }
 
 
-        private static boolean supportsGeoFunctionInFilter( SqlDialect dialect, Filter filter ) {
+        private static boolean supportsGeoFunctionInFilter( SqlDialect dialect, RelFilter filter ) {
             CheckingGeoFunctionSupportVisitor visitor = new CheckingGeoFunctionSupportVisitor( dialect );
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );
@@ -756,7 +756,7 @@ public class JdbcRules {
         }
 
 
-        private static boolean itemOperatorInFilter( Filter filter ) {
+        private static boolean itemOperatorInFilter( RelFilter filter ) {
             CheckingItemOperatorVisitor visitor = new CheckingItemOperatorVisitor();
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );
@@ -768,7 +768,7 @@ public class JdbcRules {
         }
 
 
-        private static boolean isStringComparableArrayType( Filter filter ) {
+        private static boolean isStringComparableArrayType( RelFilter filter ) {
             for ( AlgDataTypeField dataTypeField : filter.getTupleType().getFields() ) {
                 if ( dataTypeField.getType().getPolyType() == PolyType.ARRAY ) {
                     switch ( dataTypeField.getType().getComponentType().getPolyType() ) {
@@ -791,7 +791,7 @@ public class JdbcRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final Filter filter = (Filter) alg;
+            final RelFilter filter = (RelFilter) alg;
 
             return new JdbcFilter(
                     alg.getCluster(),
@@ -829,9 +829,9 @@ public class JdbcRules {
 
 
     /**
-     * Implementation of {@link Filter} in {@link JdbcConvention jdbc calling convention}.
+     * Implementation of {@link RelFilter} in {@link JdbcConvention jdbc calling convention}.
      */
-    public static class JdbcFilter extends Filter implements JdbcAlg {
+    public static class JdbcFilter extends RelFilter implements JdbcAlg {
 
         public JdbcFilter( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
             super( cluster, traitSet, input, condition );

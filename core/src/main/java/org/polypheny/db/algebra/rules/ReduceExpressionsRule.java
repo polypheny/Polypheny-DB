@@ -47,7 +47,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.EquiJoin;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.Project;
@@ -110,19 +110,19 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
 
 
     /**
-     * Rule that reduces constants inside a {@link Filter}.
+     * Rule that reduces constants inside a {@link RelFilter}.
      * If the condition is a constant, the filter is removed (if TRUE) or replaced with an empty {@link org.polypheny.db.algebra.core.Values} (if FALSE or NULL).
      */
     protected static class FilterReduceExpressionsRule extends ReduceExpressionsRule {
 
-        public FilterReduceExpressionsRule( Class<? extends Filter> filterClass, boolean matchNullability, AlgBuilderFactory algBuilderFactory ) {
-            super( filterClass, matchNullability, algBuilderFactory, "ReduceExpressionsRule(Filter)" );
+        public FilterReduceExpressionsRule( Class<? extends RelFilter> filterClass, boolean matchNullability, AlgBuilderFactory algBuilderFactory ) {
+            super( filterClass, matchNullability, algBuilderFactory, "ReduceExpressionsRule(RelFilter)" );
         }
 
 
         @Override
         public void onMatch( AlgOptRuleCall call ) {
-            final Filter filter = call.alg( 0 );
+            final RelFilter filter = call.alg( 0 );
             final List<RexNode> expList = Lists.newArrayList( filter.getCondition() );
             RexNode newConditionExp;
             boolean reduced;
@@ -177,12 +177,12 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
          * @param input alg to replace, assumes caller has already determined equivalence to Values operation for 0 records or a false filter.
          * @return equivalent but less expensive replacement rel
          */
-        protected AlgNode createEmptyRelOrEquivalent( AlgOptRuleCall call, Filter input ) {
+        protected AlgNode createEmptyRelOrEquivalent( AlgOptRuleCall call, RelFilter input ) {
             return call.builder().push( input ).empty().build();
         }
 
 
-        private void reduceNotNullableFilter( AlgOptRuleCall call, Filter filter, RexNode rexNode, boolean reverse ) {
+        private void reduceNotNullableFilter( AlgOptRuleCall call, RelFilter filter, RexNode rexNode, boolean reverse ) {
             // If the expression is a IS [NOT] NULL on a non-nullable column, then we can either remove the filter or replace it with an Empty.
             boolean alwaysTrue;
             switch ( rexNode.getKind() ) {
@@ -491,7 +491,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
         }
 
         // For Project, we have to be sure to preserve the result types, so always cast regardless of the expression type.
-        // For other RelNodes like Filter, in general, this isn't necessary, and the presence of casts could hinder other rules such as sarg analysis, which require bare literals.  But there are special cases,
+        // For other RelNodes like RelFilter, in general, this isn't necessary, and the presence of casts could hinder other rules such as sarg analysis, which require bare literals.  But there are special cases,
         // like when the expression is a UDR argument, that need to be handled as special cases.
         if ( alg instanceof Project ) {
             addCasts = Collections.nCopies( reducedValues.size(), true );
