@@ -36,6 +36,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManagerProvider;
 import org.polypheny.db.transaction.locking.IdentifierUtils;
 import org.polypheny.db.transaction.locking.VersionedEntryIdentifier;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
@@ -142,19 +143,36 @@ public class EnumerableIdCollector extends IdentifierCollector implements Enumer
     public static Function3<Enumerable<PolyValue[]>, Transaction, Long, Enumerable<PolyValue[]>> collectLpgIdentifiers() {
         return ( input, transaction, logicalId ) -> {
             input.forEach( row -> {
-                PolyGraph graph = (PolyGraph) row[0];
+                PolyValue value = row[0];
+                if ( !(value instanceof PolyGraph graph) ) {
+                    long entryIdentifier = getIdentifierFromPropertyHolder( (GraphPropertyHolder) value );
+                    transaction.addReadEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier ) );
+                    return;
+                }
                 Stream.concat(
                         graph.getNodes().values().stream().map( n -> (GraphPropertyHolder) n ),
                         graph.getEdges().values().stream().map( n -> (GraphPropertyHolder) n )
                 ).forEach( p -> {
-                    PolyValue identifier = p.getProperties().get( IdentifierUtils.getIdentifierKeyAsPolyString() );
-                    // TODO TH: Are those always strings?
-                    long entryIdentifier = Long.parseLong( identifier.asString().getValue() );
+                    long entryIdentifier = getIdentifierFromPropertyHolder( p );
                     transaction.addReadEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier ) );
                 } );
             } );
             return input;
         };
+    }
+
+
+    private static long getIdentifierFromPropertyHolder( GraphPropertyHolder propertyHolder ) {
+        PolyValue identifier = propertyHolder.getProperties().get( IdentifierUtils.getIdentifierKeyAsPolyString() );
+        long entryIdentifier = -1;
+        if ( identifier instanceof PolyLong id ) {
+            entryIdentifier = id.getValue();
+        }
+        if ( identifier instanceof PolyString string ) {
+            entryIdentifier = Long.parseLong( string.getValue() );
+        }
+        assert entryIdentifier != -1;
+        return entryIdentifier;
     }
 
 }
