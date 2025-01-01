@@ -35,7 +35,7 @@ package org.polypheny.db.algebra.rules;
 
 
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -60,15 +60,15 @@ public class FilterMergeRule extends AlgOptRule {
      */
     public FilterMergeRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                operand( Filter.class, operand( Filter.class, any() ) ),
+                operand( RelFilter.class, operand( RelFilter.class, any() ) ),
                 algBuilderFactory, null );
     }
 
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        final Filter topFilter = call.alg( 0 );
-        final Filter bottomFilter = call.alg( 1 );
+        final RelFilter topFilter = call.alg( 0 );
+        final RelFilter bottomFilter = call.alg( 1 );
 
         // use RexPrograms to merge the two FilterAlgs into a single program so we can convert the two LogicalFilter
         // conditions to directly reference the bottom LogicalFilter's child
@@ -93,7 +93,7 @@ public class FilterMergeRule extends AlgOptRule {
      * @param filterRel the LogicalFilter
      * @return created RexProgram
      */
-    private RexProgram createProgram( Filter filterRel ) {
+    private RexProgram createProgram( RelFilter filterRel ) {
         RexProgramBuilder programBuilder = new RexProgramBuilder( filterRel.getTupleType(), filterRel.getCluster().getRexBuilder() );
         programBuilder.addIdentity();
         programBuilder.addCondition( filterRel.getCondition() );

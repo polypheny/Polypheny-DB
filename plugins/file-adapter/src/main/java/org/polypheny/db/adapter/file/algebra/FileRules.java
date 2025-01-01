@@ -31,7 +31,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
@@ -303,7 +303,7 @@ public class FileRules {
 
 
         public FileFilterRule( FileConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Filter.class, f -> !functionInFilter( f ) && !DocumentRules.containsDocument( f ), Convention.NONE, out, algBuilderFactory, "FileFilterRule:" + out.getName() );
+            super( RelFilter.class, f -> !functionInFilter( f ) && !DocumentRules.containsDocument( f ), Convention.NONE, out, algBuilderFactory, "FileFilterRule:" + out.getName() );
             this.convention = out;
         }
 
@@ -320,7 +320,7 @@ public class FileRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final Filter filter = (Filter) alg;
+            final RelFilter filter = (RelFilter) alg;
             final AlgTraitSet traitSet = filter.getTraitSet().replace( convention );
             return new FileFilter(
                     filter.getCluster(),
@@ -330,7 +330,7 @@ public class FileRules {
         }
 
 
-        private static boolean functionInFilter( Filter filter ) {
+        private static boolean functionInFilter( RelFilter filter ) {
             CheckingFunctionVisitor visitor = new CheckingFunctionVisitor( filter );
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );

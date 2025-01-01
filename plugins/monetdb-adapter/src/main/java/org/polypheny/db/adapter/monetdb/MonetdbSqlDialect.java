@@ -28,7 +28,7 @@ import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
@@ -185,7 +185,7 @@ public class MonetdbSqlDialect extends SqlDialect {
 
 
     @Override
-    public boolean supportsFilter( Filter filter ) {
+    public boolean supportsFilter( RelFilter filter ) {
         MonetdbRexVisitor visitor = new MonetdbRexVisitor();
         filter.getCondition().accept( visitor );
         return visitor.supportsRex;

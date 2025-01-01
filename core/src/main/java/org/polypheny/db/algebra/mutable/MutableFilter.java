@@ -35,11 +35,12 @@ package org.polypheny.db.algebra.mutable;
 
 
 import java.util.Objects;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Mutable equivalent of {@link org.polypheny.db.algebra.core.Filter}.
+ * Mutable equivalent of {@link RelFilter}.
  */
 public class MutableFilter extends MutableSingleAlg {
 
@@ -80,7 +81,7 @@ public class MutableFilter extends MutableSingleAlg {
 
     @Override
     public StringBuilder digest( StringBuilder buf ) {
-        return buf.append( "Filter(condition: " ).append( condition ).append( ")" );
+        return buf.append( "RelFilter(condition: " ).append( condition ).append( ")" );
     }
 
 

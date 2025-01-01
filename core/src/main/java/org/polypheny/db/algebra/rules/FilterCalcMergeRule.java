@@ -35,7 +35,7 @@ package org.polypheny.db.algebra.rules;
 
 
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.plan.AlgOptRule;
@@ -63,7 +63,7 @@ public class FilterCalcMergeRule extends AlgOptRule {
      * @param algBuilderFactory Builder for relational expressions
      */
     public FilterCalcMergeRule( AlgBuilderFactory algBuilderFactory ) {
-        super( operand( Filter.class, operand( LogicalCalc.class, any() ) ), algBuilderFactory, null );
+        super( operand( RelFilter.class, operand( LogicalCalc.class, any() ) ), algBuilderFactory, null );
     }
 
 

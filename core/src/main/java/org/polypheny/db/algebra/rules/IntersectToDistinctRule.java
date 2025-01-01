@@ -67,7 +67,7 @@ import org.polypheny.db.util.Util;
  *
  * Note that we do not need <code>min(c)</code> in intersect distinct.
  *
- * <code>R5 = Filter(cnt == #branch)</code>
+ * <code>R5 = RelFilter(cnt == #branch)</code>
  *
  * If it is intersect all then
  *

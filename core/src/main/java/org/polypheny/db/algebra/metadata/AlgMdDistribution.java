@@ -42,7 +42,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Exchange;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
@@ -144,7 +144,7 @@ public class AlgMdDistribution implements MetadataHandler<BuiltInMetadata.Distri
 
 
     /**
-     * Helper method to determine a {@link Filter}'s distribution.
+     * Helper method to determine a {@link RelFilter}'s distribution.
      */
     public static AlgDistribution filter( AlgMetadataQuery mq, AlgNode input ) {
         return mq.distribution( input );

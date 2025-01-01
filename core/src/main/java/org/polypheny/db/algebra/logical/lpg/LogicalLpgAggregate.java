@@ -42,6 +42,11 @@ public class LogicalLpgAggregate extends LpgAggregate {
     }
 
 
+    public LogicalLpgAggregate copy( List<AlgNode> inputs ) {
+        return new LogicalLpgAggregate( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), groups, aggCalls, rowType );
+    }
+
+
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );

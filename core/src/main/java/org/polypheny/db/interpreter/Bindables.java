@@ -53,7 +53,7 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
@@ -297,7 +297,7 @@ public class Bindables {
 
 
     /**
-     * Rule that converts a {@link Filter} to bindable convention.
+     * Rule that converts a {@link RelFilter} to bindable convention.
      */
     public static class BindableFilterRule extends ConverterRule {
 
@@ -321,9 +321,9 @@ public class Bindables {
 
 
     /**
-     * Implementation of {@link org.polypheny.db.algebra.core.Filter} in bindable convention.
+     * Implementation of {@link RelFilter} in bindable convention.
      */
-    public static class BindableFilter extends Filter implements BindableAlg {
+    public static class BindableFilter extends RelFilter implements BindableAlg {
 
         public BindableFilter( AlgCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
             super( cluster, traitSet, input, condition );

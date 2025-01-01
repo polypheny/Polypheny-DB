@@ -46,6 +46,7 @@ import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
@@ -130,7 +131,7 @@ public abstract class Sort extends SingleAlg {
         return copy( traitSet, sole( inputs ), collation, fieldExps, offset, fetch );
     }
 
-    public final Sort copy( List<AlgNode> inputs ) {
+    public Sort copy( List<AlgNode> inputs ) {
         return copy( traitSet, sole( inputs ), collation, fieldExps, offset, fetch );
     }
 

@@ -87,7 +87,7 @@ public class QueryPlanBuilder {
                 return builder.relScan( node.entityName.split( "\\." ) ).as( node.entityName.split( "\\." )[1] );
             case "Join":
                 return builder.join( node.join, builder.call( getOperator( node.operator ), builder.field( node.inputCount, field1[0], field1[1] ), builder.field( node.inputCount, field2[0], field2[1] ) ) );
-            case "Filter":
+            case "RelFilter":
                 String[] field = node.field.split( "\\." );
                 if ( NumberUtils.isCreatable( node.filter ) ) {
                     Number filter;

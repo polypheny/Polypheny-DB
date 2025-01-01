@@ -76,7 +76,7 @@ import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.AlgFactories.ScanFactory;
 import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
@@ -1425,7 +1425,7 @@ public class AlgBuilder {
 
 
     /**
-     * Creates a {@link Filter} of an array of predicates.
+     * Creates a {@link RelFilter} of an array of predicates.
      * <p>
      * The predicates are combined using AND, and optimized in a similar way to the {@link #and} method.
      * If the result is TRUE no filter is created.
@@ -1436,7 +1436,7 @@ public class AlgBuilder {
 
 
     /**
-     * Creates a {@link Filter} of a list of predicates.
+     * Creates a {@link RelFilter} of a list of predicates.
      * <p>
      * The predicates are combined using AND, and optimized in a similar way to the {@link #and} method.
      * If the result is TRUE no filter is created.

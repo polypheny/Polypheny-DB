@@ -43,6 +43,11 @@ public class LogicalLpgTransformer extends LpgTransformer {
     }
 
 
+    public LogicalLpgTransformer copy( List<AlgNode> inputs ) {
+        return new LogicalLpgTransformer( inputs.get( 0 ).getCluster(), traitSet, inputs, rowType, operationOrder, operation );
+    }
+
+
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );

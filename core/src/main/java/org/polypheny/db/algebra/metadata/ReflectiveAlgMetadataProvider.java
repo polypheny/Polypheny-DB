@@ -53,6 +53,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -98,10 +99,10 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider {
      * <blockquote><pre><code>
      * class RelMdSelectivity {
      *   public Double getSelectivity(Union alg, RexNode predicate) { }
-     *   public Double getSelectivity(Filter alg, RexNode predicate) { }
+     *   public Double getSelectivity(RelFilter alg, RexNode predicate) { }
      * </code></pre></blockquote>
      *
-     * provides implementations of selectivity for relational expressions that extend {@link org.polypheny.db.algebra.core.Union} or {@link org.polypheny.db.algebra.core.Filter}.
+     * provides implementations of selectivity for relational expressions that extend {@link org.polypheny.db.algebra.core.Union} or {@link RelFilter}.
      */
     public static AlgMetadataProvider reflectiveSource( Method method, MetadataHandler<Metadata> target ) {
         return reflectiveSource( target, ImmutableList.of( method ) );

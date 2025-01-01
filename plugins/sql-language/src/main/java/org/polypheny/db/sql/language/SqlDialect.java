@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.core.Aggregate;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
@@ -781,7 +781,7 @@ public class SqlDialect {
     }
 
 
-    public boolean supportsFilter( Filter filter ) {
+    public boolean supportsFilter( RelFilter filter ) {
         return true;
     }
 

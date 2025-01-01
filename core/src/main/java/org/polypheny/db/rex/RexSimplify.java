@@ -1171,7 +1171,7 @@ public class RexSimplify {
                             equalityTerms.put( left, Pair.of( right, term ) );
                         }
                     }
-                    // Assume the expression a > 5 is part of a Filter condition.
+                    // Assume the expression a > 5 is part of a RelFilter condition.
                     // Then we can derive the negated term: a <= 5.
                     // But as the comparison is string based and thus operands order dependent, we should also add the inverted negated term: 5 >= a.
                     // Observe that for creating the inverted term we invert the list of operands.
@@ -1956,7 +1956,7 @@ public class RexSimplify {
      * The expression is simplified on the assumption that an UNKNOWN value is always treated as FALSE. Therefore the simplified expression may sometimes evaluate to FALSE where the original
      * expression would evaluate to UNKNOWN.
      *
-     * @param predicates Filter condition predicates
+     * @param predicates RelFilter condition predicates
      * @return simplified conjunction of predicates for the filter, null if always false
      */
     public RexNode simplifyFilterPredicates( Iterable<? extends RexNode> predicates ) {
@@ -1965,7 +1965,7 @@ public class RexSimplify {
             return null;
         }
 
-        // Remove cast of BOOLEAN NOT NULL to BOOLEAN or vice versa. Filter accepts nullable and not-nullable conditions, but a CAST might get in the way of other rewrites.
+        // Remove cast of BOOLEAN NOT NULL to BOOLEAN or vice versa. RelFilter accepts nullable and not-nullable conditions, but a CAST might get in the way of other rewrites.
         return removeNullabilityCast( simplifiedAnds );
     }
 

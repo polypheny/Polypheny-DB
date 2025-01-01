@@ -47,7 +47,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
@@ -214,10 +214,10 @@ public abstract class PruneEmptyRules {
      * <p>Examples:
      *
      * <ul>
-     * <li>Filter(Empty) becomes Empty
+     * <li>RelFilter(Empty) becomes Empty
      * </ul>
      */
-    public static final AlgOptRule FILTER_INSTANCE = new RemoveEmptySingleRule( Filter.class, "PruneEmptyFilter" );
+    public static final AlgOptRule FILTER_INSTANCE = new RemoveEmptySingleRule( RelFilter.class, "PruneEmptyFilter" );
 
     /**
      * Rule that converts a {@link Sort} to empty if its child is empty.

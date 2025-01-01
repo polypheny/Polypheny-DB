@@ -369,7 +369,7 @@ public class CsvTest {
 
 
     /**
-     * Filter that can be fully handled by CsvFilterableTable.
+     * RelFilter that can be fully handled by CsvFilterableTable.
      */
     @Test
     public void testFilterableWhere() {
@@ -379,7 +379,7 @@ public class CsvTest {
 
 
     /**
-     * Filter that can be partly handled by CsvFilterableTable.
+     * RelFilter that can be partly handled by CsvFilterableTable.
      */
     @Test
     public void testFilterableWhere2() {

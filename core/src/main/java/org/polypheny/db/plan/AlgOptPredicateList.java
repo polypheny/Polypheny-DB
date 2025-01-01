@@ -48,7 +48,7 @@ import org.polypheny.db.rex.RexUtil;
  * <b>Pulled up predicates</b> (field {@link #pulledUpPredicates} are predicates that apply to every row output by the relational expression. They are inferred from the input relational
  * expression(s) and the relational operator.
  *
- * For example, if you apply {@code Filter(x > 1)} to a relational expression that has a predicate {@code y < 10} then the pulled up predicates for the Filter are {@code [y < 10, x > ]}.
+ * For example, if you apply {@code RelFilter(x > 1)} to a relational expression that has a predicate {@code y < 10} then the pulled up predicates for the RelFilter are {@code [y < 10, x > ]}.
  *
  * <b>Inferred predicates</b> only apply to joins. If there there is a predicate on the left input to a join, and that predicate is over columns used in the join condition, then a
  * predicate can be inferred on the right input to the join. (And vice versa.)
@@ -64,7 +64,7 @@ import org.polypheny.db.rex.RexUtil;
  * we have
  *
  * <ul>
- * <li>left: {@code Filter(Scan(EMP), deptno < 10}, predicates: {@code [deptno < 10]}</li>
+ * <li>left: {@code RelFilter(Scan(EMP), deptno < 10}, predicates: {@code [deptno < 10]}</li>
  * <li>right: {@code Scan(DEPT)}, predicates: {@code []}</li>
  * <li>join: {@code Join(left, right, emp.deptno = dept.deptno}, leftInferredPredicates: [], rightInferredPredicates: [deptno &lt; 10], pulledUpPredicates: [emp.gender = 'F', emp.deptno &lt; 10, emp.deptno = dept.deptno, dept.deptno &lt; 10]</li>
  * </ul>

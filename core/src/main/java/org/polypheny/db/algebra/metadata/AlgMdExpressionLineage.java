@@ -52,7 +52,7 @@ import javax.annotation.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Exchange;
-import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.RelFilter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
@@ -360,9 +360,9 @@ public class AlgMdExpressionLineage implements MetadataHandler<BuiltInMetadata.E
 
 
     /**
-     * Expression lineage from Filter.
+     * Expression lineage from RelFilter.
      */
-    public Set<RexNode> getExpressionLineage( Filter alg, AlgMetadataQuery mq, RexNode outputExpression ) {
+    public Set<RexNode> getExpressionLineage( RelFilter alg, AlgMetadataQuery mq, RexNode outputExpression ) {
         return mq.getExpressionLineage( alg.getInput(), outputExpression );
     }
 
