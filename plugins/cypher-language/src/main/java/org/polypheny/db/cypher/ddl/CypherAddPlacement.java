@@ -16,7 +16,6 @@
 
 package org.polypheny.db.cypher.ddl;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,7 +25,6 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.cypher.CypherParameter;
@@ -41,7 +39,6 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockableUtils;
-import org.polypheny.db.transaction.locking.LockablesRegistry;
 
 
 public class CypherAddPlacement extends CypherAdminCommand implements ExecutableStatement {
