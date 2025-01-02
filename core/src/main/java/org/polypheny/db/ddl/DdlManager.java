@@ -103,6 +103,18 @@ public abstract class DdlManager {
     public abstract long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace, Statement statement );
 
     /**
+     * Creates a namespace with the provided options.
+     *
+     * @param name name of the new namespace
+     * @param type the namespace type, RELATIONAL, DOCUMENT, etc.
+     * @param ifNotExists whether to silently ignore if a namespace with this name does already exist
+     * @param replace whether to replace an existing namespace with this name
+     * @param statement the query statement
+     * @param useMvcc whether the new namespace should use multi version concurrency control
+     */
+    public abstract long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace, Statement statement, boolean useMvcc );
+
+    /**
      * Adds a new data store(adapter)
      *
      * @param uniqueName unique name of the newly created store
@@ -543,7 +555,7 @@ public abstract class DdlManager {
      */
     public abstract void refreshView( Statement statement, Long materializedId );
 
-    public abstract long createGraph( String namespaceName, boolean modifiable, @Nullable List<DataStore<?>> stores, boolean ifNotExists, boolean replace, boolean caseSensitive, Statement statement );
+    public abstract long createGraph( String namespaceName, boolean modifiable, @Nullable List<DataStore<?>> stores, boolean ifNotExists, boolean replace, boolean caseSensitive, Statement statement, boolean useMvcc );
 
     public abstract void createGraphAlias( long graphId, String alias, boolean ifNotExists );
 

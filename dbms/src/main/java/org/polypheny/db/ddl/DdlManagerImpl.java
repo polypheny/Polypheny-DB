@@ -174,7 +174,14 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
+    //TODO TH: remove this if no longer used
     public long createNamespace( String initialName, DataModel type, boolean ifNotExists, boolean replace, Statement statement ) {
+        return createNamespace( initialName, type, ifNotExists, replace, statement, false );
+    }
+
+
+    @Override
+    public long createNamespace( String initialName, DataModel type, boolean ifNotExists, boolean replace, Statement statement, boolean useMvcc ) {
         String name = initialName.toLowerCase();
         // Check that name is not blocked
         if ( blockedNamespaceNames.contains( name ) ) {
@@ -197,10 +204,10 @@ public class DdlManagerImpl extends DdlManager {
                 type == DataModel.GRAPH && RuntimeConfig.GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean();
 
         if ( type == DataModel.GRAPH ) {
-            return createGraph( name, true, null, false, false, caseSensitive, statement );
+            return createGraph( name, true, null, false, false, caseSensitive, statement, useMvcc );
         }
 
-        return catalog.createNamespace( name, type, caseSensitive );
+        return catalog.createNamespace( name, type, caseSensitive, useMvcc );
     }
 
 
@@ -1812,7 +1819,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public long createGraph( String name, boolean modifiable, @Nullable List<DataStore<?>> stores, boolean ifNotExists, boolean replace, boolean caseSensitive, Statement statement ) {
+    public long createGraph( String name, boolean modifiable, @Nullable List<DataStore<?>> stores, boolean ifNotExists, boolean replace, boolean caseSensitive, Statement statement, boolean useMvcc ) {
         assert !replace : "Graphs cannot be replaced yet.";
         String adjustedName = caseSensitive ? name : name.toLowerCase();
 
@@ -1822,7 +1829,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // add general graph
-        long graphId = catalog.createNamespace( adjustedName, DataModel.GRAPH, caseSensitive );
+        long graphId = catalog.createNamespace( adjustedName, DataModel.GRAPH, caseSensitive, useMvcc );
 
         // add specialized graph
         LogicalGraph logical = catalog.getLogicalGraph( graphId ).addGraph( graphId, adjustedName, modifiable );

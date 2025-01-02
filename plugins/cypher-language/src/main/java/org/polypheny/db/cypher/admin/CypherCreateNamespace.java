@@ -103,7 +103,8 @@ public class CypherCreateNamespace extends CypherAdminCommand implements Executa
                 ifNotExists,
                 replace,
                 true,
-                statement );
+                statement,
+                false);
     }
 
 
