@@ -55,11 +55,14 @@ public class AlgEntityLockablesExtractor extends AlgVisitor {
 
 
     private void visitRelationalNode( AlgNode currentNode ) {
-        LockType lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
+        LockType lockType = LockType.MVCC;
+        if ( !LockableUtils.isInNamespaceUsingMvcc( currentNode.getEntity() ) ) {
+            lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
+        }
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             extractWriteConstraints( currentNode.getEntity().unwrap( LogicalTable.class ).orElseThrow() );
         }
-        LockableUtils.updateMapOfDerivedLockables( currentNode.getEntity(), lockType, result );
+        LockableUtils.updateMapEntry( currentNode.getEntity(), lockType, result );
     }
 
 
@@ -72,12 +75,19 @@ public class AlgEntityLockablesExtractor extends AlgVisitor {
                             .filter( Optional::isPresent )
                             .map( Optional::get );
                 } )
-                .forEach( entry -> LockableUtils.updateMapOfDerivedLockables( entry, LockType.SHARED, result ) );
+                .forEach( entry -> {
+                    LockType lockType = LockableUtils.isInNamespaceUsingMvcc( entry ) ? LockType.MVCC : LockType.SHARED;
+                    LockableUtils.updateMapEntry( entry, lockType, result );
+                } );
     }
 
 
     private void visitNonRelationalNode( AlgNode currentNode ) {
-        LockType lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
-        LockableUtils.updateMapOfDerivedLockables( currentNode.getEntity(), lockType, result );
+        LockType lockType = LockType.MVCC;
+        if ( !LockableUtils.isInNamespaceUsingMvcc( currentNode.getEntity() ) ) {
+            lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
+        }
+        LockableUtils.updateMapEntry( currentNode.getEntity(), lockType, result );
     }
+
 }
