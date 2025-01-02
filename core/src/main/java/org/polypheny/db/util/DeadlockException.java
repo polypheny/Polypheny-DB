@@ -24,4 +24,9 @@ public class DeadlockException extends GenericRuntimeException {
         super( msg );
     }
 
+
+    public DeadlockException( String msg, Throwable cause ) {
+        super( msg, cause );
+    }
+
 }
