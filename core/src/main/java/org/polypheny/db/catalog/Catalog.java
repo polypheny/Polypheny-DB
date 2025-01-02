@@ -194,7 +194,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param caseSensitive
      * @return The id of the inserted schema
      */
-    public abstract long createNamespace( String name, DataModel dataModel, boolean caseSensitive );
+    public abstract long createNamespace( String name, DataModel dataModel, boolean caseSensitive, boolean useMvcc );
 
     /**
      * Add an adapter

@@ -154,7 +154,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long createNamespace( String name, DataModel dataModel, boolean caseSensitive ) {
+    public long createNamespace( String name, DataModel dataModel, boolean caseSensitive, boolean useMvcc ) {
         throw new NotImplementedException();
     }
 
