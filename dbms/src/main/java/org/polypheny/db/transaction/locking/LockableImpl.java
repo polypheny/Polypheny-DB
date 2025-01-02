@@ -20,16 +20,14 @@ import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.deadlocks.DeadlockHandler;
 import org.polypheny.db.util.DeadlockException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@Slf4j
 public class LockableImpl implements Lockable {
-    private static final Logger LOGGER = LoggerFactory.getLogger( LockableImpl.class );
 
     private final ReentrantLock concurrencyLock = new ReentrantLock( true );
     private final Condition concurrencyCondition = concurrencyLock.newCondition();
@@ -75,37 +73,37 @@ public class LockableImpl implements Lockable {
             }
             long count = owners.remove( transaction );
             while ( !owners.isEmpty() ) {
-                DeadlockHandler.INSTANCE.addAndResolveDeadlock(this, transaction, owners.keySet() );
+                DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners.keySet() );
                 concurrencyCondition.await();
             }
             isExclusive = true;
             owners.put( transaction, count );
-            printAcquiredInfo("UEx", transaction);
+            printAcquiredInfo( "UEx", transaction );
         } finally {
             concurrencyLock.unlock();
         }
     }
 
 
-    public void release(@NotNull Transaction transaction) {
+    public void release( @NotNull Transaction transaction ) {
         concurrencyLock.lock();
         try {
-            if (isExclusive) {
+            if ( isExclusive ) {
                 owners.clear();
                 isExclusive = false;
             }
-            owners.computeIfPresent(transaction, (key, value) -> {
+            owners.computeIfPresent( transaction, ( key, value ) -> {
                 long newValue = value - 1;
                 return newValue <= 0 ? null : newValue;
-            });
-            DeadlockHandler.INSTANCE.remove(this, transaction);
+            } );
+            DeadlockHandler.INSTANCE.remove( this, transaction );
             concurrencyCondition.signalAll();
-            printAcquiredInfo("R", transaction);
+            printAcquiredInfo( "R", transaction );
         } finally {
             concurrencyLock.unlock();
         }
-        if (!isRoot()) {
-            parent.release(transaction);
+        if ( !isRoot() ) {
+            parent.release( transaction );
         }
     }
 
@@ -115,9 +113,11 @@ public class LockableImpl implements Lockable {
         return isExclusive ? LockType.EXCLUSIVE : LockType.SHARED;
     }
 
+
     public HashMap<Transaction, Long> getCopyOfOwners() {
-        return new HashMap<>(owners);
+        return new HashMap<>( owners );
     }
+
 
     @Override
     public boolean isRoot() {
@@ -132,7 +132,7 @@ public class LockableImpl implements Lockable {
         concurrencyLock.lock();
         try {
             while ( isExclusive || hasWaitingTransactions() ) {
-                DeadlockHandler.INSTANCE.addAndResolveDeadlock(this, transaction, owners.keySet() );
+                DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners.keySet() );
                 concurrencyCondition.await();
             }
             owners.put( transaction, owners.getOrDefault( transaction, 0L ) + 1 );
@@ -150,7 +150,7 @@ public class LockableImpl implements Lockable {
         concurrencyLock.lock();
         try {
             while ( !owners.isEmpty() ) {
-                DeadlockHandler.INSTANCE.addAndResolveDeadlock(this, transaction, owners.keySet() );
+                DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners.keySet() );
                 concurrencyCondition.await();
             }
             isExclusive = true;
@@ -168,15 +168,7 @@ public class LockableImpl implements Lockable {
 
 
     private void printAcquiredInfo( String message, Transaction transaction ) {
-
-        LOGGER.info ( MessageFormat.format(
-                "{0}, TX: {1}, L: {2}",
-                message,
-                transaction,
-                this
-        ) );
-
-
-
+        log.debug( "{}, TX: {}, L: {}", message, transaction, this );
     }
+
 }
