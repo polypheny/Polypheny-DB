@@ -56,7 +56,7 @@ public class MqlUseNamespace extends MqlNode implements ExecutableStatement {
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
-        return LockableUtils.getMapOfNamespaceLockable( namespace, context, LockType.SHARED );
+        return LockableUtils.getMapOfNamespaceLockableFromName( namespace, context, LockType.SHARED );
     }
 
 

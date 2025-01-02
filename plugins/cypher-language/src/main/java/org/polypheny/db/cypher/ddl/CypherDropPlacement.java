@@ -16,7 +16,6 @@
 
 package org.polypheny.db.cypher.ddl;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -73,7 +72,7 @@ public class CypherDropPlacement extends CypherAdminCommand implements Executabl
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
-        return LockableUtils.getMapWithGlobalLockable( LockType.EXCLUSIVE );
+        return LockableUtils.getMapOfGlobalLockable( LockType.EXCLUSIVE );
     }
 
 }

@@ -25,6 +25,7 @@ public interface Lockable {
     enum LockType {
         SHARED,
         EXCLUSIVE,
+        MVCC
     }
 
     void acquire(@NonNull Transaction transaction, @NonNull LockType lockType ) throws DeadlockException;
