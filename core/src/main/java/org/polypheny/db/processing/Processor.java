@@ -54,7 +54,7 @@ public abstract class Processor {
             requiredLockables.forEach( transaction::acquireLockable );
             return getImplementation( statement, node, context );
         } catch ( DeadlockException e ) {
-            throw new DeadlockException( e.getMessage() + " Exception while acquiring global schema lock" );
+            throw new DeadlockException( " Exception while acquiring global schema lock", e );
         }
     }
 
