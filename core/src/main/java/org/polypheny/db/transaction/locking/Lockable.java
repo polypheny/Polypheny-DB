@@ -25,6 +25,7 @@ public interface Lockable {
     enum LockState {
         SHARED,
         EXCLUSIVE,
+        MVCC
     }
 
 
