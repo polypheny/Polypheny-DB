@@ -17,11 +17,8 @@
 package org.polypheny.db.sql.language.ddl;
 
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.prepare.Context;
