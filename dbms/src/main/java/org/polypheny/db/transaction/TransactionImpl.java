@@ -132,7 +132,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final Collection<ConstraintCondition> commitConstraints = new ConcurrentLinkedDeque<>();
 
     @Getter
-    private Set<Lockable> lockedEntities = new HashSet<>();
+    private final Set<Lockable> lockedEntities = new HashSet<>();
 
 
     TransactionImpl(
