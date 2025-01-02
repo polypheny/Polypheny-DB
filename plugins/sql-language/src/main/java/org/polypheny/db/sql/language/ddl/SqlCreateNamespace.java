@@ -49,16 +49,19 @@ public class SqlCreateNamespace extends SqlCreate implements ExecutableStatement
 
     private final DataModel type;
 
+    private final boolean useMvcc;
+
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE NAMESPACE", Kind.CREATE_NAMESPACE );
 
 
     /**
      * Creates a SqlCreateNamespace.
      */
-    SqlCreateNamespace( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, DataModel dataModel ) {
+    SqlCreateNamespace( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, DataModel dataModel, boolean useMvcc ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.type = dataModel;
+        this.useMvcc = useMvcc;
     }
 
 
@@ -93,7 +96,7 @@ public class SqlCreateNamespace extends SqlCreate implements ExecutableStatement
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        DdlManager.getInstance().createNamespace( name.getSimple(), type, ifNotExists, replace, statement );
+        DdlManager.getInstance().createNamespace( name.getSimple(), type, ifNotExists, replace, statement, useMvcc );
     }
 
 
