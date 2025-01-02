@@ -32,7 +32,7 @@ public class LockableImpl implements Lockable {
     private final ReentrantLock concurrencyLock = new ReentrantLock( true );
     private final Condition concurrencyCondition = concurrencyLock.newCondition();
     private final HashMap<Transaction, Long> owners = new HashMap<>();
-    Lockable parent;
+    private final Lockable parent;
 
     private boolean isExclusive = false;
 
