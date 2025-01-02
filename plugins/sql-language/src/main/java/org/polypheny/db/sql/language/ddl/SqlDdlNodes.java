@@ -43,8 +43,8 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE NAMESPACE.
      */
-    public static SqlCreateNamespace createNamespace( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, DataModel dataModel ) {
-        return new SqlCreateNamespace( pos, replace, ifNotExists, name, dataModel );
+    public static SqlCreateNamespace createNamespace( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, DataModel dataModel, boolean useMvcc ) {
+        return new SqlCreateNamespace( pos, replace, ifNotExists, name, dataModel, useMvcc );
     }
 
 
