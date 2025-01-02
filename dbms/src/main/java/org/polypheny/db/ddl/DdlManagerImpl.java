@@ -173,13 +173,6 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    //TODO TH: remove this if no longer used
-    public long createNamespace( String initialName, DataModel type, boolean ifNotExists, boolean replace, Statement statement ) {
-        return createNamespace( initialName, type, ifNotExists, replace, statement, false );
-    }
-
-
-    @Override
     public long createNamespace( String initialName, DataModel type, boolean ifNotExists, boolean replace, Statement statement, boolean useMvcc ) {
         String name = initialName.toLowerCase();
         // Check that name is not blocked

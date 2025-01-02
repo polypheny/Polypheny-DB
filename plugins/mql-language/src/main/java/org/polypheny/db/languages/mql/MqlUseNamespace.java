@@ -50,7 +50,7 @@ public class MqlUseNamespace extends MqlNode implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        DdlManager.getInstance().createNamespace( this.namespace, DataModel.DOCUMENT, true, false, statement );
+        DdlManager.getInstance().createNamespace( this.namespace, DataModel.DOCUMENT, true, false, statement, false );
     }
 
 

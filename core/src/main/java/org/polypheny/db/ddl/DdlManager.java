@@ -89,18 +89,6 @@ public abstract class DdlManager {
         return INSTANCE;
     }
 
-
-    /**
-     * Creates a namespace with the provided options.
-     *
-     * @param name name of the new namespace
-     * @param type the namespace type, RELATIONAL, DOCUMENT, etc.
-     * @param ifNotExists whether to silently ignore if a namespace with this name does already exist
-     * @param replace whether to replace an existing namespace with this name
-     * @param statement the query statement
-     */
-    public abstract long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace, Statement statement );
-
     /**
      * Creates a namespace with the provided options.
      *

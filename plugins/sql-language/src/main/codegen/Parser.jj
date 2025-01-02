@@ -1866,6 +1866,7 @@ SqlCreate SqlCreateNamespace(Span s, boolean replace) :
     final boolean ifNotExists;
     final SqlIdentifier id;
     final DataModel dataModel;
+    boolean useMvcc = false;
 }
 {
     (
@@ -1878,10 +1879,12 @@ SqlCreate SqlCreateNamespace(Span s, boolean replace) :
         { dataModel = DataModel.RELATIONAL; }
     )
     (<NAMESPACE> | <SCHEMA>) ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
+    [ <CONCURRENCY> <MVCC> { useMvcc = true; } ]
     {
-    return SqlDdlNodes.createNamespace(s.end(this), replace, ifNotExists, id, dataModel);
+        return SqlDdlNodes.createNamespace(s.end(this), replace, ifNotExists, id, dataModel, useMvcc);
+    }
 }
-}
+
 
 SqlNodeList Options() :
 {
@@ -7565,6 +7568,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < COMMAND_FUNCTION_CODE: "COMMAND_FUNCTION_CODE" >
 |   < COMMIT: "COMMIT" >
 |   < COMMITTED: "COMMITTED" >
+|   < CONCURRENCY: "CONCURRENCY" >
 |   < CONDITION: "CONDITION" >
 |   < CONDITIONAL: "CONDITIONAL" >
 |   < CONDITION_NUMBER: "CONDITION_NUMBER" >
@@ -7817,6 +7821,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < MORE_: "MORE" >
 |   < MULTISET: "MULTISET" >
 |   < MUMPS: "MUMPS" >
+|   < MVCC: "MVCC" >
 |   < NAME: "NAME" >
 |   < NAMES: "NAMES" >
 |   < NAMESPACE: "NAMESPACE" >
