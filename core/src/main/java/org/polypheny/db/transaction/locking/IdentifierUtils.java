@@ -19,13 +19,17 @@ package org.polypheny.db.transaction.locking;
 import java.text.MessageFormat;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyString;
@@ -96,6 +100,13 @@ public class IdentifierUtils {
     }
 
 
+    public static void throwIfContainsIdentifierField( List<FieldInformation> fields ) {
+        Set<String> fieldNames = fields.stream()
+                .map( FieldInformation::name )
+                .collect( Collectors.toSet() );
+        throwIfContainsIdentifierKey( fieldNames );
+    }
+
     public static boolean containsIdentifierKey( List<PolyDocument> documents ) {
         return documents.stream()
                 .flatMap( v -> v.map.keySet().stream() )
@@ -103,12 +114,19 @@ public class IdentifierUtils {
                 .anyMatch( value -> value.equals( IDENTIFIER_KEY ) );
     }
 
-
-    public static void throwIfContainsIdentifierField( List<FieldInformation> fields ) {
-        Set<String> fieldNames = fields.stream()
-                .map( FieldInformation::name )
-                .collect( Collectors.toSet() );
-        throwIfContainsIdentifierKey( fieldNames );
+    public static void throwIfContainsIdentifierKey( LogicalLpgModify lpgModify ) {
+        boolean modifiesIdentifier = lpgModify.getOperations().stream()
+                .map(o -> o.unwrap( RexCall.class))
+                .filter( Optional::isPresent)
+                .flatMap(o -> o.get().getOperands().stream())
+                .map(r -> r.unwrap( RexLiteral.class))
+                .filter(Optional::isPresent)
+                .anyMatch(r -> IdentifierUtils.IDENTIFIER_KEY.equals(r.get().getValue().asString().getValue()));
+        if (!modifiesIdentifier) {
+            return;
+        }
+        throwIllegalFieldName();
     }
+
 
 }
