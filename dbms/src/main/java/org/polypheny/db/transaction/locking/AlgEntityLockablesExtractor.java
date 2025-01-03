@@ -55,7 +55,7 @@ public class AlgEntityLockablesExtractor extends AlgVisitor {
 
 
     private void visitRelationalNode( AlgNode currentNode ) {
-        LockType lockType = LockType.MVCC;
+        LockType lockType = LockType.SHARED;
         if ( !LockableUtils.isInNamespaceUsingMvcc( currentNode.getEntity() ) ) {
             lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
         }
@@ -83,7 +83,7 @@ public class AlgEntityLockablesExtractor extends AlgVisitor {
 
 
     private void visitNonRelationalNode( AlgNode currentNode ) {
-        LockType lockType = LockType.MVCC;
+        LockType lockType = LockType.SHARED;
         if ( !LockableUtils.isInNamespaceUsingMvcc( currentNode.getEntity() ) ) {
             lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
         }
