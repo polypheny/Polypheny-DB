@@ -75,7 +75,6 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     private final Transaction transaction;
     private AlgNode collectorInsertPosition;
 
-
     public AlgTreeRewriter( Transaction transaction ) {
         this.transaction = transaction;
         this.collectorInsertPosition = null;
@@ -190,7 +189,6 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         }
         return entity;
     }
-
 
     @Override
     public AlgNode visit( LogicalRelAggregate aggregate ) {
@@ -353,7 +351,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         }
         switch ( modify1.getOperation() ) {
             case INSERT:
-                AlgNode input = modify.getInput();
+                AlgNode input = modify1.getInput();
                 LogicalRelIdentifier identifier = LogicalRelIdentifier.create(
                         modify1.getEntity(),
                         input,
@@ -385,16 +383,17 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         if ( !MvccUtils.isInNamespaceUsingMvcc( modify.getEntity() ) ) {
             return modify1;
         }
-        switch ( modify.getOperation() ) {
+        switch ( modify1.getOperation() ) {
             case INSERT:
-                AlgNode input = modify.getInput();
+                AlgNode input = modify1.getInput();
                 LogicalLpgIdentifier identifier = LogicalLpgIdentifier.create(
-                        modify.getEntity(),
+                        modify1.getEntity(),
                         input
                 );
-                return modify.copy( modify.getTraitSet(), List.of( identifier ) );
+                return modify1.copy( modify1.getTraitSet(), List.of( identifier ) );
+            case UPDATE:
             default:
-                return visitChildren( modify );
+                return modify1;
         }
     }
 
@@ -503,6 +502,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
                 return modify1.copy( modify1.getTraitSet(), List.of( identifier ) );
             case UPDATE:
                 IdentifierUtils.throwIfContainsIdentifierKey( modify1.getUpdates().keySet() );
+                return modify1;
 
         }
         return modify1;
