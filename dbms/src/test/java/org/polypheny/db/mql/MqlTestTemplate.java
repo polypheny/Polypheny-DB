@@ -69,6 +69,10 @@ public class MqlTestTemplate {
         MongoConnection.executeGetResponse( "db." + collection + ".drop()" );
     }
 
+    public static void dropCollection( String collection, String database ) {
+        MongoConnection.executeGetResponse( "db." + collection + ".drop()", database );
+    }
+
 
     public static void initCollection( String collection ) {
         MongoConnection.executeGetResponse( "db.createCollection(" + collection + ")" );

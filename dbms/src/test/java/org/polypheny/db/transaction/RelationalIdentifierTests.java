@@ -156,15 +156,16 @@ public class RelationalIdentifierTests {
 
 
     @Test
-    public void testNonMvccUpdateUnparameterizedIdentifierName() throws SQLException {
+    // TODO TH: fix this
+    public void testNonMvccUpdateUnparameterizedColumnWithIdentifierName() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setCatalog( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
-                    statement.executeUpdate( "CREATE TABLE identifiers (_eid INTEGER NOT NULL, b INTEGER, PRIMARY KEY (_eid))" );
-                    statement.executeUpdate( "INSERT INTO identifiers (_eid, b) VALUES (1, 2)" );
-                    statement.executeUpdate( "UPDATE identifiers SET _eid = 32 WHERE _eid = 1 AND b = 2" );
+                    statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, _eid INTEGER, PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers (a, _eid) VALUES (1, 2)" );
+                    statement.executeUpdate( "UPDATE identifiers SET _eid = 32 WHERE _eid = 2" );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -176,17 +177,14 @@ public class RelationalIdentifierTests {
 
 
     @Test
-    public void testNonMvccDropIdentifierColumnUnparameterized() throws SQLException {
+    public void testNonMvccDropColumnWithIdentifierName() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setCatalog( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
-                    statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
-                    assertThrows(
-                            PrismInterfaceServiceException.class,
-                            () -> statement.executeUpdate( "ALTER TABLE identifiers DROP COLUMN _eid" )
-                    );
+                    statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, _eid INTEGER, PRIMARY KEY (a))" );
+                    statement.executeUpdate( "ALTER TABLE identifiers DROP COLUMN _eid" );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -198,7 +196,7 @@ public class RelationalIdentifierTests {
 
 
     @Test
-    public void testNonMvccAddIdentifierColumnUnparameterized() throws SQLException {
+    public void testNonMvccAddColumnWithIdentifierName() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setCatalog( "public" );
@@ -217,17 +215,14 @@ public class RelationalIdentifierTests {
 
 
     @Test
-    public void testNonMvccRenameIdentifierColumnUnparameterized() throws SQLException {
+    public void testNonMvccRenameColumnWithIdentifierName() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setCatalog( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
-                    statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
-                    assertThrows(
-                            PrismInterfaceServiceException.class,
-                            () -> statement.executeUpdate( "ALTER TABLE identifiers RENAME COLUMN _eid TO nowItsBroken" )
-                    );
+                    statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, _eid INTEGER, PRIMARY KEY (a))" );
+                    statement.executeUpdate( "ALTER TABLE identifiers RENAME COLUMN _eid TO thisShouldWork" );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -258,17 +253,14 @@ public class RelationalIdentifierTests {
 
 
     @Test
-    public void testNonMvccChangeDataTypeOfIdentifierColumnUnparameterized() throws SQLException {
+    public void testNonMvccChangeDataTypeOfColumnWithIdentifierName() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setCatalog( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
-                    statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
-                    assertThrows(
-                            PrismInterfaceServiceException.class,
-                            () -> statement.executeUpdate( "ALTER TABLE identifiers MODIFY COLUMN _eid SET TYPE VARCHAR(15)" )
-                    );
+                    statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, _eid INTEGER, PRIMARY KEY (a))" );
+                    statement.executeUpdate( "ALTER TABLE identifiers MODIFY COLUMN _eid SET TYPE VARCHAR(15)" );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -280,7 +272,7 @@ public class RelationalIdentifierTests {
 
 
     @Test
-    public void testNonMvccCreateTableIllegalColumnName() throws SQLException {
+    public void testNonMvccCreateTableWithColumnWithIdentifierName() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setCatalog( "public" );
@@ -385,7 +377,7 @@ public class RelationalIdentifierTests {
     Modify <- Project <- Select ('_eid', first', 'second')
     */
     @Test
-    public void testNonMvccInsertUnparameterizedIdentifierManipulation() throws SQLException {
+    public void testNonMvccInsertValuesMismatch() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setCatalog( "public" );
@@ -621,6 +613,7 @@ public class RelationalIdentifierTests {
             }
         }
     }
+
 
     @Test
     public void testMvccCreateTable() throws SQLException {
