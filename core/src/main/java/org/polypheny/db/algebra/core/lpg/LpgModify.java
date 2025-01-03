@@ -35,6 +35,7 @@ public abstract class LpgModify<E extends Entity> extends Modify<E> implements L
     @Getter
     public final Operation operation;
     public final List<PolyString> ids;
+    @Getter
     public final List<? extends RexNode> operations;
 
 

@@ -32,6 +32,7 @@ public class GraphIdentifierTest extends CypherTestTemplate {
         GraphResult res = matchAndReturnAllNodes();
         assertNode(res, 0);
         assert containsNodes(res, true, TestNode.from( Pair.of("a", "first")));
+
     }
 
     @Test

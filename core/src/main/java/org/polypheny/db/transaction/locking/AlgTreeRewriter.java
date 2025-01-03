@@ -68,6 +68,8 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.transaction.Transaction;
 
 public class AlgTreeRewriter extends AlgShuttleImpl {
@@ -234,8 +236,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalRelValues values ) {
-
-
+        // check for identifier not needed as this is done during sql validation
         return values;
     }
 
@@ -353,6 +354,9 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         if ( !MvccUtils.isInNamespaceUsingMvcc( modify.getEntity() ) ) {
             return modify1;
         }
+        if (containsIdentifierKey) {
+            IdentifierUtils.throwIllegalFieldName();
+        }
         switch ( modify1.getOperation() ) {
             case INSERT:
                 AlgNode input = modify1.getInput();
@@ -399,6 +403,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
                 );
                 return modify1.copy( modify1.getTraitSet(), List.of( identifier ) );
             case UPDATE:
+                IdentifierUtils.throwIfContainsIdentifierKey( modify1 );
             default:
                 return modify1;
         }
