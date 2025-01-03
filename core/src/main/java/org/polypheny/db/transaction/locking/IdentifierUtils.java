@@ -96,12 +96,11 @@ public class IdentifierUtils {
     }
 
 
-    public static void throwIfContainsIdentifierKey( List<PolyDocument> documents ) {
-        Set<String> fieldNames = documents.stream()
+    public static boolean containsIdentifierKey( List<PolyDocument> documents ) {
+        return documents.stream()
                 .flatMap( v -> v.map.keySet().stream() )
                 .map( PolyString::getValue )
-                .collect( Collectors.toSet() );
-        throwIfContainsIdentifierKey( fieldNames );
+                .anyMatch( value -> value.equals( IDENTIFIER_KEY ) );
     }
 
 

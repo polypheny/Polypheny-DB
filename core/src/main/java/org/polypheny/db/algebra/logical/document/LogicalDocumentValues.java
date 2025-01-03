@@ -26,7 +26,6 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.transaction.locking.IdentifierUtils;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
 
@@ -62,7 +61,6 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
      */
     public LogicalDocumentValues( AlgCluster cluster, AlgTraitSet traitSet, List<PolyDocument> document ) {
         super( cluster, traitSet, document );
-        IdentifierUtils.throwIfContainsIdentifierKey( document );
     }
 
 
