@@ -19,6 +19,7 @@ package org.polypheny.db.languages.mql;
 import java.util.Map;
 import java.util.Optional;
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
