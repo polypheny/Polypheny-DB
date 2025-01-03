@@ -66,7 +66,6 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
      */
     public LogicalDocumentValues( AlgCluster cluster, AlgTraitSet traitSet, List<PolyDocument> document ) {
         super( cluster, traitSet, document );
-        IdentifierUtils.throwIfContainsIdentifierKey( document );
     }
 
 
