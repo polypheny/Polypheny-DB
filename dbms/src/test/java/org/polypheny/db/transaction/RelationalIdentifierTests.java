@@ -156,18 +156,15 @@ public class RelationalIdentifierTests {
 
 
     @Test
-    public void testNonMvccUpdateUnparameterizedIdentifierManipulation() throws SQLException {
+    public void testNonMvccUpdateUnparameterizedIdentifierName() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setCatalog( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
-                    statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
-                    statement.executeUpdate( "INSERT INTO identifiers (a, b) VALUES (1, 2)" );
-                    assertThrows(
-                            PrismInterfaceServiceException.class,
-                            () -> statement.executeUpdate( "UPDATE identifiers SET _eid = 32 WHERE a = 1 AND b = 2" )
-                    );
+                    statement.executeUpdate( "CREATE TABLE identifiers (_eid INTEGER NOT NULL, b INTEGER, PRIMARY KEY (_eid))" );
+                    statement.executeUpdate( "INSERT INTO identifiers (_eid, b) VALUES (1, 2)" );
+                    statement.executeUpdate( "UPDATE identifiers SET _eid = 32 WHERE _eid = 1 AND b = 2" );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
