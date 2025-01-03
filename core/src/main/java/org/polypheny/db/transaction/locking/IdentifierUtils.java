@@ -33,6 +33,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
@@ -121,7 +122,9 @@ public class IdentifierUtils {
                 .flatMap(o -> o.get().getOperands().stream())
                 .map(r -> r.unwrap( RexLiteral.class))
                 .filter(Optional::isPresent)
-                .anyMatch(r -> IdentifierUtils.IDENTIFIER_KEY.equals(r.get().getValue().asString().getValue()));
+                .map(v -> v.get().getValue())
+                .filter( PolyValue::isString )
+                .anyMatch(s -> IdentifierUtils.IDENTIFIER_KEY.equals(s.asString().getValue()));
         if (!modifiesIdentifier) {
             return;
         }
