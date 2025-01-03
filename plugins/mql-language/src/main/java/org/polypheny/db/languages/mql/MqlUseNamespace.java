@@ -19,6 +19,7 @@ package org.polypheny.db.languages.mql;
 import java.util.Map;
 import java.util.Optional;
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -56,6 +57,9 @@ public class MqlUseNamespace extends MqlNode implements ExecutableStatement {
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        if (context.getSnapshot().getNamespace( namespace ).isEmpty()) {
+            return LockableUtils.getMapOfGlobalLockable( LockType.EXCLUSIVE );
+        }
         return LockableUtils.getMapOfNamespaceLockableFromName( namespace, context, LockType.SHARED );
     }
 
