@@ -34,6 +34,7 @@ import org.polypheny.db.type.entity.PolyString;
 public abstract class LpgModify<E extends Entity> extends Modify<E> implements LpgAlg {
 
     public final List<PolyString> ids;
+    @Getter
     public final List<? extends RexNode> operations;
 
 
