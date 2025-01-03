@@ -55,7 +55,7 @@ public class HrSnapshot extends MockSnapshot {
     public HrSnapshot() {
         super();
 
-        mock( new MockLogicalNamespace( "public", DataModel.RELATIONAL, true ) );
+        mock( new MockLogicalNamespace( "public", DataModel.RELATIONAL, true, false ) );
 
         mock( new MockTable( "emps", List.of( "empid" ), List.of(
                 new MockColumnInfo( "empid", false, PolyType.INTEGER ),

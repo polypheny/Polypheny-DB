@@ -50,7 +50,7 @@ public class CatalogTransactionTest {
     public void simpleRollbackTest() {
         PolyCatalog catalog = new PolyCatalog();
 
-        long namespaceId = catalog.createNamespace( "test", DataModel.RELATIONAL, false );
+        long namespaceId = catalog.createNamespace( "test", DataModel.RELATIONAL, false, false );
 
         catalog.commit();
 
@@ -71,7 +71,7 @@ public class CatalogTransactionTest {
     public void rollbackTest() {
         PolyCatalog catalog = new PolyCatalog();
 
-        long namespaceId = catalog.createNamespace( "test", DataModel.RELATIONAL, false );
+        long namespaceId = catalog.createNamespace( "test", DataModel.RELATIONAL, false, false );
 
         catalog.commit();
 
