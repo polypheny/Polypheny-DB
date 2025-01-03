@@ -74,10 +74,12 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     private final Transaction transaction;
     private AlgNode collectorInsertPosition;
+    private boolean containsIdentifierKey;
 
     public AlgTreeRewriter( Transaction transaction ) {
         this.transaction = transaction;
         this.collectorInsertPosition = null;
+        this.containsIdentifierKey = false;
     }
 
 
@@ -232,6 +234,8 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalRelValues values ) {
+
+
         return values;
     }
 
@@ -383,6 +387,9 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         if ( !MvccUtils.isInNamespaceUsingMvcc( modify.getEntity() ) ) {
             return modify1;
         }
+        if (containsIdentifierKey) {
+            IdentifierUtils.throwIllegalFieldName();
+        }
         switch ( modify1.getOperation() ) {
             case INSERT:
                 AlgNode input = modify1.getInput();
@@ -409,6 +416,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgValues values ) {
+
         return values;
     }
 
@@ -492,6 +500,9 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         if ( !MvccUtils.isInNamespaceUsingMvcc( modify.getEntity() ) ) {
             return modify1;
         }
+        if (containsIdentifierKey) {
+            IdentifierUtils.throwIllegalFieldName();
+        }
         switch ( modify1.getOperation() ) {
             case INSERT:
                 AlgNode input = modify1.getInput();
@@ -570,6 +581,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentValues values ) {
+        containsIdentifierKey |= IdentifierUtils.containsIdentifierKey( values.getDocuments() );
         return values;
     }
 
