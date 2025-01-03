@@ -56,7 +56,7 @@ public class AlgEntityLockablesExtractor extends AlgVisitor {
 
     private void visitRelationalNode( AlgNode currentNode ) {
         LockType lockType = LockType.SHARED;
-        if ( !LockableUtils.isInNamespaceUsingMvcc( currentNode.getEntity() ) ) {
+        if ( !MvccUtils.isInNamespaceUsingMvcc( currentNode.getEntity() ) ) {
             lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
         }
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
@@ -76,7 +76,7 @@ public class AlgEntityLockablesExtractor extends AlgVisitor {
                             .map( Optional::get );
                 } )
                 .forEach( entry -> {
-                    LockType lockType = LockableUtils.isInNamespaceUsingMvcc( entry ) ? LockType.MVCC : LockType.SHARED;
+                    LockType lockType = MvccUtils.isInNamespaceUsingMvcc( entry ) ? LockType.MVCC : LockType.SHARED;
                     LockableUtils.updateMapEntry( entry, lockType, result );
                 } );
     }
@@ -84,7 +84,7 @@ public class AlgEntityLockablesExtractor extends AlgVisitor {
 
     private void visitNonRelationalNode( AlgNode currentNode ) {
         LockType lockType = LockType.SHARED;
-        if ( !LockableUtils.isInNamespaceUsingMvcc( currentNode.getEntity() ) ) {
+        if ( !MvccUtils.isInNamespaceUsingMvcc( currentNode.getEntity() ) ) {
             lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
         }
         LockableUtils.updateMapEntry( currentNode.getEntity(), lockType, result );

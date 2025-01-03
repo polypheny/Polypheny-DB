@@ -130,7 +130,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         }
 
         AlgNode first = trace.get( 0 );
-        if (first instanceof Filter) {
+        if ( first instanceof Filter ) {
             collectorInsertPosition = first;
             return;
         }
@@ -139,12 +139,15 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
             return;
         }
 
-        AlgNode second = trace.get(1);
+        AlgNode second = trace.get( 1 );
         collectorInsertPosition = (second instanceof Filter) ? second : current;
     }
 
 
     private boolean isTarget( AlgNode node ) {
+        if ( collectorInsertPosition == null ) {
+            return false;
+        }
         return node.getInputs().contains( collectorInsertPosition );
     }
 
@@ -176,7 +179,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     }
 
 
-    public Entity findEntity( AlgNode node ) {
+    private Entity findEntity( AlgNode node ) {
         Entity entity = null;
         while ( entity == null && node != null ) {
             entity = node.getEntity();
@@ -211,7 +214,9 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalRelScan scan ) {
-        updateCollectorInsertPosition( scan );
+        if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
+            updateCollectorInsertPosition( scan );
+        }
         return scan;
     }
 
@@ -343,6 +348,9 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         if ( isTarget( modify1 ) ) {
             modify1 = modify1.copy( modifyInputs( modify1.getInputs() ) );
         }
+        if ( !MvccUtils.isInNamespaceUsingMvcc( modify.getEntity() ) ) {
+            return modify1;
+        }
         switch ( modify1.getOperation() ) {
             case INSERT:
                 AlgNode input = modify.getInput();
@@ -370,6 +378,13 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgModify modify ) {
+        LogicalLpgModify modify1 = visitChildren( modify );
+        if ( isTarget( modify1 ) ) {
+            modify1 = modify1.copy( modifyInputs( modify1.getInputs() ) );
+        }
+        if ( !MvccUtils.isInNamespaceUsingMvcc( modify.getEntity() ) ) {
+            return modify1;
+        }
         switch ( modify.getOperation() ) {
             case INSERT:
                 AlgNode input = modify.getInput();
@@ -386,7 +401,9 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgScan scan ) {
-        updateCollectorInsertPosition( scan );
+        if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
+            updateCollectorInsertPosition( scan );
+        }
         return scan;
     }
 
@@ -473,6 +490,9 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         if ( isTarget( modify1 ) ) {
             modify1 = modify1.copy( modifyInputs( modify1.getInputs() ) );
         }
+        if ( !MvccUtils.isInNamespaceUsingMvcc( modify.getEntity() ) ) {
+            return modify1;
+        }
         switch ( modify1.getOperation() ) {
             case INSERT:
                 AlgNode input = modify1.getInput();
@@ -521,7 +541,9 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentScan scan ) {
-        updateCollectorInsertPosition( scan );
+        if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
+            updateCollectorInsertPosition( scan );
+        }
         return visitChildren( scan );
     }
 
