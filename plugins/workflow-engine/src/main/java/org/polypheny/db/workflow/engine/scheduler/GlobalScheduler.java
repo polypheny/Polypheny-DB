@@ -87,14 +87,15 @@ public class GlobalScheduler {
         interruptedSessions.remove( sessionId );
         ExecutionMonitor monitor = new ExecutionMonitor( workflow, targetActivity, monitoringCallback );
         WorkflowScheduler scheduler;
+        List<ExecutionSubmission> submissions;
         try {
             scheduler = new WorkflowScheduler( workflow, sm, monitor, GLOBAL_WORKERS, targetActivity );
+            submissions = scheduler.startExecution();
         } catch ( Exception e ) {
-            monitor.stop();
             workflow.setState( WorkflowState.IDLE );
+            monitor.stop();
             throw e;
         }
-        List<ExecutionSubmission> submissions = scheduler.startExecution();
         if ( submissions.isEmpty() ) {
             throw new GenericRuntimeException( "At least one activity needs to be executable when submitting a workflow for execution" );
         }

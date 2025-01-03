@@ -283,10 +283,7 @@ public class WorkflowManager {
     private void saveSession( final Context ctx ) {
         UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
         SaveSessionRequest request = ctx.bodyAsClass( SaveSessionRequest.class );
-        process( ctx, () -> {
-            sessionManager.saveUserSession( sessionId, request.getMessage() );
-            return "success";
-        } );
+        process( ctx, () -> sessionManager.saveUserSession( sessionId, request.getMessage() ) );
     }
 
 

@@ -28,6 +28,7 @@ import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.models.SessionModel;
 import org.polypheny.db.workflow.models.SessionModel.SessionModelType;
+import org.polypheny.db.workflow.models.WorkflowDefModel;
 import org.polypheny.db.workflow.models.requests.WsRequest.CreateActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.CreateEdgeRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.DeleteActivityRequest;
@@ -41,19 +42,20 @@ import org.polypheny.db.workflow.models.responses.WsResponse.ActivityUpdateRespo
 import org.polypheny.db.workflow.models.responses.WsResponse.RenderingUpdateResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.StateUpdateResponse;
 
+@Getter
 public class UserSession extends AbstractSession {
 
-    @Getter
     private final UUID wId;
-    @Getter
     @Setter
     private int openedVersion;
+    private final WorkflowDefModel workflowDef;
 
 
-    public UserSession( UUID sessionId, Workflow wf, UUID workflowId, int openedVersion ) {
+    public UserSession( UUID sessionId, Workflow wf, UUID workflowId, int openedVersion, WorkflowDefModel workflowDef ) {
         super( wf, sessionId );
         this.wId = workflowId;
         this.openedVersion = openedVersion;
+        this.workflowDef = workflowDef;
     }
 
 
@@ -107,6 +109,8 @@ public class UserSession extends AbstractSession {
     @Override
     public void handleRequest( DeleteEdgeRequest request ) {
         throwIfNotEditable();
+        workflow.deleteEdge( request.edge, sm );
+        broadcastMessage( new StateUpdateResponse( request.msgId, workflow ) );
     }
 
 
@@ -145,7 +149,7 @@ public class UserSession extends AbstractSession {
 
     @Override
     public SessionModel toModel() {
-        return new SessionModel( SessionModelType.USER_SESSION, sessionId, getSubscriberCount(), wId, openedVersion );
+        return new SessionModel( SessionModelType.USER_SESSION, sessionId, getSubscriberCount(), wId, openedVersion, workflowDef);
     }
 
 

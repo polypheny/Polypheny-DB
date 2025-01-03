@@ -93,7 +93,6 @@ public class WorkflowWebSocket implements Consumer<WsConfig> {
 
 
     public void closed( WsCloseContext ctx ) {
-        System.out.println( "closed websocket: " + ctx.reason() );
         sessions.get( ctx.session ).unsubscribe( ctx.session );
         sessions.remove( ctx.session );
     }

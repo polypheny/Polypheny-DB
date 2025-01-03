@@ -494,7 +494,7 @@ public class WorkflowImpl implements Workflow {
                 }
 
             }
-            if ( !requiredInPorts.isEmpty() ) {
+            if ( !requiredInPorts.isEmpty() && wrapper.getState() != ActivityState.SAVED) { // already saved activities do not need their predecessors in the subDag
                 throw new IllegalStateException( "Activity is missing the required data input(s) " + requiredInPorts + ": " + wrapper );
             }
         }

@@ -93,10 +93,11 @@ public class SessionManager {
     }
 
 
-    public void saveUserSession( UUID sId, String versionDesc ) throws WorkflowRepoException {
+    public int saveUserSession( UUID sId, String versionDesc ) throws WorkflowRepoException {
         UserSession session = getUserSessionOrThrow( sId );
         int version = repo.writeVersion( session.getWId(), versionDesc, session.getWorkflowModel( false ) );
         session.setOpenedVersion( version );
+        return version;
     }
 
 
@@ -133,9 +134,9 @@ public class SessionManager {
     }
 
 
-    private UUID registerUserSession( Workflow wf, UUID wId, int version ) {
+    private UUID registerUserSession( Workflow wf, UUID wId, int version ) throws WorkflowRepoException {
         UUID sId = UUID.randomUUID();
-        UserSession session = new UserSession( sId, wf, wId, version );
+        UserSession session = new UserSession( sId, wf, wId, version, repo.getWorkflowDef( wId ) );
         userSessions.put( sId, session );
         return sId;
     }

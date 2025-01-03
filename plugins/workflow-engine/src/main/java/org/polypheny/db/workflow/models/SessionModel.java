@@ -31,6 +31,7 @@ public class SessionModel {
     // USER_SESSION fields:
     UUID workflowId;
     Integer version;
+    WorkflowDefModel workflowDef;
 
 
     public SessionModel( SessionModelType type, UUID sId, int connectionCount ) {
@@ -39,7 +40,7 @@ public class SessionModel {
         this.connectionCount = connectionCount;
         this.workflowId = null;
         this.version = null;
-
+        this.workflowDef = null;
     }
 
 

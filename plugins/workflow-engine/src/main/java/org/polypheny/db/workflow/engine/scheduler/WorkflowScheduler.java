@@ -243,7 +243,14 @@ public class WorkflowScheduler {
             return null;
         }
 
-        return computeNextSubmissions();
+        try {
+            return computeNextSubmissions();
+        } catch ( Exception e ) {
+            // this should never happen, but as a fallback we finish workflow execution
+            log.error( "An unexpected error occurred while determining the next activities to be submitted", e );
+            setFinished();
+            return null;
+        }
     }
 
 
@@ -270,6 +277,9 @@ public class WorkflowScheduler {
 
     private List<ExecutionSubmission> computeNextSubmissions() {
         List<SubmissionFactory> factories = optimizer.computeNextTrees( maxWorkers - pendingCount, activePartition.commonType );
+        if (pendingCount == 0 && factories.isEmpty()) {
+            throw new IllegalStateException("The optimizer is unable to determine the next activity to be executed");
+        }
         pendingCount += factories.size();
         List<ExecutionSubmission> submissions = factories.stream().map( f -> f.create( sm, workflow ) ).toList();
         for ( ExecutionSubmission submission : submissions ) {
@@ -362,7 +372,9 @@ public class WorkflowScheduler {
             case INACTIVE -> {
                 target.setState( ActivityState.SKIPPED );
                 remainingActivities.remove( target.getId() );
-                targetPartition.setResolved( target.getId(), false ); // no need to catch the exception, as the transaction is already rolled back
+                if ( targetPartition != null) { // in case of initial propagation for saved activities, there is no targetPartition yet
+                    targetPartition.setResolved( target.getId(), false ); // no need to catch the exception, as the transaction is already rolled back
+                }
                 // a skipped activity does NOT count as failed -> onFail control edges also become INACTIVE
                 dag.getOutwardEdges( target.getId() ).forEach( e -> propagateResult( false, workflow.getEdge( e ), dag, ignorePartitions ) ); // TODO: out edges from workflow or DAG?
             }
@@ -388,6 +400,9 @@ public class WorkflowScheduler {
 
 
     private void setFinished() {
+        if (!remainingActivities.isEmpty()) {
+            setStates( remainingActivities, ActivityState.SKIPPED );
+        }
         workflow.setState( WorkflowState.IDLE );
         executionMonitor.stop();
         isFinished = true;
@@ -418,7 +433,7 @@ public class WorkflowScheduler {
             this.commonType = commonType;
             this.isAtomic = commonType != CommonType.NONE;
             this.activities = dag.vertexSet().stream().filter( n -> workflow.getActivity( n ).getConfig().getCommonType() == commonType ).collect( Collectors.toSet() );
-            this.remaining.addAll( activities );
+            this.remaining.addAll( activities.stream().filter( n -> !workflow.getActivity( n ).getState().isExecuted() ).toList() );
             this.isFinished = activities.isEmpty();
         }
 

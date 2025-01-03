@@ -79,13 +79,11 @@ public abstract class AbstractSession {
      * @param session the UI websocket session to be registered
      */
     public void subscribe( Session session ) {
-        System.out.println( "subscribed" );
         subscribers.add( session );
     }
 
 
     public void unsubscribe( Session session ) {
-        System.out.println( "unsubscribed" );
         subscribers.remove( session );
     }
 
