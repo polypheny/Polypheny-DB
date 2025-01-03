@@ -111,7 +111,7 @@ import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.locking.IdentifierUtils;
-import org.polypheny.db.transaction.locking.LockableUtils;
+import org.polypheny.db.transaction.locking.MvccUtils;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -460,7 +460,7 @@ public class DdlManagerImpl extends DdlManager {
     public void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement ) {
         columnName = adjustNameIfNeeded( columnName, table.namespaceId );
 
-        if ( LockableUtils.isInNamespaceUsingMvcc( table ) ) {
+        if ( MvccUtils.isInNamespaceUsingMvcc( table ) ) {
             IdentifierUtils.throwIfIsIdentifierKey( columnName );
         }
 
@@ -856,7 +856,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropColumn( LogicalTable table, String columnName, Statement statement ) {
-        if ( LockableUtils.isInNamespaceUsingMvcc( table ) ) {
+        if ( MvccUtils.isInNamespaceUsingMvcc( table ) ) {
             IdentifierUtils.throwIfIsIdentifierKey( columnName );
         }
 
@@ -1107,7 +1107,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void setColumnType( LogicalTable table, String columnName, ColumnTypeInformation type, Statement statement ) {
-        if ( LockableUtils.isInNamespaceUsingMvcc( table ) ) {
+        if ( MvccUtils.isInNamespaceUsingMvcc( table ) ) {
             IdentifierUtils.throwIfIsIdentifierKey( columnName );
         }
 
@@ -1630,7 +1630,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void renameColumn( LogicalTable table, String columnName, String newColumnName, Statement statement ) {
-        if ( LockableUtils.isInNamespaceUsingMvcc( table ) ) {
+        if ( MvccUtils.isInNamespaceUsingMvcc( table ) ) {
             IdentifierUtils.throwIfIsIdentifierKey( columnName );
             IdentifierUtils.throwIfIsIdentifierKey( newColumnName );
         }
@@ -2063,7 +2063,7 @@ public class DdlManagerImpl extends DdlManager {
             return;
         }
 
-        if ( LockableUtils.isNamespaceUsingMvcc( namespaceId ) ) {
+        if ( MvccUtils.isNamespaceUsingMvcc( namespaceId ) ) {
             IdentifierUtils.throwIfContainsIdentifierField( fields );
             fields = IdentifierUtils.addIdentifierFieldIfAbsent( fields );
         }
