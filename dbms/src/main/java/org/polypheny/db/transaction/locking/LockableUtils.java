@@ -48,6 +48,9 @@ public class LockableUtils {
      * @return the actual lock type supported
      */
     public static LockType convertLockType( LockType lockType, boolean isMvcc ) {
+        return lockType;
+        //TODO TH: remove this if shared vs separate lock type decision is made
+        /*
         switch ( (S2plLockingLevel) RuntimeConfig.S2PL_LOCKING_LEVEL.getEnum() ) {
             case GLOBAL, NAMESPACE -> {
                 return lockType == LockType.MVCC ? LockType.EXCLUSIVE : lockType;
@@ -63,6 +66,7 @@ public class LockableUtils {
             }
             default -> throw new IllegalArgumentException( "Unknown S2plLockingLevel: " + RuntimeConfig.S2PL_LOCKING_LEVEL.getEnum() );
         }
+        */
     }
 
 
@@ -139,6 +143,10 @@ public class LockableUtils {
 
     public static boolean isInNamespaceUsingMvcc( Entity entity ) {
         return Catalog.getInstance().getSnapshot().getNamespace( entity.getNamespaceId() ).orElseThrow().isUseMvcc();
+    }
+
+    public static boolean isNamespaceUsingMvcc( long namespaceId ) {
+        return Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElseThrow().isUseMvcc();
     }
 
 

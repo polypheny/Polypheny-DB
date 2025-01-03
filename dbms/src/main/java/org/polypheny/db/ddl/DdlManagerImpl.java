@@ -18,7 +18,6 @@ package org.polypheny.db.ddl;
 
 
 import com.google.common.collect.ImmutableList;
-import io.grpc.xds.shaded.com.google.api.expr.v1alpha1.Expr.Ident;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -112,6 +111,7 @@ import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.locking.IdentifierUtils;
+import org.polypheny.db.transaction.locking.LockableUtils;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -459,7 +459,11 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement ) {
         columnName = adjustNameIfNeeded( columnName, table.namespaceId );
-        IdentifierUtils.throwIfIsIdentifierKey( columnName );
+
+        if ( LockableUtils.isInNamespaceUsingMvcc( table ) ) {
+            IdentifierUtils.throwIfIsIdentifierKey( columnName );
+        }
+
         // Check if the column either allows null values or has a default value defined.
         if ( defaultValue == null && !nullable ) {
             throw new GenericRuntimeException( "Column is not nullable and does not have a default value defined." );
@@ -852,7 +856,10 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropColumn( LogicalTable table, String columnName, Statement statement ) {
-        IdentifierUtils.throwIfIsIdentifierKey( columnName );
+        if ( LockableUtils.isInNamespaceUsingMvcc( table ) ) {
+            IdentifierUtils.throwIfIsIdentifierKey( columnName );
+        }
+
         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
         if ( columns.size() < 2 ) {
             throw new GenericRuntimeException( "Cannot drop sole column of table %s", table.name );
@@ -1100,7 +1107,10 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void setColumnType( LogicalTable table, String columnName, ColumnTypeInformation type, Statement statement ) {
-        IdentifierUtils.throwIfIsIdentifierKey( columnName );
+        if ( LockableUtils.isInNamespaceUsingMvcc( table ) ) {
+            IdentifierUtils.throwIfIsIdentifierKey( columnName );
+        }
+
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
 
@@ -1620,8 +1630,10 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void renameColumn( LogicalTable table, String columnName, String newColumnName, Statement statement ) {
-        IdentifierUtils.throwIfIsIdentifierKey( columnName );
-        IdentifierUtils.throwIfIsIdentifierKey( newColumnName );
+        if ( LockableUtils.isInNamespaceUsingMvcc( table ) ) {
+            IdentifierUtils.throwIfIsIdentifierKey( columnName );
+            IdentifierUtils.throwIfIsIdentifierKey( newColumnName );
+        }
 
         LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
 
@@ -2051,6 +2063,11 @@ public class DdlManagerImpl extends DdlManager {
             return;
         }
 
+        if ( LockableUtils.isNamespaceUsingMvcc( namespaceId ) ) {
+            IdentifierUtils.throwIfContainsIdentifierField( fields );
+            fields = IdentifierUtils.addIdentifierFieldIfAbsent( fields );
+        }
+
         if ( stores == null ) {
             // Ask router on which storeId(s) the table should be placed
             stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewEntity();
@@ -2064,9 +2081,6 @@ public class DdlManagerImpl extends DdlManager {
 
         // addLColumns
         Map<String, LogicalColumn> ids = new HashMap<>();
-
-        IdentifierUtils.throwIfContainsIdentifierField( fields );
-        fields = IdentifierUtils.addIdentifierFieldIfAbsent( fields );
 
         for ( FieldInformation information : fields ) {
             ids.put( information.name(), addColumn( namespaceId, information.name(), information.typeInformation(), information.collation(),
