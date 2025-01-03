@@ -20,16 +20,57 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.mql.MqlTestTemplate;
 
 public class DocumentIdentifierTests extends MqlTestTemplate {
 
+    @BeforeAll
+    public static void setup() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( java.sql.Statement statement = connection.createStatement() ) {
+                statement.execute( "CREATE DOCUMENT NAMESPACE mvccTest CONCURRENCY MVCC" );
+                connection.commit();
+            }
+        }
+    }
+
+
+    @BeforeEach
+    public void initCollection() {
+        initCollection( namespace );
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( java.sql.Statement statement = connection.createStatement() ) {
+                statement.execute( "CREATE DOCUMENT NAMESPACE IF NOT EXISTS mvccTest CONCURRENCY MVCC" );
+                connection.commit();
+            }
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    @AfterEach
+    public void dropCollection() {
+        dropCollection( namespace );
+        dropCollection( "mvccTest", "mvccTest" );
+    }
+
+
     @Test
     public void insertOneDocumentNoConflict() {
-        execute( "db.test.insertOne({\"a\":\"first\", \"b\":\"second\" })" );
 
-        String[] data = execute( "db.test.find({})" ).getData();
+        execute( "db.mvccTest.insertOne({\"a\":\"first\", \"b\":\"second\" })", "mvccTest" );
+
+        String[] data = execute( "db.mvccTest.find({})", "mvccTest" ).getData();
         assertEquals( 1, data.length );
         String document = data[0];
         assertTrue( document.contains( "\"a\":\"first\"" ) );
@@ -40,10 +81,11 @@ public class DocumentIdentifierTests extends MqlTestTemplate {
 
     @Test
     public void updateOneAddOrUpdateFieldNoConflict() {
-        execute( "db.test.insertOne({\"a\":\"first\", \"b\":\"second\" })" );
-        execute( "db.test.updateOne({ \"a\":\"first\" }, { $set: { \"c\":\"third\" } })" );
 
-        String[] data = execute( "db.test.find({})" ).getData();
+        execute( "db.mvccTest.insertOne({\"a\":\"first\", \"b\":\"second\" })", "mvccTest" );
+        execute( "db.mvccTest.updateOne({ \"a\":\"first\" }, { $set: { \"c\":\"third\" } })", "mvccTest" );
+
+        String[] data = execute( "db.mvccTest.find({})", "mvccTest" ).getData();
         assertEquals( 1, data.length );
         String document = data[0];
         assertTrue( document.contains( "\"a\":\"first\"" ) );
@@ -56,10 +98,11 @@ public class DocumentIdentifierTests extends MqlTestTemplate {
     @Test
     // TODO David: find out why this does not work
     public void updateOneRemoveFieldNoConflict() {
-        execute( "db.test.insertOne({\"a\":\"first\", \"b\":\"second\" })" );
-        execute( "db.test.updateOne({ \"a\":\"first\" }, { $unset: { \"b\": null } });\n" );
 
-        String[] data = execute( "db.test.find({})" ).getData();
+        execute( "db.mvccTest.insertOne({\"a\":\"first\", \"b\":\"second\" })", "mvccTest" );
+        execute( "db.mvccTest.updateOne({ \"a\":\"first\" }, { $unset: { \"b\": null } });\n", "mvccTest" );
+
+        String[] data = execute( "db.mvccTest.find({})", "mvccTest" ).getData();
         assertEquals( 1, data.length );
         String document = data[0];
         assertTrue( document.contains( "\"a\":\"first\"" ) );
@@ -69,9 +112,10 @@ public class DocumentIdentifierTests extends MqlTestTemplate {
 
     @Test
     public void insertSingleDocumentWithConflict() {
+
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
-                () -> execute( "db.test.insert({\"_eid\":\"first\", \"b\":\"second\" })" )
+                () -> execute( "db.mvccTest.insert({\"_eid\":\"first\", \"b\":\"second\" })", "mvccTest" )
         );
         assertTrue( exception.getMessage().contains( "The field _eid is reserved" ) );
     }
@@ -79,10 +123,11 @@ public class DocumentIdentifierTests extends MqlTestTemplate {
 
     @Test
     public void updateOneAddOrUpdateIdentifierFieldConflict() {
-        execute( "db.test.insertOne({\"a\":\"first\", \"b\":\"second\" })" );
+
+        execute( "db.mvccTest.insertOne({\"a\":\"first\", \"b\":\"second\" })", "mvccTest" );
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
-                () -> execute( "db.test.updateOne({ \"a\":\"first\" }, { $set: { \"_eid\":-32 } })" )
+                () -> execute( "db.mvccTest.updateOne({ \"a\":\"first\" }, { $set: { \"_eid\":-32 } })", "mvccTest" )
         );
         assertTrue( exception.getMessage().contains( "The field _eid is reserved" ) );
     }
@@ -91,10 +136,11 @@ public class DocumentIdentifierTests extends MqlTestTemplate {
     @Test
     // TODO David: find out why this does not work
     public void updateOneRemoveIdentifierFieldConflict() {
-        execute( "db.test.insertOne({\"a\":\"first\", \"b\":\"second\" })" );
+
+        execute( "db.mvccTest.insertOne({\"a\":\"first\", \"b\":\"second\" })", "mvccTest" );
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
-                () -> execute( "db.test.updateOne({ \"a\":\"first\" }, { $unset: { \"_eid\": null } });" )
+                () -> execute( "db.mvccTest.updateOne({ \"a\":\"first\" }, { $unset: { \"_eid\": null } });", "mvccTest" )
         );
         assertTrue( exception.getMessage().contains( "The field _eid is reserved" ) );
     }
@@ -102,9 +148,10 @@ public class DocumentIdentifierTests extends MqlTestTemplate {
 
     @Test
     public void insertOneDocumentWithConflicts() {
+
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
-                () -> execute( "db.test.insertOne({\"_eid\":\"first\", \"b\":\"second\" })" )
+                () -> execute( "db.mvccTest.insertOne({\"_eid\":\"first\", \"b\":\"second\" })", "mvccTest" )
         );
         assertTrue( exception.getMessage().contains( "The field _eid is reserved" ) );
     }
@@ -112,9 +159,10 @@ public class DocumentIdentifierTests extends MqlTestTemplate {
 
     @Test
     public void insertSingleDocumentNoConflicts() {
-        execute( "db.test.insert({\"a\":\"first\", \"b\":\"second\" })" );
 
-        String[] data = execute( "db.test.find({})" ).getData();
+        execute( "db.mvccTest.insert({\"a\":\"first\", \"b\":\"second\" })", "mvccTest" );
+
+        String[] data = execute( "db.mvccTest.find({})", "mvccTest" ).getData();
         assertEquals( 1, data.length );
         String document = data[0];
         assertTrue( document.contains( "\"a\":\"first\"" ) );
@@ -125,9 +173,10 @@ public class DocumentIdentifierTests extends MqlTestTemplate {
 
     @Test
     public void insertManyDocumentNoConflicts() {
-        execute( "db.test.insertMany([{ \"a\": \"first\", \"b\": \"second\" }, { \"a\": \"third\", \"b\": \"fourth\" }, { \"a\": \"fifth\", \"b\": \"sixth\" }])" );
 
-        String[] data = execute( "db.test.find({})" ).getData();
+        execute( "db.mvccTest.insertMany([{ \"a\": \"first\", \"b\": \"second\" }, { \"a\": \"third\", \"b\": \"fourth\" }, { \"a\": \"fifth\", \"b\": \"sixth\" }])", "mvccTest" );
+
+        String[] data = execute( "db.mvccTest.find({})", "mvccTest" ).getData();
         assertEquals( 3, data.length );
         for ( String document : data ) {
             assertTrue( document.contains( "\"a\":" ) );
@@ -139,9 +188,10 @@ public class DocumentIdentifierTests extends MqlTestTemplate {
 
     @Test
     public void insertManyDocumentWithConflicts() {
+
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
-                () -> execute( "db.test.insertMany([{ \"_eid\": \"first\", \"b\": \"second\" }, { \"a\": \"third\", \"b\": \"fourth\" }, { \"a\": \"fifth\", \"b\": \"sixth\" }])" )
+                () -> execute( "db.mvccTest.insertMany([{ \"_eid\": \"first\", \"b\": \"second\" }, { \"a\": \"third\", \"b\": \"fourth\" }, { \"a\": \"fifth\", \"b\": \"sixth\" }])", "mvccTest" )
         );
         assertTrue( exception.getMessage().contains( "The field _eid is reserved" ) );
     }
@@ -149,9 +199,10 @@ public class DocumentIdentifierTests extends MqlTestTemplate {
 
     @Test
     public void updateManyAddOrUpdateFieldNoConflict() {
-        execute( "db.test.insertMany([{\"a\":\"first\", \"b\":\"second\" }, {\"a\":\"first\", \"b\":\"second\" }, {\"a\":\"second\", \"b\":\"third\" }])" );
-        execute( "db.test.updateMany({ \"a\":\"first\" }, { $set: { \"c\":\"third\" } })" );
-        String[] data = execute( "db.test.find({})" ).getData();
+
+        execute( "db.mvccTest.insertMany([{\"a\":\"first\", \"b\":\"second\" }, {\"a\":\"first\", \"b\":\"second\" }, {\"a\":\"second\", \"b\":\"third\" }])", "mvccTest" );
+        execute( "db.mvccTest.updateMany({ \"a\":\"first\" }, { $set: { \"c\":\"third\" } })", "mvccTest" );
+        String[] data = execute( "db.mvccTest.find({})", "mvccTest" ).getData();
         assertEquals( 3, data.length );
 
         int countUpdated = 0;
@@ -170,10 +221,11 @@ public class DocumentIdentifierTests extends MqlTestTemplate {
 
     @Test
     public void updateManyRemoveIdentifierFieldConflict() {
-        execute( "db.test.insertMany([{\"a\":\"first\", \"b\":\"second\"}, {\"a\":\"first\", \"b\":\"third\"}, {\"a\":\"second\", \"b\":\"fourth\"}])" );
+
+        execute( "db.mvccTest.insertMany([{\"a\":\"first\", \"b\":\"second\"}, {\"a\":\"first\", \"b\":\"third\"}, {\"a\":\"second\", \"b\":\"fourth\"}])", "mvccTest" );
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
-                () -> execute( "db.test.updateMany({ \"a\":\"first\" }, { $unset: { \"_eid\": null } })" )
+                () -> execute( "db.mvccTest.updateMany({ \"a\":\"first\" }, { $unset: { \"_eid\": null } })", "mvccTest" )
         );
         assertTrue( exception.getMessage().contains( "The field _eid is reserved" ) );
     }
