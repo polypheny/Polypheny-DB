@@ -114,7 +114,7 @@ public class EnumerableIdCollector extends IdentifierCollector implements Enumer
                 if ( !(row[0] instanceof PolyLong entryIdentifier) ) {
                     return;
                 }
-                transaction.addReadEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier.getValue() ) );
+                transaction.addWrittenEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier.getValue() ) );
             } );
             return input;
         };
@@ -132,7 +132,7 @@ public class EnumerableIdCollector extends IdentifierCollector implements Enumer
                     if ( !(identifier instanceof PolyLong entryIdentifier) ) {
                         continue;
                     }
-                    transaction.addReadEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier.getValue() ) );
+                    transaction.addWrittenEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier.getValue() ) );
                 }
             } );
             return input;
@@ -146,7 +146,7 @@ public class EnumerableIdCollector extends IdentifierCollector implements Enumer
                 PolyValue value = row[0];
                 if ( !(value instanceof PolyGraph graph) ) {
                     long entryIdentifier = getIdentifierFromPropertyHolder( (GraphPropertyHolder) value );
-                    transaction.addReadEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier ) );
+                    transaction.addWrittenEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier ) );
                     return;
                 }
                 Stream.concat(
@@ -154,7 +154,7 @@ public class EnumerableIdCollector extends IdentifierCollector implements Enumer
                         graph.getEdges().values().stream().map( n -> (GraphPropertyHolder) n )
                 ).forEach( p -> {
                     long entryIdentifier = getIdentifierFromPropertyHolder( p );
-                    transaction.addReadEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier ) );
+                    transaction.addWrittenEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier ) );
                 } );
             } );
             return input;
