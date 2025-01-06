@@ -140,7 +140,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private final Thread executor;
 
-    private Set<VersionedEntryIdentifier> readSet = new HashSet<>(); // This only contains entries if the transaction involves entities in MVCC mode
+    private Set<VersionedEntryIdentifier> writeSet = new HashSet<>(); // This only contains entries if the transaction involves entities in MVCC mode
 
 
     TransactionImpl(
@@ -218,7 +218,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         }
         boolean okToCommit = true;
 
-        if ( !readSet.isEmpty() ) {
+        if ( !writeSet.isEmpty() ) {
             okToCommit &= validateReadSet();
         }
 
@@ -296,7 +296,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     }
 
     private boolean validateReadSet() {
-        for ( VersionedEntryIdentifier identifier : readSet ) {
+        for ( VersionedEntryIdentifier identifier : writeSet ) {
             LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( identifier.getEntityId() ).orElseThrow();
             if (entity.getEntryCommitInstantsLog().getLastCommit( identifier ) > transactionTimestamp) {
                 return false;
@@ -306,7 +306,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     }
 
     private void updateCommitInstantLog() {
-        for (VersionedEntryIdentifier identifier : readSet ) {
+        for (VersionedEntryIdentifier identifier : writeSet ) {
             LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( identifier.getEntityId() ).orElseThrow();
             entity.getEntryCommitInstantsLog().setOrUpdateLastCommit( identifier, transactionTimestamp );
         }
@@ -464,8 +464,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
-    public void addReadEntity( VersionedEntryIdentifier identifier ) {
-        readSet.add( identifier );
+    public void addWrittenEntity( VersionedEntryIdentifier identifier ) {
+        writeSet.add( identifier );
     }
 
 
