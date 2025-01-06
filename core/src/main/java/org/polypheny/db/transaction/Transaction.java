@@ -32,10 +32,8 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.VersionedEntryIdentifier;
-import org.polypheny.db.util.Wrapper;
 
 
 public interface Transaction {
@@ -111,7 +109,7 @@ public interface Transaction {
 
     void acquireLockable( Lockable lockable, Lockable.LockType lockType );
 
-    void addReadEntity(VersionedEntryIdentifier entryIdentifier);
+    void addWrittenEntity(VersionedEntryIdentifier entryIdentifier);
 
     /**
      * Flavor, how multimedia results should be returned from a store.
