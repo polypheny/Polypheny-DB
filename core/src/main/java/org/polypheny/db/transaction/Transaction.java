@@ -34,7 +34,6 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.transaction.locking.Lockable;
 
 
