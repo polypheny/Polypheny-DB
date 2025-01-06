@@ -68,8 +68,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.transaction.Transaction;
 
 public class AlgTreeRewriter extends AlgShuttleImpl {
@@ -77,6 +75,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     private final Transaction transaction;
     private AlgNode collectorInsertPosition;
     private boolean containsIdentifierKey;
+
 
     public AlgTreeRewriter( Transaction transaction ) {
         this.transaction = transaction;
@@ -194,6 +193,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         return entity;
     }
 
+
     @Override
     public AlgNode visit( LogicalRelAggregate aggregate ) {
         LogicalRelAggregate aggregate1 = visitChild( aggregate, 0, aggregate.getInput() );
@@ -216,9 +216,12 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalRelScan scan ) {
+        //ToDo TH: decide whether to keep this once serializable SI is in sight...
+        /*
         if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
             updateCollectorInsertPosition( scan );
         }
+        */
         return scan;
     }
 
@@ -354,7 +357,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         if ( !MvccUtils.isInNamespaceUsingMvcc( modify.getEntity() ) ) {
             return modify1;
         }
-        if (containsIdentifierKey) {
+        if ( containsIdentifierKey ) {
             IdentifierUtils.throwIllegalFieldName();
         }
         switch ( modify1.getOperation() ) {
@@ -391,7 +394,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         if ( !MvccUtils.isInNamespaceUsingMvcc( modify.getEntity() ) ) {
             return modify1;
         }
-        if (containsIdentifierKey) {
+        if ( containsIdentifierKey ) {
             IdentifierUtils.throwIllegalFieldName();
         }
         switch ( modify1.getOperation() ) {
@@ -412,9 +415,12 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgScan scan ) {
+        //ToDo TH: decide whether to keep this once serializable SI is in sight...
+        /*
         if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
             updateCollectorInsertPosition( scan );
         }
+        */
         return scan;
     }
 
@@ -505,7 +511,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         if ( !MvccUtils.isInNamespaceUsingMvcc( modify.getEntity() ) ) {
             return modify1;
         }
-        if (containsIdentifierKey) {
+        if ( containsIdentifierKey ) {
             IdentifierUtils.throwIllegalFieldName();
         }
         switch ( modify1.getOperation() ) {
@@ -557,9 +563,12 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentScan scan ) {
+        //ToDo TH: decide whether to keep this once serializable SI is in sight...
+        /*
         if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
             updateCollectorInsertPosition( scan );
         }
+        */
         return visitChildren( scan );
     }
 
