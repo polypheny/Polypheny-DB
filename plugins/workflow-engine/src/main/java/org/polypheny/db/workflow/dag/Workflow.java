@@ -167,6 +167,8 @@ public interface Workflow {
 
     ActivityWrapper addActivity( String activityType, RenderModel renderModel );
 
+    ActivityWrapper cloneActivity( UUID activityId, double posX, double posY );
+
     void deleteActivity( UUID activityId, StorageManager sm );
 
     void addEdge( EdgeModel model, StorageManager sm );

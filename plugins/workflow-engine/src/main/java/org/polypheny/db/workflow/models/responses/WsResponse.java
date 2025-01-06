@@ -21,7 +21,6 @@ import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType
 import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.PROGRESS_UPDATE;
 import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.RENDERING_UPDATE;
 import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.STATE_UPDATE;
-import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.WORKFLOW_UPDATE;
 
 import java.util.List;
 import java.util.Map;
@@ -35,7 +34,6 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.EdgeModel;
 import org.polypheny.db.workflow.models.RenderModel;
-import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.models.requests.WsRequest.RequestType;
 
 /**
@@ -56,25 +54,11 @@ public class WsResponse {
 
 
     public enum ResponseType {
-        WORKFLOW_UPDATE, // entire workflow
         ACTIVITY_UPDATE, // single activity
         RENDERING_UPDATE, // only renderModel of an activity
         STATE_UPDATE, // all edge and activity states
         PROGRESS_UPDATE,
         ERROR
-    }
-
-
-    public static class WorkflowUpdateResponse extends WsResponse {
-
-        public final WorkflowModel workflow;
-
-
-        public WorkflowUpdateResponse( @Nullable UUID parentId, WorkflowModel workflow ) {
-            super( WORKFLOW_UPDATE, parentId );
-            this.workflow = workflow;
-        }
-
     }
 
 

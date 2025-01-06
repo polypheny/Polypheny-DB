@@ -56,6 +56,11 @@ public class GraphUtils {
      * @return the subgraph of graph induced by nodes
      */
     public static <V, E extends DefaultEdge> AttributedDirectedGraph<V, E> getInducedSubgraph( AttributedDirectedGraph<V, E> graph, Collection<V> nodes ) {
+        return getInducedSubgraph( graph, nodes, Set.of() );
+    }
+
+
+    public static <V, E extends DefaultEdge> AttributedDirectedGraph<V, E> getInducedSubgraph( AttributedDirectedGraph<V, E> graph, Collection<V> nodes, Set<E> edgesToIgnore ) {
         AttributedDirectedGraph<V, E> subgraph = AttributedDirectedGraph.create( (AttributedEdgeFactory<V, E>) graph.getEdgeFactory() );
         Set<V> vertexSet = graph.vertexSet();
         for ( V n : nodes ) {
@@ -65,7 +70,7 @@ public class GraphUtils {
         }
 
         vertexSet = subgraph.vertexSet();
-        Set<E> insertedEdges = new HashSet<>();
+        Set<E> insertedEdges = new HashSet<>( edgesToIgnore );
         for ( V source : vertexSet ) {
             for ( E edge : graph.getOutwardEdges( source ) ) {
                 if ( insertedEdges.contains( edge ) ) {

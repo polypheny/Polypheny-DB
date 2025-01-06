@@ -29,6 +29,7 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.models.SessionModel;
 import org.polypheny.db.workflow.models.SessionModel.SessionModelType;
 import org.polypheny.db.workflow.models.WorkflowDefModel;
+import org.polypheny.db.workflow.models.requests.WsRequest.CloneActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.CreateActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.CreateEdgeRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.DeleteActivityRequest;
@@ -99,6 +100,14 @@ public class UserSession extends AbstractSession {
 
 
     @Override
+    public void handleRequest( CloneActivityRequest request ) {
+        throwIfNotEditable();
+        ActivityWrapper activity = workflow.cloneActivity( request.targetId, request.posX, request.posY );
+        broadcastMessage( new ActivityUpdateResponse( request.msgId, activity ) );
+    }
+
+
+    @Override
     public void handleRequest( CreateEdgeRequest request ) {
         throwIfNotEditable();
         workflow.addEdge( request.edge, sm );
@@ -149,7 +158,7 @@ public class UserSession extends AbstractSession {
 
     @Override
     public SessionModel toModel() {
-        return new SessionModel( SessionModelType.USER_SESSION, sessionId, getSubscriberCount(), wId, openedVersion, workflowDef);
+        return new SessionModel( SessionModelType.USER_SESSION, sessionId, getSubscriberCount(), wId, openedVersion, workflowDef );
     }
 
 

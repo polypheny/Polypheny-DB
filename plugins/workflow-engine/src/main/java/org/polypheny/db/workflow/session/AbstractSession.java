@@ -37,6 +37,7 @@ import org.polypheny.db.workflow.models.SessionModel;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.models.requests.WsRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.CloneActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.CreateActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.CreateEdgeRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.DeleteActivityRequest;
@@ -161,6 +162,11 @@ public abstract class AbstractSession {
 
 
     public void handleRequest( UpdateActivityRequest request ) {
+        throwUnsupported( request );
+    }
+
+
+    public void handleRequest( CloneActivityRequest request ) {
         throwUnsupported( request );
     }
 

@@ -344,6 +344,15 @@ public class WorkflowImpl implements Workflow {
 
 
     @Override
+    public ActivityWrapper cloneActivity( UUID activityId, double posX, double posY ) {
+        ActivityModel clonedModel = getActivityOrThrow( activityId ).toModel( false ).createCopy( posX, posY );
+        ActivityWrapper wrapper = ActivityWrapper.fromModel( clonedModel );
+        addActivity( wrapper );
+        return wrapper;
+    }
+
+
+    @Override
     public void deleteActivity( UUID activityId, StorageManager sm ) {
         Set<UUID> reachable = getReachableActivities( activityId, false );
         edges.entrySet().removeIf( entry -> entry.getKey().left.equals( activityId ) || entry.getKey().right.equals( activityId ) );
@@ -358,8 +367,20 @@ public class WorkflowImpl implements Workflow {
         if ( getEdge( model ) != null ) {
             throw new GenericRuntimeException( "Cannot add an edge that is already part of this workflow." );
         }
+        if ( model.getFromId().equals( model.getToId() ) ) {
+            throw new GenericRuntimeException( "Cannot add an edge with same source and target activity." );
+        }
+        // We allow the workflow to temporarily have more than 1 in-edge per data input, to allow the UI to swap the source activity.
+        // The occupation validation is performed before execution.
+
         Edge edge = Edge.fromModel( model, activities );
         edges.computeIfAbsent( model.toPair(), k -> new ArrayList<>() ).add( edge );
+
+        if ( !(new CycleDetector<>( toDag() ).findCycles().isEmpty()) ) {
+            edges.get( model.toPair() ).remove( edge );
+            throw new GenericRuntimeException( "Cannot add an edge that would result in a cycle." );
+        }
+
         reset( edge.getTo().getId(), sm );
     }
 
@@ -428,6 +449,9 @@ public class WorkflowImpl implements Workflow {
         }
 
         for ( ExecutionEdge execEdge : subDag.edgeSet() ) {
+            if ( execEdge.getSource().equals( execEdge.getTarget() ) ) {
+                throw new IllegalStateException( "Source activity must differ from target activity for edge: " + execEdge );
+            }
             if ( !activities.containsKey( execEdge.getSource() ) || !activities.containsKey( execEdge.getTarget() ) ) {
                 throw new IllegalStateException( "Source and target activities of an edge must be part of the workflow: " + execEdge );
             }
@@ -494,7 +518,7 @@ public class WorkflowImpl implements Workflow {
                 }
 
             }
-            if ( !requiredInPorts.isEmpty() && wrapper.getState() != ActivityState.SAVED) { // already saved activities do not need their predecessors in the subDag
+            if ( !requiredInPorts.isEmpty() && wrapper.getState() != ActivityState.SAVED ) { // already saved activities do not need their predecessors in the subDag
                 throw new IllegalStateException( "Activity is missing the required data input(s) " + requiredInPorts + ": " + wrapper );
             }
         }

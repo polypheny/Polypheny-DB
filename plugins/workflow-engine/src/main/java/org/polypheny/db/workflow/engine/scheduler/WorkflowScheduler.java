@@ -153,6 +153,8 @@ public class WorkflowScheduler {
             throw new GenericRuntimeException( "Cannot prepare executionDag for empty targets" );
         }
         Set<UUID> savedActivities = new HashSet<>();
+        Set<ExecutionEdge> edgesToIgnore = new HashSet<>(); // edges that go from finished to successfully executed activities (see explanation of compromise solution below)
+        Set<UUID> finishedActivities = new HashSet<>();
         Queue<UUID> open = new LinkedList<>( targets );
         Set<UUID> visited = new HashSet<>();
 
@@ -169,6 +171,17 @@ public class WorkflowScheduler {
             if ( nWrapper.getState() == ActivityState.SAVED ) {
                 savedActivities.add( n );
                 continue;
+            } else if ( nWrapper.getState() == ActivityState.FINISHED ) {
+                // this can happen when a new outgoing edge to a FINISHED activity has been created between executions.
+                // problem: the entire fused / piped subtree that this activity belongs to and all executed successor subtrees also need to be executed again
+                // solution: either reset activities already when user creates edge (but this is not very robust), or handle it here, possibly recomputing large parts of the DAG
+                // compromise solution: only recompute this activity (and unsaved data-edge predecessors) -> assumption: activities are idempotent (not actually true, but good enough)
+                List<Edge> outEdges = workflow.getOutEdges( n );
+                finishedActivities.add( n );
+                edgesToIgnore.addAll( outEdges.stream()
+                        .filter( e -> !finishedActivities.contains( e.getTo().getId() ) && e.getTo().getState().isSuccess() )
+                        .map( e -> new ExecutionEdge( e.getFrom().getId(), e.getTo().getId(), e ) )
+                        .toList() );
             }
 
             nWrapper.resetExecution();
@@ -183,7 +196,7 @@ public class WorkflowScheduler {
             }
         }
 
-        AttributedDirectedGraph<UUID, ExecutionEdge> execDag = GraphUtils.getInducedSubgraph( workflow.toDag(), visited );
+        AttributedDirectedGraph<UUID, ExecutionEdge> execDag = GraphUtils.getInducedSubgraph( workflow.toDag(), visited, edgesToIgnore );
 
         // handle saved activities (= simulate that they finish their execution successfully)
         for ( UUID saved : savedActivities ) {
@@ -226,7 +239,6 @@ public class WorkflowScheduler {
 
         updateGraph( result.isSuccess(), result.getActivities(), result.getRootId(), execDag );
         updatePartitions();
-        executionMonitor.forwardStates();
 
         log.warn( "Remaining activities: " + remainingActivities );
 
@@ -244,7 +256,9 @@ public class WorkflowScheduler {
         }
 
         try {
-            return computeNextSubmissions();
+            List<ExecutionSubmission> next = computeNextSubmissions();
+            executionMonitor.forwardStates();
+            return next;
         } catch ( Exception e ) {
             // this should never happen, but as a fallback we finish workflow execution
             log.error( "An unexpected error occurred while determining the next activities to be submitted", e );
@@ -277,8 +291,8 @@ public class WorkflowScheduler {
 
     private List<ExecutionSubmission> computeNextSubmissions() {
         List<SubmissionFactory> factories = optimizer.computeNextTrees( maxWorkers - pendingCount, activePartition.commonType );
-        if (pendingCount == 0 && factories.isEmpty()) {
-            throw new IllegalStateException("The optimizer is unable to determine the next activity to be executed");
+        if ( pendingCount == 0 && factories.isEmpty() ) {
+            throw new IllegalStateException( "The optimizer is unable to determine the next activity to be executed" );
         }
         pendingCount += factories.size();
         List<ExecutionSubmission> submissions = factories.stream().map( f -> f.create( sm, workflow ) ).toList();
@@ -372,7 +386,7 @@ public class WorkflowScheduler {
             case INACTIVE -> {
                 target.setState( ActivityState.SKIPPED );
                 remainingActivities.remove( target.getId() );
-                if ( targetPartition != null) { // in case of initial propagation for saved activities, there is no targetPartition yet
+                if ( targetPartition != null ) { // in case of initial propagation for saved activities, there is no targetPartition yet
                     targetPartition.setResolved( target.getId(), false ); // no need to catch the exception, as the transaction is already rolled back
                 }
                 // a skipped activity does NOT count as failed -> onFail control edges also become INACTIVE
@@ -400,7 +414,7 @@ public class WorkflowScheduler {
 
 
     private void setFinished() {
-        if (!remainingActivities.isEmpty()) {
+        if ( !remainingActivities.isEmpty() ) {
             setStates( remainingActivities, ActivityState.SKIPPED );
         }
         workflow.setState( WorkflowState.IDLE );

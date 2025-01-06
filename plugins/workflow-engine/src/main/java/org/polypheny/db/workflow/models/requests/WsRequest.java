@@ -38,6 +38,7 @@ public class WsRequest {
         CREATE_ACTIVITY,
         DELETE_ACTIVITY,
         UPDATE_ACTIVITY,
+        CLONE_ACTIVITY,
         CREATE_EDGE,
         DELETE_EDGE,
         EXECUTE,
@@ -71,6 +72,15 @@ public class WsRequest {
     public static class DeleteActivityRequest extends WsRequest {
 
         public UUID targetId;
+
+    }
+
+
+    public static class CloneActivityRequest extends WsRequest {
+
+        public UUID targetId;
+        public double posX;
+        public double posY;
 
     }
 

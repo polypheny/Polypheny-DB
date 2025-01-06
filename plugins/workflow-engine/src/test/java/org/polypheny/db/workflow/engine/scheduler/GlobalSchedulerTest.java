@@ -36,10 +36,12 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.WorkflowUtils;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
+import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionMonitor;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
 import org.polypheny.db.workflow.engine.storage.StorageUtils;
+import org.polypheny.db.workflow.models.EdgeModel;
 
 class GlobalSchedulerTest {
 
@@ -164,12 +166,37 @@ class GlobalSchedulerTest {
 
 
     @Test
-    void RelValuesFusionTest() throws Exception {
+    void relValuesFusionTest() throws Exception {
         Workflow workflow = WorkflowUtils.getRelValuesFusion();
         List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
         scheduler.startExecution( workflow, sm, null );
         scheduler.awaitResultProcessor( 5000 );
         System.out.println( StorageUtils.readCheckpoint( sm, ids.get( ids.size() - 1 ), 0 ) );
+    }
+
+
+    @Test
+    void executeModifiedFusionTest() throws Exception {
+        Pair<Workflow, List<UUID>> pair = WorkflowUtils.getAdvancedFusion();
+        Workflow workflow = pair.left;
+        List<UUID> ids = pair.right;
+
+        scheduler.startExecution( workflow, sm, ids.get( 3 ) );
+        scheduler.awaitResultProcessor( 5000 );
+
+        workflow.deleteEdge( workflow.getOutEdges( ids.get( 3 ) ).get( 0 ).toModel( false ), sm );
+        workflow.addEdge( new EdgeModel( ids.get( 0 ), ids.get( 4 ), 0, 0, false, null ), sm ); // activity 0 does not yet have a checkpoint, but we add an edge that requires one
+        workflow.addEdge( new EdgeModel( ids.get( 3 ), ids.get( 4 ), ControlEdge.SUCCESS_PORT, 0, true, null ), sm );
+
+        assertEquals( ActivityState.FINISHED, workflow.getActivity( ids.get( 0 ) ).getState() );
+        assertEquals( ActivityState.SAVED, workflow.getActivity( ids.get( 3 ) ).getState() );
+        assertEquals( ActivityState.IDLE, workflow.getActivity( ids.get( 4 ) ).getState() );
+
+        scheduler.startExecution( workflow, sm, null );
+        scheduler.awaitResultProcessor( 5000 );
+        assertEquals( ActivityState.FINISHED, workflow.getActivity( ids.get( 0 ) ).getState() ); // 0 is fused with 4
+        assertEquals( ActivityState.SAVED, workflow.getActivity( ids.get( 3 ) ).getState() );
+        assertEquals( ActivityState.SAVED, workflow.getActivity( ids.get( 4 ) ).getState() );
     }
 
 
@@ -401,6 +428,7 @@ class GlobalSchedulerTest {
         System.out.println( monitor.getAllProgress() );
 
     }
+
 
     @Test
     @Disabled

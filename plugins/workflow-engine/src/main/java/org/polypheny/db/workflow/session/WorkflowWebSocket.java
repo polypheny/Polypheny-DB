@@ -29,6 +29,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.polypheny.db.workflow.models.requests.WsRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.CloneActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.CreateActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.CreateEdgeRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.DeleteActivityRequest;
@@ -77,6 +78,7 @@ public class WorkflowWebSocket implements Consumer<WsConfig> {
                 case CREATE_ACTIVITY -> session.handleRequest( ctx.messageAsClass( CreateActivityRequest.class ) );
                 case UPDATE_ACTIVITY -> session.handleRequest( ctx.messageAsClass( UpdateActivityRequest.class ) );
                 case DELETE_ACTIVITY -> session.handleRequest( ctx.messageAsClass( DeleteActivityRequest.class ) );
+                case CLONE_ACTIVITY -> session.handleRequest( ctx.messageAsClass( CloneActivityRequest.class ) );
                 case CREATE_EDGE -> session.handleRequest( ctx.messageAsClass( CreateEdgeRequest.class ) );
                 case DELETE_EDGE -> session.handleRequest( ctx.messageAsClass( DeleteEdgeRequest.class ) );
                 case EXECUTE -> session.handleRequest( ctx.messageAsClass( ExecuteRequest.class ) );

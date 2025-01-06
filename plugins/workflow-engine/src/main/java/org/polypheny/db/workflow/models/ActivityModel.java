@@ -17,7 +17,9 @@
 package org.polypheny.db.workflow.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -69,6 +71,21 @@ public class ActivityModel {
         this.state = null;
         this.inTypePreview = null;
         this.invalidReason = null;
+    }
+
+
+    public ActivityModel createCopy( double posX, double posY ) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            ActivityModel trueCopy = mapper.readValue( mapper.writeValueAsString( this ), ActivityModel.class ); // but we need a copy with a different UUID...
+            return new ActivityModel( trueCopy.type,
+                    UUID.randomUUID(),
+                    trueCopy.settings,
+                    trueCopy.config,
+                    new RenderModel( posX, posY, trueCopy.rendering.getName(), trueCopy.rendering.getNotes() ) );
+        } catch ( JsonProcessingException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 }
