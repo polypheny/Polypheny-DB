@@ -259,7 +259,6 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                     return PolyList.class;
                 case ANY:
                     return PolyValue.class;
-
             }
         }
         log.debug( "Could not find corresponding class for PolyType" );

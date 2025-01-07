@@ -131,6 +131,8 @@ public class PolyphenyDb {
 
     @Option(name = { "-defaultStore" }, description = "Type of default storeId")
     public String defaultStoreName = "hsqldb";
+    //public String defaultStoreName = "neo4j";
+    //public String defaultStoreName = "mongodb";
 
     @Option(name = { "-defaultSource" }, description = "Type of default source")
     public static String defaultSourceName = "csv";
