@@ -462,7 +462,7 @@ public class DdlManagerImpl extends DdlManager {
         columnName = adjustNameIfNeeded( columnName, table.namespaceId );
 
         if ( MvccUtils.isInNamespaceUsingMvcc( table ) ) {
-            IdentifierUtils.throwIfIsIdentifierKey( columnName );
+            IdentifierUtils.throwIfIsDisallowedKey( columnName );
         }
 
         // Check if the column either allows null values or has a default value defined.
@@ -858,7 +858,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropColumn( LogicalTable table, String columnName, Statement statement ) {
         if ( MvccUtils.isInNamespaceUsingMvcc( table ) ) {
-            IdentifierUtils.throwIfIsIdentifierKey( columnName );
+            IdentifierUtils.throwIfIsDisallowedKey( columnName );
         }
 
         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
@@ -1109,7 +1109,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void setColumnType( LogicalTable table, String columnName, ColumnTypeInformation type, Statement statement ) {
         if ( MvccUtils.isInNamespaceUsingMvcc( table ) ) {
-            IdentifierUtils.throwIfIsIdentifierKey( columnName );
+            IdentifierUtils.throwIfIsDisallowedKey( columnName );
         }
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
@@ -1632,8 +1632,8 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void renameColumn( LogicalTable table, String columnName, String newColumnName, Statement statement ) {
         if ( MvccUtils.isInNamespaceUsingMvcc( table ) ) {
-            IdentifierUtils.throwIfIsIdentifierKey( columnName );
-            IdentifierUtils.throwIfIsIdentifierKey( newColumnName );
+            IdentifierUtils.throwIfIsDisallowedKey( columnName );
+            IdentifierUtils.throwIfIsDisallowedKey( newColumnName );
         }
 
         LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
@@ -2065,8 +2065,8 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         if ( MvccUtils.isNamespaceUsingMvcc( namespaceId ) ) {
-            IdentifierUtils.throwIfContainsIdentifierField( fields );
-            fields = IdentifierUtils.addIdentifierFieldIfAbsent( fields );
+            IdentifierUtils.throwIfContainsDisallowedField( fields );
+            fields = IdentifierUtils.addMvccFieldsIfAbsent( fields );
         }
 
         if ( stores == null ) {
