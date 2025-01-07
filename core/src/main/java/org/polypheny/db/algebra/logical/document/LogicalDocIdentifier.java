@@ -28,14 +28,16 @@ import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
 public class LogicalDocIdentifier extends Identifier implements DocumentAlg {
-    protected LogicalDocIdentifier( Entity entitiy, AlgCluster cluster, AlgTraitSet traits, AlgNode input) {
-        super(cluster, traits, entitiy, input);
+
+    protected LogicalDocIdentifier( long version, Entity entity, AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
+        super( cluster, traits, version, entity, input );
     }
 
-    public static LogicalDocIdentifier create(Entity document, final AlgNode input) {
+
+    public static LogicalDocIdentifier create( long version, Entity document, final AlgNode input ) {
         final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traits = input.getTraitSet();
-        return new LogicalDocIdentifier( document, cluster, traits, input );
+        return new LogicalDocIdentifier( version, document, cluster, traits, input );
     }
 
 
@@ -45,15 +47,17 @@ public class LogicalDocIdentifier extends Identifier implements DocumentAlg {
         return DocType.VALUES;
     }
 
+
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         double dRows = mq.getTupleCount( getInput() );
         return planner.getCostFactory().makeCost( dRows, 0, 0 );
     }
 
+
     @Override
-    public AlgNode copy(AlgTraitSet traitSet, List<AlgNode> inputs) {
-        return new LogicalDocIdentifier(entity, getCluster(), traitSet, sole(inputs) );
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new LogicalDocIdentifier( version, entity, getCluster(), traitSet, sole( inputs ) );
     }
 
 
