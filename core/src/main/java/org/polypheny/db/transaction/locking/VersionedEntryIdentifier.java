@@ -28,17 +28,17 @@ public class VersionedEntryIdentifier {
     private final long version;
 
 
-    public VersionedEntryIdentifier(long entityId, long entryIdentifier, long version ) {
+    public VersionedEntryIdentifier( long entityId, long entryIdentifier, long version, boolean isComitted ) {
         this.entityId = entityId;
         this.entryIdentifier = entryIdentifier;
-        this.version = version;
+        this.version = isComitted ? version : version * -1;
     }
 
 
-    public VersionedEntryIdentifier(long entityId, long entryIdentifier ) {
+    public VersionedEntryIdentifier( long entityId, long entryIdentifier ) {
         this.entityId = entityId;
         this.entryIdentifier = entryIdentifier;
-        this.version = 0;
+        this.version = IdentifierUtils.MISSING_VERSION;
     }
 
 
@@ -64,6 +64,12 @@ public class VersionedEntryIdentifier {
     public PolyLong getEntryIdentifierAsPolyLong() {
         return PolyLong.of( entryIdentifier );
     }
+
+
+    public PolyLong getVersionAsPolyLong() {
+        return PolyLong.of( version );
+    }
+
 
     @Override
     public String toString() {

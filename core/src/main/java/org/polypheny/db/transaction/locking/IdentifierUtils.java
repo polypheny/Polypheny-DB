@@ -95,7 +95,6 @@ public class IdentifierUtils {
         return PolyString.of( IDENTIFIER_KEY );
     }
 
-
     public static void throwIllegalFieldName() {
         throw new IllegalArgumentException( MessageFormat.format(
                 "The field {0} is reserved for internal use and cannot be used.",
