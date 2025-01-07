@@ -16,6 +16,12 @@
 
 package org.polypheny.db.docker;
 
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.InspectContainerResponse;
+import com.github.dockerjava.core.DefaultDockerClientConfig;
+import com.github.dockerjava.core.DockerClientConfig;
+import com.github.dockerjava.core.DockerClientImpl;
+import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +32,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.StandardSocketOptions;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -243,10 +250,36 @@ public final class DockerContainer {
 
 
     public HostAndPort connectToContainer( int port ) {
+        if ( Catalog.mode == RunMode.BENCHMARK && RuntimeConfig.DOCKER_DIRECT_CONNECTION.getBoolean() ) {
+            log.warn( "Using direct Docker connection in benchmark mode" );
+            return connectToContainerDirectly( port );
+        }
+
         synchronized ( this ) {
             ServerSocket s = proxies.computeIfAbsent( port, this::startServer );
             return new HostAndPort( s.getInetAddress().getHostAddress(), s.getLocalPort() );
         }
+    }
+
+
+    public HostAndPort connectToContainerDirectly( int port ) {
+        DockerClientConfig config = DefaultDockerClientConfig
+                .createDefaultConfigBuilder()
+                .build();
+
+        ApacheDockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
+                .dockerHost( config.getDockerHost() )
+                .sslConfig( config.getSSLConfig() )
+                .responseTimeout( Duration.ofSeconds( RuntimeConfig.DOCKER_TIMEOUT.getInteger() ) )
+                .connectionTimeout( Duration.ofSeconds( RuntimeConfig.DOCKER_TIMEOUT.getInteger() ) )
+                .build();
+
+        DockerClient client = DockerClientImpl.getInstance( config, httpClient );
+
+        InspectContainerResponse resp = client.inspectContainerCmd( this.containerId ).exec();
+
+        String ip = resp.getNetworkSettings().getNetworks().get( "polypheny-internal" ).getIpAddress();
+        return new HostAndPort( ip, port );
     }
 
 
