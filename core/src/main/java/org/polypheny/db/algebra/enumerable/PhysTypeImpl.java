@@ -101,7 +101,10 @@ public class PhysTypeImpl implements PhysType {
 
 
     public static PhysType of( JavaTypeFactory typeFactory, AlgDataType tupleType, JavaTupleFormat format, boolean optimize ) {
-        final Type javaRowClass = format.javaTupleClass( typeFactory, tupleType );
+        Type javaRowClass = format.javaTupleClass( typeFactory, tupleType );
+        if (javaRowClass == null) {
+            javaRowClass = PolyValue.class;
+        }
         return new PhysTypeImpl( typeFactory, tupleType, javaRowClass, format );
     }
 
