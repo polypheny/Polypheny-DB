@@ -24,6 +24,7 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgProducingVisitor.Function3;
 import org.polypheny.db.algebra.core.common.Identifier;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.catalog.Catalog;
@@ -34,6 +35,7 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.transaction.locking.IdentifierUtils;
+import org.polypheny.db.transaction.locking.VersionedEntryIdentifier;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
@@ -42,8 +44,8 @@ import org.polypheny.db.util.BuiltInMethod;
 
 public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
 
-    protected EnumerableIdentifier( AlgCluster cluster, AlgTraitSet traits, Entity entity, AlgNode input ) {
-        super( cluster, traits, entity, input );
+    protected EnumerableIdentifier( AlgCluster cluster, AlgTraitSet traits, long version, Entity entity, AlgNode input ) {
+        super( cluster, traits, version, entity, input );
         assert getConvention() instanceof EnumerableConvention;
     }
 
@@ -57,7 +59,7 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new EnumerableIdentifier( inputs.get( 0 ).getCluster(), traitSet, entity, inputs.get( 0 ) );
+        return new EnumerableIdentifier( inputs.get( 0 ).getCluster(), traitSet, version, entity, inputs.get( 0 ) );
     }
 
 
@@ -70,21 +72,22 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
 
         Expression input_ = builder.append( "input", result.block() );
         Expression entityId_ = Expressions.constant( entity.getId() );
+        Expression version_ = Expressions.constant( version );
         Expression identification_ = null;
         switch ( input.getModel() ) {
             case RELATIONAL -> {
                 Expression addRelIdentifiers_ = Expressions.call( EnumerableIdentifier.class, "addRelIdentifiers" );
-                Expression addRelIdentifierWithId_ = Expressions.call( EnumerableIdentifier.class, "bindLogicalId", addRelIdentifiers_, entityId_ );
+                Expression addRelIdentifierWithId_ = Expressions.call( EnumerableIdentifier.class, "bindMvccConstants", addRelIdentifiers_, entityId_, version_ );
                 identification_ = builder.append( "identification", Expressions.call( BuiltInMethod.PROCESS_AND_STREAM_RIGHT.method, input_, addRelIdentifierWithId_ ) );
             }
             case DOCUMENT -> {
                 Expression addDocIdentifiers_ = Expressions.call( EnumerableIdentifier.class, "addDocIdentifiers" );
-                Expression addDocIdentifierWithId_ = Expressions.call( EnumerableIdentifier.class, "bindLogicalId", addDocIdentifiers_, entityId_ );
+                Expression addDocIdentifierWithId_ = Expressions.call( EnumerableIdentifier.class, "bindMvccConstants", addDocIdentifiers_, entityId_, version_ );
                 identification_ = builder.append( "identification", Expressions.call( BuiltInMethod.PROCESS_AND_STREAM_RIGHT.method, input_, addDocIdentifierWithId_ ) );
             }
             case GRAPH -> {
                 Expression addLpgIdentifiers_ = Expressions.call( EnumerableIdentifier.class, "addLpgIdentifiers" );
-                Expression addLpgIdentifiersWithId_ = Expressions.call( EnumerableIdentifier.class, "bindLogicalId", addLpgIdentifiers_, entityId_ );
+                Expression addLpgIdentifiersWithId_ = Expressions.call( EnumerableIdentifier.class, "bindMvccConstants", addLpgIdentifiers_, entityId_, version_ );
                 identification_ = builder.append( "identification", Expressions.call( BuiltInMethod.PROCESS_AND_STREAM_RIGHT.method, input_, addLpgIdentifiersWithId_ ) );
             }
         }
@@ -94,43 +97,40 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
 
     }
 
-
-    public static Function1<Enumerable<PolyValue[]>, Enumerable<PolyValue[]>> bindLogicalId(
-            Function2<Enumerable<PolyValue[]>, Long, Enumerable<PolyValue[]>> function,
-            long logicalId ) {
-        return input -> function.apply( input, logicalId );
+    public static Function1<Enumerable<PolyValue[]>, Enumerable<PolyValue[]>> bindMvccConstants(
+            Function3<Enumerable<PolyValue[]>, Long, Long, Enumerable<PolyValue[]>> function,
+            long logicalId,
+            long versionId ) {
+        return input -> function.apply( input, logicalId, versionId );
     }
 
-
-    public static Function2<Enumerable<PolyValue[]>, Long, Enumerable<PolyValue[]>> addRelIdentifiers() {
-        return ( input, logicalId ) -> {
+    public static Function3<Enumerable<PolyValue[]>, Long, Long, Enumerable<PolyValue[]>> addRelIdentifiers() {
+        return ( input, logicalId, versionId ) -> {
             LogicalEntity entity = Catalog.getInstance().getSnapshot()
                     .getLogicalEntity( logicalId )
                     .orElseThrow();
             return input.select( row -> {
-                row[0] = entity.getEntryIdentifiers()
-                        .getNextEntryIdentifier()
-                        .getEntryIdentifierAsPolyLong();
-                row[1] = new PolyLong( IdentifierUtils.MISSING_IDENTIFIER );
+                VersionedEntryIdentifier identifier = entity.getEntryIdentifiers()
+                        .getNextEntryIdentifier(versionId, false);
+                row[0] = identifier.getEntryIdentifierAsPolyLong();
+                row[1] = identifier.getVersionAsPolyLong();
                 return row;
             } );
         };
     }
 
-
-    public static Function2<Enumerable<PolyValue[]>, Long, Enumerable<PolyValue[]>> addDocIdentifiers() {
-        return ( input, logicalId ) -> {
+    public static Function3<Enumerable<PolyValue[]>, Long, Long, Enumerable<PolyValue[]>> addDocIdentifiers() {
+        return ( input, logicalId, versionId ) -> {
             LogicalEntity entity = Catalog.getInstance().getSnapshot()
                     .getLogicalEntity( logicalId )
                     .orElseThrow();
             return input.select( row -> {
                 for ( PolyValue value : row ) {
-                    PolyLong entryIdentifier = entity.getEntryIdentifiers()
-                            .getNextEntryIdentifier()
-                            .getEntryIdentifierAsPolyLong();
+                    VersionedEntryIdentifier identifier = entity.getEntryIdentifiers()
+                            .getNextEntryIdentifier(versionId, false);
                     if ( value instanceof PolyDocument ) {
-                        ((PolyDocument) value).put( IdentifierUtils.getIdentifierKeyAsPolyString(), entryIdentifier );
-                        ((PolyDocument) value).put( IdentifierUtils.getVersionKeyAsPolyString(), new PolyLong( IdentifierUtils.MISSING_VERSION ) );
+                        ((PolyDocument) value).put( IdentifierUtils.getIdentifierKeyAsPolyString(), identifier.getEntryIdentifierAsPolyLong() );
+                        ((PolyDocument) value).put( IdentifierUtils.getVersionKeyAsPolyString(), identifier.getVersionAsPolyLong() );
                     }
                 }
                 return row;
@@ -138,27 +138,24 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
         };
     }
 
-
-    public static Function2<Enumerable<PolyValue[]>, Long, Enumerable<PolyValue[]>> addLpgIdentifiers() {
-        return ( input, logicalId ) -> {
+    public static Function3<Enumerable<PolyValue[]>, Long, Long, Enumerable<PolyValue[]>> addLpgIdentifiers() {
+        return ( input, logicalId, versionId ) -> {
             LogicalEntity entity = Catalog.getInstance().getSnapshot()
                     .getLogicalEntity( logicalId )
                     .orElseThrow();
             return input.select( row -> {
                 for ( PolyValue value : row ) {
-                    PolyLong entryIdentifier = entity.getEntryIdentifiers()
-                            .getNextEntryIdentifier()
-                            .getEntryIdentifierAsPolyLong();
+                    VersionedEntryIdentifier identifier = entity.getEntryIdentifiers()
+                            .getNextEntryIdentifier(versionId, false);
                     if ( value instanceof GraphPropertyHolder ) {
                         ((GraphPropertyHolder) value).getProperties()
-                                .put( IdentifierUtils.getIdentifierKeyAsPolyString(), entryIdentifier );
+                                .put( IdentifierUtils.getIdentifierKeyAsPolyString(), identifier.getEntryIdentifierAsPolyLong() );
                         ((GraphPropertyHolder) value).getProperties()
-                                .put( IdentifierUtils.getVersionKeyAsPolyString(), new PolyLong( IdentifierUtils.MISSING_VERSION ) );
+                                .put( IdentifierUtils.getVersionKeyAsPolyString(), identifier.getVersionAsPolyLong() );
                     }
                 }
                 return row;
             } );
         };
     }
-
 }
