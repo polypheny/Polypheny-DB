@@ -123,6 +123,9 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
         return Expressions.new_( PolyDocument.class, super.asExpression(), Expressions.constant( isUnset ) );
     }
 
+    public static Expression asExpression(PolyDocument document) {
+        return document.asExpression();
+    }
 
     @Override
     public @NotNull String toTypedJson() {

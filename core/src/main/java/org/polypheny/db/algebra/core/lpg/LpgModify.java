@@ -30,12 +30,10 @@ import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.entity.PolyString;
 
 
+@Getter
 public abstract class LpgModify<E extends Entity> extends Modify<E> implements LpgAlg {
 
-    @Getter
-    public final Operation operation;
     public final List<PolyString> ids;
-    @Getter
     public final List<? extends RexNode> operations;
 
 
@@ -44,8 +42,7 @@ public abstract class LpgModify<E extends Entity> extends Modify<E> implements L
      * {@link ModelTrait#GRAPH} node, which is able to modify an LPG graph.
      */
     protected LpgModify( AlgCluster cluster, AlgTraitSet traits, E graph, AlgNode input, Operation operation, List<PolyString> ids, List<? extends RexNode> operations, AlgDataType dmlRowType ) {
-        super( cluster, traits.replace( ModelTrait.GRAPH ), graph, input );
-        this.operation = operation;
+        super( cluster, traits.replace( ModelTrait.GRAPH ), graph, input, operation );
         this.ids = ids;
         this.operations = operations;
         this.rowType = dmlRowType;

@@ -45,8 +45,6 @@ public abstract class DocumentModify<E extends Entity> extends Modify<E> impleme
     public ImmutableList<String> removes;
     @NonNull
     public ImmutableMap<String, String> renames;
-    @NonNull
-    public Operation operation;
 
 
     /**
@@ -61,8 +59,7 @@ public abstract class DocumentModify<E extends Entity> extends Modify<E> impleme
             @Nullable Map<String, ? extends RexNode> updates,
             @Nullable List<String> removes,
             @Nullable Map<String, String> renames ) {
-        super( input.getCluster(), input.getTraitSet().replace( ModelTrait.DOCUMENT ), collection, input );
-        this.operation = operation;
+        super( input.getCluster(), input.getTraitSet().replace( ModelTrait.DOCUMENT ), collection, input, operation );
         this.updates = ImmutableMap.copyOf( updates == null ? Map.of() : updates );
         this.removes = ImmutableList.copyOf( removes == null ? List.of() : removes );
         this.renames = ImmutableMap.copyOf( renames == null ? Map.of() : renames );
@@ -105,15 +102,4 @@ public abstract class DocumentModify<E extends Entity> extends Modify<E> impleme
     public DocType getDocType() {
         return DocType.MODIFY;
     }
-
-
-    public boolean isInsert() {
-        return operation == Modify.Operation.INSERT;
-    }
-
-
-    public boolean isDelete() {
-        return operation == Modify.Operation.DELETE;
-    }
-
 }

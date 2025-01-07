@@ -31,7 +31,8 @@ public abstract class Modify<E extends Entity> extends SingleAlg {
 
     @Getter
     public final E entity;
-
+    @Getter
+    protected final Operation operation;
     @Accessors(fluent = true)
     @Setter
     public boolean streamed;
@@ -43,14 +44,30 @@ public abstract class Modify<E extends Entity> extends SingleAlg {
      * @param cluster Cluster this relational expression belongs to
      * @param input Input relational expression
      */
-    protected Modify( AlgCluster cluster, AlgTraitSet traits, E target, AlgNode input ) {
+    protected Modify( AlgCluster cluster, AlgTraitSet traits, E target, AlgNode input, Operation operation ) {
         super( cluster, traits, input );
         this.entity = target;
+        this.operation = operation;
+    }
+
+    public boolean isInsert() {
+        return operation == Operation.INSERT;
     }
 
 
-    public abstract Operation getOperation();
+    public boolean isUpdate() {
+        return operation == Operation.UPDATE;
+    }
 
+
+    public boolean isDelete() {
+        return operation == Operation.DELETE;
+    }
+
+
+    public boolean isMerge() {
+        return operation == Operation.MERGE;
+    }
 
     /**
      * Enumeration of supported modification operations.
