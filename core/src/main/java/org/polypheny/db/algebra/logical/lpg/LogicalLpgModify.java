@@ -24,11 +24,13 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyString;
 
@@ -49,8 +51,21 @@ public class LogicalLpgModify extends LpgModify<Entity> implements RelationalTra
         return new LogicalLpgModify( inputs.get( 0 ).getCluster(), traitSet, entity, inputs.get( 0 ), operation, ids, operations );
     }
 
+
     public LogicalLpgModify copy( List<AlgNode> inputs ) {
         return new LogicalLpgModify( inputs.get( 0 ).getCluster(), traitSet, entity, inputs.get( 0 ), operation, ids, operations );
+    }
+
+
+    public static LogicalLpgModify create(
+            Entity entity,
+            AlgNode input,
+            Operation operation,
+            List<PolyString> ids,
+            List<? extends RexNode> operations ) {
+        final AlgCluster cluster = input.getCluster();
+        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
+        return new LogicalLpgModify( cluster, traitSet, entity, input, operation, ids, operations );
     }
 
 

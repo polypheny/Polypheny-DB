@@ -115,6 +115,10 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
     }
 
+    public static LogicalLpgValues createOne( AlgCluster cluster, AlgDataType rowType ) {
+        return new LogicalLpgValues( cluster, cluster.traitSet(), List.of(), List.of(), ImmutableList.of(), rowType );
+    }
+
 
     @Override
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<Entity> entities, Snapshot snapshot ) {
