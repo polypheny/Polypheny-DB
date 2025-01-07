@@ -24,18 +24,15 @@ public class EntryIdentifierRegistry {
         this.entityId = entityId;
     }
 
-
-    public VersionedEntryIdentifier getNextEntryIdentifier() {
-        while ( !availableIdentifiers.first().hasNextIdentifier() ) {
-            availableIdentifiers.pollFirst();
-            if ( availableIdentifiers.isEmpty() ) {
-                throw new IllegalStateException( "No identifiers available" );
-            }
-        }
-        long nextIdentifier = availableIdentifiers.first().getNextIdentifier();
-        return new VersionedEntryIdentifier(entityId, nextIdentifier );
+    public VersionedEntryIdentifier getNextEntryIdentifier(long version, boolean isCommitted) {
+        long nextIdentifier = getNextIdentifier();
+        return new VersionedEntryIdentifier(entityId, nextIdentifier, version, isCommitted );
     }
 
+
+    public VersionedEntryIdentifier getNextEntryIdentifier() {
+        return new VersionedEntryIdentifier(entityId, getNextIdentifier() );
+    }
 
     public void releaseEntryIdentifiers( Set<Long> identifiers ) {
         if ( identifiers.isEmpty() ) {
@@ -56,6 +53,16 @@ public class EntryIdentifierRegistry {
             }
             availableIdentifiers.add( newInterval );
         }
+    }
+
+    private long getNextIdentifier() {
+        while ( !availableIdentifiers.first().hasNextIdentifier() ) {
+            availableIdentifiers.pollFirst();
+            if ( availableIdentifiers.isEmpty() ) {
+                throw new IllegalStateException( "No identifiers available" );
+            }
+        }
+        return availableIdentifiers.first().getNextIdentifier();
     }
 
 
