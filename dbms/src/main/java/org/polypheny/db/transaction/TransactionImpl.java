@@ -429,6 +429,12 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
+    public long getTransactionTimestamp() {
+        return transactionTimestamp;
+    }
+
+
+    @Override
     public void wakeup() {
         Thread.currentThread().interrupt();
     }

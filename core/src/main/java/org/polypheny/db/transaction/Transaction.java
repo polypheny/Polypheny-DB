@@ -111,6 +111,8 @@ public interface Transaction {
 
     void addWrittenEntity(VersionedEntryIdentifier entryIdentifier);
 
+    long getTransactionTimestamp();
+
     /**
      * Flavor, how multimedia results should be returned from a store.
      */

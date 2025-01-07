@@ -366,6 +366,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
             case INSERT:
                 AlgNode input = modify1.getInput();
                 LogicalRelIdentifier identifier = LogicalRelIdentifier.create(
+                        transaction.getTransactionTimestamp(),
                         modify1.getEntity(),
                         input,
                         input.getTupleType()
@@ -403,6 +404,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
             case INSERT:
                 AlgNode input = modify1.getInput();
                 LogicalLpgIdentifier identifier = LogicalLpgIdentifier.create(
+                        transaction.getTransactionTimestamp(),
                         modify1.getEntity(),
                         input
                 );
@@ -520,6 +522,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
             case INSERT:
                 AlgNode input = modify1.getInput();
                 LogicalDocIdentifier identifier = LogicalDocIdentifier.create(
+                        transaction.getTransactionTimestamp(),
                         modify1.getEntity(),
                         input
                 );
