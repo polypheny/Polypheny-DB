@@ -350,6 +350,8 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalRelModify modify ) {
+
+
         LogicalRelModify modify1 = visitChildren( modify );
         if ( isTarget( modify1 ) ) {
             modify1 = modify1.copy( modifyInputs( modify1.getInputs() ) );
