@@ -309,7 +309,7 @@ public interface Modifiable extends Scannable {
                 modify.getTraitSet(),
                 entity,
                 modify.getInput(),
-                modify.operation,
+                modify.getOperation(),
                 modify.updates,
                 modify.renames,
                 modify.removes );
@@ -341,7 +341,7 @@ public interface Modifiable extends Scannable {
             builder.transform( ModelTrait.RELATIONAL, DocumentType.ofRelational(), false, null );
         }
 
-        if ( updates.left == null && modify.operation != Operation.UPDATE && modify.operation != Operation.DELETE ) {
+        if ( updates.left == null && modify.getOperation() != Operation.UPDATE && modify.getOperation() != Operation.DELETE ) {
             // Values require additional effort but less than updates
             builder.transform( ModelTrait.RELATIONAL, DocumentType.ofRelational(), false, null );
             AlgNode provider = builder.build();
@@ -410,7 +410,7 @@ public interface Modifiable extends Scannable {
                 modify.getTraitSet(),
                 entity,
                 modify.getInput(),
-                modify.operation,
+                modify.getOperation(),
                 modify.ids,
                 modify.operations );
     }
@@ -434,7 +434,7 @@ public interface Modifiable extends Scannable {
             raw = ((AlgSubset) alg.getInput()).getAlgList().get( 0 );
         }
 
-        switch ( alg.operation ) {
+        switch ( alg.getOperation() ) {
             case INSERT:
                 if ( raw instanceof LogicalLpgValues values ) {
                     // simple value insert
@@ -459,20 +459,20 @@ public interface Modifiable extends Scannable {
 
         List<AlgNode> modifies = new ArrayList<>();
         if ( inputs.get( 0 ) != null ) {
-            modifies.add( switchContext( getModify( nodesTable, inputs.get( 0 ), alg.operation, null, null ) ) );
+            modifies.add( switchContext( getModify( nodesTable, inputs.get( 0 ), alg.getOperation(), null, null ) ) );
         }
 
         if ( inputs.get( 1 ) != null ) {
-            modifies.add( switchContext( getModify( nodePropertiesTable, inputs.get( 1 ), alg.operation, null, null ) ) );
+            modifies.add( switchContext( getModify( nodePropertiesTable, inputs.get( 1 ), alg.getOperation(), null, null ) ) );
         }
 
         if ( inputs.size() > 2 ) {
             if ( inputs.get( 2 ) != null ) {
-                modifies.add( switchContext( getModify( edgesTable, inputs.get( 2 ), alg.operation, null, null ) ) );
+                modifies.add( switchContext( getModify( edgesTable, inputs.get( 2 ), alg.getOperation(), null, null ) ) );
             }
 
             if ( inputs.get( 3 ) != null ) {
-                modifies.add( switchContext( getModify( edgePropertiesTable, inputs.get( 3 ), alg.operation, null, null ) ) );
+                modifies.add( switchContext( getModify( edgePropertiesTable, inputs.get( 3 ), alg.getOperation(), null, null ) ) );
             }
         }
 
