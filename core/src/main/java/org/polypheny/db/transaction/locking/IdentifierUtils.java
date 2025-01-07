@@ -50,7 +50,7 @@ public class IdentifierUtils {
             null,
             null,
             null,
-            false
+            true
     );
 
     public static final FieldInformation IDENTIFIER_FIELD_INFORMATION = new FieldInformation(
