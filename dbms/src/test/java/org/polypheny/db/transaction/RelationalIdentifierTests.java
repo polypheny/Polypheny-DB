@@ -60,7 +60,7 @@ public class RelationalIdentifierTests {
     public void exceptionCheck() {
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
-                () -> IdentifierUtils.throwIfIsIdentifierKey( IdentifierUtils.IDENTIFIER_KEY )
+                () -> IdentifierUtils.throwIfIsDisallowedKey( IdentifierUtils.IDENTIFIER_KEY )
         );
         assertTrue( exception.getMessage().contains( "The field _eid is reserved" ) );
     }

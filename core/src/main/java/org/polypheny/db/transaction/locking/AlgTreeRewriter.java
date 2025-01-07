@@ -408,7 +408,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
                 );
                 return modify1.copy( modify1.getTraitSet(), List.of( identifier ) );
             case UPDATE:
-                IdentifierUtils.throwIfContainsIdentifierKey( modify1 );
+                IdentifierUtils.throwIfContainsDisallowedKey( modify1 );
             default:
                 return modify1;
         }
@@ -525,7 +525,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
                 );
                 return modify1.copy( modify1.getTraitSet(), List.of( identifier ) );
             case UPDATE:
-                IdentifierUtils.throwIfContainsIdentifierKey( modify1.getUpdates().keySet() );
+                IdentifierUtils.throwIfContainsDisallowedKey( modify1.getUpdates().keySet() );
                 return modify1;
 
         }
@@ -597,7 +597,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentValues values ) {
-        containsIdentifierKey |= IdentifierUtils.containsIdentifierKey( values.getDocuments() );
+        containsIdentifierKey |= IdentifierUtils.containsDisallowedKeys( values.getDocuments() );
         return values;
     }
 
