@@ -42,6 +42,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
@@ -91,44 +92,23 @@ public class LogicalStreamer extends Streamer {
         if ( !isModifyApplicable( allModify ) ) {
             return null;
         }
+        AlgNode input = getChild( allModify.getInput() );
 
         if ( allModify instanceof LogicalRelModify relModify ) {
-            return getLogicalStreamerFromRelationalModify( relModify, algBuilder );
+            return getLogicalStreamer( relModify, algBuilder, algBuilder.getRexBuilder(), input );
         }
 
         if ( allModify instanceof LogicalDocumentModify docModify ) {
-            log.debug( "non relational nodes are not supported for toModify streamer rule" );
-            return getLogicalStreamerFromDocumentModify( docModify, algBuilder );
+            return getLogicalStreamer( docModify, algBuilder, algBuilder.getRexBuilder(), input );
         }
 
         if ( allModify instanceof LogicalLpgModify lpgModify ) {
-            log.debug( "non relational nodes are not supported for toModify streamer rule" );
-            return getLogicalStreamerFromLpgModify( lpgModify, algBuilder );
+            return getLogicalStreamer( lpgModify, algBuilder, algBuilder.getRexBuilder(), input );
         }
 
         return null;
 
     }
-
-
-    private static LogicalStreamer getLogicalStreamerFromRelationalModify( RelModify<?> modify, AlgBuilder algBuilder ) {
-        AlgNode input = getChild( modify.getInput() );
-        return getLogicalStreamer( modify, algBuilder, algBuilder.getRexBuilder(), input );
-    }
-
-
-    private static LogicalStreamer getLogicalStreamerFromDocumentModify( DocumentModify<?> modify, AlgBuilder algBuilder ) {
-        AlgNode input = getChild( modify.getInput() );
-        return getLogicalStreamer( modify, algBuilder, algBuilder.getRexBuilder(), input );
-    }
-
-
-    private static LogicalStreamer getLogicalStreamerFromLpgModify( LpgModify<?> modify, AlgBuilder algBuilder ) {
-        AlgNode input = getChild( modify.getInput() );
-        throw new NotImplementedException("getLogicalStreamerFromLpgModify not implemented yet.");
-        //return getLogicalStreamer( modify, algBuilder, algBuilder.getRexBuilder(), input );
-    }
-
 
     private static LogicalStreamer getLogicalStreamer( RelModify<?> modify, AlgBuilder algBuilder, RexBuilder rexBuilder, AlgNode input ) {
         if ( input == null ) {
@@ -206,6 +186,39 @@ public class LogicalStreamer extends Streamer {
                 modify.getUpdates(),
                 modify.getRemoves(),
                 modify.getRenames()
+        ).streamed( true );
+        return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), query, prepared );
+    }
+
+    private static LogicalStreamer getLogicalStreamer( LpgModify<?> modify, AlgBuilder algBuilder, RexBuilder rexBuilder, AlgNode input ) {
+        if ( input == null ) {
+            throw new GenericRuntimeException( "Error while creating Streamer." );
+        }
+
+        AlgNode query = input;
+
+        //ToDo: TH implement update logic
+
+        /////// prepared
+
+        if ( !modify.isInsert() ) {
+            algBuilder.lpgScan( modify.getEntity() );
+            attachFilter( modify, algBuilder, rexBuilder );
+        } else {
+            /*
+            if ( input.getTupleType().getFieldCount() != modify.getEntity().getTupleType().getFieldCount() ) {
+                return null;
+            }
+            */
+            algBuilder.push( LogicalLpgValues.createOne( modify.getCluster(), modify.getRowType() ));
+        }
+
+        Modify<?> prepared = LogicalLpgModify.create(
+                modify.getEntity(),
+                algBuilder.build(),
+                modify.getOperation(),
+                modify.getIds(),
+                modify.getOperations()
         ).streamed( true );
         return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), query, prepared );
     }

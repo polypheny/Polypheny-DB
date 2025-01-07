@@ -117,6 +117,10 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
     }
 
+    public static LogicalLpgValues createOne( AlgCluster cluster, AlgDataType rowType ) {
+        return new LogicalLpgValues( cluster, cluster.traitSet(), List.of(), List.of(), ImmutableList.of(), rowType );
+    }
+
 
     public static LogicalLpgValues create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
         Triple<Collection<PolyNode>, Collection<PolyEdge>, ImmutableList<ImmutableList<RexLiteral>>> extracted = extractArgs( args, cluster );
