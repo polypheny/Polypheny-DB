@@ -17,6 +17,7 @@
 package org.polypheny.db.transaction.locking;
 
 import java.text.MessageFormat;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -40,8 +41,15 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 public class IdentifierUtils {
 
     public static final String IDENTIFIER_KEY = "_eid";
+    public static final String VERSION_KEY = "_vid";
+
+    private static final Set<String> DISALLOWED_KEYS = Set.of(IDENTIFIER_KEY, VERSION_KEY);
+
     public static final long MISSING_IDENTIFIER = 0;
+    public static final long MISSING_VERSION = 0;
+
     public static final AlgDataType IDENTIFIER_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BIGINT, true );
+    public static final AlgDataType VERSION_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BIGINT, true );
 
     public static final ColumnTypeInformation IDENTIFIER_COLUMN_TYPE = new ColumnTypeInformation(
             PolyType.BIGINT, // binary not supported by hsqldb TODO TH: check for other stores, datatypes
@@ -61,8 +69,29 @@ public class IdentifierUtils {
             1
     );
 
+    public static final ColumnTypeInformation VERSION_COLUMN_TYPE = new ColumnTypeInformation(
+            PolyType.BIGINT,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true
+    );
+
+    public static final FieldInformation VERSION_FIELD_INFORMATION = new FieldInformation(
+            VERSION_KEY,
+            VERSION_COLUMN_TYPE,
+            Collation.CASE_INSENSITIVE,
+            new PolyLong( MISSING_VERSION ),
+            2
+    );
 
     public static PolyString getIdentifierKeyAsPolyString() {
+        return PolyString.of( IDENTIFIER_KEY );
+    }
+
+    public static PolyString getVersionKeyAsPolyString() {
         return PolyString.of( IDENTIFIER_KEY );
     }
 
@@ -75,60 +104,78 @@ public class IdentifierUtils {
     }
 
 
-    public static List<FieldInformation> addIdentifierFieldIfAbsent( List<FieldInformation> fields ) {
-        if ( fields.get( 0 ).name().equals( IDENTIFIER_KEY ) ) {
-            return fields;
+    public static List<FieldInformation> addMvccFieldsIfAbsent(List<FieldInformation> fields) {
+        List<FieldInformation> newFields = new LinkedList<>();
+
+        boolean hasIdentifier = fields.get(0).name().equals(IDENTIFIER_KEY);
+        boolean hasVersion = fields.size() > 1 && fields.get(1).name().equals(VERSION_KEY);
+
+        if (!hasIdentifier) {
+            newFields.add(IDENTIFIER_FIELD_INFORMATION);
         }
-        List<FieldInformation> newFields = fields.stream()
-                .map( f -> new FieldInformation( f.name(), f.typeInformation(), f.collation(), f.defaultValue(), f.position() + 1 ) )
-                .collect( Collectors.toCollection( LinkedList::new ) );
-        newFields.add( 0, IDENTIFIER_FIELD_INFORMATION );
+
+        if (!hasVersion) {
+            newFields.add(VERSION_FIELD_INFORMATION);
+        }
+
+        fields.stream()
+                .map(f -> new FieldInformation(
+                        f.name(),
+                        f.typeInformation(),
+                        f.collation(),
+                        f.defaultValue(),
+                        f.position() + (hasIdentifier ? 0 : 1) + (hasVersion ? 0 : 1))
+                )
+                .forEach(newFields::add);
+
         return newFields;
     }
 
 
-    public static void throwIfIsIdentifierKey( String string ) {
-        if ( IDENTIFIER_KEY.equals( string ) ) {
+
+    public static void throwIfIsDisallowedKey(String string) {
+        if (DISALLOWED_KEYS.contains(string)) {
             throwIllegalFieldName();
         }
     }
 
 
-    public static void throwIfContainsIdentifierKey( Set<String> fieldNames ) {
-        if ( fieldNames.contains( IDENTIFIER_KEY ) ) {
+    public static void throwIfContainsDisallowedKey(Set<String> fieldNames) {
+        if (!Collections.disjoint(fieldNames, DISALLOWED_KEYS)) {
             throwIllegalFieldName();
         }
     }
 
 
-    public static void throwIfContainsIdentifierField( List<FieldInformation> fields ) {
+    public static void throwIfContainsDisallowedField(List<FieldInformation> fields) {
         Set<String> fieldNames = fields.stream()
-                .map( FieldInformation::name )
-                .collect( Collectors.toSet() );
-        throwIfContainsIdentifierKey( fieldNames );
+                .map(FieldInformation::name)
+                .collect(Collectors.toSet());
+        throwIfContainsDisallowedKey(fieldNames);
     }
 
-    public static boolean containsIdentifierKey( List<PolyDocument> documents ) {
+    public static boolean containsDisallowedKeys(List<PolyDocument> documents) {
         return documents.stream()
-                .flatMap( v -> v.map.keySet().stream() )
-                .map( PolyString::getValue )
-                .anyMatch( value -> value.equals( IDENTIFIER_KEY ) );
+                .flatMap(v -> v.map.keySet().stream())
+                .map(PolyString::getValue)
+                .anyMatch(DISALLOWED_KEYS::contains);
     }
 
-    public static void throwIfContainsIdentifierKey( LogicalLpgModify lpgModify ) {
-        boolean modifiesIdentifier = lpgModify.getOperations().stream()
-                .map(o -> o.unwrap( RexCall.class))
-                .filter( Optional::isPresent)
+
+    public static void throwIfContainsDisallowedKey(LogicalLpgModify lpgModify) {
+        boolean modifiesDisallowed = lpgModify.getOperations().stream()
+                .map(o -> o.unwrap(RexCall.class))
+                .filter(Optional::isPresent)
                 .flatMap(o -> o.get().getOperands().stream())
-                .map(r -> r.unwrap( RexLiteral.class))
+                .map(r -> r.unwrap(RexLiteral.class))
                 .filter(Optional::isPresent)
                 .map(v -> v.get().getValue())
-                .filter( PolyValue::isString )
-                .anyMatch(s -> IdentifierUtils.IDENTIFIER_KEY.equals(s.asString().getValue()));
-        if (!modifiesIdentifier) {
-            return;
+                .filter(PolyValue::isString)
+                .map(s -> s.asString().getValue())
+                .anyMatch(DISALLOWED_KEYS::contains);
+        if (modifiesDisallowed) {
+            throwIllegalFieldName();
         }
-        throwIllegalFieldName();
     }
 
 

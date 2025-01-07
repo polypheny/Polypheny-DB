@@ -111,6 +111,7 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
                 row[0] = entity.getEntryIdentifiers()
                         .getNextEntryIdentifier()
                         .getEntryIdentifierAsPolyLong();
+                row[1] = new PolyLong( IdentifierUtils.MISSING_IDENTIFIER );
                 return row;
             } );
         };
@@ -129,6 +130,7 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
                             .getEntryIdentifierAsPolyLong();
                     if ( value instanceof PolyDocument ) {
                         ((PolyDocument) value).put( IdentifierUtils.getIdentifierKeyAsPolyString(), entryIdentifier );
+                        ((PolyDocument) value).put( IdentifierUtils.getVersionKeyAsPolyString(), new PolyLong( IdentifierUtils.MISSING_VERSION ) );
                     }
                 }
                 return row;
@@ -150,6 +152,8 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
                     if ( value instanceof GraphPropertyHolder ) {
                         ((GraphPropertyHolder) value).getProperties()
                                 .put( IdentifierUtils.getIdentifierKeyAsPolyString(), entryIdentifier );
+                        ((GraphPropertyHolder) value).getProperties()
+                                .put( IdentifierUtils.getVersionKeyAsPolyString(), new PolyLong( IdentifierUtils.MISSING_VERSION ) );
                     }
                 }
                 return row;
