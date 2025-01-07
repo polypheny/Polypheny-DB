@@ -684,7 +684,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     alg.getTraitSet(),
                     target,
                     buildGraphDml( alg.getInput(), statement, target, excludedPlacements ),
-                    alg.operation,
+                    alg.getOperation(),
                     alg.ids,
                     alg.operations );
         }
@@ -706,7 +706,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     alg.getTraitSet(),
                     alloc,
                     buildGraphDml( alg.getInput(), statement, null, excludedPlacements ),
-                    alg.operation,
+                    alg.getOperation(),
                     alg.ids,
                     alg.operations ) );
 

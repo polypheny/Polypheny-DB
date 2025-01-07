@@ -419,7 +419,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 modify.getTraitSet(),
                 modify.getEntity(),
                 input,
-                modify.operation,
+                modify.getOperation(),
                 modify.getUpdates(),
                 modify.getRemoves(),
                 modify.getRenames()//newSourceExpression

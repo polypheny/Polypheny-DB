@@ -19,20 +19,29 @@ package org.polypheny.db.algebra.logical.common;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.core.common.Streamer;
+import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.document.DocumentValues;
+import org.polypheny.db.algebra.core.lpg.LpgModify;
+import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
@@ -79,29 +88,51 @@ public class LogicalStreamer extends Streamer {
 
     @Nullable
     public static LogicalStreamer create( Modify<?> allModify, AlgBuilder algBuilder ) {
-        RexBuilder rexBuilder = algBuilder.getRexBuilder();
+        if ( !isModifyApplicable( allModify ) ) {
+            return null;
+        }
 
-        if ( !(allModify instanceof RelModify<?> modify) ) {
+        if ( allModify instanceof LogicalRelModify relModify ) {
+            return getLogicalStreamerFromRelationalModify( relModify, algBuilder );
+        }
+
+        if ( allModify instanceof LogicalDocumentModify docModify ) {
             log.debug( "non relational nodes are not supported for toModify streamer rule" );
-            return null;
+            return getLogicalStreamerFromDocumentModify( docModify, algBuilder );
         }
 
-        if ( !isModifyApplicable( modify ) ) {
-            return null;
+        if ( allModify instanceof LogicalLpgModify lpgModify ) {
+            log.debug( "non relational nodes are not supported for toModify streamer rule" );
+            return getLogicalStreamerFromLpgModify( lpgModify, algBuilder );
         }
 
-        /////// query
-        // first we create the query, which could retrieve the values for the prepared modify
-        // if underlying adapter cannot handle it natively
+        return null;
+
+    }
+
+
+    private static LogicalStreamer getLogicalStreamerFromRelationalModify( RelModify<?> modify, AlgBuilder algBuilder ) {
         AlgNode input = getChild( modify.getInput() );
+        return getLogicalStreamer( modify, algBuilder, algBuilder.getRexBuilder(), input );
+    }
 
-        return getLogicalStreamer( modify, algBuilder, rexBuilder, input );
+
+    private static LogicalStreamer getLogicalStreamerFromDocumentModify( DocumentModify<?> modify, AlgBuilder algBuilder ) {
+        AlgNode input = getChild( modify.getInput() );
+        return getLogicalStreamer( modify, algBuilder, algBuilder.getRexBuilder(), input );
+    }
+
+
+    private static LogicalStreamer getLogicalStreamerFromLpgModify( LpgModify<?> modify, AlgBuilder algBuilder ) {
+        AlgNode input = getChild( modify.getInput() );
+        throw new NotImplementedException("getLogicalStreamerFromLpgModify not implemented yet.");
+        //return getLogicalStreamer( modify, algBuilder, algBuilder.getRexBuilder(), input );
     }
 
 
     private static LogicalStreamer getLogicalStreamer( RelModify<?> modify, AlgBuilder algBuilder, RexBuilder rexBuilder, AlgNode input ) {
         if ( input == null ) {
-            throw new GenericRuntimeException( "Error while creating Streamer." );
+            throw new GenericRuntimeException( "Error while creating Streamer: No input." );
         }
 
         // add all previous variables e.g. _id, _data(previous), _data(updated)
@@ -132,7 +163,7 @@ public class LogicalStreamer extends Streamer {
                 return null;
             }
             // attach a projection, so the values can be inserted on execution
-            algBuilder.push( getCollector( rexBuilder, input ) );
+            algBuilder.push( getRelCollector( rexBuilder, input ) );
         }
 
         Modify<?> prepared = LogicalRelModify.create(
@@ -141,7 +172,41 @@ public class LogicalStreamer extends Streamer {
                 modify.getOperation(),
                 modify.getUpdateColumns(),
                 modify.getSourceExpressions() == null ? null : createSourceList( modify, query, rexBuilder ),
-                false ).streamed( true );
+                false
+        ).streamed( true );
+        return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), query, prepared );
+    }
+
+
+    private static LogicalStreamer getLogicalStreamer( DocumentModify<?> modify, AlgBuilder algBuilder, RexBuilder rexBuilder, AlgNode input ) {
+        if ( input == null ) {
+            throw new GenericRuntimeException( "Error while creating Streamer." );
+        }
+
+        AlgNode query = input;
+
+        //ToDo: TH implement update logic
+
+        /////// prepared
+
+        if ( !modify.isInsert() ) {
+            algBuilder.documentScan( modify.getEntity() );
+            attachFilter( modify, algBuilder, rexBuilder );
+        } else {
+            if ( input.getTupleType().getFieldCount() != modify.getEntity().getTupleType().getFieldCount() ) {
+                return null;
+            }
+            algBuilder.push( LogicalDocumentValues.createOneTuple( input.getCluster()) );
+        }
+
+        Modify<?> prepared = LogicalDocumentModify.create(
+                modify.getEntity(),
+                algBuilder.build(),
+                modify.getOperation(),
+                modify.getUpdates(),
+                modify.getRemoves(),
+                modify.getRenames()
+        ).streamed( true );
         return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), query, prepared );
     }
 
@@ -152,7 +217,7 @@ public class LogicalStreamer extends Streamer {
 
 
     @NotNull
-    public static LogicalRelProject getCollector( RexBuilder rexBuilder, AlgNode input ) {
+    public static LogicalRelProject getRelCollector( RexBuilder rexBuilder, AlgNode input ) {
         return LogicalRelProject.create(
                 LogicalRelValues.createOneRow( input.getCluster() ),
                 input.getTupleType()
@@ -218,15 +283,20 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    public static boolean isModifyApplicable( RelModify<?> modify ) {
-
-        // simple delete, which all store should be able to handle by themselves
-        if ( modify.isInsert() && modify.getInput() instanceof Values || modify.getInput() instanceof DocumentValues ) {
-            // simple insert, which all store should be able to handle by themselves
-            return false;
-        } else {
-            return !modify.isDelete() || !(modify.getInput() instanceof RelScan);
+    public static boolean isModifyApplicable( Modify<?> modify ) {
+        if ( modify.isInsert() ) {
+            if ( modify.getInput() instanceof Values
+                    || modify.getInput() instanceof DocumentValues
+                    || modify.getInput() instanceof LpgValues ) {
+                return false;
+            }
         }
+
+        if ( modify.isDelete() ) {
+            return !(modify.getInput() instanceof Scan<?>);
+        }
+
+        return true;
     }
 
 

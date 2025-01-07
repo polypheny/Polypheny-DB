@@ -18,9 +18,12 @@ package org.polypheny.db.algebra.enumerable.document;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.core.document.DocumentValues;
@@ -66,7 +69,11 @@ public class EnumerableDocumentValues extends DocumentValues implements Enumerab
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
                         getTupleType(),
-                        pref.prefer( JavaTupleFormat.SCALAR) );
+                        pref.prefer(JavaTupleFormat.SCALAR));
+
+        if (isPrepared()) {
+            return attachPreparedExpression(builder, physType, implementor, pref);
+        }
 
         final List<Expression> expressions = new ArrayList<>();
 
@@ -88,7 +95,6 @@ public class EnumerableDocumentValues extends DocumentValues implements Enumerab
 
 
     private Result attachPreparedExpression( BlockBuilder builder, PhysType physType, EnumerableAlgImplementor implementor, Prefer pref ) {
-
         builder.add(
                 Expressions.return_(
                         null,
@@ -97,5 +103,4 @@ public class EnumerableDocumentValues extends DocumentValues implements Enumerab
                                 Expressions.call( CrossModelFunctions.class, "enumerableFromContext", DataContext.ROOT ) ) ) );
         return implementor.result( physType, builder.toBlock() );
     }
-
 }
