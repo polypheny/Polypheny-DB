@@ -29,14 +29,14 @@ import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
 public class LogicalLpgIdentifier extends Identifier implements LpgAlg {
-    protected LogicalLpgIdentifier(  Entity entity, AlgCluster cluster, AlgTraitSet traits, final AlgNode input ) {
-        super(cluster, traits, entity, input );
+    protected LogicalLpgIdentifier(  long version, Entity entity, AlgCluster cluster, AlgTraitSet traits, final AlgNode input ) {
+        super(cluster, traits, version, entity, input );
     }
 
-    public static LogicalLpgIdentifier create(Entity graph, final AlgNode input) {
+    public static LogicalLpgIdentifier create(long version, Entity graph, final AlgNode input) {
         final AlgCluster cluster  = input.getCluster();
         final AlgTraitSet traits = input.getTraitSet();
-        return new LogicalLpgIdentifier( graph, cluster, traits, input );
+        return new LogicalLpgIdentifier( version, graph, cluster, traits, input );
     }
 
 
@@ -54,7 +54,7 @@ public class LogicalLpgIdentifier extends Identifier implements LpgAlg {
 
     @Override
     public AlgNode copy(AlgTraitSet traitSet, List<AlgNode> inputs) {
-        return new LogicalLpgIdentifier(entity, getCluster(), traitSet, sole(inputs) );
+        return new LogicalLpgIdentifier(version, entity, getCluster(), traitSet, sole(inputs) );
     }
 
 }
