@@ -52,7 +52,7 @@ import org.polypheny.db.webui.models.results.GraphResult;
 @Slf4j
 public class CypherTestTemplate {
 
-    private static final String GRAPH_NAME = "test";
+    protected static final String GRAPH_NAME = "test";
     protected static final String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Max'})";
     protected static final String SINGLE_NODE_PERSON_2 = "CREATE (p:Person {name: 'Hans'})";
 
@@ -86,6 +86,11 @@ public class CypherTestTemplate {
 
     public static void createGraph( String name ) {
         execute( format( "CREATE DATABASE %s", name ) );
+        execute( format( "USE GRAPH %s", name ) );
+    }
+
+    public static void createGraph( String name, String store ) {
+        execute( format( "CREATE DATABASE %s ON STORE %s", name, store ) );
         execute( format( "USE GRAPH %s", name ) );
     }
 

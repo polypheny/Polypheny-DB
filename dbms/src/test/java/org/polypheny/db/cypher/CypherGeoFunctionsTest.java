@@ -19,16 +19,40 @@ package org.polypheny.db.cypher;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.webui.models.results.GraphResult;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CypherGeoFunctionsTest extends CypherTestTemplate {
+
+    final static String neo4jAdapterName = "neo4j";
+    final static String neo4jDatabaseName = "neo4j_database";
+
+
+    @BeforeAll
+    public static void init() {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( "ALTER ADAPTERS ADD \"" + neo4jAdapterName + "\" USING 'Neo4j' AS 'Store'"
+                        + " WITH '{mode:docker,instanceId:\"0\"}'" );
+            }
+        } catch ( SQLException e ) {
+            // If there is an error while adding the adapter, the most likely reason it does not work
+            // is that docker is not running!
+            throw new RuntimeException( e );
+        }
+    }
 
     @BeforeEach
     public void reset() {
@@ -39,27 +63,30 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
     @Test
     public void createPointTest() {
-        execute( "CREATE (bob:User)" );
-        GraphResult res = execute( "MATCH (n) RETURN point({longitude: 56.7, latitude: 12}) AS point" );
+        tearDown();
+        createGraph(neo4jDatabaseName, neo4jAdapterName);
+
+        execute( "CREATE (bob:User)", neo4jDatabaseName );
+        GraphResult res = execute( "MATCH (n) RETURN point({longitude: 56.7, latitude: 12}) AS point", neo4jDatabaseName );
         PolyGeometry geometry = convertJsonToPolyGeometry( res.data[0][0] );
         assert geometry.getSRID() == PolyGeometry.WGS_84;
         assert geometry.asPoint().getX() == 56.7;
         assert geometry.asPoint().getY() == 12.0;
 
-        res = execute( "MATCH (n) RETURN point({x: 15, y: 5}) AS point" );
+        res = execute( "MATCH (n) RETURN point({x: 15, y: 5}) AS point", neo4jDatabaseName );
         geometry = convertJsonToPolyGeometry( res.data[0][0] );
         assert geometry.getSRID() == 0;
         assert geometry.asPoint().getX() == 15.0;
         assert geometry.asPoint().getY() == 5.0;
 
-        res = execute( "MATCH (n) RETURN point({x: 1, y: 2, z: 3}) AS point" );
+        res = execute( "MATCH (n) RETURN point({x: 1, y: 2, z: 3}) AS point", neo4jDatabaseName );
         geometry = convertJsonToPolyGeometry( res.data[0][0] );
         assert geometry.getSRID() == 0;
         assert geometry.asPoint().getX() == 1.0;
         assert geometry.asPoint().getY() == 2.0;
         assert geometry.asPoint().getZ() == 3.0;
 
-        res = execute( "MATCH (n) RETURN point({longitude: 55.5, latitude: 12.2, height: 100}) AS point" );
+        res = execute( "MATCH (n) RETURN point({longitude: 55.5, latitude: 12.2, height: 100}) AS point", neo4jDatabaseName );
         geometry = convertJsonToPolyGeometry( res.data[0][0] );
         assert geometry.getSRID() == PolyGeometry.WGS_84_3D;
         assert geometry.asPoint().getX() == 55.5;

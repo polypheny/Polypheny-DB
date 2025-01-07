@@ -34,6 +34,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
@@ -456,6 +457,13 @@ public class PolyAlgUtils {
                         includeType = RexDigestIncludeType.NO_TYPE;
                     }
                 }
+                // TODO RB: Check if this fixes the unknown operands for CYPHER_POINT
+//                if (call.getOperator().getOperatorName() == OperatorName.CYPHER_POINT){
+//                    if (((RexLiteral)operand).value == null){
+//                        // Argument of CYPHER_POINT not used. We can safely skip it.
+//                        continue;
+//                    }
+//                }
                 sb.append( visitLiteral( (RexLiteral) operand, includeType ) );
             }
         }
