@@ -448,7 +448,7 @@ public class WorkflowScheduler {
             this.isAtomic = commonType != CommonType.NONE;
             this.activities = dag.vertexSet().stream().filter( n -> workflow.getActivity( n ).getConfig().getCommonType() == commonType ).collect( Collectors.toSet() );
             this.remaining.addAll( activities.stream().filter( n -> !workflow.getActivity( n ).getState().isExecuted() ).toList() );
-            this.isFinished = activities.isEmpty();
+            this.isFinished = remaining.isEmpty();
         }
 
 
