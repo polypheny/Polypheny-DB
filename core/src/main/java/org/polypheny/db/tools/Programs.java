@@ -169,7 +169,6 @@ public class Programs {
                     DocumentProjectToCalcRule.INSTANCE,
                     DocumentFilterToCalcRule.INSTANCE,
                     DocumentAggregateToAggregateRule.INSTANCE,
-                    DocumentSortToSortRule.INSTANCE,
                     SemiJoinRules.PROJECT,
                     SemiJoinRules.JOIN,
                     ScanRule.INSTANCE,
@@ -191,7 +190,8 @@ public class Programs {
                     JoinCommuteRule.INSTANCE,
                     JoinPushThroughJoinRule.RIGHT,
                     JoinPushThroughJoinRule.LEFT,
-                    SortProjectTransposeRule.INSTANCE );
+                    SortProjectTransposeRule.INSTANCE
+            );
 
 
     // private constructor for utility class

@@ -56,6 +56,7 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
@@ -94,44 +95,44 @@ public class EnumerableValues extends Values implements EnumerableAlg {
 
 
     @Override
-    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
-        /*
-          return Linq4j.asEnumerable(
-              new Object[][] {
-                  new Object[] {1, 2},
-                  new Object[] {3, 4}
-              });
-        */
-        final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
+    public Result implement(EnumerableAlgImplementor implementor, Prefer pref) {
         final BlockBuilder builder = new BlockBuilder();
-        final PhysType physType =
-                PhysTypeImpl.of(
-                        implementor.getTypeFactory(),
-                        getTupleType(),
-                        pref.preferCustom() );
-        final Type rowClass = physType.getJavaTupleType();
+        final PhysType physType = PhysTypeImpl.of(
+                implementor.getTypeFactory(),
+                getTupleType(),
+                pref.prefer(JavaTupleFormat.ARRAY)
+        );
+        final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
 
-        final List<Expression> expressions = new ArrayList<>();
+        final List<Expression> rows = new ArrayList<>();
         final List<AlgDataTypeField> fields = rowType.getFields();
-        for ( List<RexLiteral> tuple : tuples ) {
+
+        for (List<RexLiteral> tuple : tuples) {
             final List<Expression> literals = new ArrayList<>();
-            for ( Pair<AlgDataTypeField, RexLiteral> pair : Pair.zip( fields, tuple ) ) {
+            for (Pair<AlgDataTypeField, RexLiteral> pair : Pair.zip(fields, tuple)) {
                 literals.add(
                         RexToLixTranslator.translateLiteral(
-                                pair.right,
-                                pair.left.getType(),
-                                typeFactory,
-                                RexImpTable.NullAs.NULL ) );
+                                pair.right,                // Literal value
+                                pair.left.getType(),       // Corresponding type
+                                typeFactory,               // Type factory
+                                RexImpTable.NullAs.NULL    // Handle nulls
+                        )
+                );
             }
-            expressions.add( physType.record( literals ) );
+            rows.add( Expressions.newArrayInit( PolyValue.class, literals ) );
         }
+
         builder.add(
                 Expressions.return_(
                         null,
                         Expressions.call(
                                 BuiltInMethod.AS_ENUMERABLE.method,
-                                Expressions.newArrayInit( Primitive.box( rowClass ), 2, expressions ) ) ) );
-        return implementor.result( physType, builder.toBlock() );
+                                Expressions.newArrayInit( Primitive.box( PolyValue.class ), 2, rows )
+                        )
+                )
+        );
+
+        return implementor.result(physType, builder.toBlock());
     }
 
 }

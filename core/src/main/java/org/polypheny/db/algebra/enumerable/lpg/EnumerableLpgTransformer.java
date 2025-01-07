@@ -58,7 +58,6 @@ public class EnumerableLpgTransformer extends LpgTransformer implements Enumerab
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         BlockBuilder builder = new BlockBuilder();
-
         return buildInsert( implementor, pref, builder );
     }
 

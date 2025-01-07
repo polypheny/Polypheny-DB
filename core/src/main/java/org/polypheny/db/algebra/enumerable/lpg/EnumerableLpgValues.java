@@ -60,18 +60,20 @@ public class EnumerableLpgValues extends LpgValues implements EnumerableAlg {
         final PhysType physType = PhysTypeImpl.of(
                 implementor.getTypeFactory(),
                 getTupleType(),
-                pref.prefer( JavaTupleFormat.SCALAR)
+                pref.prefer( JavaTupleFormat.ARRAY)
         );
-        final List<Expression> expressions = Stream.concat(
-                nodes.stream().map( n -> Expressions.newArrayInit( PolyNode.class, n.asExpression() ) ),
-                edges.stream().map( n -> Expressions.newArrayInit( PolyEdge.class, n.asExpression() ) )
-        ).collect( Collectors.toCollection( ArrayList::new ) );
+        final Expression _nodesAndEdges = Expressions.newArrayInit(
+                PolyValue.class, Stream.concat(
+                        nodes.stream().map( PolyNode::asExpression ),
+                        edges.stream().map( PolyEdge::asExpression )
+                ).collect(Collectors.toList())
+        );
         builder.add(
                 Expressions.return_(
                         null,
                         Expressions.call(
                                 BuiltInMethod.AS_ENUMERABLE.method,
-                                Expressions.newArrayInit( Primitive.box( PolyValue.class ), 2, expressions ) ) ) );
+                                Expressions.newArrayInit( Primitive.box( PolyValue.class ), 2, _nodesAndEdges ) ) ) );
         return implementor.result( physType, builder.toBlock() );
     }
 
