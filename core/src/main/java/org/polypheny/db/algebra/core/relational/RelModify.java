@@ -63,8 +63,7 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
     /**
      * The table definition.
      */
-    @Getter
-    private final Operation operation;
+
     @Getter
     private final List<String> updateColumns;
     @Getter
@@ -100,8 +99,7 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
             List<String> updateColumns,
             List<? extends RexNode> sourceExpressions,
             boolean flattened ) {
-        super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), table, input );
-        this.operation = operation;
+        super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), table, input, operation );
         this.updateColumns = updateColumns;
         this.sourceExpressions = sourceExpressions;
         if (operation == Operation.UPDATE) {
@@ -116,24 +114,6 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
     }
 
 
-    public boolean isInsert() {
-        return operation == Operation.INSERT;
-    }
-
-
-    public boolean isUpdate() {
-        return operation == Operation.UPDATE;
-    }
-
-
-    public boolean isDelete() {
-        return operation == Operation.DELETE;
-    }
-
-
-    public boolean isMerge() {
-        return operation == Operation.MERGE;
-    }
 
 
     @Override

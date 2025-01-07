@@ -96,7 +96,7 @@ public interface NeoGraphRules {
                     modify.getTraitSet().replace( NeoConvention.INSTANCE ),
                     modify.getEntity(),
                     convert( modify.getInput(), NeoConvention.INSTANCE ),
-                    modify.operation,
+                    modify.getOperation(),
                     modify.ids,
                     modify.operations );
         }

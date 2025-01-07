@@ -112,10 +112,10 @@ public class EnumerableValues extends Values implements EnumerableAlg {
             for (Pair<AlgDataTypeField, RexLiteral> pair : Pair.zip(fields, tuple)) {
                 literals.add(
                         RexToLixTranslator.translateLiteral(
-                                pair.right,                // Literal value
-                                pair.left.getType(),       // Corresponding type
-                                typeFactory,               // Type factory
-                                RexImpTable.NullAs.NULL    // Handle nulls
+                                pair.right,                // literal value
+                                pair.left.getType(),       // corresponding type
+                                typeFactory,
+                                RexImpTable.NullAs.NULL
                         )
                 );
             }

@@ -673,7 +673,7 @@ public class MongoRules {
                     traitSet,
                     modify.entity.unwrap( MongoEntity.class ).get(),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
-                    modify.operation,
+                    modify.getOperation(),
                     modify.updates,
                     modify.removes,
                     modify.renames );
