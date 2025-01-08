@@ -19,7 +19,6 @@ package org.polypheny.db.algebra.enumerable;
 import java.util.List;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function1;
-import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -34,12 +33,11 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.transaction.locking.EntryIdentifier;
 import org.polypheny.db.transaction.locking.IdentifierUtils;
-import org.polypheny.db.transaction.locking.VersionedEntryIdentifier;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
-import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.BuiltInMethod;
 
 public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
@@ -110,10 +108,10 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
                     .getLogicalEntity( logicalId )
                     .orElseThrow();
             return input.select( row -> {
-                VersionedEntryIdentifier identifier = entity.getEntryIdentifiers()
-                        .getNextEntryIdentifier(versionId, false);
+                EntryIdentifier identifier = entity.getEntryIdentifiers()
+                        .getNextEntryIdentifier();
                 row[0] = identifier.getEntryIdentifierAsPolyLong();
-                row[1] = identifier.getVersionAsPolyLong();
+                row[1] = IdentifierUtils.getVersionAsPolyLong( versionId, false );
                 return row;
             } );
         };
@@ -126,11 +124,14 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
                     .orElseThrow();
             return input.select( row -> {
                 for ( PolyValue value : row ) {
-                    VersionedEntryIdentifier identifier = entity.getEntryIdentifiers()
-                            .getNextEntryIdentifier(versionId, false);
+                    EntryIdentifier identifier = entity.getEntryIdentifiers().getNextEntryIdentifier();
                     if ( value instanceof PolyDocument ) {
-                        ((PolyDocument) value).put( IdentifierUtils.getIdentifierKeyAsPolyString(), identifier.getEntryIdentifierAsPolyLong() );
-                        ((PolyDocument) value).put( IdentifierUtils.getVersionKeyAsPolyString(), identifier.getVersionAsPolyLong() );
+                        ((PolyDocument) value).put(
+                                IdentifierUtils.getIdentifierKeyAsPolyString(),
+                                identifier.getEntryIdentifierAsPolyLong() );
+                        ((PolyDocument) value).put(
+                                IdentifierUtils.getVersionKeyAsPolyString(),
+                                IdentifierUtils.getVersionAsPolyLong( versionId, false ) );
                     }
                 }
                 return row;
@@ -145,13 +146,12 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
                     .orElseThrow();
             return input.select( row -> {
                 for ( PolyValue value : row ) {
-                    VersionedEntryIdentifier identifier = entity.getEntryIdentifiers()
-                            .getNextEntryIdentifier(versionId, false);
+                    EntryIdentifier identifier = entity.getEntryIdentifiers().getNextEntryIdentifier();
                     if ( value instanceof GraphPropertyHolder ) {
                         ((GraphPropertyHolder) value).getProperties()
                                 .put( IdentifierUtils.getIdentifierKeyAsPolyString(), identifier.getEntryIdentifierAsPolyLong() );
                         ((GraphPropertyHolder) value).getProperties()
-                                .put( IdentifierUtils.getVersionKeyAsPolyString(), identifier.getVersionAsPolyLong() );
+                                .put( IdentifierUtils.getVersionKeyAsPolyString(), IdentifierUtils.getVersionAsPolyLong( versionId, false ) );
                     }
                 }
                 return row;
