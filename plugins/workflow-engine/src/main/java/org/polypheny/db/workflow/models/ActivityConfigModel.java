@@ -27,6 +27,7 @@ import org.polypheny.db.workflow.dag.activities.Activity.ControlStateMerger;
 public class ActivityConfigModel {
 
     boolean enforceCheckpoint;
+    int timeoutMillis; // 0 for no timeout
     String[] preferredStores;  // one entry per output
 
     @JsonProperty(required = true)
@@ -52,7 +53,7 @@ public class ActivityConfigModel {
 
 
     public static ActivityConfigModel of() {
-        return new ActivityConfigModel( false, null, CommonType.NONE, ControlStateMerger.AND_AND );
+        return new ActivityConfigModel( false, 0, null, CommonType.NONE, ControlStateMerger.AND_AND );
     }
 
 

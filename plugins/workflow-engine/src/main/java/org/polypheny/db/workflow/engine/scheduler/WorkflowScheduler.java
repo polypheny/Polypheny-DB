@@ -345,6 +345,23 @@ public class WorkflowScheduler {
             }
         }
 
+        if ( workflow.getConfig().isDropUnusedCheckpoints() ) {
+            for ( UUID n : dag.vertexSet() ) {
+                ActivityWrapper wrapper = workflow.getActivity( n );
+                if ( wrapper.getConfig().isEnforceCheckpoint() || wrapper.getState() != ActivityState.SAVED ) {
+                    continue;
+                }
+                if ( dag.getOutwardEdges( n ).stream().allMatch( execEdge -> {
+                    ActivityState state = workflow.getActivity( execEdge.getTarget() ).getState();
+                    return state.isExecuted() || state == ActivityState.SKIPPED || workflow.getEdge( execEdge ).isIgnored();
+                } )
+                ) {
+                    sm.dropCheckpoints( n ); // all successors are already executed
+                    wrapper.setState( ActivityState.FINISHED );
+                }
+            }
+        }
+
         // TODO: update entire workflow instead of dag?
         if ( !isInitialUpdate ) {
             for ( UUID n : GraphUtils.getTopologicalIterable( dag, rootId, false ) ) {

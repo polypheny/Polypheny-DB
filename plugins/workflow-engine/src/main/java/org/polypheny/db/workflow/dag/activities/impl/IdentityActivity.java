@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.dag.activities.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.algebra.AlgNode;
@@ -69,7 +70,9 @@ public class IdentityActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
-        return List.of( inTypes.get( 0 ) );
+        List<Optional<AlgDataType>> outTypes = new ArrayList<>(); // TODO: this is a workaround since inType could be null and List.of() requires non null
+        outTypes.add( inTypes.get( 0 ) );
+        return outTypes;
     }
 
 

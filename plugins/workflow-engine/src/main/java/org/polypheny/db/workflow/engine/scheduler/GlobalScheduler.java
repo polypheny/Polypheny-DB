@@ -25,6 +25,8 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -54,6 +56,7 @@ public class GlobalScheduler {
     private final Set<UUID> interruptedSessions = ConcurrentHashMap.newKeySet();
     private final ThreadPoolExecutor executor;
     private final CompletionService<ExecutionResult> completionService;
+    private final ScheduledExecutorService timeoutService;
 
     private Thread resultProcessor; // When no workflow is being executed, the thread may die and be replaced by a new thread when execution starts again
 
@@ -63,6 +66,7 @@ public class GlobalScheduler {
                 60L, TimeUnit.SECONDS,
                 new SynchronousQueue<>() );
         completionService = new ExecutorCompletionService<>( executor );
+        timeoutService = new ScheduledThreadPoolExecutor( 1 );
     }
 
 
@@ -168,6 +172,15 @@ public class GlobalScheduler {
                 }
 
                 activeSubmissions.computeIfAbsent( sessionId, k -> ConcurrentHashMap.newKeySet() ).add( submission );
+
+                int timeoutMillis = submission.getTimeoutMillis();
+                if ( timeoutMillis > 0 ) {
+                    timeoutService.schedule( () -> {
+                        if ( submission.getInfo().getState() == ExecutionState.EXECUTING ) {
+                            submission.getExecutor().interrupt();
+                        }
+                    }, Math.max( 50, timeoutMillis ), TimeUnit.MILLISECONDS ); // minimum timeout to ensure executor was actually called
+                }
 
                 ExecutionResult result;
                 try {

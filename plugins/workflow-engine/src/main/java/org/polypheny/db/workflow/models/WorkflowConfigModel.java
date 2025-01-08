@@ -29,6 +29,8 @@ public class WorkflowConfigModel {
     Map<DataModel, String> preferredStores;
     boolean fusionEnabled;
     boolean pipelineEnabled;
+    int timeoutMillis; // 0 for no timeout
+    boolean dropUnusedCheckpoints;
     int maxWorkers;
     int pipelineQueueCapacity;
     // TODO: config value for changing behavior of deleting created checkpoints
@@ -41,6 +43,8 @@ public class WorkflowConfigModel {
                         DataModel.GRAPH, WorkflowManager.DEFAULT_CHECKPOINT_ADAPTER ),
                 true,
                 true,
+                0,
+                false,
                 1,
                 1000
         );

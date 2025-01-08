@@ -59,6 +59,8 @@ public class WorkflowUtils {
                 Map.of( DataModel.RELATIONAL, "hsqldb", DataModel.DOCUMENT, "hsqldb", DataModel.GRAPH, "hsqldb" ),
                 fusionEnabled,
                 pipelineEnabled,
+                0,
+                false,
                 maxWorkers,
                 10 // low on purpose to observe blocking
         );
@@ -429,7 +431,7 @@ public class WorkflowUtils {
 
 
     private static ActivityModel getCommonActivity( String type, Map<String, JsonNode> settings, CommonType commonType ) {
-        ActivityConfigModel config = new ActivityConfigModel( false, null, commonType, ControlStateMerger.AND_AND );
+        ActivityConfigModel config = new ActivityConfigModel( false, 0, null, commonType, ControlStateMerger.AND_AND );
         return new ActivityModel( type, UUID.randomUUID(), settings, config, RenderModel.of() );
     }
 

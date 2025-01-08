@@ -433,6 +433,22 @@ public class WorkflowImpl implements Workflow {
 
 
     @Override
+    public int getTimeoutMillis( Set<UUID> activities ) {
+        int baseTimeout = Math.max( 0, config.getTimeoutMillis() );
+        int timeout = 0;
+        for ( UUID activityId : activities ) {
+            int activityTimeout = Math.max( 0, getActivity( activityId ).getConfig().getTimeoutMillis() );
+            if ( activityTimeout > 0 ) { // override base timeout
+                timeout += activityTimeout;
+            } else {
+                timeout += baseTimeout; // activity cannot disable base timeout
+            }
+        }
+        return timeout;
+    }
+
+
+    @Override
     public AttributedDirectedGraph<UUID, ExecutionEdge> toDag() {
         AttributedDirectedGraph<UUID, ExecutionEdge> dag = AttributedDirectedGraph.create( new ExecutionEdgeFactory() );
 
