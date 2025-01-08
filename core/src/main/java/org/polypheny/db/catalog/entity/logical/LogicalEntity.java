@@ -34,7 +34,6 @@ import org.polypheny.db.transaction.locking.EntryIdentifierRegistry;
 public abstract class LogicalEntity extends Entity {
 
     public EntryIdentifierRegistry entryIdentifiers;
-    public CommitInstantsLog entryCommitInstantsLog;
 
 
     public LogicalEntity(
@@ -45,8 +44,7 @@ public abstract class LogicalEntity extends Entity {
             DataModel dataModel,
             boolean modifiable ) {
         super( id, name, namespaceId, type, dataModel, modifiable );
-        this.entryIdentifiers = new EntryIdentifierRegistry( this );
-        this.entryCommitInstantsLog = new CommitInstantsLog();
+        this.entryIdentifiers = new EntryIdentifierRegistry(this);
     }
 
 
