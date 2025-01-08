@@ -18,33 +18,26 @@ package org.polypheny.db.transaction.locking;
 
 import java.util.Objects;
 import lombok.Getter;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
 @Getter
-public class VersionedEntryIdentifier {
+public class EntryIdentifier {
 
-    private final long entityId;
+    private final Entity entity;
     private final long entryIdentifier;
-    private final long version;
 
 
-    public VersionedEntryIdentifier( long entityId, long entryIdentifier, long version, boolean isComitted ) {
-        this.entityId = entityId;
+
+    public EntryIdentifier( Entity entity, long entryIdentifier ) {
+        this.entity = entity;
         this.entryIdentifier = entryIdentifier;
-        this.version = isComitted ? version : version * -1;
-    }
-
-
-    public VersionedEntryIdentifier( long entityId, long entryIdentifier ) {
-        this.entityId = entityId;
-        this.entryIdentifier = entryIdentifier;
-        this.version = IdentifierUtils.MISSING_VERSION;
     }
 
 
     @Override
     public int hashCode() {
-        return Objects.hash( entryIdentifier, version );
+        return Objects.hash( entryIdentifier );
     }
 
 
@@ -56,8 +49,8 @@ public class VersionedEntryIdentifier {
         if ( other == null || getClass() != other.getClass() ) {
             return false;
         }
-        VersionedEntryIdentifier that = (VersionedEntryIdentifier) other;
-        return entryIdentifier == that.entryIdentifier && version == that.version;
+        EntryIdentifier that = (EntryIdentifier) other;
+        return entryIdentifier == that.entryIdentifier;
     }
 
 
@@ -65,15 +58,9 @@ public class VersionedEntryIdentifier {
         return PolyLong.of( entryIdentifier );
     }
 
-
-    public PolyLong getVersionAsPolyLong() {
-        return PolyLong.of( version );
-    }
-
-
     @Override
     public String toString() {
-        return "VersionedEntryIdentifier{entity=" + entityId + ", entryIdentifier=" + entryIdentifier + ", version=" + version + '}';
+        return "EntryIdentifier{entity=" + entity.getId() + ", entryIdentifier=" + entryIdentifier + '}';
     }
 
 }

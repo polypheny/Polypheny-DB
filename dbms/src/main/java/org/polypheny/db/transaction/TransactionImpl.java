@@ -141,7 +141,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private Set<Entity> writtenEntities = new HashSet<>();
 
-    private Set<VersionedEntryIdentifier> writeSet = new HashSet<>(); // This only contains entries if the transaction involves entities in MVCC mode
+    private Set<Entity> writtenEntities = new HashSet<>();
 
 
     TransactionImpl(
@@ -298,6 +298,53 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         // Handover information about commit to Materialized Manager
         MaterializedViewManager.getInstance().updateCommittedXid( xid );
+
+    }
+
+    private boolean validateWriteSet() {
+        /*
+        ToDo TH: get the write set based on the transaction id and the written entities and compare to other comitted entities
+
+        1) get read set
+
+        pseudocode:
+        writtenIds = []
+        for each entity in writtenEntities:
+             writtenIds.add (SELECT _eid, _vid FROM entity WHERE _vid = TxID;
+
+        2) get latest committed version
+            SELECT MAX(_vid) AS max_vid
+            FROM main_table
+            WHERE _eid IN (?, ?, ?, ...);
+
+        pseudocode:
+        maxVersion = 0
+        for each entity in writtenEntities:
+            maxVersion.updateIfGreater(
+                SELECT MAX(_vid) AS max_vid
+                FROM entity
+                WHERE _eid IN (?, ?, ?, ...); <-- those are the writtenIds set
+            )
+
+         return maxVid <= TxID
+         */
+
+        return true;
+    }
+
+    private void updateCommitInstantLog() {
+        /*
+        ToDo TH: update the vids of each written entity
+
+        1) get read set as parameter for efficiency
+        2) flip the sign of each of the -vid entries to vid
+
+        pseudocode:
+        for each entity in writeSet:
+            UPDATE entity
+            SET _vid = TxCommitTimestamp
+            WHERE _vid = -TxID;
+         */
     }
 
 
@@ -464,10 +511,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     }
 
 
-    @Override
-    public long getTransactionTimestamp() {
-        return transactionTimestamp;
-    }
 
 
     @Override

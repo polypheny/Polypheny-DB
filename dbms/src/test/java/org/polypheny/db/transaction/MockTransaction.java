@@ -257,7 +257,7 @@ public class MockTransaction implements Transaction {
 
 
     @Override
-    public void addWrittenEntity( VersionedEntryIdentifier entryIdentifier ) {
+    public void addWrittenEntity( EntryIdentifier entryIdentifier ) {
 
     }
 }
