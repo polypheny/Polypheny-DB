@@ -2,36 +2,31 @@ package org.polypheny.db.transaction.locking;
 
 import java.util.Set;
 import java.util.TreeSet;
+import org.polypheny.db.catalog.entity.Entity;
 
 public class EntryIdentifierRegistry {
 
     private static final Long MAX_IDENTIFIER_VALUE = Long.MAX_VALUE;
     private final TreeSet<IdentifierInterval> availableIdentifiers;
 
-    private final long entityId;
+    private final Entity entity;
 
 
-    public EntryIdentifierRegistry(long entityId) {
+    public EntryIdentifierRegistry(Entity entity) {
         this.availableIdentifiers = new TreeSet<>();
         this.availableIdentifiers.add( new IdentifierInterval( IdentifierUtils.MISSING_IDENTIFIER + 1, MAX_IDENTIFIER_VALUE ) );
-        this.entityId = entityId;
+        this.entity = entity;
     }
 
 
-    public EntryIdentifierRegistry(long entityId, long maxIdentifierValue ) {
+    public EntryIdentifierRegistry(Entity entity, long maxIdentifierValue ) {
         this.availableIdentifiers = new TreeSet<>();
         this.availableIdentifiers.add( new IdentifierInterval( IdentifierUtils.MISSING_IDENTIFIER + 1, maxIdentifierValue ) );
-        this.entityId = entityId;
+        this.entity = entity;
     }
 
-    public VersionedEntryIdentifier getNextEntryIdentifier(long version, boolean isCommitted) {
-        long nextIdentifier = getNextIdentifier();
-        return new VersionedEntryIdentifier(entityId, nextIdentifier, version, isCommitted );
-    }
-
-
-    public VersionedEntryIdentifier getNextEntryIdentifier() {
-        return new VersionedEntryIdentifier(entityId, getNextIdentifier() );
+    public EntryIdentifier getNextEntryIdentifier() {
+        return new EntryIdentifier(entity, getNextIdentifier() );
     }
 
     public void releaseEntryIdentifiers( Set<Long> identifiers ) {
