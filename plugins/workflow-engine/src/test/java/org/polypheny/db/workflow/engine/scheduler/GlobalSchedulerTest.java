@@ -271,7 +271,6 @@ class GlobalSchedulerTest {
     void concurrentActivityExecutionTest() throws Exception {
         int nBranches = 10;
         int delay = 1000;
-        assert nBranches <= GlobalScheduler.GLOBAL_WORKERS;
 
         Workflow workflow = WorkflowUtils.getParallelBranchesWorkflow( nBranches, delay, nBranches );
         List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
@@ -288,7 +287,6 @@ class GlobalSchedulerTest {
     void concurrentWorkflowExecutionTest() throws Exception {
         int nWorkflows = 10;
         int delay = 1000;
-        assert nWorkflows <= GlobalScheduler.GLOBAL_WORKERS;
 
         List<Workflow> workflows = new ArrayList<>();
         List<StorageManager> storageManagers = new ArrayList<>();
