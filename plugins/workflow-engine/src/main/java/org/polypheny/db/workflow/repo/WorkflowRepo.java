@@ -227,7 +227,7 @@ public interface WorkflowRepo {
         }
 
 
-        WorkflowRepoException( String message, Throwable cause ) {
+        public WorkflowRepoException( String message, Throwable cause ) {
             this( message, cause, HttpCode.INTERNAL_SERVER_ERROR );
         }
 

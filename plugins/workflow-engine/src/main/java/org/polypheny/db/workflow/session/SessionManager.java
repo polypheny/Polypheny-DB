@@ -60,7 +60,11 @@ public class SessionManager {
 
     public UUID createUserSession( UUID wId, int version ) throws WorkflowRepoException {
         WorkflowModel model = repo.readVersion( wId, version );
-        return registerUserSession( WorkflowImpl.fromModel( model ), wId, version );
+        try {
+            return registerUserSession( WorkflowImpl.fromModel( model ), wId, version );
+        } catch ( Exception e ) {
+            throw new WorkflowRepoException( "Unable to instantiate workflow", e );
+        }
     }
 
 

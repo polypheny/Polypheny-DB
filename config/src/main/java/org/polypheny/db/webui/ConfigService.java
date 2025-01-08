@@ -112,6 +112,13 @@ public class ConfigService implements ConfigListener {
         Config c = cm.getConfig( entry.getKey() );
         switch ( c.getConfigType() ) {
             case "ConfigInteger":
+                if ( entry.getValue() instanceof Integer i ) {
+                    if ( !c.setInt( i ) ) {
+                        allValid = false;
+                        appendError( feedback, entry, c );
+                    }
+                    break;
+                }
                 Double d = (Double) entry.getValue();
                 if ( !c.setInt( d.intValue() ) ) {
                     allValid = false;

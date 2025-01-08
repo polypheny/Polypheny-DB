@@ -64,7 +64,6 @@ public class WorkflowImpl implements Workflow {
     private final Map<UUID, ActivityWrapper> activities;
     private final Map<Pair<UUID, UUID>, List<Edge>> edges;
     @Getter
-    @Setter
     private WorkflowConfigModel config;
     @Getter
     @Setter
@@ -88,7 +87,8 @@ public class WorkflowImpl implements Workflow {
     }
 
 
-    public static Workflow fromModel( WorkflowModel model ) {
+    public static Workflow fromModel( WorkflowModel model ) throws Exception {
+        model.validate();
 
         Map<UUID, ActivityWrapper> activities = new ConcurrentHashMap<>();
         Map<Pair<UUID, UUID>, List<Edge>> edges = new ConcurrentHashMap<>();
@@ -194,6 +194,13 @@ public class WorkflowImpl implements Workflow {
             }
         }
         return null;
+    }
+
+
+    @Override
+    public void setConfig( WorkflowConfigModel config ) {
+        config.validate();
+        this.config = config;
     }
 
 

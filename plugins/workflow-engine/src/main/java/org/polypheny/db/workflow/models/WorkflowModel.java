@@ -57,4 +57,9 @@ public class WorkflowModel {
         this.state = null;
     }
 
+
+    public void validate() throws Exception {
+        this.config.validate();
+    }
+
 }

@@ -502,6 +502,14 @@ public enum RuntimeConfig {
             "pluginsGroup"
     ),
 
+    WORKFLOWS_WORKERS(
+            "workflows/globalWorkers",
+            "The maximum number of worker threads over all workflows. Changes apply as soon as all currently executing workflows have finished.",
+            20,
+            ConfigType.INTEGER,
+            "workflowsSettingsGroup"
+    ),
+
     BLOCKED_PLUGINS(
             "runtime/blockedPlugins",
             "All plugins, which are blocked by default.",
@@ -627,6 +635,15 @@ public enum RuntimeConfig {
         final WebUiGroup pluginGroup = new WebUiGroup( "pluginsGroup", pluginPage.getId() );
         configManager.registerWebUiPage( pluginPage );
         configManager.registerWebUiGroup( pluginGroup );
+
+        // Workflows Plugin
+        final WebUiPage workflowsPage = new WebUiPage(
+                "workflowsPage",
+                "Workflows",
+                "Settings related to the Workflows plugin." );
+        configManager.registerWebUiGroup(
+                new WebUiGroup( "workflowsSettingsGroup", workflowsPage.getId() ).withTitle( "Execution" ) );
+        configManager.registerWebUiPage( workflowsPage );
 
         // UI specific setting
         final WebUiPage uiSettingsPage = new WebUiPage(

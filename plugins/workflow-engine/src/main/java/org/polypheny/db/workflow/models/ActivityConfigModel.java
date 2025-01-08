@@ -57,12 +57,9 @@ public class ActivityConfigModel {
 
 
     public enum CommonType {
-        // TODO: scheduler must take EXTRACT and LOAD "transactions" into account (these activities are executed first / last and succeed or fail atomically). LOAD can only start when EXTRACT has committed.
-        // Any predecessor of a EXTRACT must also be a EXTRACT
-        // Any successor of a LOAD must also be a LOAD
         NONE,
-        EXTRACT, // only relevant for EXTRACT + TRANSFORM category activities
-        LOAD // only relevant for LOAD + TRANSFORM category activities
+        EXTRACT,
+        LOAD
     }
 
 }

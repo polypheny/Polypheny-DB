@@ -25,7 +25,6 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +32,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
@@ -47,19 +47,19 @@ import org.polypheny.db.workflow.models.responses.WsResponse;
 public class GlobalScheduler {
 
     private static GlobalScheduler INSTANCE;
-    public static final int GLOBAL_WORKERS = 20; // TODO: use config value, allow to change it when no scheduler is running
+    private int globalWorkerCount = Math.max( 1, RuntimeConfig.WORKFLOWS_WORKERS.getInteger() );
 
     private final Map<UUID, WorkflowScheduler> schedulers = new HashMap<>();
     private final Map<UUID, Set<ExecutionSubmission>> activeSubmissions = new ConcurrentHashMap<>(); // used for interrupting the execution
     private final Set<UUID> interruptedSessions = ConcurrentHashMap.newKeySet();
-    private final ExecutorService executor;
+    private final ThreadPoolExecutor executor;
     private final CompletionService<ExecutionResult> completionService;
 
     private Thread resultProcessor; // When no workflow is being executed, the thread may die and be replaced by a new thread when execution starts again
 
 
     private GlobalScheduler() {
-        executor = new ThreadPoolExecutor( 0, GLOBAL_WORKERS,
+        executor = new ThreadPoolExecutor( 0, globalWorkerCount,
                 60L, TimeUnit.SECONDS,
                 new SynchronousQueue<>() );
         completionService = new ExecutorCompletionService<>( executor );
@@ -86,10 +86,14 @@ public class GlobalScheduler {
         }
         interruptedSessions.remove( sessionId );
         ExecutionMonitor monitor = new ExecutionMonitor( workflow, targetActivity, monitoringCallback );
+
+        if ( schedulers.isEmpty() ) {
+            updateWorkerCount(); // only update thread pool size if nothing is being executed
+        }
         WorkflowScheduler scheduler;
         List<ExecutionSubmission> submissions;
         try {
-            scheduler = new WorkflowScheduler( workflow, sm, monitor, GLOBAL_WORKERS, targetActivity );
+            scheduler = new WorkflowScheduler( workflow, sm, monitor, globalWorkerCount, targetActivity );
             submissions = scheduler.startExecution();
         } catch ( Exception e ) {
             workflow.setState( WorkflowState.IDLE );
@@ -222,6 +226,15 @@ public class GlobalScheduler {
         } );
         t.start();
         return t;
+    }
+
+
+    private void updateWorkerCount() {
+        log.warn( "Updating worker count from " + globalWorkerCount + " to " + Math.max( 1, RuntimeConfig.WORKFLOWS_WORKERS.getInteger() ) );
+        globalWorkerCount = Math.max( 1, RuntimeConfig.WORKFLOWS_WORKERS.getInteger() );
+        if ( !executor.isShutdown() ) {
+            executor.setMaximumPoolSize( globalWorkerCount );
+        }
     }
 
 }

@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.models;
 
 import java.util.Map;
 import lombok.Value;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.workflow.WorkflowManager;
 
@@ -43,6 +44,16 @@ public class WorkflowConfigModel {
                 1,
                 1000
         );
+    }
+
+
+    public void validate() throws GenericRuntimeException {
+        if ( maxWorkers <= 0 ) {
+            throw new GenericRuntimeException( "Max worker count must be greater than 0" );
+        }
+        if ( pipelineQueueCapacity <= 0 ) {
+            throw new GenericRuntimeException( "Pipeline queue capacity must be greater than 0" );
+        }
     }
 
 }

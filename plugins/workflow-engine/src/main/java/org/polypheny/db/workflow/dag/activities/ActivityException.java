@@ -32,6 +32,15 @@ public class ActivityException extends Exception {
 
 
     @Override
+    public String getMessage() {
+        if ( activity != null ) {
+            return activity.getType() + ": " + super.getMessage();
+        }
+        return super.getMessage();
+    }
+
+
+    @Override
     public String toString() {
         if ( activity != null ) {
             return activity.getType() + ":" + activity.getId() + ": " + super.toString();
@@ -57,6 +66,12 @@ public class ActivityException extends Exception {
             return super.toString() + " (Setting Key: " + settingKey + ")";
         }
 
+
+        @Override
+        public String getMessage() {
+            return super.getMessage() + " (Setting: " + settingKey + ")";
+        }
+
     }
 
 
@@ -79,6 +94,12 @@ public class ActivityException extends Exception {
         @Override
         public String toString() {
             return super.toString() + " (Input Index: " + index + ")";
+        }
+
+
+        @Override
+        public String getMessage() {
+            return super.getMessage() + " (Index: " + index + ")";
         }
 
     }

@@ -63,7 +63,11 @@ public class WorkflowUtils {
                 10 // low on purpose to observe blocking
         );
         Map<String, JsonNode> variables = Map.of( "creationTime", TextNode.valueOf( LocalDateTime.now().format( DateTimeFormatter.ISO_DATE_TIME ) ) );
-        return WorkflowImpl.fromModel( new WorkflowModel( activities, edges, config, variables ) );
+        try {
+            return WorkflowImpl.fromModel( new WorkflowModel( activities, edges, config, variables ) );
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
@@ -387,9 +391,9 @@ public class WorkflowUtils {
                 getDocumentWorkflow( 5 ),
                 getLpgWorkflow( 5, 0.5, false )
         );
-        for (Workflow wf : workflows) {
+        for ( Workflow wf : workflows ) {
             try {
-                System.out.println(mapper.writeValueAsString( wf.toModel( false ) ));
+                System.out.println( mapper.writeValueAsString( wf.toModel( false ) ) );
             } catch ( JsonProcessingException e ) {
                 throw new RuntimeException( e );
             }
