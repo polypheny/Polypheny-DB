@@ -33,7 +33,7 @@ public class CommitInstantsLogTest {
 
     @Test
     void testSetOrUpdateLastCommitAndGetLastCommit() {
-        VersionedEntryIdentifier identifier = new VersionedEntryIdentifier(1L, 1L);
+        EntryIdentifier identifier = new EntryIdentifier(1L, 1L);
         long instant = 1000L;
 
         log.setOrUpdateLastCommit(identifier, instant);
@@ -44,7 +44,7 @@ public class CommitInstantsLogTest {
 
     @Test
     void testSetOrUpdateLastCommitOverridesPreviousCommit() {
-        VersionedEntryIdentifier identifier = new VersionedEntryIdentifier(1L, 1L);
+        EntryIdentifier identifier = new EntryIdentifier(1L, 1L);
         long firstInstant = 1000L;
         long secondInstant = 2000L;
 
@@ -57,7 +57,7 @@ public class CommitInstantsLogTest {
 
     @Test
     void testGetLastCommitForNonexistentEntry() {
-        VersionedEntryIdentifier identifier = new VersionedEntryIdentifier(1L, 1L);
+        EntryIdentifier identifier = new EntryIdentifier(1L, 1L);
 
         long retrievedInstant = log.getLastCommit(identifier);
 
@@ -67,7 +67,7 @@ public class CommitInstantsLogTest {
 
     @Test
     void testRemoveEntry() {
-        VersionedEntryIdentifier identifier = new VersionedEntryIdentifier(1L, 1L);
+        EntryIdentifier identifier = new EntryIdentifier(1L, 1L);
         long instant = 1000L;
 
         log.setOrUpdateLastCommit(identifier, instant);
@@ -81,7 +81,7 @@ public class CommitInstantsLogTest {
 
     @Test
     void testRemoveEntryForNonexistentEntry() {
-        VersionedEntryIdentifier identifier = new VersionedEntryIdentifier(1L, 1L);
+        EntryIdentifier identifier = new EntryIdentifier(1L, 1L);
 
         assertDoesNotThrow(() -> log.removeEntry(identifier),
                 "Removing a nonexistent entry should not throw an exception.");
@@ -89,10 +89,10 @@ public class CommitInstantsLogTest {
 
     @Test
     void testMultipleEntries() {
-        VersionedEntryIdentifier identifier1 = new VersionedEntryIdentifier(1L, 1L);
+        EntryIdentifier identifier1 = new EntryIdentifier(1L, 1L);
         long instant1 = 1000L;
 
-        VersionedEntryIdentifier identifier2 = new VersionedEntryIdentifier(2L, 2L);
+        EntryIdentifier identifier2 = new EntryIdentifier(2L, 2L);
         long instant2 = 2000L;
 
         log.setOrUpdateLastCommit(identifier1, instant1);

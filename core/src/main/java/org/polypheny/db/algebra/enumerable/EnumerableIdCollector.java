@@ -35,7 +35,6 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManagerProvider;
 import org.polypheny.db.transaction.locking.IdentifierUtils;
-import org.polypheny.db.transaction.locking.VersionedEntryIdentifier;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -114,7 +113,8 @@ public class EnumerableIdCollector extends IdentifierCollector implements Enumer
                 if ( !(row[0] instanceof PolyLong entryIdentifier) ) {
                     return;
                 }
-                transaction.addWrittenEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier.getValue() ) );
+                //ToDo TH: decide what to do here one read sets are used
+                //transaction.addWrittenEntity( new EntryIdentifier( logicalId, entryIdentifier.getValue() ) );
             } );
             return input;
         };
@@ -132,7 +132,8 @@ public class EnumerableIdCollector extends IdentifierCollector implements Enumer
                     if ( !(identifier instanceof PolyLong entryIdentifier) ) {
                         continue;
                     }
-                    transaction.addWrittenEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier.getValue() ) );
+                    //ToDo TH: decide what to do here one read sets are used
+                    //transaction.addWrittenEntity( new EntryIdentifier( logicalId, entryIdentifier.getValue() ) );
                 }
             } );
             return input;
@@ -146,7 +147,8 @@ public class EnumerableIdCollector extends IdentifierCollector implements Enumer
                 PolyValue value = row[0];
                 if ( !(value instanceof PolyGraph graph) ) {
                     long entryIdentifier = getIdentifierFromPropertyHolder( (GraphPropertyHolder) value );
-                    transaction.addWrittenEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier ) );
+                    //ToDo TH: decide what to do here one read sets are used
+                    //transaction.addWrittenEntity( new EntryIdentifier( logicalId, entryIdentifier ) );
                     return;
                 }
                 Stream.concat(
@@ -154,7 +156,8 @@ public class EnumerableIdCollector extends IdentifierCollector implements Enumer
                         graph.getEdges().values().stream().map( n -> (GraphPropertyHolder) n )
                 ).forEach( p -> {
                     long entryIdentifier = getIdentifierFromPropertyHolder( p );
-                    transaction.addWrittenEntity( new VersionedEntryIdentifier( logicalId, entryIdentifier ) );
+                    //ToDo TH: decide what to do here one read sets are used
+                    //transaction.addWrittenEntity( new EntryIdentifier( logicalId, entryIdentifier ) );
                 } );
             } );
             return input;

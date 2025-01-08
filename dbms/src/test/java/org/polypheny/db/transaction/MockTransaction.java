@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -33,9 +32,9 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.transaction.locking.EntryIdentifier;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
-import org.polypheny.db.transaction.locking.VersionedEntryIdentifier;
 
 public class MockTransaction implements Transaction {
 
@@ -247,7 +246,7 @@ public class MockTransaction implements Transaction {
 
 
     @Override
-    public void addWrittenEntity( VersionedEntryIdentifier entryIdentifier ) {
+    public void addWrittenEntity( EntryIdentifier entryIdentifier ) {
 
     }
 }

@@ -43,9 +43,9 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.EnforcementInformation;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.LogicalUser;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -62,7 +62,7 @@ import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.locking.Lockable;
-import org.polypheny.db.transaction.locking.VersionedEntryIdentifier;
+import org.polypheny.db.transaction.locking.MonotonicNumberSource;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
@@ -74,10 +74,11 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private static final AtomicLong TRANSACTION_COUNTER = new AtomicLong();
 
-    private long transactionTimestamp;
-
     @Getter
     private final long id;
+
+    @Getter
+    private final long sequenceNumber;
 
     @Getter
     private final PolyXid xid;
@@ -128,7 +129,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Getter
     private Set<Lockable> lockedEntities = new HashSet<>();
 
-    private Set<VersionedEntryIdentifier> writeSet = new HashSet<>(); // This only contains entries if the transaction involves entities in MVCC mode
+    private Set<Entity> writtenEntities = new HashSet<>();
 
 
     TransactionImpl(
@@ -147,8 +148,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         this.analyze = analyze;
         this.origin = origin;
         this.flavor = flavor;
-        // ToDo TH: temporary dummy to get some values to work with
-        this.transactionTimestamp = System.nanoTime();
+        this.sequenceNumber = MonotonicNumberSource.getInstance().getNextNumber();
     }
 
 
@@ -178,8 +178,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         }
         boolean okToCommit = true;
 
-        if ( !writeSet.isEmpty() ) {
-            okToCommit &= validateReadSet();
+        if ( !writtenEntities.isEmpty() ) {
+            okToCommit &= validateWriteSet();
         }
 
         Pair<Boolean, String> isValid = catalog.checkIntegrity();
@@ -254,21 +254,50 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     }
 
-    private boolean validateReadSet() {
-        for ( VersionedEntryIdentifier identifier : writeSet ) {
-            LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( identifier.getEntityId() ).orElseThrow();
-            if (entity.getEntryCommitInstantsLog().getLastCommit( identifier ) > transactionTimestamp) {
-                return false;
-            }
-        }
+    private boolean validateWriteSet() {
+        /*
+        ToDo TH: get the write set based on the transaction id and the written entities and compare to other comitted entities
+
+        1) get read set
+
+        pseudocode:
+        writtenIds = []
+        for each entity in writtenEntities:
+             writtenIds.add (SELECT _eid, _vid FROM entity WHERE _vid = TxID;
+
+        2) get latest committed version
+            SELECT MAX(_vid) AS max_vid
+            FROM main_table
+            WHERE _eid IN (?, ?, ?, ...);
+
+        pseudocode:
+        maxVersion = 0
+        for each entity in writtenEntities:
+            maxVersion.updateIfGreater(
+                SELECT MAX(_vid) AS max_vid
+                FROM entity
+                WHERE _eid IN (?, ?, ?, ...); <-- those are the writtenIds set
+            )
+
+         return maxVid <= TxID
+         */
+
         return true;
     }
 
     private void updateCommitInstantLog() {
-        for (VersionedEntryIdentifier identifier : writeSet ) {
-            LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( identifier.getEntityId() ).orElseThrow();
-            entity.getEntryCommitInstantsLog().setOrUpdateLastCommit( identifier, transactionTimestamp );
-        }
+        /*
+        ToDo TH: update the vids of each written entity
+
+        1) get read set as parameter for efficiency
+        2) flip the sign of each of the -vid entries to vid
+
+        pseudocode:
+        for each entity in writeSet:
+            UPDATE entity
+            SET _vid = TxCommitTimestamp
+            WHERE _vid = -TxID;
+         */
     }
 
 
@@ -422,16 +451,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     }
 
 
-    @Override
-    public void addWrittenEntity( VersionedEntryIdentifier identifier ) {
-        writeSet.add( identifier );
-    }
 
-
-    @Override
-    public long getTransactionTimestamp() {
-        return transactionTimestamp;
-    }
+    
 
 
     @Override
