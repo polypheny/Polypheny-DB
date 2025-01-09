@@ -112,21 +112,14 @@ public class ConfigService implements ConfigListener {
         Config c = cm.getConfig( entry.getKey() );
         switch ( c.getConfigType() ) {
             case "ConfigInteger":
-                if ( entry.getValue() instanceof Integer i ) {
-                    if ( !c.setInt( i ) ) {
-                        allValid = false;
-                        appendError( feedback, entry, c );
-                    }
-                    break;
-                }
-                Double d = (Double) entry.getValue();
-                if ( !c.setInt( d.intValue() ) ) {
+                Number n = (Number) entry.getValue();
+                if ( !c.setInt( n.intValue() ) ) {
                     allValid = false;
                     appendError( feedback, entry, c );
                 }
                 break;
             case "ConfigDouble":
-                if ( !c.setDouble( (double) entry.getValue() ) ) {
+                if ( !c.setDouble( ((Number) entry.getValue()).doubleValue() ) ) {
                     allValid = false;
                     appendError( feedback, entry, c );
                 }
@@ -138,7 +131,7 @@ public class ConfigService implements ConfigListener {
                 }
                 break;
             case "ConfigLong":
-                if ( !c.setLong( (long) entry.getValue() ) ) {
+                if ( !c.setLong( ((Number) entry.getValue()).longValue() ) ) {
                     allValid = false;
                     appendError( feedback, entry, c );
                 }
