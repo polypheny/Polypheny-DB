@@ -200,7 +200,9 @@ public class LanguageManager {
                     }
 
                     AlgRoot root = processor.translate( statement, parsed );
-                    root = new AlgTreeRewriter( transaction ).process( root );
+                    if ( !context.isMvccInternal ) {
+                        root = new AlgTreeRewriter( transaction ).process( root );
+                    }
 
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Translation" );

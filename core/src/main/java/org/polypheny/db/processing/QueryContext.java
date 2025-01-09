@@ -63,11 +63,13 @@ public class QueryContext {
     boolean usesCache = true;
 
     @Builder.Default
+    public boolean isMvccInternal = false;
+
+    @Builder.Default
     long userId = Catalog.defaultUserId;
 
     @Builder.Default
     Statement statement = null;
-
 
     @NotNull
     String origin;
