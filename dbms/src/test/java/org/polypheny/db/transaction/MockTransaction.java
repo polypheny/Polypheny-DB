@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -257,7 +258,14 @@ public class MockTransaction implements Transaction {
 
 
     @Override
-    public void addWrittenEntity( EntryIdentifier entryIdentifier ) {
-
+    public long getSequenceNumber() {
+        return 0;
     }
+
+
+    @Override
+    public void addWrittenEntitiy( Entity entity ) {
+        return;
+    }
+
 }
