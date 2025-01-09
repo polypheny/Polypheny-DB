@@ -41,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -58,6 +59,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.util.ConstraintCondition;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -65,10 +67,13 @@ import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.processing.ConstraintEnforceAttacher;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
+import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.MonotonicNumberSource;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
@@ -220,6 +225,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         if ( !writtenEntities.isEmpty() ) {
             okToCommit &= validateWriteSet();
+            updateWrittenVersionIds();
         }
 
         Pair<Boolean, String> isValid = catalog.checkIntegrity();
@@ -284,8 +290,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // Free resources hold by statements
         statements.forEach( Statement::close );
 
-        updateCommitInstantLog();
-
         // Release locks
         releaseAllLocks();
         // Remove transaction
@@ -296,40 +300,71 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     }
 
     private boolean validateWriteSet() {
-        /*
-        ToDo TH: get the write set based on the transaction id and the written entities and compare to other comitted entities
 
-        pseudocode:
-        for each entity in writtenEntities:
-            max = String query = """
-                SELECT MAX(_vid) AS max_vid
-                FROM entity
-                WHERE _eid IN (
-                SELECT _eid FROM main_table WHERE _vid = ?
+        String queryTemplate = """
+            SELECT MAX(_vid) AS max_vid
+            FROM %s
+            WHERE _eid IN (
+                SELECT _eid FROM %s WHERE _vid = %d
+            )
             """;
 
-            if (max >= TxId)
-                return false
+        long maxVersion = 0;
 
-        return true
-         */
+        for (Entity writtenEntity : writtenEntities) {
+            String query = String.format(queryTemplate, writtenEntity.getName(), writtenEntity.getName(), getSequenceNumber());
+            ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
+                    QueryContext.builder()
+                            .query( query )
+                            .language( QueryLanguage.from( "sql" ) )
+                            .origin( this.getOrigin() )
+                            .namespaceId( writtenEntity.getNamespaceId() )
+                            .transactionManager( this.getTransactionManager() )
+                            .isMvccInternal( true )
+                            .build(), this ).get( 0 );
 
-        return true;
+            if ( context.getException().isPresent() ) {
+                //ToDo TH: properly handle this
+                throw new RuntimeException( context.getException().get() );
+            }
+
+            ResultIterator iterator = context.execute( context.getStatement() ).getIterator();
+            List<List<PolyValue>> res = iterator.getNextBatch();
+            maxVersion = Math.max(maxVersion, res.get(0).get(0).asLong().getValue() ); // Make this save
+            iterator.close();
+        }
+
+        return maxVersion <= getSequenceNumber();
     }
 
-    private void updateCommitInstantLog() {
-        /*
-        ToDo TH: update the vids of each written entity
+    private void updateWrittenVersionIds() {
+        String queryTemplate = """
+        UPDATE %s
+        SET _vid = %d
+        WHERE _vid = %d
+        """;
 
-        1) get read set as parameter for efficiency
-        2) flip the sign of each of the -vid entries to vid
+        long commitSequenceNumber = MonotonicNumberSource.getInstance().getNextNumber();
 
-        pseudocode:
-        for each entity in writeSet:
-            UPDATE entity
-            SET _vid = TxCommitTimestamp
-            WHERE _vid = -TxID;
-         */
+        for (Entity writtenEntity : writtenEntities) {
+            String query = String.format(queryTemplate, writtenEntity.getName(), commitSequenceNumber, -getSequenceNumber());
+
+            ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
+                    QueryContext.builder()
+                            .query(query)
+                            .language(QueryLanguage.from("sql"))
+                            .origin(this.getOrigin())
+                            .namespaceId(writtenEntity.getNamespaceId())
+                            .transactionManager(this.getTransactionManager())
+                            .isMvccInternal(true)
+                            .build(), this).get(0);
+
+            if (context.getException().isPresent()) {
+                throw new RuntimeException("Query preparation failed: " + context.getException().get());
+            }
+
+            context.execute(context.getStatement());
+        }
     }
 
 
