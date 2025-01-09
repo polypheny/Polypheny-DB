@@ -299,28 +299,19 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         /*
         ToDo TH: get the write set based on the transaction id and the written entities and compare to other comitted entities
 
-        1) get read set
-
         pseudocode:
-        writtenIds = []
         for each entity in writtenEntities:
-             writtenIds.add (SELECT _eid, _vid FROM entity WHERE _vid = TxID;
-
-        2) get latest committed version
-            SELECT MAX(_vid) AS max_vid
-            FROM main_table
-            WHERE _eid IN (?, ?, ?, ...);
-
-        pseudocode:
-        maxVersion = 0
-        for each entity in writtenEntities:
-            maxVersion.updateIfGreater(
+            max = String query = """
                 SELECT MAX(_vid) AS max_vid
                 FROM entity
-                WHERE _eid IN (?, ?, ?, ...); <-- those are the writtenIds set
-            )
+                WHERE _eid IN (
+                SELECT _eid FROM main_table WHERE _vid = ?
+            """;
 
-         return maxVid <= TxID
+            if (max >= TxId)
+                return false
+
+        return true
          */
 
         return true;
@@ -492,8 +483,10 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     }
 
 
-
-
+    @Override
+    public void addWrittenEntitiy( Entity entity ) {
+        writtenEntities.add( entity );
+    }
 
 
     @Override
