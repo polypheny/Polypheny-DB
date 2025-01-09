@@ -69,6 +69,9 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyNode;
 
 public class AlgTreeRewriter extends AlgShuttleImpl {
 
@@ -351,17 +354,21 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalRelModify modify ) {
 
-
         LogicalRelModify modify1 = visitChildren( modify );
         if ( isTarget( modify1 ) ) {
             modify1 = modify1.copy( modifyInputs( modify1.getInputs() ) );
         }
+
         if ( !MvccUtils.isInNamespaceUsingMvcc( modify.getEntity() ) ) {
             return modify1;
         }
+
         if ( containsIdentifierKey ) {
             IdentifierUtils.throwIllegalFieldName();
         }
+
+        transaction.addWrittenEntitiy( modify.getEntity() );
+
         switch ( modify1.getOperation() ) {
             case INSERT:
                 AlgNode input = modify1.getInput();
@@ -390,16 +397,22 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgModify modify ) {
+
         LogicalLpgModify modify1 = visitChildren( modify );
         if ( isTarget( modify1 ) ) {
             modify1 = modify1.copy( modifyInputs( modify1.getInputs() ) );
         }
+
         if ( !MvccUtils.isInNamespaceUsingMvcc( modify.getEntity() ) ) {
             return modify1;
         }
+
         if ( containsIdentifierKey ) {
             IdentifierUtils.throwIllegalFieldName();
         }
+
+        transaction.addWrittenEntitiy( modify.getEntity() );
+
         switch ( modify1.getOperation() ) {
             case INSERT:
                 AlgNode input = modify1.getInput();
@@ -431,7 +444,14 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalLpgValues values ) {
-
+        for ( PolyNode node : values.getNodes()) {
+            containsIdentifierKey |= node.properties.containsKey( new PolyString( IdentifierUtils.IDENTIFIER_KEY) );
+            containsIdentifierKey |= node.properties.containsKey( new PolyString( IdentifierUtils.VERSION_KEY) );
+        }
+        for ( PolyEdge edge : values.getEdges()) {
+            containsIdentifierKey |= edge.properties.containsKey( new PolyString( IdentifierUtils.IDENTIFIER_KEY) );
+            containsIdentifierKey |= edge.properties.containsKey( new PolyString( IdentifierUtils.VERSION_KEY) );
+        }
         return values;
     }
 
@@ -508,16 +528,22 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentModify modify ) {
+
         LogicalDocumentModify modify1 = visitChildren( modify );
         if ( isTarget( modify1 ) ) {
             modify1 = modify1.copy( modifyInputs( modify1.getInputs() ) );
         }
+
         if ( !MvccUtils.isInNamespaceUsingMvcc( modify.getEntity() ) ) {
             return modify1;
         }
+
         if ( containsIdentifierKey ) {
             IdentifierUtils.throwIllegalFieldName();
         }
+
+        transaction.addWrittenEntitiy( modify.getEntity() );
+
         switch ( modify1.getOperation() ) {
             case INSERT:
                 AlgNode input = modify1.getInput();
