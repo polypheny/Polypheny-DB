@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -110,7 +111,7 @@ public interface Transaction {
 
     long getSequenceNumber();
 
-
+    void addWrittenEntitiy( Entity entity );
     /**
      * Flavor, how multimedia results should be returned from a store.
      */
