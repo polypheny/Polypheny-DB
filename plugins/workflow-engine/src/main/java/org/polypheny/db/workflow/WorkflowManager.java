@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.adapter.java.AdapterTemplate;
@@ -58,6 +59,7 @@ import org.polypheny.db.workflow.repo.WorkflowRepoImpl;
 import org.polypheny.db.workflow.session.SessionManager;
 import org.polypheny.db.workflow.session.WorkflowWebSocket;
 
+@Slf4j
 public class WorkflowManager {
 
     private final SessionManager sessionManager;
@@ -171,6 +173,9 @@ public class WorkflowManager {
             fileName = fileName.substring( 0, fileName.length() - ".json".length() );
             try {
                 WorkflowModel workflow = mapper.readValue( file, WorkflowModel.class );
+                if ( repo.doesNameExist( fileName ) ) {
+                    continue;
+                }
                 UUID wId = repo.createWorkflow( fileName );
                 repo.writeVersion( wId, "Created Sample Workflow", workflow );
             } catch ( IOException e ) {
@@ -181,7 +186,7 @@ public class WorkflowManager {
 
 
     private void registerAdapter() {
-        if ( PolyphenyDb.mode == RunMode.TEST || Catalog.getInstance().getAdapters().values().stream().anyMatch( a -> a.adapterName.equals( DEFAULT_CHECKPOINT_ADAPTER ) ) ) {
+        if ( PolyphenyDb.mode == RunMode.TEST || Catalog.getInstance().getAdapters().values().stream().anyMatch( a -> a.uniqueName.equals( DEFAULT_CHECKPOINT_ADAPTER ) ) ) {
             return;
         }
 

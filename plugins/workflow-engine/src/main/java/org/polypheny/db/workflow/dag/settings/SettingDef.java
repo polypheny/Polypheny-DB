@@ -48,7 +48,8 @@ public abstract class SettingDef {
     private final SettingType type;
     private final String key;
     private final String displayName;
-    private final String description;
+    private final String shortDescription;
+    private final String longDescription;
 
     @JsonIgnore // the UI does not handle defaultValues. This is instead done by the backend, at the moment the activity is created.
     private final SettingValue defaultValue;
@@ -59,12 +60,13 @@ public abstract class SettingDef {
     private final String subOf;
 
 
-    public SettingDef( SettingType type, String key, String displayName, String description, SettingValue defaultValue, String group, String subgroup, int position, String subOf ) {
+    public SettingDef( SettingType type, String key, String displayName, String shortDescription, String longDescription, SettingValue defaultValue, String group, String subgroup, int position, String subOf ) {
         assert !key.contains( SettingDef.SUB_SEP ) : "Setting key must not contain separator symbol '" + SUB_SEP + "': " + key;
         this.type = type;
         this.key = key;
         this.displayName = displayName;
-        this.description = description;
+        this.shortDescription = shortDescription;
+        this.longDescription = longDescription.isEmpty() ? shortDescription : longDescription;
         this.defaultValue = defaultValue;
         this.group = group;
         this.subgroup = subgroup;

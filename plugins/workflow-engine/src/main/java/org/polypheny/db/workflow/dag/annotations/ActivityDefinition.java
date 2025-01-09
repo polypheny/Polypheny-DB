@@ -31,7 +31,17 @@ public @interface ActivityDefinition {
 
     String displayName();            // Display name used by the UI
 
-    String description() default "";
+    /**
+     * A short description of this activity shown as raw text.
+     */
+    String shortDescription() default "";
+
+    /**
+     * A long description of this activity using markdown.
+     * Image paths are resolved by the UI to "assets/img/plugin/workflows" (subject to change).
+     * If no longDescription is given, the shortDescription is used instead.
+     */
+    String longDescription() default ""; // given as markdown
 
     ActivityCategory[] categories();
 
@@ -45,6 +55,9 @@ public @interface ActivityDefinition {
 
         PortType type();
 
+        /**
+         * A description given in raw text.
+         */
         String description() default "";
 
         boolean isOptional() default false; // TODO: isOptional currently has no effect
@@ -56,6 +69,9 @@ public @interface ActivityDefinition {
 
         PortType type();
 
+        /**
+         * A description given in raw text.
+         */
         String description() default "";
 
     }

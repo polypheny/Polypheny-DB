@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.dag.activities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -24,6 +25,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.Value;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
@@ -42,7 +45,8 @@ public class ActivityDef {
     Class<? extends Activity> activityClass;
     String type;
     String displayName;
-    String description;
+    String shortDescription;
+    String longDescription;
     ActivityCategory[] categories;
     InPortDef[] inPorts;
     OutPortDef[] outPorts;
@@ -62,7 +66,8 @@ public class ActivityDef {
                 activityClass,
                 def.type(),
                 def.displayName(),
-                def.description(),
+                def.shortDescription(),
+                def.longDescription().isEmpty() ? def.shortDescription() : def.longDescription(),
                 def.categories(),
                 InPortDef.fromAnnotations( def.inPorts() ),
                 OutPortDef.fromAnnotations( def.outPorts() ),
@@ -115,6 +120,8 @@ public class ActivityDef {
 
         PortType type;
         String description;
+
+        @Getter(AccessLevel.NONE)
         boolean isOptional;
 
 
@@ -122,6 +129,12 @@ public class ActivityDef {
             type = inPort.type();
             description = inPort.description();
             isOptional = inPort.isOptional();
+        }
+
+
+        @JsonProperty("isOptional")
+        public boolean isOptional() {
+            return isOptional;
         }
 
 

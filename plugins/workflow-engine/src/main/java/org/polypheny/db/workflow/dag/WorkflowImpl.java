@@ -433,11 +433,11 @@ public class WorkflowImpl implements Workflow {
 
 
     @Override
-    public int getTimeoutMillis( Set<UUID> activities ) {
-        int baseTimeout = Math.max( 0, config.getTimeoutMillis() );
+    public int getTimeoutSeconds( Set<UUID> activities ) {
+        int baseTimeout = Math.max( 0, config.getTimeoutSeconds() );
         int timeout = 0;
         for ( UUID activityId : activities ) {
-            int activityTimeout = Math.max( 0, getActivity( activityId ).getConfig().getTimeoutMillis() );
+            int activityTimeout = Math.max( 0, getActivity( activityId ).getConfig().getTimeoutSeconds() );
             if ( activityTimeout > 0 ) { // override base timeout
                 timeout += activityTimeout;
             } else {

@@ -178,13 +178,13 @@ public interface Workflow {
     ActivityWrapper updateActivity( UUID activityId, @Nullable Map<String, JsonNode> settings, @Nullable ActivityConfigModel config, @Nullable RenderModel rendering, StorageManager sm );
 
     /**
-     * Returns the number of milliseconds until the execution of the subtree containing the given activities times out.
+     * Returns the number of seconds until the execution of the subtree containing the given activities times out.
      * If there is more than one activitiy in the set, the sum of all timeout durations is returned.
      *
      * @param activities the activities of the subtree to be executed
-     * @return the timout duration in millis, or 0 if no timeout is desired.
+     * @return the timout duration in seconds, or 0 if no timeout is desired.
      */
-    int getTimeoutMillis( Set<UUID> activities );
+    int getTimeoutSeconds( Set<UUID> activities );
 
     AttributedDirectedGraph<UUID, ExecutionEdge> toDag();
 

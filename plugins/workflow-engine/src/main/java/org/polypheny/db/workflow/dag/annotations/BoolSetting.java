@@ -37,7 +37,15 @@ public @interface BoolSetting {
 
     String displayName();
 
-    String description() default "";
+    /**
+     * A short description given in raw text.
+     */
+    String shortDescription() default "";
+
+    /**
+     * A description given in markdown.
+     */
+    String longDescription() default "";
 
     String group() default "";
 

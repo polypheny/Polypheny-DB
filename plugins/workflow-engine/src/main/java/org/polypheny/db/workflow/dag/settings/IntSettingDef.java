@@ -32,7 +32,7 @@ public class IntSettingDef extends SettingDef {
 
 
     public IntSettingDef( IntSetting a ) {
-        super( SettingType.INT, a.key(), a.displayName(), a.description(), getDefaultValue( a.defaultValue(), a.isList() ), a.group(), a.subGroup(), a.position(), a.subOf() );
+        super( SettingType.INT, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultValue(), a.isList() ), a.group(), a.subGroup(), a.position(), a.subOf() );
         this.isList = a.isList();
         this.minValue = a.min();
         this.maxValue = a.max();

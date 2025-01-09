@@ -173,13 +173,13 @@ public class GlobalScheduler {
 
                 activeSubmissions.computeIfAbsent( sessionId, k -> ConcurrentHashMap.newKeySet() ).add( submission );
 
-                int timeoutMillis = submission.getTimeoutMillis();
-                if ( timeoutMillis > 0 ) {
+                int timeoutSeconds = submission.getTimeoutSeconds();
+                if ( timeoutSeconds > 0 ) {
                     timeoutService.schedule( () -> {
                         if ( submission.getInfo().getState() == ExecutionState.EXECUTING ) {
                             submission.getExecutor().interrupt();
                         }
-                    }, Math.max( 50, timeoutMillis ), TimeUnit.MILLISECONDS ); // minimum timeout to ensure executor was actually called
+                    }, timeoutSeconds, TimeUnit.SECONDS );
                 }
 
                 ExecutionResult result;

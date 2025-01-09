@@ -31,7 +31,7 @@ public class ExecutionSubmission {
     UUID rootId;
     CommonType commonType;
     UUID sessionId;
-    int timeoutMillis; // 0 for no timeout
+    int timeoutSeconds; // 0 for no timeout
     ExecutionInfo info;
 
 

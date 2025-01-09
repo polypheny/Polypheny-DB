@@ -37,7 +37,15 @@ public @interface StringSetting {
 
     String displayName();
 
-    String description() default "";
+    /**
+     * A short description given in raw text.
+     */
+    String shortDescription() default "";
+
+    /**
+     * A description given in markdown.
+     */
+    String longDescription() default "";
 
     String group() default "";  // the group this setting belongs to. Default is {@code GroupDef.DEFAULT_GROUP}, advanced is {@code GroupDef.ADVANCED_GROUP}. Others must be created manually
 

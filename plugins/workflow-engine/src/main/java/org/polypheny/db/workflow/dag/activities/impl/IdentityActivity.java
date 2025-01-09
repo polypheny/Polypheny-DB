@@ -47,18 +47,39 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 
 @ActivityDefinition(type = "identity", displayName = "Identity", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
-        inPorts = { @InPort(type = PortType.REL) },
-        outPorts = { @OutPort(type = PortType.REL) }
-)
+        inPorts = { @InPort(type = PortType.REL, description = "Input table") },
+        outPorts = { @OutPort(type = PortType.REL, description = "Output table, equal to the input table.") },
+        shortDescription = "The identity activity outputs the input table unchanged.",
+        longDescription = """
+                This is the long description of the identity activity. It is possible to use *markdown*!
+                # Title
+                ## Subtitle
+                ### Subsubtitle
+                
+                Now a list:
+                - first
+                - second
+                - third
+                
+                code: `inline code`
+                or block:
+                
+                ```python
+                def my_function():
+                    print('test')
+                ```
+                
+                > This is a blockquote
+                """)
 
-@IntSetting(key = "I1", displayName = "FIRST", defaultValue = 2)
-@StringSetting(key = "S1", displayName = "SECOND")
+@IntSetting(key = "I1", displayName = "FIRST", defaultValue = 2, shortDescription = "This setting doesn't do anything.")
+@StringSetting(key = "S1", displayName = "SECOND", shortDescription = "This setting doesn't do anything.")
 
 @Group(key = "groupA", displayName = "Group A",
         subgroups = { @Subgroup(key = "a", displayName = "Sub1") }
 )
-@IntSetting(key = "I2", displayName = "THIRD", defaultValue = 0, isList = true, group = "groupA")
-@StringSetting(key = "S2", displayName = "FOURTH", defaultValue = "test", isList = true, group = "groupA", subGroup = "a")
+@IntSetting(key = "I2", displayName = "THIRD", defaultValue = 0, isList = true, group = "groupA", shortDescription = "This setting doesn't do anything.")
+@StringSetting(key = "S2", displayName = "FOURTH", defaultValue = "test", isList = true, group = "groupA", subGroup = "a", shortDescription = "This setting doesn't do anything.")
 
 @SuppressWarnings("unused")
 public class IdentityActivity implements Activity, Fusable, Pipeable {
