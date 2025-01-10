@@ -132,7 +132,7 @@ public class ActivityWrapper {
             List<TypePreviewModel> inTypeModels = inTypePreview.stream().map(
                     inType -> inType.map( TypePreviewModel::of ).orElse( null ) ).toList();
             String invalidReason = invalidStateReason == null ? null : invalidStateReason.toString();
-            return new ActivityModel( type, id, serializableSettings, config, rendering, this.state, inTypeModels, invalidReason );
+            return new ActivityModel( type, id, serializableSettings, config, rendering, this.state, inTypeModels, invalidReason, variables.getVariables() );
 
         } else {
             return new ActivityModel( type, id, serializableSettings, config, rendering );

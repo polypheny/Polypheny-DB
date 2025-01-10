@@ -169,6 +169,26 @@ class ActivityRegistryTest {
 
 
     @Test
+    public void checkSubPointers() {
+        for ( ActivityDef activity : ActivityRegistry.getRegistry().values() ) {
+            String activityName = activity.getActivityClass().getSimpleName();
+
+            Set<String> keys = activity.getSettings().keySet();
+
+            for ( SettingDef setting : activity.getSettings().values() ) {
+                String subPointer = setting.getSubPointer();
+                if ( !subPointer.isEmpty() ) {
+                    String targetKey = subPointer.substring( 1 ).split( "/", 2 )[0];
+                    assertNotEquals( setting.getKey(), targetKey );
+                    assertTrue( keys.contains( targetKey ), "Target setting key '" + targetKey + "' in subPointer is not defined for " + activityName );
+                }
+            }
+        }
+
+    }
+
+
+    @Test
     public void intVariableResolveTest() throws InvalidSettingException {
         int newValue = 42;
         String varName = "intVariable";

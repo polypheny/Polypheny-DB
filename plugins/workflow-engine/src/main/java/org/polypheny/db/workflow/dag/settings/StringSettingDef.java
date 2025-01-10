@@ -32,7 +32,8 @@ public class StringSettingDef extends SettingDef {
 
 
     public StringSettingDef( StringSetting a ) {
-        super( SettingType.STRING, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultValue(), a.isList() ), a.group(), a.subGroup(), a.position(), a.subOf() );
+        super( SettingType.STRING, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultValue(), a.isList() ),
+                a.group(), a.subGroup(), a.position(), a.subPointer(), a.subValues() );
         this.isList = a.isList();
         this.minLength = a.minLength();
         this.maxLength = a.maxLength();

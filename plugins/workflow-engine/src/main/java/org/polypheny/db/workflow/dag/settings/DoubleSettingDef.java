@@ -31,7 +31,8 @@ public class DoubleSettingDef extends SettingDef {
 
 
     public DoubleSettingDef( DoubleSetting a ) {
-        super( SettingType.DOUBLE, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultValue() ), a.group(), a.subGroup(), a.position(), a.subOf() );
+        super( SettingType.DOUBLE, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultValue() ),
+                a.group(), a.subGroup(), a.position(), a.subPointer(), a.subValues() );
         minValue = a.min();
         maxValue = a.max();
 

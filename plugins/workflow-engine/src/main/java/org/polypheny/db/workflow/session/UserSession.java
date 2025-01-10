@@ -94,8 +94,8 @@ public class UserSession extends AbstractSession {
             broadcastMessage( new RenderingUpdateResponse( request.msgId, activity ) );
             return;
         }
-        broadcastMessage( new StateUpdateResponse( request.msgId, workflow ) );
         broadcastMessage( new ActivityUpdateResponse( request.msgId, activity ) );
+        broadcastMessage( new StateUpdateResponse( request.msgId, workflow ) );
     }
 
 

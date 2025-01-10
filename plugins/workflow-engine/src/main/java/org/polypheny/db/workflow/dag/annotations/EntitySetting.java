@@ -22,6 +22,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.workflow.dag.settings.SettingDef;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -54,7 +55,15 @@ public @interface EntitySetting {
 
     int position() default 100;
 
-    String subOf() default "";
+    /**
+     * See {@link SettingDef#getSubPointer()}
+     */
+    String subPointer() default "";
+
+    /**
+     * See {@link SettingDef#getSubValues()}
+     */
+    String[] subValues() default {};
 
     // Setting-specifics
     String defaultNamespace() default "";

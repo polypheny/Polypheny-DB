@@ -25,8 +25,10 @@ import java.util.Optional;
 public interface ReadableVariableStore {
 
     /**
-     * A variable reference is given as an object with a VARIABLE_REF_FIELD key and the reference as a string value.
-     * A reference corresponds to a JsonPointer (https://datatracker.ietf.org/doc/html/rfc6901).
+     * A variable reference is given as an object with a {@link #VARIABLE_REF_FIELD} key and the reference as a string value.
+     * Additionally, a default value can be specified with {@link #VARIABLE_DEFAULT_FIELD}.
+     * <p>
+     * The reference corresponds to a JsonPointer (<a href="https://datatracker.ietf.org/doc/html/rfc6901">RFC6901</a>).
      * Note that "/" and "~" in variable names need to be escaped as ~1 and ~0 respectively.
      * The leading "/" is optional, as the first referenced object must always correspond to a variable name.
      * Examples of valid references:
@@ -39,6 +41,7 @@ public interface ReadableVariableStore {
      * </ul>
      */
     String VARIABLE_REF_FIELD = "$ref";
+    String VARIABLE_DEFAULT_FIELD = "$default";
 
     boolean contains( String key );
 
@@ -58,24 +61,27 @@ public interface ReadableVariableStore {
      * Variable references are indicated by objects that contain a single field with name equal to the value of {@code VARIABLE_REF_FIELD}.
      *
      * @param node The node to be resolved recursively
+     * @param useDefaultIfMissing whether the default value specified by the variable reference is used in case the variable cannot be resolved.
      * @return a JsonNode with any variable references replaced by their value stored in this store.
-     * @throws IllegalArgumentException if a variable reference cannot be resolved in the variableMap
+     * @throws IllegalArgumentException if a variable reference cannot be resolved in the variableMap and no default value can be used (useDefaultIfMissing is false or no default exists).
      */
-    JsonNode resolveVariables( JsonNode node );
+    JsonNode resolveVariables( JsonNode node, boolean useDefaultIfMissing );
 
 
     /**
-     * Resolves variables in the given map by recursively replacing any variable references with their resolved values.
+     * Resolves variables in the given map by recursively replacing any variable references with their resolved values
+     * or the default value specified by the reference, if the variable cannot be found.
      *
      * @param nodes The nodes to be resolved
      * @return an immutable map with JsonNodes that have any variable references replaced by their value stored in this store.
-     * @throws IllegalArgumentException if any {@link JsonNode} contains an unresolved variable reference.
+     * @throws IllegalArgumentException if any {@link JsonNode} contains an unresolved variable reference with no default value.
      */
     Map<String, JsonNode> resolveVariables( Map<String, JsonNode> nodes );
 
     /**
      * Resolves variables in the given map by recursively replacing any variable references with their resolved values.
      * If a variable cannot be resolved, inserts {@link Optional#empty()} for that variable.
+     * Default values are ignored.
      *
      * @param nodes The nodes to be resolved
      * @return an immutable map with resolved variables wrapped in {@link Optional}.

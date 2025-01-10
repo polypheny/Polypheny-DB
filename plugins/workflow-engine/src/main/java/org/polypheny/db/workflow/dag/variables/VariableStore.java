@@ -147,10 +147,10 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
 
 
     // TODO: make sure to not change the existing JsonNode
-    public JsonNode resolveVariables( JsonNode node ) {
+    public JsonNode resolveVariables( JsonNode node, boolean useDefaultIfMissing ) {
         if ( node.isObject() ) {
             ObjectNode objectNode = (ObjectNode) node;
-            if ( objectNode.size() == 1 && objectNode.has( VARIABLE_REF_FIELD ) ) {
+            if ( objectNode.size() <= 2 && objectNode.has( VARIABLE_REF_FIELD ) ) {
                 String refString = objectNode.get( VARIABLE_REF_FIELD ).asText();
                 if ( refString.startsWith( "/" ) ) {
                     refString = refString.substring( 1 );
@@ -164,7 +164,11 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
 
                 // Replace the entire object with the value from the map, if it exists
                 if ( replacement == null ) {
-                    throw new IllegalArgumentException( "Cannot resolve variable with name: " + variableRef );
+                    if ( useDefaultIfMissing && objectNode.has( VARIABLE_DEFAULT_FIELD ) ) {
+                        replacement = objectNode.get( VARIABLE_DEFAULT_FIELD );
+                    } else {
+                        throw new IllegalArgumentException( "Cannot resolve variable with name: " + variableRef );
+                    }
                 }
                 return replacement;
             } else {
@@ -172,14 +176,14 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
                 Iterator<Entry<String, JsonNode>> fields = objectNode.fields();
                 while ( fields.hasNext() ) {
                     Map.Entry<String, JsonNode> field = fields.next();
-                    objectNode.set( field.getKey(), resolveVariables( field.getValue() ) );
+                    objectNode.set( field.getKey(), resolveVariables( field.getValue(), useDefaultIfMissing ) );
                 }
                 return objectNode;
             }
         } else if ( node.isArray() ) {
             // Recursively process child fields
             for ( int i = 0; i < node.size(); i++ ) {
-                ((ArrayNode) node).set( i, resolveVariables( node.get( i ) ) );
+                ((ArrayNode) node).set( i, resolveVariables( node.get( i ), useDefaultIfMissing ) );
             }
             return node;
         } else {
@@ -192,7 +196,7 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
     public Map<String, JsonNode> resolveVariables( Map<String, JsonNode> nodes ) {
         Map<String, JsonNode> resolved = new HashMap<>();
         for ( Entry<String, JsonNode> entry : nodes.entrySet() ) {
-            resolved.put( entry.getKey(), resolveVariables( entry.getValue() ) );
+            resolved.put( entry.getKey(), resolveVariables( entry.getValue(), true ) );
         }
         return Collections.unmodifiableMap( resolved );
     }
@@ -203,7 +207,7 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
         Map<String, Optional<JsonNode>> resolved = new HashMap<>();
         for ( Map.Entry<String, JsonNode> entry : nodes.entrySet() ) {
             try {
-                resolved.put( entry.getKey(), Optional.of( resolveVariables( entry.getValue() ) ) );
+                resolved.put( entry.getKey(), Optional.of( resolveVariables( entry.getValue(), false ) ) );
             } catch ( IllegalArgumentException e ) {
                 resolved.put( entry.getKey(), Optional.empty() );
             }

@@ -34,7 +34,8 @@ public class EntitySettingDef extends SettingDef {
 
 
     public EntitySettingDef( EntitySetting a ) {
-        super( SettingType.ENTITY, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultNamespace(), a.defaultName() ), a.group(), a.subGroup(), a.position(), a.subOf() );
+        super( SettingType.ENTITY, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultNamespace(), a.defaultName() ),
+                a.group(), a.subGroup(), a.position(), a.subPointer(), a.subValues() );
         this.dataModel = a.dataModel();
         this.mustExist = a.mustExist();
     }

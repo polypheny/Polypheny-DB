@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.annotation.Annotation;
@@ -31,6 +32,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Value;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Wrapper;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
@@ -43,7 +45,7 @@ import org.polypheny.db.workflow.dag.annotations.StringSetting;
 @Getter
 public abstract class SettingDef {
 
-    public static String SUB_SEP = ">"; // this separator is used to specify dependencies on values of other settings. For example "modeSelector>mode1" to specify that this setting is only active if modeSelector is equal to mode1
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final SettingType type;
     private final String key;
@@ -57,21 +59,55 @@ public abstract class SettingDef {
     private final String group;
     private final String subgroup;
     private final int position;
-    private final String subOf;
+
+    /**
+     * The subPointer is used to specify conditional rendering of this setting in the UI based on the value
+     * of another setting. An empty pointer disables conditional rendering for this setting.
+     * <p>
+     * SubPointer is a JsonPointer (<a href="https://datatracker.ietf.org/doc/html/rfc6901">RFC6901</a>) to a setting value.
+     * Note that "/" and "~" need to be escaped as ~1 and ~0 respectively.
+     * The leading "/" is optional in the constructor, as the first referenced object must always correspond to a setting name.
+     * Examples of valid pointers:
+     * <ul>
+     *     <li>{@code "mySetting"}</li>
+     *     <li>{@code "/mySetting"}</li>
+     *     <li>{@code "mySetting/names"}</li>
+     *     <li>{@code "mySetting/names/0"}</li>
+     *     <li>{@code "my~1escaped~0setting~1example"}</li>
+     * </ul>
+     */
+    private final String subPointer;
+
+    /**
+     * SubValues is an array of values to compare the object at {@link #getSubPointer()} to.
+     * The setting is only rendered if at least one object is equal to a value of this array.
+     * The SettingDef constructor expects values specified as json. This implies that strings must be quoted!
+     */
+    private final List<JsonNode> subValues;
 
 
-    public SettingDef( SettingType type, String key, String displayName, String shortDescription, String longDescription, SettingValue defaultValue, String group, String subgroup, int position, String subOf ) {
-        assert !key.contains( SettingDef.SUB_SEP ) : "Setting key must not contain separator symbol '" + SUB_SEP + "': " + key;
+    public SettingDef(
+            SettingType type, String key, String displayName,
+            String shortDescription, String longDescription,
+            SettingValue defaultValue, String group, String subgroup,
+            int position, String subPointer, String[] subValues ) {
         this.type = type;
         this.key = key;
-        this.displayName = displayName;
+        this.displayName = displayName.isBlank() ? key : displayName;
         this.shortDescription = shortDescription;
         this.longDescription = longDescription.isEmpty() ? shortDescription : longDescription;
         this.defaultValue = defaultValue;
         this.group = group;
         this.subgroup = subgroup;
         this.position = position;
-        this.subOf = subOf;
+        this.subPointer = (subPointer.isEmpty() || subPointer.startsWith( "/" )) ? subPointer : "/" + subPointer;
+        this.subValues = Arrays.stream( subValues ).map( v -> {
+            try {
+                return MAPPER.readTree( v );
+            } catch ( JsonProcessingException e ) {
+                throw new GenericRuntimeException( "Invalid subValue for setting " + key + ": " + v, e );
+            }
+        } ).toList();
     }
 
 

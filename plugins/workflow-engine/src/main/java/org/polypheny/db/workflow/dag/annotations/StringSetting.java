@@ -21,6 +21,7 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.polypheny.db.workflow.dag.settings.SettingDef;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -53,7 +54,15 @@ public @interface StringSetting {
 
     int position() default 100;  // manually impose order within subGroup (lower pos => further to the top)
 
-    String subOf() default "";  // determine the visibility of this setting, possibly using {@code SettingDef.SUB_SEP}.
+    /**
+     * See {@link SettingDef#getSubPointer()}
+     */
+    String subPointer() default "";
+
+    /**
+     * See {@link SettingDef#getSubValues()}
+     */
+    String[] subValues() default {};
 
     // String-specific settings
     String defaultValue() default "";

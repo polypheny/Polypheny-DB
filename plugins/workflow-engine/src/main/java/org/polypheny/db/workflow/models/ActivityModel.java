@@ -45,6 +45,8 @@ public class ActivityModel {
     List<TypePreviewModel> inTypePreview;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     String invalidReason; // null if not invalid
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    Map<String, JsonNode> variables;
 
 
     public ActivityModel( String type ) {
@@ -71,6 +73,7 @@ public class ActivityModel {
         this.state = null;
         this.inTypePreview = null;
         this.invalidReason = null;
+        this.variables = null;
     }
 
 

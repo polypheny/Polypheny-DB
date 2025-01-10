@@ -28,7 +28,8 @@ public class BoolSettingDef extends SettingDef {
 
 
     public BoolSettingDef( BoolSetting a ) {
-        super( SettingType.BOOLEAN, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultValue() ), a.group(), a.subGroup(), a.position(), a.subOf() );
+        super( SettingType.BOOLEAN, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultValue() ),
+                a.group(), a.subGroup(), a.position(), a.subPointer(), a.subValues() );
     }
 
 
