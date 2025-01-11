@@ -29,15 +29,15 @@ import org.polypheny.db.plan.AlgTraitSet;
 
 public class LogicalDocIdentifier extends Identifier implements DocumentAlg {
 
-    protected LogicalDocIdentifier( long version, Entity entity, AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
-        super( cluster, traits, version, entity, input );
+    protected LogicalDocIdentifier( Entity entity, AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
+        super( cluster, traits, entity, input );
     }
 
 
-    public static LogicalDocIdentifier create( long version, Entity document, final AlgNode input ) {
+    public static LogicalDocIdentifier create( Entity document, final AlgNode input ) {
         final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traits = input.getTraitSet();
-        return new LogicalDocIdentifier( version, document, cluster, traits, input );
+        return new LogicalDocIdentifier( document, cluster, traits, input );
     }
 
 
@@ -57,7 +57,7 @@ public class LogicalDocIdentifier extends Identifier implements DocumentAlg {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalDocIdentifier( version, entity, getCluster(), traitSet, sole( inputs ) );
+        return new LogicalDocIdentifier( entity, getCluster(), traitSet, sole( inputs ) );
     }
 
 
