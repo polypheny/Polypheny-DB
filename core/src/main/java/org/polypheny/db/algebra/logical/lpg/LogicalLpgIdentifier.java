@@ -20,7 +20,6 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Identifier;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
-import org.polypheny.db.algebra.logical.document.LogicalDocIdentifier;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
@@ -29,14 +28,16 @@ import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
 public class LogicalLpgIdentifier extends Identifier implements LpgAlg {
-    protected LogicalLpgIdentifier(  long version, Entity entity, AlgCluster cluster, AlgTraitSet traits, final AlgNode input ) {
-        super(cluster, traits, version, entity, input );
+
+    protected LogicalLpgIdentifier( Entity entity, AlgCluster cluster, AlgTraitSet traits, final AlgNode input ) {
+        super( cluster, traits, entity, input );
     }
 
-    public static LogicalLpgIdentifier create(long version, Entity graph, final AlgNode input) {
-        final AlgCluster cluster  = input.getCluster();
+
+    public static LogicalLpgIdentifier create( Entity graph, final AlgNode input ) {
+        final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traits = input.getTraitSet();
-        return new LogicalLpgIdentifier( version, graph, cluster, traits, input );
+        return new LogicalLpgIdentifier( graph, cluster, traits, input );
     }
 
 
@@ -46,15 +47,17 @@ public class LogicalLpgIdentifier extends Identifier implements LpgAlg {
         return NodeType.VALUES;
     }
 
+
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         double dRows = mq.getTupleCount( getInput() );
         return planner.getCostFactory().makeCost( dRows, 0, 0 );
     }
 
+
     @Override
-    public AlgNode copy(AlgTraitSet traitSet, List<AlgNode> inputs) {
-        return new LogicalLpgIdentifier(version, entity, getCluster(), traitSet, sole(inputs) );
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new LogicalLpgIdentifier( entity, getCluster(), traitSet, sole( inputs ) );
     }
 
 }

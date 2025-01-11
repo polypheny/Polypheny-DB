@@ -32,16 +32,16 @@ import org.polypheny.db.plan.AlgTraitSet;
 @Getter
 public class LogicalRelIdentifier extends Identifier implements RelAlg {
 
-    protected LogicalRelIdentifier( long version, Entity entity, AlgCluster cluster, AlgTraitSet traits, AlgNode input, AlgDataType rowType ) {
-        super( cluster, traits, version, entity, input );
+    protected LogicalRelIdentifier( Entity entity, AlgCluster cluster, AlgTraitSet traits, AlgNode input, AlgDataType rowType ) {
+        super( cluster, traits, entity, input );
         this.rowType = rowType;
     }
 
 
-    public static LogicalRelIdentifier create(long version, Entity table, final AlgNode input, AlgDataType rowType ) {
+    public static LogicalRelIdentifier create( Entity table, final AlgNode input, AlgDataType rowType ) {
         final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traits = input.getTraitSet();
-        return new LogicalRelIdentifier( version, table, cluster, traits, input, rowType );
+        return new LogicalRelIdentifier( table, cluster, traits, input, rowType );
     }
 
 
@@ -54,7 +54,7 @@ public class LogicalRelIdentifier extends Identifier implements RelAlg {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalRelIdentifier(version, entity, getCluster(), traitSet, sole( inputs ), getRowType() );
+        return new LogicalRelIdentifier( entity, getCluster(), traitSet, sole( inputs ), getRowType() );
     }
 
 }
