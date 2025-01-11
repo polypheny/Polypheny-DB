@@ -42,9 +42,15 @@ import org.polypheny.db.util.BuiltInMethod;
 
 public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
 
-    protected EnumerableIdentifier( AlgCluster cluster, AlgTraitSet traits, long version, Entity entity, AlgNode input ) {
-        super( cluster, traits, version, entity, input );
+    protected EnumerableIdentifier( AlgCluster cluster, AlgTraitSet traits, Entity entity, AlgNode input ) {
+        super( cluster, traits, entity, input );
         assert getConvention() instanceof EnumerableConvention;
+    }
+
+
+    @Override
+    public boolean isImplementationCacheable() {
+        return false;
     }
 
 
@@ -57,7 +63,7 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new EnumerableIdentifier( inputs.get( 0 ).getCluster(), traitSet, version, entity, inputs.get( 0 ) );
+        return new EnumerableIdentifier( inputs.get( 0 ).getCluster(), traitSet, entity, inputs.get( 0 ) );
     }
 
 
@@ -70,7 +76,7 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
 
         Expression input_ = builder.append( "input", result.block() );
         Expression entityId_ = Expressions.constant( entity.getId() );
-        Expression version_ = Expressions.constant( version );
+        Expression version_ = Expressions.constant( implementor.map.get(IdentifierUtils.VERSION_KEY), long.class);
         Expression identification_ = null;
         switch ( input.getModel() ) {
             case RELATIONAL -> {
