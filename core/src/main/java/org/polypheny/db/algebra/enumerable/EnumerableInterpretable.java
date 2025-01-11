@@ -71,6 +71,7 @@ import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.IdentifierUtils;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -114,6 +115,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
             EnumerableAlg alg,
             EnumerableAlg.Prefer prefer,
             Statement statement ) {
+        parameters.put( IdentifierUtils.VERSION_KEY, statement.getTransaction().getSequenceNumber() );
         EnumerableAlgImplementor algImplementor = new EnumerableAlgImplementor( alg.getCluster().getRexBuilder(), parameters );
 
         final ClassDeclaration expr = algImplementor.implementRoot( alg, prefer );
