@@ -28,12 +28,10 @@ import org.polypheny.db.plan.AlgTraitSet;
 public class Identifier extends SingleAlg {
 
     protected final Entity entity;
-    protected final long version;
 
-    protected Identifier( AlgCluster cluster, AlgTraitSet traits, long version, Entity entity, AlgNode input ) {
+    protected Identifier( AlgCluster cluster, AlgTraitSet traits, Entity entity, AlgNode input ) {
         super( cluster, traits, input );
         this.entity = entity;
-        this.version = version;
     }
 
 
