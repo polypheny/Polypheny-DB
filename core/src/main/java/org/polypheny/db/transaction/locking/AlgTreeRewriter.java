@@ -16,6 +16,7 @@
 
 package org.polypheny.db.transaction.locking;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -24,6 +25,8 @@ import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocIdentifier;
@@ -62,15 +65,27 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.DeferredAlgTreeModification.Modification;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
 
 public class AlgTreeRewriter extends AlgShuttleImpl {
+
+    public static final AlgDataType BOOLEAN_TRUE_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BOOLEAN, true );
+    public static final AlgDataType SINGLE_VERSION_ROW_ALG_TYPE = AlgDataTypeFactoryImpl.DEFAULT.createStructType( List.of(0L), List.of(IdentifierUtils.VERSION_ALG_TYPE), List.of("_vid"));
 
     private final Statement statement;
     private final Set<DeferredAlgTreeModification> pendingModifications;
@@ -116,6 +131,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         }
         return node;
     }
+
 
     private Transaction getTransaction() {
         return statement.getTransaction();
@@ -303,8 +319,61 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
                         input.getTupleType()
                 );
                 return modify1.copy( modify1.getTraitSet(), List.of( identifier ) );
+
             case UPDATE:
-                return modify1;
+                /* Rewrite:
+                   Update <- Filter <- Input
+
+                   to
+
+                                 v Project <- RelValues (for new _vid)
+                   Insert <- Join
+                                 ^ Project (to remove old _vid) <- Filter <- Input
+                 */
+
+                PolyValue newVersion = IdentifierUtils.getVersionAsPolyLong( getTransaction().getSequenceNumber(), false );
+                LogicalRelValues newVersionValues = LogicalRelValues.create(
+                        modify1.getCluster(),
+                        SINGLE_VERSION_ROW_ALG_TYPE,
+                        ImmutableList.of( ImmutableList.of(
+                                new RexLiteral(
+                                        newVersion,
+                                        IdentifierUtils.VERSION_ALG_TYPE,
+                                        PolyType.BIGINT )
+                        ) ) );
+
+                LogicalRelProject versionProject = LogicalRelProject.create(
+                        newVersionValues,
+                        List.of(new RexIndexRef(0, IdentifierUtils.VERSION_ALG_TYPE) ),
+                        List.of(IdentifierUtils.VERSION_KEY));
+
+                List<AlgDataTypeField> inputFields = modify1.getInput().getTupleType().getFields().stream()
+                        .filter( f -> !f.getName().equals( IdentifierUtils.VERSION_KEY ) ).toList();
+                List<RexIndexRef> inputProjects = inputFields.stream()
+                        .map( f -> new RexIndexRef( f.getIndex(), f.getType()) )
+                        .toList();
+                LogicalRelProject inputProject = LogicalRelProject.create(
+                        modify1.getInput(),
+                        inputProjects,
+                        inputFields.stream().map( AlgDataTypeField::getName ).toList()
+                );
+
+                LogicalRelJoin versionToInputJoin = LogicalRelJoin.create(
+                        inputProject,
+                        versionProject,
+                        new RexLiteral( PolyBoolean.TRUE, BOOLEAN_TRUE_ALG_TYPE, PolyType.BOOLEAN ),
+                        Set.of(),
+                        JoinAlgType.INNER );
+
+                return LogicalRelModify.create(
+                        modify1.getEntity(),
+                        versionToInputJoin,
+                        Operation.INSERT,
+                        null,
+                        null,
+                        false
+                        );
+
             default:
                 return modify1;
         }
