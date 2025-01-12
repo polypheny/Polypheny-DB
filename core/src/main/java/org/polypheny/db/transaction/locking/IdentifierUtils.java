@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.catalog.logistic.Collation;
@@ -105,7 +106,6 @@ public class IdentifierUtils {
     public static PolyLong getVersionAsPolyLong(long version, boolean isComitted) {
         return PolyLong.of( isComitted ? version : version * -1);
     }
-
 
     public static List<FieldInformation> addMvccFieldsIfAbsent(List<FieldInformation> fields) {
         List<FieldInformation> newFields = new LinkedList<>();
