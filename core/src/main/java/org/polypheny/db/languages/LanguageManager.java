@@ -186,7 +186,7 @@ public class LanguageManager {
 
                     AlgRoot root = processor.translate( statement, parsed );
                     if ( !context.isMvccInternal ) {
-                        root = new AlgTreeRewriter( transaction ).process( root );
+                        root = new AlgTreeRewriter( statement ).process( root );
                     }
 
                     if ( transaction.isAnalyze() ) {
