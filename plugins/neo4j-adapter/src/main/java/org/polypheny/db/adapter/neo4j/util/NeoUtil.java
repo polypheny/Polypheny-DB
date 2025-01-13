@@ -212,8 +212,12 @@ public interface NeoUtil {
             return PolyString.of( value.asString() );
         } else if ( value instanceof FloatValue ) {
             return PolyString.of( String.valueOf( value.asDouble() ) );
+
         } else if ( value instanceof ListValue ) {
             return new PolyList<>( value.asList( NeoUtil::getComparableOrString ) );
+        }
+        else if ( value instanceof PointValue ) {
+            return asPolyGeometry( value );
         }
         throw new NotImplementedException( "Type not supported" );
     }
