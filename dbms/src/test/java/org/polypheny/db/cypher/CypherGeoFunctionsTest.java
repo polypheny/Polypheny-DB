@@ -38,7 +38,6 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
     final static String neo4jAdapterName = "neo4j";
     final static String neo4jDatabaseName = "neo4j_database";
 
-
     @BeforeAll
     public static void init() {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -63,11 +62,16 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
     @Test
     public void createPointTest() {
+//        tearDown();
+//        createGraph(neo4jDatabaseName, neo4jAdapterName);
         tearDown();
-        createGraph(neo4jDatabaseName, neo4jAdapterName);
+        createGraph();
 
-        execute( "CREATE (bob:User)", neo4jDatabaseName );
-        GraphResult res = execute( "MATCH (n) RETURN point({longitude: 56.7, latitude: 12}) AS point", neo4jDatabaseName );
+        // TODO: Why are all my commands executed on Neo4j, only because I added the adapter?
+        execute( format( "USE GRAPH %s", GRAPH_NAME ) );
+        execute( "CREATE (bob:User)", GRAPH_NAME );
+//        execute( "CREATE (bob:User)", neo4jDatabaseName );
+        GraphResult res = execute( "MATCH (n) RETURN point({longitude: 56.7, latitude: 12}) AS point", GRAPH_NAME );
         PolyGeometry geometry = convertJsonToPolyGeometry( res.data[0][0] );
         assert geometry.getSRID() == PolyGeometry.WGS_84;
         assert geometry.asPoint().getX() == 56.7;
@@ -271,7 +275,6 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                 """ );
         assert res.data[0][0] == null;
     }
-
 
     private PolyGeometry convertJsonToPolyGeometry( String json ) {
         try {
