@@ -31,14 +31,19 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.lang3.NotImplementedException;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
+import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
 import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
 import org.polypheny.db.algebra.constant.Kind;
@@ -121,11 +126,33 @@ public interface NeoUtil {
             case NODE -> o -> asPolyNode( o.asNode() );
             case EDGE -> o -> asPolyEdge( o.asRelationship() );
             case PATH -> o -> asPolyPath( o.asPath() );
-            case GEOMETRY -> o -> PolyGeometry.of( o.asString() );
+            case GEOMETRY -> NeoUtil::asPolyGeometry;
             default -> throw new GenericRuntimeException( String.format( "Object of type %s was not transformable.", type ) );
         };
 
 
+    }
+
+    static PolyGeometry asPolyGeometry( Value value ){
+        if ( value instanceof PointValue pointValue ) {
+            Point point = pointValue.asPoint();
+
+            // These are the only real SRIDs that Neo4j uses, the others are only used
+            // internally for the cartesian 2D / 3D case, which we will represent as 0.
+            int srid = 0;
+            if (point.srid() == 4326 || point.srid() == 4979) {
+                srid = point.srid();
+            }
+
+            GeometryFactory geometryFactory = new GeometryFactory( new PrecisionModel(), srid );
+            Coordinate coordinate = new Coordinate(point.x(), point.y());
+            if (!Double.isNaN( point.z() )){
+                coordinate.setZ( point.z() );
+            }
+            return PolyGeometry.of(geometryFactory.createPoint( coordinate ));
+        }
+
+        throw new GenericRuntimeException( String.format( "Could not transform object of type %s to PolyGeometry", value.type() ) );
     }
 
     static PolyPath asPolyPath( Path path ) {
@@ -343,6 +370,7 @@ public interface NeoUtil {
             case AVG -> o -> String.format( "avg(%s)", o.get( 0 ) );
             case MIN -> o -> String.format( "min(%s)", o.get( 0 ) );
             case MAX -> o -> String.format( "max(%s)", o.get( 0 ) );
+            case CYPHER_POINT -> handlePoint( operatorName, operands, returnType );
             default -> null;
         };
 
@@ -357,6 +385,26 @@ public interface NeoUtil {
             return null;
         }
         return o -> o.get( 0 );
+    }
+
+    static Function1<List<String>, String> handlePoint( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType ) {
+        // return point( { argName1: argValue1, argName2: argValue2 } )
+        List<String> arguments = new ArrayList<>();
+        for (int i = 0; i < operands.size(); i += 2) {
+            RexNode argName = operands.get(i);
+            RexNode argValue = operands.get(i + 1);
+
+            if (argName instanceof RexLiteral argNameLiteral && argValue instanceof RexLiteral argValueLiteral){
+                if (argNameLiteral.value == null){
+                    // Unknown value, we are done.
+                    break;
+                }
+                String arg = argNameLiteral.value.toString() + ":" + argValueLiteral.value.toString();
+                arguments.add(arg);
+            }
+        }
+
+        return o -> "point({" + String.join( ",", arguments) + "})";
     }
 
     static Function1<List<String>, String> handleDivide( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType ) {
