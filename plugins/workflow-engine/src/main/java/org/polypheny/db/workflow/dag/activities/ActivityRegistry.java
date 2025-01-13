@@ -91,8 +91,7 @@ public class ActivityRegistry {
      * @param resolved a map of setting keys to their resolved JSON node representations.
      * @return an unmodifiable map of setting keys to their corresponding {@code SettingValue} instances.
      * @throws IllegalArgumentException if no activity definition is found for the provided {@code activityType}
-     * or if a JsonNode has an unexpected format.
-     * @throws InvalidSettingException if the settingValue is not valid for the corresponding SettingDef
+     * @throws InvalidSettingException if the settingValue is not valid for the corresponding SettingDef or if a JsonNode has an unexpected format.
      */
     public static Settings buildSettingValues( String activityType, Map<String, JsonNode> resolved ) throws InvalidSettingException {
         return buildSettingValues( activityType, resolved, false );
@@ -105,10 +104,16 @@ public class ActivityRegistry {
         Map<String, SettingValue> settingValues = new HashMap<>();
         for ( Entry<String, JsonNode> entry : resolved.entrySet() ) {
             String key = entry.getKey();
-            SettingValue settingValue = disableValidation ?
-                    settingDefs.get( key ).buildValue( entry.getValue() ) :
-                    settingDefs.get( key ).buildValidatedValue( entry.getValue() );
-            settingValues.put( key, settingValue );
+            try {
+                SettingValue settingValue = disableValidation ?
+                        settingDefs.get( key ).buildValue( entry.getValue() ) :
+                        settingDefs.get( key ).buildValidatedValue( entry.getValue() );
+                settingValues.put( key, settingValue );
+            } catch ( InvalidSettingException e ) {
+                throw e;
+            } catch ( Exception e ) {
+                throw new InvalidSettingException( e.getMessage(), key ); // ensure illegal setting format is catched
+            }
         }
         return new Settings( settingValues );
     }
@@ -121,7 +126,8 @@ public class ActivityRegistry {
      * @param activityType the identifier for the activity type.
      * @param resolved a map of setting keys to {@link Optional<JsonNode>} values, where unresolved settings are {@link Optional#empty()}.
      * @return a wrapper around a map of setting keys to {@link Optional<SettingValue>} instances, where missing or unresolved settings are {@link Optional#empty()}.
-     * @throws IllegalArgumentException if the {@code activityType} is invalid or a {@link JsonNode} has an unexpected format or is invalid.
+     * @throws InvalidSettingException if a {@link JsonNode} has an unexpected format or results in an invalid setting value.
+     * @throws IllegalArgumentException if the {@code activityType} is invalid.
      */
     public static SettingsPreview buildAvailableSettingValues( String activityType, Map<String, Optional<JsonNode>> resolved ) throws InvalidSettingException {
         Map<String, SettingDef> settingDefs = get( activityType ).getSettings();
@@ -131,7 +137,13 @@ public class ActivityRegistry {
             String key = entry.getKey();
             Optional<JsonNode> node = entry.getValue();
             if ( node.isPresent() ) {
-                settingValues.put( key, Optional.of( settingDefs.get( key ).buildValidatedValue( node.get() ) ) );
+                try {
+                    settingValues.put( key, Optional.of( settingDefs.get( key ).buildValidatedValue( node.get() ) ) );
+                } catch ( InvalidSettingException e ) {
+                    throw e;
+                } catch ( Exception e ) {
+                    throw new InvalidSettingException( e.getMessage(), key );
+                }
             } else {
                 settingValues.put( key, Optional.empty() );
             }

@@ -21,7 +21,6 @@ import java.util.Optional;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
-import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
@@ -79,7 +78,7 @@ public interface Pipeable extends Activity {
             OutputPipe outPipe = new CheckpointOutputPipe( type, writer, ctx, tupleCount );
             pipe( inPipes, outPipe, settings, pipeCtx );
         } catch ( PipeInterruptedException e ) {
-            throw new ExecutorException( "Activity execution was interrupted" );
+            ctx.throwException( "Activity execution was interrupted" );
         }
     }
 

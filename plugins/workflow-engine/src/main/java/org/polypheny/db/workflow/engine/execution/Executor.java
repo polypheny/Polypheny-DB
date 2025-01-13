@@ -16,10 +16,15 @@
 
 package org.polypheny.db.workflow.engine.execution;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
@@ -116,28 +121,55 @@ public abstract class Executor implements Callable<Void> {
 
     public static class ExecutorException extends Exception {
 
+        private final UUID origin;
+
+
         public ExecutorException( String message ) {
             super( message );
+            this.origin = null;
+        }
+
+
+        public ExecutorException( String message, UUID origin ) {
+            super( message );
+            this.origin = origin;
         }
 
 
         public ExecutorException( Throwable cause ) {
-            super( cause );
+            super( cause.getMessage() );
+            this.origin = null;
+        }
+
+
+        public ExecutorException( Throwable cause, UUID origin ) {
+            super( cause.getMessage() );
+            this.origin = origin;
         }
 
 
         public ExecutorException( String message, Throwable cause ) {
             super( message, cause );
+            this.origin = null;
         }
 
 
-        public ObjectNode getVariableValue() {
+        public ObjectNode getVariableValue( Set<UUID> fallbackOrigin ) {
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode node = mapper.createObjectNode();
             node.put( "message", getMessage() );
             if ( getCause() != null ) {
                 node.put( "cause", getCause().getMessage() );
             }
+            JsonNode originNode;
+            if ( origin != null ) {
+                originNode = TextNode.valueOf( origin.toString() );
+            } else {
+                ArrayNode arr = mapper.createArrayNode();
+                fallbackOrigin.forEach( n -> arr.add( n.toString() ) );
+                originNode = arr;
+            }
+            node.set( "origin", originNode );
             return node;
         }
 

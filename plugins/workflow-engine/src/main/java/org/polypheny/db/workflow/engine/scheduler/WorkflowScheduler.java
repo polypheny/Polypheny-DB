@@ -306,7 +306,7 @@ public class WorkflowScheduler {
 
 
     private void setErrorVariable( Set<UUID> activities, ExecutorException exception ) {
-        ObjectNode value = exception.getVariableValue();
+        ObjectNode value = exception.getVariableValue( activities );
         for ( UUID n : activities ) {
             workflow.getActivity( n ).getVariables().setError( value );
         }

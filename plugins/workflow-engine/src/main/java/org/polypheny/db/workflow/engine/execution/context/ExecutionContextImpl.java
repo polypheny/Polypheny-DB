@@ -72,7 +72,7 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
     @Override
     public void checkInterrupted() throws ExecutorException {
         if ( interrupt ) {
-            throw new ExecutorException( "Activity execution was interrupted" );
+            throwException( "Activity execution was interrupted" );
         }
     }
 
@@ -147,6 +147,18 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
     @Override
     public ReadableVariableStore getVariableStore() {
         return activityWrapper.getVariables();
+    }
+
+
+    @Override
+    public void throwException( String message ) throws ExecutorException {
+        throw new ExecutorException( message, activityWrapper.getId() );
+    }
+
+
+    @Override
+    public void throwException( Throwable cause ) throws ExecutorException {
+        throw new ExecutorException( cause, activityWrapper.getId() );
     }
 
 

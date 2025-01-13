@@ -69,7 +69,6 @@ public class FusionExecutor extends Executor {
 
     @Override
     void execute() throws ExecutorException {
-        System.out.println( "Start execution fused tree: " + execTree );
         ActivityWrapper rootWrapper = workflow.getActivity( rootId );
         Transaction transaction = sm.getTransaction( rootId, rootWrapper.getConfig().getCommonType() );
         Statement statement = transaction.createStatement();

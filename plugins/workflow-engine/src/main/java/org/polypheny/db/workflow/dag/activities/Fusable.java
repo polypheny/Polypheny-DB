@@ -32,7 +32,6 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
-import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
@@ -82,12 +81,12 @@ public interface Fusable extends Activity {
         AlgRoot root = AlgRoot.of( fuse( inNodes, settings, cluster ), Kind.SELECT );
 
         if ( !QueryUtils.validateAlg( root, false, null ) ) {
-            throw new ExecutorException( "The fused AlgNode tree may not perform data manipulation" );
+            ctx.throwException( "The fused AlgNode tree may not perform data manipulation" );
         }
 
         ExecutedContext executedContext = QueryUtils.executeAlgRoot( root, statement );
         if ( executedContext.getException().isPresent() ) {
-            throw new ExecutorException( "An error occurred while executing the fused activities." );
+            ctx.throwException( "An error occurred while executing the fused activities." );
         }
 
         long countDelta = Math.max( estimatedTupleCount / 100, 1 );
@@ -103,7 +102,7 @@ public interface Fusable extends Activity {
                 }
             }
         } catch ( Exception e ) {
-            throw new ExecutorException( e );
+            ctx.throwException( e );
         } finally {
             executedContext.getIterator().close();
         }

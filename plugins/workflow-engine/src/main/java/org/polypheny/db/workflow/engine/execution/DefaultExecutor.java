@@ -52,7 +52,7 @@ public class DefaultExecutor extends Executor {
             wrapper.setOutTypePreview( sm.getOptionalCheckpointTypes( wrapper.getId() ) );
             ctx.updateProgress( 1 ); // ensure progress is correct
         } catch ( Exception e ) {
-            throw new ExecutorException( e );
+            throw new ExecutorException( e, wrapper.getId() );
         }
     }
 
