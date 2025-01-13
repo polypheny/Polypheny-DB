@@ -116,6 +116,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         //		  }
         //		},
         GraphResult res = execute( "MATCH (n) RETURN n;" );
+        // TODO: Validate object properties as well...
         assert res.data.length == 1;
     }
 
