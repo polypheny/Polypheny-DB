@@ -457,13 +457,12 @@ public class PolyAlgUtils {
                         includeType = RexDigestIncludeType.NO_TYPE;
                     }
                 }
-                // TODO RB: Check if this fixes the unknown operands for CYPHER_POINT
-//                if (call.getOperator().getOperatorName() == OperatorName.CYPHER_POINT){
-//                    if (((RexLiteral)operand).value == null){
-//                        // Argument of CYPHER_POINT not used. We can safely skip it.
-//                        continue;
-//                    }
-//                }
+                // Argument of CYPHER_POINT not used (=unknown). We can safely skip it.
+                if (call.getOperator().getOperatorName() == OperatorName.CYPHER_POINT){
+                    if (((RexLiteral)operand).value == null){
+                        continue;
+                    }
+                }
                 sb.append( visitLiteral( (RexLiteral) operand, includeType ) );
             }
         }
