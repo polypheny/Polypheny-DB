@@ -35,6 +35,7 @@ import org.polypheny.db.workflow.models.requests.WsRequest.CreateEdgeRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.DeleteActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.DeleteEdgeRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.ExecuteRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.GetCheckpointRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.InterruptRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.RequestType;
 import org.polypheny.db.workflow.models.requests.WsRequest.ResetRequest;
@@ -87,6 +88,7 @@ public class WorkflowWebSocket implements Consumer<WsConfig> {
                 case RESET -> session.handleRequest( ctx.messageAsClass( ResetRequest.class ) );
                 case UPDATE_CONFIG -> session.handleRequest( ctx.messageAsClass( UpdateConfigRequest.class ) );
                 case UPDATE_VARIABLES -> session.handleRequest( ctx.messageAsClass( UpdateVariablesRequest.class ) );
+                case GET_CHECKPOINT -> session.handleRequest( ctx.messageAsClass( GetCheckpointRequest.class ), ctx );
                 default -> throw new IllegalArgumentException( "Received request with unknown type!" );
             }
         } catch ( Exception e ) {

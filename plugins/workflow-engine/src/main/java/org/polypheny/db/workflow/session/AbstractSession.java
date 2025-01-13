@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.session;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.javalin.websocket.WsMessageContext;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
@@ -28,12 +29,18 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.util.Triple;
+import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
+import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
+import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionMonitor;
 import org.polypheny.db.workflow.engine.scheduler.GlobalScheduler;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.SessionModel;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
@@ -45,6 +52,7 @@ import org.polypheny.db.workflow.models.requests.WsRequest.CreateEdgeRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.DeleteActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.DeleteEdgeRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.ExecuteRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.GetCheckpointRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.InterruptRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.ResetRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
@@ -153,6 +161,23 @@ public abstract class AbstractSession {
     }
 
 
+    Triple<Result<?, ?>, Integer, Long> getCheckpointData( UUID activityId, int outputIndex ) {
+
+        ActivityWrapper wrapper = workflow.getActivityOrThrow( activityId );
+        if ( wrapper.getState() != ActivityState.SAVED ) {
+            throw new IllegalStateException( "Only checkpoints of saved activities can be requested" );
+        }
+
+        if ( !sm.hasCheckpoint( activityId, outputIndex ) ) {
+            throw new GenericRuntimeException( "The specified checkpoint does not exist" );
+        }
+
+        try ( CheckpointReader reader = sm.readCheckpoint( activityId, outputIndex ) ) {
+            return reader.getPreview();
+        }
+    }
+
+
     void interruptExecution() {
         throwIfNotExecuting();
         scheduler.interruptExecution( sessionId );
@@ -210,6 +235,11 @@ public abstract class AbstractSession {
 
 
     public void handleRequest( UpdateVariablesRequest request ) {
+        throwUnsupported( request );
+    }
+
+
+    public void handleRequest( GetCheckpointRequest request, WsMessageContext ctx ) {
         throwUnsupported( request );
     }
 

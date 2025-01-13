@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.models.responses;
 
 import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.ACTIVITY_UPDATE;
+import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.CHECKPOINT_DATA;
 import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.ERROR;
 import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.PROGRESS_UPDATE;
 import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.RENDERING_UPDATE;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
@@ -58,7 +60,8 @@ public class WsResponse {
         RENDERING_UPDATE, // only renderModel of an activity
         STATE_UPDATE, // all edge and activity states
         PROGRESS_UPDATE,
-        ERROR
+        ERROR,
+        CHECKPOINT_DATA
     }
 
 
@@ -118,6 +121,23 @@ public class WsResponse {
         public ProgressUpdateResponse( @Nullable UUID parentId, Map<UUID, Double> progress ) {
             super( PROGRESS_UPDATE, parentId );
             this.progress = progress;
+        }
+
+    }
+
+
+    public static class CheckpointDataResponse extends WsResponse {
+
+        public final Result<?, ?> result;
+        public final int limit; // the fixed limit on the number of rows / docs / nodes
+        public final long totalCount; // total number of rows / docs / nodes
+
+
+        public CheckpointDataResponse( @Nullable UUID parentId, Result<?, ?> result, int limit, long totalCount ) {
+            super( CHECKPOINT_DATA, parentId );
+            this.result = result;
+            this.limit = limit;
+            this.totalCount = totalCount;
         }
 
     }

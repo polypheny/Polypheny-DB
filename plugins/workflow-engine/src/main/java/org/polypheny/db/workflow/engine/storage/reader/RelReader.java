@@ -27,9 +27,14 @@ import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Triple;
+import org.polypheny.db.webui.models.requests.UIRequest;
+import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
 public class RelReader extends CheckpointReader {
+
+    public static final int PREVIEW_ROW_LIMIT = 100;
 
 
     public RelReader( LogicalTable table, Transaction transaction ) {
@@ -72,6 +77,25 @@ public class RelReader extends CheckpointReader {
     @Override
     public long getTupleCount() {
         return getRowCount();
+    }
+
+
+    @Override
+    public Triple<Result<?, ?>, Integer, Long> getPreview() {
+        LogicalTable table = getTable();
+        String query = "SELECT " + QueryUtils.quoteAndJoin( table.getColumnNames() ) + " FROM " + QueryUtils.quotedIdentifier( table )
+                + " LIMIT " + PREVIEW_ROW_LIMIT;
+        UIRequest request = UIRequest.builder()
+                .entityId( table.id )
+                .namespace( table.getNamespaceName() )
+                .build();
+        ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery(
+                query, "SQL", table.getNamespaceId(), transaction );
+
+        return Triple.of(
+                QueryUtils.getRelResult( executedContext, request, executedContext.getStatement() ),
+                PREVIEW_ROW_LIMIT,
+                getRowCount() );
     }
 
 

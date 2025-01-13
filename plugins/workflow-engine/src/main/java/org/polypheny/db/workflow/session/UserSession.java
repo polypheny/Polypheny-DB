@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.session;
 
+import io.javalin.websocket.WsMessageContext;
 import java.util.Map.Entry;
 import java.util.UUID;
 import lombok.Getter;
@@ -23,6 +24,8 @@ import lombok.Setter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.util.Triple;
+import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
@@ -35,12 +38,14 @@ import org.polypheny.db.workflow.models.requests.WsRequest.CreateEdgeRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.DeleteActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.DeleteEdgeRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.ExecuteRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.GetCheckpointRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.InterruptRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.ResetRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateConfigRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateVariablesRequest;
 import org.polypheny.db.workflow.models.responses.WsResponse.ActivityUpdateResponse;
+import org.polypheny.db.workflow.models.responses.WsResponse.CheckpointDataResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.RenderingUpdateResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.StateUpdateResponse;
 
@@ -162,6 +167,13 @@ public class UserSession extends AbstractSession {
     public void handleRequest( InterruptRequest request ) {
         throwIfNotExecuting();
         interruptExecution();
+    }
+
+
+    @Override
+    public void handleRequest( GetCheckpointRequest request, WsMessageContext ctx ) {
+        Triple<Result<?, ?>, Integer, Long> preview = getCheckpointData( request.activityId, request.outputIndex );
+        ctx.send( new CheckpointDataResponse( request.msgId, preview.left, preview.middle, preview.right ) ); // we do NOT broadcast the result
     }
 
 

@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -167,6 +168,8 @@ public interface Workflow {
 
     void reset( StorageManager sm );
 
+    void resetFailedExecutionInit( StorageManager sm );
+
     ActivityWrapper addActivity( String activityType, RenderModel renderModel );
 
     ActivityWrapper cloneActivity( UUID activityId, double posX, double posY );
@@ -193,6 +196,10 @@ public interface Workflow {
     void validateStructure( StorageManager sm ) throws Exception;
 
     void validateStructure( StorageManager sm, AttributedDirectedGraph<UUID, ExecutionEdge> subDag ) throws IllegalStateException;
+
+    default ActivityWrapper getActivityOrThrow( UUID activityId ) {
+        return Objects.requireNonNull( getActivity( activityId ), "Activity does not exist: " + activityId );
+    }
 
 
     /**

@@ -35,6 +35,8 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
+import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
 public abstract class CheckpointReader implements AutoCloseable {
@@ -109,6 +111,14 @@ public abstract class CheckpointReader implements AutoCloseable {
     public Pair<AlgDataType, Iterator<List<PolyValue>>> getIteratorFromQuery( CheckpointQuery query ) {
         return getIteratorFromQuery( query, List.of( this ) );
     }
+
+
+    /**
+     * Reads a subset of this checkpoint and returns it as a Result that can be sent to the frontend.
+     *
+     * @return a preview of this checkpoint, followed by the limit on the number of tuples and the total count for this checkpoint (for graphs: node-count)
+     */
+    public abstract Triple<Result<?, ?>, Integer, Long> getPreview();
 
 
     /**

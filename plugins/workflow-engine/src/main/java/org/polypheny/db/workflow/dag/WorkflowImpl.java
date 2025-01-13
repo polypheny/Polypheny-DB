@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
@@ -115,11 +114,6 @@ public class WorkflowImpl implements Workflow {
     @Override
     public ActivityWrapper getActivity( UUID activityId ) {
         return activities.get( activityId );
-    }
-
-
-    private ActivityWrapper getActivityOrThrow( UUID activityId ) {
-        return Objects.requireNonNull( activities.get( activityId ), "Activity does not exist: " + activityId );
     }
 
 
@@ -336,6 +330,16 @@ public class WorkflowImpl implements Workflow {
     @Override
     public void reset( StorageManager sm ) {
         resetAll( getActivities().stream().map( ActivityWrapper::getId ).toList(), sm );
+    }
+
+
+    @Override
+    public void resetFailedExecutionInit( StorageManager sm ) {
+        resetAll( getActivities().stream()
+                .filter( a -> a.getState() == ActivityState.QUEUED )
+                .map( ActivityWrapper::getId ).toList(), sm
+        );
+        setState( WorkflowState.IDLE );
     }
 
 

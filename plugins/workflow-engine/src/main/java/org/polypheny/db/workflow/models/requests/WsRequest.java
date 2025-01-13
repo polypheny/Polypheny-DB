@@ -46,6 +46,7 @@ public class WsRequest {
         RESET,
         UPDATE_CONFIG, // workflow config
         UPDATE_VARIABLES,
+        GET_CHECKPOINT,
         KEEPALIVE
     }
 
@@ -129,6 +130,14 @@ public class WsRequest {
     public static class UpdateVariablesRequest extends WsRequest {
 
         public Map<String, JsonNode> variables;
+
+    }
+
+
+    public static class GetCheckpointRequest extends WsRequest {
+
+        public UUID activityId;
+        public int outputIndex;
 
     }
 

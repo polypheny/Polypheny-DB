@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -29,9 +30,16 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.util.Triple;
+import org.polypheny.db.webui.crud.LanguageCrud;
+import org.polypheny.db.webui.models.requests.UIRequest;
+import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
 public class LpgReader extends CheckpointReader {
+
+    public static final int PREVIEW_NODES_LIMIT = 100;
+
 
     public LpgReader( LogicalGraph graph, Transaction transaction ) {
         super( graph, transaction );
@@ -133,6 +141,22 @@ public class LpgReader extends CheckpointReader {
     @Override
     public long getTupleCount() {
         return getNodeCount() + getEdgeCount();
+    }
+
+
+    @Override
+    public Triple<Result<?, ?>, Integer, Long> getPreview() {
+        LogicalGraph graph = getGraph();
+        String query = "MATCH (n) RETURN n LIMIT " + PREVIEW_NODES_LIMIT;
+        UIRequest request = UIRequest.builder()
+                .namespace( Catalog.snapshot().getNamespace( graph.getNamespaceId() ).orElseThrow().getName() )
+                .build();
+        ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery(
+                query, "cypher", graph.getNamespaceId(), transaction );
+
+        return Triple.of( LanguageCrud.getGraphResult( executedContext, request, executedContext.getStatement() ).build(),
+                PREVIEW_NODES_LIMIT,
+                getNodeCount() );
     }
 
 

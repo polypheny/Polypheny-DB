@@ -29,9 +29,16 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.util.Triple;
+import org.polypheny.db.webui.crud.LanguageCrud;
+import org.polypheny.db.webui.models.requests.UIRequest;
+import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
 public class DocReader extends CheckpointReader {
+
+    public static final int PREVIEW_DOCS_LIMIT = 100;
+
 
     public DocReader( LogicalCollection collection, Transaction transaction ) {
         super( collection, transaction );
@@ -100,6 +107,23 @@ public class DocReader extends CheckpointReader {
     @Override
     public long getTupleCount() {
         return getDocCount();
+    }
+
+
+    @Override
+    public Triple<Result<?, ?>, Integer, Long> getPreview() {
+        LogicalCollection collection = getCollection();
+        String query = "db.\"" + collection.getName() + "\".find({}).limit(" + PREVIEW_DOCS_LIMIT + ")";
+        UIRequest request = UIRequest.builder()
+                .entityId( collection.id )
+                .namespace( collection.getNamespaceName() )
+                .build();
+        ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery(
+                query, "MQL", collection.getNamespaceId(), transaction );
+
+        return Triple.of( LanguageCrud.getDocResult( executedContext, request, executedContext.getStatement() ).build(),
+                PREVIEW_DOCS_LIMIT,
+                getDocCount() );
     }
 
 

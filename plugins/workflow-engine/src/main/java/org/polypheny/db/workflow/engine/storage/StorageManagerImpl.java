@@ -259,7 +259,7 @@ public class StorageManagerImpl implements StorageManager {
         LogicalGraph graph = Catalog.snapshot().graph().getGraph( graphId ).orElseThrow();
         register( activityId, outputIdx, graph );
         registeredNamespaces.put( graphId, graphName );
-        return new LpgWriter( graph, QueryUtils.startTransaction( docNamespace, "DocWrite" ) );
+        return new LpgWriter( graph, QueryUtils.startTransaction( graphId, "LpgWrite" ) );
     }
 
 

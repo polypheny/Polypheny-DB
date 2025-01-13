@@ -16,11 +16,15 @@
 
 package org.polypheny.db.workflow.engine.storage;
 
+import java.sql.ResultSetMetaData;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -28,9 +32,11 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
@@ -57,6 +63,14 @@ import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.webui.crud.LanguageCrud;
+import org.polypheny.db.webui.models.SortState;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition.UiColumnDefinitionBuilder;
+import org.polypheny.db.webui.models.requests.UIRequest;
+import org.polypheny.db.webui.models.results.QueryType;
+import org.polypheny.db.webui.models.results.RelationalResult;
+import org.polypheny.db.webui.models.results.Result;
 
 public class QueryUtils {
 
@@ -135,7 +149,7 @@ public class QueryUtils {
         } else if ( entity instanceof LogicalCollection collection ) {
             return "\"" + collection.getNamespaceName() + "\".\"" + collection.getName() + "\"";
         } else if ( entity instanceof LogicalGraph graph ) {
-            return "\"" + graph.getNamespaceName() + "\"";
+            return "\"" + Catalog.snapshot().getNamespace( graph.getNamespaceId() ).orElseThrow().getName() + "\"";
         }
         throw new IllegalArgumentException( "Encountered unknown entity type" );
     }
@@ -249,6 +263,66 @@ public class QueryUtils {
             }
         }
         return size;
+    }
+
+
+    public static Result<?, ?> getRelResult( ExecutedContext context, UIRequest request, Statement statement ) {
+        // TODO decide whether to use this method or LanguageCrud directly
+        if ( context.getException().isPresent() ) {
+            return LanguageCrud.buildErrorResult( statement.getTransaction(), context, context.getException().get() ).build();
+        }
+
+        Catalog catalog = Catalog.getInstance();
+        ResultIterator iterator = context.getIterator();
+        List<List<PolyValue>> rows;
+        try {
+            rows = iterator.getAllRowsAndClose();
+        } catch ( Exception e ) {
+            return LanguageCrud.buildErrorResult( statement.getTransaction(), context, e ).build();
+        }
+
+        LogicalTable table = null;
+        if ( request.entityId != null ) {
+            table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
+        }
+
+        List<UiColumnDefinition> header = new ArrayList<>();
+        for ( AlgDataTypeField field : context.getIterator().getImplementation().tupleType.getFields() ) {
+            String columnName = field.getName();
+
+            UiColumnDefinitionBuilder<?, ?> dbCol = UiColumnDefinition.builder()
+                    .name( field.getName() )
+                    .dataType( field.getType().getFullTypeString() )
+                    .nullable( field.getType().isNullable() == (ResultSetMetaData.columnNullable == 1) )
+                    .precision( field.getType().getPrecision() )
+                    .sort( new SortState() )
+                    .filter( "" );
+
+            // Get column default values
+            if ( table != null ) {
+                Optional<LogicalColumn> optional = catalog.getSnapshot().rel().getColumn( table.id, columnName );
+                if ( optional.isPresent() ) {
+                    if ( optional.get().defaultValue != null ) {
+                        dbCol.defaultValue( optional.get().defaultValue.value.toJson() );
+                    }
+                }
+            }
+            header.add( dbCol.build() );
+        }
+
+        List<String[]> data = LanguageCrud.computeResultData( rows, header, statement.getTransaction() );
+
+        return RelationalResult
+                .builder()
+                .header( header.toArray( new UiColumnDefinition[0] ) )
+                .data( data.toArray( new String[0][] ) )
+                .dataModel( context.getIterator().getImplementation().getDataModel() )
+                .namespace( request.namespace )
+                .language( context.getQuery().getLanguage() )
+                .affectedTuples( data.size() )
+                .queryType( QueryType.from( context.getImplementation().getKind() ) )
+                .xid( statement.getTransaction().getXid().toString() )
+                .query( context.getQuery().getQuery() ).build();
     }
 
 

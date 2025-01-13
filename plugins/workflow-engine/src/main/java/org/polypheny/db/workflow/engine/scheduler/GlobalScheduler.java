@@ -36,7 +36,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.workflow.dag.Workflow;
-import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo.ExecutionState;
@@ -100,7 +99,7 @@ public class GlobalScheduler {
             scheduler = new WorkflowScheduler( workflow, sm, monitor, globalWorkerCount, targetActivity );
             submissions = scheduler.startExecution();
         } catch ( Exception e ) {
-            workflow.setState( WorkflowState.IDLE );
+            workflow.resetFailedExecutionInit( sm );
             monitor.stop();
             throw e;
         }
