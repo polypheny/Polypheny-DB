@@ -30,6 +30,8 @@ import org.polypheny.db.catalog.impl.Expressible;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Namespace;
 
+import static org.polypheny.db.adapter.neo4j.Neo4jPlugin.getMappingLabel;
+
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class NeoNamespace extends Namespace implements Expressible {
@@ -65,6 +67,10 @@ public class NeoNamespace extends Namespace implements Expressible {
     public NeoEntity createEntity( PhysicalEntity entity, List<? extends PhysicalField> fields, NeoNamespace namespace ) {
 
         return new NeoEntity( entity, fields, namespace );
+    }
+
+    public NeoGraph createGraph( PhysicalEntity entity, List<? extends PhysicalField> fields, Driver db, Neo4jStore store  ) {
+        return new NeoGraph( entity, fields, this.transactionProvider, db, getMappingLabel( entity.id ), store );
     }
 
 
