@@ -39,6 +39,7 @@ import org.polypheny.db.workflow.models.requests.WsRequest.InterruptRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.ResetRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateConfigRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.UpdateVariablesRequest;
 import org.polypheny.db.workflow.models.responses.WsResponse.ActivityUpdateResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.RenderingUpdateResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.StateUpdateResponse;
@@ -131,6 +132,14 @@ public class UserSession extends AbstractSession {
             sm.setDefaultStore( entry.getKey(), entry.getValue() );
         }
         // broadcasting the updated config is not required
+    }
+
+
+    @Override
+    public void handleRequest( UpdateVariablesRequest request ) {
+        throwIfNotEditable();
+        workflow.updateVariables( request.variables );
+        // broadcasting the updated variables is not required
     }
 
 

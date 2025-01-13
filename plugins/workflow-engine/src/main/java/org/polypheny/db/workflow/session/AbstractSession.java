@@ -17,9 +17,11 @@
 package org.polypheny.db.workflow.session;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
@@ -47,6 +49,7 @@ import org.polypheny.db.workflow.models.requests.WsRequest.InterruptRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.ResetRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateConfigRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.UpdateVariablesRequest;
 import org.polypheny.db.workflow.models.responses.WsResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.ResponseType;
 
@@ -109,6 +112,11 @@ public abstract class AbstractSession {
 
     public WorkflowConfigModel getWorkflowConfig() {
         return workflow.getConfig();
+    }
+
+
+    public Map<String, JsonNode> getVariables() {
+        return workflow.getVariables().getVariables();
     }
 
 
@@ -197,6 +205,11 @@ public abstract class AbstractSession {
 
 
     public void handleRequest( UpdateConfigRequest request ) {
+        throwUnsupported( request );
+    }
+
+
+    public void handleRequest( UpdateVariablesRequest request ) {
         throwUnsupported( request );
     }
 

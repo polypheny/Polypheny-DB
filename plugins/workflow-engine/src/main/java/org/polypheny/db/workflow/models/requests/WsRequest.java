@@ -45,6 +45,7 @@ public class WsRequest {
         INTERRUPT,
         RESET,
         UPDATE_CONFIG, // workflow config
+        UPDATE_VARIABLES,
         KEEPALIVE
     }
 
@@ -121,6 +122,13 @@ public class WsRequest {
     public static class UpdateConfigRequest extends WsRequest {
 
         public WorkflowConfigModel workflowConfig;
+
+    }
+
+
+    public static class UpdateVariablesRequest extends WsRequest {
+
+        public Map<String, JsonNode> variables;
 
     }
 

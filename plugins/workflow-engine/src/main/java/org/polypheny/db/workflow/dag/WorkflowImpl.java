@@ -205,6 +205,12 @@ public class WorkflowImpl implements Workflow {
 
 
     @Override
+    public void updateVariables( Map<String, JsonNode> variables ) {
+        this.variables.reset( variables );
+    }
+
+
+    @Override
     public void updatePreview( UUID activityId ) {
         try {
             updatePreview( activityId, false );

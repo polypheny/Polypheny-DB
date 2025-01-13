@@ -90,6 +90,8 @@ public interface Workflow {
 
     VariableStore getVariables();
 
+    void updateVariables( Map<String, JsonNode> variables );
+
     /**
      * Sets the state of this workflow to the specified value.
      * A workflow should not change its state by itself (after initialization).

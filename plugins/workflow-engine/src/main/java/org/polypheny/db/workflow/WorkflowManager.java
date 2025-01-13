@@ -209,6 +209,7 @@ public class WorkflowManager {
         server.addSerializedRoute( PATH + "/sessions/{sessionId}", this::getSession, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow", this::getActiveWorkflow, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/config", this::getWorkflowConfig, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/variables", this::getWorkflowVariables, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/{activityId}", this::getActivity, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/{activityId}/{outIndex}", this::getIntermediaryResult, HandlerType.GET );
         server.addSerializedRoute( PATH + "/workflows", this::getWorkflowDefs, HandlerType.GET );
@@ -242,6 +243,12 @@ public class WorkflowManager {
     private void getWorkflowConfig( final Context ctx ) {
         UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
         process( ctx, () -> sessionManager.getSessionOrThrow( sessionId ).getWorkflowConfig() );
+    }
+
+
+    private void getWorkflowVariables( final Context ctx ) {
+        UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
+        process( ctx, () -> sessionManager.getSessionOrThrow( sessionId ).getVariables() );
     }
 
 

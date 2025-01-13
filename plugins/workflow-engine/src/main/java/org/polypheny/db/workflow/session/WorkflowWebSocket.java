@@ -40,6 +40,7 @@ import org.polypheny.db.workflow.models.requests.WsRequest.RequestType;
 import org.polypheny.db.workflow.models.requests.WsRequest.ResetRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateConfigRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.UpdateVariablesRequest;
 import org.polypheny.db.workflow.models.responses.WsResponse.ErrorResponse;
 
 @Slf4j
@@ -85,6 +86,7 @@ public class WorkflowWebSocket implements Consumer<WsConfig> {
                 case INTERRUPT -> session.handleRequest( ctx.messageAsClass( InterruptRequest.class ) );
                 case RESET -> session.handleRequest( ctx.messageAsClass( ResetRequest.class ) );
                 case UPDATE_CONFIG -> session.handleRequest( ctx.messageAsClass( UpdateConfigRequest.class ) );
+                case UPDATE_VARIABLES -> session.handleRequest( ctx.messageAsClass( UpdateVariablesRequest.class ) );
                 default -> throw new IllegalArgumentException( "Received request with unknown type!" );
             }
         } catch ( Exception e ) {
