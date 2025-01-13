@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.locationtech.jts.geom.Coordinate;
@@ -123,8 +124,7 @@ public class CypherLiteral extends CypherExpression {
                 Map<PolyString, PolyValue> map = mapValue.entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), e -> {
                     if (e.getValue() instanceof CypherFunctionInvocation func && func.getOperatorName() == OperatorName.CYPHER_POINT ){
                         if (func.getArguments().get( 0 ) instanceof CypherLiteral literal){
-                            // TODO: get real values based on key-names. 
-                            return handlePoint( new PolyDouble( 1.1 ), new PolyDouble( 1.1 ) );
+                            return convertMapToPolyGeometry( literal.getMapValue() );
                         }
                     }
                     return e.getValue().getComparable();
@@ -142,11 +142,53 @@ public class CypherLiteral extends CypherExpression {
         };
     }
 
-    public PolyGeometry handlePoint( PolyNumber latitude, PolyNumber longitude ){
-        GeometryFactory geometryFactory = new GeometryFactory( new PrecisionModel(), 4326 );
+    public PolyGeometry convertMapToPolyGeometry( Map<String, CypherExpression> map ){
         Coordinate coordinate = new Coordinate();
-        coordinate.setX( latitude.doubleValue() );
-        coordinate.setY( longitude.doubleValue() );
+        boolean isCartesian = false;
+        boolean isSpherical = false;
+        boolean is3d = false;
+
+        for (String key : map.keySet()) {
+            CypherExpression value = map.get(key);
+            double doubleValue = value.getComparable().asDouble().doubleValue();
+
+            switch (key) {
+                case "x":
+                    coordinate.setX(doubleValue);
+                    isCartesian = true;
+                    break;
+                case "y":
+                    coordinate.setY(doubleValue);
+                    isCartesian = true;
+                    break;
+                case "z":
+                    coordinate.setZ(doubleValue);
+                    isCartesian = true;
+                    is3d = true;
+                    break;
+                case "latitude":
+                    coordinate.setX(doubleValue);
+                    isSpherical = true;
+                    break;
+                case "longitude":
+                    coordinate.setY(doubleValue);
+                    isSpherical = true;
+                    break;
+                case "height":
+                    coordinate.setZ(doubleValue);
+                    isSpherical = true;
+                    is3d = true;
+                    break;
+            }
+        }
+        assert !(isCartesian && isSpherical) : "Mixing x/y and latitude/longitude when creating points is not allowed";
+
+        int WGS84_2D = 4326;
+        int WGS84_3D = 4947;
+        int srid = isCartesian
+                ? 0
+                : (is3d ? WGS84_3D : WGS84_2D);
+        GeometryFactory geometryFactory = new GeometryFactory( new PrecisionModel(), srid );
         return PolyGeometry.of( geometryFactory.createPoint( coordinate ) );
     }
 
