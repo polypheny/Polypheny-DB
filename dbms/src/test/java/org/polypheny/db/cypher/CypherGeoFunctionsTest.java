@@ -33,6 +33,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.lang.String.format;
+
 public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
     final static String neo4jAdapterName = "neo4j";
