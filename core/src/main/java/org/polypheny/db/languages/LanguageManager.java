@@ -145,15 +145,6 @@ public class LanguageManager {
         int i = 0;
         String changedNamespace = null;
         for ( ParsedQueryContext parsed : parsedQueries ) {
-            // TODO: Remove after testing
-            if ( Kind.DDL.contains( parsed.getQueryNode().get().getKind() )) {
-                String currentPath = System.getProperty( "user.home" );
-                File file = new File( currentPath, "RO" );
-                if ( file.exists() ) {
-                    throw new GenericRuntimeException( "DML-Queries are not allowed. Sorry!" );
-                }
-            }
-
             if ( i != 0 ) {
                 // as long as we directly commit the transaction, we cannot reuse the same transaction
                 if ( previousDdl && !transaction.isActive() ) {
