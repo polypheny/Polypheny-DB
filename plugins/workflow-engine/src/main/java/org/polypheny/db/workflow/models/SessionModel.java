@@ -19,19 +19,21 @@ package org.polypheny.db.workflow.models;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Value;
+import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 
 @Value
 @AllArgsConstructor
 public class SessionModel {
 
     SessionModelType type;
-    UUID sessionId; // TODO: remove redundant session id, since it's already the map key? Or send list
+    UUID sessionId;
     int connectionCount;
 
     // USER_SESSION fields:
     UUID workflowId;
     Integer version;
     WorkflowDefModel workflowDef;
+    WorkflowState state;
 
 
     public SessionModel( SessionModelType type, UUID sId, int connectionCount ) {
@@ -41,6 +43,7 @@ public class SessionModel {
         this.workflowId = null;
         this.version = null;
         this.workflowDef = null;
+        this.state = null;
     }
 
 

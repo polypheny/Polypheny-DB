@@ -74,7 +74,7 @@ public class WorkflowRepoTest {
         UUID id = repo.createWorkflow( "versionTest" );
         int version = repo.writeVersion( id, "Initial version", new WorkflowModel() );
 
-        assertNotNull(  repo.readVersion( id, version ) );
+        assertNotNull( repo.readVersion( id, version ) );
         assertEquals( "Initial version", repo.getWorkflowDef( id ).getVersions().get( version ).getDescription() );
     }
 
@@ -115,28 +115,29 @@ public class WorkflowRepoTest {
         assertTrue( repo.doesExist( id, version2 ) );
     }
 
+
     @Test
     public void incrementVersionAfterDeletionTest() throws WorkflowRepoException {
-        UUID id = repo.createWorkflow("incrementAfterDeletion");
+        UUID id = repo.createWorkflow( "incrementAfterDeletion" );
 
-        int version1 = repo.writeVersion(id, "Version 1", new WorkflowModel());
-        int version2 = repo.writeVersion(id, "Version 2", new WorkflowModel());
-        int version3 = repo.writeVersion(id, "Version 3", new WorkflowModel());
-        int version4 = repo.writeVersion(id, "Version 4", new WorkflowModel());
+        int version1 = repo.writeVersion( id, "Version 1", new WorkflowModel() );
+        int version2 = repo.writeVersion( id, "Version 2", new WorkflowModel() );
+        int version3 = repo.writeVersion( id, "Version 3", new WorkflowModel() );
+        int version4 = repo.writeVersion( id, "Version 4", new WorkflowModel() );
 
-        repo.deleteVersion(id, version2);
-        repo.deleteVersion(id, version4);
+        repo.deleteVersion( id, version2 );
+        repo.deleteVersion( id, version4 );
 
         // the largest existing version (3 in this case) is incremented
-        assertEquals( version4, repo.writeVersion(id, "Version 4", new WorkflowModel()));
-        assertEquals(0, version1);
-        assertEquals(2, version3);
-        assertEquals(3, version4);
+        assertEquals( version4, repo.writeVersion( id, "Version 4", new WorkflowModel() ) );
+        assertEquals( 0, version1 );
+        assertEquals( 2, version3 );
+        assertEquals( 3, version4 );
 
-        assertTrue(repo.doesExist(id, version1));
-        assertFalse(repo.doesExist(id, version2));
-        assertTrue(repo.doesExist(id, version3));
-        assertTrue(repo.doesExist(id, version4));
+        assertTrue( repo.doesExist( id, version1 ) );
+        assertFalse( repo.doesExist( id, version2 ) );
+        assertTrue( repo.doesExist( id, version3 ) );
+        assertTrue( repo.doesExist( id, version4 ) );
     }
 
 
@@ -148,6 +149,16 @@ public class WorkflowRepoTest {
         assertEquals( "newName", repo.getWorkflowDef( id ).getName() );
         assertTrue( repo.doesNameExist( "newName" ) );
         assertFalse( repo.doesNameExist( "oldName" ) );
+    }
+
+
+    @Test
+    public void updateWorkflowGroupTest() throws WorkflowRepoException {
+        UUID id = repo.createWorkflow( "workflow", "originalGroup" );
+        assertEquals( "originalGroup", repo.getWorkflowDef( id ).getGroup() );
+        repo.updateWorkflowGroup( id, "newGroup" );
+
+        assertEquals( "newGroup", repo.getWorkflowDef( id ).getGroup() );
     }
 
 

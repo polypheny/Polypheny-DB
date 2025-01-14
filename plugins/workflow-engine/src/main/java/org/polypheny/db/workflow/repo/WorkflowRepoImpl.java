@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.workflow.models.WorkflowDefModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
@@ -98,7 +99,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
 
 
     @Override
-    public UUID createWorkflow( String name ) throws WorkflowRepoException {
+    public UUID createWorkflow( String name, @Nullable String group ) throws WorkflowRepoException {
         if ( doesNameExist( name ) ) {
             throw new WorkflowRepoException( "Name already exists: " + name, HttpCode.CONFLICT );
         }
@@ -113,7 +114,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
         } catch ( SecurityException e ) {
             throw new WorkflowRepoException( "Insufficient permissions to create workflow directory: " + workflowDir.getAbsolutePath(), e );
         }
-        serializeToFile( new File( workflowDir, DEF_FILE ), new WorkflowDefModel( name ) );
+        serializeToFile( new File( workflowDir, DEF_FILE ), new WorkflowDefModel( name, group ) );
 
         return id;
     }
@@ -162,20 +163,24 @@ public class WorkflowRepoImpl implements WorkflowRepo {
 
     @Override
     public void deleteVersion( UUID id, int version ) throws WorkflowRepoException {
+        WorkflowDefModel def = getWorkflowDef( id );
+        if ( def.getVersions().size() <= 1 ) {
+            throw new WorkflowRepoException( "Cannot delete the only remaining version of workflow " + def.getName(), HttpCode.FORBIDDEN );
+        }
+
         if ( !doesExist( id, version ) ) {
-            throw new WorkflowRepoException( "Unable to delete non-existent workflow version " + id + " v" + version, HttpCode.NOT_FOUND );
+            throw new WorkflowRepoException( "Unable to delete non-existent workflow version " + def.getName() + " v" + version, HttpCode.NOT_FOUND );
         }
 
         File dir = getWorkflowDir( id );
         File versionFile = new File( dir, version + ".json" );
         if ( !versionFile.exists() ) {
-            throw new WorkflowRepoException( "Version file " + versionFile.getName() + " not found for workflow " + id, HttpCode.NOT_FOUND );
+            throw new WorkflowRepoException( "Version file " + versionFile.getName() + " not found for workflow " + def.getName(), HttpCode.NOT_FOUND );
         }
         if ( !versionFile.delete() ) {
             throw new WorkflowRepoException( "Failed to delete version file: " + versionFile.getAbsolutePath() );
         }
 
-        WorkflowDefModel def = getWorkflowDef( id );
         def.removeVersion( version );
         serializeToFile( new File( dir, DEF_FILE ), def );
     }
@@ -192,7 +197,17 @@ public class WorkflowRepoImpl implements WorkflowRepo {
         }
         def.setName( name );
         serializeToFile( new File( getWorkflowDir( id ), DEF_FILE ), def );  // updated definition
+    }
 
+
+    @Override
+    public void updateWorkflowGroup( UUID id, String group ) throws WorkflowRepoException {
+        WorkflowDefModel def = getWorkflowDef( id );
+        if ( def.getGroup().equals( group ) ) {
+            return;
+        }
+        def.setGroup( group );
+        serializeToFile( new File( getWorkflowDir( id ), DEF_FILE ), def );  // updated definition
     }
 
 

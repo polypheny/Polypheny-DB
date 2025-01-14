@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.NonNull;
@@ -67,6 +69,7 @@ public class WorkflowScheduler {
     private final AttributedDirectedGraph<UUID, ExecutionEdge> execDag;
     private final WorkflowOptimizer optimizer;
     private final ExecutionMonitor executionMonitor;
+    private CountDownLatch finishLatch;
 
     // TODO: define overall success or failure of workflow execution, e.g. with "mustSucceed" flag in activity
     private boolean isAborted; // by interruption
@@ -104,6 +107,7 @@ public class WorkflowScheduler {
     public List<ExecutionSubmission> startExecution() {
         List<ExecutionSubmission> submissions = computeNextSubmissions();
         executionMonitor.forwardStates();
+        finishLatch = new CountDownLatch( 1 );
         return submissions;
     }
 
@@ -127,6 +131,11 @@ public class WorkflowScheduler {
      */
     public boolean isFinished() {
         return isFinished;
+    }
+
+
+    public boolean awaitFinish( int seconds ) throws InterruptedException {
+        return finishLatch == null || finishLatch.await( seconds, TimeUnit.SECONDS );
     }
 
 
@@ -437,6 +446,7 @@ public class WorkflowScheduler {
         workflow.setState( WorkflowState.IDLE );
         executionMonitor.stop();
         isFinished = true;
+        finishLatch.countDown();
     }
 
 

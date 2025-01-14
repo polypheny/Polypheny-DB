@@ -20,6 +20,7 @@ import io.javalin.http.HttpCode;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.workflow.models.WorkflowDefModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
@@ -43,14 +44,27 @@ public interface WorkflowRepo {
     WorkflowDefModel getWorkflowDef( UUID id ) throws WorkflowRepoException;
 
     /**
-     * Creates a new workflow with the specified name.
+     * Creates a new workflow with the specified name and group.
+     *
+     * @param name the name of the new workflow to create.
+     * @param group the group of the new workflow or null to use the default group.
+     * @return the ID of the newly created workflow.
+     * @throws WorkflowRepoException if the workflow cannot be created, such as when a workflow with the
+     * same name already exists or if an error occurs during creation.
+     */
+    UUID createWorkflow( String name, @Nullable String group ) throws WorkflowRepoException;
+
+    /**
+     * Creates a new workflow with the specified name in the default group.
      *
      * @param name the name of the new workflow to create.
      * @return the ID of the newly created workflow.
      * @throws WorkflowRepoException if the workflow cannot be created, such as when a workflow with the
      * same name already exists or if an error occurs during creation.
      */
-    UUID createWorkflow( String name ) throws WorkflowRepoException;
+    default UUID createWorkflow( String name ) throws WorkflowRepoException {
+        return createWorkflow( name, null );
+    }
 
     /**
      * Reads a specific version of a workflow by ID.
@@ -101,6 +115,15 @@ public interface WorkflowRepo {
      * or if an error occurs during the renaming process.
      */
     void renameWorkflow( UUID id, String name ) throws WorkflowRepoException;
+
+    /**
+     * Changes the group of a workflow to the specified value.
+     *
+     * @param id the unique ID of the workflow.
+     * @param group the new group for the workflow.
+     * @throws WorkflowRepoException if the workflow cannot be modified, such as if an error occurs during the process.
+     */
+    void updateWorkflowGroup( UUID id, String group ) throws WorkflowRepoException;
 
     /**
      * Checks if a workflow with the specified name already exists in the repository.
@@ -211,18 +234,18 @@ public interface WorkflowRepo {
         private final HttpCode errorCode;
 
 
-        WorkflowRepoException( String message, Throwable cause, HttpCode errorCode ) {
+        public WorkflowRepoException( String message, Throwable cause, HttpCode errorCode ) {
             super( message, cause );
             this.errorCode = errorCode;
         }
 
 
-        WorkflowRepoException( String message ) {
+        public WorkflowRepoException( String message ) {
             this( message, null, HttpCode.INTERNAL_SERVER_ERROR );
         }
 
 
-        WorkflowRepoException( String message, HttpCode errorCode ) {
+        public WorkflowRepoException( String message, HttpCode errorCode ) {
             this( message, null, errorCode );
         }
 

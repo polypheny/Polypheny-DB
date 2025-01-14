@@ -21,7 +21,6 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.util.Triple;
@@ -71,7 +70,15 @@ public class UserSession extends AbstractSession {
         if ( workflow.getState() == WorkflowState.EXECUTING ) {
             scheduler.interruptExecution( sessionId );
         }
-        throw new NotImplementedException();
+        try {
+            if ( scheduler.awaitExecutionFinish( sessionId, 60 ) ) {
+                sm.close();
+            } else {
+                throw new GenericRuntimeException( "Timed out waiting for execution to finish. Try terminating the session when the workflow is idle." );
+            }
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( e );
+        }
     }
 
 
@@ -179,7 +186,8 @@ public class UserSession extends AbstractSession {
 
     @Override
     public SessionModel toModel() {
-        return new SessionModel( SessionModelType.USER_SESSION, sessionId, getSubscriberCount(), wId, openedVersion, workflowDef );
+        return new SessionModel( SessionModelType.USER_SESSION, sessionId, getSubscriberCount(),
+                wId, openedVersion, workflowDef, workflow.getState() );
     }
 
 

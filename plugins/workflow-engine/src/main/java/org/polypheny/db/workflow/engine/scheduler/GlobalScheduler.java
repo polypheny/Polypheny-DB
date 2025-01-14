@@ -155,6 +155,15 @@ public class GlobalScheduler {
     }
 
 
+    public boolean awaitExecutionFinish( UUID sessionId, int seconds ) throws InterruptedException {
+        WorkflowScheduler scheduler = schedulers.get( sessionId );
+        if ( scheduler == null || scheduler.isFinished() ) {
+            return true;
+        }
+        return scheduler.awaitFinish( seconds );
+    }
+
+
     private void submit( List<ExecutionSubmission> submissions ) {
         for ( ExecutionSubmission submission : submissions ) {
             log.info( "Submitting {}", submission );

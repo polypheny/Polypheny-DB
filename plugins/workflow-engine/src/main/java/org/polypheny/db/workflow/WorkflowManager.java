@@ -52,6 +52,7 @@ import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.RenderModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.models.requests.CreateSessionRequest;
+import org.polypheny.db.workflow.models.requests.RenameWorkflowRequest;
 import org.polypheny.db.workflow.models.requests.SaveSessionRequest;
 import org.polypheny.db.workflow.repo.WorkflowRepo;
 import org.polypheny.db.workflow.repo.WorkflowRepo.WorkflowRepoException;
@@ -176,7 +177,7 @@ public class WorkflowManager {
                 if ( repo.doesNameExist( fileName ) ) {
                     continue;
                 }
-                UUID wId = repo.createWorkflow( fileName );
+                UUID wId = repo.createWorkflow( fileName, "Sample Workflows" );
                 repo.writeVersion( wId, "Created Sample Workflow", workflow );
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
@@ -219,7 +220,11 @@ public class WorkflowManager {
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/save", this::saveSession, HandlerType.POST );
         server.addSerializedRoute( PATH + "/workflows/{workflowId}/{version}", this::openWorkflow, HandlerType.POST );
 
+        server.addSerializedRoute( PATH + "/workflows/{workflowId}", this::renameWorkflow, HandlerType.PATCH );
+
         server.addSerializedRoute( PATH + "/sessions/{sessionId}", this::terminateSession, HandlerType.DELETE );
+        server.addSerializedRoute( PATH + "/workflows/{workflowId}", this::deleteWorkflow, HandlerType.DELETE );
+        server.addSerializedRoute( PATH + "/workflows/{workflowId}/{version}", this::deleteVersion, HandlerType.DELETE );
     }
 
 
@@ -280,7 +285,7 @@ public class WorkflowManager {
 
     private void createSession( final Context ctx ) {
         CreateSessionRequest request = ctx.bodyAsClass( CreateSessionRequest.class );
-        process( ctx, () -> sessionManager.createUserSession( request.getName() ) );
+        process( ctx, () -> sessionManager.createUserSession( request.getName(), request.getGroup() ) );
     }
 
 
@@ -289,6 +294,43 @@ public class WorkflowManager {
         int version = Integer.parseInt( ctx.pathParam( "version" ) );
         // TODO: combine with CreateSessionRequest into createSession endpoint?
         process( ctx, () -> sessionManager.createUserSession( workflowId, version ) );
+    }
+
+
+    private void renameWorkflow( final Context ctx ) {
+        UUID workflowId = UUID.fromString( ctx.pathParam( "workflowId" ) );
+        RenameWorkflowRequest request = ctx.bodyAsClass( RenameWorkflowRequest.class );
+        process( ctx, () -> {
+            if ( request.getName() != null ) {
+                repo.renameWorkflow( workflowId, request.getName() );
+            }
+            if ( request.getGroup() != null ) {
+                repo.updateWorkflowGroup( workflowId, request.getGroup() );
+            }
+            return "success";
+        } );
+    }
+
+
+    private void deleteVersion( final Context ctx ) {
+        UUID workflowId = UUID.fromString( ctx.pathParam( "workflowId" ) );
+        int version = Integer.parseInt( ctx.pathParam( "version" ) );
+        process( ctx, () -> {
+            repo.deleteVersion( workflowId, version );
+            return "success";
+        } );
+    }
+
+
+    private void deleteWorkflow( final Context ctx ) {
+        UUID workflowId = UUID.fromString( ctx.pathParam( "workflowId" ) );
+        process( ctx, () -> {
+            if ( sessionManager.isWorkflowOpened( workflowId ) ) {
+                throw new WorkflowRepoException( "Cannot delete workflow while it is opened in a session", HttpCode.FORBIDDEN );
+            }
+            repo.deleteWorkflow( workflowId );
+            return "success";
+        } );
     }
 
 
