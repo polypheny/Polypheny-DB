@@ -483,7 +483,10 @@ public class StorageManagerImpl implements StorageManager {
 
 
     private String getCollectionName( UUID activityId, int outputIdx ) {
-        return COLLECTION_PREFIX + activityId.toString().replace( "-", "" ) + "_" + outputIdx;
+        // TODO: change back to simplified name if collections with duplicate names in different namespaces can exist
+        //return COLLECTION_PREFIX + activityId.toString().replace( "-", "" ) + "_" + outputIdx;
+        return COLLECTION_PREFIX + sessionId.toString().replace( "-", "" ) + "_"
+                + activityId.toString().replace( "-", "" ) + "_" + outputIdx;
     }
 
 

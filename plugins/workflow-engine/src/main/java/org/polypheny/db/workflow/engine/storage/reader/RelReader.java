@@ -35,16 +35,19 @@ import org.polypheny.db.workflow.engine.storage.QueryUtils;
 public class RelReader extends CheckpointReader {
 
     public static final int PREVIEW_ROW_LIMIT = 100;
+    private final String quotedIdentifier;
+    private final String quotedCols;
 
 
     public RelReader( LogicalTable table, Transaction transaction ) {
         super( table, transaction );
+        this.quotedIdentifier = QueryUtils.quotedIdentifier( table );
+        this.quotedCols = QueryUtils.quoteAndJoin( table.getColumnNames() );
     }
 
 
     public long getRowCount() {
-        LogicalTable table = getTable();
-        String query = "SELECT COUNT(*) FROM \"" + table.getName() + "\"";
+        String query = "SELECT COUNT(*) FROM " + quotedIdentifier;
         Iterator<PolyValue[]> it = executeSqlQuery( query );
         try {
             return it.next()[0].asLong().longValue();
@@ -69,7 +72,7 @@ public class RelReader extends CheckpointReader {
         registerIterator( iterator );
         return iterator;*/
 
-        String query = "SELECT " + QueryUtils.quoteAndJoin( table.getColumnNames() ) + " FROM " + QueryUtils.quotedIdentifier( table );
+        String query = "SELECT " + quotedCols + " FROM " + quotedIdentifier;
         return executeSqlQuery( query );
     }
 
@@ -83,7 +86,7 @@ public class RelReader extends CheckpointReader {
     @Override
     public Triple<Result<?, ?>, Integer, Long> getPreview() {
         LogicalTable table = getTable();
-        String query = "SELECT " + QueryUtils.quoteAndJoin( table.getColumnNames() ) + " FROM " + QueryUtils.quotedIdentifier( table )
+        String query = "SELECT " + quotedCols + " FROM " + quotedIdentifier
                 + " LIMIT " + PREVIEW_ROW_LIMIT;
         UIRequest request = UIRequest.builder()
                 .entityId( table.id )

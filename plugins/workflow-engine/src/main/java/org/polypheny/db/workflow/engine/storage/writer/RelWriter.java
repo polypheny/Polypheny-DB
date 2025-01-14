@@ -51,7 +51,7 @@ public class RelWriter extends CheckpointWriter {
             paramTypes.put( (long) i, fieldType );
         }
 
-        String query = "INSERT INTO \"" + table.getName() + "\" VALUES " + joiner;
+        String query = "INSERT INTO " + QueryUtils.quotedIdentifier( table ) + " VALUES " + joiner;
         QueryContext context = QueryUtils.constructContext( query, "SQL", table.getNamespaceId(), transaction );
         writer = new BatchWriter( context, transaction.createStatement(), paramTypes );
     }
