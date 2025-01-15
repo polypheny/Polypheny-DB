@@ -36,8 +36,10 @@ import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.dag.variables.VariableStore;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityModel;
+import org.polypheny.db.workflow.models.ExecutionInfoModel;
 import org.polypheny.db.workflow.models.RenderModel;
 import org.polypheny.db.workflow.models.TypePreviewModel;
 
@@ -64,6 +66,8 @@ public class ActivityWrapper {
     @Setter
     private SettingsPreview settingsPreview; // contains the (possibly not yet known) settings
     private ActivityException invalidStateReason; // null if the state of this activity is not invalid
+    @Setter
+    private ExecutionInfo executionInfo; // execution info from last execution
 
 
     protected ActivityWrapper( UUID id, Activity activity, String type, Map<String, JsonNode> settings, ActivityConfigModel config, RenderModel rendering ) {
@@ -132,7 +136,9 @@ public class ActivityWrapper {
             List<TypePreviewModel> inTypeModels = inTypePreview.stream().map(
                     inType -> inType.map( TypePreviewModel::of ).orElse( null ) ).toList();
             String invalidReason = invalidStateReason == null ? null : invalidStateReason.toString();
-            return new ActivityModel( type, id, serializableSettings, config, rendering, this.state, inTypeModels, invalidReason, variables.getVariables() );
+            ExecutionInfoModel infoModel = executionInfo == null ? null : executionInfo.toModel();
+            return new ActivityModel( type, id, serializableSettings, config, rendering,
+                    this.state, inTypeModels, invalidReason, variables.getVariables(), infoModel );
 
         } else {
             return new ActivityModel( type, id, serializableSettings, config, rendering );
@@ -174,6 +180,7 @@ public class ActivityWrapper {
         activity.reset();
         variables.clear();
         state = ActivityState.IDLE;
+        executionInfo = null;
     }
 
 

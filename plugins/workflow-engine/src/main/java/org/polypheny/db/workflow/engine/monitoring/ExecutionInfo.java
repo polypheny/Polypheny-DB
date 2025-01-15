@@ -16,6 +16,8 @@
 
 package org.polypheny.db.workflow.engine.monitoring;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,9 +25,11 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorType;
+import org.polypheny.db.workflow.models.ExecutionInfoModel;
 
 public class ExecutionInfo {
 
@@ -140,6 +144,19 @@ public class ExecutionInfo {
 
     public boolean usesCombinedProgress() {
         return executorType == ExecutorType.FUSION;
+    }
+
+
+    public ExecutionInfoModel toModel() {
+        return new ExecutionInfoModel(
+                getDurationMillis(),
+                Arrays.stream( ExecutionState.values() )
+                        .filter( s -> s != ExecutionState.DONE )
+                        .collect( Collectors.toMap( s -> s, this::getDurationMillis ) ),
+                new ArrayList<>( activities ),
+                executorType,
+                state
+        );
     }
 
 
