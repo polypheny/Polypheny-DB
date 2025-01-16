@@ -35,6 +35,7 @@ import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
+import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
@@ -135,7 +136,7 @@ public class ActivityWrapper {
         if ( includeState ) {
             List<TypePreviewModel> inTypeModels = inTypePreview.stream().map(
                     inType -> inType.map( TypePreviewModel::of ).orElse( null ) ).toList();
-            String invalidReason = invalidStateReason == null ? null : invalidStateReason.toString();
+            String invalidReason = invalidStateReason == null ? null : invalidStateReason.getMessage();
             ExecutionInfoModel infoModel = executionInfo == null ? null : executionInfo.toModel();
             return new ActivityModel( type, id, serializableSettings, config, rendering,
                     this.state, inTypeModels, invalidReason, variables.getVariables(), infoModel );
@@ -176,9 +177,9 @@ public class ActivityWrapper {
     }
 
 
-    public void resetExecution() {
+    public void resetExecution( ReadableVariableStore workflowVariables ) {
         activity.reset();
-        variables.clear();
+        variables.reset( workflowVariables );
         state = ActivityState.IDLE;
         executionInfo = null;
     }

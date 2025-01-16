@@ -31,5 +31,6 @@ public class ExecutionInfoModel {
     List<UUID> activities;
     ExecutorType executorType;
     ExecutionState state;
+    List<String> log;
 
 }

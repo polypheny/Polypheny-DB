@@ -29,6 +29,7 @@ import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo.LogLevel;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
@@ -162,6 +163,25 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
     }
 
 
+    @Override
+    public void logInfo( String message ) {
+        info.appendLog( activityWrapper.getId(), LogLevel.INFO, message );
+    }
+
+
+    @Override
+    public void logWarning( String message ) {
+        info.appendLog( activityWrapper.getId(), LogLevel.WARN, message );
+
+    }
+
+
+    @Override
+    public void logError( String message ) {
+        info.appendLog( activityWrapper.getId(), LogLevel.ERROR, message );
+    }
+
+
     public void setInterrupted() {
         interrupt = true;
     }
@@ -182,7 +202,7 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
                 exceptions.add( e );
             }
         }
-        if (!exceptions.isEmpty()) {
+        if ( !exceptions.isEmpty() ) {
             throw exceptions.get( 0 ); // we only throw the first exception
         }
     }

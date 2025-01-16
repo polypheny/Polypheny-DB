@@ -32,15 +32,6 @@ public class ActivityException extends Exception {
 
 
     @Override
-    public String getMessage() {
-        if ( activity != null ) {
-            return activity.getType() + ": " + super.getMessage();
-        }
-        return super.getMessage();
-    }
-
-
-    @Override
     public String toString() {
         if ( activity != null ) {
             return activity.getType() + ":" + activity.getId() + ": " + super.toString();

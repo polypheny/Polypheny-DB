@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -27,11 +28,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorType;
 import org.polypheny.db.workflow.models.ExecutionInfoModel;
 
 public class ExecutionInfo {
+
+    public static final int LOG_CAPACITY = 100;
 
     private final StopWatch totalDuration;
     private final Map<ExecutionState, StopWatch> durations = new HashMap<>();
@@ -44,6 +48,8 @@ public class ExecutionInfo {
     private ExecutionState state;
     private final Map<UUID, Double> progressMap = new ConcurrentHashMap<>();
     private double combinedProgress; // only used by FusionExecutor, since we cannot specify the progress of individual activities
+
+    private final CircularFifoQueue<String> log = new CircularFifoQueue<>( LOG_CAPACITY );
 
 
     public ExecutionInfo( Set<UUID> activities, ExecutorType executorType ) {
@@ -147,7 +153,13 @@ public class ExecutionInfo {
     }
 
 
-    public ExecutionInfoModel toModel() {
+    public synchronized void appendLog( UUID activityId, LogLevel level, String message ) {
+        String logMessage = activityId + "|" + level + "|" + getDurationMillis( ExecutionState.EXECUTING ) + "|" + message;
+        log.add( logMessage );
+    }
+
+
+    public synchronized ExecutionInfoModel toModel() {
         return new ExecutionInfoModel(
                 getDurationMillis(),
                 Arrays.stream( ExecutionState.values() )
@@ -155,7 +167,8 @@ public class ExecutionInfo {
                         .collect( Collectors.toMap( s -> s, this::getDurationMillis ) ),
                 new ArrayList<>( activities ),
                 executorType,
-                state
+                state,
+                List.copyOf( log )
         );
     }
 
@@ -195,6 +208,13 @@ public class ExecutionInfo {
         AWAIT_PROCESSING,
         PROCESSING_RESULT,
         DONE
+    }
+
+
+    public enum LogLevel {
+        INFO,
+        WARN,
+        ERROR
     }
 
 }

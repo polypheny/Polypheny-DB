@@ -44,6 +44,38 @@ public interface PipeExecutionContext {
      */
     Transaction getTransaction();
 
+
+    /**
+     * Logs an informational message.
+     *
+     * <p>Note: Logs are saved to a circular queue limited to {@link org.polypheny.db.workflow.engine.monitoring.ExecutionInfo#LOG_CAPACITY} entries.
+     * Use logging sparingly to avoid dropping messages.</p>
+     *
+     * @param message the informational message to log
+     */
+    void logInfo( String message );
+
+    /**
+     * Logs a warning message.
+     *
+     * <p>Note: Logs are saved to a circular queue limited to {@link org.polypheny.db.workflow.engine.monitoring.ExecutionInfo#LOG_CAPACITY} entries.
+     * Use logging sparingly to avoid dropping messages.</p>
+     *
+     * @param message the warning message to log
+     */
+    void logWarning( String message );
+
+    /**
+     * Logs a non-catastrophic error message.
+     * If the error makes it impossible for the activity to successfully execute, it is better throw an exception.
+     *
+     * <p>Note: Logs are saved to a circular queue limited to {@link org.polypheny.db.workflow.engine.monitoring.ExecutionInfo#LOG_CAPACITY} entries.
+     * Use logging sparingly to avoid dropping messages.</p>
+     *
+     * @param message the error message to log
+     */
+    void logError( String message );
+
     List<Long> getEstimatedInCounts();
 
 }

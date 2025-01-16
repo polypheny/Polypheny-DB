@@ -193,7 +193,7 @@ public class WorkflowScheduler {
                         .toList() );
             }
 
-            nWrapper.resetExecution();
+            nWrapper.resetExecution( workflow.getVariables() );
             nWrapper.setState( ActivityState.QUEUED );
             sm.dropCheckpoints( n );
             remainingActivities.add( n );

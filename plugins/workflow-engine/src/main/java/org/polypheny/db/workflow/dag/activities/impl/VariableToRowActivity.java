@@ -76,8 +76,13 @@ public class VariableToRowActivity implements Activity {
             } else if ( node.isInt() ) {
                 builder.add( entry.getKey(), null, PolyType.INTEGER );
             } else if ( node.isTextual() ) {
-                builder.add( entry.getKey(), null, PolyType.VARCHAR );
-            } else if ( node.isArray() ) {
+                builder.add( entry.getKey(), null, PolyType.VARCHAR, node.toString().length() );
+            } else {
+                insertAsString = true;
+                builder.add( entry.getKey(), null, PolyType.VARCHAR, node.toString().length() );
+            }
+            /* TODO: find out why array of integers results in "data exception: invalid character value for cast"
+            if ( node.isArray() ) {
                 if ( node.isEmpty() ) {
                     builder.add( entry.getKey(), null, PolyType.VARCHAR );
                     insertAsString = true;
@@ -99,9 +104,8 @@ public class VariableToRowActivity implements Activity {
                         builder.add( entry.getKey(), null, PolyType.VARCHAR );
                         insertAsString = true;
                     }
-
                 }
-            }
+            }*/
 
             row.add( insertAsString ? PolyString.of( node.toString() ) : PolyValue.fromJson( node.toString() ) );
         }

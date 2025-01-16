@@ -235,6 +235,7 @@ public class WorkflowImpl implements Workflow {
             if ( throwIfInvalid ) {
                 throw e;
             } else {
+                System.out.println( "Ignoring exception:" );
                 e.printStackTrace(); // TODO: make sure ignoring inconsistency is okay
             }
         }
@@ -307,7 +308,7 @@ public class WorkflowImpl implements Workflow {
         AttributedDirectedGraph<UUID, ExecutionEdge> subDag = GraphUtils.getInducedSubgraph( toDag(), activities );
         for ( UUID n : TopologicalOrderIterator.of( subDag ) ) {
             ActivityWrapper wrapper = this.activities.get( n );
-            wrapper.resetExecution();
+            wrapper.resetExecution( variables );
             sm.dropCheckpoints( n );
             updatePreview( n );
             for ( ExecutionEdge e : subDag.getOutwardEdges( n ) ) {
