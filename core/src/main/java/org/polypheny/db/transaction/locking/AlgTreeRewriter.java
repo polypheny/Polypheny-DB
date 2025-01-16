@@ -64,10 +64,13 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -319,55 +322,134 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
                 return modify1.copy( modify1.getTraitSet(), List.of( identifier ) );
 
             case UPDATE:
-                if ( !(modify1.getInput() instanceof LogicalRelProject originalProject) ) {
-                    throw new IllegalStateException( "Project expected as input to updating rel modify" );
-                }
+                return getRewriteOfUpdateRelModify( modify1 );
 
-                List<AlgDataTypeField> inputFields = originalProject.getRowType().getFields().stream()
-                        .filter( f -> originalProject.getProjects().get( f.getIndex() ) instanceof RexIndexRef ).collect( Collectors.toCollection( ArrayList::new ) );
-
-                assert IdentifierUtils.IDENTIFIER_KEY.equals( inputFields.get( 0 ).getName() );
-                assert IdentifierUtils.VERSION_KEY.equals( inputFields.get( 1 ).getName() );
-
-                List<RexNode> projects = new ArrayList<>( inputFields.size() );
-
-                for ( int i = 0; i < inputFields.size(); i++ ) {
-                    AlgDataTypeField field = inputFields.get( i );
-                    if ( i == 1 ) {
-                        // replace _vid
-                        projects.add( new RexLiteral(
-                                IdentifierUtils.getVersionAsPolyLong( statement.getTransaction().getSequenceNumber(), false ),
-                                IdentifierUtils.VERSION_ALG_TYPE,
-                                IdentifierUtils.VERSION_ALG_TYPE.getPolyType()
-                        ) );
-                    } else if ( modify1.getUpdateColumns().contains( field.getName() ) ) {
-                        // replace updated values
-                        int updateIndex = modify1.getUpdateColumns().indexOf( field.getName() );
-                        projects.add( modify1.getSourceExpressions().get( updateIndex ) );
-                    } else {
-                        // no change
-                        projects.add( new RexIndexRef( field.getIndex(), field.getType() ) );
-                    }
-                }
-
-                LogicalRelProject project = LogicalRelProject.create(
-                        originalProject.getInput(),
-                        projects,
-                        inputFields.stream().map( AlgDataTypeField::getName ).toList()
-                );
-
-                return LogicalRelModify.create(
-                        modify1.getEntity(),
-                        project,
-                        Operation.INSERT,
-                        null,
-                        null,
-                        false
-                );
+            case DELETE:
+                return getRewriteOfDeleteRelModify( modify1 );
 
             default:
                 return modify1;
         }
+    }
+
+
+    /**
+     * Rewrites an updating relational modification to an insert while adjusting the version id.
+     * It's the callers responsibility to ensure that the passed modify is indeed an update.
+     *
+     * @param modify updating modification to rewrite
+     * @return insert version of the updating modification
+     */
+    public LogicalRelModify getRewriteOfUpdateRelModify( LogicalRelModify modify ) {
+        if ( !(modify.getInput() instanceof LogicalRelProject originalProject) ) {
+            throw new IllegalStateException( "Project expected as input to updating rel modify" );
+        }
+
+        List<AlgDataTypeField> inputFields = originalProject.getRowType().getFields().stream()
+                .filter( f -> !(originalProject.getProjects().get( f.getIndex() ) instanceof RexLiteral) ).collect( Collectors.toCollection( ArrayList::new ) );
+
+        assert IdentifierUtils.IDENTIFIER_KEY.equals( inputFields.get( 0 ).getName() );
+        assert IdentifierUtils.VERSION_KEY.equals( inputFields.get( 1 ).getName() );
+
+        List<RexNode> projects = new ArrayList<>( inputFields.size() );
+
+        for ( int i = 0; i < inputFields.size(); i++ ) {
+            AlgDataTypeField field = inputFields.get( i );
+            if ( i == 1 ) {
+                // replace _vid
+                projects.add( new RexLiteral(
+                        IdentifierUtils.getVersionAsPolyLong( statement.getTransaction().getSequenceNumber(), false ),
+                        IdentifierUtils.VERSION_ALG_TYPE,
+                        IdentifierUtils.VERSION_ALG_TYPE.getPolyType()
+                ) );
+                continue;
+            }
+
+            if ( modify.getUpdateColumns().contains( field.getName() ) ) {
+                // replace updated values
+                int updateIndex = modify.getUpdateColumns().indexOf( field.getName() );
+                projects.add( modify.getSourceExpressions().get( updateIndex ) );
+                continue;
+            }
+
+            // no change
+            projects.add( new RexIndexRef( field.getIndex(), field.getType() ) );
+        }
+
+        LogicalRelProject project = LogicalRelProject.create(
+                originalProject.getInput(),
+                projects,
+                inputFields.stream().map( AlgDataTypeField::getName ).toList()
+        );
+
+        return LogicalRelModify.create(
+                modify.getEntity(),
+                project,
+                Operation.INSERT,
+                null,
+                null,
+                false
+        );
+    }
+
+
+    /**
+     * Rewrites a deleting relational modification to an insert while adjusting the entity id and version id.
+     * It's the callers responsibility to ensure that the passed modify is indeed an update.
+     *
+     * @param modify deleting modify to rewrite
+     * @return inserting modify representing the rewritten version of the deleting modify
+     */
+    public LogicalRelModify getRewriteOfDeleteRelModify( LogicalRelModify modify ) {
+        if ( !(modify.getInput() instanceof LogicalRelProject originalProject) ) {
+            throw new IllegalStateException( "Project expected as input to updating rel modify" );
+        }
+
+        List<AlgDataTypeField> inputFields = originalProject.getRowType().getFields();
+
+        assert IdentifierUtils.IDENTIFIER_KEY.equals( inputFields.get( 0 ).getName() );
+        assert IdentifierUtils.VERSION_KEY.equals( inputFields.get( 1 ).getName() );
+
+        List<RexNode> projects = new ArrayList<>( inputFields.size() );
+
+        for ( int i = 0; i < inputFields.size(); i++ ) {
+            AlgDataTypeField field = inputFields.get( i );
+            if ( i == 0 ) {
+                // somehow swap the sign of the entity id
+                projects.add( new RexCall(
+                        IdentifierUtils.IDENTIFIER_ALG_TYPE,
+                        OperatorRegistry.get( OperatorName.UNARY_MINUS ),
+                        new RexIndexRef( field.getIndex(), field.getType() ) ) );
+                continue;
+            }
+
+            if ( i == 1 ) {
+                // replace _vid
+                projects.add( new RexLiteral(
+                        IdentifierUtils.getVersionAsPolyLong( statement.getTransaction().getSequenceNumber(), false ),
+                        IdentifierUtils.VERSION_ALG_TYPE,
+                        IdentifierUtils.VERSION_ALG_TYPE.getPolyType()
+                ) );
+                continue;
+            }
+            
+            projects.add( new RexIndexRef( field.getIndex(), field.getType() ) );
+        }
+
+        LogicalRelProject project = LogicalRelProject.create(
+                originalProject.getInput(),
+                projects,
+                inputFields.stream().map( AlgDataTypeField::getName ).toList()
+        );
+
+        return LogicalRelModify.create(
+                modify.getEntity(),
+                project,
+                Operation.INSERT,
+                null,
+                null,
+                false
+        );
     }
 
 
