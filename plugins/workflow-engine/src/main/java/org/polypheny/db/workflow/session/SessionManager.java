@@ -63,7 +63,7 @@ public class SessionManager {
         try {
             return registerUserSession( WorkflowImpl.fromModel( model ), wId, version );
         } catch ( Exception e ) {
-            throw new WorkflowRepoException( "Unable to instantiate workflow", e );
+            throw new WorkflowRepoException( "Unable to instantiate workflow: " + e.getMessage(), e );
         }
     }
 

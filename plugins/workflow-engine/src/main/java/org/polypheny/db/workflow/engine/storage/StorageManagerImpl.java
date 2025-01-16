@@ -189,20 +189,26 @@ public class StorageManagerImpl implements StorageManager {
             }
         }
 
-        Transaction transaction = QueryUtils.startTransaction( relNamespace, "RelCreate" );
         String tableName = getTableName( activityId, outputIdx );
+        Transaction transaction = QueryUtils.startTransaction( relNamespace, "RelCreate" );
 
-        acquireSchemaLock( transaction, relNamespace );
-        ddlManager.createTable(
-                relNamespace,
-                tableName,
-                getFieldInfo( type ),
-                getPkConstraint( pkField.getName() ),
-                false,
-                List.of( getStore( storeName ) ),
-                PlacementType.AUTOMATIC,
-                transaction.createStatement() );
-        transaction.commit();
+        try{
+            acquireSchemaLock( transaction, relNamespace );
+            ddlManager.createTable(
+                    relNamespace,
+                    tableName,
+                    getFieldInfo( type ),
+                    getPkConstraint( pkField.getName() ),
+                    false,
+                    List.of( getStore( storeName ) ),
+                    PlacementType.AUTOMATIC,
+                    transaction.createStatement() );
+            transaction.commit();
+        } finally {
+            if (transaction.isActive()) {
+                transaction.rollback( null );
+            }
+        }
 
         LogicalTable table = Catalog.snapshot().rel().getTable( relNamespace, tableName ).orElseThrow();
 
@@ -220,16 +226,22 @@ public class StorageManagerImpl implements StorageManager {
         String collectionName = getCollectionName( activityId, outputIdx );
 
         Transaction transaction = QueryUtils.startTransaction( docNamespace, "DocCreate" );
-        acquireSchemaLock( transaction, docNamespace );
-        ddlManager.createCollection(
-                docNamespace,
-                collectionName,
-                false,
-                List.of( getStore( storeName ) ),
-                PlacementType.AUTOMATIC,
-                transaction.createStatement()
-        );
-        transaction.commit();
+        try {
+            acquireSchemaLock( transaction, docNamespace );
+            ddlManager.createCollection(
+                    docNamespace,
+                    collectionName,
+                    false,
+                    List.of( getStore( storeName ) ),
+                    PlacementType.AUTOMATIC,
+                    transaction.createStatement()
+            );
+            transaction.commit();
+        } finally {
+            if (transaction.isActive()) {
+                transaction.rollback( null );
+            }
+        }
 
         LogicalCollection collection = Catalog.snapshot().doc().getCollection( docNamespace, collectionName ).orElseThrow();
         register( activityId, outputIdx, collection );
@@ -245,16 +257,23 @@ public class StorageManagerImpl implements StorageManager {
         String graphName = getGraphName( activityId, outputIdx );
         Transaction transaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId, "LpgCreate" );
         //acquireSchemaLock( transaction, Catalog.defaultNamespaceId ); // TODO: no lock required since we create a new namespace?
-        long graphId = ddlManager.createGraph(
-                graphName,
-                true,
-                List.of( getStore( storeName ) ),
-                false,
-                false,
-                RuntimeConfig.GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean(),
-                transaction.createStatement()
-        );
-        transaction.commit();
+        long graphId;
+        try {
+            graphId = ddlManager.createGraph(
+                    graphName,
+                    true,
+                    List.of( getStore( storeName ) ),
+                    false,
+                    false,
+                    RuntimeConfig.GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean(),
+                    transaction.createStatement()
+            );
+            transaction.commit();
+        } finally {
+            if (transaction.isActive()) {
+                transaction.rollback( null );
+            }
+        }
 
         LogicalGraph graph = Catalog.snapshot().graph().getGraph( graphId ).orElseThrow();
         register( activityId, outputIdx, graph );
@@ -392,7 +411,7 @@ public class StorageManagerImpl implements StorageManager {
 
 
     private void dropEntity( LogicalEntity entity ) {
-        Transaction transaction = startTransaction( entity );
+        Transaction transaction = QueryUtils.startTransaction( entity.getNamespaceId(), "DropCheckpoint" );
         Statement statement = transaction.createStatement();
         acquireSchemaLock( transaction, entity.getNamespaceId() );
         switch ( entity.dataModel ) {
@@ -415,15 +434,6 @@ public class StorageManagerImpl implements StorageManager {
     }
 
     // Utils:
-
-
-    private Transaction startTransaction( LogicalEntity targetEntity ) {
-        return switch ( targetEntity.dataModel ) {
-            case RELATIONAL -> QueryUtils.startTransaction( relNamespace );
-            case DOCUMENT -> QueryUtils.startTransaction( docNamespace );
-            case GRAPH -> QueryUtils.startTransaction( targetEntity.getNamespaceId() );
-        };
-    }
 
 
     private List<ConstraintInformation> getPkConstraint( String pkCol ) {

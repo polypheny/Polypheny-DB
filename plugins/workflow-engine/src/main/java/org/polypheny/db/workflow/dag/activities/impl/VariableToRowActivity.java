@@ -105,6 +105,7 @@ public class VariableToRowActivity implements Activity {
 
             row.add( insertAsString ? PolyString.of( node.toString() ) : PolyValue.fromJson( node.toString() ) );
         }
+        builder.uniquify(); // make sure no conflicts with pk column name
 
         RelWriter writer = ctx.createRelWriter( 0, builder.build(), true );
         if ( !variables.isEmpty() ) {

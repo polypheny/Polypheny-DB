@@ -99,8 +99,11 @@ public class LpgWriter extends CheckpointWriter {
     @Override
     public void close() throws Exception {
         if ( transaction.isActive() ) { // ensure writer is only closed once
-            writer.close();
-            super.close();
+            try {
+                writer.close();
+            } finally {
+                super.close();
+            }
         }
     }
 

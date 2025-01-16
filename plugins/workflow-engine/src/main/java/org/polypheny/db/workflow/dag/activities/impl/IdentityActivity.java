@@ -75,7 +75,7 @@ import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 @IntSetting(key = "I1", displayName = "FIRST", defaultValue = 2, shortDescription = "This setting doesn't do anything.")
 @StringSetting(key = "S1", displayName = "SECOND", shortDescription = "This setting doesn't do anything.")
 @IntSetting(key = "X1", displayName = "X1", shortDescription = "Depends on I1 being 42 or 420", subPointer = "I1", subValues = { "42", "420" })
-@StringSetting(key = "X2", displayName = "X2", shortDescription = "Depends on X1 being 3", subPointer = "I1", subValues = { "3" })
+@StringSetting(key = "X2", displayName = "X2", shortDescription = "Depends on X1 being 3", subPointer = "X1", subValues = { "3" })
 @StringSetting(key = "X3", displayName = "X3", shortDescription = "Depends on I1/doesNotExist being 7", subPointer = "I1/doesNotExist", subValues = { "7" })
 
 @Group(key = "groupA", displayName = "Group A",

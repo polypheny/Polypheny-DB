@@ -174,8 +174,16 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
 
     @Override
     public void close() throws Exception {
+        List<Exception> exceptions = new ArrayList<>();
         for ( CheckpointWriter writer : writers ) {
-            writer.close();
+            try {
+                writer.close();
+            } catch ( Exception e ) {
+                exceptions.add( e );
+            }
+        }
+        if (!exceptions.isEmpty()) {
+            throw exceptions.get( 0 ); // we only throw the first exception
         }
     }
 

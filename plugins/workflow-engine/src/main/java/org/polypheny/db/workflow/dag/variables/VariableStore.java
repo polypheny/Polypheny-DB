@@ -158,7 +158,7 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
                 String[] refSplit = refString.split( "/", 2 );
                 String variableRef = refSplit[0].replace( JsonPointer.ESC_SLASH, "/" ).replace( JsonPointer.ESC_TILDE, "~" );
                 JsonNode replacement = variables.get( variableRef );
-                if ( refSplit.length == 2 && !refSplit[1].isEmpty() ) {
+                if ( replacement != null && refSplit.length == 2 && !refSplit[1].isEmpty() ) {
                     replacement = replacement.at( "/" + refSplit[1] ); // resolve JsonPointer
                 }
 

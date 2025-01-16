@@ -73,7 +73,8 @@ public class BatchWriter implements AutoCloseable {
         ExecutedContext executedContext = QueryUtils.executeQuery( parsed, writeStatement );
 
         if ( executedContext.getException().isPresent() ) {
-            throw new GenericRuntimeException( "An error occurred while writing a batch: ", executedContext.getException().get() );
+            Throwable e = executedContext.getException().get();
+            throw new GenericRuntimeException( "An error occurred while writing a batch: " + e.getMessage(), e );
         }
         List<List<PolyValue>> results = executedContext.getIterator().getAllRowsAndClose();
         long changedCount = results.size() == 1 ? results.get( 0 ).get( 0 ).asLong().longValue() : 0;
