@@ -1152,6 +1152,11 @@ public class DdlManagerImpl extends DdlManager {
         // Check if model permits operation
         checkModelLogic( table, columnName );
 
+        // Check that column is not part of a primary key
+        if ( catalog.getLogicalRel( table.namespaceId ).getKeys().values().stream().filter( v -> v instanceof LogicalPrimaryKey ).flatMap( v -> v.fieldIds.stream() ).anyMatch( l -> l == logicalColumn.id ) ) {
+            throw new GenericRuntimeException( "Primary key cannot be nullable" );
+        }
+
         catalog.getLogicalRel( table.namespaceId ).setNullable( logicalColumn.id, nullable );
 
         // Reset plan cache implementation cache & routing cache
