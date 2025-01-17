@@ -325,7 +325,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
         }
 
-        columns.put( columnId, columns.get( columnId ).toBuilder().type( type ).length( length ).scale( scale ).dimension( dimension ).cardinality( cardinality ).build() );
+        columns.put( columnId, columns.get( columnId ).toBuilder().type( type ).collectionsType( collectionsType ).length( length ).scale( scale ).dimension( dimension ).cardinality( cardinality ).build() );
         change( CatalogEvent.LOGICAL_REL_FIELD_TYPE_CHANGED, columnId, type );
     }
 
