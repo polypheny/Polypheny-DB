@@ -72,7 +72,7 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.locking.Lockable;
-import org.polypheny.db.transaction.locking.MonotonicNumberSource;
+import org.polypheny.db.transaction.locking.SequenceNumberGenerator;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.DeadlockException;
@@ -165,8 +165,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         this.analyze = analyze;
         this.origin = origin;
         this.flavor = flavor;
+        this.sequenceNumber = SequenceNumberGenerator.getInstance().getNextNumber();
         this.executor = Thread.currentThread();
-        this.sequenceNumber = MonotonicNumberSource.getInstance().getNextNumber();
     }
 
 
@@ -296,6 +296,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // Remove transaction
         transactionManager.removeTransaction( xid );
 
+        SequenceNumberGenerator.getInstance().releaseNumber( sequenceNumber );
+
         // Handover information about commit to Materialized Manager
         MaterializedViewManager.getInstance().updateCommittedXid( xid );
     }
@@ -345,7 +347,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         WHERE _vid = %d
         """;
 
-        long commitSequenceNumber = MonotonicNumberSource.getInstance().getNextNumber();
+        long commitSequenceNumber = SequenceNumberGenerator.getInstance().getNextNumber();
 
         for (Entity writtenEntity : writtenEntities) {
             String query = String.format(queryTemplate, writtenEntity.getName(), commitSequenceNumber, -getSequenceNumber());
@@ -400,6 +402,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             releaseAllLocks();
             // Remove transaction
             transactionManager.removeTransaction( xid );
+            SequenceNumberGenerator.getInstance().releaseNumber( sequenceNumber );
         }
     }
 
