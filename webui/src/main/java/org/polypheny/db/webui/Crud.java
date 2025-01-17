@@ -1292,9 +1292,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .transactionManager( transactionManager )
                             .build(), UIRequest.builder().build() ).get( 0 );
             ctx.json( result );
+            if ( result.error != null ) {
+                break;
+            }
         }
-
-
     }
 
 
