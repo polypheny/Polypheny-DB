@@ -1255,7 +1255,7 @@ public class RexSimplify {
         // Example #1. x AND y AND z AND NOT (x AND y)  - not satisfiable
         // Example #2. x AND y AND NOT (x AND y)        - not satisfiable
         // Example #3. x AND y AND NOT (x AND y AND z)  - may be satisfiable
-        final Set<RexNode> termsSet = new HashSet<>( terms );
+        final Set<RexNode> termsSet = Set.copyOf( terms );
         for ( RexNode notDisjunction : notTerms ) {
             if ( !RexUtil.isDeterministic( notDisjunction ) ) {
                 continue;
@@ -1439,7 +1439,7 @@ public class RexSimplify {
             // Analyzer cannot handle this expression currently
             return simplified;
         }
-        if ( !new HashSet<>( foo0.variables ).containsAll( foo1.variables ) ) {
+        if ( !Set.copyOf( foo0.variables ).containsAll( foo1.variables ) ) {
             throw new AssertionError( "variable mismatch: " + before + " has " + foo0.variables + ", " + simplified + " has " + foo1.variables );
         }
         assignment_loop:

@@ -2277,7 +2277,7 @@ public class Functions {
     public static <E> Collection<E> multisetIntersectDistinct( Collection<E> c1, Collection<E> c2 ) {
         final Set<E> result = new HashSet<>( c1 );
         result.retainAll( c2 );
-        return new ArrayList<>( result );
+        return result;
     }
 
 
@@ -2314,7 +2314,7 @@ public class Functions {
     public static <E> Collection<E> multisetExceptDistinct( Collection<E> c1, Collection<E> c2 ) {
         final Set<E> result = new HashSet<>( c1 );
         result.removeAll( c2 );
-        return new ArrayList<>( result );
+        return result;
     }
 
 
@@ -2363,7 +2363,7 @@ public class Functions {
         Set<String> resultCollection = new HashSet<>( Math.max( (int) ((collection1.size() + collection2.size()) / .75f) + 1, 16 ) );
         resultCollection.addAll( collection1 );
         resultCollection.addAll( collection2 );
-        return new ArrayList<>( resultCollection );
+        return resultCollection;
     }
 
 
