@@ -23,7 +23,6 @@ import java.util.Optional;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.rex.RexBuilder;
@@ -46,11 +45,11 @@ public interface Fusable extends Activity {
      * If this method is overridden, it is required to also provide a custom execute implementation.
      * This is necessary, as it will be used in the case that the activity cannot be fused.
      *
-     * @param inTypes preview of the input types. For inactive edges, the type is null (important for non-default DataStateMergers).
+     * @param inTypes preview of the input types. For inactive edges, the type is {@link org.polypheny.db.workflow.dag.activities.TypePreview.InactiveType} (important for non-default DataStateMergers).
      * @param settings preview of the settings
      * @return an Optional containing the final decision whether this activity can be fused, or an empty Optional if it cannot be stated at this point.
      */
-    default Optional<Boolean> canFuse( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) {
+    default Optional<Boolean> canFuse( List<TypePreview> inTypes, SettingsPreview settings ) {
         return Optional.of( true );
     }
 
@@ -58,7 +57,7 @@ public interface Fusable extends Activity {
     @Override
     default void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         assert canFuse(
-                inputs.stream().map( r -> Optional.of( r.getTupleType() ) ).toList(),
+                inputs.stream().map( r -> TypePreview.ofType( r.getTupleType() ) ).toList(),
                 SettingsPreview.of( settings )
         ).orElseThrow() : "Cannot use the default execute implementation of Fusable if canFuse returns false.";
 

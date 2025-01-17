@@ -20,14 +20,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.variables.VariableStore;
@@ -145,13 +144,14 @@ public interface Workflow {
 
     /**
      * Returns a list containing a preview of all input types for the specified activity.
-     * Not yet available input types are empty Optionals.
-     * As inactive data edges cannot transmit data, their type is set to null.
+     * Not yet available input types are {@link org.polypheny.db.workflow.dag.activities.TypePreview.UnknownType}.
+     * As inactive data edges cannot transmit data, their type is {@link org.polypheny.db.workflow.dag.activities.TypePreview.InactiveType}.
+     * Input ports without a connected edge have a {@link org.polypheny.db.workflow.dag.activities.TypePreview.MissingType}.
      *
      * @param activityId target activity
      * @return a list of all input types ordered by inPort index
      */
-    List<Optional<AlgDataType>> getInputTypes( UUID activityId );
+    List<TypePreview> getInputTypes( UUID activityId );
 
     int getInPortCount( UUID activityId );
 

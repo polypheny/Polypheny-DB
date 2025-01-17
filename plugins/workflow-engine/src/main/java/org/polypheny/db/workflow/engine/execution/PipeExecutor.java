@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
@@ -38,6 +37,7 @@ import org.polypheny.db.util.graph.TopologicalOrderIterator;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.execution.pipe.CheckpointInputPipe;
@@ -187,7 +187,7 @@ public class PipeExecutor extends Executor {
         outCounts.put( root, activity.estimateTupleCount( inTypesList, settings, inCountsList, ctx::getTransaction ) );
         if ( outType != null ) {
             outTypes.put( root, outType );
-            wrapper.setOutTypePreview( List.of( Optional.of( outType ) ) );
+            wrapper.setOutTypePreview( TypePreview.ofType( outType ).asOutTypes() );
         } else {
             // we are at the actual root of the tree, and it's an activity with no outputs.
             wrapper.setOutTypePreview( List.of() );

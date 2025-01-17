@@ -19,7 +19,6 @@ package org.polypheny.db.workflow.engine.execution;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
@@ -39,6 +38,7 @@ import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.Fusable;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
@@ -168,7 +168,7 @@ public class FusionExecutor extends Executor {
 
         long tupleCount = activity.estimateTupleCount( inTypes, settings, Arrays.asList( inCountsArr ), () -> transaction );
         AlgNode fused = activity.fuse( inputs, settings, cluster );
-        wrapper.setOutTypePreview( List.of( Optional.of( fused.getTupleType() ) ) );
+        wrapper.setOutTypePreview( TypePreview.ofType( fused.getTupleType() ).asOutTypes() );
         return Pair.of( fused, tupleCount );
     }
 

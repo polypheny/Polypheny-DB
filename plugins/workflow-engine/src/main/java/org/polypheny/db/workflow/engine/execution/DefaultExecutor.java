@@ -49,7 +49,7 @@ public class DefaultExecutor extends Executor {
                 ExecutionContextImpl ctx = new ExecutionContextImpl( wrapper, sm, info ) ) {
             this.ctx = ctx;
             wrapper.getActivity().execute( inputs, wrapper.resolveSettings(), ctx );
-            wrapper.setOutTypePreview( sm.getOptionalCheckpointTypes( wrapper.getId() ) );
+            wrapper.setOutTypePreview( sm.getCheckpointPreviewTypes( wrapper.getId() ) );
             ctx.updateProgress( 1 ); // ensure progress is correct
         } catch ( Exception e ) {
             throw new ExecutorException( e, wrapper.getId() );

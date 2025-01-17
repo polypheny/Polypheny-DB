@@ -17,7 +17,6 @@
 package org.polypheny.db.workflow.engine.storage;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.NonNull;
@@ -28,6 +27,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
@@ -60,7 +60,7 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
 
     List<AlgDataType> getCheckpointTypes( UUID activityId );
 
-    List<Optional<AlgDataType>> getOptionalCheckpointTypes( UUID activityId );
+    List<TypePreview> getCheckpointPreviewTypes( UUID activityId );
 
     /**
      * Creates a relational checkpoint for an activity output and returns a RelWriter for that checkpoint.

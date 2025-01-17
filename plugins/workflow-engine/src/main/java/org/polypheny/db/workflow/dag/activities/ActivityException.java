@@ -17,26 +17,13 @@
 package org.polypheny.db.workflow.dag.activities;
 
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
 public class ActivityException extends Exception {
 
-    @Setter
-    private ActivityWrapper activity = null;
-
 
     public ActivityException( String message ) {
         super( message );
-    }
-
-
-    @Override
-    public String toString() {
-        if ( activity != null ) {
-            return activity.getType() + ":" + activity.getId() + ": " + super.toString();
-        }
-        return super.toString();
     }
 
 
@@ -55,12 +42,6 @@ public class ActivityException extends Exception {
         @Override
         public String toString() {
             return super.toString() + " (Setting Key: " + settingKey + ")";
-        }
-
-
-        @Override
-        public String getMessage() {
-            return super.getMessage() + " (Setting: " + settingKey + ")";
         }
 
     }
@@ -90,7 +71,7 @@ public class ActivityException extends Exception {
 
         @Override
         public String getMessage() {
-            return super.getMessage() + " (Index: " + index + ")";
+            return super.getMessage() + " (Input " + index + ")";
         }
 
     }

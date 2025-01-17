@@ -131,7 +131,7 @@ public abstract class SettingDef {
 
 
     /**
-     * Builds a {@link SettingValue} from the given {@link JsonNode} and validates itthat represents a value for this SettingInfo.
+     * Builds a {@link SettingValue} from the given {@link JsonNode} and validates that it represents a value for this SettingInfo.
      *
      * @param node the {@link JsonNode} containing the data (with any variable references already replaced) to build the {@link SettingValue}.
      * @return the constructed {@link SettingValue}.

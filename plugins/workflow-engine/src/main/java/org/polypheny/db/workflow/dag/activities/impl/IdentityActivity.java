@@ -16,9 +16,7 @@
 
 package org.polypheny.db.workflow.dag.activities.impl;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -30,6 +28,7 @@ import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
@@ -88,15 +87,9 @@ import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 public class IdentityActivity implements Activity, Fusable, Pipeable {
 
 
-    public IdentityActivity() {
-    }
-
-
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
-        List<Optional<AlgDataType>> outTypes = new ArrayList<>(); // TODO: this is a workaround since inType could be null and List.of() requires non null
-        outTypes.add( inTypes.get( 0 ) );
-        return outTypes;
+    public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
+        return inTypes.get( 0 ).asOutTypes();
     }
 
 
@@ -126,11 +119,6 @@ public class IdentityActivity implements Activity, Fusable, Pipeable {
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
         // to make it more interesting, we add a project activity that doesn't change the tupleType
         return LogicalRelProject.identity( inputs.get( 0 ) );
-    }
-
-
-    @Override
-    public void reset() {
     }
 
 }

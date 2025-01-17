@@ -18,7 +18,6 @@ package org.polypheny.db.workflow.dag.activities;
 
 import java.util.List;
 import java.util.Optional;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
@@ -32,7 +31,7 @@ public interface VariableWriter extends Activity {
     @Override
     default void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         assert requestsToWrite(
-                inputs.stream().map( r -> Optional.of( r.getTupleType() ) ).toList(),
+                inputs.stream().map( r -> TypePreview.ofType( r.getTupleType() ) ).toList(),
                 SettingsPreview.of( settings )
         ).orElseThrow() : "Cannot use the default execute implementation of VariableWriter if requestsToWrite returns false.";
 
@@ -51,7 +50,7 @@ public interface VariableWriter extends Activity {
      *
      * @return an Optional containing the final decision whether this activity intends to write variables, or an empty Optional if it cannot be stated at this point
      */
-    default Optional<Boolean> requestsToWrite( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) {
+    default Optional<Boolean> requestsToWrite( List<TypePreview> inTypes, SettingsPreview settings ) {
         return Optional.of( true );
     }
 

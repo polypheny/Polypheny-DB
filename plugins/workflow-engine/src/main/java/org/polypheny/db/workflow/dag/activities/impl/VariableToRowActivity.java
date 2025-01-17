@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
+import java.util.StringJoiner;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
@@ -33,6 +33,8 @@ import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
+import org.polypheny.db.workflow.dag.activities.TypePreview.UnknownType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
@@ -54,8 +56,8 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 public class VariableToRowActivity implements Activity {
 
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
-        return List.of( Optional.empty() ); // type depends on variables
+    public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
+        return UnknownType.of().asOutTypes(); // type depends on variables
     }
 
 
@@ -77,17 +79,25 @@ public class VariableToRowActivity implements Activity {
                 builder.add( entry.getKey(), null, PolyType.INTEGER );
             } else if ( node.isTextual() ) {
                 builder.add( entry.getKey(), null, PolyType.VARCHAR, node.toString().length() );
-            } else {
-                insertAsString = true;
-                builder.add( entry.getKey(), null, PolyType.VARCHAR, node.toString().length() );
-            }
-            /* TODO: find out why array of integers results in "data exception: invalid character value for cast"
-            if ( node.isArray() ) {
+            } else if ( node.isArray() ) {
                 if ( node.isEmpty() ) {
                     builder.add( entry.getKey(), null, PolyType.VARCHAR );
                     insertAsString = true;
                 } else {
-                    PolyType type = null;
+                    // TODO: find out why array of integers results in "data exception: invalid character value for cast"
+                    // until then: insert all elements as strings
+                    AlgDataType elementType = factory.createPolyType( PolyType.VARCHAR );
+                    builder.add( entry.getKey(), null, factory.createArrayType( elementType, node.size() ) );
+
+                    StringJoiner joiner = new StringJoiner( ",", "[", "]" );
+                    for ( int i = 0; i < node.size(); i++ ) {
+                        joiner.add( node.get( i ).toString() );
+                    }
+
+                    row.add( PolyValue.fromJson( joiner.toString() ) );
+                    continue;
+
+                    /*PolyType type = null;
                     boolean isConsistent = true;
                     for ( int i = 1; i < node.size(); i++ ) {
                         if ( type == null ) {
@@ -103,9 +113,12 @@ public class VariableToRowActivity implements Activity {
                     } else {
                         builder.add( entry.getKey(), null, PolyType.VARCHAR );
                         insertAsString = true;
-                    }
+                    }*/
                 }
-            }*/
+            } else {
+                insertAsString = true;
+                builder.add( entry.getKey(), null, PolyType.VARCHAR, node.toString().length() );
+            }
 
             row.add( insertAsString ? PolyString.of( node.toString() ) : PolyValue.fromJson( node.toString() ) );
         }
@@ -120,12 +133,6 @@ public class VariableToRowActivity implements Activity {
 
     private PolyType getType( JsonNode node ) {
         return PolyValue.fromJson( node.toString() ).getType();
-    }
-
-
-    @Override
-    public void reset() {
-
     }
 
 }

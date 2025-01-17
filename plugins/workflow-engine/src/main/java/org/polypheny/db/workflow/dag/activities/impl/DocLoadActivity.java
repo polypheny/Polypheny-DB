@@ -19,7 +19,6 @@ package org.polypheny.db.workflow.dag.activities.impl;
 import static org.polypheny.db.workflow.dag.activities.impl.DocLoadActivity.COLL_KEY;
 
 import java.util.List;
-import java.util.Optional;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -31,6 +30,7 @@ import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
@@ -57,14 +57,8 @@ public class DocLoadActivity implements Activity, Pipeable {
 
 
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
+    public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
         return List.of();
-    }
-
-
-    @Override
-    public void reset() {
-
     }
 
 

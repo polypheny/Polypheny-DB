@@ -30,6 +30,7 @@ import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
@@ -63,8 +64,8 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 public class DebugActivity implements Activity, Pipeable, Fusable {
 
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
-        return List.of( inTypes.get( 0 ) );
+    public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
+        return inTypes.get( 0 ).asOutTypes();
     }
 
 
@@ -80,7 +81,7 @@ public class DebugActivity implements Activity, Pipeable, Fusable {
 
 
     @Override
-    public Optional<Boolean> canFuse( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) {
+    public Optional<Boolean> canFuse( List<TypePreview> inTypes, SettingsPreview settings ) {
         return settings.get( "canFuse", BoolValue.class ).map( BoolValue::getValue );
     }
 
@@ -93,7 +94,7 @@ public class DebugActivity implements Activity, Pipeable, Fusable {
 
 
     @Override
-    public Optional<Boolean> canPipe( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) {
+    public Optional<Boolean> canPipe( List<TypePreview> inTypes, SettingsPreview settings ) {
         return settings.get( "canPipe", BoolValue.class ).map( BoolValue::getValue );
     }
 
@@ -116,11 +117,6 @@ public class DebugActivity implements Activity, Pipeable, Fusable {
             }
             output.put( value );
         }
-    }
-
-
-    @Override
-    public void reset() {
     }
 
 

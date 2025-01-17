@@ -21,7 +21,6 @@ import static org.polypheny.db.workflow.dag.activities.impl.DocExtractActivity.C
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.function.Supplier;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
@@ -43,6 +42,8 @@ import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
+import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
@@ -68,25 +69,16 @@ public class DocExtractActivity implements Activity, Fusable, Pipeable {
 
     public static final String COLL_KEY = "collection";
 
-    private LogicalCollection lockedEntity;
-
 
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
-        Optional<EntityValue> collection = settings.get( COLL_KEY, EntityValue.class );
-
-        if ( collection.isPresent() ) {
-            AlgDataType type = getOutputType( collection.get().getCollection() );
-            return Activity.wrapType( type );
-        }
-        return Activity.wrapType( null );
+    public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
+        return DocType.of().asOutTypes();
     }
 
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         LogicalCollection collection = settings.get( COLL_KEY, EntityValue.class ).getCollection();
-        AlgDataType type = getOutputType( collection );
         DocWriter writer = ctx.createDocWriter( 0 );
         try ( ResultIterator result = getResultIterator( ctx.getTransaction(), collection ) ) { // transaction will get committed or rolled back externally
             for ( Iterator<PolyValue[]> it = result.getIterator(); it.hasNext(); ) {
@@ -98,24 +90,16 @@ public class DocExtractActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public void reset() {
-        lockedEntity = null;
-    }
-
-
-    @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
         LogicalCollection collection = settings.get( COLL_KEY, EntityValue.class ).getCollection();
         AlgTraitSet traits = AlgTraitSet.createEmpty().plus( ModelTrait.DOCUMENT );
-
         return new LogicalDocumentScan( cluster, traits, collection );
     }
 
 
     @Override
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
-        lockedEntity = settings.get( COLL_KEY, EntityValue.class ).getCollection();
-        return getOutputType( lockedEntity );
+        return getDocType();
     }
 
 
@@ -147,11 +131,6 @@ public class DocExtractActivity implements Activity, Fusable, Pipeable {
                 output.put( it.next() );
             }
         }
-    }
-
-
-    private AlgDataType getOutputType( LogicalCollection collection ) {
-        return collection.getTupleType();
     }
 
 

@@ -17,7 +17,6 @@
 package org.polypheny.db.workflow.dag.activities.impl;
 
 import java.util.List;
-import java.util.Optional;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -31,6 +30,8 @@ import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidInputException;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
+import org.polypheny.db.workflow.dag.activities.TypePreview.UnknownType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
@@ -51,14 +52,13 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 public class RelUnionActivity implements Activity, Fusable, Pipeable {
 
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
+    public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
+        TypePreview first = inTypes.get( 0 ), second = inTypes.get( 1 );
 
-        Optional<AlgDataType> firstType = inTypes.get( 0 );
-        Optional<AlgDataType> secondType = inTypes.get( 1 );
-        if ( firstType.isEmpty() || secondType.isEmpty() ) {
-            return List.of( Optional.empty() );
+        if ( first.isEmpty() || second.isEmpty() ) {
+            return UnknownType.of().asOutTypes();
         }
-        return Activity.wrapType( getTypeOrThrow( List.of( firstType.get(), secondType.get() ) ) );
+        return TypePreview.ofType( getTypeOrThrow( List.of( first.getNullableType(), second.getNullableType() ) ) ).asOutTypes();
     }
 
 
@@ -90,13 +90,8 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
     }
 
 
-    @Override
-    public void reset() {
-
-    }
-
-
     public static AlgDataType getTypeOrThrow( List<AlgDataType> inputs ) throws InvalidInputException {
+        // all inputs must not be null!
         AlgDataType type = AlgDataTypeFactory.DEFAULT.leastRestrictive( inputs );
 
         if ( type == null ) {

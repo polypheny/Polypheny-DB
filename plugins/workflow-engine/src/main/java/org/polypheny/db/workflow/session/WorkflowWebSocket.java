@@ -94,6 +94,7 @@ public class WorkflowWebSocket implements Consumer<WsConfig> {
         } catch ( Exception e ) {
             // catch any exception that has no specific error handling already
             session.broadcastMessage( new ErrorResponse( baseRequest.msgId, e, baseRequest.type ) );
+            log.warn( "Websocket exception", e );
         }
     }
 

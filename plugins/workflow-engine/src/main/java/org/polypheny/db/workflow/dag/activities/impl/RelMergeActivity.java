@@ -18,7 +18,6 @@ package org.polypheny.db.workflow.dag.activities.impl;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
@@ -26,6 +25,8 @@ import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
+import org.polypheny.db.workflow.dag.activities.TypePreview.UnknownType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
@@ -44,16 +45,17 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 public class RelMergeActivity implements Activity {
 
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
-        // A somewhat ugly solution that is necessary since an unknown inType is Optional.empty, and a failed input has inType null
-        Optional<AlgDataType> firstType = Optional.ofNullable( inTypes.get( 0 ) ).orElse( Optional.empty() );
-        Optional<AlgDataType> secondType = Optional.ofNullable( inTypes.get( 1 ) ).orElse( Optional.empty() );
-
-        if ( firstType.isEmpty() || secondType.isEmpty() ) {
-            return List.of( Optional.empty() );
+    public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
+        TypePreview first = inTypes.get( 0 ), second = inTypes.get( 1 );
+        if ( first.isPresent() && second.isEmpty() ) {
+            return first.asOutTypes();
+        } else if ( second.isPresent() && first.isEmpty() ) {
+            return second.asOutTypes();
+        } else if ( first.isPresent() && second.isPresent() ) {
+            AlgDataType type = RelUnionActivity.getTypeOrThrow( List.of( first.getNullableType(), second.getNullableType() ) );
+            return TypePreview.ofType( type ).asOutTypes();
         }
-
-        return Activity.wrapType( RelUnionActivity.getTypeOrThrow( List.of( firstType.get(), secondType.get() ) ) );
+        return UnknownType.of().asOutTypes();
     }
 
 

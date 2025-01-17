@@ -22,8 +22,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -31,6 +33,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.AdvancedGroup;
@@ -121,34 +124,38 @@ public class ActivityRegistry {
 
     /**
      * Builds a map of available setting values for the specified activity type using resolved JSON nodes.
-     * If a supplied setting is {@link Optional#empty()}, it is represented as {@link Optional#empty()} in the output map.
+     * If a supplied setting is {@link Optional#empty()} or a corresponding SettingValue cannot be created,
+     * it is represented as {@link Optional#empty()} in the output map.
      *
      * @param activityType the identifier for the activity type.
      * @param resolved a map of setting keys to {@link Optional<JsonNode>} values, where unresolved settings are {@link Optional#empty()}.
-     * @return a wrapper around a map of setting keys to {@link Optional<SettingValue>} instances, where missing or unresolved settings are {@link Optional#empty()}.
-     * @throws InvalidSettingException if a {@link JsonNode} has an unexpected format or results in an invalid setting value.
+     * @return A pair containing a wrapper around a map of setting keys to {@link Optional<SettingValue>} instances, where missing or unresolved settings are {@link Optional#empty()}
+     * and a list of InvalidSettingExceptions for each failed setting.
      * @throws IllegalArgumentException if the {@code activityType} is invalid.
      */
-    public static SettingsPreview buildAvailableSettingValues( String activityType, Map<String, Optional<JsonNode>> resolved ) throws InvalidSettingException {
+    public static Pair<SettingsPreview, List<InvalidSettingException>> buildAvailableSettingValues( String activityType, Map<String, Optional<JsonNode>> resolved ) {
         Map<String, SettingDef> settingDefs = get( activityType ).getSettings();
 
         Map<String, Optional<SettingValue>> settingValues = new HashMap<>();
+        List<InvalidSettingException> exceptions = new ArrayList<>();
         for ( Entry<String, Optional<JsonNode>> entry : resolved.entrySet() ) {
             String key = entry.getKey();
             Optional<JsonNode> node = entry.getValue();
+            SettingValue value = null;
             if ( node.isPresent() ) {
                 try {
-                    settingValues.put( key, Optional.of( settingDefs.get( key ).buildValidatedValue( node.get() ) ) );
+                    value = settingDefs.get( key ).buildValidatedValue( node.get() );
                 } catch ( InvalidSettingException e ) {
-                    throw e;
+                    exceptions.add( e );
                 } catch ( Exception e ) {
-                    throw new InvalidSettingException( e.getMessage(), key );
+                    exceptions.add( new InvalidSettingException( e.getMessage(), key ) );
                 }
+                settingValues.put( key, Optional.ofNullable( value ) );
             } else {
                 settingValues.put( key, Optional.empty() );
             }
         }
-        return new SettingsPreview( settingValues );
+        return Pair.of( new SettingsPreview( settingValues ), exceptions );
     }
 
 

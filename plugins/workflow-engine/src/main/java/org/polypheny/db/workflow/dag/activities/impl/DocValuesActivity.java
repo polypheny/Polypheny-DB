@@ -23,14 +23,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyString;
@@ -43,6 +41,8 @@ import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
+import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
@@ -72,8 +72,8 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
-        return Activity.wrapType( getType() );
+    public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
+        return DocType.of().asOutTypes();
     }
 
 
@@ -89,7 +89,7 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
-        return getType();
+        return getDocType();
     }
 
 
@@ -122,17 +122,6 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
     }
 
 
-    @Override
-    public void reset() {
-
-    }
-
-
-    private static AlgDataType getType() {
-        return DocumentType.ofId();
-    }
-
-
     private static List<PolyDocument> getValues( int n, boolean fixSeed ) {
         Random random = fixSeed ? new Random( 42 ) : new Random();
         List<PolyDocument> documents = new ArrayList<>();
@@ -154,7 +143,6 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
 
     private static PolyDocument getDocument( String name, String lastName, int age, int salary ) {
         Map<PolyString, PolyValue> map = new HashMap<>();
-        //map.put( PolyString.of( DocumentType.DOCUMENT_ID ), PolyString.of( UUID.randomUUID().toString().replace( "-", "" ).substring( 0, 12 ) ) );
         map.put( PolyString.of( "name" ), PolyString.of( name ) );
         map.put( PolyString.of( "lastName" ), PolyString.of( lastName ) );
         map.put( PolyString.of( "age" ), PolyInteger.of( age ) );

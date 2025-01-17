@@ -17,7 +17,6 @@
 package org.polypheny.db.workflow.dag.activities.impl;
 
 import java.util.List;
-import java.util.Optional;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
@@ -28,6 +27,8 @@ import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
+import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
@@ -49,13 +50,9 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 public class DocIdentityActivity implements Activity, Fusable, Pipeable {
 
 
-    public DocIdentityActivity() {
-    }
-
-
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
-        return List.of( inTypes.get( 0 ) );
+    public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
+        return DocType.of().asOutTypes();
     }
 
 
@@ -69,7 +66,7 @@ public class DocIdentityActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
-        return inTypes.get( 0 );
+        return getDocType();
     }
 
 
@@ -84,11 +81,6 @@ public class DocIdentityActivity implements Activity, Fusable, Pipeable {
     @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
         return inputs.get( 0 ); // this does not really test fusion
-    }
-
-
-    @Override
-    public void reset() {
     }
 
 }

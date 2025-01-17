@@ -46,6 +46,8 @@ public class ActivityModel {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     String invalidReason; // null if not invalid
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    Map<String, String> invalidSettings; // null if not invalid
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     Map<String, JsonNode> variables;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     ExecutionInfoModel executionInfo;
@@ -75,6 +77,7 @@ public class ActivityModel {
         this.state = null;
         this.inTypePreview = null;
         this.invalidReason = null;
+        this.invalidSettings = null;
         this.variables = null;
         this.executionInfo = null;
     }

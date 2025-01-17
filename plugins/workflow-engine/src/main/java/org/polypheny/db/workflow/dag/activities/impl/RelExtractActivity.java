@@ -50,6 +50,7 @@ import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
@@ -76,18 +77,11 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
 
     static final String TABLE_KEY = "table";
 
-    private LogicalTable lockedEntity;
-
 
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
+    public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
         Optional<EntityValue> table = settings.get( TABLE_KEY, EntityValue.class );
-
-        if ( table.isPresent() ) {
-            AlgDataType type = getOutputType( table.get().getTable() );
-            return Activity.wrapType( type );
-        }
-        return Activity.wrapType( null );
+        return TypePreview.ofType( table.map( t -> getOutputType( t.getTable() ) ) ).asOutTypes();
     }
 
 
@@ -117,12 +111,6 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public void reset() {
-        lockedEntity = null;
-    }
-
-
-    @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
         LogicalTable table = settings.get( TABLE_KEY, EntityValue.class ).getTable();
         AlgTraitSet traits = AlgTraitSet.createEmpty().plus( ModelTrait.RELATIONAL );
@@ -141,8 +129,7 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
-        lockedEntity = settings.get( TABLE_KEY, EntityValue.class ).getTable();
-        return getOutputType( lockedEntity );
+        return getOutputType( settings.get( TABLE_KEY, EntityValue.class ).getTable() );
     }
 
 
@@ -177,6 +164,9 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
 
 
     private AlgDataType getOutputType( LogicalTable table ) {
+        if ( table == null ) {
+            return null; // this should never happen, since we specify in our setting that the table must exist
+        }
         // we insert the primary key column
         AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
         List<Long> ids = new ArrayList<>();

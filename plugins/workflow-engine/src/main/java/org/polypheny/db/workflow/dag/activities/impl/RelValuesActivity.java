@@ -19,7 +19,6 @@ package org.polypheny.db.workflow.dag.activities.impl;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +42,7 @@ import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
@@ -76,8 +76,8 @@ public class RelValuesActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
-        return Activity.wrapType( getType() );
+    public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
+        return TypePreview.ofType( getType() ).asOutTypes();
     }
 
 
@@ -124,12 +124,6 @@ public class RelValuesActivity implements Activity, Fusable, Pipeable {
                 settings.get( "fixSeed", BoolValue.class ).getValue()
         );
         return LogicalRelValues.create( cluster, getType(), toRexLiterals( getType(), values ) );
-    }
-
-
-    @Override
-    public void reset() {
-
     }
 
 

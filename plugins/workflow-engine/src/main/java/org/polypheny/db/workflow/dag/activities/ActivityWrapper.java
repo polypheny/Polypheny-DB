@@ -22,12 +22,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.activities.Activity.ControlStateMerger;
+import org.polypheny.db.workflow.dag.activities.ActivityDef.InPortDef;
+import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidInputException;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
@@ -61,12 +63,12 @@ public class ActivityWrapper {
 
     private final VariableStore variables = new VariableStore(); // depending on state, this either represents the variables before (possibly not yet stable) or after execution (always stable)
     @Setter
-    private List<Optional<AlgDataType>> outTypePreview; // TODO: ensure this is always up to date
+    private List<TypePreview> outTypePreview; // TODO: ensure this is always up to date
     @Setter
-    private List<Optional<AlgDataType>> inTypePreview; // contains the (possibly not yet known) input type
-    @Setter
+    private List<TypePreview> inTypePreview; // contains the (possibly not yet known) input type
     private SettingsPreview settingsPreview; // contains the (possibly not yet known) settings
-    private ActivityException invalidStateReason; // null if the state of this activity is not invalid
+    private List<InvalidSettingException> invalidSettings = List.of();
+    private ActivityException invalidStateReason; // any non-setting related Exception
     @Setter
     private ExecutionInfo executionInfo; // execution info from last execution
 
@@ -96,33 +98,39 @@ public class ActivityWrapper {
         return ActivityRegistry.buildSettingValues( type, variables.resolveVariables( serializableSettings ) );
     }
 
-    // TODO: be careful to use correct variables (must be sure they are correct)
-
-
-    public SettingsPreview resolveAvailableSettings( boolean hasStableVariables ) throws InvalidSettingException {
-        VariableStore store = hasStableVariables ? variables : new VariableStore();
-        return ActivityRegistry.buildAvailableSettingValues( type, store.resolveAvailableVariables( serializableSettings ) );
-    }
-
 
     /**
      * Updates the output type preview based on the provided input type previews and variable stability.
      *
      * @param inTypePreviews a list of optional input type previews.
-     * @param hasStableVariables a flag indicating whether stable variables are available.
-     * @return the resolved settings preview used for computing the preview.
-     * @throws ActivityException if an error occurs during the preview resolution.
+     * @param hasStableVariables a flag indicating whether stable variables are available. If false, variables are ignored in the preview, as they might still change.
+     * @throws ActivityException if the preview could not be resolved without errors. The settingsPreview is still updated, with empty optionals for failed settings.
      */
-    public SettingsPreview updateOutTypePreview( List<Optional<AlgDataType>> inTypePreviews, boolean hasStableVariables ) throws ActivityException {
+    public void updateOutTypePreview( List<TypePreview> inTypePreviews, boolean hasStableVariables ) throws ActivityException {
+        VariableStore store = hasStableVariables ? variables : new VariableStore();
+        Pair<SettingsPreview, List<InvalidSettingException>> built = ActivityRegistry.buildAvailableSettingValues(
+                type, store.resolveAvailableVariables( serializableSettings ) );
+        settingsPreview = built.left;
+        invalidSettings = built.right;
+
         try {
-            SettingsPreview settings = resolveAvailableSettings( hasStableVariables );
-            outTypePreview = activity.previewOutTypes( inTypePreviews, settings );
             invalidStateReason = null;
-            return settings;
+            outTypePreview = activity.previewOutTypes( inTypePreviews, settingsPreview );
+
+            // check for missing inputs to warn the user immediately
+            for ( Pair<TypePreview, InPortDef> pair : Pair.zip( inTypePreviews, Arrays.asList( getDef().getInPorts() ) ) ) {
+                if ( pair.left.isMissing() && !pair.right.isOptional() ) {
+                    throw new InvalidInputException( "Required input is missing", inTypePreviews.indexOf( pair.left ) );
+                }
+            }
+        } catch ( InvalidSettingException e ) {
+            invalidSettings.add( e );
         } catch ( ActivityException e ) {
-            e.setActivity( this );
-            invalidStateReason = e;
+            invalidStateReason = e; // any other problem, e.g. an invalid input
             throw e;
+        }
+        if ( !invalidSettings.isEmpty() ) {
+            throw invalidSettings.get( 0 );
         }
     }
 
@@ -137,9 +145,11 @@ public class ActivityWrapper {
             List<TypePreviewModel> inTypeModels = inTypePreview.stream().map(
                     inType -> inType.map( TypePreviewModel::of ).orElse( null ) ).toList();
             String invalidReason = invalidStateReason == null ? null : invalidStateReason.getMessage();
+            Map<String, String> invalidSettingsMap = invalidSettings.stream().collect(
+                    Collectors.toMap( InvalidSettingException::getSettingKey, InvalidSettingException::getMessage ) );
             ExecutionInfoModel infoModel = executionInfo == null ? null : executionInfo.toModel();
             return new ActivityModel( type, id, serializableSettings, config, rendering,
-                    this.state, inTypeModels, invalidReason, variables.getVariables(), infoModel );
+                    this.state, inTypeModels, invalidReason, invalidSettingsMap, variables.getVariables(), infoModel );
 
         } else {
             return new ActivityModel( type, id, serializableSettings, config, rendering );

@@ -23,12 +23,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -42,6 +40,8 @@ import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
+import org.polypheny.db.workflow.dag.activities.TypePreview.LpgType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
@@ -77,8 +77,8 @@ public class LpgValuesActivity implements Activity, Pipeable {
 
 
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
-        return Activity.wrapType( getType() );
+    public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
+        return LpgType.of().asOutTypes();
     }
 
 
@@ -96,7 +96,7 @@ public class LpgValuesActivity implements Activity, Pipeable {
 
     @Override
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
-        return getType();
+        return getGraphType();
     }
 
 
@@ -132,17 +132,6 @@ public class LpgValuesActivity implements Activity, Pipeable {
     @Override
     public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
         return settings.get( "count", IntValue.class ).getValue();
-    }
-
-
-    @Override
-    public void reset() {
-
-    }
-
-
-    private static AlgDataType getType() {
-        return GraphType.of();
     }
 
 

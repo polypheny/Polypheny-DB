@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
@@ -55,6 +54,7 @@ import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DeadlockException;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.DocReader;
 import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
@@ -169,8 +169,8 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    public List<Optional<AlgDataType>> getOptionalCheckpointTypes( UUID activityId ) {
-        return getCheckpointTypes( activityId ).stream().map( Optional::ofNullable ).toList();
+    public List<TypePreview> getCheckpointPreviewTypes( UUID activityId ) {
+        return getCheckpointTypes( activityId ).stream().map( TypePreview::ofType ).toList();
     }
 
 
@@ -192,7 +192,7 @@ public class StorageManagerImpl implements StorageManager {
         String tableName = getTableName( activityId, outputIdx );
         Transaction transaction = QueryUtils.startTransaction( relNamespace, "RelCreate" );
 
-        try{
+        try {
             acquireSchemaLock( transaction, relNamespace );
             ddlManager.createTable(
                     relNamespace,
@@ -205,7 +205,7 @@ public class StorageManagerImpl implements StorageManager {
                     transaction.createStatement() );
             transaction.commit();
         } finally {
-            if (transaction.isActive()) {
+            if ( transaction.isActive() ) {
                 transaction.rollback( null );
             }
         }
@@ -238,7 +238,7 @@ public class StorageManagerImpl implements StorageManager {
             );
             transaction.commit();
         } finally {
-            if (transaction.isActive()) {
+            if ( transaction.isActive() ) {
                 transaction.rollback( null );
             }
         }
@@ -270,7 +270,7 @@ public class StorageManagerImpl implements StorageManager {
             );
             transaction.commit();
         } finally {
-            if (transaction.isActive()) {
+            if ( transaction.isActive() ) {
                 transaction.rollback( null );
             }
         }

@@ -21,7 +21,6 @@ import static org.polypheny.db.workflow.dag.activities.impl.LpgExtractActivity.G
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.function.Supplier;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -35,6 +34,8 @@ import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
+import org.polypheny.db.workflow.dag.activities.TypePreview.LpgType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
@@ -60,25 +61,16 @@ public class LpgExtractActivity implements Activity, Pipeable {
 
     public static final String GRAPH_KEY = "graph";
 
-    private LogicalGraph lockedEntity;
-
 
     @Override
-    public List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException {
-        Optional<EntityValue> graph = settings.get( GRAPH_KEY, EntityValue.class );
-
-        if ( graph.isPresent() ) {
-            AlgDataType type = getOutputType( graph.get().getGraph() );
-            return Activity.wrapType( type );
-        }
-        return Activity.wrapType( null );
+    public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
+        return LpgType.of().asOutTypes();
     }
 
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         LogicalGraph graph = settings.get( GRAPH_KEY, EntityValue.class ).getGraph();
-        AlgDataType type = getOutputType( graph );
         LpgWriter writer = ctx.createLpgWriter( 0 );
         try ( ResultIterator nodes = getResultIterator( ctx.getTransaction(), graph, false ) ) {
             for ( Iterator<PolyValue[]> it = nodes.getIterator(); it.hasNext(); ) {
@@ -90,20 +82,12 @@ public class LpgExtractActivity implements Activity, Pipeable {
                 writer.writeEdge( it.next()[0].asEdge() );
             }
         }
-
-    }
-
-
-    @Override
-    public void reset() {
-        lockedEntity = null;
     }
 
 
     @Override
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
-        lockedEntity = settings.get( GRAPH_KEY, EntityValue.class ).getGraph();
-        return getOutputType( lockedEntity );
+        return getGraphType();
     }
 
 
@@ -137,11 +121,6 @@ public class LpgExtractActivity implements Activity, Pipeable {
                 output.put( it.next() );
             }
         }
-    }
-
-
-    private AlgDataType getOutputType( LogicalGraph graph ) {
-        return graph.getTupleType();
     }
 
 

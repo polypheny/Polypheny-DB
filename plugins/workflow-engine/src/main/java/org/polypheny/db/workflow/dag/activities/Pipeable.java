@@ -40,11 +40,11 @@ public interface Pipeable extends Activity {
      * If this method is overridden, it is required to also provide a custom execute implementation.
      * This is necessary, as it might be used in the case that this activity cannot be piped.
      *
-     * @param inTypes preview of the input types. For inactive edges, the entry is null (important for non-default DataStateMergers).
+     * @param inTypes preview of the input types. For inactive edges, the entry {@link org.polypheny.db.workflow.dag.activities.TypePreview.InactiveType} (important for non-default DataStateMergers).
      * @param settings preview of the settings
      * @return an Optional containing the final decision whether this activity can be piped, or an empty Optional if it cannot be stated at this point
      */
-    default Optional<Boolean> canPipe( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) {
+    default Optional<Boolean> canPipe( List<TypePreview> inTypes, SettingsPreview settings ) {
         return Optional.of( true );
     }
 
@@ -62,7 +62,7 @@ public interface Pipeable extends Activity {
     default void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         List<AlgDataType> inputTypes = inputs.stream().map( CheckpointReader::getTupleType ).toList();
         assert canPipe(
-                inputTypes.stream().map( Optional::of ).toList(),
+                inputTypes.stream().map( TypePreview::ofType ).toList(),
                 SettingsPreview.of( settings )
         ).orElseThrow() : "Cannot use the default execute implementation of Pipeable if canPipe returns false.";
 

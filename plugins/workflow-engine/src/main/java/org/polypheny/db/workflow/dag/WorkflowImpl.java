@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -32,7 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
@@ -41,10 +39,12 @@ import org.polypheny.db.util.graph.TopologicalOrderIterator;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
+import org.polypheny.db.workflow.dag.activities.TypePreview.InactiveType;
+import org.polypheny.db.workflow.dag.activities.TypePreview.MissingType;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge.ExecutionEdgeFactory;
@@ -226,17 +226,13 @@ public class WorkflowImpl implements Workflow {
             return; // previews are only important for activities that can still get executed
         }
         recomputeInVariables( activityId );
-        List<Optional<AlgDataType>> inTypes = getInputTypes( activityId );
+        List<TypePreview> inTypes = getInputTypes( activityId );
         wrapper.setInTypePreview( inTypes );
         try {
-            SettingsPreview settings = wrapper.updateOutTypePreview( inTypes, hasStableInVariables( activityId ) );
-            wrapper.setSettingsPreview( settings );
+            wrapper.updateOutTypePreview( inTypes, hasStableInVariables( activityId ) );
         } catch ( ActivityException e ) {
             if ( throwIfInvalid ) {
                 throw e;
-            } else {
-                System.out.println( "Ignoring exception:" );
-                e.printStackTrace(); // TODO: make sure ignoring inconsistency is okay
             }
         }
     }
@@ -261,15 +257,15 @@ public class WorkflowImpl implements Workflow {
 
 
     @Override
-    public List<Optional<AlgDataType>> getInputTypes( UUID activityId ) {
-        List<Optional<AlgDataType>> inputTypes = new ArrayList<>();
+    public List<TypePreview> getInputTypes( UUID activityId ) {
+        List<TypePreview> inputTypes = new ArrayList<>();
 
         for ( int i = 0; i < getInPortCount( activityId ); i++ ) {
             DataEdge dataEdge = getDataEdge( activityId, i );
             if ( dataEdge == null ) {
-                inputTypes.add( Optional.empty() ); // not yet connected
+                inputTypes.add( MissingType.of() ); // not yet connected
             } else if ( dataEdge.getState() == EdgeState.INACTIVE ) {
-                inputTypes.add( null ); // TODO: this might lead to problems when a newly added activity is connected to a failed activity
+                inputTypes.add( InactiveType.of() );
             } else {
                 inputTypes.add( dataEdge.getFrom().getOutTypePreview().get( dataEdge.getFromPort() ) );
             }

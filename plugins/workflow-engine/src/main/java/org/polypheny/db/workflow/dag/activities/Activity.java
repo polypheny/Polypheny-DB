@@ -18,16 +18,15 @@ package org.polypheny.db.workflow.dag.activities;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
-import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
@@ -37,24 +36,20 @@ public interface Activity {
 
     /**
      * This method computes the output tuple-types by considering (a preview of) input types and settings.
-     * If the input types or settings are not available or cannot be validated yet, the output type is set to an empty {@link Optional}
+     * If the input types or settings are not available or cannot be validated yet, the output type is set to a {@link org.polypheny.db.workflow.dag.activities.TypePreview.UnknownType}
      * for the outputs that depend on it. The same holds for outputs whose type can only be determined during execution.
      * If any available setting or input type results in a contradiction or invalid state,
      * an {@link ActivityException} is thrown.
      * If a setting, input or output type is available, it is guaranteed to not change anymore.
      * This method should be idempotent.
      *
-     * @param inTypes a list of {@link Optional<AlgDataType>} representing the input tuple types. For inactive edges, the entry is null (important for non-default DataStateMergers).
-     * @param settings a map of setting keys to {@link Optional<SettingValue>} representing the available settings, i.e. all settings that do not contain variables.
-     * @return a list of {@link Optional<AlgDataType>} representing the expected output tuple types.
-     * If an output type cannot be determined at this point, the corresponding {@link Optional} will be empty.
+     * @param inTypes a list of {@link TypePreview}s representing the input tuple types.
+     * @param settings the SettingsPreview representing the available settings, i.e. all settings that do not contain variables.
+     * @return a list of {@link TypePreview} representing the expected output tuple types.
+     * If an output type cannot be determined at this point, {@link org.polypheny.db.workflow.dag.activities.TypePreview.UnknownType} should be used.
      * @throws ActivityException if any available setting or input type results in a contradiction or invalid state.
      */
-    List<Optional<AlgDataType>> previewOutTypes( List<Optional<AlgDataType>> inTypes, SettingsPreview settings ) throws ActivityException;
-
-    static List<Optional<AlgDataType>> wrapType( @Nullable AlgDataType type ) {
-        return List.of( Optional.ofNullable( type ) );
-    }
+    List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException;
 
     /**
      * Estimates the total output tuple count based on input types and their respective counts.
@@ -91,11 +86,22 @@ public interface Activity {
      * Reset any execution-specific state of this activity.
      * It is guaranteed to be called before execution starts.
      */
-    void reset();
+    default void reset() {
+
+    }
 
     default DataStateMerger getDataStateMerger() {
         // typically depends on the activity type
         return DataStateMerger.AND;
+    }
+
+
+    default AlgDataType getDocType() {
+        return DocumentType.ofId();
+    }
+
+    default AlgDataType getGraphType() {
+        return GraphType.of();
     }
 
 

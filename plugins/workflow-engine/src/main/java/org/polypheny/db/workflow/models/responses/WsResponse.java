@@ -23,6 +23,7 @@ import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType
 import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.RENDERING_UPDATE;
 import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.STATE_UPDATE;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -31,6 +32,8 @@ import javax.annotation.Nullable;
 import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
+import org.polypheny.db.workflow.dag.activities.ActivityException;
+import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.models.ActivityModel;
@@ -96,17 +99,29 @@ public class WsResponse {
     public static class StateUpdateResponse extends WsResponse {
 
         public final WorkflowState workflowState;
-        public final Map<UUID, ActivityState> activityStates;
+        public final Map<UUID, ActivityState> activityStates = new HashMap<>();
+        public final Map<UUID, String> activityInvalidReasons = new HashMap<>();
+        public final Map<UUID, Map<String, String>> activityInvalidSettings = new HashMap<>();
         public final List<EdgeModel> edgeStates;
 
 
         public StateUpdateResponse( @Nullable UUID parentId, Workflow workflow ) {
             super( STATE_UPDATE, parentId );
             workflowState = workflow.getState();
-            activityStates = workflow.getActivities().stream().collect( Collectors.toMap(
-                    ActivityWrapper::getId,
-                    ActivityWrapper::getState
-            ) );
+
+            for ( ActivityWrapper wrapper : workflow.getActivities() ) {
+                UUID id = wrapper.getId();
+                activityStates.put( id, wrapper.getState() );
+                ActivityException e = wrapper.getInvalidStateReason();
+                if ( e != null ) {
+                    activityInvalidReasons.put( id, e.getMessage() );
+                }
+                List<InvalidSettingException> invalidSettings = wrapper.getInvalidSettings();
+                if ( !invalidSettings.isEmpty() ) {
+                    activityInvalidSettings.put( id, invalidSettings.stream().collect(
+                            Collectors.toMap( InvalidSettingException::getSettingKey, InvalidSettingException::getMessage ) ) );
+                }
+            }
             edgeStates = workflow.getEdges().stream().map( e -> e.toModel( true ) ).toList();
         }
 
