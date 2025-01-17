@@ -316,6 +316,10 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
             if (max >= TxId)
                 return false
+        long commitSequenceNumber = SequenceNumberGenerator.getInstance().getNextNumber();
+
+        for (Entity writtenEntity : writtenEntities) {
+            String query = String.format(queryTemplate, writtenEntity.getName(), commitSequenceNumber, -getSequenceNumber());
 
         return true
          */
