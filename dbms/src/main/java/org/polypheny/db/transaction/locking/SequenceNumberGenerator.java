@@ -18,6 +18,7 @@ package org.polypheny.db.transaction.locking;
 
 import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.Getter;
 
 public class SequenceNumberGenerator {
 
@@ -32,7 +33,7 @@ public class SequenceNumberGenerator {
 
     private SequenceNumberGenerator() {
         this.counter = new AtomicLong( 0 );
-        this.lowestActive = 1;
+        this.lowestActive = 0;
         this.releasedNumbers = new BitSet( WINDOW_SIZE );
     }
 
