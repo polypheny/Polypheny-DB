@@ -177,4 +177,6 @@ public interface Snapshot extends OperatorTable {
     @NotNull
     Optional<LogicalEntity> getLogicalEntity( long namespaceId, String entity );
 
+    @NotNull
+    List<LogicalEntity> getLogicalEntities(long namespaceId);
 }
