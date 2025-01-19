@@ -35,6 +35,7 @@ import org.polypheny.db.transaction.PUID.NodeId;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PUID.UserId;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
+import org.polypheny.db.transaction.locking.GarbageCollector;
 
 
 @Slf4j
@@ -44,6 +45,8 @@ public class TransactionManagerImpl implements TransactionManager {
     private final ConcurrentHashMap<Long, PolyXid> xidById = new ConcurrentHashMap<>();
 
     private final AtomicLong totalTransactions = new AtomicLong( 0 );
+
+    private final GarbageCollector garbageCollector;
 
 
     private TransactionManagerImpl() {
@@ -67,11 +70,14 @@ public class TransactionManagerImpl implements TransactionManager {
                     v.getInvolvedAdapters().stream().map( Adapter::getUniqueName ).collect( Collectors.joining( ", " ) ),
                     v.getOrigin() ) );
         } );
+        this.garbageCollector = new GarbageCollector( this );
     }
 
 
     private static final class InstanceHolder {
-        private static final TransactionManager INSTANCE =  TransactionManagerProvider.setAndGetInstance(new TransactionManagerImpl());
+
+        private static final TransactionManager INSTANCE = TransactionManagerProvider.setAndGetInstance( new TransactionManagerImpl() );
+
     }
 
 
@@ -87,7 +93,7 @@ public class TransactionManagerImpl implements TransactionManager {
         PolyXid xid = generateNewTransactionId( nodeId, userId, connectionId );
         Transaction newTransaction = new TransactionImpl( xid, this, user, defaultNamespace, analyze, origin, flavor );
         transactions.put( xid, newTransaction );
-        xidById.put(newTransaction.getId(), newTransaction.getXid());
+        xidById.put( newTransaction.getId(), newTransaction.getXid() );
         totalTransactions.incrementAndGet();
         log.debug( "open {}", xid );
         return transactions.get( xid );
@@ -129,6 +135,7 @@ public class TransactionManagerImpl implements TransactionManager {
             log.warn( "Unknown transaction id: {}", xid );
         } else {
             transactions.remove( xid );
+            //garbageCollector.runIfRequired( totalTransactions.get() );
         }
     }
 
@@ -158,7 +165,7 @@ public class TransactionManagerImpl implements TransactionManager {
 
     @Override
     public Transaction getTransactionById( long transactionId ) {
-        return transactions.get(xidById.get(transactionId));
+        return transactions.get( xidById.get( transactionId ) );
     }
 
 }
