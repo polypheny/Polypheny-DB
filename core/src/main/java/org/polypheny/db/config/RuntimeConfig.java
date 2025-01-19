@@ -58,6 +58,13 @@ public enum RuntimeConfig {
             ConfigType.ENUM
     ),
 
+    GARBAGE_COLLECTION_INTERVAL(
+            "runtime/garbageCollectionInterval",
+            "Defines the interval in which the periodic garbage collector runs.",
+            2L,
+            ConfigType.LONG
+    ),
+
     APPROXIMATE_DISTINCT_COUNT(
             "runtime/approximateDistinctCount",
             "Whether approximate results from \"COUNT(DISTINCT ...)\" aggregate functions are acceptable.",
