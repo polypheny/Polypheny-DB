@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog.snapshot.impl;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -210,6 +212,22 @@ public class SnapshotImpl implements Snapshot {
         }
 
         return graph.getGraph( id );
+    }
+
+    @Override
+    public @NotNull List<LogicalEntity> getLogicalEntities(long namespaceId) {
+        List<LogicalTable> tables = rel.getTables(namespaceId, null);
+        if (!tables.isEmpty()) {
+            return new ArrayList<>(tables);
+        }
+
+        List<LogicalCollection> collections = doc.getCollections(namespaceId, null);
+        if (!collections.isEmpty()) {
+            return new ArrayList<>(collections);
+        }
+
+        Optional<LogicalGraph> optionalGraph = graph.getGraph( namespaceId );
+        return optionalGraph.<List<LogicalEntity>>map( List::of ).orElseGet( List::of );
     }
 
 
