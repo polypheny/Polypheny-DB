@@ -16,7 +16,6 @@
 
 package org.polypheny.db.languages.mql;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -77,9 +76,10 @@ public class MqlDeletePlacement extends MqlCollectionStatement implements Execut
         return getCollection();
     }
 
+
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
-        return LockableUtils.getMapOfCollectionLockableFromContext( context, parsedQueryContext, collection, LockType.EXCLUSIVE );
+        return LockableUtils.getMapOfCollectionLockableFromContext( context, parsedQueryContext, LockType.EXCLUSIVE );
     }
 
 }

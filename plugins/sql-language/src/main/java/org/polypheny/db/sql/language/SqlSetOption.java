@@ -224,7 +224,7 @@ public class SqlSetOption extends SqlAlter {
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
-        return LockableUtils.getMapWithGlobalLockable(LockType.EXCLUSIVE);
+        return LockableUtils.getMapOfGlobalLockable(LockType.EXCLUSIVE);
     }
 
 }

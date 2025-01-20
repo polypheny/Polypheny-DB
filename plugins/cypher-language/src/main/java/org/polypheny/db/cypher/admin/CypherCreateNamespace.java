@@ -109,7 +109,7 @@ public class CypherCreateNamespace extends CypherAdminCommand implements Executa
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
-        return LockableUtils.getMapWithGlobalLockable( LockType.EXCLUSIVE );
+        return LockableUtils.getMapOfGlobalLockable( LockType.EXCLUSIVE );
     }
 
 
