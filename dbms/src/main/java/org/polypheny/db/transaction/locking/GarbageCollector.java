@@ -16,7 +16,13 @@
 
 package org.polypheny.db.transaction.locking;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -35,7 +41,14 @@ public class GarbageCollector {
 
     private static final String TRANSACTION_ORIGIN = "MVCC Garbage Collector";
 
-    private static final String RELATIONAL_CLEANUP_STATEMENT = """
+    private static final String REL_RELEASED_EID_QUERY = """
+           SELECT ABS(t._eid) AS released_eid
+           FROM %s AS t
+           WHERE t._eid < 0
+             AND t._vid < %d;
+           """;
+
+    private static final String REL_CLEANUP_QUERY = """
             DELETE FROM %s
             WHERE EXISTS (
                 SELECT 1
@@ -134,15 +147,21 @@ public class GarbageCollector {
     private final TransactionManager transactionManager;
 
     private long lastCleanupSequenceNumber;
+    private volatile boolean isRunning;
 
 
     public GarbageCollector( TransactionManager transactionManager ) {
         this.transactionManager = transactionManager;
         this.lastCleanupSequenceNumber = 0;
+        this.isRunning = false;
     }
 
 
-    public void runIfRequired( long totalTransactions ) {
+    public synchronized void runIfRequired( long totalTransactions ) {
+        if (isRunning) {
+            return;
+        }
+
         if ( totalTransactions % RuntimeConfig.GARBAGE_COLLECTION_INTERVAL.getLong() != 0 ) {
             return;
         }
@@ -151,6 +170,7 @@ public class GarbageCollector {
         if ( lowestActiveTransaction == lastCleanupSequenceNumber ) {
             return;
         }
+
         lastCleanupSequenceNumber = lowestActiveTransaction;
 
         // get all namespaces
@@ -165,9 +185,11 @@ public class GarbageCollector {
         }
 
         // for each entity run cleanup
+        isRunning = true;
         Transaction transaction = transactionManager.startTransaction(  Catalog.defaultUserId, false, TRANSACTION_ORIGIN );
         entities.forEach( e -> garbageCollect( e, lowestActiveTransaction, transaction ) );
         transaction.commit();
+        isRunning = false;
     }
 
 
@@ -181,8 +203,21 @@ public class GarbageCollector {
 
 
     private void relGarbageCollect( LogicalEntity entity, long lowestActiveVersion, Transaction transaction ) {
+        String releasedEidQuery = String.format(
+                REL_RELEASED_EID_QUERY,
+                entity.getName(),
+                lowestActiveVersion
+        );
+
+        Set<Long> releasedIds = new HashSet<>(); //ToDo TH: this will become a problem with table size
+        Statement statement1 = transaction.createStatement();
+        ResultIterator iterator = executeStatement( releasedEidQuery, RELATIONAL_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement1, transaction).getIterator();
+        iterator.getIterator(). forEachRemaining( r -> releasedIds.add( r[0].asLong().longValue() ));
+        iterator.close();
+        statement1.close();
+
         String query = String.format(
-                RELATIONAL_CLEANUP_STATEMENT,
+                REL_CLEANUP_QUERY,
                 entity.getName(),
                 entity.getName(),
                 entity.getName(),
@@ -191,9 +226,14 @@ public class GarbageCollector {
                 entity.getName(),
                 entity.getName()
                 );
-        Statement statement = transaction.createStatement();
-        executeStatement( query, RELATIONAL_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement, transaction);
-        statement.close();
+        Statement statement2 = transaction.createStatement();
+        executeStatement( query, RELATIONAL_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement2, transaction);
+        statement2.close();
+
+        entity.getEntryIdentifiers().releaseEntryIdentifiers( releasedIds );
+
+        System.out.println("Garbage Collection: ");
+        releasedIds.forEach( System.out::println );
     }
 
 
