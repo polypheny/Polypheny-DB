@@ -202,11 +202,24 @@ public class DeferredAlgTreeModification {
                 new RexIndexRef( 0, IdentifierUtils.IDENTIFIER_ALG_TYPE ),
                 new RexLiteral(
                         PolyLong.of( 0 ),
-                        IdentifierUtils.VERSION_ALG_TYPE,
+                        IdentifierUtils.IDENTIFIER_ALG_TYPE,
                         PolyType.BIGINT
                 )
         );
 
+        RexCall scopeCondition = new RexCall(
+                        BOOLEAN_ALG_TYPE,
+                        OperatorRegistry.get( OperatorName.OR ),
+                        selfReadCondition,
+                        new RexCall(
+                                BOOLEAN_ALG_TYPE,
+                                OperatorRegistry.get( OperatorName.AND ),
+                                versionInSnapshotCondition,
+                                versionCommittedCondition
+                        )
+        );
+
+        /**
         RexCall scopeCondition = new RexCall(
                 BOOLEAN_ALG_TYPE,
                 OperatorRegistry.get( OperatorName.AND ),
@@ -223,6 +236,7 @@ public class DeferredAlgTreeModification {
                         )
                 )
         );
+         **/
 
         return LogicalRelFilter.create(
                 input,

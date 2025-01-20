@@ -89,7 +89,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final long id;
 
     @Getter
-    private final long sequenceNumber;
+    private long sequenceNumber;
 
     @Getter
     private final PolyXid xid;
@@ -225,7 +225,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         if ( !writtenEntities.isEmpty() ) {
             okToCommit &= validateWriteSet();
-            updateWrittenVersionIds();
+            updateWrittenVersionIds(); // a rollback reverts this as well
         }
 
         Pair<Boolean, String> isValid = catalog.checkIntegrity();
@@ -366,6 +366,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             }
 
             context.execute(context.getStatement());
+            SequenceNumberGenerator.getInstance().releaseNumber( sequenceNumber );
+            sequenceNumber = commitSequenceNumber;
         }
     }
 

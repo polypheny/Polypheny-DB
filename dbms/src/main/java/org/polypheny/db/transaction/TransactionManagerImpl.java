@@ -135,7 +135,7 @@ public class TransactionManagerImpl implements TransactionManager {
             log.warn( "Unknown transaction id: {}", xid );
         } else {
             transactions.remove( xid );
-            //garbageCollector.runIfRequired( totalTransactions.get() );
+            garbageCollector.runIfRequired( totalTransactions.get() );
         }
     }
 

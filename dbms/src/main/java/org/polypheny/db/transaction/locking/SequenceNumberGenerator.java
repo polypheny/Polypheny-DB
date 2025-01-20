@@ -33,7 +33,7 @@ public class SequenceNumberGenerator {
 
     private SequenceNumberGenerator() {
         this.counter = new AtomicLong( 0 );
-        this.lowestActive = 0;
+        this.lowestActive = 1;
         this.releasedNumbers = new BitSet( WINDOW_SIZE );
     }
 
