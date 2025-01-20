@@ -62,7 +62,8 @@ public class WorkflowUtils {
                 0,
                 false,
                 maxWorkers,
-                10 // low on purpose to observe blocking
+                10, // low on purpose to observe blocking
+                100
         );
         Map<String, JsonNode> variables = Map.of( "creationTime", TextNode.valueOf( LocalDateTime.now().format( DateTimeFormatter.ISO_DATE_TIME ) ) );
         try {

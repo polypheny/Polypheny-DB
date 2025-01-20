@@ -34,6 +34,7 @@ public class ExecutionResult {
     public ExecutionResult( ExecutionSubmission submission ) {
         this.submission = submission;
         exception = null;
+        submission.getInfo().setSuccess( isSuccess() );
     }
 
 

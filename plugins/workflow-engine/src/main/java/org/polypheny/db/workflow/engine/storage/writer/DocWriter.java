@@ -27,6 +27,7 @@ import org.polypheny.db.workflow.engine.storage.DocBatchWriter;
 public class DocWriter extends CheckpointWriter {
 
     private final DocBatchWriter writer;
+    private long writeCount = 0;
 
 
     public DocWriter( LogicalCollection collection, Transaction transaction ) {
@@ -36,6 +37,7 @@ public class DocWriter extends CheckpointWriter {
 
 
     public void write( PolyDocument document ) {
+        writeCount++;
         writer.write( document );
     }
 
@@ -49,7 +51,14 @@ public class DocWriter extends CheckpointWriter {
 
     @Override
     public void write( List<PolyValue> tuple ) {
+        writeCount++;
         writer.write( tuple.get( 0 ).asDocument() );
+    }
+
+
+    @Override
+    public long getWriteCount() {
+        return writeCount;
     }
 
 

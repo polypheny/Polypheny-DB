@@ -66,6 +66,8 @@ public interface Pipeable extends Activity {
                 SettingsPreview.of( settings )
         ).orElseThrow() : "Cannot use the default execute implementation of Pipeable if canPipe returns false.";
 
+        ctx.logInfo( "Relying on the pipeable implementation of " + getClass().getSimpleName() + " to execute the activity." );
+
         AlgDataType type = lockOutputType( inputTypes, settings );
         List<InputPipe> inPipes = inputs.stream().map( reader -> (InputPipe) new CheckpointInputPipe( reader ) ).toList();
         PipeExecutionContext pipeCtx = (ExecutionContextImpl) ctx;

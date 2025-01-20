@@ -97,7 +97,6 @@ public class WorkflowScheduler {
 
         workflow.validateStructure( sm, this.execDag );
         log.info( "Structure is valid" );
-
         workflow.setState( WorkflowState.EXECUTING );
         this.optimizer = new WorkflowOptimizerImpl( workflow, execDag );
 
@@ -105,6 +104,10 @@ public class WorkflowScheduler {
 
 
     public List<ExecutionSubmission> startExecution() {
+        executionMonitor.setTotalCount( (int) workflow.getActivities().stream()
+                .filter( activity -> activity.getState() == ActivityState.QUEUED )
+                .count()
+        );
         List<ExecutionSubmission> submissions = computeNextSubmissions();
         executionMonitor.forwardStates();
         finishLatch = new CountDownLatch( 1 );
@@ -412,6 +415,7 @@ public class WorkflowScheduler {
             case INACTIVE -> {
                 target.setState( ActivityState.SKIPPED );
                 remainingActivities.remove( target.getId() );
+                executionMonitor.addSkippedActivity( target.getId() );
                 if ( targetPartition != null ) { // in case of initial propagation for saved activities, there is no targetPartition yet
                     targetPartition.setResolved( target.getId(), false ); // no need to catch the exception, as the transaction is already rolled back
                 }
@@ -452,6 +456,9 @@ public class WorkflowScheduler {
 
     private void setStates( Set<UUID> activities, ActivityState state ) {
         activities.forEach( id -> workflow.getActivity( id ).setState( state ) );
+        if ( state == ActivityState.SKIPPED ) {
+            activities.forEach( executionMonitor::addSkippedActivity );
+        }
     }
 
 

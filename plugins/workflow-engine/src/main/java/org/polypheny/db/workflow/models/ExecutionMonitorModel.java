@@ -16,37 +16,23 @@
 
 package org.polypheny.db.workflow.models;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.Value;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorType;
-import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo.ExecutionState;
 
 @Value
-public class ExecutionInfoModel {
+public class ExecutionMonitorModel {
 
-    String submissionTime; // ISO 8601: "2025-01-17T14:30:00Z"
+    String startTime; // ISO 8601:  "2025-01-17T14:30:00Z"
     long totalDuration;
-    Map<ExecutionState, Long> durations;
-    List<UUID> activities;
-    ExecutorType executorType;
-    ExecutionState state;
-
-    @Getter(AccessLevel.NONE)
-    boolean isSuccess; // only valid when state == DONE
-    long tuplesWritten;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    List<String> log;
-
-
-    @JsonProperty("isSuccess")
-    public boolean isSuccess() {
-        return isSuccess;
-    }
+    UUID targetActivity;
+    List<ExecutionInfoModel> infos; // without log
+    int totalCount;
+    int successCount;
+    int failCount;
+    int skipCount;
+    Map<ExecutorType, Integer> countByExecutorType;
 
 }

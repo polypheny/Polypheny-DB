@@ -66,6 +66,7 @@ public class PipeExecutor extends Executor {
     private final Map<UUID, ExecutionContextImpl> contexts = new HashMap<>();
     private final Map<UUID, Settings> settingsSnapshot = new HashMap<>();
     private final int queueCapacity;
+    private CheckpointWriter writer;
 
     private boolean hasDetectedAbort = false;
     private ExecutorService executor;
@@ -132,6 +133,7 @@ public class PipeExecutor extends Executor {
         if ( abortReason != null ) {
             throw abortReason; // we only throw now to ensure threads are all shut down.
         }
+        info.setTuplesWritten( writer.getWriteCount() );
     }
 
 
@@ -201,12 +203,14 @@ public class PipeExecutor extends Executor {
             // This could be a LOAD activity. It generally has no outputs and instead uses side effects to load the data -> no pipe required
             return null;
         }
+        assert writer != null;
+
         ActivityWrapper wrapper = workflow.getActivity( rootId );
         DataModel model = wrapper.getDef().getOutPortTypes()[0].getDataModel( rootType );
         String store = wrapper.getConfig().getPreferredStore( 0 );
 
         System.out.println( "creating CheckpointWriterPipe for model " + model );
-        CheckpointWriter writer = sm.createCheckpoint( rootId, 0, rootType, true, store, model );
+        writer = sm.createCheckpoint( rootId, 0, rootType, true, store, model );
         return new CheckpointOutputPipe( rootType, writer, contexts.get( rootId ), outCounts.get( rootId ) );
     }
 
@@ -253,6 +257,7 @@ public class PipeExecutor extends Executor {
         ExecutionContextImpl ctx = contexts.get( wrapper.getId() );
         return () -> {
             try {
+                ctx.logInfo( "Starting pipelined execution with settings: " + settings.serialize() );
                 if ( outPipe != null ) {
                     try ( outPipe ) { // try-with-resource to close pipe (in case of the CheckpointOutputPipe, this closes the checkpoint writer)
                         activity.pipe( inPipes, outPipe, settings, ctx );

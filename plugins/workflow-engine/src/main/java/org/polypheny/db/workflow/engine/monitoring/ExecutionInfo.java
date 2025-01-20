@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorType;
@@ -35,7 +36,7 @@ import org.polypheny.db.workflow.models.ExecutionInfoModel;
 
 public class ExecutionInfo {
 
-    public static final int LOG_CAPACITY = 100;
+    public static final int MIN_LOG_CAPACITY = 10;
 
     private final StopWatch totalDuration;
     private final Map<ExecutionState, StopWatch> durations = new HashMap<>();
@@ -43,16 +44,20 @@ public class ExecutionInfo {
     private final Set<UUID> activities;
     @Getter
     private final ExecutorType executorType;
-
     @Getter
     private ExecutionState state;
+    @Getter
+    @Setter
+    private boolean isSuccess;
     private final Map<UUID, Double> progressMap = new ConcurrentHashMap<>();
     private double combinedProgress; // only used by FusionExecutor, since we cannot specify the progress of individual activities
+    @Getter
+    private long tuplesWritten = -1;
 
-    private final CircularFifoQueue<String> log = new CircularFifoQueue<>( LOG_CAPACITY );
+    private final CircularFifoQueue<String> log;
 
 
-    public ExecutionInfo( Set<UUID> activities, ExecutorType executorType ) {
+    public ExecutionInfo( Set<UUID> activities, ExecutorType executorType, int logCapacity ) {
         this.activities = Collections.unmodifiableSet( activities );
         this.executorType = executorType;
         activities.forEach( n -> progressMap.put( n, 0. ) );
@@ -60,6 +65,7 @@ public class ExecutionInfo {
         this.state = ExecutionState.SUBMITTED;
         this.totalDuration = StopWatch.createStarted();
         this.durations.put( state, StopWatch.createStarted() );
+        this.log = new CircularFifoQueue<>( Math.min( logCapacity, MIN_LOG_CAPACITY ) );
     }
 
 
@@ -74,6 +80,14 @@ public class ExecutionInfo {
         } else {
             durations.put( state, StopWatch.createStarted() );
         }
+    }
+
+
+    public void setTuplesWritten( long tuplesWritten ) {
+        if ( this.tuplesWritten >= 0 ) {
+            return;
+        }
+        this.tuplesWritten = tuplesWritten;
     }
 
 
@@ -159,8 +173,9 @@ public class ExecutionInfo {
     }
 
 
-    public synchronized ExecutionInfoModel toModel() {
+    public synchronized ExecutionInfoModel toModel( boolean includeLog ) {
         return new ExecutionInfoModel(
+                totalDuration.getStartInstant().toString(),
                 getDurationMillis(),
                 Arrays.stream( ExecutionState.values() )
                         .filter( s -> s != ExecutionState.DONE )
@@ -168,13 +183,16 @@ public class ExecutionInfo {
                 new ArrayList<>( activities ),
                 executorType,
                 state,
-                List.copyOf( log )
+                isSuccess,
+                tuplesWritten,
+                includeLog ? List.copyOf( log ) : null
         );
     }
 
 
     @Override
     public String toString() {
+        // This does no longer capture the ExecutionInfo in its entirety
         StringJoiner dJoiner = new StringJoiner( "\n", "\n", "" );
         for ( ExecutionState state : ExecutionState.values() ) {
             if ( state == ExecutionState.DONE ) {

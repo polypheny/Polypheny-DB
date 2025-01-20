@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.VariableWriter;
+import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
@@ -46,7 +47,9 @@ public class VariableWriterExecutor extends Executor {
                 ExecutionContextImpl ctx = new ExecutionContextImpl( wrapper, sm, info ) ) {
             this.ctx = ctx;
             VariableWriter activity = (VariableWriter) wrapper.getActivity();
-            activity.execute( inputs, wrapper.resolveSettings(), ctx, wrapper.getVariables() );
+            Settings settings = wrapper.resolveSettings();
+            ctx.logInfo( "Starting variable writer execution with settings: " + settings.serialize() );
+            activity.execute( inputs, settings, ctx, wrapper.getVariables() );
             wrapper.setOutTypePreview( sm.getCheckpointPreviewTypes( wrapper.getId() ) );
         } catch ( Exception e ) {
             throw new ExecutorException( e, wrapper.getId() );

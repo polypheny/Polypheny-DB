@@ -30,7 +30,8 @@ import org.polypheny.db.workflow.engine.storage.LpgBatchWriter;
 public class LpgWriter extends CheckpointWriter {
 
     private final LpgBatchWriter writer;
-    boolean isWritingEdges = false;
+    private boolean isWritingEdges = false;
+    private long writeCount = 0;
 
 
     public LpgWriter( LogicalGraph graph, Transaction transaction ) {
@@ -59,6 +60,7 @@ public class LpgWriter extends CheckpointWriter {
         if ( isWritingEdges ) {
             throw new GenericRuntimeException( "Cannot write node after writing edges" );
         }
+        writeCount++;
         writer.write( node );
     }
 
@@ -71,6 +73,7 @@ public class LpgWriter extends CheckpointWriter {
 
 
     public void writeEdge( PolyEdge edge ) {
+        writeCount++;
         writer.write( edge );
         isWritingEdges = true;
     }
@@ -93,6 +96,12 @@ public class LpgWriter extends CheckpointWriter {
         } else {
             throw new IllegalArgumentException( "LpgWriter can only write PolyNode or PolyEdge values, but found: " + value.getClass().getSimpleName() );
         }
+    }
+
+
+    @Override
+    public long getWriteCount() {
+        return writeCount;
     }
 
 

@@ -21,6 +21,7 @@ import java.util.List;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 public abstract class CheckpointWriter implements AutoCloseable {
 
@@ -52,13 +53,21 @@ public abstract class CheckpointWriter implements AutoCloseable {
     }
 
 
+    /**
+     * Returns the number of tuples written so far.
+     * After the writer gets closed, this method should return the same value
+     * as if calling {@link CheckpointReader#getTupleCount()} on a Reader that reads the checkpoint.
+     *
+     * @return long representing the written tuple count.
+     */
+    public abstract long getWriteCount();
+
+
     @Override
     public void close() throws Exception {
         // even in case of an error we can commit, since the checkpoint will be dropped
         transaction.commit();
     }
-
-
 
 
 }

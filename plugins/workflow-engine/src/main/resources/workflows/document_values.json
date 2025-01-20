@@ -56,7 +56,9 @@
         "fusionEnabled": false,
         "pipelineEnabled": false,
         "maxWorkers": 1,
-        "pipelineQueueCapacity": 10
+        "pipelineQueueCapacity": 10,
+        "dropUnusedCheckpoints": false,
+        "logCapacity": 100
     },
     "variables": {
         "creationTime": "2024-12-23T16:18:37.3097338"

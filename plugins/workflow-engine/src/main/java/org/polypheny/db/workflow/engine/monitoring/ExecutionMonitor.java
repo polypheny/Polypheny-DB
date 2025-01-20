@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -33,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorType;
+import org.polypheny.db.workflow.models.ExecutionMonitorModel;
 import org.polypheny.db.workflow.models.responses.WsResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.ProgressUpdateResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.StateUpdateResponse;
@@ -46,6 +48,12 @@ public class ExecutionMonitor {
     private final List<ExecutionInfo> infos = new CopyOnWriteArrayList<>();
     private final Map<UUID, ExecutionInfo> activityToInfoMap = new ConcurrentHashMap<>();
     private final StopWatch workflowDuration;
+    private int totalCount = -1;
+    private final Set<UUID> skippedActivities = ConcurrentHashMap.newKeySet();
+
+    // needs to be updated manually
+    private int successCount;
+    private int failCount;
 
     private final Workflow workflow;
     @Getter
@@ -82,6 +90,19 @@ public class ExecutionMonitor {
         for ( UUID activityId : info.getActivities() ) {
             activityToInfoMap.put( activityId, info );
         }
+    }
+
+
+    public void addSkippedActivity( UUID activityId ) {
+        skippedActivities.add( activityId );
+    }
+
+
+    public void setTotalCount( int totalCount ) {
+        if ( totalCount < 0 ) {
+            throw new IllegalArgumentException( "Total count was already set" );
+        }
+        this.totalCount = totalCount;
     }
 
 
@@ -128,6 +149,22 @@ public class ExecutionMonitor {
     }
 
 
+    public ExecutionMonitorModel toModel() {
+        updateCounts();
+        return new ExecutionMonitorModel(
+                workflowDuration.getStartInstant().toString(),
+                getWorkflowDurationMillis(),
+                targetActivity,
+                infos.stream().map( i -> i.toModel( false ) ).toList(),
+                totalCount,
+                successCount,
+                failCount,
+                skippedActivities.size(),
+                getActivityCounts()
+        );
+    }
+
+
     public synchronized void forwardStates() {
         if ( callback != null ) {
             boolean isScheduled = scheduledUpdate != null;
@@ -139,6 +176,23 @@ public class ExecutionMonitor {
                 }, STATE_UPDATE_DEFER_DELAY, TimeUnit.MILLISECONDS );
             }
         }
+    }
+
+
+    private void updateCounts() {
+        int successCount = 0;
+        int failCount = 0;
+        for ( ExecutionInfo info : infos ) {
+            if ( info.isDone() ) {
+                if ( info.isSuccess() ) {
+                    successCount += info.getActivities().size();
+                } else {
+                    failCount += info.getActivities().size();
+                }
+            }
+        }
+        this.successCount = successCount;
+        this.failCount = failCount;
     }
 
 }

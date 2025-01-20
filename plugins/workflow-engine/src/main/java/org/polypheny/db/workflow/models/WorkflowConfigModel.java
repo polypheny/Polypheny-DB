@@ -21,6 +21,7 @@ import lombok.Value;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.workflow.WorkflowManager;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 
 
 @Value
@@ -33,7 +34,7 @@ public class WorkflowConfigModel {
     boolean dropUnusedCheckpoints;
     int maxWorkers;
     int pipelineQueueCapacity;
-    // TODO: config value for changing behavior of deleting created checkpoints
+    int logCapacity;
 
 
     public static WorkflowConfigModel of() {
@@ -46,7 +47,8 @@ public class WorkflowConfigModel {
                 0,
                 false,
                 1,
-                1000
+                1000,
+                100
         );
     }
 
@@ -57,6 +59,9 @@ public class WorkflowConfigModel {
         }
         if ( pipelineQueueCapacity <= 0 ) {
             throw new GenericRuntimeException( "Pipeline queue capacity must be greater than 0" );
+        }
+        if ( logCapacity < ExecutionInfo.MIN_LOG_CAPACITY ) {
+            throw new GenericRuntimeException( "Log capacity must be greater than " + ExecutionInfo.MIN_LOG_CAPACITY );
         }
     }
 

@@ -61,6 +61,8 @@ public interface Fusable extends Activity {
                 SettingsPreview.of( settings )
         ).orElseThrow() : "Cannot use the default execute implementation of Fusable if canFuse returns false.";
 
+        ctx.logInfo( "Relying on the fusable implementation of " + getClass().getSimpleName() + " to execute the activity." );
+
         // Imitates the fusion executor
         Transaction transaction = ctx.getTransaction();
         Statement statement = transaction.createStatement();

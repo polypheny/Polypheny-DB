@@ -210,6 +210,7 @@ public abstract class SettingDef {
     @Value
     public static class Settings {
 
+        private static final ObjectMapper MAPPER = new ObjectMapper();
         Map<String, SettingValue> map;
 
 
@@ -229,12 +230,20 @@ public abstract class SettingDef {
 
 
         public Map<String, JsonNode> getSerializableSettings() {
-            ObjectMapper mapper = new ObjectMapper();
             Map<String, JsonNode> settingValues = new HashMap<>();
             for ( Entry<String, SettingValue> entry : map.entrySet() ) {
-                settingValues.put( entry.getKey(), entry.getValue().toJson( mapper ) );
+                settingValues.put( entry.getKey(), entry.getValue().toJson( MAPPER ) );
             }
             return Collections.unmodifiableMap( settingValues );
+        }
+
+
+        public String serialize() {
+            try {
+                return MAPPER.writeValueAsString( getSerializableSettings() );
+            } catch ( JsonProcessingException e ) {
+                throw new GenericRuntimeException( "Unable to serialize settings: " + e.getMessage(), e );
+            }
         }
 
     }

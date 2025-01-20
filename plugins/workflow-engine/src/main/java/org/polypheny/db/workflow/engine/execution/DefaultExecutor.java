@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.UUID;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
+import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
@@ -48,7 +49,9 @@ public class DefaultExecutor extends Executor {
         try ( CloseableList ignored = new CloseableList( inputs );
                 ExecutionContextImpl ctx = new ExecutionContextImpl( wrapper, sm, info ) ) {
             this.ctx = ctx;
-            wrapper.getActivity().execute( inputs, wrapper.resolveSettings(), ctx );
+            Settings settings = wrapper.resolveSettings();
+            ctx.logInfo( "Starting execution with settings: " + settings.serialize() );
+            wrapper.getActivity().execute( inputs, settings, ctx );
             wrapper.setOutTypePreview( sm.getCheckpointPreviewTypes( wrapper.getId() ) );
             ctx.updateProgress( 1 ); // ensure progress is correct
         } catch ( Exception e ) {

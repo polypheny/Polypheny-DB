@@ -41,6 +41,7 @@ import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo.LogLevel;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
@@ -114,6 +115,7 @@ public class FusionExecutor extends Executor {
                 }
             }
             info.setProgress( 1 );
+            info.setTuplesWritten( writer.getWriteCount() );
         } catch ( Exception e ) {
             throw new ExecutorException( e );
         } finally {
@@ -167,6 +169,7 @@ public class FusionExecutor extends Executor {
         Fusable activity = (Fusable) wrapper.getActivity();
 
         long tupleCount = activity.estimateTupleCount( inTypes, settings, Arrays.asList( inCountsArr ), () -> transaction );
+        info.appendLog( root, LogLevel.INFO, "Fusing with settings: " + settings.serialize() );
         AlgNode fused = activity.fuse( inputs, settings, cluster );
         wrapper.setOutTypePreview( TypePreview.ofType( fused.getTupleType() ).asOutTypes() );
         return Pair.of( fused, tupleCount );

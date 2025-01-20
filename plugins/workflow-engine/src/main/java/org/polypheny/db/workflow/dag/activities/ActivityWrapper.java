@@ -147,7 +147,7 @@ public class ActivityWrapper {
             String invalidReason = invalidStateReason == null ? null : invalidStateReason.getMessage();
             Map<String, String> invalidSettingsMap = invalidSettings.stream().collect(
                     Collectors.toMap( InvalidSettingException::getSettingKey, InvalidSettingException::getMessage ) );
-            ExecutionInfoModel infoModel = executionInfo == null ? null : executionInfo.toModel();
+            ExecutionInfoModel infoModel = executionInfo == null ? null : executionInfo.toModel( true );
             return new ActivityModel( type, id, serializableSettings, config, rendering,
                     this.state, inTypeModels, invalidReason, invalidSettingsMap, variables.getVariables(), infoModel );
 

@@ -88,7 +88,7 @@ public interface ExecutionContext {
     /**
      * Logs an informational message.
      *
-     * <p>Note: Logs are saved to a circular queue limited to {@link org.polypheny.db.workflow.engine.monitoring.ExecutionInfo#LOG_CAPACITY} entries.
+     * <p>Note: Logs are saved to a circular queue limited to the log capacity specified in the workflow config.
      * Use logging sparingly to avoid dropping messages.</p>
      *
      * @param message the informational message to log
@@ -98,7 +98,7 @@ public interface ExecutionContext {
     /**
      * Logs a warning message.
      *
-     * <p>Note: Logs are saved to a circular queue limited to {@link org.polypheny.db.workflow.engine.monitoring.ExecutionInfo#LOG_CAPACITY} entries.
+     * <p>Note: Logs are saved to a circular queue limited to the log capacity specified in the workflow config.
      * Use logging sparingly to avoid dropping messages.</p>
      *
      * @param message the warning message to log
@@ -109,7 +109,7 @@ public interface ExecutionContext {
      * Logs a non-catastrophic error message.
      * If the error makes it impossible for the activity to successfully execute, it is better throw an exception.
      *
-     * <p>Note: Logs are saved to a circular queue limited to {@link org.polypheny.db.workflow.engine.monitoring.ExecutionInfo#LOG_CAPACITY} entries.
+     * <p>Note: Logs are saved to a circular queue limited to the log capacity specified in the workflow config.
      * Use logging sparingly to avoid dropping messages.</p>
      *
      * @param message the error message to log

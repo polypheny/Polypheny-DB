@@ -36,6 +36,7 @@ public class RelWriter extends CheckpointWriter {
     private final int mapCapacity; // Since we know the size of each paramValue map, we can specify the initialCapacity for better performance
 
     private final BatchWriter writer;
+    private long writeCount = 0;
 
 
     public RelWriter( LogicalTable table, Transaction transaction, boolean resetPk ) {
@@ -119,6 +120,12 @@ public class RelWriter extends CheckpointWriter {
 
 
     @Override
+    public long getWriteCount() {
+        return writeCount;
+    }
+
+
+    @Override
     public void close() throws Exception {
         if ( transaction.isActive() ) { // ensure writer is only closed once
             try {
@@ -135,6 +142,7 @@ public class RelWriter extends CheckpointWriter {
             rowMap.put( 0L, PolyLong.of( currentPk ) );
             currentPk++;
         }
+        writeCount++;
         writer.write( rowMap );
     }
 

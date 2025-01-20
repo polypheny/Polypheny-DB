@@ -42,6 +42,7 @@ import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.models.ActivityModel;
+import org.polypheny.db.workflow.models.ExecutionMonitorModel;
 import org.polypheny.db.workflow.models.SessionModel;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
@@ -125,6 +126,11 @@ public abstract class AbstractSession {
 
     public Map<String, JsonNode> getVariables() {
         return workflow.getVariables().getVariables();
+    }
+
+
+    public ExecutionMonitorModel getMonitorModel() {
+        return executionMonitor == null ? null : executionMonitor.toModel();
     }
 
 
