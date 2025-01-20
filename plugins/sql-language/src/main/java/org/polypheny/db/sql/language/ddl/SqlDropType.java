@@ -53,7 +53,7 @@ public class SqlDropType extends SqlDropObject {
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
-        return LockableUtils.getMapOfNamespaceLockable( name.getSimple(), context, LockType.EXCLUSIVE );
+        return LockableUtils.getMapOfNamespaceLockableFromName( name.getSimple(), context, LockType.EXCLUSIVE );
     }
 
 }
