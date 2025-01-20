@@ -22,6 +22,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
@@ -141,6 +142,12 @@ public class LpgReader extends CheckpointReader {
     @Override
     public long getTupleCount() {
         return getNodeCount() + getEdgeCount();
+    }
+
+
+    @Override
+    public DataModel getDataModel() {
+        return DataModel.GRAPH;
     }
 
 

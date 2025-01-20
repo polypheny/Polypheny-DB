@@ -90,7 +90,7 @@ public class FusionExecutor extends Executor {
         }
         DataModel model = root.getModel().dataModel();
         PortType definedType = rootWrapper.getDef().getOutPortTypes()[0];
-        if ( !PortType.fromDataModel( model ).canWriteTo( definedType ) ) {
+        if ( !definedType.couldBeCompatibleWith( model ) ) {
             throw new ExecutorException( "The data model of the fused AlgNode tree (" + model + ") is incompatible with the defined outPort type (" + definedType + ") of the root activity: " + execTree );
         }
 
@@ -148,6 +148,12 @@ public class FusionExecutor extends Executor {
             Pair<AlgNode, Long> pair = constructAlgNode( edge.getSource(), cluster, transaction );
             inputsArr[edge.getToPort()] = pair.left;
             inCountsArr[edge.getToPort()] = pair.right;
+
+            PortType toPortType = wrapper.getDef().getInPortTypes()[edge.getToPort()];
+            DataModel fromModel = pair.left.getModel();
+            if ( !toPortType.couldBeCompatibleWith( fromModel ) ) {
+                throw new ExecutorException( "Detected incompatible data models for " + wrapper.getType() + ": " + toPortType.getDataModel() + " and " + fromModel );
+            }
         }
         for ( int i = 0; i < inputsArr.length; i++ ) {
             if ( inputsArr[i] == null ) {

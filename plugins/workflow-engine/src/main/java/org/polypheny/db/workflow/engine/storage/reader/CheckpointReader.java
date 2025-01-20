@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
@@ -63,6 +64,8 @@ public abstract class CheckpointReader implements AutoCloseable {
     public abstract Iterator<PolyValue[]> getArrayIterator();
 
     public abstract long getTupleCount();
+
+    public abstract DataModel getDataModel();
 
 
     /**

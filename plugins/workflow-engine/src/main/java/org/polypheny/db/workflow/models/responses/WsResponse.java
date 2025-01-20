@@ -39,6 +39,7 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.EdgeModel;
 import org.polypheny.db.workflow.models.RenderModel;
+import org.polypheny.db.workflow.models.TypePreviewModel;
 import org.polypheny.db.workflow.models.requests.WsRequest.RequestType;
 
 /**
@@ -100,6 +101,8 @@ public class WsResponse {
 
         public final WorkflowState workflowState;
         public final Map<UUID, ActivityState> activityStates = new HashMap<>();
+        public final Map<UUID, List<TypePreviewModel>> inTypePreviews = new HashMap<>();
+        public final Map<UUID, List<TypePreviewModel>> outTypePreviews = new HashMap<>();
         public final Map<UUID, String> activityInvalidReasons = new HashMap<>();
         public final Map<UUID, Map<String, String>> activityInvalidSettings = new HashMap<>();
         public final List<EdgeModel> edgeStates;
@@ -112,6 +115,8 @@ public class WsResponse {
             for ( ActivityWrapper wrapper : workflow.getActivities() ) {
                 UUID id = wrapper.getId();
                 activityStates.put( id, wrapper.getState() );
+                inTypePreviews.put( id, wrapper.getInTypeModels() );
+                outTypePreviews.put( id, wrapper.getOutTypeModels() );
                 ActivityException e = wrapper.getInvalidStateReason();
                 if ( e != null ) {
                     activityInvalidReasons.put( id, e.getMessage() );

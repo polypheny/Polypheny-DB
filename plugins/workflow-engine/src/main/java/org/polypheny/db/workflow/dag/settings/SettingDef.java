@@ -40,6 +40,7 @@ import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.DoubleSetting;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
+import org.polypheny.db.workflow.dag.annotations.QuerySetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
 
 @Getter
@@ -174,9 +175,18 @@ public abstract class SettingDef {
                 settings.add( new DoubleSettingDef( a ) );
             } else if ( annotation instanceof DoubleSetting.List a ) {
                 Arrays.stream( a.value() ).forEach( el -> settings.add( new DoubleSettingDef( el ) ) );
+            } else if ( annotation instanceof QuerySetting a ) {
+                settings.add( new QuerySettingDef( a ) );
+            } else if ( annotation instanceof QuerySetting.List a ) {
+                Arrays.stream( a.value() ).forEach( el -> settings.add( new QuerySettingDef( el ) ) );
             }
         }
         return settings;
+    }
+
+
+    void throwInvalid( String message ) throws InvalidSettingException {
+        throw new InvalidSettingException( message, key );
     }
 
 
@@ -196,7 +206,8 @@ public abstract class SettingDef {
         INT,
         ENTITY,
         BOOLEAN,
-        DOUBLE
+        DOUBLE,
+        QUERY
     }
 
 

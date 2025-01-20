@@ -24,50 +24,59 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
-import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.webui.models.catalog.FieldDefinition;
+import org.polypheny.db.workflow.dag.activities.Activity.PortType;
+import org.polypheny.db.workflow.dag.activities.TypePreview;
 
 @Value
 public class TypePreviewModel {
 
-    DataModel dataModel;
-    List<FieldDefinition> fields;
+    PortType portType; // ANY if not yet known
+    List<FieldDefinition> fields; // null if not yet known
 
 
-    public TypePreviewModel( DataModel dataModel, AlgDataType type ) {
-        this.dataModel = dataModel;
-        List<FieldDefinition> fields = new ArrayList<>();
-        switch ( dataModel ) {
-            // TODO: better previews for graph and document?
-            case RELATIONAL -> {
-                for ( AlgDataTypeField field : type.getFields() ) {
-                    fields.add( FieldDefinition.of( field ) );
+    private TypePreviewModel( PortType portType, AlgDataType type ) {
+        this.portType = portType;
+        if ( portType != PortType.ANY && type != null ) {
+            List<FieldDefinition> fields = new ArrayList<>();
+            switch ( portType.getDataModel() ) {
+                // TODO: better previews for graph and document?
+                case RELATIONAL -> {
+                    for ( AlgDataTypeField field : type.getFields() ) {
+                        fields.add( FieldDefinition.of( field ) );
+                    }
+                }
+                case DOCUMENT -> {
+                    fields.add( FieldDefinition.builder()
+                            .name( "Document" )
+                            .dataType( DocumentType.ofId().getFullTypeString() )
+                            .build() );
+                }
+                case GRAPH -> {
+                    fields.add( FieldDefinition.builder()
+                            .name( "Graph" )
+                            .dataType( GraphType.of().getFullTypeString() )
+                            .build() );
                 }
             }
-            case DOCUMENT -> {
-                fields.add( FieldDefinition.builder()
-                        .name( "Document" )
-                        .dataType( DocumentType.ofId().getFullTypeString() )
-                        .build() );
-            }
-            case GRAPH -> {
-                fields.add( FieldDefinition.builder()
-                        .name( "Graph" )
-                        .dataType( GraphType.of().getFullTypeString() )
-                        .build() );
-            }
+            this.fields = Collections.unmodifiableList( fields );
+        } else {
+            fields = null;
         }
-        this.fields = Collections.unmodifiableList( fields );
     }
 
 
-    public static TypePreviewModel of( AlgDataType type ) {
-        DataModel model = switch ( type.getPolyType() ) {
-            case DOCUMENT -> DataModel.DOCUMENT;
-            case GRAPH -> DataModel.GRAPH;
-            default -> DataModel.RELATIONAL;
-        };
-        return new TypePreviewModel( model, type );
+    public static List<TypePreviewModel> of( List<TypePreview> previews, PortType[] portTypes ) {
+        List<TypePreviewModel> models = new ArrayList<>();
+        for ( int i = 0; i < portTypes.length; i++ ) {
+            PortType portType = portTypes[i];
+            TypePreview preview = previews.get( i );
+            if ( portType == PortType.ANY && preview.isPresent() ) {
+                portType = PortType.fromDataModel( preview.getDataModel() );
+            }
+            models.add( new TypePreviewModel( portType, preview.getNullableType() ) );
+        }
+        return models;
     }
 
 }

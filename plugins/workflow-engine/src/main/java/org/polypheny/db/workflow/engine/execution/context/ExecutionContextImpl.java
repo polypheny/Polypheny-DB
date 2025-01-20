@@ -82,7 +82,7 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
     public RelWriter createRelWriter( int idx, AlgDataType tupleType, boolean resetPk ) {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
-        if ( type.canWriteTo( PortType.REL ) ) {
+        if ( type.couldBeCompatibleWith( PortType.REL ) ) {
             RelWriter writer = sm.createRelCheckpoint( activityWrapper.getId(), idx, tupleType, resetPk, getStore( idx ) );
             writers.add( writer );
             return writer;
@@ -95,7 +95,7 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
     public DocWriter createDocWriter( int idx ) {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
-        if ( type.canWriteTo( PortType.DOC ) ) {
+        if ( type.couldBeCompatibleWith( PortType.DOC ) ) {
             DocWriter writer = sm.createDocCheckpoint( activityWrapper.getId(), idx, getStore( idx ) );
             writers.add( writer );
             return writer;
@@ -108,7 +108,7 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
     public LpgWriter createLpgWriter( int idx ) {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
-        if ( type.canWriteTo( PortType.LPG ) ) {
+        if ( type.couldBeCompatibleWith( PortType.LPG ) ) {
             LpgWriter writer = sm.createLpgCheckpoint( activityWrapper.getId(), idx, getStore( idx ) );
             writers.add( writer );
             return writer;

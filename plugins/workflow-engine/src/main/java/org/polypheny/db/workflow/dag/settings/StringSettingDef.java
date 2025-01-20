@@ -72,9 +72,9 @@ public class StringSettingDef extends SettingDef {
     private void validateStringValue( StringValue value ) throws InvalidSettingException {
         String s = value.getValue();
         if ( s.length() < minLength ) {
-            throw new InvalidSettingException( "String must have a length of at least " + minLength, getKey() );
+            throwInvalid( "String must have a length of at least " + minLength );
         } else if ( s.length() >= maxLength ) {
-            throw new InvalidSettingException( "String must have a length of less than " + maxLength, getKey() );
+            throwInvalid( "String must have a length of less than " + maxLength );
         }
     }
 

@@ -122,6 +122,9 @@ public class ActivityWrapper {
                 if ( pair.left.isMissing() && !pair.right.isOptional() ) {
                     throw new InvalidInputException( "Required input is missing", inTypePreviews.indexOf( pair.left ) );
                 }
+                if ( !pair.right.getType().couldBeCompatibleWith( pair.left ) ) {
+                    throw new InvalidInputException( "Input type " + pair.left.getDataModel() + " is incompatible with defined port type " + pair.right.getType(), inTypePreviews.indexOf( pair.left ) );
+                }
             }
         } catch ( InvalidSettingException e ) {
             invalidSettings.add( e );
@@ -142,19 +145,27 @@ public class ActivityWrapper {
 
     public ActivityModel toModel( boolean includeState ) {
         if ( includeState ) {
-            List<TypePreviewModel> inTypeModels = inTypePreview.stream().map(
-                    inType -> inType.map( TypePreviewModel::of ).orElse( null ) ).toList();
             String invalidReason = invalidStateReason == null ? null : invalidStateReason.getMessage();
             Map<String, String> invalidSettingsMap = invalidSettings.stream().collect(
                     Collectors.toMap( InvalidSettingException::getSettingKey, InvalidSettingException::getMessage ) );
             ExecutionInfoModel infoModel = executionInfo == null ? null : executionInfo.toModel( true );
             return new ActivityModel( type, id, serializableSettings, config, rendering,
-                    this.state, inTypeModels, invalidReason, invalidSettingsMap, variables.getVariables(), infoModel );
+                    this.state, getInTypeModels(), getOutTypeModels(), invalidReason, invalidSettingsMap, variables.getVariables(), infoModel );
 
         } else {
             return new ActivityModel( type, id, serializableSettings, config, rendering );
 
         }
+    }
+
+
+    public List<TypePreviewModel> getInTypeModels() {
+        return TypePreviewModel.of( inTypePreview, getDef().getInPortTypes() );
+    }
+
+
+    public List<TypePreviewModel> getOutTypeModels() {
+        return TypePreviewModel.of( outTypePreview, getDef().getOutPortTypes() );
     }
 
 

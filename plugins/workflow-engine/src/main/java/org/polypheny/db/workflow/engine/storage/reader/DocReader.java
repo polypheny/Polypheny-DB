@@ -21,6 +21,7 @@ import java.util.NoSuchElementException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
@@ -107,6 +108,12 @@ public class DocReader extends CheckpointReader {
     @Override
     public long getTupleCount() {
         return getDocCount();
+    }
+
+
+    @Override
+    public DataModel getDataModel() {
+        return DataModel.DOCUMENT;
     }
 
 

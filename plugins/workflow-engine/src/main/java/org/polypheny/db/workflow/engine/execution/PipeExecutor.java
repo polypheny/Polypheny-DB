@@ -87,6 +87,8 @@ public class PipeExecutor extends Executor {
         List<Callable<Void>> callables;
         try {
             callables = getCallables();
+        } catch ( ExecutorException e ) {
+            throw e;
         } catch ( Exception e ) {
             throw new ExecutorException( e );
         }
@@ -169,8 +171,11 @@ public class PipeExecutor extends Executor {
             if ( inTypes[i] == null ) {
                 // existing checkpoint
                 CheckpointReader reader = getReader( wrapper, i );
-                inTypes[i] = reader == null ? null : reader.getTupleType(); // null implies inactive data edge
-                inCounts[i] = reader == null ? null : reader.getTupleCount();
+                if ( reader != null ) {
+                    inTypes[i] = reader.getTupleType(); // null implies inactive data edge
+                    inCounts[i] = reader.getTupleCount();
+                    reader.close();
+                }
             }
         }
         if ( isInnerNode ) { // leaf nodes already have correct variables from scheduler
@@ -203,7 +208,7 @@ public class PipeExecutor extends Executor {
             // This could be a LOAD activity. It generally has no outputs and instead uses side effects to load the data -> no pipe required
             return null;
         }
-        assert writer != null;
+        assert writer == null;
 
         ActivityWrapper wrapper = workflow.getActivity( rootId );
         DataModel model = wrapper.getDef().getOutPortTypes()[0].getDataModel( rootType );
@@ -220,6 +225,7 @@ public class PipeExecutor extends Executor {
         AlgDataType rootType = registerOutputTypes( rootId );
 
         List<Callable<Void>> callables = new ArrayList<>();
+        List<CheckpointReader> readers = new ArrayList<>();
         for ( UUID currentId : TopologicalOrderIterator.of( execTree ) ) {
             ActivityWrapper wrapper = workflow.getActivity( currentId );
             List<ExecutionEdge> inEdges = execTree.getInwardEdges( currentId );
@@ -228,11 +234,16 @@ public class PipeExecutor extends Executor {
                 assert !edge.isControl() : "Execution tree for pipelining must not contain control edges";
                 QueuePipe inPipe = outQueues.get( edge.getSource() );
                 inPipesArr[edge.getToPort()] = inPipe;
+                if ( !wrapper.getDef().getInPortTypes()[edge.getToPort()].couldBeCompatibleWith( inPipe.getType() ) ) {
+                    new CloseableList( readers ).close(); // no need to close the QueryPipes, since they are not associated with a transaction
+                    throw new ExecutorException( "Detected incompatible data models for input " + edge.getToPort() + " of " + wrapper.getType() );
+                }
             }
             for ( int i = 0; i < inPipesArr.length; i++ ) {
                 if ( inPipesArr[i] == null ) {
                     // add remaining pipes for existing checkpoints
                     CheckpointReader reader = getReader( wrapper, i );
+                    readers.add( reader );
                     inPipesArr[i] = reader == null ? null : new CheckpointInputPipe( reader );
                 }
             }

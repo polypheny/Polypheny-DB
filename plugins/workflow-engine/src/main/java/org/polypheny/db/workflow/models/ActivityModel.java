@@ -44,6 +44,8 @@ public class ActivityModel {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     List<TypePreviewModel> inTypePreview;
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    List<TypePreviewModel> outTypePreview;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     String invalidReason; // null if not invalid
     @JsonInclude(JsonInclude.Include.NON_NULL)
     Map<String, String> invalidSettings; // null if not invalid
@@ -76,6 +78,7 @@ public class ActivityModel {
         this.rendering = rendering;
         this.state = null;
         this.inTypePreview = null;
+        this.outTypePreview = null;
         this.invalidReason = null;
         this.invalidSettings = null;
         this.variables = null;

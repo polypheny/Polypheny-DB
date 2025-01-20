@@ -58,7 +58,7 @@ public class DataEdge extends Edge {
 
 
     public boolean isCompatible() {
-        return getToPortType().canReadFrom( getFromPortType() );
+        return getFromPortType().couldBeCompatibleWith( getToPortType() ); // only detects static incompatibilities, ANY is always okay
     }
 
 

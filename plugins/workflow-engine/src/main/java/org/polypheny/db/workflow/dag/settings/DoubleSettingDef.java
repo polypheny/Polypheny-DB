@@ -52,9 +52,9 @@ public class DoubleSettingDef extends SettingDef {
         if ( value instanceof DoubleValue doubleValue ) {
             double d = doubleValue.getValue();
             if ( d < minValue ) {
-                throw new InvalidSettingException( "Value must not be smaller than " + minValue, getKey() );
+                throwInvalid( "Value must not be smaller than " + minValue );
             } else if ( d > maxValue ) {
-                throw new InvalidSettingException( "Value must not be larger than " + maxValue, getKey() );
+                throwInvalid( "Value must not be larger than " + maxValue );
             }
         } else {
             throw new IllegalArgumentException( "Value is not a DoubleValue" );

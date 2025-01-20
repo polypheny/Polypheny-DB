@@ -34,8 +34,8 @@ import org.polypheny.db.workflow.engine.storage.QueryUtils;
 @Builder
 public class CheckpointQuery {
 
-    private static final String ENTITY_L = "{?";
-    private static final String ENTITY_R = "?}";
+    public static final String ENTITY_L = "{?";
+    public static final String ENTITY_R = "?}";
 
     @Getter
     private final String query;

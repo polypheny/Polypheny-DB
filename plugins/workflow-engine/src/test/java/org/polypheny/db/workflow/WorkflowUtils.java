@@ -365,6 +365,21 @@ public class WorkflowUtils {
     }
 
 
+    public static Workflow getIncompatibleDynamicPortTypes( boolean canFuse, boolean canPipe ) throws JsonProcessingException {
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "relValues" ),
+                new ActivityModel( "query", Map.of( "query", mapper.readTree( "{\"query\": \"SELECT * FROM {?0?}\", \"queryLanguage\": \"SQL\"}" ) ) ),
+                new ActivityModel( "identity" ),
+                new ActivityModel( "lpgIdentity" ) );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 1 ) ),
+                EdgeModel.of( activities.get( 1 ), activities.get( 2 ) ),
+                EdgeModel.of( activities.get( 2 ), activities.get( 3 ) )
+        );
+        return getWorkflow( activities, edges, canFuse, canPipe, 1 );
+    }
+
+
     public static List<UUID> getTopologicalActivityIds( Workflow workflow ) {
         List<UUID> list = new ArrayList<>();
         for ( UUID n : TopologicalOrderIterator.of( workflow.toDag() ) ) {

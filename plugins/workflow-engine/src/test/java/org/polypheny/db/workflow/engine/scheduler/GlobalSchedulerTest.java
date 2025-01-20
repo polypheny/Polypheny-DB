@@ -424,8 +424,30 @@ class GlobalSchedulerTest {
 
         scheduler.awaitResultProcessor( 5000 );
         System.out.println( monitor.getAllProgress() );
-
     }
+
+
+    @Test
+    void incompatibleTypesTest() throws Exception {
+        Workflow workflow = WorkflowUtils.getIncompatibleDynamicPortTypes( false, false );
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        executeAllAndCheck( workflow, List.of( ids.get( 0 ), ids.get( 1 ), ids.get( 2 ) ), List.of( ids.get( 3 ) ), List.of() );
+    }
+
+
+    @Test
+    void incompatibleTypesPipeTest() throws Exception {
+        Workflow workflow = WorkflowUtils.getIncompatibleDynamicPortTypes( false, true );
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        executeAllAndCheck( workflow, List.of( ids.get( 0 ), ids.get( 1 ) ), List.of( ids.get( 2 ), ids.get( 3 ) ), List.of() );
+    }
+
+    /*@Test // TODO: write test when fusion is implemented for query-activity
+    void incompatibleTypesFusionTest() throws Exception {
+        Workflow workflow = WorkflowUtils.getIncompatibleDynamicPortTypes( true, false );
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        executeAllAndCheck( workflow, List.of(), ids, List.of() );
+    }*/
 
 
     @Test

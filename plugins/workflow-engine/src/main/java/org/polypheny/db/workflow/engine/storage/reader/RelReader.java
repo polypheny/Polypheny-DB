@@ -21,6 +21,7 @@ import java.util.NoSuchElementException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
@@ -80,6 +81,12 @@ public class RelReader extends CheckpointReader {
     @Override
     public long getTupleCount() {
         return getRowCount();
+    }
+
+
+    @Override
+    public DataModel getDataModel() {
+        return DataModel.RELATIONAL;
     }
 
 

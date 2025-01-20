@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.polypheny.db.workflow.dag.Workflow;
+import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
@@ -83,24 +84,39 @@ public abstract class Executor implements Callable<Void> {
     }
 
 
-    List<CheckpointReader> getReaders( ActivityWrapper target ) {
+    List<CheckpointReader> getReaders( ActivityWrapper target ) throws ExecutorException {
         CheckpointReader[] inputs = new CheckpointReader[target.getDef().getInPorts().length];
         for ( Edge edge : workflow.getInEdges( target.getId() ) ) {
             if ( edge instanceof DataEdge dataEdge && dataEdge.getState() != EdgeState.INACTIVE ) {
                 CheckpointReader reader = sm.readCheckpoint( dataEdge.getFrom().getId(), dataEdge.getFromPort() );
-                inputs[dataEdge.getToPort()] = reader; // might be null
+                PortType toPortType = target.getDef().getInPortTypes()[dataEdge.getToPort()];
+                inputs[dataEdge.getToPort()] = reader;
+                if ( !toPortType.couldBeCompatibleWith( reader.getDataModel() ) ) {
+                    for ( CheckpointReader r : inputs ) {
+                        if ( r != null ) {
+                            r.close();
+                        }
+                    }
+                    throw new ExecutorException( "Detected incompatible data models: " + toPortType.getDataModel() + " and " + reader.getDataModel() );
+                }
             }
         }
         return Arrays.asList( inputs );
     }
 
 
-    CheckpointReader getReader( ActivityWrapper target, int toPort ) {
+    CheckpointReader getReader( ActivityWrapper target, int toPort ) throws ExecutorException {
         DataEdge edge = workflow.getDataEdge( target.getId(), toPort );
         if ( edge == null || edge.getState() == EdgeState.INACTIVE ) {
             return null;
         }
-        return sm.readCheckpoint( edge.getFrom().getId(), edge.getFromPort() );
+        CheckpointReader reader = sm.readCheckpoint( edge.getFrom().getId(), edge.getFromPort() );
+        PortType toPortType = target.getDef().getInPortTypes()[toPort];
+        if ( !toPortType.couldBeCompatibleWith( reader.getDataModel() ) ) {
+            reader.close();
+            throw new ExecutorException( "Detected incompatible data models: " + toPortType.getDataModel() + " and " + reader.getDataModel() );
+        }
+        return reader;
     }
 
 

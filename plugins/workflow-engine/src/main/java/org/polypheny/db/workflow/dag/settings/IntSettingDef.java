@@ -72,9 +72,9 @@ public class IntSettingDef extends SettingDef {
     private void validateIntValue( IntValue value ) throws InvalidSettingException {
         int i = value.getValue();
         if ( i < minValue ) {
-            throw new InvalidSettingException( "Int must not be smaller than " + minValue, getKey() );
+            throwInvalid( "Int must not be smaller than " + minValue );
         } else if ( i > maxValue ) {
-            throw new InvalidSettingException( "Int must not be larger than " + maxValue, getKey() );
+            throwInvalid( "Int must not be larger than " + maxValue );
         }
     }
 

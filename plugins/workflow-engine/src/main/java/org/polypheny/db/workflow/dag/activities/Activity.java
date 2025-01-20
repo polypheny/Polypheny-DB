@@ -136,13 +136,24 @@ public interface Activity {
         LPG;
 
 
-        public boolean canReadFrom( PortType other ) {
-            return this == other || this == ANY;
+        public boolean couldBeCompatibleWith( PortType other ) {
+            return this == ANY || other == ANY || this == other;
         }
 
 
-        public boolean canWriteTo( PortType other ) {
-            return this == other || other == ANY;
+        public boolean couldBeCompatibleWith( DataModel other ) {
+            return couldBeCompatibleWith( PortType.fromDataModel( other ) );
+        }
+
+
+        public boolean couldBeCompatibleWith( TypePreview other ) {
+            DataModel model = other.getDataModel();
+            return model == null || couldBeCompatibleWith( model );
+        }
+
+
+        public boolean couldBeCompatibleWith( AlgDataType other ) {
+            return couldBeCompatibleWith( ActivityUtils.getDataModel( other ) );
         }
 
 
@@ -165,12 +176,7 @@ public interface Activity {
             if ( this != ANY || type == null ) {
                 return getDataModel();
             }
-
-            return switch ( type.getPolyType() ) {
-                case DOCUMENT -> DataModel.DOCUMENT;
-                case GRAPH -> DataModel.GRAPH;
-                default -> DataModel.RELATIONAL;
-            };
+            return ActivityUtils.getDataModel( type );
         }
 
 

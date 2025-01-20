@@ -18,7 +18,6 @@ package org.polypheny.db.workflow.dag.activities.impl;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.type.entity.PolyValue;
@@ -43,12 +42,11 @@ import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 
-@ActivityDefinition(type = "identity", displayName = "Identity", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
-        inPorts = { @InPort(type = PortType.REL, description = "Input table") },
-        outPorts = { @OutPort(type = PortType.REL, description = "Output table, equal to the input table.") },
-        shortDescription = "The identity activity outputs the input table unchanged.",
+@ActivityDefinition(type = "identity", displayName = "Identity", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL, ActivityCategory.DOCUMENT, ActivityCategory.GRAPH },
+        inPorts = { @InPort(type = PortType.ANY, description = "Input table, collection or graph") },
+        outPorts = { @OutPort(type = PortType.ANY, description = "Output, equal to the input.") },
+        shortDescription = "The identity activity outputs the input unchanged. It is useful to observe the effect of having an activity with ANY output port type",
         longDescription = """
                 This is the long description of the identity activity. It is possible to use *markdown*!
                 # Title
@@ -95,9 +93,21 @@ public class IdentityActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        RelReader input = (RelReader) inputs.get( 0 );
-        ctx.createRelWriter( 0, input.getTupleType(), false )
-                .write( input.getIterator() );
+        CheckpointReader reader = inputs.get( 0 );
+        switch ( reader.getDataModel() ) {
+            case RELATIONAL -> {
+                ctx.createRelWriter( 0, reader.getTupleType(), false )
+                        .write( reader.getIterator() );
+            }
+            case DOCUMENT -> {
+                ctx.createDocWriter( 0 )
+                        .write( reader.getIterator() );
+            }
+            case GRAPH -> {
+                ctx.createLpgWriter( 0 )
+                        .write( reader.getIterator() );
+            }
+        }
     }
 
 
@@ -117,8 +127,7 @@ public class IdentityActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
-        // to make it more interesting, we add a project activity that doesn't change the tupleType
-        return LogicalRelProject.identity( inputs.get( 0 ) );
+        return inputs.get( 0 );
     }
 
 }
