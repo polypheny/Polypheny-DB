@@ -61,7 +61,7 @@ public enum RuntimeConfig {
     GARBAGE_COLLECTION_INTERVAL(
             "runtime/garbageCollectionInterval",
             "Defines the interval in which the periodic garbage collector runs.",
-            2L,
+            5L,
             ConfigType.LONG
     ),
 
