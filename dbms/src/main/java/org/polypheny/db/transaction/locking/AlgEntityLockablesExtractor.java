@@ -59,7 +59,7 @@ public class AlgEntityLockablesExtractor extends AlgVisitor {
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             extractWriteConstraints( currentNode.getEntity().unwrap( LogicalTable.class ).orElseThrow() );
         }
-        LockableUtils.updateMapOfDerivedLockables( currentNode.getEntity(), lockType, result );
+        LockableUtils.updateMapEntry( currentNode.getEntity(), lockType, result );
     }
 
 
@@ -72,12 +72,14 @@ public class AlgEntityLockablesExtractor extends AlgVisitor {
                             .filter( Optional::isPresent )
                             .map( Optional::get );
                 } )
-                .forEach( entry -> LockableUtils.updateMapOfDerivedLockables( entry, LockType.SHARED, result ) );
+                .forEach( entry -> {
+                    LockableUtils.updateMapEntry( entry, LockType.SHARED, result );
+                } );
     }
 
 
     private void visitNonRelationalNode( AlgNode currentNode ) {
         LockType lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
-        LockableUtils.updateMapOfDerivedLockables( currentNode.getEntity(), lockType, result );
+        LockableUtils.updateMapEntry( currentNode.getEntity(), lockType, result );
     }
 }

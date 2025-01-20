@@ -32,7 +32,6 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
@@ -109,22 +108,22 @@ public abstract class SqlDdl extends SqlCall {
     protected Map<Lockable, LockType> getMapOfTableLockable(SqlIdentifier identifier, Context context, LockType lockType) {
         Optional<? extends LogicalEntity> logicalTable = searchEntity( context, identifier );
         HashMap<Lockable, LockType> lockableObjects = new HashMap<>();
-        logicalTable.ifPresent( t -> LockableUtils.updateMapOfDerivedLockables( t, lockType, lockableObjects ) );
+        logicalTable.ifPresent( t -> LockableUtils.updateMapEntry( t, lockType, lockableObjects ) );
         return lockableObjects;
     }
 
     protected Map<Lockable, LockType> getMapOfNamespaceLockable(SqlIdentifier identifier, Context context, LockType lockType) {
-        return LockableUtils.getMapOfNamespaceLockable( identifier.getSimple(), context, lockType );
+        return LockableUtils.getMapOfNamespaceLockableFromName( identifier.getSimple(), context, lockType );
     }
 
 
 
     protected Map<Lockable, LockType> getMapOfNamespaceLockableOrDefault(SqlIdentifier identifier, Context context, LockType lockType) {
         if ( identifier.names.size() == 2 ) { // NamespaceName.ViewName
-            return LockableUtils.getMapOfNamespaceLockable( identifier.names.get( 0 ), context, lockType );
+            return LockableUtils.getMapOfNamespaceLockableFromName( identifier.names.get( 0 ), context, lockType );
         }
         if ( identifier.names.size() == 1 ) { // ViewName
-            return LockableUtils.getMapOfNamespaceLockable( context.getDefaultNamespaceName(), context, lockType );
+            return LockableUtils.getMapOfNamespaceLockableFromName( context.getDefaultNamespaceName(), context, lockType );
         }
         return Map.of();
     }

@@ -67,7 +67,7 @@ public class CypherDropAlias extends CypherAdminCommand implements ExecutableSta
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
-        return LockableUtils.getMapWithGlobalLockable( LockType.EXCLUSIVE );
+        return LockableUtils.getMapOfGlobalLockable( LockType.EXCLUSIVE );
     }
 
 }
