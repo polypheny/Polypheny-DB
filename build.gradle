@@ -74,10 +74,10 @@ allprojects {
         maven {
             url "https://clojars.org/repo/"
         }
-        maven {
+        //maven {
             // DBIS Nexus
-            url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
-        }
+        //    url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
+        //}
         maven {
             url "https://oss.sonatype.org/content/repositories/snapshots/"
         }
