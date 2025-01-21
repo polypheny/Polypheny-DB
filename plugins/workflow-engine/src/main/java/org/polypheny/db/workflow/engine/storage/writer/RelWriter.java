@@ -65,6 +65,15 @@ public class RelWriter extends CheckpointWriter {
     }
 
 
+    public void wWithoutPk( List<PolyValue> rowWithoutPk ) {
+        Map<Long, PolyValue> map = new HashMap<>( mapCapacity );
+        for ( int i = 0; i < rowWithoutPk.size(); i++ ) {
+            map.put( (long) i + 1, rowWithoutPk.get( i ) );
+        }
+        writeToBatch( map );
+    }
+
+
     public void wInsert( List<PolyValue> row, PolyValue insertValue, int insertIdx ) {
         Map<Long, PolyValue> map = new HashMap<>( mapCapacity );
 

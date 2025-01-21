@@ -57,7 +57,7 @@ public class VariableToRowActivity implements Activity {
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
-        return UnknownType.of().asOutTypes(); // type depends on variables
+        return UnknownType.ofRel().asOutTypes(); // type depends on variables
     }
 
 

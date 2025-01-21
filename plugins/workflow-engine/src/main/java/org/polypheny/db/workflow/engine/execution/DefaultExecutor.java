@@ -55,6 +55,7 @@ public class DefaultExecutor extends Executor {
             wrapper.setOutTypePreview( sm.getCheckpointPreviewTypes( wrapper.getId() ) );
             ctx.updateProgress( 1 ); // ensure progress is correct
         } catch ( Exception e ) {
+            e.printStackTrace();
             throw new ExecutorException( e, wrapper.getId() );
         }
     }

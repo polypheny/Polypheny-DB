@@ -20,9 +20,11 @@ import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.AdapterManager;
@@ -34,11 +36,13 @@ import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -72,6 +76,7 @@ import org.polypheny.db.webui.models.results.QueryType;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.Result;
 
+@Slf4j
 public class QueryUtils {
 
     private static final long DEFAULT_BYTE_SIZE = 32; // used as fallback to estimate number of bytes in a PolyValue
@@ -160,12 +165,15 @@ public class QueryUtils {
             return false;
         }
 
-        Set<Long> allowedIds = allowedEntities == null ? null : allowedEntities.stream().map( e -> e.id ).collect( Collectors.toSet() );
-        return validateRecursive( root.alg, allowDml, allowedIds );
+        Set<Long> allowedIds = allowedEntities == null ? null :
+                allowedEntities.stream().filter( Objects::nonNull ).map( e -> e.id ).collect( Collectors.toSet() );
+        Set<Long> allowedNamespaces = allowedEntities == null ? null : // only used for substitution graphs
+                allowedEntities.stream().filter( Objects::nonNull ).map( e -> e.namespaceId ).collect( Collectors.toSet() );
+        return validateRecursive( root.alg, allowDml, allowedIds, allowedNamespaces );
     }
 
 
-    private static boolean validateRecursive( AlgNode root, boolean allowDml, Set<Long> allowedIds ) {
+    private static boolean validateRecursive( AlgNode root, boolean allowDml, Set<Long> allowedIds, Set<Long> allowedNamespaces ) {
         boolean checkEntities = allowedIds != null;
         if ( !allowDml ) {
             if ( root instanceof Modify ) {
@@ -177,11 +185,19 @@ public class QueryUtils {
         }
 
         // Check Scan
-        if ( checkEntities && root instanceof Scan<?> scan && !allowedIds.contains( scan.entity.id ) ) {
+        if ( checkEntities && root instanceof Scan<?> scan && !validateScan( scan, allowedIds, allowedNamespaces ) ) {
             return false;
         }
 
-        return root.getInputs().stream().allMatch( node -> validateRecursive( node, allowDml, allowedIds ) );
+        return root.getInputs().stream().allMatch( node -> validateRecursive( node, allowDml, allowedIds, allowedNamespaces ) );
+    }
+
+
+    private static boolean validateScan( Scan<? extends Entity> scan, Set<Long> allowedIds, Set<Long> allowedNamespaces ) {
+        if ( scan.getEntity() instanceof SubstitutionGraph sub ) {
+            return allowedNamespaces.contains( sub.namespaceId );
+        }
+        return allowedIds.contains( scan.entity.id );
     }
 
 

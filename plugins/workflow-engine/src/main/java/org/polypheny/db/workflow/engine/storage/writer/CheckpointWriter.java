@@ -53,6 +53,13 @@ public abstract class CheckpointWriter implements AutoCloseable {
     }
 
 
+    public final void write( Iterable<List<PolyValue>> iterable ) {
+        for ( List<PolyValue> tuple : iterable ) {
+            write( tuple );
+        }
+    }
+
+
     /**
      * Returns the number of tuples written so far.
      * After the writer gets closed, this method should return the same value

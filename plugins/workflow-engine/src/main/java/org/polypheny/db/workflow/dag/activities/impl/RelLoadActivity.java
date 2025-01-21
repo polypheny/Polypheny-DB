@@ -54,7 +54,7 @@ import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 
-@ActivityDefinition(type = "relLoad", displayName = "Load Table", categories = { ActivityCategory.LOAD, ActivityCategory.RELATIONAL },
+@ActivityDefinition(type = "relLoad", displayName = "Load Table to Polypheny", categories = { ActivityCategory.LOAD, ActivityCategory.RELATIONAL },
         inPorts = { @InPort(type = PortType.REL) },
         outPorts = {})
 

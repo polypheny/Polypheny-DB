@@ -45,7 +45,7 @@ import org.polypheny.db.workflow.engine.storage.DocBatchWriter;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.DocReader;
 
-@ActivityDefinition(type = "docLoad", displayName = "Load Collection", categories = { ActivityCategory.LOAD, ActivityCategory.DOCUMENT },
+@ActivityDefinition(type = "docLoad", displayName = "Load Collection to Polypheny", categories = { ActivityCategory.LOAD, ActivityCategory.DOCUMENT },
         inPorts = { @InPort(type = PortType.DOC) },
         outPorts = {})
 

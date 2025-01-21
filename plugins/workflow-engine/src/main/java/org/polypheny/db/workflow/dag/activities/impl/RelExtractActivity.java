@@ -18,36 +18,28 @@ package org.polypheny.db.workflow.dag.activities.impl;
 
 import static org.polypheny.db.workflow.dag.activities.impl.RelExtractActivity.TABLE_KEY;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
-import org.polypheny.db.rex.RexIndexRef;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
+import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
@@ -62,11 +54,10 @@ import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
-import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
-@ActivityDefinition(type = "relExtract", displayName = "Read Table", categories = { ActivityCategory.EXTRACT, ActivityCategory.RELATIONAL },
+@ActivityDefinition(type = "relExtract", displayName = "Extract Table in Polypheny", categories = { ActivityCategory.EXTRACT, ActivityCategory.RELATIONAL },
         inPorts = {},
         outPorts = { @OutPort(type = PortType.REL) })
 
@@ -116,14 +107,7 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
         AlgTraitSet traits = AlgTraitSet.createEmpty().plus( ModelTrait.RELATIONAL );
 
         AlgNode scan = new LogicalRelScan( cluster, traits, table );
-        List<RexNode> projects = new ArrayList<>();
-        projects.add( cluster.getRexBuilder().makeBigintLiteral( new BigDecimal( 0 ) ) ); // Add new PK col
-        IntStream.range( 0, table.getTupleType().getFieldCount() )
-                .mapToObj( i ->
-                        new RexIndexRef( i, table.getTupleType().getFields().get( i ).getType() )
-                ).forEach( projects::add );
-
-        return LogicalRelProject.create( scan, projects, getOutputType( table ) );
+        return ActivityUtils.addPkCol( scan, cluster );
     }
 
 
@@ -168,22 +152,7 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
             return null; // this should never happen, since we specify in our setting that the table must exist
         }
         // we insert the primary key column
-        AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
-        List<Long> ids = new ArrayList<>();
-        List<AlgDataType> types = new ArrayList<>();
-        List<String> names = new ArrayList<>();
-
-        ids.add( null );
-        types.add( factory.createPolyType( PolyType.BIGINT ) );
-        names.add( StorageManager.PK_COL );
-
-        for ( AlgDataTypeField field : table.getTupleType().getFields() ) {
-            ids.add( null );
-            types.add( field.getType() );
-            names.add( field.getName() );
-        }
-
-        return factory.createStructType( ids, types, names );
+        return ActivityUtils.addPkCol( table.getTupleType() );
     }
 
 

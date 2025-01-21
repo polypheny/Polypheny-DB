@@ -61,7 +61,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 @Slf4j
 
-@ActivityDefinition(type = "relValues", displayName = "Constant Table", categories = { ActivityCategory.EXTRACT, ActivityCategory.RELATIONAL },
+@ActivityDefinition(type = "relValues", displayName = "Generate Table", categories = { ActivityCategory.EXTRACT, ActivityCategory.RELATIONAL },
         inPorts = {},
         outPorts = { @OutPort(type = PortType.REL) }
 )

@@ -20,14 +20,13 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
-import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidInputException;
+import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
@@ -56,15 +55,15 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
         TypePreview first = inTypes.get( 0 ), second = inTypes.get( 1 );
 
         if ( first.isEmpty() || second.isEmpty() ) {
-            return UnknownType.of().asOutTypes();
+            return UnknownType.ofRel().asOutTypes();
         }
-        return TypePreview.ofType( getTypeOrThrow( List.of( first.getNullableType(), second.getNullableType() ) ) ).asOutTypes();
+        return TypePreview.ofType( ActivityUtils.mergeTypesOrThrow( List.of( first.getNullableType(), second.getNullableType() ) ) ).asOutTypes();
     }
 
 
     @Override
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
-        return getTypeOrThrow( inTypes );
+        return ActivityUtils.mergeTypesOrThrow( inTypes );
     }
 
 
@@ -87,17 +86,6 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
     @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
         return LogicalRelUnion.create( inputs, true );
-    }
-
-
-    public static AlgDataType getTypeOrThrow( List<AlgDataType> inputs ) throws InvalidInputException {
-        // all inputs must not be null!
-        AlgDataType type = AlgDataTypeFactory.DEFAULT.leastRestrictive( inputs );
-
-        if ( type == null ) {
-            throw new InvalidInputException( "The tuple types of the inputs are incompatible", 1 );
-        }
-        return type;
     }
 
 }

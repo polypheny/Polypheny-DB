@@ -166,7 +166,7 @@ public abstract class TypePreview implements Wrapper {
         if ( isPresent() ) {
             return this;
         }
-        return UnknownType.of();
+        return UnknownType.of(getDataModel());
     }
 
 
@@ -307,17 +307,20 @@ public abstract class TypePreview implements Wrapper {
 
     public static class UnknownType extends TypePreview {
 
-        private static final UnknownType instance = new UnknownType();
+        private static final UnknownType instance = new UnknownType( null );
+        private static final UnknownType relInstance = new UnknownType( DataModel.RELATIONAL );
+        private final DataModel dataModel; // an unknown type might already have a known data model
 
 
-        private UnknownType() {
+        private UnknownType( DataModel dataModel ) {
             super( null );
+            this.dataModel = dataModel;
         }
 
 
         @Override
         public DataModel getDataModel() {
-            return null;
+            return dataModel;
         }
 
 
@@ -329,6 +332,18 @@ public abstract class TypePreview implements Wrapper {
 
         public static UnknownType of() {
             return instance;
+        }
+
+
+        public static UnknownType ofRel() {
+            return relInstance;
+        }
+
+        public static UnknownType of(DataModel dataModel) {
+            if ( dataModel == DataModel.RELATIONAL ) {
+                return ofRel();
+            }
+            return of();
         }
 
     }

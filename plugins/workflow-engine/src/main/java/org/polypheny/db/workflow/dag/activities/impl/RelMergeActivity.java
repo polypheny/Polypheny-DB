@@ -25,6 +25,7 @@ import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
+import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.activities.TypePreview.UnknownType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
@@ -52,10 +53,10 @@ public class RelMergeActivity implements Activity {
         } else if ( second.isPresent() && first.isEmpty() ) {
             return second.asOutTypes();
         } else if ( first.isPresent() && second.isPresent() ) {
-            AlgDataType type = RelUnionActivity.getTypeOrThrow( List.of( first.getNullableType(), second.getNullableType() ) );
+            AlgDataType type = ActivityUtils.mergeTypesOrThrow( List.of( first.getNullableType(), second.getNullableType() ) );
             return TypePreview.ofType( type ).asOutTypes();
         }
-        return UnknownType.of().asOutTypes();
+        return UnknownType.ofRel().asOutTypes();
     }
 
 

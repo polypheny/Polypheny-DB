@@ -60,7 +60,7 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 
 @Slf4j
 
-@ActivityDefinition(type = "docValues", displayName = "Constant Collection", categories = { ActivityCategory.EXTRACT, ActivityCategory.DOCUMENT },
+@ActivityDefinition(type = "docValues", displayName = "Generate Collection", categories = { ActivityCategory.EXTRACT, ActivityCategory.DOCUMENT },
         inPorts = {},
         outPorts = { @OutPort(type = PortType.DOC) }
 )

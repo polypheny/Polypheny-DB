@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.engine.storage.reader;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
@@ -47,14 +48,18 @@ public class CheckpointQuery {
 
 
     public String getQueryWithPlaceholdersReplaced( LogicalEntity entity ) {
-        return query.replace( ENTITY(), QueryUtils.quotedIdentifier( entity ) );
+        return query.replace( ENTITY(), getReplacement( entity ) );
     }
 
 
     public String getQueryWithPlaceholdersReplaced( List<LogicalEntity> entities ) {
         String replaced = query;
         for ( int i = 0; i < entities.size(); i++ ) {
-            replaced = replaced.replace( ENTITY( i ), QueryUtils.quotedIdentifier( entities.get( i ) ) );
+            LogicalEntity entity = entities.get( i );
+            if ( entity == null ) {
+                continue; // do not replace missing entities
+            }
+            replaced = replaced.replace( ENTITY( i ), getReplacement( entities.get( i ) ) );
         }
         return replaced;
     }
@@ -108,6 +113,14 @@ public class CheckpointQuery {
 
     public boolean hasParams() {
         return !parameters.isEmpty();
+    }
+
+
+    private String getReplacement( LogicalEntity entity ) {
+        if ( queryLanguage.toLowerCase( Locale.ROOT ).equals( "cypher" ) ) {
+            return entity.getName(); // must be unquoted to work with cypher
+        }
+        return QueryUtils.quotedIdentifier( entity );
     }
 
 }

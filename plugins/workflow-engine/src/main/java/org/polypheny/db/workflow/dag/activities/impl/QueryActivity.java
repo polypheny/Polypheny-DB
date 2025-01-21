@@ -21,7 +21,6 @@ import static org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory
 import static org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory.RELATIONAL;
 import static org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory.TRANSFORM;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
@@ -34,6 +33,7 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
+import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
@@ -46,16 +46,23 @@ import org.polypheny.db.workflow.dag.settings.QueryValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointQuery;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
+import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 @ActivityDefinition(type = "query", displayName = "Query", categories = { TRANSFORM, RELATIONAL, DOCUMENT, GRAPH },
-        inPorts = { @InPort(type = PortType.ANY, description = "The input data to be queried. Can have any data model.") },
-        outPorts = { @OutPort(type = PortType.ANY, description = "The query result. Cypher queries produce relational results.") },
+        inPorts = {
+                @InPort(type = PortType.ANY, description = "The input data to be queried. Can have any data model."),
+                @InPort(type = PortType.ANY, isOptional = true, description = "An optional second input. Note: Not all query languages support inputs with differing data models.")
+        },
+        outPorts = { @OutPort(type = PortType.ANY, description = "The query result. Note: Cypher queries produce relational results.") },
         shortDescription = "Execute an arbitrary query on the input data."
 )
-@QuerySetting(key = "query", displayName = "Query", shortDescription = "The query to be executed on the input data.")
+@QuerySetting(key = "query", displayName = "Query", shortDescription = "The query to be executed on the input data. The first column of a relational result should ideally be numeric and called \"" + StorageManager.PK_COL + "\".",
+        longDescription = "The query to be executed on the input data. The first column of a relational result should be numeric and called `" + StorageManager.PK_COL + "`. It will get overwritten. Otherwise, it is added manually (less efficient)."
+                + "The placeholders are replaced as `\"namespace\".\"name\"`. An MQL query with placeholder could look like `" + CheckpointQuery.ENTITY_L + "0" + CheckpointQuery.ENTITY_R + ".find({})`.")
 @SuppressWarnings("unused")
 public class QueryActivity implements Activity, Fusable {
 
@@ -64,11 +71,12 @@ public class QueryActivity implements Activity, Fusable {
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
         Optional<QueryValue> query = settings.get( "query", QueryValue.class );
         if ( query.isPresent() ) {
+            // TODO: find way how to determine tuple type without input being present
             QueryLanguage queryLanguage = query.get().getLanguage();
             TypePreview type = switch ( queryLanguage.dataModel() ) {
-                case RELATIONAL -> UnknownType.of();
+                case RELATIONAL -> UnknownType.ofRel();
                 case DOCUMENT -> DocType.of();
-                case GRAPH -> UnknownType.of(); // TODO: cypher has graph as datamodel but it's not the output type
+                case GRAPH -> UnknownType.of(); // TODO: cypher has graph as datamodel but it's not necessarily the output type
             };
             return type.asOutTypes();
         }
@@ -80,17 +88,26 @@ public class QueryActivity implements Activity, Fusable {
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         CheckpointQuery query = settings.get( "query", QueryValue.class ).getCheckpointQuery();
 
-        Pair<AlgDataType, Iterator<List<PolyValue>>> pair = inputs.get( 0 ).getIteratorFromQuery( query );
+        Pair<AlgDataType, Iterable<List<PolyValue>>> pair = inputs.get( 0 ).getIterableFromQuery( query, inputs );
         ctx.logInfo( "Result data type: " + pair.left );
         // TODO: check if pk col is present
-        CheckpointWriter writer = ctx.createWriter( 0, pair.left, true );
-        writer.write( pair.right );
+        if ( !ActivityUtils.hasRequiredFields( pair.left ) ) {
+            AlgDataType outType = ActivityUtils.addPkCol( pair.left );
+            ctx.logInfo( "Adding primary key column to type." );
+            RelWriter writer = ctx.createRelWriter( 0, outType, true );
+            for (List<PolyValue> row : pair.right) {
+                writer.wWithoutPk( row );
+            }
+        } else {
+            CheckpointWriter writer = ctx.createWriter( 0, pair.left, true );
+            writer.write( pair.right );
+        }
     }
 
 
     @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
-        throw new NotImplementedException( "Not yet implemented fusion for queryactivity" );
+        throw new NotImplementedException( "Fusion not yet implemented for query activity" );
     }
 
 

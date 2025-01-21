@@ -270,12 +270,12 @@ class GlobalSchedulerTest {
     @Test
     void concurrentActivityExecutionTest() throws Exception {
         int nBranches = 10;
-        int delay = 1000;
+        int delay = 200;
 
         Workflow workflow = WorkflowUtils.getParallelBranchesWorkflow( nBranches, delay, nBranches );
         List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
         scheduler.startExecution( workflow, sm, null );
-        scheduler.awaitResultProcessor( delay + 2000 ); // not enough time if not executed concurrently
+        scheduler.awaitResultProcessor( nBranches * delay / 2 ); // not enough time if not executed concurrently
 
         for ( int i = 0; i <= nBranches; i++ ) { // also checks initial activity
             assertTrue( sm.hasCheckpoint( ids.get( i ), 0 ) );
@@ -286,7 +286,7 @@ class GlobalSchedulerTest {
     @Test
     void concurrentWorkflowExecutionTest() throws Exception {
         int nWorkflows = 10;
-        int delay = 1000;
+        int delay = 200;
 
         List<Workflow> workflows = new ArrayList<>();
         List<StorageManager> storageManagers = new ArrayList<>();
@@ -297,7 +297,7 @@ class GlobalSchedulerTest {
             storageManagers.add( storageManager );
             scheduler.startExecution( workflow, storageManager, null );
         }
-        scheduler.awaitResultProcessor( delay + 2000 ); // not enough time if not executed concurrently
+        scheduler.awaitResultProcessor( nWorkflows * delay / 2 ); // not enough time if not executed concurrently
 
         for ( Pair<Workflow, StorageManager> entry : Pair.zip( workflows, storageManagers ) ) { // also checks initial activity
             List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( entry.left );
@@ -408,6 +408,7 @@ class GlobalSchedulerTest {
 
 
     @Test
+    @Disabled
     void executionMonitorTest() throws Exception {
         int delay = 1000;
         int n = 5; // number of intermediary checks

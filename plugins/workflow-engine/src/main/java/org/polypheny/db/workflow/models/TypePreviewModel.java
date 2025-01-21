@@ -33,10 +33,12 @@ public class TypePreviewModel {
 
     PortType portType; // ANY if not yet known
     List<FieldDefinition> fields; // null if not yet known
+    boolean notConnected; // only relevant for inputs
 
 
-    private TypePreviewModel( PortType portType, AlgDataType type ) {
+    private TypePreviewModel( PortType portType, AlgDataType type, boolean notConnected ) {
         this.portType = portType;
+        this.notConnected = notConnected;
         if ( portType != PortType.ANY && type != null ) {
             List<FieldDefinition> fields = new ArrayList<>();
             switch ( portType.getDataModel() ) {
@@ -71,10 +73,10 @@ public class TypePreviewModel {
         for ( int i = 0; i < portTypes.length; i++ ) {
             PortType portType = portTypes[i];
             TypePreview preview = previews.get( i );
-            if ( portType == PortType.ANY && preview.isPresent() ) {
+            if ( portType == PortType.ANY && preview.getDataModel() != null ) {
                 portType = PortType.fromDataModel( preview.getDataModel() );
             }
-            models.add( new TypePreviewModel( portType, preview.getNullableType() ) );
+            models.add( new TypePreviewModel( portType, preview.getNullableType(), preview.isMissing() ) );
         }
         return models;
     }

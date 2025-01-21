@@ -246,7 +246,7 @@ class StorageManagerTest {
     private AlgDataType getSampleType() {
         AlgDataTypeFactory typeFactory = AlgDataTypeFactory.DEFAULT;
         return typeFactory.builder()
-                .add( null, "field0", null, typeFactory.createPolyType( PolyType.INTEGER ) )
+                .add( null, StorageManager.PK_COL, null, typeFactory.createPolyType( PolyType.INTEGER ) )
                 .add( null, "field1", null, typeFactory.createPolyType( PolyType.VARCHAR, 50 ) )
                 .build();
     }

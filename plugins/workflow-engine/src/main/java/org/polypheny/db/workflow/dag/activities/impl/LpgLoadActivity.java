@@ -45,7 +45,7 @@ import org.polypheny.db.workflow.engine.storage.LpgBatchWriter;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
 
-@ActivityDefinition(type = "lpgLoad", displayName = "Load Graph", categories = { ActivityCategory.LOAD, ActivityCategory.GRAPH },
+@ActivityDefinition(type = "lpgLoad", displayName = "Load Graph to Polypheny", categories = { ActivityCategory.LOAD, ActivityCategory.GRAPH },
         inPorts = { @InPort(type = PortType.LPG) },
         outPorts = {})
 

@@ -103,12 +103,14 @@ public class StorageManagerImpl implements StorageManager {
         this.defaultStores.putIfAbsent( DataModel.DOCUMENT, fallbackStore );
         this.defaultStores.putIfAbsent( DataModel.GRAPH, fallbackStore );
 
+        String relNsName = getNamespaceName( REL_PREFIX );
         relNamespace = ddlManager.createNamespace(
-                REL_PREFIX + sessionId, DataModel.RELATIONAL, true, false, null );
-        registeredNamespaces.put( relNamespace, REL_PREFIX + sessionId );
+                relNsName, DataModel.RELATIONAL, true, false, null );
+        registeredNamespaces.put( relNamespace, relNsName );
 
-        docNamespace = ddlManager.createNamespace( DOC_PREFIX + sessionId, DataModel.DOCUMENT, true, false, null );
-        registeredNamespaces.put( docNamespace, DOC_PREFIX + sessionId );
+        String docNsName = getNamespaceName( DOC_PREFIX );
+        docNamespace = ddlManager.createNamespace( docNsName, DataModel.DOCUMENT, true, false, null );
+        registeredNamespaces.put( docNamespace, docNsName );
     }
 
 
@@ -183,10 +185,8 @@ public class StorageManagerImpl implements StorageManager {
             throw new IllegalArgumentException( "An output table must contain at least one column" );
         }
         AlgDataTypeField pkField = type.getFields().get( 0 ); // pk is at index 0
-        if ( resetPk ) {
-            if ( !PolyType.INT_TYPES.contains( pkField.getType().getPolyType() ) ) {
-                throw new IllegalArgumentException( "Only primary keys of an integer type can be reset" );
-            }
+        if ( !StorageManager.isPkCol( pkField ) ) {
+            throw new IllegalArgumentException( "The first column of an output table must be its (numeric) primary key with name " + PK_COL );
         }
 
         String tableName = getTableName( activityId, outputIdx );
@@ -501,8 +501,13 @@ public class StorageManagerImpl implements StorageManager {
 
 
     private String getGraphName( UUID activityId, int outputIdx ) {
-        return LPG_PREFIX + sessionId.toString().replace( "-", "" ) + "_"
+        return getNamespaceName( LPG_PREFIX ) + "_"
                 + activityId.toString().replace( "-", "" ) + "_" + outputIdx;
+    }
+
+
+    private String getNamespaceName( String prefix ) {
+        return prefix + sessionId.toString().replace( "-", "" );
     }
 
 

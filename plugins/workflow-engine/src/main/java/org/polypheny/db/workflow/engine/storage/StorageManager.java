@@ -144,4 +144,8 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
 
     boolean isCommonActive( @NonNull ActivityConfigModel.CommonType commonType );
 
+    static boolean isPkCol( AlgDataTypeField field ) {
+        return field.getName().equals( PK_COL ) && PolyType.INT_TYPES.contains( field.getType().getPolyType() );
+    }
+
 }

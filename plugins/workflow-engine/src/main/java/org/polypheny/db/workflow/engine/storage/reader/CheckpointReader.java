@@ -188,7 +188,7 @@ public abstract class CheckpointReader implements AutoCloseable {
      * Read any of the checkpoints for the given input readers through the means of a custom query.
      * This reader is used as the primary reader and must always be part of the inputs list. When it gets closed, the iterator will also be closed.
      * The query may not modify any data. It can only read the checkpoints of the specified readers.
-     * For user defined input, it is advised to use dynamic parameters in the CheckpointQuery, to avoid SQL injections.
+     * For user defined input, it is advised to use dynamic parameters in the CheckpointQuery.
      *
      * @param query The CheckpointQuery to be executed.
      * @param inputs The readers whose checkpoints can be used in the query. The index of a reader in this list corresponds to the placeholder index in the CheckpointQuery.
@@ -196,7 +196,7 @@ public abstract class CheckpointReader implements AutoCloseable {
      */
     public Pair<AlgDataType, Iterator<List<PolyValue>>> getIteratorFromQuery( CheckpointQuery query, List<CheckpointReader> inputs ) {
         assert inputs.contains( this );
-        List<LogicalEntity> entities = inputs.stream().map( reader -> reader.entity ).toList();
+        List<LogicalEntity> entities = inputs.stream().map( reader -> reader == null ? null : reader.entity ).toList();
 
         String queryStr = query.getQueryWithPlaceholdersReplaced( entities );
 
