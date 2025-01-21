@@ -31,6 +31,21 @@ import org.polypheny.db.transaction.locking.Lockable.LockType;
 
 public class LockableUtils {
 
+    public static class DebugTimer {
+        private final long startTime;
+        String name;
+
+        public DebugTimer(String name) {
+            this.name = name;
+            this.startTime = System.nanoTime();
+        }
+
+        public void stop() {
+            long elapsedTime = System.nanoTime() - startTime;
+            System.out.println("<TIMER: " + name + " - Elapsed time: " + elapsedTime + " ns");
+        }
+    }
+
     public static LockableObject getNamespaceAsLockableObject( Entity entity ) {
         return Catalog.getInstance().getSnapshot().getNamespace( entity.getNamespaceId() ).orElseThrow();
     }
@@ -233,9 +248,9 @@ public class LockableUtils {
      * @param lockType contains the desired lock type to set as the value
      * @return map containing the appropriate lockable and lock type for the specified namespace
      */
-    public static Map<Lockable, LockType> getMapOfCollectionLockableFromContext( Context context, ParsedQueryContext parsedQueryContext, LockType lockType ) {
-        long namespaceId = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
-        LogicalCollection collection = context.getSnapshot().doc().getCollection( namespaceId ).orElseThrow();
+    public static Map<Lockable, LockType> getMapOfCollectionLockableFromContext( Context context, ParsedQueryContext parsedQueryContext, String collectionName, LockType lockType ) {
+        long namespaceId = parsedQueryContext.getNamespaceId();
+        LogicalCollection collection = context.getSnapshot().doc().getCollection( namespaceId, collectionName ).orElseThrow();
         return getMapOfLockableFromObject( collection, lockType );
     }
 }

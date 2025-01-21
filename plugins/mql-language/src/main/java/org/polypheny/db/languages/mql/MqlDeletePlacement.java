@@ -79,7 +79,7 @@ public class MqlDeletePlacement extends MqlCollectionStatement implements Execut
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
-        return LockableUtils.getMapOfCollectionLockableFromContext( context, parsedQueryContext, LockType.EXCLUSIVE );
+        return LockableUtils.getMapOfCollectionLockableFromContext( context, parsedQueryContext, collection, LockType.EXCLUSIVE );
     }
 
 }
