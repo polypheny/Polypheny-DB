@@ -147,7 +147,7 @@ public class DocumentNearUnwrap extends ConverterRule {
             filterNodes.add(
                     getFixedCall(
                             List.of(
-                                    new RexNameRef( List.of( "_distance" ), null, DocumentType.ofDoc() ),
+                                    new RexNameRef( List.of( distanceField ), null, DocumentType.ofDoc() ),
                                     convertLiteral( minDistance.getValue() ) ),
                             OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GTE ),
                             PolyType.BOOLEAN ) );
@@ -156,7 +156,7 @@ public class DocumentNearUnwrap extends ConverterRule {
             filterNodes.add(
                     getFixedCall(
                             List.of(
-                                    new RexNameRef( List.of( "_distance" ), null, DocumentType.ofDoc() ),
+                                    new RexNameRef( List.of( distanceField ), null, DocumentType.ofDoc() ),
                                     convertLiteral( maxDistance.getValue() ) ),
                             OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_LTE ),
                             PolyType.BOOLEAN ) );
@@ -173,19 +173,19 @@ public class DocumentNearUnwrap extends ConverterRule {
 
         //
         // Step 3:
-        // Sort by _distance ascending
-        List<String> names = List.of( "_distance" );
+        // Sort by distance ascending
+        List<String> names = List.of( distanceField );
         replacementNode = LogicalDocumentSort.create(
                 replacementNode,
                 AlgCollations.of( generateCollation( List.of( Direction.ASCENDING ), names, names ) ),
-                List.of( new RexNameRef( List.of( "_distance" ), null, DocumentType.ofDoc() ) ),
+                List.of( new RexNameRef( List.of( distanceField ), null, DocumentType.ofDoc() ) ),
                 null,
                 null );
         replacementNode.getTupleType();
 
         //
         // Step 4:
-        // Projection to remove field _distance
+        // Projection to remove field distance
         replacementNode = LogicalDocumentProject.create( replacementNode, Map.of(), List.of( distanceField ), Map.of() );
         replacementNode.getTupleType();
 
