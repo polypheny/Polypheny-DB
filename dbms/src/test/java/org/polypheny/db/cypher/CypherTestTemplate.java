@@ -85,9 +85,9 @@ public class CypherTestTemplate {
 
 
     public static void createGraph( String name ) {
-        execute( format( "CREATE DATABASE %s", name ) );
-        execute( format( "USE GRAPH %s", name ) );
+        createGraph( name, "hsqldb" );
     }
+
 
     public static void createGraph( String name, String store ) {
         execute( format( "CREATE DATABASE %s ON STORE %s", name, store ) );
