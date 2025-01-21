@@ -364,6 +364,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
     @Test
     public void docsNearTest() {
+        // TODO: This test currently fails, because the sort is not working correctly for some reason.
         ArrayList<String> queries = new ArrayList<>();
         queries.add( """
                 db.%s.insertMany([
@@ -610,7 +611,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                     continue;
                 }
                 Object value = entry.getValue();
-                Object mongoValue = entry.getValue();
+                Object mongoValue = mongoDocumentMap.get( key );
                 assertEquals( mongoValue, value );
             }
         }
