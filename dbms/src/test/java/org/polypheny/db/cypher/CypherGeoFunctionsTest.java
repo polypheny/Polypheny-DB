@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -32,13 +33,17 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
     final static String neo4jAdapterName = "neo4j";
     final static String neo4jDatabaseName = "neo4j_database";
+
 
     @BeforeAll
     public static void init() {
@@ -55,6 +60,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         }
     }
 
+
     @BeforeEach
     public void reset() {
         tearDown();
@@ -62,46 +68,114 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
     }
 
 
+    private List<GraphResult> runQueries( List<String> queries ) {
+        ArrayList<GraphResult> results = new ArrayList<>();
+
+        // 1. Run queries internally
+        tearDown( );
+        createGraph();
+        GraphResult finalResult = null;
+        for ( String query : queries ) {
+            finalResult = execute( query, GRAPH_NAME );
+        }
+        results.add( finalResult );
+
+        // 2. Run queries in Docker
+        deleteData( neo4jDatabaseName );
+        createGraph( neo4jDatabaseName, neo4jAdapterName );
+        for ( String query : queries ) {
+            finalResult = execute( query, neo4jDatabaseName );
+        }
+        results.add( finalResult );
+
+        assertEquals( 2, results.size() );
+        return results;
+    }
+
+
+    private Map<String, Object> assertResultsAreEqual( List<GraphResult> results ) {
+        return assertResultsAreEqual( results.get( 0 ), results.get( 1 ) );
+    }
+
+
+    private Map<String, Object> assertResultsAreEqual( GraphResult hsqlResult, GraphResult neo4jResult ) {
+        Map<String, Object> hsqlJson = Map.of();
+        assertEquals( hsqlResult.data.length, neo4jResult.data.length );
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        for ( int i = 0; i < neo4jResult.data.length; i++ ) {
+            String hsqlData = hsqlResult.data[i][0];
+            String neo4jData = neo4jResult.data[i][0];
+
+            Map<String, Object> neo4jJson;
+            try {
+                hsqlJson = objectMapper.readValue( neo4jData, new TypeReference<>() {
+                } );
+                neo4jJson = objectMapper.readValue( hsqlData, new TypeReference<>() {
+                } );
+            } catch ( JsonProcessingException e ) {
+                throw new RuntimeException( e );
+            }
+            assertEquals( neo4jJson.keySet(), hsqlJson.keySet() );
+
+            for ( Entry<String, Object> entry : hsqlJson.entrySet() ) {
+                String key = entry.getKey();
+                Object value = hsqlJson.get( key );
+                Object neo4jValue = neo4jJson.get( key );
+                assertEquals( neo4jValue, value );
+            }
+        }
+
+        return hsqlJson;
+    }
+
+
     @Test
     public void createPointTest() {
-//        tearDown();
-//        createGraph(neo4jDatabaseName, neo4jAdapterName);
-        tearDown();
-        createGraph();
+        ArrayList<String> queries = new ArrayList<>();
+        queries.add( "CREATE (bob:User)" );
+        queries.add( "MATCH (n) RETURN point({longitude: 56.7, latitude: 12}) AS point" );
 
-        // TODO: Why are all my commands executed on Neo4j, only because I added the adapter?
-        execute( format( "USE GRAPH %s", GRAPH_NAME ) );
-        execute( "CREATE (bob:User)", GRAPH_NAME );
-//        execute( "CREATE (bob:User)", neo4jDatabaseName );
-        GraphResult res = execute( "MATCH (n) RETURN point({longitude: 56.7, latitude: 12}) AS point", GRAPH_NAME );
-        PolyGeometry geometry = convertJsonToPolyGeometry( res.data[0][0] );
+        List<GraphResult> results = runQueries( queries );
+        Map<String, Object> res = assertResultsAreEqual( results );
+        PolyGeometry geometry = PolyGeometry.ofOrThrow( (String) res.get( "wkt" ) );
         assert geometry.getSRID() == PolyGeometry.WGS_84;
         assert geometry.asPoint().getX() == 56.7;
         assert geometry.asPoint().getY() == 12.0;
 
-        res = execute( "MATCH (n) RETURN point({x: 15, y: 5}) AS point", neo4jDatabaseName );
-        geometry = convertJsonToPolyGeometry( res.data[0][0] );
+        queries.remove( 1 );
+        queries.add( "MATCH (n) RETURN point({x: 15, y: 5}) AS point" );
+        results = runQueries( queries );
+        res = assertResultsAreEqual( results );
+        geometry = PolyGeometry.ofOrThrow( (String) res.get( "wkt" ) );
         assert geometry.getSRID() == 0;
         assert geometry.asPoint().getX() == 15.0;
         assert geometry.asPoint().getY() == 5.0;
 
-        res = execute( "MATCH (n) RETURN point({x: 1, y: 2, z: 3}) AS point", neo4jDatabaseName );
-        geometry = convertJsonToPolyGeometry( res.data[0][0] );
+        queries.remove( 1 );
+        queries.add( "MATCH (n) RETURN point({x: 1, y: 2, z: 3}) AS point" );
+        results = runQueries( queries );
+        res = assertResultsAreEqual( results );
+        geometry = PolyGeometry.ofOrThrow( (String) res.get( "wkt" ) );
         assert geometry.getSRID() == 0;
         assert geometry.asPoint().getX() == 1.0;
         assert geometry.asPoint().getY() == 2.0;
         assert geometry.asPoint().getZ() == 3.0;
 
-        res = execute( "MATCH (n) RETURN point({longitude: 55.5, latitude: 12.2, height: 100}) AS point", neo4jDatabaseName );
-        geometry = convertJsonToPolyGeometry( res.data[0][0] );
+        queries.remove( 1 );
+        queries.add( "MATCH (n) RETURN point({longitude: 55.5, latitude: 12.2, height: 100}) AS point" );
+        results = runQueries( queries );
+        res = assertResultsAreEqual( results );
+        geometry = PolyGeometry.ofOrThrow( (String) res.get( "wkt" ) );
         assert geometry.getSRID() == PolyGeometry.WGS_84_3D;
         assert geometry.asPoint().getX() == 55.5;
         assert geometry.asPoint().getY() == 12.2;
         assert geometry.asPoint().getZ() == 100.0;
     }
 
+
     @Test
-    public void createNodeWithPointTest(){
+    public void createNodeWithPointTest() {
         execute( "CREATE (z:Station {name: 'Zürich', location: point({latitude: 47.3769, longitude: 8.5417})})" );
         // Node should have the following properties (according to Neo4j)
         //"properties": {
@@ -119,6 +193,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         // TODO: Validate object properties as well...
         assert res.data.length == 1;
     }
+
 
     @Test
     public void createPointFromNodeFields() {
@@ -266,7 +341,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                 RETURN point.withinBBox(dPoint, point({x: 1, y: 1}), point({x: 2, y: 2, z: 1})) AS result, d.name
                 """ );
         assert res.data[0][0] == null;
-        
+
         res = execute( """
                 MATCH (c:Coordinate {name: 'Paris'})
                 WITH point({longitude: c.longitude, latitude: c.latitude, height: 100}) AS cPoint, c
@@ -279,6 +354,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         assert res.data[0][0] == null;
     }
 
+
     private PolyGeometry convertJsonToPolyGeometry( String json ) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
@@ -290,12 +366,13 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         }
     }
 
-    private List<List<JsonNode>> convertResultsToJsonList(String[][] data){
+
+    private List<List<JsonNode>> convertResultsToJsonList( String[][] data ) {
         List<List<JsonNode>> results = new ArrayList<>();
         ObjectMapper objectMapper = new ObjectMapper();
-        for (String[] d : data){
+        for ( String[] d : data ) {
             List<JsonNode> nodes = new ArrayList<>();
-            for(String result : d){
+            for ( String result : d ) {
                 try {
                     JsonNode jsonNode = objectMapper.readTree( result );
                     nodes.add( jsonNode );
