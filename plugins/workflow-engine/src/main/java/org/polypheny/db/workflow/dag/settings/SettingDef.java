@@ -39,6 +39,7 @@ import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.DoubleSetting;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
+import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.annotations.QuerySetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
@@ -179,6 +180,10 @@ public abstract class SettingDef {
                 settings.add( new QuerySettingDef( a ) );
             } else if ( annotation instanceof QuerySetting.List a ) {
                 Arrays.stream( a.value() ).forEach( el -> settings.add( new QuerySettingDef( el ) ) );
+            } else if ( annotation instanceof FieldSelectSetting a ) {
+                settings.add( new FieldSelectSettingDef( a ) );
+            } else if ( annotation instanceof FieldSelectSetting.List a ) {
+                Arrays.stream( a.value() ).forEach( el -> settings.add( new FieldSelectSettingDef( el ) ) );
             }
         }
         return settings;
@@ -207,13 +212,26 @@ public abstract class SettingDef {
         ENTITY,
         BOOLEAN,
         DOUBLE,
-        QUERY
+        QUERY,
+        FIELD_SELECT
     }
 
 
     public interface SettingValue extends Wrapper {
 
-        JsonNode toJson( ObjectMapper mapper );
+        ObjectMapper MAPPER = SettingDef.MAPPER;
+
+        default JsonNode toJson() {
+            return MAPPER.valueToTree( this );
+        }
+
+        static <T extends SettingValue> T fromJson( JsonNode node, Class<T> clazz ) throws IllegalArgumentException {
+            try {
+                return MAPPER.treeToValue( node, clazz );
+            } catch ( JsonProcessingException e ) {
+                throw new IllegalArgumentException( e );
+            }
+        }
 
     }
 
@@ -221,7 +239,6 @@ public abstract class SettingDef {
     @Value
     public static class Settings {
 
-        private static final ObjectMapper MAPPER = new ObjectMapper();
         Map<String, SettingValue> map;
 
 
@@ -243,7 +260,7 @@ public abstract class SettingDef {
         public Map<String, JsonNode> getSerializableSettings() {
             Map<String, JsonNode> settingValues = new HashMap<>();
             for ( Entry<String, SettingValue> entry : map.entrySet() ) {
-                settingValues.put( entry.getKey(), entry.getValue().toJson( MAPPER ) );
+                settingValues.put( entry.getKey(), entry.getValue().toJson() );
             }
             return Collections.unmodifiableMap( settingValues );
         }

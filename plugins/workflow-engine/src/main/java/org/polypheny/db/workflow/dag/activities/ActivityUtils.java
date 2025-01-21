@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
@@ -34,7 +35,9 @@ import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidInputEx
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 
 public class ActivityUtils {
+
     private static final AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
+
 
     public static DataModel getDataModel( AlgDataType type ) {
         return switch ( type.getPolyType() ) {
@@ -44,15 +47,16 @@ public class ActivityUtils {
         };
     }
 
+
     public static boolean hasRequiredFields( AlgDataType type ) {
-        if (getDataModel( type ) != DataModel.RELATIONAL) {
+        if ( getDataModel( type ) != DataModel.RELATIONAL ) {
             return true;
         }
         return StorageManager.isPkCol( type.getFields().get( 0 ) );
     }
 
 
-    public static AlgDataType addPkCol(AlgDataType type) {
+    public static AlgDataType addPkCol( AlgDataType type ) {
         List<Long> ids = new ArrayList<>();
         List<AlgDataType> types = new ArrayList<>();
         List<String> names = new ArrayList<>();
@@ -70,7 +74,8 @@ public class ActivityUtils {
         return factory.createStructType( ids, types, names );
     }
 
-    public static AlgNode addPkCol(AlgNode input, AlgCluster cluster ) {
+
+    public static AlgNode addPkCol( AlgNode input, AlgCluster cluster ) {
         List<RexNode> projects = new ArrayList<>();
         AlgDataType type = input.getTupleType();
         projects.add( cluster.getRexBuilder().makeBigintLiteral( new BigDecimal( 0 ) ) ); // Add new PK col
@@ -81,6 +86,28 @@ public class ActivityUtils {
 
         return LogicalRelProject.create( input, projects, addPkCol( type ) );
     }
+
+
+    /**
+     * If ensureFirstIsPk is true, it is assumed that type has the PK_COL field, but it might not be present in fields or at the wrong position.
+     * In this case, it will be added.
+     */
+    public static AlgDataType filterFields( AlgDataType type, List<String> fields, boolean ensureFirstIsPk ) {
+        List<String> include = new ArrayList<>( fields );
+        if ( ensureFirstIsPk && (fields.isEmpty() || !fields.get( 0 ).equals( StorageManager.PK_COL )) ) {
+            include.remove( StorageManager.PK_COL ); // remove if not at first index
+            include.add( 0, StorageManager.PK_COL );
+        }
+        Builder builder = factory.builder();
+        for ( String name : include ) {
+            AlgDataTypeField field = type.getField( name, true, false );
+            if ( field != null ) {
+                builder.add( field );
+            }
+        }
+        return builder.build();
+    }
+
 
     public static AlgDataType mergeTypesOrThrow( List<AlgDataType> types ) throws InvalidInputException {
         // all inputs must not be null!

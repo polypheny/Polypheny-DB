@@ -17,7 +17,6 @@
 package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Objects;
 import lombok.Value;
 import org.polypheny.db.catalog.Catalog;
@@ -53,8 +52,8 @@ public class EntityValue implements SettingValue {
 
 
     @Override
-    public JsonNode toJson( ObjectMapper mapper ) {
-        return mapper.createObjectNode()
+    public JsonNode toJson() {
+        return MAPPER.createObjectNode()
                 .put( "namespace", namespace )
                 .put( "name", name );
     }

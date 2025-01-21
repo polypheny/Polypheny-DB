@@ -78,7 +78,7 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
     @Override
     public void setVariable( String key, SettingValue value ) {
         failIfReservedKey( key );
-        variables.put( key, value.toJson( mapper ) );
+        variables.put( key, value.toJson() );
     }
 
 

@@ -17,7 +17,6 @@
 package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,10 +74,10 @@ public class ListValue<T extends SettingValue> implements SettingValue {
 
 
     @Override
-    public JsonNode toJson( ObjectMapper mapper ) {
-        ArrayNode node = mapper.createArrayNode();
+    public JsonNode toJson() {
+        ArrayNode node = MAPPER.createArrayNode();
         for ( SettingValue value : values ) {
-            node.add( value.toJson( mapper ) );
+            node.add( value.toJson() );
         }
         return node;
     }

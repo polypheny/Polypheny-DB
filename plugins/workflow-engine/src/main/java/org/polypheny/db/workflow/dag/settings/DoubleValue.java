@@ -17,7 +17,6 @@
 package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.DoubleNode;
 import lombok.Value;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
@@ -44,7 +43,7 @@ public class DoubleValue implements SettingValue {
 
 
     @Override
-    public JsonNode toJson( ObjectMapper mapper ) {
+    public JsonNode toJson() {
         return DoubleNode.valueOf( value );
     }
 

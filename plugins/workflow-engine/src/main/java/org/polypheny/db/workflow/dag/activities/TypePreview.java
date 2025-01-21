@@ -111,6 +111,14 @@ public abstract class TypePreview implements Wrapper {
     }
 
 
+    /**
+     * See {@link Optional#flatMap(Function)}
+     */
+    public <U> Optional<U> flatMap( Function<AlgDataType, Optional<? extends U>> mapper ) {
+        return Optional.ofNullable( type ).flatMap( mapper );
+    }
+
+
     public RelType asRel() {
         if ( this instanceof RelType t ) {
             return t;
@@ -166,7 +174,7 @@ public abstract class TypePreview implements Wrapper {
         if ( isPresent() ) {
             return this;
         }
-        return UnknownType.of(getDataModel());
+        return UnknownType.of( getDataModel() );
     }
 
 
@@ -339,7 +347,8 @@ public abstract class TypePreview implements Wrapper {
             return relInstance;
         }
 
-        public static UnknownType of(DataModel dataModel) {
+
+        public static UnknownType of( DataModel dataModel ) {
             if ( dataModel == DataModel.RELATIONAL ) {
                 return ofRel();
             }
