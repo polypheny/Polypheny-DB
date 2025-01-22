@@ -150,7 +150,14 @@ public class CypherLiteral extends CypherExpression {
 
         for (String key : map.keySet()) {
             CypherExpression value = map.get(key);
-            double doubleValue = value.getComparable().asDouble().doubleValue();
+
+            double doubleValue;
+            if (value.getComparable().isInteger()){
+                doubleValue = value.getComparable().asInteger().intValue();
+            }
+            else{
+                doubleValue = value.getComparable().asDouble().doubleValue();
+            }
 
             switch (key) {
                 case "x":
