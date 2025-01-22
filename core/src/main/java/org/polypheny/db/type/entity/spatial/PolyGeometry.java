@@ -150,7 +150,7 @@ public class PolyGeometry extends PolyValue {
      * @param inputFormat describes the representation format of the geometry
      * @throws InvalidGeometryException if {@link PolyGeometry} is invalid or provided input is invalid.
      */
-    private PolyGeometry( String input, int srid, GeometryInputFormat inputFormat ) throws InvalidGeometryException {
+    public PolyGeometry( String input, int srid, GeometryInputFormat inputFormat ) throws InvalidGeometryException {
         this( PolyType.GEOMETRY );
         switch ( inputFormat ) {
             case WKT:
@@ -991,7 +991,7 @@ public class PolyGeometry extends PolyValue {
     /**
      * Describe the input format of Geometry
      */
-    enum GeometryInputFormat {
+    public enum GeometryInputFormat {
 
         WKT( "wkt" ), // Well-known Text
         TWKB( "twkb" ), // Tiny Well-known Binary
