@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.activities.impl;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
@@ -124,6 +125,12 @@ public class RelValuesActivity implements Activity, Fusable, Pipeable {
                 settings.get( "fixSeed", BoolValue.class ).getValue()
         );
         return LogicalRelValues.create( cluster, getType(), toRexLiterals( getType(), values ) );
+    }
+
+
+    @Override
+    public Optional<Boolean> canFuse( List<TypePreview> inTypes, SettingsPreview settings ) {
+        return settings.get( "rowCount", IntValue.class ).map( v -> v.getValue() <= 250 ); // otherwise the amount of generated code grows too big
     }
 
 

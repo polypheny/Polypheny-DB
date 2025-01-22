@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -118,7 +120,13 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
                 settings.get( "count", IntValue.class ).getValue(),
                 settings.get( "fixSeed", BoolValue.class ).getValue()
         );
-        return LogicalDocumentValues.create( cluster, values );
+        return new LogicalDocumentValues( cluster, cluster.traitSetOf( ModelTrait.DOCUMENT ), values );
+    }
+
+
+    @Override
+    public Optional<Boolean> canFuse( List<TypePreview> inTypes, SettingsPreview settings ) {
+        return settings.get( "count", IntValue.class ).map( v -> v.getValue() <= 250 ); // otherwise the amount of generated code grows too big
     }
 
 

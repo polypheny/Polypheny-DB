@@ -278,7 +278,7 @@ public class QueryUtils {
                 size += DEFAULT_BYTE_SIZE;
             }
         }
-        return size;
+        return Math.max( DEFAULT_BYTE_SIZE, size );
     }
 
 

@@ -60,7 +60,7 @@ public class RelReader extends CheckpointReader {
 
     @Override
     public AlgNode getAlgNode( AlgCluster cluster ) {
-        AlgTraitSet traits = AlgTraitSet.createEmpty().plus( ModelTrait.RELATIONAL );
+        AlgTraitSet traits = cluster.traitSetOf( ModelTrait.RELATIONAL );
         return new LogicalRelScan( cluster, traits, entity );
     }
 

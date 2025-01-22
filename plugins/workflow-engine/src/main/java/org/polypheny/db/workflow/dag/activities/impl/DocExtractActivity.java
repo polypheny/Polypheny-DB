@@ -58,7 +58,7 @@ import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 
-@ActivityDefinition(type = "docExtract", displayName = "Extract Collection in Polypheny", categories = { ActivityCategory.EXTRACT, ActivityCategory.DOCUMENT },
+@ActivityDefinition(type = "docExtract", displayName = "Extract Collection", categories = { ActivityCategory.EXTRACT, ActivityCategory.DOCUMENT },
         inPorts = {},
         outPorts = { @OutPort(type = PortType.DOC) })
 
@@ -92,7 +92,7 @@ public class DocExtractActivity implements Activity, Fusable, Pipeable {
     @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
         LogicalCollection collection = settings.get( COLL_KEY, EntityValue.class ).getCollection();
-        AlgTraitSet traits = AlgTraitSet.createEmpty().plus( ModelTrait.DOCUMENT );
+        AlgTraitSet traits = cluster.traitSetOf( ModelTrait.DOCUMENT );
         return new LogicalDocumentScan( cluster, traits, collection );
     }
 

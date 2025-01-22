@@ -57,7 +57,7 @@ import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
-@ActivityDefinition(type = "relExtract", displayName = "Extract Table in Polypheny", categories = { ActivityCategory.EXTRACT, ActivityCategory.RELATIONAL },
+@ActivityDefinition(type = "relExtract", displayName = "Extract Table", categories = { ActivityCategory.EXTRACT, ActivityCategory.RELATIONAL },
         inPorts = {},
         outPorts = { @OutPort(type = PortType.REL) })
 
@@ -104,7 +104,7 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
     @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
         LogicalTable table = settings.get( TABLE_KEY, EntityValue.class ).getTable();
-        AlgTraitSet traits = AlgTraitSet.createEmpty().plus( ModelTrait.RELATIONAL );
+        AlgTraitSet traits = cluster.traitSetOf( ModelTrait.RELATIONAL );
 
         AlgNode scan = new LogicalRelScan( cluster, traits, table );
         return ActivityUtils.addPkCol( scan, cluster );

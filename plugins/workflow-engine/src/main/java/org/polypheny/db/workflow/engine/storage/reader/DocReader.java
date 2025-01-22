@@ -23,9 +23,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
-import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -88,8 +86,7 @@ public class DocReader extends CheckpointReader {
 
     @Override
     public AlgNode getAlgNode( AlgCluster cluster ) {
-        AlgTraitSet traits = AlgTraitSet.createEmpty().plus( ModelTrait.DOCUMENT );
-        return new LogicalDocumentScan( cluster, traits, entity );
+        return LogicalDocumentScan.create( cluster, entity );
     }
 
 

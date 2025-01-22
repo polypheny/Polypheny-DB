@@ -103,6 +103,7 @@ public interface Fusable extends Activity {
                 }
             }
         } catch ( Exception e ) {
+            e.printStackTrace();
             ctx.throwException( e );
         } finally {
             executedContext.getIterator().close();

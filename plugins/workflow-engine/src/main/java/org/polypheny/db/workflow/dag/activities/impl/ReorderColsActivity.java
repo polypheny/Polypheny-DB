@@ -46,13 +46,16 @@ import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
+import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 @ActivityDefinition(type = "reorderCols", displayName = "Select / Reorder Columns", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
-        inPorts = { @InPort(type = PortType.REL) },
-        outPorts = { @OutPort(type = PortType.REL) }
+        inPorts = { @InPort(type = PortType.REL, description = "The input table") },
+        outPorts = { @OutPort(type = PortType.REL, description = "A Table containing the selected subset of columns from the input table in the specified order.") },
+        shortDescription = "Select and reorder the columns of the input table."
 )
-@FieldSelectSetting(key = "cols", displayName = "Columns", reorder = true, defaultAll = true)
+@FieldSelectSetting(key = "cols", displayName = "Columns", reorder = true, defaultAll = true,
+        shortDescription = "Specify the names of the columns to include. Alternatively, you can include all columns except for the excluded ones. The \"" + StorageManager.PK_COL + "\" column must always be included.")
 
 @SuppressWarnings("unused")
 public class ReorderColsActivity implements Activity, Fusable, Pipeable {

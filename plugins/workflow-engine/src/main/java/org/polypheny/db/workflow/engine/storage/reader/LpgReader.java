@@ -59,7 +59,7 @@ public class LpgReader extends CheckpointReader {
 
     @Override
     public AlgNode getAlgNode( AlgCluster cluster ) {
-        AlgTraitSet traits = AlgTraitSet.createEmpty().plus( ModelTrait.GRAPH );
+        AlgTraitSet traits = cluster.traitSetOf( ModelTrait.GRAPH );
         return new LogicalLpgScan( cluster, traits, entity, entity.getTupleType() );
     }
 
