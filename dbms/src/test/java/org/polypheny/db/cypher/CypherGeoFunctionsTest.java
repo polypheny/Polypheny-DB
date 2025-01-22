@@ -26,7 +26,9 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyGeometry.GeometryInputFormat;
 import org.polypheny.db.webui.models.results.GraphResult;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -72,7 +74,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         ArrayList<GraphResult> results = new ArrayList<>();
 
         // 1. Run queries internally
-        tearDown( );
+        tearDown();
         createGraph();
         GraphResult finalResult = null;
         for ( String query : queries ) {
@@ -102,20 +104,9 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         Map<String, Object> hsqlJson = Map.of();
         assertEquals( hsqlResult.data.length, neo4jResult.data.length );
 
-        ObjectMapper objectMapper = new ObjectMapper();
         for ( int i = 0; i < neo4jResult.data.length; i++ ) {
-            String hsqlData = hsqlResult.data[i][0];
-            String neo4jData = neo4jResult.data[i][0];
-
-            Map<String, Object> neo4jJson;
-            try {
-                hsqlJson = objectMapper.readValue( neo4jData, new TypeReference<>() {
-                } );
-                neo4jJson = objectMapper.readValue( hsqlData, new TypeReference<>() {
-                } );
-            } catch ( JsonProcessingException e ) {
-                throw new RuntimeException( e );
-            }
+            hsqlJson = convertResultToMap( hsqlResult ).get( 0 );
+            Map<String, Object> neo4jJson = convertResultToMap( neo4jResult ).get( 0 );
             assertEquals( neo4jJson.keySet(), hsqlJson.keySet() );
 
             for ( Entry<String, Object> entry : hsqlJson.entrySet() ) {
@@ -127,6 +118,49 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         }
 
         return hsqlJson;
+    }
+
+
+    private List<Map<String, Object>> convertResultToMap( GraphResult result ) {
+        ArrayList<Map<String, Object>> results = new ArrayList<>();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            for ( int i = 0; i < result.data.length; i++ ) {
+                Map<String, Object> map = objectMapper.readValue( result.data[i][0], new TypeReference<>() {
+                } );
+                results.add( map );
+            }
+        } catch ( JsonProcessingException e ) {
+            throw new RuntimeException( e );
+        }
+
+        return results;
+    }
+
+
+    private Object extractValueAtPath( Map<String, Object> map, List<String> path ) {
+        Object currentMap = map;
+        for ( int i = 0; i < path.size(); i++ ) {
+            String key = path.get( i );
+
+            if ( currentMap instanceof Map m ) {
+                currentMap = m.get( key );
+            } else if ( currentMap instanceof ArrayList listOfLists ) {
+                for ( Object o : listOfLists ) {
+                    if ( o instanceof ArrayList keyValueList ) {
+                        // 0 -> Key
+                        // 1 -> Value
+                        if ( keyValueList.get( 0 ).equals( key ) ) {
+                            currentMap = keyValueList.get( 1 );
+                            break;
+                        }
+                    }
+
+                }
+            }
+        }
+        return currentMap;
     }
 
 
@@ -175,23 +209,28 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
 
     @Test
-    public void createNodeWithPointTest() {
-        execute( "CREATE (z:Station {name: 'Zürich', location: point({latitude: 47.3769, longitude: 8.5417})})" );
-        // Node should have the following properties (according to Neo4j)
-        //"properties": {
-        //		  "name": "Zürich",
-        //		  "location": {
-        //			"srid": {
-        //			  "low": 4326,
-        //			  "high": 0
-        //			},
-        //			"x": 8.5417,
-        //			"y": 47.3769
-        //		  }
-        //		},
-        GraphResult res = execute( "MATCH (n) RETURN n;" );
-        // TODO: Validate object properties as well...
-        assert res.data.length == 1;
+    public void createNodeWithPointTest() throws InvalidGeometryException {
+        List<GraphResult> results = runQueries( List.of(
+                "CREATE (z:Station {name: 'Zürich', location: point({latitude: 47.3769, longitude: 8.5417})})",
+                "MATCH (n) RETURN n;"
+        ) );
+        assert results.size() == 2;
+        var hsqlValue = extractValueAtPath( convertResultToMap( results.get( 0 ) ).get( 0 ), List.of( "properties", "_ps", "location", "value" ) );
+        var neo4jValue = extractValueAtPath( convertResultToMap( results.get( 1 ) ).get( 0 ), List.of( "properties", "_ps", "location", "wkt" ) );
+        var neo4jGeometry = PolyGeometry.of( neo4jValue.toString() );
+        var hsqlGeometry = new PolyGeometry( hsqlValue.toString(), 4326, GeometryInputFormat.GEO_JSON );
+        assertEquals( neo4jGeometry, hsqlGeometry );
+
+        results = runQueries( List.of(
+                "CREATE (z:Station {name: 'Zürich', location: point({x: 15, y: 30})})",
+                "MATCH (n) RETURN n;"
+        ) );
+        assert results.size() == 2;
+        hsqlValue = extractValueAtPath( convertResultToMap( results.get( 0 ) ).get( 0 ), List.of( "properties", "_ps", "location", "value" ) );
+        neo4jValue = extractValueAtPath( convertResultToMap( results.get( 1 ) ).get( 0 ), List.of( "properties", "_ps", "location", "wkt" ) );
+        neo4jGeometry = PolyGeometry.of( neo4jValue.toString() );
+        hsqlGeometry = new PolyGeometry( hsqlValue.toString(), 0, GeometryInputFormat.GEO_JSON );
+        assertEquals( neo4jGeometry, hsqlGeometry );
     }
 
 
