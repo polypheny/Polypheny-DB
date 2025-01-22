@@ -464,8 +464,8 @@ public interface NeoStatements {
                 case 0 -> dimensions == 2
                         ? "x: " + point.getX() + " , y: " + point.getY()
                         : "x: " + point.getX() + " , y: " + point.getY() + ", z: " + point.getZ();
-                case 4326 -> "latitude: " + point.getX() + " , longitude: " + point.getY();
-                case 4979 -> "latitude: " + point.getX() + " , longitude: " + point.getY() + " , height: " + point.getZ();
+                case 4326 -> "longitude: " + point.getX() + " , latitude: " + point.getY();
+                case 4979 -> "longitude: " + point.getX() + " , latitude: " + point.getY() + " , height: " + point.getZ();
                 default -> throw new IllegalArgumentException("Unsupported SRID: " + point.getSRID());
             };
             String pointString = "point({" + pointValues + "})";
