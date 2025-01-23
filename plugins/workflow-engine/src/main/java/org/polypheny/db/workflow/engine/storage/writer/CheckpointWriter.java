@@ -21,6 +21,8 @@ import java.util.List;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
+import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 public abstract class CheckpointWriter implements AutoCloseable {
@@ -53,9 +55,33 @@ public abstract class CheckpointWriter implements AutoCloseable {
     }
 
 
+    /**
+     * Write the content of the given iterator and use the ExecutionContext
+     * to check for interruptions after every written tuple.
+     */
+    public final void write( Iterator<List<PolyValue>> iterator, ExecutionContext ctx ) throws ExecutorException {
+        while ( iterator.hasNext() ) {
+            write( iterator.next() );
+            ctx.checkInterrupted();
+        }
+    }
+
+
     public final void write( Iterable<List<PolyValue>> iterable ) {
         for ( List<PolyValue> tuple : iterable ) {
             write( tuple );
+        }
+    }
+
+
+    /**
+     * Write the content of the given iterable and use the ExecutionContext
+     * to check for interruptions after every written tuple.
+     */
+    public final void write( Iterable<List<PolyValue>> iterable, ExecutionContext ctx ) throws ExecutorException {
+        for ( List<PolyValue> tuple : iterable ) {
+            write( tuple );
+            ctx.checkInterrupted();
         }
     }
 

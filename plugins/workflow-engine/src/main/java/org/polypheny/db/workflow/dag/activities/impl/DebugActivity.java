@@ -74,7 +74,17 @@ public class DebugActivity implements Activity, Pipeable, Fusable {
         RelReader input = (RelReader) inputs.get( 0 );
         RelWriter output = ctx.createRelWriter( 0, input.getTupleType(), false );
 
-        Thread.sleep( settings.get( "delay", IntValue.class ).getValue() );
+        int delay = settings.get( "delay", IntValue.class ).getValue();
+        if ( delay > 1000 ) {
+            int delta = 100; // delta ms per step
+            int steps = delay / delta;
+            for ( int i = 0; i < steps; i++ ) {
+                Thread.sleep( delta );
+                ctx.checkInterrupted();
+            }
+        } else {
+            Thread.sleep( delay );
+        }
         checkFail( settings );
         output.write( input.getIterator() );
     }

@@ -68,7 +68,7 @@ public class RelMergeActivity implements Activity {
             CheckpointReader input = input0 != null ? input0 : input1;
 
             ctx.createRelWriter( 0, input.getTupleType(), true )
-                    .write( input.getIterator() );
+                    .write( input.getIterator(), ctx );
             return;
         }
 
@@ -78,7 +78,7 @@ public class RelMergeActivity implements Activity {
                 .build();
         Pair<AlgDataType, Iterator<List<PolyValue>>> result = input0.getIteratorFromQuery( query, inputs );
         ctx.createRelWriter( 0, result.left, true )
-                .write( result.right );
+                .write( result.right, ctx );
     }
 
 

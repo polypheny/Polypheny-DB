@@ -101,6 +101,7 @@ public interface Fusable extends Activity {
                 if ( estimatedTupleCount > 0 && count % countDelta == 0 ) {
                     ctx.updateProgress( (double) count / estimatedTupleCount );
                 }
+                ctx.checkInterrupted();
             }
         } catch ( Exception e ) {
             e.printStackTrace();

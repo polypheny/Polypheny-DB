@@ -34,6 +34,7 @@ public class ExecutionInfoModel {
     long totalDuration;
     Map<ExecutionState, Long> durations;
     List<UUID> activities;
+    UUID root;
     ExecutorType executorType;
     ExecutionState state;
 

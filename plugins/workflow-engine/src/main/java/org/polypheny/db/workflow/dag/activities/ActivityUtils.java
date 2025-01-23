@@ -18,8 +18,12 @@ package org.polypheny.db.workflow.dag.activities;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
+import lombok.Getter;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -31,6 +35,8 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidInputException;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 
@@ -117,6 +123,133 @@ public class ActivityUtils {
             throw new InvalidInputException( "The tuple types of the inputs are incompatible", 1 );
         }
         return type;
+    }
+
+
+    public static PolyString valueToString( PolyValue value ) {
+        return switch ( value.getType() ) {
+            case NULL -> PolyString.of( null );
+            case ANY, DOCUMENT, GRAPH, NODE, EDGE, PATH -> value.toPolyJson();
+            default -> PolyString.convert( value );
+        };
+    }
+
+
+    /**
+     * TuplePipes are a simple way to transform tuples after reading or before writing them to a checkpoint.
+     * It is not exclusive to Pipeable activities, but can also be useful in other situations.
+     */
+
+    @Getter
+    public static abstract class TuplePipe {
+
+        final AlgDataType inType;
+
+
+        TuplePipe( AlgDataType inType ) {
+            this.inType = inType;
+        }
+
+
+        public abstract AlgDataType getOutType();
+
+
+        abstract List<PolyValue> transform( List<PolyValue> input );
+
+
+        private Iterator<List<PolyValue>> getIterator( Iterator<List<PolyValue>> input ) {
+            return new Iterator<>() {
+
+                @Override
+                public boolean hasNext() {
+                    return input.hasNext();
+                }
+
+
+                @Override
+                public List<PolyValue> next() {
+                    return transform( input.next() );
+                }
+            };
+        }
+
+
+        public final Iterable<List<PolyValue>> pipe( Iterator<List<PolyValue>> input ) {
+            return () -> getIterator( input );
+        }
+
+
+        public final Iterable<List<PolyValue>> pipe( Iterable<List<PolyValue>> input ) {
+            return () -> getIterator( input.iterator() );
+        }
+
+    }
+
+
+    /**
+     * Transforms any relational tuples with some types possibly being unsupported by relational checkpoints
+     * into tuples that can be stored in a relational checkpoint.
+     */
+    public static class AnyToRelPipe extends TuplePipe {
+
+        private static final Map<PolyType, PolyType> TYPE_MAP = Map.of(
+                PolyType.ANY, PolyType.TEXT,
+                PolyType.DOCUMENT, PolyType.TEXT,
+                PolyType.NODE, PolyType.TEXT,
+                PolyType.EDGE, PolyType.TEXT,
+                PolyType.PATH, PolyType.TEXT
+        );
+        private final AlgDataType outType;
+        private final PolyType[] targetTypes;
+        private final int size;
+
+
+        public AnyToRelPipe( AlgDataType inType ) {
+            super( inType );
+            if ( !inType.isStruct() ) {
+                throw new IllegalArgumentException( "Only structs are currently supported" );
+            }
+            this.size = inType.getFieldCount();
+            this.targetTypes = new PolyType[size];
+            Builder builder = factory.builder();
+            for ( int i = 0; i < size; i++ ) {
+                AlgDataTypeField field = inType.getFields().get( i );
+                PolyType targetType = TYPE_MAP.getOrDefault( field.getType().getPolyType(), null );
+                targetTypes[i] = targetType;
+                if ( targetType == null ) {
+                    builder.add( field );
+                } else {
+                    builder.add( field.getName(), field.getPhysicalName(), targetType );
+                }
+            }
+            outType = builder.build();
+        }
+
+
+        @Override
+        public AlgDataType getOutType() {
+            return outType;
+        }
+
+
+        @Override
+        List<PolyValue> transform( List<PolyValue> input ) {
+            List<PolyValue> output = new ArrayList<>( size );
+            for ( int i = 0; i < size; i++ ) {
+                PolyValue value = input.get( i );
+                PolyType target = targetTypes[i];
+                if ( target != null ) {
+                    if ( target == PolyType.TEXT ) {
+                        value = valueToString( value );
+                    } else {
+                        throw new NotImplementedException( "Target type " + target + " is not yet implemented" );
+                    }
+                }
+                output.add( value );
+            }
+            return output;
+        }
+
     }
 
 }

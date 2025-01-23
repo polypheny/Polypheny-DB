@@ -43,6 +43,8 @@ public class ExecutionInfo {
     @Getter
     private final Set<UUID> activities;
     @Getter
+    private final UUID root;
+    @Getter
     private final ExecutorType executorType;
     @Getter
     private ExecutionState state;
@@ -57,8 +59,9 @@ public class ExecutionInfo {
     private final CircularFifoQueue<String> log;
 
 
-    public ExecutionInfo( Set<UUID> activities, ExecutorType executorType, int logCapacity ) {
+    public ExecutionInfo( Set<UUID> activities, UUID root, ExecutorType executorType, int logCapacity ) {
         this.activities = Collections.unmodifiableSet( activities );
+        this.root = root;
         this.executorType = executorType;
         activities.forEach( n -> progressMap.put( n, 0. ) );
 
@@ -181,6 +184,7 @@ public class ExecutionInfo {
                         .filter( s -> s != ExecutionState.DONE )
                         .collect( Collectors.toMap( s -> s, this::getDurationMillis ) ),
                 new ArrayList<>( activities ),
+                root,
                 executorType,
                 state,
                 isSuccess,

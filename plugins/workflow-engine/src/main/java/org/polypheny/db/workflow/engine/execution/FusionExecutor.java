@@ -113,10 +113,17 @@ public class FusionExecutor extends Executor {
                 if ( estimatedTupleCount > 0 && count % countDelta == 0 ) {
                     info.setProgress( (double) count / estimatedTupleCount ); // we estimate progress only by number of produced output tuples -> the true progress would be higher
                 }
+                if ( isInterrupted ) {
+                    info.appendLog( rootId, LogLevel.WARN, "Fusion execution was interrupted." );
+                    throw new ExecutorException( "Fusion execution was interrupted" );
+                }
             }
             info.setProgress( 1 );
             info.setTuplesWritten( writer.getWriteCount() );
         } catch ( Exception e ) {
+            if ( e instanceof ExecutorException ex ) {
+                throw ex;
+            }
             throw new ExecutorException( e );
         } finally {
             executedContext.getIterator().close();

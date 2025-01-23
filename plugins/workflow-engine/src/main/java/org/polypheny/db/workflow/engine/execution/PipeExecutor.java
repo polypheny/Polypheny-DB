@@ -46,6 +46,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.QueuePipe;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo.LogLevel;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
@@ -150,6 +151,9 @@ public class PipeExecutor extends Executor {
         super.interrupt();
         if ( !hasDetectedAbort && executor != null ) {
             executor.shutdownNow();
+        }
+        for ( UUID n : info.getActivities() ) {
+            info.appendLog( n, LogLevel.WARN, "Pipeline execution was interrupted" );
         }
     }
 

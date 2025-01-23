@@ -23,18 +23,17 @@ import static org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory
 
 import java.util.List;
 import java.util.Optional;
-import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.ActivityUtils;
-import org.polypheny.db.workflow.dag.activities.Fusable;
+import org.polypheny.db.workflow.dag.activities.ActivityUtils.AnyToRelPipe;
+import org.polypheny.db.workflow.dag.activities.ActivityUtils.TuplePipe;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
 import org.polypheny.db.workflow.dag.activities.TypePreview.UnknownType;
@@ -64,19 +63,18 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
         longDescription = "The query to be executed on the input data. The first column of a relational result should be numeric and called `" + StorageManager.PK_COL + "`. It will get overwritten. Otherwise, it is added manually (less efficient)."
                 + "The placeholders are replaced as `\"namespace\".\"name\"`. An MQL query with placeholder could look like `" + CheckpointQuery.ENTITY_L + "0" + CheckpointQuery.ENTITY_R + ".find({})`.")
 @SuppressWarnings("unused")
-public class QueryActivity implements Activity, Fusable {
+public class QueryActivity implements Activity {
 
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
         Optional<QueryValue> query = settings.get( "query", QueryValue.class );
         if ( query.isPresent() ) {
-            // TODO: find way how to determine tuple type without input being present
+            // TODO: is there a way to determine tuple type without the input entity existing yet?
             QueryLanguage queryLanguage = query.get().getLanguage();
             TypePreview type = switch ( queryLanguage.dataModel() ) {
-                case RELATIONAL -> UnknownType.ofRel();
+                case RELATIONAL, GRAPH -> UnknownType.ofRel();
                 case DOCUMENT -> DocType.of();
-                case GRAPH -> UnknownType.of(); // TODO: cypher has graph as datamodel but it's not necessarily the output type
             };
             return type.asOutTypes();
         }
@@ -86,34 +84,33 @@ public class QueryActivity implements Activity, Fusable {
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        CheckpointQuery query = settings.get( "query", QueryValue.class ).getCheckpointQuery();
+        QueryValue query = settings.get( "query", QueryValue.class );
 
-        Pair<AlgDataType, Iterable<List<PolyValue>>> pair = inputs.get( 0 ).getIterableFromQuery( query, inputs );
-        ctx.logInfo( "Result data type: " + pair.left );
-        // TODO: check if pk col is present
-        if ( !ActivityUtils.hasRequiredFields( pair.left ) ) {
-            AlgDataType outType = ActivityUtils.addPkCol( pair.left );
-            ctx.logInfo( "Adding primary key column to type." );
-            RelWriter writer = ctx.createRelWriter( 0, outType, true );
-            for ( List<PolyValue> row : pair.right ) {
-                writer.wWithoutPk( row );
+        Pair<AlgDataType, Iterable<List<PolyValue>>> pair = inputs.get( 0 ).getIterableFromQuery( query.getCheckpointQuery(), inputs );
+        DataModel targetModel = ActivityUtils.getDataModel( pair.left );
+        ctx.logInfo( "Result data type: " + pair.left + " (DataModel: " + targetModel + ")" );
+
+        if ( targetModel == DataModel.RELATIONAL ) {
+            if ( query.getLanguage().dataModel() != DataModel.RELATIONAL ||
+                    inputs.stream().anyMatch( i -> i != null && i.getDataModel() != DataModel.RELATIONAL ) ) {
+                // Cross-model query to relational
+                TuplePipe pipe = new AnyToRelPipe( pair.left );
+                ctx.logInfo( "Detected cross-model query. Casting to " + pipe.getOutType() );
+                pair = Pair.of( pipe.getOutType(), pipe.pipe( pair.right ) );
             }
-        } else {
-            CheckpointWriter writer = ctx.createWriter( 0, pair.left, true );
-            writer.write( pair.right );
+            if ( !ActivityUtils.hasRequiredFields( pair.left ) ) {
+                AlgDataType outType = ActivityUtils.addPkCol( pair.left );
+                ctx.logInfo( "Adding primary key column to type." );
+                RelWriter writer = ctx.createRelWriter( 0, outType, true );
+                for ( List<PolyValue> row : pair.right ) {
+                    writer.wWithoutPk( row );
+                    ctx.checkInterrupted();
+                }
+                return;
+            }
         }
-    }
-
-
-    @Override
-    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
-        throw new NotImplementedException( "Fusion not yet implemented for query activity" );
-    }
-
-
-    @Override
-    public Optional<Boolean> canFuse( List<TypePreview> inTypes, SettingsPreview settings ) {
-        return Optional.of( false ); // TODO: change when fuse is implemented
+        CheckpointWriter writer = ctx.createWriter( 0, pair.left, true );
+        writer.write( pair.right );
     }
 
 }

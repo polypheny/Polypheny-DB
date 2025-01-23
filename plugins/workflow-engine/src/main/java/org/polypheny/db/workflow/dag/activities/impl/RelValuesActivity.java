@@ -89,7 +89,7 @@ public class RelValuesActivity implements Activity, Fusable, Pipeable {
                 settings.get( "fixSeed", BoolValue.class ).getValue()
         );
         RelWriter writer = ctx.createRelWriter( 0, getType(), true );
-        writer.write( values.iterator() );
+        writer.write( values.iterator(), ctx );
     }
 
 

@@ -162,7 +162,7 @@ public abstract class WorkflowOptimizer {
 
         public ExecutionSubmission create( StorageManager sm, Workflow wf ) {
             UUID root = getRootActivity(); // root of inverted tree
-            ExecutionInfo info = new ExecutionInfo( activities, executorType, wf.getConfig().getLogCapacity() );
+            ExecutionInfo info = new ExecutionInfo( activities, root, executorType, wf.getConfig().getLogCapacity() );
             activities.forEach( n -> wf.getActivity( n ).setExecutionInfo( info ) );
             Executor executor = switch ( executorType ) {
                 case DEFAULT -> new DefaultExecutor( sm, wf, root, info );

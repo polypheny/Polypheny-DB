@@ -73,6 +73,7 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
     @Override
     public void checkInterrupted() throws ExecutorException {
         if ( interrupt ) {
+            logWarning( "Execution was interrupted" );
             throwException( "Activity execution was interrupted" );
         }
     }
