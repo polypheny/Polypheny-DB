@@ -85,11 +85,12 @@ public abstract class Executor implements Callable<Void> {
 
 
     List<CheckpointReader> getReaders( ActivityWrapper target ) throws ExecutorException {
-        CheckpointReader[] inputs = new CheckpointReader[target.getDef().getInPorts().length];
-        for ( Edge edge : workflow.getInEdges( target.getId() ) ) {
+        List<Edge> inEdges = workflow.getInEdges( target.getId() );
+        CheckpointReader[] inputs = new CheckpointReader[target.getDef().getDynamicInPortCount( inEdges )];
+        for ( Edge edge : inEdges ) {
             if ( edge instanceof DataEdge dataEdge && dataEdge.getState() != EdgeState.INACTIVE ) {
                 CheckpointReader reader = sm.readCheckpoint( dataEdge.getFrom().getId(), dataEdge.getFromPort() );
-                PortType toPortType = target.getDef().getInPortTypes()[dataEdge.getToPort()];
+                PortType toPortType = target.getDef().getInPortType( dataEdge.getToPort() );
                 inputs[dataEdge.getToPort()] = reader;
                 if ( !toPortType.couldBeCompatibleWith( reader.getDataModel() ) ) {
                     for ( CheckpointReader r : inputs ) {
@@ -106,12 +107,13 @@ public abstract class Executor implements Callable<Void> {
 
 
     CheckpointReader getReader( ActivityWrapper target, int toPort ) throws ExecutorException {
+        // TODO: multi-port
         DataEdge edge = workflow.getDataEdge( target.getId(), toPort );
         if ( edge == null || edge.getState() == EdgeState.INACTIVE ) {
             return null;
         }
         CheckpointReader reader = sm.readCheckpoint( edge.getFrom().getId(), edge.getFromPort() );
-        PortType toPortType = target.getDef().getInPortTypes()[toPort];
+        PortType toPortType = target.getDef().getInPortType( toPort );
         if ( !toPortType.couldBeCompatibleWith( reader.getDataModel() ) ) {
             reader.close();
             throw new ExecutorException( "Detected incompatible data models: " + toPortType.getDataModel() + " and " + reader.getDataModel() );

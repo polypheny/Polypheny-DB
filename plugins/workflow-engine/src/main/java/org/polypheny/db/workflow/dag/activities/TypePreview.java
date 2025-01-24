@@ -43,6 +43,7 @@ public abstract class TypePreview implements Wrapper {
     /**
      * Whether this type preview represents a missing input.
      * In other words, no edge is connected to that input.
+     * For any port (including multi-ports), at most 1 missing TypePreview may exist.
      *
      * @return true if the corresponding inpu is missing
      */

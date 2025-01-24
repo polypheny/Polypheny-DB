@@ -38,6 +38,7 @@ import org.polypheny.db.workflow.dag.activities.Activity.ControlStateMerger;
 import org.polypheny.db.workflow.dag.activities.impl.DocExtractActivity;
 import org.polypheny.db.workflow.dag.activities.impl.LpgExtractActivity;
 import org.polypheny.db.workflow.dag.settings.EntityValue;
+import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.engine.storage.StorageUtils;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
@@ -368,7 +369,9 @@ public class WorkflowUtils {
     public static Workflow getIncompatibleDynamicPortTypes( boolean canFuse, boolean canPipe ) throws JsonProcessingException {
         List<ActivityModel> activities = List.of(
                 new ActivityModel( "relValues" ),
-                new ActivityModel( "query", Map.of( "query", mapper.readTree( "{\"query\": \"SELECT * FROM {?0?}\", \"queryLanguage\": \"SQL\"}" ) ) ),
+                new ActivityModel( "query", Map.of( "query", mapper.readTree(
+                        "{\"query\": \"SELECT * FROM {?0?}\", \"queryLanguage\": {\"" + ReadableVariableStore.VARIABLE_REF_FIELD + "\": \"language\"}}"
+                ) ) ),
                 new ActivityModel( "identity" ),
                 new ActivityModel( "lpgIdentity" ) );
         List<EdgeModel> edges = List.of(
@@ -376,7 +379,27 @@ public class WorkflowUtils {
                 EdgeModel.of( activities.get( 1 ), activities.get( 2 ) ),
                 EdgeModel.of( activities.get( 2 ), activities.get( 3 ) )
         );
-        return getWorkflow( activities, edges, canFuse, canPipe, 1 );
+        Workflow wf = getWorkflow( activities, edges, canFuse, canPipe, 1 );
+        wf.updateVariables( Map.of( "language", TextNode.valueOf( "SQL" ) ) ); // required to make outType only known when executing
+        return wf;
+    }
+
+
+    public static Workflow getMultiInputWorkflow() {
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "relValues" ),
+                new ActivityModel( "relValues" ),
+                new ActivityModel( "relValues" ),
+                new ActivityModel( "relValues" ),
+                new ActivityModel( "relUnion" )
+        );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 4 ), 0 ),
+                EdgeModel.of( activities.get( 1 ), activities.get( 4 ), 1 ),
+                EdgeModel.of( activities.get( 2 ), activities.get( 4 ), 2 ),
+                EdgeModel.of( activities.get( 3 ), activities.get( 4 ), 3 )
+        );
+        return getWorkflow( activities, edges, false, false, 1 );
     }
 
 
@@ -420,7 +443,7 @@ public class WorkflowUtils {
 
 
     public static JsonNode getEntitySetting( String namespace, String name ) {
-        return new EntityValue( namespace, name ).toJson( mapper );
+        return new EntityValue( namespace, name ).toJson();
     }
 
 

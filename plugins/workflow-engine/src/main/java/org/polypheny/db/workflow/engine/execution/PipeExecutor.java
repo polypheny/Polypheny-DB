@@ -162,7 +162,7 @@ public class PipeExecutor extends Executor {
         ActivityWrapper wrapper = workflow.getActivity( root );
 
         List<ExecutionEdge> inEdges = execTree.getInwardEdges( root );
-        AlgDataType[] inTypes = new AlgDataType[wrapper.getDef().getInPorts().length];
+        AlgDataType[] inTypes = new AlgDataType[wrapper.getDef().getDynamicInPortCount( inEdges )];
         Long[] inCounts = new Long[inTypes.length];
         boolean isInnerNode = false;
         for ( ExecutionEdge edge : inEdges ) {
@@ -215,7 +215,7 @@ public class PipeExecutor extends Executor {
         assert writer == null;
 
         ActivityWrapper wrapper = workflow.getActivity( rootId );
-        DataModel model = wrapper.getDef().getOutPortTypes()[0].getDataModel( rootType );
+        DataModel model = wrapper.getDef().getOutPortType( 0 ).getDataModel( rootType );
         String store = wrapper.getConfig().getPreferredStore( 0 );
 
         System.out.println( "creating CheckpointWriterPipe for model " + model );
@@ -233,12 +233,12 @@ public class PipeExecutor extends Executor {
         for ( UUID currentId : TopologicalOrderIterator.of( execTree ) ) {
             ActivityWrapper wrapper = workflow.getActivity( currentId );
             List<ExecutionEdge> inEdges = execTree.getInwardEdges( currentId );
-            InputPipe[] inPipesArr = new InputPipe[wrapper.getDef().getInPorts().length];
+            InputPipe[] inPipesArr = new InputPipe[wrapper.getDef().getDynamicInPortCount( inEdges )];
             for ( ExecutionEdge edge : inEdges ) {
                 assert !edge.isControl() : "Execution tree for pipelining must not contain control edges";
                 QueuePipe inPipe = outQueues.get( edge.getSource() );
                 inPipesArr[edge.getToPort()] = inPipe;
-                if ( !wrapper.getDef().getInPortTypes()[edge.getToPort()].couldBeCompatibleWith( inPipe.getType() ) ) {
+                if ( !wrapper.getDef().getInPortType( edge.getToPort() ).couldBeCompatibleWith( inPipe.getType() ) ) {
                     new CloseableList( readers ).close(); // no need to close the QueryPipes, since they are not associated with a transaction
                     throw new ExecutorException( "Detected incompatible data models for input " + edge.getToPort() + " of " + wrapper.getType() );
                 }

@@ -159,9 +159,8 @@ class ActivityRegistryTest {
             Map<String, SettingValue> rebuiltSettings = ActivityRegistry.buildSettingValues( key, defaultSettings, true ).getMap();
             assertEquals( defaultSettings.size(), rebuiltSettings.size() );
 
-            ObjectMapper mapper = new ObjectMapper();
             for ( Entry<String, SettingValue> entry : rebuiltSettings.entrySet() ) {
-                JsonNode rebuiltJson = entry.getValue().toJson( mapper );
+                JsonNode rebuiltJson = entry.getValue().toJson();
                 assertEquals( defaultSettings.get( entry.getKey() ), rebuiltJson );
             }
         }

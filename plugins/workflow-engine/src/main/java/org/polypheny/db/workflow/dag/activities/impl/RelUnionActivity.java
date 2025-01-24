@@ -34,6 +34,8 @@ import org.polypheny.db.workflow.dag.activities.TypePreview.UnknownType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
+import org.polypheny.db.workflow.dag.annotations.BoolSetting;
+import org.polypheny.db.workflow.dag.settings.BoolValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
@@ -43,9 +45,11 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 @ActivityDefinition(type = "relUnion", displayName = "Relational Union", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
-        inPorts = { @InPort(type = PortType.REL), @InPort(type = PortType.REL) },
+        inPorts = { @InPort(type = PortType.REL), @InPort(type = PortType.REL, isMulti = true) },
         outPorts = { @OutPort(type = PortType.REL) }
 )
+
+@BoolSetting(key = "all", displayName = "Keep All", shortDescription = "Include duplicate rows in the result.", defaultValue = true)
 
 @SuppressWarnings("unused")
 public class RelUnionActivity implements Activity, Fusable, Pipeable {
@@ -54,10 +58,10 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
         TypePreview first = inTypes.get( 0 ), second = inTypes.get( 1 );
 
-        if ( first.isEmpty() || second.isEmpty() ) {
+        if ( inTypes.stream().anyMatch( TypePreview::isEmpty ) ) {
             return UnknownType.ofRel().asOutTypes();
         }
-        return TypePreview.ofType( ActivityUtils.mergeTypesOrThrow( List.of( first.getNullableType(), second.getNullableType() ) ) ).asOutTypes();
+        return TypePreview.ofType( ActivityUtils.mergeTypesOrThrow( inTypes.stream().map( TypePreview::getNullableType ).toList() ) ).asOutTypes();
     }
 
 
@@ -85,7 +89,7 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
-        return LogicalRelUnion.create( inputs, true );
+        return LogicalRelUnion.create( inputs, settings.get( "all", BoolValue.class ).getValue() );
     }
 
 }

@@ -241,7 +241,8 @@ public class WorkflowImpl implements Workflow {
     @Override
     public void recomputeInVariables( UUID activityId ) {
         ActivityWrapper wrapper = activities.get( activityId );
-        wrapper.getVariables().mergeInputStores( getInEdges( activityId ), wrapper.getDef().getInPorts().length, variables );
+        List<Edge> inEdges = getInEdges( activityId );
+        wrapper.getVariables().mergeInputStores( inEdges, wrapper.getDef().getDynamicInPortCount( inEdges ), variables );
     }
 
 
@@ -262,15 +263,28 @@ public class WorkflowImpl implements Workflow {
 
         for ( int i = 0; i < getInPortCount( activityId ); i++ ) {
             DataEdge dataEdge = getDataEdge( activityId, i );
-            if ( dataEdge == null ) {
-                inputTypes.add( MissingType.of() ); // not yet connected
-            } else if ( dataEdge.getState() == EdgeState.INACTIVE ) {
-                inputTypes.add( InactiveType.of() );
-            } else {
-                inputTypes.add( dataEdge.getFrom().getOutTypePreview().get( dataEdge.getFromPort() ) );
+            inputTypes.add( getTypePreview( dataEdge ) );
+            if ( dataEdge != null && dataEdge.isMulti() ) {
+                // the first of possibly several multi-edges
+                int multiIdx = i + 1;
+                DataEdge multiEdge = getDataEdge( activityId, multiIdx );
+                while ( multiEdge != null ) {
+                    inputTypes.add( getTypePreview( multiEdge ) );
+                    multiEdge = getDataEdge( activityId, ++multiIdx );
+                }
             }
         }
         return Collections.unmodifiableList( inputTypes );
+    }
+
+
+    private TypePreview getTypePreview( DataEdge dataEdge ) {
+        if ( dataEdge == null ) {
+            return MissingType.of(); // not yet connected
+        } else if ( dataEdge.getState() == EdgeState.INACTIVE ) {
+            return InactiveType.of();
+        }
+        return dataEdge.getFrom().getOutTypePreview().get( dataEdge.getFromPort() );
     }
 
 
@@ -388,6 +402,20 @@ public class WorkflowImpl implements Workflow {
         // The occupation validation is performed before execution.
 
         Edge edge = Edge.fromModel( model, activities );
+        if ( edge instanceof DataEdge dataEdge && dataEdge.isMulti() ) {
+            for ( Edge e : getInEdges( model.getToId() ) ) {
+                if ( e instanceof DataEdge de && de.isMulti() && de.getFrom().getId().equals( model.getFromId() )
+                        && de.getFromPort() == model.getFromPort() ) {
+                    throw new GenericRuntimeException( "Cannot add the same edge more than once to a multi inPort." );
+                }
+            }
+            if ( !dataEdge.isFirstMulti() ) {
+                DataEdge previous = getDataEdge( model.getToId(), model.getToPort() - 1 );
+                if ( previous == null ) {
+                    throw new GenericRuntimeException( "Cannot add an edge to a multi inPort which is out of order." );
+                }
+            }
+        }
         edges.computeIfAbsent( model.toPair(), k -> new ArrayList<>() ).add( edge );
 
         if ( !(new CycleDetector<>( toDag() ).findCycles().isEmpty()) ) {
@@ -407,6 +435,16 @@ public class WorkflowImpl implements Workflow {
             return;
         }
         edgeList.remove( edge );
+        if ( edge instanceof DataEdge dataEdge && dataEdge.isMulti() ) {
+            int nextIdx = model.getToPort() + 1;
+            DataEdge nextEdge = getDataEdge( model.getToId(), nextIdx );
+            while ( nextEdge != null ) {
+                edges.get( nextEdge.toPair() ).remove( nextEdge );
+                DataEdge movedEdge = DataEdge.of( nextEdge, nextIdx - 1 );
+                edges.get( movedEdge.toPair() ).add( movedEdge );
+                nextEdge = getDataEdge( model.getToId(), ++nextIdx );
+            }
+        }
         reset( edge.getTo().getId(), sm );
     }
 
@@ -513,12 +551,16 @@ public class WorkflowImpl implements Workflow {
 
             Set<Integer> requiredInPorts = wrapper.getDef().getRequiredInPorts();
             Set<Integer> occupiedInPorts = new HashSet<>();
+            Set<Integer> multiInPortIndices = new HashSet<>();
             for ( ExecutionEdge execEdge : subDag.getInwardEdges( n ) ) {
                 ActivityWrapper source = getActivity( execEdge.getSource() );
                 CommonType sourceType = source.getConfig().getCommonType();
 
                 if ( !execEdge.isControl() ) {
                     int toPort = execEdge.getToPort();
+                    if ( wrapper.getDef().getInPort( toPort ).isMulti() ) {
+                        multiInPortIndices.add( toPort ); // throws null-pointer if port too high and not multi-port
+                    }
 
                     requiredInPorts.remove( toPort );
 
@@ -548,13 +590,22 @@ public class WorkflowImpl implements Workflow {
                 }
 
             }
-            if ( !requiredInPorts.isEmpty() && wrapper.getState() != ActivityState.SAVED ) { // already saved activities do not need their predecessors in the subDag
-                throw new IllegalStateException( "Activity is missing the required data input(s) " + requiredInPorts + ": " + wrapper );
+
+            if ( wrapper.getState() != ActivityState.SAVED ) { // already saved activities do not need their predecessors in the subDag
+                if ( !requiredInPorts.isEmpty() ) {
+                    throw new IllegalStateException( "Activity is missing the required data input(s) " + requiredInPorts + ": " + wrapper );
+                }
+                if ( !multiInPortIndices.isEmpty() ) {
+                    int multiIdx = wrapper.getDef().getInPorts().length - 1;
+                    for ( int i = multiIdx; i < multiIdx + multiInPortIndices.size(); i++ ) {
+                        if ( !multiInPortIndices.contains( i ) ) {
+                            throw new IllegalStateException( "Multi-InPort indices must be in consecutive order, but " + i + "is missing for " + wrapper );
+                        }
+                    }
+                }
+
             }
         }
-
-        // compatible settings ?
-
     }
 
 

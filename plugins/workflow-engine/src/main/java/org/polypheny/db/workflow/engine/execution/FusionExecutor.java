@@ -86,10 +86,11 @@ public class FusionExecutor extends Executor {
             root = AlgRoot.of( pair.left, Kind.SELECT );
             estimatedTupleCount = pair.right;
         } catch ( Exception e ) {
+            e.printStackTrace();
             throw new ExecutorException( e );
         }
         DataModel model = root.getModel().dataModel();
-        PortType definedType = rootWrapper.getDef().getOutPortTypes()[0];
+        PortType definedType = rootWrapper.getDef().getOutPortType( 0 );
         if ( !definedType.couldBeCompatibleWith( model ) ) {
             throw new ExecutorException( "The data model of the fused AlgNode tree (" + model + ") is incompatible with the defined outPort type (" + definedType + ") of the root activity: " + execTree );
         }
@@ -148,7 +149,7 @@ public class FusionExecutor extends Executor {
     private Pair<AlgNode, Long> constructAlgNode( UUID root, AlgCluster cluster, Transaction transaction ) throws Exception {
         ActivityWrapper wrapper = workflow.getActivity( root );
         List<ExecutionEdge> inEdges = execTree.getInwardEdges( root );
-        AlgNode[] inputsArr = new AlgNode[wrapper.getDef().getInPorts().length];
+        AlgNode[] inputsArr = new AlgNode[wrapper.getDef().getDynamicInPortCount( inEdges )];
         Long[] inCountsArr = new Long[inputsArr.length];
         for ( ExecutionEdge edge : inEdges ) {
             assert !edge.isControl() : "Execution tree for fusion must not contain control edges";
@@ -156,7 +157,7 @@ public class FusionExecutor extends Executor {
             inputsArr[edge.getToPort()] = pair.left;
             inCountsArr[edge.getToPort()] = pair.right;
 
-            PortType toPortType = wrapper.getDef().getInPortTypes()[edge.getToPort()];
+            PortType toPortType = wrapper.getDef().getInPortType( edge.getToPort() );
             DataModel fromModel = pair.left.getModel();
             if ( !toPortType.couldBeCompatibleWith( fromModel ) ) {
                 throw new ExecutorException( "Detected incompatible data models for " + wrapper.getType() + ": " + toPortType.getDataModel() + " and " + fromModel );

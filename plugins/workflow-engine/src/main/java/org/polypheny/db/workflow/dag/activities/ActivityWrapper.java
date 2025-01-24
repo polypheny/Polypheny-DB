@@ -112,18 +112,22 @@ public class ActivityWrapper {
                 type, store.resolveAvailableVariables( serializableSettings ) );
         settingsPreview = built.left;
         invalidSettings = built.right;
+        ActivityDef def = getDef();
 
         try {
             invalidStateReason = null;
             outTypePreview = activity.previewOutTypes( inTypePreviews, settingsPreview );
 
             // check for missing inputs to warn the user immediately
-            for ( Pair<TypePreview, InPortDef> pair : Pair.zip( inTypePreviews, Arrays.asList( getDef().getInPorts() ) ) ) {
-                if ( pair.left.isMissing() && !pair.right.isOptional() ) {
-                    throw new InvalidInputException( "Required input is missing", inTypePreviews.indexOf( pair.left ) );
+            for ( int i = 0; i < inTypePreviews.size(); i++ ) {
+                TypePreview preview = inTypePreviews.get( i );
+                InPortDef port = def.getInPort( i );
+                if ( preview.isMissing() && !port.isOptional() ) {
+                    throw new InvalidInputException( "Required input is missing", inTypePreviews.indexOf( preview ) );
                 }
-                if ( !pair.right.getType().couldBeCompatibleWith( pair.left ) ) {
-                    throw new InvalidInputException( "Input type " + pair.left.getDataModel() + " is incompatible with defined port type " + pair.right.getType(), inTypePreviews.indexOf( pair.left ) );
+                if ( !port.getType().couldBeCompatibleWith( preview ) ) {
+                    throw new InvalidInputException( "Input type " + preview.getDataModel() + " is incompatible with defined port type " + port.getType(),
+                            inTypePreviews.indexOf( preview ) );
                 }
             }
         } catch ( InvalidSettingException e ) {
@@ -160,12 +164,12 @@ public class ActivityWrapper {
 
 
     public List<TypePreviewModel> getInTypeModels() {
-        return TypePreviewModel.of( inTypePreview, getDef().getInPortTypes() );
+        return TypePreviewModel.of( inTypePreview, getDef(), true );
     }
 
 
     public List<TypePreviewModel> getOutTypeModels() {
-        return TypePreviewModel.of( outTypePreview, getDef().getOutPortTypes() );
+        return TypePreviewModel.of( outTypePreview, getDef(), false );
     }
 
 
@@ -179,7 +183,7 @@ public class ActivityWrapper {
 
 
     public EdgeState canExecute( List<Edge> inEdges ) {
-        EdgeState[] dataEdges = new EdgeState[getDef().getInPorts().length];
+        EdgeState[] dataEdges = new EdgeState[getDef().getDynamicInPortCount( inEdges )];
         List<EdgeState> successEdges = new ArrayList<>();
         List<EdgeState> failEdges = new ArrayList<>();
         for ( Edge edge : inEdges ) {

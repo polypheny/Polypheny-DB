@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,8 +36,11 @@ import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.AdvancedGroup;
 import org.polypheny.db.workflow.dag.annotations.DefaultGroup;
+import org.polypheny.db.workflow.dag.edges.DataEdge;
+import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.settings.GroupDef;
 import org.polypheny.db.workflow.dag.settings.SettingDef;
+import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 
 @Value
 public class ActivityDef {
@@ -79,8 +83,71 @@ public class ActivityDef {
 
 
     @JsonIgnore
-    public PortType[] getInPortTypes() {
-        return Arrays.stream( inPorts ).map( InPortDef::getType ).toArray( PortType[]::new );
+    public boolean hasMultiInPort() {
+        return inPorts.length > 0 && inPorts[inPorts.length - 1].isMulti;
+    }
+
+
+    @JsonIgnore
+    public int getDynamicInPortCount( Collection<Edge> inEdges ) {
+        int count = (int) inEdges.stream().filter(
+                e -> e instanceof DataEdge d && d.isMulti()
+        ).count();
+        return inPorts.length + Math.max( 0, count - 1 ); // - 1 to avoid counting first multi twice
+    }
+
+
+    @JsonIgnore
+    public int getDynamicInPortCount( List<ExecutionEdge> inEdges ) {
+        int count = inPorts.length;
+        if ( !hasMultiInPort() ) {
+            return count;
+        }
+        for ( ExecutionEdge edge : inEdges ) {
+            if ( !edge.isControl() && edge.getToPort() >= inPorts.length ) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+
+    /**
+     * This method is preferred to {@code getInPorts()[index]},
+     * as it takes multi-ports into account.
+     *
+     * @param index The index of the connection. If the activity has a multi-port, the index can be arbitrarily large.
+     * @return the InPortDef for the port corresponding to the index
+     */
+    @JsonIgnore
+    public InPortDef getInPort( int index ) {
+        if ( index >= inPorts.length ) {
+            InPortDef port = inPorts[inPorts.length - 1];
+            if ( !port.isMulti() ) {
+                throw new IndexOutOfBoundsException();
+            }
+            return port;
+        }
+        return inPorts[index];
+    }
+
+
+    /**
+     * This method is preferred to {@code getInPortTypes()[index]},
+     * as it takes multi-ports into account.
+     *
+     * @param index The index of the connection. If the activity has a multi-port, the index can be arbitrarily large
+     * @return the PortType for the InPort corresponding to the index.
+     */
+    @JsonIgnore
+    public PortType getInPortType( int index ) {
+        return getInPort( index ).getType();
+    }
+
+
+    @JsonIgnore
+    public PortType getOutPortType( int index ) {
+        return outPorts[index].getType();
     }
 
 
@@ -123,12 +190,15 @@ public class ActivityDef {
 
         @Getter(AccessLevel.NONE)
         boolean isOptional;
+        @Getter(AccessLevel.NONE)
+        boolean isMulti;
 
 
         private InPortDef( InPort inPort ) {
             type = inPort.type();
             description = inPort.description();
             isOptional = inPort.isOptional();
+            isMulti = inPort.isMulti();
         }
 
 
@@ -138,8 +208,18 @@ public class ActivityDef {
         }
 
 
+        @JsonProperty("isMulti")
+        public boolean isMulti() {
+            return isMulti;
+        }
+
+
         public static InPortDef[] fromAnnotations( InPort[] inPorts ) {
-            return Arrays.stream( inPorts ).map( InPortDef::new ).toArray( InPortDef[]::new );
+            InPortDef[] defs = Arrays.stream( inPorts ).map( InPortDef::new ).toArray( InPortDef[]::new );
+            for ( int i = 0; i < defs.length - 1; i++ ) {
+                assert !defs[i].isMulti : "Only the last InPort can set isMulti to true";
+            }
+            return defs;
         }
 
     }

@@ -60,7 +60,14 @@ public @interface ActivityDefinition {
          */
         String description() default "";
 
-        boolean isOptional() default false; // TODO: isOptional currently has no effect
+        boolean isOptional() default false;
+
+        /**
+         * If true, allows for arbitrary many connections to this port.
+         * Depending on isOptional, the minimum connections is either 0 or 1.
+         * Only the last InPort may set isMulti to true.
+         */
+        boolean isMulti() default false;
 
     }
 

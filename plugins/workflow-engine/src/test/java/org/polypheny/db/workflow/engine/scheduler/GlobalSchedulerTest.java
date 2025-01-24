@@ -452,6 +452,14 @@ class GlobalSchedulerTest {
 
 
     @Test
+    void multiInputTest() throws Exception {
+        Workflow workflow = WorkflowUtils.getMultiInputWorkflow();
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        executeAllAndCheck( workflow, ids );
+    }
+
+
+    @Test
     @Disabled
         // TODO: delete when no longer required
     void exportTestWorkflows() throws Exception {

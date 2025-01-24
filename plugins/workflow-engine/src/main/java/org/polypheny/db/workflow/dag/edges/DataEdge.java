@@ -25,13 +25,22 @@ import org.polypheny.db.workflow.models.EdgeModel;
 public class DataEdge extends Edge {
 
     private final int fromPort;
-    private final int toPort;
+    private final int toPort; // for multi InPorts: does not have to be < inPorts.length
+    private final boolean isMulti;
 
 
     public DataEdge( ActivityWrapper from, ActivityWrapper to, int fromPort, int toPort ) {
         super( from, to );
         this.fromPort = fromPort;
         this.toPort = toPort;
+        this.isMulti = to.getDef().getInPort( toPort ).isMulti();
+    }
+
+
+    public static DataEdge of( DataEdge nextEdge, int toPort ) {
+        DataEdge edge = new DataEdge( nextEdge.getFrom(), nextEdge.getTo(), nextEdge.getFromPort(), toPort );
+        edge.setState( nextEdge.getState() );
+        return edge;
     }
 
 
@@ -48,17 +57,22 @@ public class DataEdge extends Edge {
 
 
     public PortType getFromPortType() {
-        return from.getDef().getOutPortTypes()[fromPort];
+        return from.getDef().getOutPortType( fromPort );
     }
 
 
     public PortType getToPortType() {
-        return to.getDef().getInPortTypes()[toPort];
+        return to.getDef().getInPortType( toPort );
     }
 
 
     public boolean isCompatible() {
         return getFromPortType().couldBeCompatibleWith( getToPortType() ); // only detects static incompatibilities, ANY is always okay
+    }
+
+
+    public boolean isFirstMulti() {
+        return isMulti && toPort == to.getDef().getInPorts().length - 1;
     }
 
 

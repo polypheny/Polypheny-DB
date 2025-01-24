@@ -26,6 +26,7 @@ import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.webui.models.catalog.FieldDefinition;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
+import org.polypheny.db.workflow.dag.activities.ActivityDef;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 
 @Value
@@ -68,11 +69,11 @@ public class TypePreviewModel {
     }
 
 
-    public static List<TypePreviewModel> of( List<TypePreview> previews, PortType[] portTypes ) {
+    public static List<TypePreviewModel> of( List<TypePreview> previews, ActivityDef def, boolean isInPreview ) {
         List<TypePreviewModel> models = new ArrayList<>();
-        for ( int i = 0; i < portTypes.length; i++ ) {
-            PortType portType = portTypes[i];
+        for ( int i = 0; i < previews.size(); i++ ) {
             TypePreview preview = previews.get( i );
+            PortType portType = isInPreview ? def.getInPortType( i ) : def.getOutPortType( i );
             if ( portType == PortType.ANY && preview.getDataModel() != null ) {
                 portType = PortType.fromDataModel( preview.getDataModel() );
             }
