@@ -1244,7 +1244,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
 
             // change default value
-            if ( oldColumn.defaultValue == null || newColumn.defaultValue == null || !oldColumn.defaultValue.equals( newColumn.defaultValue ) ) {
+            if ( !Objects.equals( oldColumn.defaultValue, newColumn.defaultValue ) ) {
                 String query;
                 if ( newColumn.defaultValue == null ) {
                     query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" DROP DEFAULT", tableId, newColumn.name );
@@ -1292,9 +1292,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .transactionManager( transactionManager )
                             .build(), UIRequest.builder().build() ).get( 0 );
             ctx.json( result );
+            if ( result.error != null ) {
+                break;
+            }
         }
-
-
     }
 
 
