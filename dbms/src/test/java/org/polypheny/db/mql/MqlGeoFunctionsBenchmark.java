@@ -75,11 +75,11 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
     }
 
 
-//    default: 34.92757623762376ms
-//    mongo: 11.864550495049505ms
+    // 100 runs
+    //    default: 24.285108ms
+    //    mongo: 8.393663ms
     @Test
     public void docGeoWithinPerformanceTst() {
-        List<DocResult> results;
         String insertMany = generateInsertTestDataQueries( 100 );
         String geoWithinBox = """
                 db.%s.find({
@@ -94,6 +94,49 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
                 })
                 """;
         benchmarkQueries( Arrays.asList( insertMany, geoWithinBox ) );
+    }
+
+
+    // 100 runs
+    //    default: 31.133715000000002ms
+    //    mongo: 9.54054ms
+    @Test
+    public void docGeoIntersectsPerformanceTst() {
+        String insertMany = generateInsertTestDataQueries( 100 );
+        String geoIntersects = """
+                db.%s.find({
+                    location: {
+                       $geoIntersects: {
+                          $geometry: {
+                              type: "Polygon",
+                              coordinates: [[ [0,0], [0,10], [10,10], [10,0], [0,0] ]]
+                          }
+                       }
+                    }
+                })
+                """;
+        benchmarkQueries( Arrays.asList( insertMany, geoIntersects ) );
+    }
+    
+    // 100 runs
+    //    default: 19.415951ms
+    //    mongo: 8.168845ms
+    @Test
+    public void docGeoWithinCenterSpherePerformanceTst() {
+        String insertMany = generateInsertTestDataQueries( 100 );
+        String geoIntersects = """
+                db.%s.find({
+                    location: {
+                       $geoWithin: {
+                             $centerSphere: [
+                                [7.5872232, 47.5601937],
+                                0.00004
+                             ]
+                        }
+                    }
+                })
+                """;
+        benchmarkQueries( Arrays.asList( insertMany, geoIntersects ) );
     }
 
 
@@ -163,13 +206,13 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
                     long startTime = System.nanoTime();
                     // Use for verification
                     DocResult finalResult = execute( query, namespace );
-                    if (runs == runCount){
+                    if ( runs == runCount ) {
 //                        System.out.println( finalResult.toString() );
                     }
 
                     long endTime = System.nanoTime();
                     durationMs = (endTime - startTime) / 1_000_000.0;
-                    if (j >= warmUpRuns){
+                    if ( j >= warmUpRuns ) {
                         durations.add( durationMs );
                     }
                 }
