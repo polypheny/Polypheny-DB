@@ -32,6 +32,8 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
+import org.polypheny.db.workflow.engine.execution.context.FuseExecutionContext;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
@@ -79,7 +81,8 @@ public interface Fusable extends Activity {
                 inputs.stream().map( CheckpointReader::getTupleCount ).toList(),
                 () -> transaction );
 
-        AlgRoot root = AlgRoot.of( fuse( inNodes, settings, cluster ), Kind.SELECT );
+        FuseExecutionContext fuseCtx = (ExecutionContextImpl) ctx;
+        AlgRoot root = AlgRoot.of( fuse( inNodes, settings, cluster, fuseCtx ), Kind.SELECT );
 
         if ( !QueryUtils.validateAlg( root, false, null ) ) {
             ctx.throwException( "The fused AlgNode tree may not perform data manipulation" );
@@ -117,8 +120,9 @@ public interface Fusable extends Activity {
      * @param inputs A list of logical input AlgNodes. For relational inputs, the first column contains the primary key. Make sure to remove unnecessary primary key columns, for instance when joining 2 tables. For inactive edges, the AlgNode is null (important for non-default DataStateMergers).
      * @param settings The resolved settings
      * @param cluster the AlgCluster that is used for the construction of the query plan
+     * @param ctx ExecutionContext to be used for logging
      * @return The created logical AlgNode. In case of a relational result, its tuple type has the first column reserved for the primary key. It can be left empty.
      */
-    AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception;
+    AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster, FuseExecutionContext ctx ) throws Exception;
 
 }

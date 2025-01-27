@@ -54,6 +54,7 @@ import org.polypheny.db.workflow.dag.settings.IntValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.FuseExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
@@ -103,7 +104,9 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
         Random random = fixSeed ? new Random( 42 ) : new Random();
         for ( int i = 0; i < n; i++ ) {
             PolyDocument doc = getValue( random );
-            output.put( doc );
+            if (!output.put( doc )) {
+                break;
+            }
         }
     }
 
@@ -115,7 +118,7 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
+    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster, FuseExecutionContext ctx ) throws Exception {
         List<PolyDocument> values = getValues(
                 settings.get( "count", IntValue.class ).getValue(),
                 settings.get( "fixSeed", BoolValue.class ).getValue()

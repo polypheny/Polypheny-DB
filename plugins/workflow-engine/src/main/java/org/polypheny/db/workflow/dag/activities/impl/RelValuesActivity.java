@@ -26,10 +26,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgCluster;
-import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -53,6 +51,7 @@ import org.polypheny.db.workflow.dag.settings.IntValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.FuseExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
@@ -113,13 +112,15 @@ public class RelValuesActivity implements Activity, Fusable, Pipeable {
         Random random = fixSeed ? new Random( 42 ) : new Random();
         for ( int i = 0; i < n; i++ ) {
             List<PolyValue> tuple = getValue( random );
-            output.put( tuple );
+            if (!output.put( tuple )) {
+                break;
+            }
         }
     }
 
 
     @Override
-    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
+    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster, FuseExecutionContext ctx ) throws Exception {
         List<List<PolyValue>> values = getValues(
                 settings.get( "rowCount", IntValue.class ).getValue(),
                 settings.get( "fixSeed", BoolValue.class ).getValue()
@@ -135,13 +136,12 @@ public class RelValuesActivity implements Activity, Fusable, Pipeable {
 
 
     private static AlgDataType getType() {
-        AlgDataTypeFactory typeFactory = AlgDataTypeFactory.DEFAULT;
-        return typeFactory.builder()
-                .add( null, StorageManager.PK_COL, null, typeFactory.createPolyType( PolyType.BIGINT ) )
-                .add( null, "name", null, typeFactory.createPolyType( PolyType.VARCHAR, 50 ) )
-                .add( null, "lastName", null, typeFactory.createPolyType( PolyType.VARCHAR, 50 ) )
-                .add( null, "age", null, typeFactory.createPolyType( PolyType.INTEGER ) )
-                .add( null, "salary", null, typeFactory.createPolyType( PolyType.INTEGER ) )
+        return factory.builder()
+                .add( null, StorageManager.PK_COL, null, factory.createPolyType( PolyType.BIGINT ) )
+                .add( null, "name", null, factory.createPolyType( PolyType.VARCHAR, 50 ) )
+                .add( null, "lastname", null, factory.createPolyType( PolyType.VARCHAR, 50 ) )
+                .add( null, "age", null, factory.createPolyType( PolyType.INTEGER ) )
+                .add( null, "salary", null, factory.createPolyType( PolyType.INTEGER ) )
                 .build();
     }
 
@@ -166,7 +166,6 @@ public class RelValuesActivity implements Activity, Fusable, Pipeable {
 
 
     private static ImmutableList<ImmutableList<RexLiteral>> toRexLiterals( AlgDataType tupleType, List<List<PolyValue>> rows ) {
-        RexBuilder builder = new RexBuilder( AlgDataTypeFactory.DEFAULT );
         List<ImmutableList<RexLiteral>> records = new ArrayList<>();
         List<AlgDataType> fieldTypes = tupleType.getFields().stream().map( AlgDataTypeField::getType ).toList();
         for ( final List<PolyValue> row : rows ) {

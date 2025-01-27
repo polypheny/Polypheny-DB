@@ -41,4 +41,9 @@ public interface InputPipe extends Iterable<List<PolyValue>> {
     @Override
     Iterator<List<PolyValue>> iterator();
 
+    /**
+     * A consumer can call this method to notify the producer that no more values need to be produced.
+     */
+    void finishIteration();
+
 }

@@ -18,9 +18,11 @@ package org.polypheny.db.workflow.dag.activities;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
@@ -33,10 +35,12 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidInputException;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 
@@ -115,6 +119,18 @@ public class ActivityUtils {
     }
 
 
+    /**
+     * Concatenates the specified types and uniquifies them.
+     */
+    public static AlgDataType concatTypes( AlgDataType first, AlgDataType second ) {
+        return factory.builder()
+                .addAll( first.getFields() )
+                .addAll( second.getFields() )
+                .uniquify()
+                .build();
+    }
+
+
     public static AlgDataType mergeTypesOrThrow( List<AlgDataType> types ) throws InvalidInputException {
         // all inputs must not be null!
         AlgDataType type = AlgDataTypeFactory.DEFAULT.leastRestrictive( types );
@@ -132,6 +148,28 @@ public class ActivityUtils {
             case ANY, DOCUMENT, GRAPH, NODE, EDGE, PATH -> value.toPolyJson();
             default -> PolyString.convert( value );
         };
+    }
+
+
+    public static List<Integer> getRegexMatches( String regex, List<String> candidates ) {
+        return getRegexMatches( Pattern.compile( regex ), candidates );
+    }
+
+
+    public static List<Integer> getRegexMatches( Pattern pattern, List<String> candidates ) {
+        List<Integer> matches = new ArrayList<>();
+        for ( int i = 0; i < candidates.size(); i++ ) {
+            if ( pattern.matcher( candidates.get( i ) ).matches() ) {
+                matches.add( i );
+            }
+        }
+        return Collections.unmodifiableList( matches );
+    }
+
+
+    public static RexLiteral getRexLiteral( int i ) {
+        PolyValue value = PolyInteger.of( i );
+        return new RexLiteral( value, factory.createPolyType( value.type ), value.type );
     }
 
 
@@ -192,6 +230,7 @@ public class ActivityUtils {
      */
     public static class AnyToRelPipe extends TuplePipe {
 
+        // in the future, this could become more elaborate
         private static final Map<PolyType, PolyType> TYPE_MAP = Map.of(
                 PolyType.ANY, PolyType.TEXT,
                 PolyType.DOCUMENT, PolyType.TEXT,

@@ -22,6 +22,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.polypheny.db.workflow.dag.settings.SettingDef;
+import org.polypheny.db.workflow.dag.settings.StringSettingDef.AutoCompleteType;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -67,7 +68,6 @@ public @interface StringSetting {
     // String-specific settings
     String defaultValue() default "";
 
-    boolean isList() default false;  // results in values of type ListValue<StringValue> if true.
 
     /**
      * The minimum length of the string (inclusive)
@@ -78,6 +78,15 @@ public @interface StringSetting {
      * The maximum length of the string (exclusive)
      */
     int maxLength() default Integer.MAX_VALUE;
+
+
+    AutoCompleteType autoCompleteType() default AutoCompleteType.NONE;
+
+    /**
+     * The input to use for autoComplete hints.
+     * Only has an effect if autoCompleteType != NONE.
+     */
+    int autoCompleteInput() default 0;
 
 
     @Target(ElementType.TYPE)

@@ -37,8 +37,10 @@ import org.polypheny.db.util.Wrapper;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
+import org.polypheny.db.workflow.dag.annotations.CollationSetting;
 import org.polypheny.db.workflow.dag.annotations.DoubleSetting;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
+import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.annotations.QuerySetting;
@@ -184,6 +186,14 @@ public abstract class SettingDef {
                 settings.add( new FieldSelectSettingDef( a ) );
             } else if ( annotation instanceof FieldSelectSetting.List a ) {
                 Arrays.stream( a.value() ).forEach( el -> settings.add( new FieldSelectSettingDef( el ) ) );
+            } else if ( annotation instanceof EnumSetting a ) {
+                settings.add( new EnumSettingDef( a ) );
+            } else if ( annotation instanceof EnumSetting.List a ) {
+                Arrays.stream( a.value() ).forEach( el -> settings.add( new EnumSettingDef( el ) ) );
+            } else if ( annotation instanceof CollationSetting a ) {
+                settings.add( new CollationSettingDef( a ) );
+            } else if ( annotation instanceof CollationSetting.List a ) {
+                Arrays.stream( a.value() ).forEach( el -> settings.add( new CollationSettingDef( el ) ) );
             }
         }
         return settings;
@@ -213,7 +223,8 @@ public abstract class SettingDef {
         BOOLEAN,
         DOUBLE,
         QUERY,
-        FIELD_SELECT
+        ENUM,
+        COLLATION, FIELD_SELECT
     }
 
 
@@ -298,13 +309,36 @@ public abstract class SettingDef {
         }
 
 
-        public <T extends SettingValue> Optional<T> get( String key, Class<T> clazz ) {
-            return map.get( key ).map( value -> value.unwrapOrThrow( clazz ) );
+        public boolean allPresent() {
+            return map.values().stream().allMatch( Optional::isPresent );
+        }
+
+
+        public boolean keysPresent( String... keys ) {
+            for ( String key : keys ) {
+                if ( !map.containsKey( key ) || map.get( key ).isEmpty() ) {
+                    return false;
+                }
+            }
+            return true;
         }
 
 
         public Optional<SettingValue> get( String key ) {
             return map.get( key );
+        }
+
+
+        public <T extends SettingValue> Optional<T> get( String key, Class<T> clazz ) {
+            return map.get( key ).map( value -> value.unwrapOrThrow( clazz ) );
+        }
+
+
+        /**
+         * Useful in combination with {@code keysPresent()} or {@code allPresent()}.
+         */
+        public <T extends SettingValue> T getOrThrow( String key, Class<T> clazz ) {
+            return get( key, clazz ).orElseThrow();
         }
 
     }

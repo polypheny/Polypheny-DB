@@ -83,12 +83,6 @@ public class RelMergeActivity implements Activity {
 
 
     @Override
-    public void reset() {
-
-    }
-
-
-    @Override
     public DataStateMerger getDataStateMerger() {
         return DataStateMerger.OR;
     }

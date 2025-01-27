@@ -119,6 +119,7 @@ public class PipeExecutor extends Executor {
                         hasDetectedAbort = true;
                         futures.forEach( future -> future.cancel( true ) ); // ensure all remaining tasks are cancelled
                         abortReason = new ExecutorException( e.getCause() );
+                        e.printStackTrace();
                     }
                     // only the first task to throw an exception is relevant
                 } catch ( CancellationException ignored ) {
@@ -136,7 +137,9 @@ public class PipeExecutor extends Executor {
         if ( abortReason != null ) {
             throw abortReason; // we only throw now to ensure threads are all shut down.
         }
-        info.setTuplesWritten( writer.getWriteCount() );
+        if (writer != null) {
+            info.setTuplesWritten( writer.getWriteCount() );
+        }
     }
 
 

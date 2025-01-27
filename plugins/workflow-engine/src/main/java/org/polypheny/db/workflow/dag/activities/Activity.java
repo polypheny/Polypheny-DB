@@ -22,6 +22,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -33,6 +34,7 @@ import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 public interface Activity {
+    AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
 
     /**
      * This method computes the output tuple-types by considering (a preview of) input types and settings.

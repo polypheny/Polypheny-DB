@@ -43,6 +43,7 @@ import org.polypheny.db.workflow.dag.settings.FieldSelectValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.FuseExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
@@ -51,7 +52,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 @ActivityDefinition(type = "reorderCols", displayName = "Select / Reorder Columns", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
         inPorts = { @InPort(type = PortType.REL, description = "The input table") },
-        outPorts = { @OutPort(type = PortType.REL, description = "A Table containing the selected subset of columns from the input table in the specified order.") },
+        outPorts = { @OutPort(type = PortType.REL, description = "A table containing the selected subset of columns from the input table in the specified order.") },
         shortDescription = "Select and reorder the columns of the input table."
 )
 @FieldSelectSetting(key = "cols", displayName = "Columns", reorder = true, defaultAll = true,
@@ -79,7 +80,7 @@ public class ReorderColsActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
+    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster, FuseExecutionContext ctx ) throws Exception {
         AlgDataType type = getOutType( inputs.get( 0 ).getTupleType(), settings.get( "cols", FieldSelectValue.class ) );
         List<Integer> inCols = type.getFieldNames().stream().map(
                 name -> inputs.get( 0 ).getTupleType().getFieldNames().indexOf( name )
@@ -103,7 +104,10 @@ public class ReorderColsActivity implements Activity, Fusable, Pipeable {
         ).toList();
 
         for ( List<PolyValue> row : inputs.get( 0 ) ) {
-            output.put( inCols.stream().map( row::get ).toList() );
+            if (!output.put( inCols.stream().map( row::get ).toList() )) {
+                inputs.forEach( InputPipe::finishIteration );
+                break;
+            }
         }
     }
 

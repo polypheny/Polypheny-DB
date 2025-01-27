@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringJoiner;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
@@ -63,7 +62,6 @@ public class VariableToRowActivity implements Activity {
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
         Map<String, JsonNode> variables = ctx.getVariableStore().getVariables();
         Builder builder = factory.builder().add( StorageManager.PK_FIELD );
         List<PolyValue> row = new ArrayList<>( List.of( PolyInteger.of( 0 ) ) );

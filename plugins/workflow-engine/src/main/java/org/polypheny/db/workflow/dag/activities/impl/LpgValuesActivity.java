@@ -111,7 +111,9 @@ public class LpgValuesActivity implements Activity, Pipeable {
         for ( int i = 0; i < n; i++ ) {
             PolyNode node = getNode( random );
             nodeIds.add( node.id );
-            output.put( node );
+            if (!output.put( node )) {
+                return;
+            }
         }
 
         if ( edgeDensity > 0 && n > 1 ) {
@@ -122,7 +124,9 @@ public class LpgValuesActivity implements Activity, Pipeable {
                     do {
                         target = random.nextInt( n );
                     } while ( target == i );
-                    output.put( getEdge( nodeIds, i, target ) );
+                    if (!output.put( getEdge( nodeIds, i, target ) )) {
+                        return;
+                    }
                 }
             }
         }

@@ -51,6 +51,7 @@ import org.polypheny.db.workflow.dag.settings.EntityValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.FuseExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
@@ -90,7 +91,7 @@ public class DocExtractActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
+    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster, FuseExecutionContext ctx ) throws Exception {
         LogicalCollection collection = settings.get( COLL_KEY, EntityValue.class ).getCollection();
         AlgTraitSet traits = cluster.traitSetOf( ModelTrait.DOCUMENT );
         return new LogicalDocumentScan( cluster, traits, collection );
@@ -128,7 +129,9 @@ public class DocExtractActivity implements Activity, Fusable, Pipeable {
         try ( ResultIterator result = getResultIterator( ctx.getTransaction(), collection ) ) { // transaction will get committed or rolled back externally
             Iterator<List<PolyValue>> it = CheckpointReader.arrayToListIterator( result.getIterator(), true );
             while ( it.hasNext() ) {
-                output.put( it.next() );
+                if (!output.put( it.next() )) {
+                    break;
+                }
             }
         }
     }

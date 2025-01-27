@@ -25,11 +25,9 @@
             "id": "0f1d3a63-37e1-4a10-ad12-7bdf2ee3096f",
             "settings": {
                 "I1": 2,
-                "I2": [],
+                "I2": 0,
                 "S1": "",
-                "S2": [
-                    "test"
-                ]
+                "S2": "test"
             },
             "config": {
                 "enforceCheckpoint": false,
@@ -49,11 +47,9 @@
             "id": "cef57a93-1438-44ee-bf43-fc6a5e0dda5b",
             "settings": {
                 "I1": 2,
-                "I2": [],
+                "I2": 0,
                 "S1": "",
-                "S2": [
-                    "test"
-                ]
+                "S2": "test"
             },
             "config": {
                 "enforceCheckpoint": false,

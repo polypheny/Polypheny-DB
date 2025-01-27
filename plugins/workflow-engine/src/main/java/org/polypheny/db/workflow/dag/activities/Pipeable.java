@@ -60,7 +60,7 @@ public interface Pipeable extends Activity {
      */
     @Override
     default void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        List<AlgDataType> inputTypes = inputs.stream().map( CheckpointReader::getTupleType ).toList();
+        List<AlgDataType> inputTypes = inputs.stream().map( i -> i == null ? null : i.getTupleType() ).toList();
         assert canPipe(
                 inputTypes.stream().map( TypePreview::ofType ).toList(),
                 SettingsPreview.of( settings )
@@ -69,18 +69,28 @@ public interface Pipeable extends Activity {
         ctx.logInfo( "Relying on the pipeable implementation of " + getClass().getSimpleName() + " to execute the activity." );
 
         AlgDataType type = lockOutputType( inputTypes, settings );
-        List<InputPipe> inPipes = inputs.stream().map( reader -> (InputPipe) new CheckpointInputPipe( reader ) ).toList();
+        List<InputPipe> inPipes = inputs.stream().map( reader -> reader == null ? null :
+                (InputPipe) new CheckpointInputPipe( reader ) ).toList();
+
         PipeExecutionContext pipeCtx = (ExecutionContextImpl) ctx;
 
         List<Long> inCounts = inputs.stream().map( reader -> reader == null ? null : reader.getTupleCount() ).toList();
         long tupleCount = estimateTupleCount( inputTypes, settings, inCounts, pipeCtx::getTransaction );
         CheckpointWriter writer = ctx.createWriter( 0, type, true );
 
-        try {
-            OutputPipe outPipe = new CheckpointOutputPipe( type, writer, ctx, tupleCount );
+        try ( OutputPipe outPipe = new CheckpointOutputPipe( type, writer, ctx, tupleCount ) ) {
             pipe( inPipes, outPipe, settings, pipeCtx );
         } catch ( PipeInterruptedException e ) {
             ctx.throwException( "Activity execution was interrupted" );
+        } finally {
+            for ( InputPipe inputPipe : inPipes ) {
+                if ( inputPipe instanceof CheckpointInputPipe closeable ) {
+                    try {
+                        closeable.close();
+                    } catch ( Exception ignored ) {
+                    }
+                }
+            }
         }
     }
 

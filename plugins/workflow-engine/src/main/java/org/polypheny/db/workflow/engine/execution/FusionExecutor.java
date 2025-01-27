@@ -40,6 +40,7 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
+import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo.LogLevel;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
@@ -122,6 +123,7 @@ public class FusionExecutor extends Executor {
             info.setProgress( 1 );
             info.setTuplesWritten( writer.getWriteCount() );
         } catch ( Exception e ) {
+            e.printStackTrace();
             if ( e instanceof ExecutorException ex ) {
                 throw ex;
             }
@@ -182,11 +184,15 @@ public class FusionExecutor extends Executor {
         Settings settings = wrapper.resolveSettings();
         Fusable activity = (Fusable) wrapper.getActivity();
 
-        long tupleCount = activity.estimateTupleCount( inTypes, settings, Arrays.asList( inCountsArr ), () -> transaction );
+        List<Long> inCounts = Arrays.asList( inCountsArr );
+        long tupleCount = activity.estimateTupleCount( inTypes, settings, inCounts, () -> transaction );
         info.appendLog( root, LogLevel.INFO, "Fusing with settings: " + settings.serialize() );
-        AlgNode fused = activity.fuse( inputs, settings, cluster );
-        wrapper.setOutTypePreview( TypePreview.ofType( fused.getTupleType() ).asOutTypes() );
-        return Pair.of( fused, tupleCount );
+        try (ExecutionContextImpl ctx = new ExecutionContextImpl( wrapper, sm, info, inCounts )) {
+            // closing a FuseExecutionContext is currently not required, but we want to be sure.
+            AlgNode fused = activity.fuse( inputs, settings, cluster, ctx );
+            wrapper.setOutTypePreview( TypePreview.ofType( fused.getTupleType() ).asOutTypes() );
+            return Pair.of( fused, tupleCount );
+        }
     }
 
 }

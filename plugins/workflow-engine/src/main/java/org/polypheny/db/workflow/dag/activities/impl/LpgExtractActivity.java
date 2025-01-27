@@ -113,12 +113,16 @@ public class LpgExtractActivity implements Activity, Pipeable {
         LogicalGraph graph = settings.get( GRAPH_KEY, EntityValue.class ).getGraph();
         try ( ResultIterator nodes = getResultIterator( ctx.getTransaction(), graph, false ) ) {
             for ( Iterator<List<PolyValue>> it = CheckpointReader.arrayToListIterator( nodes.getIterator(), true ); it.hasNext(); ) {
-                output.put( it.next() );
+                if (!output.put( it.next() )) {
+                    return;
+                }
             }
         }
         try ( ResultIterator edges = getResultIterator( ctx.getTransaction(), graph, true ) ) {
             for ( Iterator<List<PolyValue>> it = CheckpointReader.arrayToListIterator( edges.getIterator(), true ); it.hasNext(); ) {
-                output.put( it.next() );
+                if (!output.put( it.next() )) {
+                    return;
+                }
             }
         }
     }

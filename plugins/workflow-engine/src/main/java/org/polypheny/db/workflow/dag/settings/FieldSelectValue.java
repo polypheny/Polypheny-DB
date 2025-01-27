@@ -45,25 +45,6 @@ public class FieldSelectValue implements SettingValue {
         List<String> selected = new ArrayList<>();
         Set<String> remaining = new HashSet<>( candidates );
 
-        /*if (includeUnspecified()) {
-            for (int i = 0; i < Math.min(unspecifiedIndex, include.size()); i++) {
-                String in  = include.get(i);
-                if (remaining.contains(in)) {
-                    if (!exclude.contains(in)) {
-                        selected.add(in);
-                    }
-                    remaining.remove(in);
-                }
-            }
-            for (String candidate : candidates) {
-                if (remaining.contains(candidate) && !include.contains(candidate)) {
-                    if (!exclude.contains(candidate)) {
-                        selected.add(candidate);
-                    }
-                }
-            }
-        }*/
-
         int insertIdx = -1;
         for ( int i = 0; i < include.size(); i++ ) {
             if ( i == unspecifiedIndex ) {

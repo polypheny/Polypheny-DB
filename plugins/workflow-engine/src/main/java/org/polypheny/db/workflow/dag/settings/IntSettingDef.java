@@ -26,15 +26,13 @@ import org.polypheny.db.workflow.dag.annotations.IntSetting;
 @Value
 public class IntSettingDef extends SettingDef {
 
-    boolean isList;
     int minValue;
     int maxValue;
 
 
     public IntSettingDef( IntSetting a ) {
-        super( SettingType.INT, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultValue(), a.isList() ),
+        super( SettingType.INT, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultValue() ),
                 a.group(), a.subGroup(), a.position(), a.subPointer(), a.subValues() );
-        this.isList = a.isList();
         this.minValue = a.min();
         this.maxValue = a.max();
 
@@ -44,9 +42,6 @@ public class IntSettingDef extends SettingDef {
 
     @Override
     public SettingValue buildValue( JsonNode node ) {
-        if ( isList ) {
-            return ListValue.of( node, IntValue::of );
-        }
         return IntValue.of( node );
     }
 
@@ -55,14 +50,6 @@ public class IntSettingDef extends SettingDef {
     public void validateValue( SettingValue value ) throws InvalidSettingException {
         if ( value instanceof IntValue intValue ) {
             validateIntValue( intValue );
-            return;
-        } else if ( value instanceof ListValue<? extends SettingValue> list ) {
-            if ( !isList ) {
-                throw new IllegalArgumentException( "Value must not be a list" );
-            }
-            for ( SettingValue v : list.getValues() ) {
-                validateIntValue( (IntValue) v );
-            }
             return;
         }
         throw new IllegalArgumentException( "Value is not a IntValue" );
@@ -79,14 +66,7 @@ public class IntSettingDef extends SettingDef {
     }
 
 
-    private static SettingValue getDefaultValue( int value, boolean isList ) {
-        if ( isList ) {
-            if ( value == 0 ) {
-                return ListValue.of();
-            } else {
-                return ListValue.of( new IntValue( value ) );
-            }
-        }
+    private static SettingValue getDefaultValue( int value ) {
         return new IntValue( value );
     }
 

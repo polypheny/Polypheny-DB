@@ -208,6 +208,21 @@ public class WorkflowUtils {
     }
 
 
+    public static Workflow getEarlyTerminatingLongRunningPipe( int minMillis, int limitMillis ) {
+        int n = 100;
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "relValues", Map.of( "rowCount", IntNode.valueOf( n ) ) ),
+                new ActivityModel( "debug", Map.of( "pipeDelay", IntNode.valueOf( minMillis / n + 1 ), "canPipe", TRUE ) ),
+                new ActivityModel( "relSort", Map.of( "limit", IntNode.valueOf( Math.min( limitMillis / n - 1, 1 ) ) ) )
+        );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 1 ), 0 ),
+                EdgeModel.of( activities.get( 1 ), activities.get( 2 ), 0 )
+        );
+        return getWorkflow( activities, edges, false, true, 1 );
+    }
+
+
     public static Pair<Workflow, List<UUID>> getCombinedFuseAndPipe() {
         // 0 - 4 - 5  should fuse
         // 3 -/
@@ -235,7 +250,7 @@ public class WorkflowUtils {
     public static Workflow getVariableWritingWorkflow() {
         List<ActivityModel> activities = List.of(
                 new ActivityModel( "relValues" ),
-                new ActivityModel( "fieldNameToVar" ),
+                new ActivityModel( "colNameToVar", Map.of( "variableName", TextNode.valueOf( "field_names" ) ) ),
                 new ActivityModel( "varToRow" )
         );
         List<EdgeModel> edges = List.of(

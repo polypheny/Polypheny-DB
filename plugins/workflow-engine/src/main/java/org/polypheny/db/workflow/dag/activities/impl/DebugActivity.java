@@ -41,6 +41,7 @@ import org.polypheny.db.workflow.dag.settings.IntValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.FuseExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
@@ -97,7 +98,7 @@ public class DebugActivity implements Activity, Pipeable, Fusable {
 
 
     @Override
-    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
+    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster, FuseExecutionContext ctx ) throws Exception {
         checkFail( settings );
         return LogicalRelProject.identity( inputs.get( 0 ) );
     }
@@ -125,7 +126,10 @@ public class DebugActivity implements Activity, Pipeable, Fusable {
             } catch ( InterruptedException e ) {
                 throw new PipeInterruptedException( e );
             }
-            output.put( value );
+            if (!output.put( value )) {
+                inputs.forEach( InputPipe::finishIteration );
+                break;
+            }
         }
     }
 

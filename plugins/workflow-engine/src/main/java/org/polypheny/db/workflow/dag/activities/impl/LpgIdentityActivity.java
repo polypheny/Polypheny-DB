@@ -72,7 +72,10 @@ public class LpgIdentityActivity implements Activity, Pipeable {
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         for ( List<PolyValue> value : inputs.get( 0 ) ) {
-            output.put( value );
+            if (!output.put( value )) {
+                inputs.get( 0 ).finishIteration();
+                return;
+            }
         }
     }
 

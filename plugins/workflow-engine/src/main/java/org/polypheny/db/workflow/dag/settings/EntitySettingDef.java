@@ -60,6 +60,12 @@ public class EntitySettingDef extends SettingDef {
                     throwInvalid( "Entity \"" + entityValue.getNamespace() + "." + entityValue.getName() + "\" does not exist" );
                 }
             }
+            if (entityValue.getNamespace().isBlank()) {
+                throwInvalid( "Namespace must not be empty" );
+            }
+            if (entityValue.getName().isBlank() && dataModel != DataModel.GRAPH) {
+                throwInvalid( "Entity name must not be empty" );
+            }
             return;
         }
         throw new IllegalArgumentException( "Value is not an EntityValue" );

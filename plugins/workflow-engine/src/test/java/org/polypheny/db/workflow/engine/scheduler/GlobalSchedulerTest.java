@@ -35,6 +35,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.WorkflowUtils;
 import org.polypheny.db.workflow.dag.Workflow;
+import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionMonitor;
@@ -232,6 +233,17 @@ class GlobalSchedulerTest {
         scheduler.interruptExecution( sessionId );
         scheduler.awaitResultProcessor( 5000 );
         checkFailed( workflow, ids );
+    }
+
+
+    @Test
+    void limitingConsumerPipeTest() throws Exception {
+        Workflow workflow = WorkflowUtils.getEarlyTerminatingLongRunningPipe( 5000, 100 );
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        scheduler.startExecution( workflow, sm, null );
+        scheduler.awaitResultProcessor( 500 );
+        assertEquals( WorkflowState.IDLE, workflow.getState() );
+        assertEquals( ActivityState.SAVED, workflow.getActivity( ids.get( 2 ) ).getState() );
     }
 
 

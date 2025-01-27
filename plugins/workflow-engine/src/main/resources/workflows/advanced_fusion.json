@@ -89,11 +89,9 @@
             "id": "9f93aece-473e-4743-9cb4-2c956a53740d",
             "settings": {
                 "I1": 2,
-                "I2": [],
+                "I2": 0,
                 "S1": "",
-                "S2": [
-                    "test"
-                ]
+                "S2": "test"
             },
             "config": {
                 "enforceCheckpoint": false,

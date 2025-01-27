@@ -25,8 +25,8 @@ import org.polypheny.db.workflow.dag.settings.SettingDef;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Repeatable(BoolSetting.List.class)
-public @interface BoolSetting {
+@Repeatable(EnumSetting.List.class)
+public @interface EnumSetting {
 
     /**
      * A unique key that identifies this setting.
@@ -64,15 +64,18 @@ public @interface BoolSetting {
      */
     String[] subValues() default {};
 
-    // Specific settings
-    boolean defaultValue() default false;
+    // Setting-specific properties
+    String[] options();
+    String[] displayOptions() default {};
+    String defaultValue();
+    String label() default "";
 
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     @interface List {
 
-        BoolSetting[] value();
+        EnumSetting[] value();
 
     }
 

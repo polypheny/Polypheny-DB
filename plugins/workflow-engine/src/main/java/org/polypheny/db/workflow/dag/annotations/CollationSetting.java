@@ -25,15 +25,10 @@ import org.polypheny.db.workflow.dag.settings.SettingDef;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Repeatable(BoolSetting.List.class)
-public @interface BoolSetting {
+@Repeatable(CollationSetting.List.class)
+public @interface CollationSetting {
 
-    /**
-     * A unique key that identifies this setting.
-     * Must not contain {@code SettingDef.SUB_SEP}.
-     *
-     * @return the key of this setting
-     */
+    // Common properties
     String key();
 
     String displayName();
@@ -64,15 +59,16 @@ public @interface BoolSetting {
      */
     String[] subValues() default {};
 
-    // Specific settings
-    boolean defaultValue() default false;
+    // Setting-specific properties
+    int targetInput() default 0;
+    boolean allowRegex() default false;
 
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     @interface List {
 
-        BoolSetting[] value();
+        CollationSetting[] value();
 
     }
 

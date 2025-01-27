@@ -37,7 +37,7 @@ import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 
-public class ExecutionContextImpl implements ExecutionContext, PipeExecutionContext, AutoCloseable {
+public class ExecutionContextImpl implements ExecutionContext, PipeExecutionContext, FuseExecutionContext, AutoCloseable {
 
     private final StorageManager sm;
     private final ActivityWrapper activityWrapper;

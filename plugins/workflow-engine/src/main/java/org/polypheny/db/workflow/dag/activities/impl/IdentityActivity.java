@@ -37,7 +37,9 @@ import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
+import org.polypheny.db.workflow.dag.settings.StringSettingDef.AutoCompleteType;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.FuseExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
@@ -70,7 +72,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
                 """)
 
 @IntSetting(key = "I1", displayName = "FIRST", defaultValue = 2, shortDescription = "This setting doesn't do anything.")
-@StringSetting(key = "S1", displayName = "SECOND", shortDescription = "This setting doesn't do anything.")
+@StringSetting(key = "S1", displayName = "SECOND", shortDescription = "This setting doesn't do anything.", autoCompleteType = AutoCompleteType.FIELD_NAMES)
 @IntSetting(key = "X1", displayName = "X1", shortDescription = "Depends on I1 being 42 or 420", subPointer = "I1", subValues = { "42", "420" })
 @StringSetting(key = "X2", displayName = "X2", shortDescription = "Depends on X1 being 3", subPointer = "X1", subValues = { "3" })
 @StringSetting(key = "X3", displayName = "X3", shortDescription = "Depends on I1/doesNotExist being 7", subPointer = "I1/doesNotExist", subValues = { "7" })
@@ -78,8 +80,8 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 @Group(key = "groupA", displayName = "Group A",
         subgroups = { @Subgroup(key = "a", displayName = "Sub1") }
 )
-@IntSetting(key = "I2", displayName = "THIRD", defaultValue = 0, isList = true, group = "groupA", shortDescription = "This setting doesn't do anything.")
-@StringSetting(key = "S2", displayName = "FOURTH", defaultValue = "test", isList = true, group = "groupA", subGroup = "a", shortDescription = "This setting doesn't do anything.")
+@IntSetting(key = "I2", displayName = "THIRD", defaultValue = 0, group = "groupA", shortDescription = "This setting doesn't do anything.")
+@StringSetting(key = "S2", displayName = "FOURTH", defaultValue = "test", group = "groupA", subGroup = "a", shortDescription = "This setting doesn't do anything.")
 
 @SuppressWarnings("unused")
 public class IdentityActivity implements Activity, Fusable, Pipeable {
@@ -120,13 +122,16 @@ public class IdentityActivity implements Activity, Fusable, Pipeable {
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         for ( List<PolyValue> value : inputs.get( 0 ) ) {
-            output.put( value );
+            if (!output.put( value )) {
+                inputs.forEach( InputPipe::finishIteration );
+                break;
+            }
         }
     }
 
 
     @Override
-    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
+    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster, FuseExecutionContext ctx ) throws Exception {
         return inputs.get( 0 );
     }
 

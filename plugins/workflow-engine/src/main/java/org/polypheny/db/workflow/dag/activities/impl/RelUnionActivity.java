@@ -39,6 +39,7 @@ import org.polypheny.db.workflow.dag.settings.BoolValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.FuseExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
@@ -56,8 +57,6 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
-        TypePreview first = inTypes.get( 0 ), second = inTypes.get( 1 );
-
         if ( inTypes.stream().anyMatch( TypePreview::isEmpty ) ) {
             return UnknownType.ofRel().asOutTypes();
         }
@@ -75,7 +74,10 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         for ( InputPipe input : inputs ) {
             for ( List<PolyValue> tuple : input ) {
-                output.put( tuple );
+                if (!output.put( tuple )) {
+                    inputs.forEach( InputPipe::finishIteration );
+                    return;
+                }
             }
         }
     }
@@ -88,7 +90,7 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster ) throws Exception {
+    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster, FuseExecutionContext ctx ) throws Exception {
         return LogicalRelUnion.create( inputs, settings.get( "all", BoolValue.class ).getValue() );
     }
 

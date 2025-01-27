@@ -22,7 +22,17 @@ import org.polypheny.db.type.entity.PolyValue;
 
 public interface OutputPipe extends AutoCloseable {
 
-    void put( List<PolyValue> value ) throws InterruptedException;
+    /**
+     * Puts the specified tuple into this pipe, possibly waiting for the pipe to have sufficient free capacity.
+     * <p>
+     * For graphs, the convention is that first all nodes are piped, followed by all edges.
+     *
+     * @param value the tuple to insert
+     * @return false if any future value being put into this pipe is ignored. This allows the producer to prematurely stop in the case where the consumer
+     * is not interested in any more values.
+     * @throws InterruptedException if the thread was interrupted while waiting
+     */
+    boolean put( List<PolyValue> value ) throws InterruptedException;
 
     /**
      * Puts the specified value into this pipe, possibly waiting for the pipe to have sufficient free capacity.
@@ -30,10 +40,12 @@ public interface OutputPipe extends AutoCloseable {
      * For graphs, the convention is that first all nodes are piped, followed by all edges.
      *
      * @param value the single value to insert
+     * @return false if any future value being put into this pipe is ignored. This allows the producer to prematurely stop in the case where the consumer
+     * is not interested in any more values.
      * @throws InterruptedException if the thread was interrupted while waiting
      */
-    default void put( PolyValue value ) throws InterruptedException {
-        put( List.of( value ) );
+    default boolean put( PolyValue value ) throws InterruptedException {
+        return put( List.of( value ) );
     }
 
     AlgDataType getType();

@@ -34,6 +34,7 @@ public class QueuePipe implements InputPipe, OutputPipe {
     private boolean hasNext = true; // whether all tuples to ever be produced have been consumed
     private List<PolyValue> nextValue;
     private boolean startedIteration;
+    private boolean finishedByConsumer; // whether the consumer of the pipe is not interested in any more values
 
     private final long totalCount; // the estimated total number of tuples to be piped, or -1 if no estimation is possible
     private final long countDelta; // the number of tuples to be taken between updates to the progress;
@@ -58,13 +59,17 @@ public class QueuePipe implements InputPipe, OutputPipe {
 
 
     @Override
-    public void put( List<PolyValue> value ) throws InterruptedException {
+    public boolean put( List<PolyValue> value ) throws InterruptedException {
         assert !value.isEmpty() : "Cannot pipe empty list, as it is used as an end marker.";
+        if (finishedByConsumer) {
+            return false; // prevent deadlock, since consumer does no longer consume
+        }
         queue.put( value );
         count++;
         if ( canEstimateProgress && count % countDelta == 0 ) {
             ctx.updateProgress( getEstimatedProgress() );
         }
+        return !finishedByConsumer;
     }
 
 
@@ -100,6 +105,17 @@ public class QueuePipe implements InputPipe, OutputPipe {
                 return nextValue; // important: hasNext must be called to load the next value
             }
         };
+    }
+
+
+    @Override
+    public void finishIteration() {
+        if (!hasNext || finishedByConsumer) {
+            return;
+        }
+        finishedByConsumer = true;
+        queue.clear(); // prevents deadlocks, the next time put is called by the producer, they get the signal to stop producing
+        ctx.updateProgress( 1 );
     }
 
 

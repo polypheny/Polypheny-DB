@@ -40,11 +40,12 @@
             }
         },
         {
-            "type": "fieldNameToVar",
+            "type": "colNameToVar",
             "id": "6e35a701-95ef-447a-88fc-b6f353fa4afc",
             "settings": {
-                "fields": [],
-                "variableName": "field_names"
+                "variableName": "columnNames",
+                "specifyColumn": false,
+                "target": 0
             },
             "config": {
                 "enforceCheckpoint": false,

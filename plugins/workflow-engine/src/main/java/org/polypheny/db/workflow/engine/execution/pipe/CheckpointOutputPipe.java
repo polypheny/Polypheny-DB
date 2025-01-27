@@ -46,7 +46,7 @@ public class CheckpointOutputPipe implements OutputPipe {
 
 
     @Override
-    public void put( List<PolyValue> value ) throws InterruptedException {
+    public boolean put( List<PolyValue> value ) throws InterruptedException {
         if ( Thread.interrupted() ) { // get the same behavior as with QueuePipe -> adds ability to interrupt execution
             throw new PipeInterruptedException();
         }
@@ -55,6 +55,7 @@ public class CheckpointOutputPipe implements OutputPipe {
         if ( canEstimateProgress && count % countDelta == 0 ) {
             ctx.updateProgress( getEstimatedProgress() );
         }
+        return true; // no limit to the number of tuples that can be written
     }
 
 

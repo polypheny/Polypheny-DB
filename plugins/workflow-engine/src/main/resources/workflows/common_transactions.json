@@ -45,11 +45,9 @@
             "id": "c26a2c1c-410d-44dd-9b72-d69cca0530c8",
             "settings": {
                 "I1": 2,
-                "I2": [],
+                "I2": 0,
                 "S1": "",
-                "S2": [
-                    "test"
-                ]
+                "S2": "test"
             },
             "config": {
                 "enforceCheckpoint": false,
@@ -69,11 +67,9 @@
             "id": "9d81b32c-4227-49e1-b1bc-a05d9c2d2402",
             "settings": {
                 "I1": 2,
-                "I2": [],
+                "I2": 0,
                 "S1": "",
-                "S2": [
-                    "test"
-                ]
+                "S2": "test"
             },
             "config": {
                 "enforceCheckpoint": false,
@@ -93,11 +89,9 @@
             "id": "c36aa9eb-6fff-4258-841b-d364f7de02a2",
             "settings": {
                 "I1": 2,
-                "I2": [],
+                "I2": 0,
                 "S1": "",
-                "S2": [
-                    "test"
-                ]
+                "S2": "test"
             },
             "config": {
                 "enforceCheckpoint": false,

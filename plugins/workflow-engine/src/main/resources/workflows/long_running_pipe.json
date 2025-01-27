@@ -5,11 +5,9 @@
             "id": "bb3807f7-8ae7-4986-a668-6b8140799b6b",
             "settings": {
                 "I1": 2,
-                "I2": [],
+                "I2": 0,
                 "S1": "",
-                "S2": [
-                    "test"
-                ]
+                "S2": "test"
             },
             "config": {
                 "enforceCheckpoint": false,

@@ -65,7 +65,7 @@ public class EntityValue implements SettingValue {
 
 
     public LogicalCollection getCollection() {
-        LogicalNamespace ns = Catalog.snapshot().getNamespace( namespace ).orElse( null );
+        LogicalNamespace ns = getLogicalNamespace();
         if ( ns == null ) {
             return null;
         }
@@ -74,7 +74,7 @@ public class EntityValue implements SettingValue {
 
 
     public LogicalGraph getGraph() {
-        LogicalNamespace ns = Catalog.snapshot().getNamespace( namespace ).orElse( null );
+        LogicalNamespace ns = getLogicalNamespace();
         if ( ns == null ) {
             ns = Catalog.snapshot().getNamespace( name ).orElse( null );
             if ( ns == null ) {
@@ -82,6 +82,11 @@ public class EntityValue implements SettingValue {
             }
         }
         return Catalog.snapshot().graph().getGraph( ns.id ).orElse( null );
+    }
+
+
+    public LogicalNamespace getLogicalNamespace() {
+        return Catalog.snapshot().getNamespace( namespace ).orElse( null );
     }
 
 }

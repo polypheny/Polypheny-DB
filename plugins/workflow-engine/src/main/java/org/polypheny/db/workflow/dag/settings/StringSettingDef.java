@@ -26,17 +26,19 @@ import org.polypheny.db.workflow.dag.annotations.StringSetting;
 @Value
 public class StringSettingDef extends SettingDef {
 
-    boolean isList;
     int minLength;
     int maxLength;
+    AutoCompleteType autoComplete;
+    int autoCompleteInput;
 
 
     public StringSettingDef( StringSetting a ) {
-        super( SettingType.STRING, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultValue(), a.isList() ),
+        super( SettingType.STRING, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultValue() ),
                 a.group(), a.subGroup(), a.position(), a.subPointer(), a.subValues() );
-        this.isList = a.isList();
         this.minLength = a.minLength();
         this.maxLength = a.maxLength();
+        this.autoComplete = a.autoCompleteType();
+        this.autoCompleteInput = a.autoCompleteInput();
 
         assert minLength < maxLength;
     }
@@ -44,9 +46,6 @@ public class StringSettingDef extends SettingDef {
 
     @Override
     public SettingValue buildValue( JsonNode node ) {
-        if ( isList ) {
-            return ListValue.of( node, StringValue::of );
-        }
         return StringValue.of( node );
     }
 
@@ -55,14 +54,6 @@ public class StringSettingDef extends SettingDef {
     public void validateValue( SettingValue value ) throws InvalidSettingException {
         if ( value instanceof StringValue stringValue ) {
             validateStringValue( stringValue );
-            return;
-        } else if ( value instanceof ListValue<? extends SettingValue> list ) {
-            if ( !isList ) {
-                throw new IllegalArgumentException( "Value must not be a list" );
-            }
-            for ( SettingValue v : list.getValues() ) {
-                validateStringValue( (StringValue) v );
-            }
             return;
         }
         throw new IllegalArgumentException( "Value is not a SettingValue" );
@@ -79,15 +70,15 @@ public class StringSettingDef extends SettingDef {
     }
 
 
-    private static SettingValue getDefaultValue( String s, boolean isList ) {
-        if ( isList ) {
-            if ( s.isEmpty() ) {
-                return ListValue.of();
-            } else {
-                return ListValue.of( StringValue.of( s ) );
-            }
-        }
+    private static SettingValue getDefaultValue( String s ) {
         return StringValue.of( s );
+    }
+
+
+    public enum AutoCompleteType {
+        NONE,
+        FIELD_NAMES,
+        VALUES, ADAPTERS;
     }
 
 }

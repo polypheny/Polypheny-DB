@@ -69,6 +69,12 @@ public class CheckpointInputPipe implements InputPipe, AutoCloseable {
 
 
     @Override
+    public void finishIteration() {
+        // since this is a pure input pipe, we have no producer thread to notify
+    }
+
+
+    @Override
     public void close() throws Exception {
         try {
             reader.close();
