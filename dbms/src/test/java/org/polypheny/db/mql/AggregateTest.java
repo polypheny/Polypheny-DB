@@ -68,6 +68,12 @@ public class AggregateTest extends MqlTestTemplate {
         DocResult result = aggregate( $match( "{\"b\": 5}" ), $group( "{\"_id\" : null, \"a\" : { \"$addToSet\" : \" $a\"}}"));
     }
 
+    @Test
+    public void aggregateCountTest() {
+        insertMany( DATA_4 );
+        DocResult result = aggregate("{ \"$match\": { \"_vid\": -5 } }, { \"$group\": { \"_id\": null, \"count\": { \"$sum\": 1 } } }");
+    }
+
 
     @Test
     public void projectTest() {
