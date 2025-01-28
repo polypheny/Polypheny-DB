@@ -93,13 +93,14 @@ public class IdentifierUtils {
     }
 
     public static PolyString getVersionKeyAsPolyString() {
-        return PolyString.of( IDENTIFIER_KEY );
+        return PolyString.of( VERSION_KEY );
     }
 
     public static void throwIllegalFieldName() {
         throw new IllegalArgumentException( MessageFormat.format(
-                "The field {0} is reserved for internal use and cannot be used.",
-                IdentifierUtils.IDENTIFIER_KEY )
+                "The fields {0} and {1} are reserved for internal use and cannot be used.",
+                IDENTIFIER_KEY,
+                VERSION_KEY)
         );
     }
 

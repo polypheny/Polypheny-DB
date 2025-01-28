@@ -16,17 +16,23 @@
 
 package org.polypheny.db.transaction.locking;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.ImplementationContext;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.PrecedenceClimbingParser.Result;
 
 public class MvccUtils {
 
@@ -46,12 +52,31 @@ public class MvccUtils {
         for ( Entity writtenEntity : writtenEntities ) {
             maxVersion = Math.max( maxVersion, switch ( writtenEntity.getDataModel() ) {
                 case RELATIONAL -> validateRelWrites( sequenceNumber, writtenEntity, transaction );
-                case DOCUMENT -> validateDowWrites( sequenceNumber, writtenEntity, transaction );
+                case DOCUMENT -> validateDocWrites( sequenceNumber, writtenEntity, transaction );
                 case GRAPH -> validateGraphWrites( sequenceNumber, writtenEntity, transaction );
             } );
         }
 
         return maxVersion <= sequenceNumber;
+    }
+
+    private static ExecutedContext executeStatement(Entity entitiy, Transaction transaction, QueryLanguage language, String query) {
+        ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( transaction.getOrigin() )
+                        .namespaceId( entitiy.getNamespaceId() )
+                        .transactionManager( transaction.getTransactionManager() )
+                        .isMvccInternal( true )
+                        .build(), transaction ).get( 0 );
+
+        if ( context.getException().isPresent() ) {
+            //ToDo TH: properly handle this
+            throw new RuntimeException( context.getException().get() );
+        }
+
+        return context.execute( context.getStatement() );
     }
 
 
@@ -64,57 +89,43 @@ public class MvccUtils {
                 )
                 """;
 
-        String query = String.format( queryTemplate, writtenEntity.getName(), writtenEntity.getName(), sequenceNumber );
-        ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
-                QueryContext.builder()
-                        .query( query )
-                        .language( QueryLanguage.from( "sql" ) )
-                        .origin( transaction.getOrigin() )
-                        .namespaceId( writtenEntity.getNamespaceId() )
-                        .transactionManager( transaction.getTransactionManager() )
-                        .isMvccInternal( true )
-                        .build(), transaction ).get( 0 );
-
-        if ( context.getException().isPresent() ) {
-            //ToDo TH: properly handle this
-            throw new RuntimeException( context.getException().get() );
+        String query = String.format( queryTemplate, writtenEntity.getName(), writtenEntity.getName(), -sequenceNumber );
+        List<List<PolyValue>> res;
+        try ( ResultIterator iterator = executeStatement( writtenEntity, transaction, QueryLanguage.from( "sql" ), query ).getIterator() ) {
+            res = iterator.getNextBatch();
+            return res.get( 0 ).get( 0 ).asLong().longValue();
         }
-
-        ResultIterator iterator = context.execute( context.getStatement() ).getIterator();
-        List<List<PolyValue>> res = iterator.getNextBatch();
-        return res.get( 0 ).get( 0 ).asLong().longValue();
     }
 
-    private static long validateDowWrites(long sequenceNumber, Entity writtenEntity, Transaction transaction ) {
-        String queryTemplate = """
-                [
-                { "$match": { "_eid": { "$in": db.%s.find({ "_vid": %d }, { "_id": 0, "_eid": 1 }).map(doc => doc._eid) } } },
-                { "$group": { "_id": null, "max_vid": { "$max": "$_vid" } } },
-                { "$project": { "_id": 0, "max_vid": 1 } }
-                ]
-                """;
+    private static long validateDocWrites(long sequenceNumber, Entity writtenEntity, Transaction transaction ) {
+        // ToDo TH. Replace with more efficient mechanism once group and addToSet are fixed
 
-        String query = String.format( queryTemplate, writtenEntity.getName(), sequenceNumber );
-        ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
-                QueryContext.builder()
-                        .query( query )
-                        .language( QueryLanguage.from( "mql" ) )
-                        .origin( transaction.getOrigin() )
-                        .namespaceId( writtenEntity.getNamespaceId() )
-                        .transactionManager( transaction.getTransactionManager() )
-                        .isMvccInternal( true )
-                        .build(), transaction ).get( 0 );
+        // step 1: get list of all written document entry ids
+        String writeSetTemplate = "db.%s.find( { \"_vid\": %d }, { \"_eid\": 1 } );";
 
-        if ( context.getException().isPresent() ) {
-            //ToDo TH: properly handle this
-            throw new RuntimeException( context.getException().get() );
+        String writeSetQuery = String.format( writeSetTemplate, writtenEntity.getName(), -sequenceNumber);
+        List<List<PolyValue>> res;
+        HashSet<Long> entryIds = new HashSet<>();
+        try ( ResultIterator iterator = executeStatement( writtenEntity, transaction, QueryLanguage.from( "mql" ), writeSetQuery ).getIterator() ) {
+            while (iterator.hasMoreRows()) {
+                res = iterator.getNextBatch();
+                res.forEach( r -> entryIds.add(r.get(0).asDocument().get( IdentifierUtils.getIdentifierKeyAsPolyString() ).asLong().longValue()  ) );
+            }
         }
 
-        ResultIterator iterator = context.execute( context.getStatement() ).getIterator();
-        List<List<PolyValue>> res = iterator.getNextBatch();
-        return res.get( 0 ).get( 0 ).asLong().longValue();
+        // step 2: get max of version ids present for each of the written entry ids
+        String getMaxTemplate = "db.%s.aggregate(["
+                + "    { \"$match\": { \"_eid\": { \"$in\": [%s] } } },"
+                + "    { \"$group\": { \"_id\": null, \"max_vid\": { \"$max\": \"$_vid\" } } }"
+                + "]);";
 
+        String entryIdString = entryIds.stream().map( String::valueOf ).collect( Collectors.joining(", "));
+        String getMaxQuery = String.format( getMaxTemplate, writtenEntity.getName(), entryIdString  );
+        try ( ResultIterator iterator = executeStatement( writtenEntity, transaction, QueryLanguage.from( "mql" ), getMaxQuery ).getIterator() ) {
+            return Objects.requireNonNull( iterator.getNextBatch().get( 0 ).get( 0 ).asDocument().get( PolyString.of( "max_vid" ) ).asBigDecimal().getValue() ).longValue();
+        }
     }
+
 
     public static long validateGraphWrites(long sequenceNumber, Entity writtenEntity, Transaction transaction) {
         String queryTemplate = """
@@ -135,25 +146,12 @@ public class MvccUtils {
                 RETURN MAX(r._vid) AS max_vid
                 """;
 
-        String query = String.format( queryTemplate, sequenceNumber, sequenceNumber);
-        ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
-                QueryContext.builder()
-                        .query( query )
-                        .language( QueryLanguage.from( "cypher" ) )
-                        .origin( transaction.getOrigin() )
-                        .namespaceId( writtenEntity.getNamespaceId() )
-                        .transactionManager( transaction.getTransactionManager() )
-                        .isMvccInternal( true )
-                        .build(), transaction ).get( 0 );
-
-        if ( context.getException().isPresent() ) {
-            //ToDo TH: properly handle this
-            throw new RuntimeException( context.getException().get() );
+        String query = String.format( queryTemplate, sequenceNumber, -sequenceNumber);
+        List<List<PolyValue>> res;
+        try ( ResultIterator iterator = executeStatement( writtenEntity, transaction, QueryLanguage.from( "cypher" ), query ).getIterator() ) {
+            res = iterator.getNextBatch();
+            return res.get( 0 ).get( 0 ).asLong().longValue();
         }
-
-        ResultIterator iterator = context.execute( context.getStatement() ).getIterator();
-        List<List<PolyValue>> res = iterator.getNextBatch();
-        return res.get( 0 ).get( 0 ).asLong().longValue();
     }
 
 
@@ -179,21 +177,7 @@ public class MvccUtils {
                 """;
 
         String query = String.format( queryTemplate, writtenEntity.getName(), commitSequenceNumber, -sequenceNumber );
-        ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
-                QueryContext.builder()
-                        .query( query )
-                        .language( QueryLanguage.from( "sql" ) )
-                        .origin( transaction.getOrigin() )
-                        .namespaceId( writtenEntity.getNamespaceId() )
-                        .transactionManager( transaction.getTransactionManager() )
-                        .isMvccInternal( true )
-                        .build(), transaction ).get( 0 );
-
-        if ( context.getException().isPresent() ) {
-            throw new RuntimeException( "Query preparation failed: " + context.getException().get() );
-        }
-
-        context.execute( context.getStatement() );
+        executeStatement( writtenEntity, transaction, QueryLanguage.from( "sql" ), query );
     }
 
     private static void updateWrittenGraphVersionIds( long sequenceNumber, long commitSequenceNumber, Entity writtenEntity, Transaction transaction ) {
@@ -215,22 +199,7 @@ public class MvccUtils {
                 -sequenceNumber,
                 commitSequenceNumber);
 
-        ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
-                QueryContext.builder()
-                        .query(updateQuery)
-                        .language(QueryLanguage.from("cypher"))
-                        .origin(transaction.getOrigin())
-                        .namespaceId(writtenEntity.getNamespaceId())
-                        .transactionManager(transaction.getTransactionManager())
-                        .isMvccInternal(true)
-                        .build(),
-                transaction).get(0);
-
-        if (context.getException().isPresent()) {
-            throw new RuntimeException("Query preparation failed: " + context.getException().get());
-        }
-
-        context.execute(context.getStatement());
+        executeStatement( writtenEntity, transaction, QueryLanguage.from( "cypher" ), updateQuery );
     }
 
 
@@ -246,23 +215,7 @@ public class MvccUtils {
                 writtenEntity.getName(),
                 -sequenceNumber,
                 commitSequenceNumber);
-
-        ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
-                QueryContext.builder()
-                        .query(updateQuery)
-                        .language(QueryLanguage.from("mql"))
-                        .origin(transaction.getOrigin())
-                        .namespaceId(writtenEntity.getNamespaceId())
-                        .transactionManager(transaction.getTransactionManager())
-                        .isMvccInternal(true)
-                        .build(),
-                transaction).get(0);
-
-        if (context.getException().isPresent()) {
-            throw new RuntimeException("Query preparation failed: " + context.getException().get());
-        }
-
-        context.execute(context.getStatement());
+        executeStatement( writtenEntity, transaction, QueryLanguage.from( "mql" ), updateQuery );
     }
 }
 
