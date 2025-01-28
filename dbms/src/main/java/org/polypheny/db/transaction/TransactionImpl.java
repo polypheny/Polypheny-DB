@@ -72,6 +72,7 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.MvccUtils;
 import org.polypheny.db.transaction.locking.SequenceNumberGenerator;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -224,8 +225,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         boolean okToCommit = true;
 
         if ( !writtenEntities.isEmpty() ) {
-            okToCommit &= validateWriteSet();
-            updateWrittenVersionIds(); // a rollback reverts this as well
+            okToCommit &= MvccUtils.validateWriteSet( getSequenceNumber(), writtenEntities, this );
+            sequenceNumber = MvccUtils.updateWrittenVersionIds(sequenceNumber, writtenEntities, this); // a rollback reverts this
         }
 
         Pair<Boolean, String> isValid = catalog.checkIntegrity();
@@ -300,76 +301,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         // Handover information about commit to Materialized Manager
         MaterializedViewManager.getInstance().updateCommittedXid( xid );
-    }
-
-    private boolean validateWriteSet() {
-
-        String queryTemplate = """
-            SELECT MAX(_vid) AS max_vid
-            FROM %s
-            WHERE _eid IN (
-                SELECT _eid FROM %s WHERE _vid = %d
-            )
-            """;
-
-        long maxVersion = 0;
-
-        for (Entity writtenEntity : writtenEntities) {
-            String query = String.format(queryTemplate, writtenEntity.getName(), writtenEntity.getName(), getSequenceNumber());
-            ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
-                    QueryContext.builder()
-                            .query( query )
-                            .language( QueryLanguage.from( "sql" ) )
-                            .origin( this.getOrigin() )
-                            .namespaceId( writtenEntity.getNamespaceId() )
-                            .transactionManager( this.getTransactionManager() )
-                            .isMvccInternal( true )
-                            .build(), this ).get( 0 );
-
-            if ( context.getException().isPresent() ) {
-                //ToDo TH: properly handle this
-                throw new RuntimeException( context.getException().get() );
-            }
-
-            ResultIterator iterator = context.execute( context.getStatement() ).getIterator();
-            List<List<PolyValue>> res = iterator.getNextBatch();
-            maxVersion = Math.max(maxVersion, res.get(0).get(0).asLong().getValue() ); // Make this save
-            iterator.close();
-        }
-
-        return maxVersion <= getSequenceNumber();
-    }
-
-    private void updateWrittenVersionIds() {
-        String queryTemplate = """
-        UPDATE %s
-        SET _vid = %d
-        WHERE _vid = %d
-        """;
-
-        long commitSequenceNumber = SequenceNumberGenerator.getInstance().getNextNumber();
-
-        for (Entity writtenEntity : writtenEntities) {
-            String query = String.format(queryTemplate, writtenEntity.getName(), commitSequenceNumber, -getSequenceNumber());
-
-            ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
-                    QueryContext.builder()
-                            .query(query)
-                            .language(QueryLanguage.from("sql"))
-                            .origin(this.getOrigin())
-                            .namespaceId(writtenEntity.getNamespaceId())
-                            .transactionManager(this.getTransactionManager())
-                            .isMvccInternal(true)
-                            .build(), this).get(0);
-
-            if (context.getException().isPresent()) {
-                throw new RuntimeException("Query preparation failed: " + context.getException().get());
-            }
-
-            context.execute(context.getStatement());
-            SequenceNumberGenerator.getInstance().releaseNumber( sequenceNumber );
-            sequenceNumber = commitSequenceNumber;
-        }
     }
 
 
