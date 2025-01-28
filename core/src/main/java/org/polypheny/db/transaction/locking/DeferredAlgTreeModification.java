@@ -196,17 +196,6 @@ public class DeferredAlgTreeModification {
                 )
         );
 
-        RexCall notDeletedCondition = new RexCall(
-                BOOLEAN_ALG_TYPE,
-                OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ),
-                new RexIndexRef( 0, IdentifierUtils.IDENTIFIER_ALG_TYPE ),
-                new RexLiteral(
-                        PolyLong.of( 0 ),
-                        IdentifierUtils.IDENTIFIER_ALG_TYPE,
-                        PolyType.BIGINT
-                )
-        );
-
         RexCall scopeCondition = new RexCall(
                         BOOLEAN_ALG_TYPE,
                         OperatorRegistry.get( OperatorName.OR ),
@@ -219,24 +208,6 @@ public class DeferredAlgTreeModification {
                         )
         );
 
-        /**
-        RexCall scopeCondition = new RexCall(
-                BOOLEAN_ALG_TYPE,
-                OperatorRegistry.get( OperatorName.AND ),
-                notDeletedCondition,
-                new RexCall(
-                        BOOLEAN_ALG_TYPE,
-                        OperatorRegistry.get( OperatorName.OR ),
-                        selfReadCondition,
-                        new RexCall(
-                                BOOLEAN_ALG_TYPE,
-                                OperatorRegistry.get( OperatorName.AND ),
-                                versionInSnapshotCondition,
-                                versionCommittedCondition
-                        )
-                )
-        );
-         **/
 
         return LogicalRelFilter.create(
                 input,
@@ -247,11 +218,13 @@ public class DeferredAlgTreeModification {
 
 
     private AlgNode applyLimitDocScanToSnapshot( AlgNode parent ) {
+        // TODO TH: implement
         throw new NotImplementedException();
     }
 
 
     private AlgNode applyLimitLpgScanToSnapshot( AlgNode parent ) {
+        // TODO TH: implement
         throw new NotImplementedException();
     }
 }

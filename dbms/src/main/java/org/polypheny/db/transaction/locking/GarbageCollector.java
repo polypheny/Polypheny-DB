@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
@@ -231,19 +232,18 @@ public class GarbageCollector {
         statement2.close();
 
         entity.getEntryIdentifiers().releaseEntryIdentifiers( releasedIds );
-
-        System.out.println("Garbage Collection: ");
-        releasedIds.forEach( System.out::println );
     }
 
 
     private void docGarbageCollect( LogicalEntity entity, long lowestActiveVersion, Transaction transaction ) {
-
+        // ToDo TH: implement
+        //throw new NotImplementedException();
     }
 
 
     private void graphGarbageCollect( LogicalEntity entity, long lowestActiveVersion, Transaction transaction ) {
-
+        // ToDo TH: implement
+        //throw new NotImplementedException();
     }
 
 
