@@ -46,4 +46,8 @@ public interface InputPipe extends Iterable<List<PolyValue>> {
      */
     void finishIteration();
 
+    default LpgInputPipe asLpgInputPipe() {
+        return new LpgInputPipe( this );
+    }
+
 }

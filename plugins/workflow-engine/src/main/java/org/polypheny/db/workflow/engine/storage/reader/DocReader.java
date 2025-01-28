@@ -32,6 +32,7 @@ import org.polypheny.db.util.Triple;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.Result;
+import org.polypheny.db.workflow.engine.storage.CheckpointMetadata.DocMetadata;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
 public class DocReader extends CheckpointReader {
@@ -39,8 +40,8 @@ public class DocReader extends CheckpointReader {
     public static final int PREVIEW_DOCS_LIMIT = 100;
 
 
-    public DocReader( LogicalCollection collection, Transaction transaction ) {
-        super( collection, transaction );
+    public DocReader( LogicalCollection collection, Transaction transaction, DocMetadata metadata ) {
+        super( collection, transaction, metadata );
     }
 
 

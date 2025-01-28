@@ -16,15 +16,20 @@
 
 package org.polypheny.db.workflow.dag.activities;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.util.Wrapper;
+import org.polypheny.db.workflow.engine.storage.CheckpointMetadata.DocMetadata;
+import org.polypheny.db.workflow.engine.storage.CheckpointMetadata.LpgMetadata;
 
 /**
  * Represents a thin wrapper around an AlgDataType that is similar to an
@@ -206,11 +211,14 @@ public abstract class TypePreview implements Wrapper {
 
     public static class DocType extends TypePreview {
 
-        private static final DocType instance = new DocType( DocumentType.ofId() );
+        private static final DocType empty = new DocType( Set.of() );
+        @Getter
+        private final Set<String> knownFields;
 
 
-        private DocType( AlgDataType type ) {
-            super( type );
+        private DocType( Set<String> knownFields ) {
+            super( DocumentType.ofId() );
+            this.knownFields = Collections.unmodifiableSet( knownFields );
         }
 
 
@@ -221,7 +229,17 @@ public abstract class TypePreview implements Wrapper {
 
 
         public static DocType of() {
-            return instance;
+            return empty;
+        }
+
+
+        public static DocType of( Set<String> knownFields ) {
+            return new DocType( knownFields );
+        }
+
+
+        public static DocType of( DocMetadata metadata ) {
+            return DocType.of( metadata.getFieldNames() );
         }
 
     }
@@ -229,11 +247,17 @@ public abstract class TypePreview implements Wrapper {
 
     public static class LpgType extends TypePreview {
 
-        private static final LpgType instance = new LpgType( GraphType.of() );
+        private static final LpgType empty = new LpgType( Set.of(), Set.of() );
+        @Getter
+        private final Set<String> knownNodeLabels;
+        @Getter
+        private final Set<String> knownEdgeLabels;
 
 
-        private LpgType( AlgDataType type ) {
-            super( type );
+        private LpgType( Set<String> knownNodeLabels, Set<String> knownEdgeLabels ) {
+            super( GraphType.of() );
+            this.knownNodeLabels = Collections.unmodifiableSet( knownNodeLabels );
+            this.knownEdgeLabels = Collections.unmodifiableSet( knownEdgeLabels );
         }
 
 
@@ -244,7 +268,17 @@ public abstract class TypePreview implements Wrapper {
 
 
         public static LpgType of() {
-            return instance;
+            return empty;
+        }
+
+
+        public static LpgType of( Set<String> knownNodeLabels, Set<String> knownEdgeLabels ) {
+            return new LpgType( knownNodeLabels, knownEdgeLabels );
+        }
+
+
+        public static LpgType of( LpgMetadata metadata ) {
+            return LpgType.of( metadata.getNodeLabels(), metadata.getEdgeLabels() );
         }
 
     }

@@ -28,6 +28,8 @@ public class SessionModel {
     SessionModelType type;
     UUID sessionId;
     int connectionCount;
+    String lastInteraction; // ISO 8601:  "2025-01-17T14:30:00Z"
+    int activityCount;
 
     // USER_SESSION fields:
     UUID workflowId;
@@ -36,10 +38,12 @@ public class SessionModel {
     WorkflowState state;
 
 
-    public SessionModel( SessionModelType type, UUID sId, int connectionCount ) {
+    public SessionModel( SessionModelType type, UUID sId, int connectionCount, String lastInteraction, int activityCount ) {
         this.type = type;
         this.sessionId = sId;
         this.connectionCount = connectionCount;
+        this.lastInteraction = lastInteraction;
+        this.activityCount = activityCount;
         this.workflowId = null;
         this.version = null;
         this.workflowDef = null;

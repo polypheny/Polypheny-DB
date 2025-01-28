@@ -30,6 +30,7 @@ public class StringSettingDef extends SettingDef {
     int maxLength;
     AutoCompleteType autoComplete;
     int autoCompleteInput;
+    boolean nonBlank;
 
 
     public StringSettingDef( StringSetting a ) {
@@ -39,6 +40,7 @@ public class StringSettingDef extends SettingDef {
         this.maxLength = a.maxLength();
         this.autoComplete = a.autoCompleteType();
         this.autoCompleteInput = a.autoCompleteInput();
+        this.nonBlank = a.nonBlank();
 
         assert minLength < maxLength;
     }
@@ -66,6 +68,8 @@ public class StringSettingDef extends SettingDef {
             throwInvalid( "String must have a length of at least " + minLength );
         } else if ( s.length() >= maxLength ) {
             throwInvalid( "String must have a length of less than " + maxLength );
+        } else if ( nonBlank && s.isBlank() ) {
+            throwInvalid( "String must not be empty" );
         }
     }
 
@@ -78,7 +82,8 @@ public class StringSettingDef extends SettingDef {
     public enum AutoCompleteType {
         NONE,
         FIELD_NAMES,
-        VALUES, ADAPTERS;
+        VALUES,
+        ADAPTERS;
     }
 
 }

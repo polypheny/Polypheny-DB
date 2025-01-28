@@ -53,6 +53,9 @@ public class DocIdentityActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
+        if ( inTypes.get( 0 ).isPresent() ) {
+            return inTypes.get( 0 ).asOutTypes();
+        }
         return DocType.of().asOutTypes();
     }
 
@@ -74,7 +77,7 @@ public class DocIdentityActivity implements Activity, Fusable, Pipeable {
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         for ( List<PolyValue> value : inputs.get( 0 ) ) {
-            if (!output.put( value )) {
+            if ( !output.put( value ) ) {
                 inputs.forEach( InputPipe::finishIteration );
                 break;
             }

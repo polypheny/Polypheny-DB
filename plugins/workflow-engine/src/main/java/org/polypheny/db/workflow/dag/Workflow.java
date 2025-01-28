@@ -43,7 +43,9 @@ import org.polypheny.db.workflow.models.WorkflowModel;
  */
 public interface Workflow {
 
-    List<ActivityWrapper> getActivities(); // TODO: change return type to Map<UUID, Activity> ?
+    List<ActivityWrapper> getActivities();
+
+    int getActivityCount();
 
     ActivityWrapper getActivity( UUID activityId );
 

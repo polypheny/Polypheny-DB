@@ -47,7 +47,7 @@ public @interface CollationSetting {
 
     String subGroup() default "";
 
-    int position() default 100;
+    int position() default SettingDef.DEFAULT_POS;
 
     /**
      * See {@link SettingDef#getSubPointer()}
@@ -61,6 +61,7 @@ public @interface CollationSetting {
 
     // Setting-specific properties
     int targetInput() default 0;
+
     boolean allowRegex() default false;
 
 

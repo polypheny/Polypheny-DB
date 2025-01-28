@@ -47,14 +47,20 @@ import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DeadlockException;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
+import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
+import org.polypheny.db.workflow.dag.activities.TypePreview.LpgType;
+import org.polypheny.db.workflow.dag.activities.TypePreview.RelType;
+import org.polypheny.db.workflow.dag.activities.TypePreview.UnknownType;
+import org.polypheny.db.workflow.engine.storage.CheckpointMetadata.DocMetadata;
+import org.polypheny.db.workflow.engine.storage.CheckpointMetadata.LpgMetadata;
+import org.polypheny.db.workflow.engine.storage.CheckpointMetadata.RelMetadata;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.DocReader;
 import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
@@ -77,10 +83,9 @@ public class StorageManagerImpl implements StorageManager {
 
     private final UUID sessionId;
     private final Map<DataModel, String> defaultStores;
-    private final Map<UUID, Map<Integer, LogicalEntity>> checkpoints = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<Integer, Pair<LogicalEntity, CheckpointMetadata>>> checkpoints = new ConcurrentHashMap<>();
     private final Map<Long, String> registeredNamespaces = new ConcurrentHashMap<>();
     private final AdapterManager adapterManager;
-    private final TransactionManager transactionManager;
     private final DdlManager ddlManager;
 
     private final Map<UUID, Transaction> localTransactions = new ConcurrentHashMap<>();
@@ -93,7 +98,6 @@ public class StorageManagerImpl implements StorageManager {
 
     public StorageManagerImpl( UUID sessionId, Map<DataModel, String> defaultStores ) {
         adapterManager = AdapterManager.getInstance();
-        transactionManager = TransactionManagerImpl.getInstance();
         ddlManager = DdlManager.getInstance();
 
         this.sessionId = sessionId;
@@ -134,11 +138,12 @@ public class StorageManagerImpl implements StorageManager {
 
     @Override
     public CheckpointReader readCheckpoint( UUID activityId, int outputIdx ) {
-        LogicalEntity entity = Objects.requireNonNull( checkpoints.get( activityId ).get( outputIdx ), "Checkpoint does not exist for output " + outputIdx + " of activity " + activityId );
+        Pair<LogicalEntity, CheckpointMetadata> checkpoint = Objects.requireNonNull( checkpoints.get( activityId ).get( outputIdx ), "Checkpoint does not exist for output " + outputIdx + " of activity " + activityId );
+        LogicalEntity entity = checkpoint.left;
         return switch ( entity.dataModel ) {
-            case RELATIONAL -> new RelReader( (LogicalTable) entity, QueryUtils.startTransaction( relNamespace, "RelRead" ) );
-            case DOCUMENT -> new DocReader( (LogicalCollection) entity, QueryUtils.startTransaction( docNamespace, "DocRead" ) );
-            case GRAPH -> new LpgReader( (LogicalGraph) entity, QueryUtils.startTransaction( entity.getNamespaceId(), "LpgRead" ) );
+            case RELATIONAL -> new RelReader( (LogicalTable) entity, QueryUtils.startTransaction( relNamespace, "RelRead" ), checkpoint.right.asRel() );
+            case DOCUMENT -> new DocReader( (LogicalCollection) entity, QueryUtils.startTransaction( docNamespace, "DocRead" ), checkpoint.right.asDoc() );
+            case GRAPH -> new LpgReader( (LogicalGraph) entity, QueryUtils.startTransaction( entity.getNamespaceId(), "LpgRead" ), checkpoint.right.asLpg() );
         };
     }
 
@@ -156,23 +161,27 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    public List<AlgDataType> getCheckpointTypes( UUID activityId ) {
-        List<AlgDataType> types = new ArrayList<>();
-        Map<Integer, LogicalEntity> outputs = checkpoints.get( activityId );
+    public List<TypePreview> getCheckpointPreviewTypes( UUID activityId ) {
+        List<TypePreview> previews = new ArrayList<>();
+        Map<Integer, Pair<LogicalEntity, CheckpointMetadata>> outputs = checkpoints.get( activityId );
         if ( outputs == null ) {
             return List.of();
         }
         for ( int i = 0; i < outputs.size(); i++ ) {
-            LogicalEntity output = outputs.get( i );
-            types.add( output == null ? null : output.getTupleType() );
+            LogicalEntity output = outputs.get( i ).left;
+            CheckpointMetadata meta = outputs.get( i ).right;
+            if ( output == null ) {
+                previews.add( UnknownType.of() );
+            } else {
+                TypePreview preview = switch ( meta.getDataModel() ) {
+                    case RELATIONAL -> RelType.of( output.getTupleType() );
+                    case DOCUMENT -> DocType.of( meta.asDoc() );
+                    case GRAPH -> LpgType.of( meta.asLpg() );
+                };
+                previews.add( preview );
+            }
         }
-        return types;
-    }
-
-
-    @Override
-    public List<TypePreview> getCheckpointPreviewTypes( UUID activityId ) {
-        return getCheckpointTypes( activityId ).stream().map( TypePreview::ofType ).toList();
+        return previews;
     }
 
 
@@ -211,9 +220,9 @@ public class StorageManagerImpl implements StorageManager {
         }
 
         LogicalTable table = Catalog.snapshot().rel().getTable( relNamespace, tableName ).orElseThrow();
-
-        register( activityId, outputIdx, table );
-        return new RelWriter( table, QueryUtils.startTransaction( relNamespace, "RelWrite" ), resetPk );
+        RelMetadata meta = new RelMetadata( table.getTupleType() );
+        register( activityId, outputIdx, table, meta );
+        return new RelWriter( table, QueryUtils.startTransaction( relNamespace, "RelWrite" ), resetPk, meta );
     }
 
 
@@ -244,8 +253,9 @@ public class StorageManagerImpl implements StorageManager {
         }
 
         LogicalCollection collection = Catalog.snapshot().doc().getCollection( docNamespace, collectionName ).orElseThrow();
-        register( activityId, outputIdx, collection );
-        return new DocWriter( collection, QueryUtils.startTransaction( docNamespace, "DocWrite" ) );
+        DocMetadata meta = new DocMetadata();
+        register( activityId, outputIdx, collection, meta );
+        return new DocWriter( collection, QueryUtils.startTransaction( docNamespace, "DocWrite" ), meta );
     }
 
 
@@ -276,9 +286,10 @@ public class StorageManagerImpl implements StorageManager {
         }
 
         LogicalGraph graph = Catalog.snapshot().graph().getGraph( graphId ).orElseThrow();
-        register( activityId, outputIdx, graph );
+        LpgMetadata meta = new LpgMetadata();
+        register( activityId, outputIdx, graph, meta );
         registeredNamespaces.put( graphId, graphName );
-        return new LpgWriter( graph, QueryUtils.startTransaction( graphId, "LpgWrite" ) );
+        return new LpgWriter( graph, QueryUtils.startTransaction( graphId, "LpgWrite" ), meta );
     }
 
 
@@ -294,8 +305,8 @@ public class StorageManagerImpl implements StorageManager {
 
     @Override
     public void dropCheckpoints( UUID activityId ) {
-        for ( LogicalEntity entity : checkpoints.getOrDefault( activityId, Map.of() ).values() ) {
-            dropEntity( entity );
+        for ( Pair<LogicalEntity, CheckpointMetadata> entry : checkpoints.getOrDefault( activityId, Map.of() ).values() ) {
+            dropEntity( entry.left );
         }
         checkpoints.remove( activityId );
     }
@@ -395,13 +406,13 @@ public class StorageManagerImpl implements StorageManager {
 
 
     private LogicalEntity getCheckpoint( UUID activityId, int outputIdx ) {
-        return Objects.requireNonNull( checkpoints.get( activityId ).get( outputIdx ) );
+        return Objects.requireNonNull( checkpoints.get( activityId ).get( outputIdx ) ).left;
     }
 
 
-    private void register( UUID activityId, int outputIdx, LogicalEntity entity ) {
+    private void register( UUID activityId, int outputIdx, LogicalEntity entity, CheckpointMetadata meta ) {
         checkpoints.computeIfAbsent( activityId, k -> new ConcurrentHashMap<>() )
-                .put( outputIdx, entity );
+                .put( outputIdx, Pair.of( entity, meta ) );
     }
 
 

@@ -18,6 +18,8 @@ package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import lombok.NonNull;
 import lombok.Value;
@@ -28,6 +30,11 @@ public class StringValue implements SettingValue {
 
     @NonNull
     String value;
+
+
+    public List<String> splitAndTrim( String regex ) {
+        return Arrays.stream( value.split( regex ) ).map( String::trim ).filter( s -> !s.isEmpty() ).toList();
+    }
 
 
     public static StringValue of( String s ) {

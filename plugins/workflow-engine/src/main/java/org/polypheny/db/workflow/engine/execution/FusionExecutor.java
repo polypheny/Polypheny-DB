@@ -38,7 +38,6 @@ import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.Fusable;
-import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
@@ -187,10 +186,10 @@ public class FusionExecutor extends Executor {
         List<Long> inCounts = Arrays.asList( inCountsArr );
         long tupleCount = activity.estimateTupleCount( inTypes, settings, inCounts, () -> transaction );
         info.appendLog( root, LogLevel.INFO, "Fusing with settings: " + settings.serialize() );
-        try (ExecutionContextImpl ctx = new ExecutionContextImpl( wrapper, sm, info, inCounts )) {
+        try ( ExecutionContextImpl ctx = new ExecutionContextImpl( wrapper, sm, info, inCounts ) ) {
             // closing a FuseExecutionContext is currently not required, but we want to be sure.
             AlgNode fused = activity.fuse( inputs, settings, cluster, ctx );
-            wrapper.setOutTypePreview( TypePreview.ofType( fused.getTupleType() ).asOutTypes() );
+            wrapper.mergeOutTypePreview( List.of( fused.getTupleType() ) );
             return Pair.of( fused, tupleCount );
         }
     }

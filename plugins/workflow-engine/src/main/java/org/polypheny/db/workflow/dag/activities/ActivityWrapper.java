@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.activities;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.activities.Activity.ControlStateMerger;
 import org.polypheny.db.workflow.dag.activities.ActivityDef.InPortDef;
@@ -139,6 +142,21 @@ public class ActivityWrapper {
         if ( !invalidSettings.isEmpty() ) {
             throw invalidSettings.get( 0 );
         }
+    }
+
+
+    public void mergeOutTypePreview( List<AlgDataType> outTypes ) {
+        List<TypePreview> merged = new ArrayList<>( outTypes.stream().map( TypePreview::ofType ).toList() );
+        for ( int i = 0; i < merged.size(); i++ ) {
+            TypePreview preview = merged.get( i );
+            TypePreview old = this.outTypePreview.get( i );
+            if ( old.isPresent() && old.getDataModel() == preview.getDataModel() ) {
+                if ( old.getDataModel() == DataModel.DOCUMENT || old.getDataModel() == DataModel.GRAPH ) {
+                    merged.set( i, old ); // The old one might contain information about fields that the new one doesn't have
+                }
+            }
+        }
+        this.outTypePreview = Collections.unmodifiableList( merged );
     }
 
 

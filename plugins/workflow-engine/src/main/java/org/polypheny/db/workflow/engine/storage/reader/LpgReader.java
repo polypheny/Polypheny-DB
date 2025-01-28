@@ -35,6 +35,7 @@ import org.polypheny.db.util.Triple;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.Result;
+import org.polypheny.db.workflow.engine.storage.CheckpointMetadata.LpgMetadata;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
 public class LpgReader extends CheckpointReader {
@@ -42,8 +43,8 @@ public class LpgReader extends CheckpointReader {
     public static final int PREVIEW_NODES_LIMIT = 100;
 
 
-    public LpgReader( LogicalGraph graph, Transaction transaction ) {
-        super( graph, transaction );
+    public LpgReader( LogicalGraph graph, Transaction transaction, LpgMetadata metadata ) {
+        super( graph, transaction, metadata );
     }
 
 
@@ -179,7 +180,7 @@ public class LpgReader extends CheckpointReader {
     private long getCount( String countQuery ) {
         Iterator<PolyValue[]> it = executeCypherQuery( countQuery );
         try {
-            return it.next()[0].asLong().longValue();
+            return it.next()[0].asNumber().longValue();
         } catch ( NoSuchElementException | IndexOutOfBoundsException | NullPointerException ignored ) {
             return 0;
         }

@@ -62,6 +62,7 @@ public class DocSelectFieldsActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
+        // TODO: include selected fields in TypePreview
         return DocType.of().asOutTypes();
     }
 

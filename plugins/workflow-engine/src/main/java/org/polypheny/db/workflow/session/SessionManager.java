@@ -54,7 +54,7 @@ public class SessionManager {
         UUID wId = repo.createWorkflow( newWorkflowName, group );
         UUID sessionId = registerUserSession( new WorkflowImpl(), wId, 0 );
         saveUserSession( sessionId, "Initial Version" );
-        return registerUserSession( new WorkflowImpl(), wId, 0 );
+        return sessionId;
     }
 
 

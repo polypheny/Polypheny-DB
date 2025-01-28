@@ -23,6 +23,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.storage.CheckpointMetadata;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 public abstract class CheckpointWriter implements AutoCloseable {
@@ -30,11 +31,13 @@ public abstract class CheckpointWriter implements AutoCloseable {
 
     final LogicalEntity entity;
     final Transaction transaction;
+    final CheckpointMetadata metadata;
 
 
-    public CheckpointWriter( LogicalEntity entity, Transaction transaction ) {
+    public CheckpointWriter( LogicalEntity entity, Transaction transaction, CheckpointMetadata metadata ) {
         this.entity = entity;
         this.transaction = transaction;
+        this.metadata = metadata;
     }
 
 
@@ -100,6 +103,7 @@ public abstract class CheckpointWriter implements AutoCloseable {
     public void close() throws Exception {
         // even in case of an error we can commit, since the checkpoint will be dropped
         transaction.commit();
+        metadata.close();
     }
 
 

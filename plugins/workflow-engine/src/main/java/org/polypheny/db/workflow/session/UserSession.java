@@ -186,7 +186,7 @@ public class UserSession extends AbstractSession {
 
     @Override
     public SessionModel toModel() {
-        return new SessionModel( SessionModelType.USER_SESSION, sessionId, getSubscriberCount(),
+        return new SessionModel( SessionModelType.USER_SESSION, sessionId, getSubscriberCount(), lastInteraction.toString(), workflow.getActivityCount(),
                 wId, openedVersion, workflowDef, workflow.getState() );
     }
 

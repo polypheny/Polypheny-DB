@@ -53,7 +53,7 @@ public @interface StringSetting {
 
     String subGroup() default "";  // the subgroup this setting belongs to. Default is {@code GroupDef.DEFAULT_SUBGROUP}
 
-    int position() default 100;  // manually impose order within subGroup (lower pos => further to the top)
+    int position() default SettingDef.DEFAULT_POS;  // manually impose order within subGroup (lower pos => further to the top)
 
     /**
      * See {@link SettingDef#getSubPointer()}
@@ -78,6 +78,11 @@ public @interface StringSetting {
      * The maximum length of the string (exclusive)
      */
     int maxLength() default Integer.MAX_VALUE;
+
+    /**
+     * Whether the string must consist of at least one non-whitespace character
+     */
+    boolean nonBlank() default false;
 
 
     AutoCompleteType autoCompleteType() default AutoCompleteType.NONE;

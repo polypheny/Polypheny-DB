@@ -17,55 +17,67 @@
 package org.polypheny.db.workflow.models;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import lombok.Value;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.webui.models.catalog.FieldDefinition;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityDef;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
+import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
+import org.polypheny.db.workflow.dag.activities.TypePreview.LpgType;
 
 @Value
 public class TypePreviewModel {
 
     PortType portType; // ANY if not yet known
-    List<FieldDefinition> fields; // null if not yet known
+    List<FieldDefinition> columns; // null if not yet known or not relational
+    Set<String> fields; // null if not yet known or not document
+    Set<String> nodeLabels; // null if not yet known or not lpg
+    Set<String> edgeLabels; // null if not yet known or not lpg
     boolean notConnected; // only relevant for inputs
 
 
-    private TypePreviewModel( PortType portType, AlgDataType type, boolean notConnected ) {
+    private TypePreviewModel( PortType portType, TypePreview preview ) {
         this.portType = portType;
-        this.notConnected = notConnected;
-        if ( portType != PortType.ANY && type != null ) {
-            List<FieldDefinition> fields = new ArrayList<>();
-            switch ( portType.getDataModel() ) {
-                // TODO: better previews for graph and document?
-                case RELATIONAL -> {
+        this.notConnected = preview.isMissing();
+        AlgDataType type = preview.getNullableType();
+
+        List<FieldDefinition> columns = null;
+        Set<String> fields = null;
+        Set<String> nodeLabels = null;
+        Set<String> edgeLabels = null;
+
+        switch ( portType ) {
+            case REL -> {
+                if ( type != null ) {
+                    columns = new ArrayList<>();
                     for ( AlgDataTypeField field : type.getFields() ) {
-                        fields.add( FieldDefinition.of( field ) );
+                        columns.add( FieldDefinition.of( field ) );
                     }
                 }
-                case DOCUMENT -> {
-                    fields.add( FieldDefinition.builder()
-                            .name( "Document" )
-                            .dataType( DocumentType.ofId().getFullTypeString() )
-                            .build() );
-                }
-                case GRAPH -> {
-                    fields.add( FieldDefinition.builder()
-                            .name( "Graph" )
-                            .dataType( GraphType.of().getFullTypeString() )
-                            .build() );
+            }
+            case DOC -> {
+                if ( preview.isPresent() && preview instanceof DocType doc ) {
+                    fields = doc.getKnownFields();
                 }
             }
-            this.fields = Collections.unmodifiableList( fields );
-        } else {
-            fields = null;
+            case LPG -> {
+                if ( preview.isPresent() && preview instanceof LpgType lpg ) {
+                    nodeLabels = lpg.getKnownNodeLabels();
+                    edgeLabels = lpg.getKnownEdgeLabels();
+                }
+            }
+            case ANY -> {
+                // ignored
+            }
         }
+        this.columns = columns;
+        this.fields = fields;
+        this.nodeLabels = nodeLabels;
+        this.edgeLabels = edgeLabels;
     }
 
 
@@ -77,7 +89,7 @@ public class TypePreviewModel {
             if ( portType == PortType.ANY && preview.getDataModel() != null ) {
                 portType = PortType.fromDataModel( preview.getDataModel() );
             }
-            models.add( new TypePreviewModel( portType, preview.getNullableType(), preview.isMissing() ) );
+            models.add( new TypePreviewModel( portType, preview ) );
         }
         return models;
     }

@@ -25,17 +25,27 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
+import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.storage.CheckpointMetadata.LpgMetadata;
 import org.polypheny.db.workflow.engine.storage.LpgBatchWriter;
 
 public class LpgWriter extends CheckpointWriter {
 
+    /**
+     * How many nodes and edges are inspected for metadata extraction.
+     * A higher value results in a larger overhead.
+     */
+    private static final int MAX_INSPECTIONS = 100;
+
     private final LpgBatchWriter writer;
     private boolean isWritingEdges = false;
-    private long writeCount = 0;
+    private long nodeWriteCount = 0;
+    private long edgeWriteCount = 0;
 
 
-    public LpgWriter( LogicalGraph graph, Transaction transaction ) {
-        super( graph, transaction );
+    public LpgWriter( LogicalGraph graph, Transaction transaction, LpgMetadata metadata ) {
+        super( graph, transaction, metadata );
         writer = new LpgBatchWriter( graph, transaction );
     }
 
@@ -60,28 +70,36 @@ public class LpgWriter extends CheckpointWriter {
         if ( isWritingEdges ) {
             throw new GenericRuntimeException( "Cannot write node after writing edges" );
         }
-        writeCount++;
+        if ( nodeWriteCount < MAX_INSPECTIONS ) {
+            metadata.asLpg().addLabels( node );
+        }
+        nodeWriteCount++;
         writer.write( node );
     }
 
 
-    public void writeNode( Iterator<PolyNode> iterator ) {
+    public void writeNode( Iterator<PolyNode> iterator, ExecutionContext ctx ) throws ExecutorException {
         while ( iterator.hasNext() ) {
             writeNode( iterator.next() );
+            ctx.checkInterrupted();
         }
     }
 
 
     public void writeEdge( PolyEdge edge ) {
-        writeCount++;
+        if ( edgeWriteCount < MAX_INSPECTIONS ) {
+            metadata.asLpg().addLabels( edge );
+        }
+        edgeWriteCount++;
         writer.write( edge );
         isWritingEdges = true;
     }
 
 
-    public void writeEdge( Iterator<PolyEdge> iterator ) {
+    public void writeEdge( Iterator<PolyEdge> iterator, ExecutionContext ctx ) throws ExecutorException {
         while ( iterator.hasNext() ) {
             writeEdge( iterator.next() );
+            ctx.checkInterrupted();
         }
     }
 
@@ -101,12 +119,15 @@ public class LpgWriter extends CheckpointWriter {
 
     @Override
     public long getWriteCount() {
-        return writeCount;
+        return nodeWriteCount + edgeWriteCount;
     }
 
 
     @Override
     public void close() throws Exception {
+        LpgMetadata meta = metadata.asLpg();
+        meta.setNodeCount( nodeWriteCount );
+        meta.setEdgeCount( edgeWriteCount );
         if ( transaction.isActive() ) { // ensure writer is only closed once
             try {
                 writer.close();

@@ -47,7 +47,7 @@ public @interface IntSetting {
 
     String subGroup() default "";
 
-    int position() default 100;
+    int position() default SettingDef.DEFAULT_POS;
 
     /**
      * See {@link SettingDef#getSubPointer()}

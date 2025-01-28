@@ -58,8 +58,6 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
 
     AlgDataType getTupleType( UUID activityId, int outputIdx );
 
-    List<AlgDataType> getCheckpointTypes( UUID activityId );
-
     List<TypePreview> getCheckpointPreviewTypes( UUID activityId );
 
     /**

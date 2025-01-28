@@ -67,6 +67,9 @@ public class DocSortActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
+        if ( inTypes.get( 0 ).isPresent() ) {
+            return inTypes.get( 0 ).asOutTypes();
+        }
         return DocType.of().asOutTypes();
     }
 

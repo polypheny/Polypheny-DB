@@ -16,17 +16,16 @@
 
 package org.polypheny.db.workflow.dag.activities.impl;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.algebra.type.AlgDataType;
+import java.util.Set;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
-import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
-import org.polypheny.db.workflow.dag.activities.TypePreview.RelType;
-import org.polypheny.db.workflow.dag.activities.TypePreview.UnknownType;
+import org.polypheny.db.workflow.dag.activities.TypePreview.LpgType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
@@ -34,48 +33,45 @@ import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
+import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
+import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 
-@ActivityDefinition(type = "relMerge", displayName = "Relational Merge", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
-        inPorts = { @InPort(type = PortType.REL, description = "A single table that might not be active."),
-                @InPort(type = PortType.REL, isMulti = true, description = "One or more tables, some or all might not be active.") },
-        outPorts = { @OutPort(type = PortType.REL, description = "The union of all active inputs.") },
-        shortDescription = "Writes the rows of all active input tables into a single output table. "
+@ActivityDefinition(type = "lpgMerge", displayName = "Graph Merge", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH },
+        inPorts = { @InPort(type = PortType.LPG, description = "A single graph."),
+                @InPort(type = PortType.LPG, isMulti = true, description = "One or more graphs.") },
+        outPorts = { @OutPort(type = PortType.LPG, description = "The union of all active inputs.") },
+        shortDescription = "Combines the nodes and edges of all active input graphs into a single graph. "
                 + "Unlike a Union activity, this activity produces a result even if some inputs are inactive. This is useful for merging conditional branches."
 )
 
 @SuppressWarnings("unused")
-public class RelMergeActivity implements Activity {
+public class LpgMergeActivity implements Activity {
     // Not Pipeable on purpose to ensure a failure on one input does not abort the other input
 
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
-        List<AlgDataType> presentTypes = inTypes.stream().filter( TypePreview::isPresent ).map( TypePreview::getNullableType ).toList();
-
-        if ( presentTypes.isEmpty() ) {
-            return UnknownType.ofRel().asOutTypes();
+        Set<String> nodes = new HashSet<>();
+        Set<String> edges = new HashSet<>();
+        for ( TypePreview preview : inTypes ) {
+            if ( preview instanceof LpgType type ) {
+                nodes.addAll( type.getKnownNodeLabels() );
+                edges.addAll( type.getKnownEdgeLabels() );
+            }
         }
-        if ( presentTypes.size() == 1 ) {
-            return RelType.of( presentTypes.get( 0 ) ).asOutTypes();
-        }
-        AlgDataType type = ActivityUtils.mergeTypesOrThrow( presentTypes );
-        return RelType.of( type ).asOutTypes();
+        return LpgType.of( nodes, edges ).asOutTypes();
     }
 
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-
-        List<AlgDataType> types = inputs.stream().filter( Objects::nonNull ).map( CheckpointReader::getTupleType ).toList();
-        AlgDataType type = ActivityUtils.mergeTypesOrThrow( types );
-
-        RelWriter writer = ctx.createRelWriter( 0, type, true );
-        for ( CheckpointReader reader : inputs ) {
-            if ( reader == null ) {
-                continue;
-            }
-            writer.write( reader.getIterator(), ctx );
+        LpgWriter writer = ctx.createLpgWriter( 0 );
+        List<LpgReader> readers = inputs.stream().filter( Objects::nonNull ).map( in -> (LpgReader) in ).toList();
+        for ( LpgReader reader : readers ) {
+            writer.writeNode( reader.getNodeIterator(), ctx );
+        }
+        for ( LpgReader reader : readers ) {
+            writer.writeEdge( reader.getEdgeIterator(), ctx );
         }
     }
 

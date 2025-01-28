@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.websocket.WsMessageContext;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -73,6 +74,7 @@ public abstract class AbstractSession {
     private final Set<Session> subscribers = new HashSet<>();
     final GlobalScheduler scheduler;
     ExecutionMonitor executionMonitor; // corresponds to the last started execution
+    Instant lastInteraction = Instant.now();
 
 
     protected AbstractSession( Workflow workflow, UUID sessionId ) {
@@ -131,6 +133,11 @@ public abstract class AbstractSession {
 
     public ExecutionMonitorModel getMonitorModel() {
         return executionMonitor == null ? null : executionMonitor.toModel();
+    }
+
+
+    public void updateLastInteraction() {
+        this.lastInteraction = Instant.now();
     }
 
 

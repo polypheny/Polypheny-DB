@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
@@ -76,7 +77,7 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
-        return DocType.of().asOutTypes();
+        return DocType.of( Set.of( "name", "lastName", "age", "salary" ) ).asOutTypes();
     }
 
 
@@ -104,7 +105,7 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
         Random random = fixSeed ? new Random( 42 ) : new Random();
         for ( int i = 0; i < n; i++ ) {
             PolyDocument doc = getValue( random );
-            if (!output.put( doc )) {
+            if ( !output.put( doc ) ) {
                 break;
             }
         }

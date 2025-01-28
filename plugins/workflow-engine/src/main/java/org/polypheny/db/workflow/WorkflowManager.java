@@ -291,15 +291,16 @@ public class WorkflowManager {
 
 
     private void createSession( final Context ctx ) {
+        // -> creates a new workflow
         CreateSessionRequest request = ctx.bodyAsClass( CreateSessionRequest.class );
         process( ctx, () -> sessionManager.createUserSession( request.getName(), request.getGroup() ) );
     }
 
 
     private void openWorkflow( final Context ctx ) {
+        // -> opens existing workflow
         UUID workflowId = UUID.fromString( ctx.pathParam( "workflowId" ) );
         int version = Integer.parseInt( ctx.pathParam( "version" ) );
-        // TODO: combine with CreateSessionRequest into createSession endpoint?
         process( ctx, () -> sessionManager.createUserSession( workflowId, version ) );
     }
 

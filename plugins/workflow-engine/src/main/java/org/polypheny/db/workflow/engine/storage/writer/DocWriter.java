@@ -22,21 +22,31 @@ import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.workflow.engine.storage.CheckpointMetadata.DocMetadata;
 import org.polypheny.db.workflow.engine.storage.DocBatchWriter;
 
 public class DocWriter extends CheckpointWriter {
+
+    /**
+     * How many documents are inspected for metadata extraction.
+     * A higher value results in a larger overhead.
+     */
+    private static final int MAX_INSPECTIONS = 100;
 
     private final DocBatchWriter writer;
     private long writeCount = 0;
 
 
-    public DocWriter( LogicalCollection collection, Transaction transaction ) {
-        super( collection, transaction );
+    public DocWriter( LogicalCollection collection, Transaction transaction, DocMetadata metadata ) {
+        super( collection, transaction, metadata );
         writer = new DocBatchWriter( collection, transaction );
     }
 
 
     public void write( PolyDocument document ) {
+        if ( writeCount < MAX_INSPECTIONS ) {
+            metadata.asDoc().addFields( document );
+        }
         writeCount++;
         writer.write( document );
     }
@@ -51,8 +61,7 @@ public class DocWriter extends CheckpointWriter {
 
     @Override
     public void write( List<PolyValue> tuple ) {
-        writeCount++;
-        writer.write( tuple.get( 0 ).asDocument() );
+        write( tuple.get( 0 ).asDocument() );
     }
 
 

@@ -31,6 +31,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Triple;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.Result;
+import org.polypheny.db.workflow.engine.storage.CheckpointMetadata.RelMetadata;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
 public class RelReader extends CheckpointReader {
@@ -40,8 +41,8 @@ public class RelReader extends CheckpointReader {
     private final String quotedCols;
 
 
-    public RelReader( LogicalTable table, Transaction transaction ) {
-        super( table, transaction );
+    public RelReader( LogicalTable table, Transaction transaction, RelMetadata metadata ) {
+        super( table, transaction, metadata );
         this.quotedIdentifier = QueryUtils.quotedIdentifier( table );
         this.quotedCols = QueryUtils.quoteAndJoin( table.getColumnNames() );
     }
@@ -51,7 +52,7 @@ public class RelReader extends CheckpointReader {
         String query = "SELECT COUNT(*) FROM " + quotedIdentifier;
         Iterator<PolyValue[]> it = executeSqlQuery( query );
         try {
-            return it.next()[0].asLong().longValue();
+            return it.next()[0].asNumber().longValue();
         } catch ( NoSuchElementException | IndexOutOfBoundsException | NullPointerException ignored ) {
             return 0;
         }

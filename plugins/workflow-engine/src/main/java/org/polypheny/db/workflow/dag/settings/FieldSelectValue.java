@@ -69,4 +69,25 @@ public class FieldSelectValue implements SettingValue {
         return selected;
     }
 
+
+    /**
+     * Filters by inspecting labels.
+     * If one label should be included and another one excluded, includeConflicting is the tiebreaker.
+     * If the set is empty, includeConflicting is returned.
+     * A single matching label is sufficient, not all have to match.
+     */
+    public boolean isSelected( Set<String> labels, boolean includeConflicting ) {
+        if ( labels.isEmpty() ) {
+            return includeConflicting;
+        }
+        boolean isExcluded = exclude.stream().anyMatch( labels::contains );
+        if ( isExcluded && !includeConflicting ) {
+            return false;
+        }
+
+        return includeUnspecified() ?
+                labels.stream().anyMatch( label -> !exclude.contains( label ) ) :
+                include.stream().anyMatch( labels::contains );
+    }
+
 }

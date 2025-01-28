@@ -16,7 +16,9 @@
 
 package org.polypheny.db.workflow.dag.activities.impl;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
@@ -25,7 +27,7 @@ import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
-import org.polypheny.db.workflow.dag.activities.TypePreview.LpgType;
+import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
@@ -36,49 +38,53 @@ import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
-import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
+import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 
-@ActivityDefinition(type = "lpgIdentity", displayName = "Graph Identity", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH },
-        inPorts = { @InPort(type = PortType.LPG) },
-        outPorts = { @OutPort(type = PortType.LPG) }
+@ActivityDefinition(type = "docUnion", displayName = "Document Union", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT },
+        inPorts = { @InPort(type = PortType.DOC, description = "A single document collection."), @InPort(type = PortType.DOC, isMulti = true, description = "One or more collections.") },
+        outPorts = { @OutPort(type = PortType.DOC) },
+        shortDescription = "Writes the documents of all input collections into a single output collection."
 )
-@SuppressWarnings("unused")
-public class LpgIdentityActivity implements Activity, Pipeable {
 
+@SuppressWarnings("unused")
+public class DocUnionActivity implements Activity, Pipeable {
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
-        if ( inTypes.get( 0 ).isPresent() ) {
-            return inTypes.get( 0 ).asOutTypes();
+        Set<String> fields = new HashSet<>();
+        for ( TypePreview preview : inTypes ) {
+            if ( preview instanceof DocType type ) {
+                fields.addAll( type.getKnownFields() );
+            }
         }
-        return LpgType.of().asOutTypes();
-    }
-
-
-    @Override
-    public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        LpgReader input = (LpgReader) inputs.get( 0 );
-        LpgWriter output = ctx.createLpgWriter( 0 );
-
-        output.writeNode( input.getNodeIterator(), ctx );
-        output.writeEdge( input.getEdgeIterator(), ctx );
+        return DocType.of( fields ).asOutTypes();
     }
 
 
     @Override
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
-        return inTypes.get( 0 );
+        return getDocType();
     }
 
 
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
-        for ( List<PolyValue> value : inputs.get( 0 ) ) {
-            if ( !output.put( value ) ) {
-                inputs.get( 0 ).finishIteration();
-                return;
+        for ( InputPipe input : inputs ) {
+            for ( List<PolyValue> tuple : input ) {
+                if ( !output.put( tuple ) ) {
+                    inputs.forEach( InputPipe::finishIteration );
+                    return;
+                }
             }
+        }
+    }
+
+
+    @Override
+    public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
+        DocWriter writer = ctx.createDocWriter( 0 );
+        for ( CheckpointReader input : inputs ) {
+            writer.write( input.getIterable(), ctx );
         }
     }
 

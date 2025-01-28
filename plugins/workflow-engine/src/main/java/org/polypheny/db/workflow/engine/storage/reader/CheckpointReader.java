@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -38,18 +39,23 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Triple;
 import org.polypheny.db.webui.models.results.Result;
+import org.polypheny.db.workflow.engine.storage.CheckpointMetadata;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
 public abstract class CheckpointReader implements AutoCloseable {
 
     final LogicalEntity entity;
     final Transaction transaction;
+    @Getter
+    final CheckpointMetadata metadata;
     private final Set<AutoCloseable> openIterators = new HashSet<>();
 
 
-    public CheckpointReader( LogicalEntity entity, Transaction transaction ) {
+    public CheckpointReader( LogicalEntity entity, Transaction transaction, CheckpointMetadata metadata ) {
         this.entity = entity;
         this.transaction = transaction;
+        this.metadata = metadata;
+        assert metadata.isClosed();
     }
 
 

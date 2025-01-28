@@ -52,7 +52,7 @@ public @interface EnumSetting {
 
     String subGroup() default "";
 
-    int position() default 100;
+    int position() default SettingDef.DEFAULT_POS;
 
     /**
      * See {@link SettingDef#getSubPointer()}
@@ -66,8 +66,11 @@ public @interface EnumSetting {
 
     // Setting-specific properties
     String[] options();
+
     String[] displayOptions() default {};
+
     String defaultValue();
+
     String label() default "";
 
 

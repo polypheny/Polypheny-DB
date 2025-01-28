@@ -112,6 +112,12 @@ public class WorkflowImpl implements Workflow {
 
 
     @Override
+    public int getActivityCount() {
+        return activities.size();
+    }
+
+
+    @Override
     public ActivityWrapper getActivity( UUID activityId ) {
         return activities.get( activityId );
     }

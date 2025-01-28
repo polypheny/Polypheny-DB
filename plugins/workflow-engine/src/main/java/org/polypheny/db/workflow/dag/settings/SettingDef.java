@@ -50,6 +50,7 @@ import org.polypheny.db.workflow.dag.annotations.StringSetting;
 public abstract class SettingDef {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    public static final int DEFAULT_POS = 1000;
 
     private final SettingType type;
     private final String key;
@@ -268,6 +269,26 @@ public abstract class SettingDef {
         }
 
 
+        public boolean getBool( String key ) {
+            return get( key, BoolValue.class ).getValue();
+        }
+
+
+        public int getInt( String key ) {
+            return get( key, IntValue.class ).getValue();
+        }
+
+
+        public String getString( String key ) {
+            return get( key, StringValue.class ).getValue();
+        }
+
+
+        public double getDouble( String key ) {
+            return get( key, DoubleValue.class ).getValue();
+        }
+
+
         public Map<String, JsonNode> getSerializableSettings() {
             Map<String, JsonNode> settingValues = new HashMap<>();
             for ( Entry<String, SettingValue> entry : map.entrySet() ) {
@@ -331,6 +352,26 @@ public abstract class SettingDef {
 
         public <T extends SettingValue> Optional<T> get( String key, Class<T> clazz ) {
             return map.get( key ).map( value -> value.unwrapOrThrow( clazz ) );
+        }
+
+
+        public boolean getBool( String key ) {
+            return getOrThrow( key, BoolValue.class ).getValue();
+        }
+
+
+        public int getInt( String key ) {
+            return getOrThrow( key, IntValue.class ).getValue();
+        }
+
+
+        public String getString( String key ) {
+            return getOrThrow( key, StringValue.class ).getValue();
+        }
+
+
+        public double getDouble( String key ) {
+            return getOrThrow( key, DoubleValue.class ).getValue();
         }
 
 

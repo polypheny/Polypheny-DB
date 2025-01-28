@@ -27,6 +27,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.workflow.engine.storage.BatchWriter;
+import org.polypheny.db.workflow.engine.storage.CheckpointMetadata.RelMetadata;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
 public class RelWriter extends CheckpointWriter {
@@ -39,8 +40,8 @@ public class RelWriter extends CheckpointWriter {
     private long writeCount = 0;
 
 
-    public RelWriter( LogicalTable table, Transaction transaction, boolean resetPk ) {
-        super( table, transaction );
+    public RelWriter( LogicalTable table, Transaction transaction, boolean resetPk, RelMetadata metadata ) {
+        super( table, transaction, metadata );
         this.resetPk = resetPk;
         this.mapCapacity = (int) Math.ceil( table.getTupleType().getFieldCount() / 0.75 ); // 0.75 is the default loadFactor of HashMap
 
@@ -136,6 +137,7 @@ public class RelWriter extends CheckpointWriter {
 
     @Override
     public void close() throws Exception {
+        metadata.asRel().setTupleCount( writeCount );
         if ( transaction.isActive() ) { // ensure writer is only closed once
             try {
                 writer.close();

@@ -113,14 +113,14 @@ public class LpgExtractActivity implements Activity, Pipeable {
         LogicalGraph graph = settings.get( GRAPH_KEY, EntityValue.class ).getGraph();
         try ( ResultIterator nodes = getResultIterator( ctx.getTransaction(), graph, false ) ) {
             for ( Iterator<List<PolyValue>> it = CheckpointReader.arrayToListIterator( nodes.getIterator(), true ); it.hasNext(); ) {
-                if (!output.put( it.next() )) {
+                if ( !output.put( it.next() ) ) {
                     return;
                 }
             }
         }
         try ( ResultIterator edges = getResultIterator( ctx.getTransaction(), graph, true ) ) {
             for ( Iterator<List<PolyValue>> it = CheckpointReader.arrayToListIterator( edges.getIterator(), true ); it.hasNext(); ) {
-                if (!output.put( it.next() )) {
+                if ( !output.put( it.next() ) ) {
                     return;
                 }
             }
@@ -143,7 +143,7 @@ public class LpgExtractActivity implements Activity, Pipeable {
         ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery(
                 countQuery, "cypher", graph.getNamespaceId(), transaction );
         try ( ResultIterator resultIterator = executedContext.getIterator() ) {
-            return resultIterator.getIterator().next()[0].asLong().longValue();
+            return resultIterator.getIterator().next()[0].asNumber().longValue();
         } catch ( NoSuchElementException | IndexOutOfBoundsException | NullPointerException ignored ) {
             return -1;
         }

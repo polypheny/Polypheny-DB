@@ -108,7 +108,7 @@ public class LpgBatchWriter implements AutoCloseable {
             throw new GenericRuntimeException( "An error occurred while writing a batch: ", executedContext.getException().get() );
         }
         List<List<PolyValue>> results = executedContext.getIterator().getAllRowsAndClose();
-        long changedCount = results.size() == 1 ? results.get( 0 ).get( 0 ).asLong().longValue() : 0;
+        long changedCount = results.size() == 1 ? results.get( 0 ).get( 0 ).asNumber().longValue() : 0;
         if ( changedCount < 1 && batchSize > 0 ) { // Temporary solution, since changedCount can be higher than the number of tuples written
             throw new GenericRuntimeException( "Unable to write all values of the batch: " + changedCount + " of " + batchSize + " tuples were written. Result is " + results );
         }
