@@ -199,8 +199,8 @@ public class LockableUtils {
      * @return map containing the appropriate lockable and lock type for the specified namespace
      */
     public static Map<Lockable, LockType> getMapOfNamespaceLockableFromName( String namespaceName, Context context, LockType lockType ) {
-        LogicalNamespace namespace = context.getSnapshot().getNamespace( namespaceName ).orElseThrow();
-        return getMapOfNamespaceLockable( namespace, lockType );
+        Optional<LogicalNamespace> namespace = context.getSnapshot().getNamespace( namespaceName );
+        return namespace.map( logicalNamespace -> getMapOfNamespaceLockable( logicalNamespace, lockType ) ).orElseGet( HashMap::new );
     }
 
 
@@ -216,8 +216,8 @@ public class LockableUtils {
      */
     public static Map<Lockable, LockType> getMapOfNamespaceLockableFromContext( Context context, ParsedQueryContext parsedQueryContext, LockType lockType ) {
         long namespaceId = parsedQueryContext.getNamespaceId();
-        LogicalNamespace namespace = context.getSnapshot().getNamespace( namespaceId ).orElseThrow();
-        return getMapOfNamespaceLockable( namespace, lockType );
+        Optional<LogicalNamespace> namespace = context.getSnapshot().getNamespace( namespaceId );
+        return namespace.map( logicalNamespace -> getMapOfNamespaceLockable( logicalNamespace, lockType ) ).orElseGet( HashMap::new );
     }
 
 
@@ -250,7 +250,7 @@ public class LockableUtils {
      */
     public static Map<Lockable, LockType> getMapOfCollectionLockableFromContext( Context context, ParsedQueryContext parsedQueryContext, String collectionName, LockType lockType ) {
         long namespaceId = parsedQueryContext.getNamespaceId();
-        LogicalCollection collection = context.getSnapshot().doc().getCollection( namespaceId, collectionName ).orElseThrow();
-        return getMapOfLockableFromObject( collection, lockType );
+        Optional<LogicalCollection> collection = context.getSnapshot().doc().getCollection( namespaceId, collectionName );
+        return collection.map( logicalCollection -> getMapOfLockableFromObject( logicalCollection, lockType ) ).orElseGet( HashMap::new );
     }
 }
