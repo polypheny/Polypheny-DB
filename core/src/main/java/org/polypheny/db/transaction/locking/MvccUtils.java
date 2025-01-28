@@ -186,7 +186,7 @@ public class MvccUtils {
                 WHERE n._vid = %d
                 SET n._vid = %d
 
-                WITH n // Continue after updating nodes
+                WITH n
 
                 MATCH ()-[r]->()
                 WHERE r._vid = %d
