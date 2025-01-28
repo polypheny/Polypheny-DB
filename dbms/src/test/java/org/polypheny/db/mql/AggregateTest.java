@@ -56,6 +56,18 @@ public class AggregateTest extends MqlTestTemplate {
             "{\"val\":\"31\",\"test\":[\"test\",null,{ \"test\": 25 }]}",
             "{\"test\":13}" );
 
+    private final List<String> DATA_4 = Arrays.asList(
+            "{\"a\": 1, \"b\": 5}",
+            "{\"a\": 2, \"b\": 5}",
+            "{\"a\": 3, \"b\": 5}"
+    );
+
+    @Test
+    public void aggregateToSetTest() {
+        insertMany( DATA_4 );
+        DocResult result = aggregate( $match( "{\"b\": 5}" ), $group( "{\"_id\" : null, \"a\" : { \"$addToSet\" : \" $a\"}}"));
+    }
+
 
     @Test
     public void projectTest() {
