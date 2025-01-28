@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,12 +76,36 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
     }
 
 
-    // 100 runs
+    // 100 Items
     //    default: 24.285108ms
     //    mongo: 8.393663ms
+    //
+    // 100 Items (2dsphere)
+    //    default: 20.152744ms
+    //    mongo: 7.857897ms
+    //
     @Test
     public void docGeoWithinPerformanceTst() {
-        String insertMany = generateInsertTestDataQueries( 100 );
+        String insertMany = generateInsertGeoJsonTestDataQuery( 0, 100 );
+        String near2d = """
+                db.%s.find({
+                    location: {
+                       $near: [0,0]
+                    }
+                })
+                """;
+        String near2dsphere = """
+                db.%s.find({
+                    location: {
+                       $near: {
+                            $geometry: {
+                                  type: "Point",
+                                  coordinates: [0,0]
+                            }
+                      }
+                    }
+                })
+                """;
         String geoWithinBox = """
                 db.%s.find({
                     location: {
@@ -93,7 +118,66 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
                     }
                 })
                 """;
-        benchmarkQueries( Arrays.asList( insertMany, geoWithinBox ) );
+        benchmarkLastQuery( Arrays.asList( insertMany, near2dsphere, geoWithinBox ) );
+    }
+
+    // 1000
+    //    default: 57.147675ms
+    //    mongo: 8.592755ms
+    // 10 000
+    //    default: 487.473431ms
+    //    mongo: 18.985399ms
+    // 25 000
+    //    default: 1312.20273995ms
+    //    mongo: 35.70343193ms
+    // 50 000
+    //    default: 2653.53503814ms
+    //    mongo: 68.01575299999999ms
+    // 100 000
+    //    default: 5056.052291ms
+    //    mongo: 125.72021602000001ms
+    @Test
+    public void docGeoWithinWithIndex() {
+        List<String> insertMany = generateInsertGeoJsonTestDataQueries( 50_000 );
+        String near2d = """
+                db.%s.find({
+                    location: {
+                       $near: [0,0]
+                    }
+                })
+                """;
+        String near2dsphere = """
+                db.%s.find({
+                    location: {
+                       $near: {
+                            $geometry: {
+                                  type: "Point",
+                                  coordinates: [0,0]
+                            }
+                      }
+                    }
+                })
+                """;
+        String geoWithinBox = """
+                db.%s.find({
+                    location: {
+                       $geoWithin: {
+                          $box: [
+                            [10,10],
+                            [20,20]
+                          ]
+                       }
+                    }
+                })
+                """;
+        ArrayList<String> queries = new ArrayList<>();
+        // Create 2dsphere index
+        queries.add( near2dsphere );
+        // Insert data
+        queries.addAll( insertMany );
+        // Final query will be benchmarked
+        queries.add( geoWithinBox );
+        benchmarkLastQuery( queries );
     }
 
 
@@ -102,7 +186,7 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
     //    mongo: 9.54054ms
     @Test
     public void docGeoIntersectsPerformanceTst() {
-        String insertMany = generateInsertTestDataQueries( 100 );
+        String insertMany = generateInsertGeoJsonTestDataQuery( 0, 100 );
         String geoIntersects = """
                 db.%s.find({
                     location: {
@@ -115,15 +199,16 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
                     }
                 })
                 """;
-        benchmarkQueries( Arrays.asList( insertMany, geoIntersects ) );
+        benchmarkLastQuery( Arrays.asList( insertMany, geoIntersects ) );
     }
-    
+
+
     // 100 runs
     //    default: 19.415951ms
     //    mongo: 8.168845ms
     @Test
     public void docGeoWithinCenterSpherePerformanceTst() {
-        String insertMany = generateInsertTestDataQueries( 100 );
+        String insertMany = generateInsertGeoJsonTestDataQuery( 0, 100 );
         String geoIntersects = """
                 db.%s.find({
                     location: {
@@ -136,13 +221,35 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
                     }
                 })
                 """;
-        benchmarkQueries( Arrays.asList( insertMany, geoIntersects ) );
+        benchmarkLastQuery( Arrays.asList( insertMany, geoIntersects ) );
     }
 
 
-    private String generateInsertTestDataQueries( int itemCount ) {
+    public List<String> generateInsertGeoJsonTestDataQueries( int itemCount ) {
+        List<String> queries = new ArrayList<>();
+        int batchSize = 100;
+
+        for ( int start = 0; start < itemCount; start += batchSize ) {
+            int currentBatchSize = Math.min( batchSize, itemCount - start );
+            String query = generateInsertGeoJsonTestDataQuery( start, currentBatchSize );
+            queries.add( query );
+        }
+
+        return queries;
+    }
+
+
+    private String generateInsertGeoJsonTestDataQuery( int startCount, int itemCount ) {
         List<String> items = new ArrayList<>( itemCount );
+        int seed = 42;
+        Random random = new Random( seed );
+
         for ( int i = 0; i < itemCount; i++ ) {
+            // Generate valid latitude and longitude
+            double latitude = -90 + random.nextDouble() * 180;
+            double longitude = -180 + random.nextDouble() * 360;
+
+            int num = startCount + i;
             String itemTemplate = """
                     {
                       name: "GeoJSON [%s,%s]",
@@ -152,7 +259,7 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
                         coordinates: [%s,%s]
                       }
                     }
-                    """.formatted( i, i, i, i, i );
+                    """.formatted( num, num, num, longitude, latitude );
             items.add( itemTemplate );
         }
         String query = "db.%s.insertMany([" + String.join( ",", items ) + "])";
@@ -190,7 +297,7 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
      * @param queries Queries which are run for each system. Make sure
      * the query contains a placeholder %s for the collection.
      */
-    private void benchmarkQueries( List<String> queries ) {
+    private void benchmarkLastQuery( List<String> queries ) {
         int runCount = 110;
         int warmUpRuns = 10;
 
