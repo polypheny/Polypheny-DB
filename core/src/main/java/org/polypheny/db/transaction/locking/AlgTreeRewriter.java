@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
@@ -589,9 +590,26 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
             case UPDATE:
                 IdentifierUtils.throwIfContainsDisallowedKey( modify1.getUpdates().keySet() );
                 return modify1;
+                // return getRewriteOfUpdateDocModify( modify1 );
+
+            case DELETE:
+                return modify1;
+                // return getRewriteOfDeleteDocModify( modify1 );
 
         }
         return modify1;
+    }
+
+
+    private LogicalDocumentModify getRewriteOfDeleteDocModify( LogicalDocumentModify modify1 ) {
+        throw new NotImplementedException();
+        //ToDo TH: implement
+    }
+
+
+    private LogicalDocumentModify getRewriteOfUpdateDocModify( LogicalDocumentModify modify1 ) {
+        throw new NotImplementedException();
+        //ToDo TH: implement
     }
 
 
@@ -619,7 +637,8 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalDocumentScan scan ) {
         if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
-            pendingModifications.add( new DeferredAlgTreeModification( scan, Modification.LIMIT_DOC_SCAN_TO_SNAPSHOT, statement ) );
+            // TODO TH: activate this once rest is working
+            //pendingModifications.add( new DeferredAlgTreeModification( scan, Modification.LIMIT_DOC_SCAN_TO_SNAPSHOT, statement ) );
         }
         return visitChildren( scan );
     }
