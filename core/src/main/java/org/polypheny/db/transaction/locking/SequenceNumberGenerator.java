@@ -18,7 +18,6 @@ package org.polypheny.db.transaction.locking;
 
 import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicLong;
-import lombok.Getter;
 
 public class SequenceNumberGenerator {
 
