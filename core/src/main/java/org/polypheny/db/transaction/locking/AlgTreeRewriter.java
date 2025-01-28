@@ -495,7 +495,8 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalLpgScan scan ) {
         if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
-            pendingModifications.add( new DeferredAlgTreeModification( scan, Modification.LIMIT_LPG_SCAN_TO_SNAPSHOT, statement ) );
+            // TODO reactivate this once the rest is working
+            //pendingModifications.add( new DeferredAlgTreeModification( scan, Modification.LIMIT_LPG_SCAN_TO_SNAPSHOT, statement ) );
         }
         return scan;
     }
