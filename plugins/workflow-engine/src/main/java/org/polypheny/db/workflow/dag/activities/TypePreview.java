@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.dag.activities;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -235,6 +236,11 @@ public abstract class TypePreview implements Wrapper {
 
         public static DocType of( Set<String> knownFields ) {
             return new DocType( knownFields );
+        }
+
+
+        public static DocType of( Collection<String> knownFields ) {
+            return new DocType( Set.copyOf( knownFields ) );
         }
 
 

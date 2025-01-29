@@ -78,6 +78,11 @@ public @interface FieldSelectSetting {
      */
     boolean defaultAll() default false;
 
+    /**
+     * Whether to include unspecified fields by default.
+     */
+    boolean defaultUnspecified() default false;
+
     int targetInput() default 0;
 
 

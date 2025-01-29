@@ -81,11 +81,19 @@ public class ActivityUtils {
         AlgDataType type = input.getTupleType();
         projects.add( cluster.getRexBuilder().makeBigintLiteral( new BigDecimal( 0 ) ) ); // Add new PK col
         IntStream.range( 0, type.getFieldCount() )
-                .mapToObj( i ->
-                        new RexIndexRef( i, type.getFields().get( i ).getType() )
-                ).forEach( projects::add );
-
+                .mapToObj( i -> new RexIndexRef( i, type.getFields().get( i ).getType() ) )
+                .forEach( projects::add );
         return LogicalRelProject.create( input, projects, addPkCol( type ) );
+    }
+
+
+    public static AlgNode removePkCol( AlgNode input, AlgCluster cluster ) {
+        List<RexNode> projects = new ArrayList<>();
+        AlgDataType type = input.getTupleType();
+        IntStream.range( 1, type.getFieldCount() )
+                .mapToObj( i -> new RexIndexRef( i, type.getFields().get( i ).getType() ) )
+                .forEach( projects::add );
+        return LogicalRelProject.create( input, projects, removeField( type, StorageManager.PK_COL ) );
     }
 
 

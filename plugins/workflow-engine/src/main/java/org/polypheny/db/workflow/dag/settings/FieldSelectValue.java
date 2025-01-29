@@ -90,4 +90,12 @@ public class FieldSelectValue implements SettingValue {
                 include.stream().anyMatch( labels::contains );
     }
 
+
+    public boolean isSelected( String candidate ) {
+        if ( exclude.contains( candidate ) ) {
+            return false;
+        }
+        return includeUnspecified() || include.contains( candidate );
+    }
+
 }

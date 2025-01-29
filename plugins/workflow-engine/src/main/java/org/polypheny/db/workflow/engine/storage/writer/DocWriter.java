@@ -73,6 +73,7 @@ public class DocWriter extends CheckpointWriter {
 
     @Override
     public void close() throws Exception {
+        metadata.asDoc().setTupleCount( writeCount );
         if ( transaction.isActive() ) { // ensure writer is only closed once
             try {
                 writer.close();

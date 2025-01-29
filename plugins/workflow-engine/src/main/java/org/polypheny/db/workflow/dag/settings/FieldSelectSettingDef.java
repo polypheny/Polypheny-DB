@@ -34,7 +34,7 @@ public class FieldSelectSettingDef extends SettingDef {
 
 
     public FieldSelectSettingDef( FieldSelectSetting a ) {
-        super( SettingType.FIELD_SELECT, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.simplified() ),
+        super( SettingType.FIELD_SELECT, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultUnspecified() ),
                 a.group(), a.subGroup(), a.pos(), a.subPointer(), a.subValues() );
         this.simplified = a.simplified();
         this.reorder = a.reorder();
@@ -72,8 +72,8 @@ public class FieldSelectSettingDef extends SettingDef {
     }
 
 
-    private static SettingValue getDefaultValue( boolean isSimplified ) {
-        return new FieldSelectValue( List.of(), List.of(), -1 );
+    private static SettingValue getDefaultValue( boolean includeUnspecified ) {
+        return new FieldSelectValue( List.of(), List.of(), includeUnspecified ? 0 : -1 );
     }
 
 }

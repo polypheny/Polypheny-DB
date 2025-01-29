@@ -52,6 +52,7 @@ public class VariableWriterExecutor extends Executor {
             activity.execute( inputs, settings, ctx, wrapper.getVariables() );
             wrapper.setOutTypePreview( sm.getCheckpointPreviewTypes( wrapper.getId() ) );
         } catch ( Exception e ) {
+            e.printStackTrace();
             throw new ExecutorException( e, wrapper.getId() );
         }
     }

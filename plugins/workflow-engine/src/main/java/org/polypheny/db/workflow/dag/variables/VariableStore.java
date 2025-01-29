@@ -17,10 +17,12 @@
 package org.polypheny.db.workflow.dag.variables;
 
 import com.fasterxml.jackson.core.JsonPointer;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +32,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
@@ -70,7 +73,17 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
 
     @Override
     public void setVariable( String key, Object obj ) {
-        JsonNode jsonNode = mapper.valueToTree( obj );
+        JsonNode jsonNode;
+        if ( obj instanceof PolyValue value ) {
+            String serialized = value.toJson();
+            try {
+                jsonNode = mapper.readTree( serialized );
+            } catch ( JsonProcessingException e ) {
+                jsonNode = TextNode.valueOf( serialized );
+            }
+        } else {
+            jsonNode = mapper.valueToTree( obj );
+        }
         setVariable( key, jsonNode );
     }
 
