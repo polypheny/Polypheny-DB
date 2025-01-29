@@ -103,9 +103,25 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     public AlgRoot process( AlgRoot root ) {
         AlgNode rootAlg = root.alg.accept( this );
-        if ( pendingModifications.isEmpty() ) {
+
+        if (pendingModifications.isEmpty()) {
             return root.withAlg( rootAlg );
         }
+
+        Iterator<DeferredAlgTreeModification> iterator = pendingModifications.iterator();
+        while ( iterator.hasNext() ) {
+            DeferredAlgTreeModification modification = iterator.next();
+            if ( modification.notTargets( rootAlg ) ) {
+                continue;
+            }
+            rootAlg = modification.applyOrSkip( rootAlg );
+            iterator.remove();
+        }
+
+        if (pendingModifications.isEmpty()) {
+            return root.withAlg( rootAlg );
+        }
+
         throw new IllegalStateException( "No pending tree modifications must be left on root level." );
     }
 
@@ -125,10 +141,10 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         Iterator<DeferredAlgTreeModification> iterator = pendingModifications.iterator();
         while ( iterator.hasNext() ) {
             DeferredAlgTreeModification modification = iterator.next();
-            if ( modification.notTargets( node ) ) {
+            if ( modification.notTargetsChildOf( node ) ) {
                 continue;
             }
-            node = modification.applyOrSkip( node );
+            node = modification.applyToChildOrSkip( node );
             iterator.remove();
         }
         return node;
@@ -638,10 +654,9 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalDocumentScan scan ) {
         if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
-            // TODO TH: activate this once rest is working
-            //pendingModifications.add( new DeferredAlgTreeModification( scan, Modification.LIMIT_DOC_SCAN_TO_SNAPSHOT, statement ) );
+            pendingModifications.add( new DeferredAlgTreeModification( scan, Modification.LIMIT_DOC_SCAN_TO_SNAPSHOT, statement ) );
         }
-        return visitChildren( scan );
+        return scan;
     }
 
 
