@@ -49,7 +49,7 @@ public class GroupDef {
         return new GroupDef(
                 a.key(),
                 a.displayName(),
-                a.position(),
+                a.pos(),
                 SubgroupDef.fromAnnotations( a.subgroups() )
         );
     }
@@ -102,7 +102,7 @@ public class GroupDef {
         private SubgroupDef( Subgroup a ) {
             key = a.key();
             displayName = a.displayName();
-            position = a.position();
+            position = a.pos();
         }
 
 

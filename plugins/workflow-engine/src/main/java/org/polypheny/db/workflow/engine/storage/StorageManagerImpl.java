@@ -17,10 +17,12 @@
 package org.polypheny.db.workflow.engine.storage;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
@@ -196,6 +198,10 @@ public class StorageManagerImpl implements StorageManager {
         AlgDataTypeField pkField = type.getFields().get( 0 ); // pk is at index 0
         if ( !StorageManager.isPkCol( pkField ) ) {
             throw new IllegalArgumentException( "The first column of an output table must be its (numeric) primary key with name " + PK_COL );
+        }
+        String duplicateField = findDuplicateField( type );
+        if ( duplicateField != null ) {
+            throw new IllegalArgumentException( "Found duplicate column in output table: " + duplicateField );
         }
 
         String tableName = getTableName( activityId, outputIdx );
@@ -447,12 +453,25 @@ public class StorageManagerImpl implements StorageManager {
     // Utils:
 
 
+    private String findDuplicateField( AlgDataType type ) {
+        Set<String> names = new HashSet<>();
+        for ( AlgDataTypeField field : type.getFields() ) {
+            String name = field.getName();
+            if ( names.contains( name ) ) {
+                return name;
+            }
+            names.add( name );
+        }
+        return null;
+    }
+
+
     private List<ConstraintInformation> getPkConstraint( String pkCol ) {
         return List.of( new ConstraintInformation( "PRIMARY KEY", ConstraintType.PRIMARY, List.of( pkCol ) ) );
     }
 
 
-    private List<FieldInformation> getFieldInfo( AlgDataType tupleType ) {
+    public static List<FieldInformation> getFieldInfo( AlgDataType tupleType ) {
         List<FieldInformation> columns = new ArrayList<>();
 
         int position = 0;
@@ -471,7 +490,7 @@ public class StorageManagerImpl implements StorageManager {
     }
 
 
-    private ColumnTypeInformation getColTypeInfo( AlgDataTypeField field ) {
+    private static ColumnTypeInformation getColTypeInfo( AlgDataTypeField field ) {
         AlgDataType type = field.getType();
         boolean isArray = false;
         if ( type.getPolyType() == PolyType.ARRAY ) {

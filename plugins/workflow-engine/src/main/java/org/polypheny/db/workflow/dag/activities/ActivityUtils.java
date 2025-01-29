@@ -67,21 +67,12 @@ public class ActivityUtils {
 
 
     public static AlgDataType addPkCol( AlgDataType type ) {
-        List<Long> ids = new ArrayList<>();
-        List<AlgDataType> types = new ArrayList<>();
-        List<String> names = new ArrayList<>();
-
-        ids.add( null );
-        types.add( factory.createPolyType( PolyType.BIGINT ) );
-        names.add( StorageManager.PK_COL );
-
+        Builder builder = factory.builder();
+        builder.add( StorageManager.PK_COL, null, PolyType.BIGINT );
         for ( AlgDataTypeField field : type.getFields() ) {
-            ids.add( null );
-            types.add( field.getType() );
-            names.add( field.getName() );
+            builder.add( field );
         }
-
-        return factory.createStructType( ids, types, names );
+        return builder.uniquify().build();
     }
 
 
@@ -119,6 +110,17 @@ public class ActivityUtils {
     }
 
 
+    public static AlgDataType removeField( AlgDataType type, String fieldName ) {
+        Builder builder = factory.builder();
+        for ( AlgDataTypeField field : type.getFields() ) {
+            if ( !field.getName().equals( fieldName ) ) {
+                builder.add( field );
+            }
+        }
+        return builder.build();
+    }
+
+
     /**
      * Concatenates the specified types and uniquifies them.
      */
@@ -139,6 +141,20 @@ public class ActivityUtils {
             throw new InvalidInputException( "The tuple types of the inputs are incompatible", 1 );
         }
         return type;
+    }
+
+
+    public static boolean areTypesCompatible( List<AlgDataType> types ) {
+        AlgDataType type = AlgDataTypeFactory.DEFAULT.leastRestrictive( types );
+        if ( type == null ) {
+            return false;
+        }
+        for ( AlgDataTypeField field : type.getFields() ) {
+            if ( field.getType() == null ) {
+                return false;
+            }
+        }
+        return true;
     }
 
 

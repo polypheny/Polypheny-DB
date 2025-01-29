@@ -35,7 +35,7 @@ public class StringSettingDef extends SettingDef {
 
     public StringSettingDef( StringSetting a ) {
         super( SettingType.STRING, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultValue() ),
-                a.group(), a.subGroup(), a.position(), a.subPointer(), a.subValues() );
+                a.group(), a.subGroup(), a.pos(), a.subPointer(), a.subValues() );
         this.minLength = a.minLength();
         this.maxLength = a.maxLength();
         this.autoComplete = a.autoCompleteType();

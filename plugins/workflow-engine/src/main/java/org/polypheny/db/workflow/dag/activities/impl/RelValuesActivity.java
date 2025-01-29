@@ -112,7 +112,7 @@ public class RelValuesActivity implements Activity, Fusable, Pipeable {
         Random random = fixSeed ? new Random( 42 ) : new Random();
         for ( int i = 0; i < n; i++ ) {
             List<PolyValue> tuple = getValue( random );
-            if (!output.put( tuple )) {
+            if ( !output.put( tuple ) ) {
                 break;
             }
         }
@@ -138,10 +138,10 @@ public class RelValuesActivity implements Activity, Fusable, Pipeable {
     private static AlgDataType getType() {
         return factory.builder()
                 .add( null, StorageManager.PK_COL, null, factory.createPolyType( PolyType.BIGINT ) )
-                .add( null, "name", null, factory.createPolyType( PolyType.VARCHAR, 50 ) )
-                .add( null, "lastname", null, factory.createPolyType( PolyType.VARCHAR, 50 ) )
-                .add( null, "age", null, factory.createPolyType( PolyType.INTEGER ) )
-                .add( null, "salary", null, factory.createPolyType( PolyType.INTEGER ) )
+                .add( null, "name", null, factory.createPolyType( PolyType.VARCHAR, 50 ) ).nullable( true )
+                .add( null, "lastname", null, factory.createPolyType( PolyType.VARCHAR, 50 ) ).nullable( true )
+                .add( null, "age", null, factory.createPolyType( PolyType.INTEGER ) ).nullable( true )
+                .add( null, "salary", null, factory.createPolyType( PolyType.INTEGER ) ).nullable( true )
                 .build();
     }
 

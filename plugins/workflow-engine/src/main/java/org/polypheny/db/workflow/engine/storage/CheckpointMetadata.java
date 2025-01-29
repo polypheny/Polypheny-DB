@@ -169,9 +169,9 @@ public abstract class CheckpointMetadata {
     public static class LpgMetadata extends CheckpointMetadata {
 
         @Setter
-        private long nodeCount;
+        private long nodeCount = -1;
         @Setter
-        private long edgeCount;
+        private long edgeCount = -1;
 
         public static final int MAX_LABELS = 20;
 

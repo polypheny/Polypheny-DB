@@ -37,7 +37,7 @@ public class CollationSettingDef extends SettingDef {
 
     public CollationSettingDef( CollationSetting a ) {
         super( SettingType.COLLATION, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.allowRegex() ),
-                a.group(), a.subGroup(), a.position(), a.subPointer(), a.subValues() );
+                a.group(), a.subGroup(), a.pos(), a.subPointer(), a.subValues() );
         targetInput = a.targetInput();
         allowRegex = a.allowRegex();
     }
@@ -55,7 +55,7 @@ public class CollationSettingDef extends SettingDef {
         if ( value instanceof CollationValue collation ) {
             for ( FieldCollation field : collation.getFields() ) {
                 if ( field.isRegex() ) {
-                    if (!allowRegex) {
+                    if ( !allowRegex ) {
                         throwInvalid( "Regex is not permitted" );
                     }
                     try {
@@ -64,10 +64,10 @@ public class CollationSettingDef extends SettingDef {
                         throwInvalid( "Regex syntax is invalid: " + field.getName() + " (" + e.getMessage() + ")" );
                     }
                 }
-                if (field.getName().isBlank()) {
+                if ( field.getName().isBlank() ) {
                     throwInvalid( "Collation name must not be blank" );
                 }
-                if (names.contains( field.getName() ) ) {
+                if ( names.contains( field.getName() ) ) {
                     throwInvalid( "Duplicate name: " + field.getName() );
                 }
                 names.add( field.getName() );
@@ -78,7 +78,7 @@ public class CollationSettingDef extends SettingDef {
     }
 
 
-    private static SettingValue getDefaultValue(boolean allowRegex) {
+    private static SettingValue getDefaultValue( boolean allowRegex ) {
         return new CollationValue( List.of() );
     }
 

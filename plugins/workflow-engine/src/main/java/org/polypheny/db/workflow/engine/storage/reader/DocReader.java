@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.engine.storage.reader;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -35,6 +36,7 @@ import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.workflow.engine.storage.CheckpointMetadata.DocMetadata;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
+@Slf4j
 public class DocReader extends CheckpointReader {
 
     public static final int PREVIEW_DOCS_LIMIT = 100;
@@ -46,20 +48,25 @@ public class DocReader extends CheckpointReader {
 
 
     public long getDocCount() {
-        LogicalCollection collection = getCollection();
-        String query = "db.\"" + collection.getName() + "\".count({})";
+        long count = metadata.getTupleCount();
+        if ( count < 0 ) {
+            LogicalCollection collection = getCollection();
+            log.warn( "DocMetadata for {} is missing the tuple count. Performing count query as fallback.", collection.getName() );
+            String query = "db.\"" + collection.getName() + "\".count({})";
 
-        ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery(
-                query, "MQL", collection.getNamespaceId(), transaction );
+            ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery(
+                    query, "MQL", collection.getNamespaceId(), transaction );
 
-        Iterator<PolyValue[]> it = executedContext.getIterator().getIterator();
-        registerIterator( it );
-        try {
-            PolyDocument doc = it.next()[0].asDocument();
-            return doc.get( PolyString.of( "count" ) ).asNumber().longValue();
-        } catch ( NoSuchElementException | IndexOutOfBoundsException | NullPointerException ignored ) {
-            return 0;
+            Iterator<PolyValue[]> it = executedContext.getIterator().getIterator();
+            registerIterator( it );
+            try {
+                PolyDocument doc = it.next()[0].asDocument();
+                return doc.get( PolyString.of( "count" ) ).asNumber().longValue();
+            } catch ( NoSuchElementException | IndexOutOfBoundsException | NullPointerException ignored ) {
+                return 0;
+            }
         }
+        return count;
     }
 
 

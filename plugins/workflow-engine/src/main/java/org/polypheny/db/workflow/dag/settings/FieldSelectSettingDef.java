@@ -35,7 +35,7 @@ public class FieldSelectSettingDef extends SettingDef {
 
     public FieldSelectSettingDef( FieldSelectSetting a ) {
         super( SettingType.FIELD_SELECT, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.simplified() ),
-                a.group(), a.subGroup(), a.position(), a.subPointer(), a.subValues() );
+                a.group(), a.subGroup(), a.pos(), a.subPointer(), a.subValues() );
         this.simplified = a.simplified();
         this.reorder = a.reorder();
         this.defaultAll = a.defaultAll();

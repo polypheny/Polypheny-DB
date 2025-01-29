@@ -35,7 +35,7 @@ public class QuerySettingDef extends SettingDef {
 
     public QuerySettingDef( QuerySetting a ) {
         super( SettingType.QUERY, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.queryLanguages() ),
-                a.group(), a.subGroup(), a.position(), a.subPointer(), a.subValues() );
+                a.group(), a.subGroup(), a.pos(), a.subPointer(), a.subValues() );
         this.queryLanguages = a.queryLanguages();
     }
 

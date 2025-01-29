@@ -39,13 +39,13 @@ public class EnumSettingDef extends SettingDef {
 
     public EnumSettingDef( EnumSetting a ) {
         super( SettingType.ENUM, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultValue() ),
-                a.group(), a.subGroup(), a.position(), a.subPointer(), a.subValues() );
+                a.group(), a.subGroup(), a.pos(), a.subPointer(), a.subValues() );
         options = a.options();
-        optionsSet = Set.of(a.options());
+        optionsSet = Set.of( a.options() );
         displayOptions = Arrays.copyOf( options, options.length );
         for ( int i = 0; i < a.displayOptions().length; i++ ) {
             String d = a.displayOptions()[i];
-            if (!d.isEmpty()) {
+            if ( !d.isEmpty() ) {
                 displayOptions[i] = d;
             }
         }

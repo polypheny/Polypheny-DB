@@ -53,7 +53,7 @@ public @interface EntitySetting {
 
     String subGroup() default "";
 
-    int position() default SettingDef.DEFAULT_POS;
+    int pos() default SettingDef.DEFAULT_POS;
 
     /**
      * See {@link SettingDef#getSubPointer()}

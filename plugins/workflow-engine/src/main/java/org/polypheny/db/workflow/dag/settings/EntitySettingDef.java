@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
@@ -31,11 +32,12 @@ public class EntitySettingDef extends SettingDef {
 
     DataModel dataModel;
     boolean mustExist;
+    private static final Pattern nameValidation = Pattern.compile( "^[a-zA-Z_][a-zA-Z0-9_]*$" ); // namespace must be lower case, but this is done automatically
 
 
     public EntitySettingDef( EntitySetting a ) {
         super( SettingType.ENTITY, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultNamespace(), a.defaultName() ),
-                a.group(), a.subGroup(), a.position(), a.subPointer(), a.subValues() );
+                a.group(), a.subGroup(), a.pos(), a.subPointer(), a.subValues() );
         this.dataModel = a.dataModel();
         this.mustExist = a.mustExist();
     }
@@ -60,11 +62,19 @@ public class EntitySettingDef extends SettingDef {
                     throwInvalid( "Entity \"" + entityValue.getNamespace() + "." + entityValue.getName() + "\" does not exist" );
                 }
             }
-            if (entityValue.getNamespace().isBlank()) {
+            if ( entityValue.getNamespace().isBlank() ) {
                 throwInvalid( "Namespace must not be empty" );
             }
-            if (entityValue.getName().isBlank() && dataModel != DataModel.GRAPH) {
-                throwInvalid( "Entity name must not be empty" );
+            if ( !nameValidation.matcher( entityValue.getNamespace() ).matches() ) {
+                throwInvalid( "The namespace may only contain alphanumeric characters and underscores" );
+            }
+            if ( dataModel != DataModel.GRAPH ) {
+                if ( entityValue.getName().isBlank() ) {
+                    throwInvalid( "Entity name must not be empty" );
+                }
+                if ( !nameValidation.matcher( entityValue.getName() ).matches() ) {
+                    throwInvalid( "The entity name may only contain alphanumeric characters and underscores" );
+                }
             }
             return;
         }

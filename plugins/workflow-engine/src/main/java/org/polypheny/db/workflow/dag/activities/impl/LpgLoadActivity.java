@@ -19,9 +19,17 @@ package org.polypheny.db.workflow.dag.activities.impl;
 import static org.polypheny.db.workflow.dag.activities.impl.LpgLoadActivity.GRAPH_KEY;
 
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
@@ -33,10 +41,13 @@ import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
+import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
+import org.polypheny.db.workflow.dag.annotations.StringSetting;
 import org.polypheny.db.workflow.dag.settings.EntityValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
+import org.polypheny.db.workflow.dag.settings.StringSettingDef.AutoCompleteType;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
@@ -49,22 +60,34 @@ import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
         inPorts = { @InPort(type = PortType.LPG) },
         outPorts = {})
 
-@EntitySetting(key = GRAPH_KEY, displayName = "Graph", dataModel = DataModel.GRAPH)
+@EntitySetting(key = GRAPH_KEY, displayName = "Graph", dataModel = DataModel.GRAPH, pos = 0)
+@BoolSetting(key = "create", displayName = "Create Graph", pos = 1,
+        shortDescription = "Create a new graph with the specified name, if it does not yet exist.")
+@StringSetting(key = "adapter", displayName = "Adapter", shortDescription = "Specify which adapter is used when a new graph is created.",
+        subPointer = "create", subValues = { "true" }, pos = 2, autoCompleteType = AutoCompleteType.ADAPTERS)
+@BoolSetting(key = "drop", displayName = "Drop Existing Graph", pos = 3,
+        shortDescription = "Drop any nodes that are already in the specified graph.", defaultValue = false)
 @SuppressWarnings("unused")
 public class LpgLoadActivity implements Activity, Pipeable {
 
     public static final String GRAPH_KEY = "graph";
+    private final AdapterManager adapterManager = AdapterManager.getInstance();
+    private final DdlManager ddlManager = DdlManager.getInstance();
 
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
+        if ( settings.keysPresent( "create", "adapter" ) && settings.getBool( "create" ) ) {
+            String adapter = settings.getString( "adapter" );
+            adapterManager.getStore( adapter ).orElseThrow( () -> new InvalidSettingException( "Adapter does not exist: " + adapter, "adapter" ) );
+        }
         return List.of();
     }
 
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        LogicalGraph graph = getEntity( settings.get( GRAPH_KEY, EntityValue.class ) );
+        LogicalGraph graph = getEntity( settings, ctx::getTransaction, ctx::logInfo );
         LpgReader reader = (LpgReader) inputs.get( 0 );
         write( graph, ctx.getTransaction(), reader.getIterable(), ctx, null, reader.getTupleCount() );
     }
@@ -79,16 +102,43 @@ public class LpgLoadActivity implements Activity, Pipeable {
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         long estimatedTupleCount = estimateTupleCount( inputs.stream().map( InputPipe::getType ).toList(), settings, ctx.getEstimatedInCounts(), ctx::getTransaction );
-        LogicalGraph graph = getEntity( settings.get( GRAPH_KEY, EntityValue.class ) );
+        LogicalGraph graph = getEntity( settings, ctx::getTransaction, ctx::logInfo );
         write( graph, ctx.getTransaction(), inputs.get( 0 ), null, ctx, estimatedTupleCount );
     }
 
 
-    private LogicalGraph getEntity( EntityValue setting ) throws ActivityException {
+    private LogicalGraph getEntity( Settings settings, Supplier<Transaction> txSupplier, Consumer<String> logInfo ) throws ActivityException {
         // TODO: check if the adapter is a data store (and thus writable)
-        LogicalGraph graph = setting.getGraph();
+        EntityValue entitySetting = settings.get( GRAPH_KEY, EntityValue.class );
+        LogicalGraph graph = entitySetting.getGraph();
+        boolean create = settings.getBool( "create" );
+        boolean drop = settings.getBool( "drop" );
+        String adapter = settings.getString( "adapter" );
+
         if ( graph == null ) {
-            throw new InvalidSettingException( "Specified graph does not exist", GRAPH_KEY );
+            if ( !create ) {
+                throw new InvalidSettingException( "Specified graph does not exist", GRAPH_KEY );
+            }
+            logInfo.accept( "Creating graph '" + entitySetting.getNamespace() + "'" );
+            // no need for try catch here: transaction is rolled back by WorkflowScheduler if an exception is thrown
+            Transaction transaction = txSupplier.get();
+            long graphId = ddlManager.createGraph(
+                    entitySetting.getNamespace(),
+                    true,
+                    List.of( adapterManager.getStore( adapter ).orElseThrow( () ->
+                            new InvalidSettingException( "Adapter does not exist: " + adapter, "adapter" ) ) ),
+                    false,
+                    false,
+                    RuntimeConfig.GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean(),
+                    transaction.createStatement()
+            );
+            return Catalog.snapshot().graph().getGraph( graphId ).orElseThrow();
+        } else if ( drop ) {
+            logInfo.accept( "Truncating existing graph" );
+            Transaction transaction = txSupplier.get();
+            Statement statement = transaction.createStatement();
+            List<AllocationEntity> allocations = transaction.getSnapshot().alloc().getFromLogical( graph.id );
+            allocations.forEach( a -> AdapterManager.getInstance().getAdapter( a.adapterId ).orElseThrow().truncate( statement.getPrepareContext(), a.id ) );
         }
         return graph;
     }

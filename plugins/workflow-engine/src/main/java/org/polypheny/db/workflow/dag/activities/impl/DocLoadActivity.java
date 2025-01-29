@@ -19,15 +19,18 @@ package org.polypheny.db.workflow.dag.activities.impl;
 import static org.polypheny.db.workflow.dag.activities.impl.DocLoadActivity.COLL_KEY;
 
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockablesRegistry;
@@ -44,12 +47,10 @@ import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
-import org.polypheny.db.workflow.dag.settings.BoolValue;
 import org.polypheny.db.workflow.dag.settings.EntityValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.dag.settings.StringSettingDef.AutoCompleteType;
-import org.polypheny.db.workflow.dag.settings.StringValue;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
@@ -62,12 +63,13 @@ import org.polypheny.db.workflow.engine.storage.reader.DocReader;
         inPorts = { @InPort(type = PortType.DOC) },
         outPorts = {})
 
-@EntitySetting(key = COLL_KEY, displayName = "Collection", dataModel = DataModel.DOCUMENT)
-@BoolSetting(key = "create", displayName = "Create Collection",
-        shortDescription = "Create a new collection with the specified name, if it does not yet exist. The namespace must exist in any case.")
-@StringSetting(key = "adapter", displayName = "Adapter", shortDescription = "Specify which adapter is used when a new collection is created",
-        subPointer = "create", subValues = { "true" }, autoCompleteType = AutoCompleteType.ADAPTERS)
-// TODO: delete existing docs BoolSetting
+@EntitySetting(key = COLL_KEY, displayName = "Collection", dataModel = DataModel.DOCUMENT, pos = 0)
+@BoolSetting(key = "create", displayName = "Create Collection", pos = 1,
+        shortDescription = "Create a new collection with the specified name, if it does not yet exist.")
+@StringSetting(key = "adapter", displayName = "Adapter", shortDescription = "Specify which adapter is used when a new collection is created.",
+        subPointer = "create", subValues = { "true" }, pos = 2, autoCompleteType = AutoCompleteType.ADAPTERS)
+@BoolSetting(key = "drop", displayName = "Drop Existing Collection", pos = 3,
+        shortDescription = "Drop any documents that are already in the specified collection.", defaultValue = false)
 @SuppressWarnings("unused")
 public class DocLoadActivity implements Activity, Pipeable {
 
@@ -78,8 +80,8 @@ public class DocLoadActivity implements Activity, Pipeable {
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
-        if ( settings.keysPresent( "create", "adapter" ) && settings.getOrThrow( "create", BoolValue.class ).getValue() ) {
-            String adapter = settings.getOrThrow( "adapter", StringValue.class ).getValue();
+        if ( settings.keysPresent( "create", "adapter" ) && settings.getBool( "create" ) ) {
+            String adapter = settings.getString( "adapter" );
             adapterManager.getStore( adapter ).orElseThrow( () -> new InvalidSettingException( "Adapter does not exist: " + adapter, "adapter" ) );
         }
         return List.of();
@@ -89,9 +91,11 @@ public class DocLoadActivity implements Activity, Pipeable {
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         LogicalCollection collection = getEntity( settings.get( COLL_KEY, EntityValue.class ),
-                settings.get( "create", BoolValue.class ).getValue(),
-                settings.get( "adapter", StringValue.class ).getValue(),
-                ctx::getTransaction );
+                settings.getBool( "create" ),
+                settings.getBool( "drop" ),
+                settings.getString( "adapter" ),
+                ctx::getTransaction,
+                ctx::logInfo );
         DocReader reader = (DocReader) inputs.get( 0 );
         write( collection, ctx.getTransaction(), reader.getIterable(), ctx, null, reader.getDocCount() );
     }
@@ -108,9 +112,11 @@ public class DocLoadActivity implements Activity, Pipeable {
         long estimatedTupleCount = estimateTupleCount( inputs.stream().map( InputPipe::getType ).toList(), settings, ctx.getEstimatedInCounts(), ctx::getTransaction );
 
         LogicalCollection collection = getEntity( settings.get( COLL_KEY, EntityValue.class ),
-                settings.get( "create", BoolValue.class ).getValue(),
-                settings.get( "adapter", StringValue.class ).getValue(),
-                ctx::getTransaction );
+                settings.getBool( "create" ),
+                settings.getBool( "drop" ),
+                settings.getString( "adapter" ),
+                ctx::getTransaction,
+                ctx::logInfo );
         write( collection, ctx.getTransaction(), inputs.get( 0 ), null, ctx, estimatedTupleCount );
     }
 
@@ -118,8 +124,10 @@ public class DocLoadActivity implements Activity, Pipeable {
     private LogicalCollection getEntity(
             EntityValue setting,
             boolean canCreate,
+            boolean dropExisting,
             String adapter,
-            Supplier<Transaction> txSupplier ) throws ActivityException {
+            Supplier<Transaction> txSupplier,
+            Consumer<String> logInfo ) throws ActivityException {
         // TODO: check if the adapter is a data store (and thus writable)
         LogicalCollection collection = setting.getCollection();
         if ( collection == null ) {
@@ -128,10 +136,18 @@ public class DocLoadActivity implements Activity, Pipeable {
             }
             LogicalNamespace namespace = setting.getLogicalNamespace();
             if ( namespace == null ) {
-                throw new InvalidSettingException( "Specified namespace does not exist", COLL_KEY );
+                logInfo.accept( "Creating namespace '" + setting.getNamespace() + "'" );
+                try {
+                    long namespaceId = ddlManager.createNamespace( setting.getNamespace(), DataModel.DOCUMENT, false, false, null );
+                    namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElse( null );
+                } catch ( Exception e ) {
+                    throw new InvalidSettingException( "Specified namespace cannot be created: " + e.getMessage(), COLL_KEY );
+                }
             }
-            // no need for try catch: transaction is rolled back by WorkflowScheduler if an exception is thrown
+            logInfo.accept( "Creating collection '" + setting.getName() + "'" );
+            // no need for try catch here: transaction is rolled back by WorkflowScheduler if an exception is thrown
             Transaction transaction = txSupplier.get();
+            assert namespace != null;
             transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.EXCLUSIVE );
             ddlManager.createCollection(
                     namespace.getId(),
@@ -144,6 +160,12 @@ public class DocLoadActivity implements Activity, Pipeable {
             );
             return Catalog.snapshot().doc().getCollection( namespace.id, setting.getName() ).orElseThrow();
 
+        } else if ( dropExisting ) {
+            logInfo.accept( "Truncating existing collection" );
+            Transaction transaction = txSupplier.get();
+            Statement statement = transaction.createStatement();
+            List<AllocationEntity> allocations = transaction.getSnapshot().alloc().getFromLogical( collection.id );
+            allocations.forEach( a -> AdapterManager.getInstance().getAdapter( a.adapterId ).orElseThrow().truncate( statement.getPrepareContext(), a.id ) );
         }
         return collection;
     }

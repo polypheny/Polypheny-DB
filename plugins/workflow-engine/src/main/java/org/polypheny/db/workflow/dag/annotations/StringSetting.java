@@ -53,7 +53,7 @@ public @interface StringSetting {
 
     String subGroup() default "";  // the subgroup this setting belongs to. Default is {@code GroupDef.DEFAULT_SUBGROUP}
 
-    int position() default SettingDef.DEFAULT_POS;  // manually impose order within subGroup (lower pos => further to the top)
+    int pos() default SettingDef.DEFAULT_POS;  // manually impose order within subGroup (lower pos => further to the top)
 
     /**
      * See {@link SettingDef#getSubPointer()}

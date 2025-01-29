@@ -75,17 +75,17 @@ import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 @DefaultGroup(subgroups = { @Subgroup(key = "nodes", displayName = "Nodes"), @Subgroup(key = "edges", displayName = "Edges") })
 @BoolSetting(key = "fixSeed", displayName = "Fix Random Seed", defaultValue = false)
 
-@IntSetting(key = "count", displayName = "Node Count", defaultValue = 3, min = 1, max = 1_000, subGroup = "nodes", position = 0)
+@IntSetting(key = "count", displayName = "Node Count", defaultValue = 3, min = 1, max = 1_000, subGroup = "nodes", pos = 0)
 @StringSetting(key = "nodeLabels", displayName = "Node Labels", shortDescription = "A list of node labels separated by comma (',') to sample from.",
-        defaultValue = "Person", nonBlank = true, subGroup = "nodes", position = 1)
+        defaultValue = "Person", nonBlank = true, subGroup = "nodes", pos = 1)
 @IntSetting(key = "nodeLabelCount", displayName = "Node Label Count", shortDescription = "The number of labels per node.",
-        defaultValue = 1, min = 1, max = 10, subGroup = "nodes", position = 2)
+        defaultValue = 1, min = 1, max = 10, subGroup = "nodes", pos = 2)
 
-@DoubleSetting(key = "edgeDensity", displayName = "Edges per Node", defaultValue = 0.5, min = 0, max = 1, subGroup = "edges", position = 0)
+@DoubleSetting(key = "edgeDensity", displayName = "Edges per Node", defaultValue = 0.5, min = 0, max = 1, subGroup = "edges", pos = 0)
 @StringSetting(key = "edgeLabels", displayName = "Edge Labels", shortDescription = "A list of edge labels separated by comma (',') to sample from.",
-        defaultValue = "KNOWS", nonBlank = true, subGroup = "edges", position = 1)
+        defaultValue = "KNOWS", nonBlank = true, subGroup = "edges", pos = 1)
 @IntSetting(key = "edgeLabelCount", displayName = "Edge Label Count", shortDescription = "The number of labels per edge.",
-        defaultValue = 1, min = 1, max = 10, subGroup = "edges", position = 2)
+        defaultValue = 1, min = 1, max = 10, subGroup = "edges", pos = 2)
 
 @SuppressWarnings("unused")
 public class LpgValuesActivity implements Activity, Pipeable {

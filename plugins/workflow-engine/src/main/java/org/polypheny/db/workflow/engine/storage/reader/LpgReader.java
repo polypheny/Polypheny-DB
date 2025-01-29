@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.engine.storage.reader;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.catalog.Catalog;
@@ -38,6 +39,7 @@ import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.workflow.engine.storage.CheckpointMetadata.LpgMetadata;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
+@Slf4j
 public class LpgReader extends CheckpointReader {
 
     public static final int PREVIEW_NODES_LIMIT = 100;
@@ -49,12 +51,22 @@ public class LpgReader extends CheckpointReader {
 
 
     public long getNodeCount() {
-        return getCount( "MATCH (n) RETURN COUNT(n)" );
+        long count = metadata.asLpg().getNodeCount();
+        if ( count < 0 ) {
+            log.warn( "LpgMetadata for {} is missing the node count. Performing count query as fallback.", entity.getName() );
+            return getCount( "MATCH (n) RETURN COUNT(n)" );
+        }
+        return count;
     }
 
 
     public long getEdgeCount() {
-        return getCount( "MATCH ()-[r]->() RETURN COUNT(r)" );
+        long count = metadata.asLpg().getEdgeCount();
+        if ( count < 0 ) {
+            log.warn( "LpgMetadata for {} is missing the edge count. Performing count query as fallback.", entity.getName() );
+            return getCount( "MATCH ()-[r]->() RETURN COUNT(r)" );
+        }
+        return count;
     }
 
 

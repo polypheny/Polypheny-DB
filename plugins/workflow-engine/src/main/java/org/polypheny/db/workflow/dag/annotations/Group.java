@@ -31,7 +31,7 @@ public @interface Group {
 
     String displayName();
 
-    int position() default 100; // the default group "" has position Integer.MIN_VALUE and advanced has Integer.MAX_VALUE
+    int pos() default 100; // the default group "" has position Integer.MIN_VALUE and advanced has Integer.MAX_VALUE
 
     Subgroup[] subgroups() default {};
 
@@ -50,7 +50,7 @@ public @interface Group {
 
         String displayName();
 
-        int position() default 100;
+        int pos() default 100;
 
     }
 

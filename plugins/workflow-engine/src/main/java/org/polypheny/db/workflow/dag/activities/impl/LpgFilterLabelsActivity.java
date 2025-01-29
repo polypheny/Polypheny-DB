@@ -48,27 +48,27 @@ import org.polypheny.db.workflow.engine.execution.pipe.LpgInputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
-@ActivityDefinition(type = "lpgFilterLabels", displayName = "Filter Graph by Label", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH },
+@ActivityDefinition(type = "lpgFilterLabels", displayName = "Filter Graph by Labels", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH },
         inPorts = { @InPort(type = PortType.LPG) },
         outPorts = { @OutPort(type = PortType.LPG) },
         shortDescription = "Computes a subgraph of the input that only includes nodes and edges with the specified labels."
 )
 @DefaultGroup(subgroups = { @Subgroup(key = "nodes", displayName = "Nodes"), @Subgroup(key = "edges", displayName = "Edges") })
 
-@BoolSetting(key = "filterNodes", displayName = "Filter Nodes", defaultValue = true, subGroup = "nodes", position = 0)
+@BoolSetting(key = "filterNodes", displayName = "Filter Nodes", defaultValue = true, subGroup = "nodes", pos = 0)
 @FieldSelectSetting(key = "nodeLabels", displayName = "Select Node Labels", reorder = false,
-        subPointer = "filterNodes", subValues = { "true" }, subGroup = "nodes", position = 1,
+        subPointer = "filterNodes", subValues = { "true" }, subGroup = "nodes", pos = 1,
         shortDescription = "Specify the nodes to include by their label.")
 @BoolSetting(key = "nodeTie", displayName = "Include Conflicting", defaultValue = false,
-        subPointer = "filterNodes", subValues = { "true" }, subGroup = "nodes", position = 2,
+        subPointer = "filterNodes", subValues = { "true" }, subGroup = "nodes", pos = 2,
         shortDescription = "Whether a node that contains both label(s) to include and exclude should be included.")
 
-@BoolSetting(key = "filterEdges", displayName = "Filter Edges", defaultValue = false, subGroup = "edges", position = 0)
+@BoolSetting(key = "filterEdges", displayName = "Filter Edges", defaultValue = false, subGroup = "edges", pos = 0)
 @FieldSelectSetting(key = "edgeLabels", displayName = "Select Edge Labels", reorder = false,
-        subPointer = "filterEdges", subValues = { "true" }, subGroup = "edges", position = 1,
+        subPointer = "filterEdges", subValues = { "true" }, subGroup = "edges", pos = 1,
         shortDescription = "Specify the edges to include by their label.")
 @BoolSetting(key = "edgeTie", displayName = "Include Conflicting", defaultValue = false,
-        subPointer = "filterEdges", subValues = { "true" }, subGroup = "edges", position = 2,
+        subPointer = "filterEdges", subValues = { "true" }, subGroup = "edges", pos = 2,
         shortDescription = "Whether a edge that contains both label(s) to include and exclude should be included.")
 
 @SuppressWarnings("unused")
@@ -77,8 +77,24 @@ public class LpgFilterLabelsActivity implements Activity, Pipeable {
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
-        // TODO: include selected labels in TypePreview
-        return LpgType.of().asOutTypes();
+        Set<String> nodes = new HashSet<>();
+        Set<String> edges = new HashSet<>();
+        if ( inTypes.get( 0 ) instanceof LpgType lpg ) {
+            nodes.addAll( lpg.getKnownNodeLabels() );
+            edges.addAll( lpg.getKnownEdgeLabels() );
+        }
+        if ( settings.keysPresent( "filterNodes", "nodeLabels" ) && settings.getBool( "filterNodes" ) ) {
+            FieldSelectValue nodeLabels = settings.getOrThrow( "nodeLabels", FieldSelectValue.class );
+            nodeLabels.getExclude().forEach( nodes::remove );
+            nodes.addAll( nodeLabels.getInclude() );
+        }
+        if ( settings.keysPresent( "filterEdges", "edgeLabels" ) && settings.getBool( "filterEdges" ) ) {
+            FieldSelectValue edgeLabels = settings.getOrThrow( "edgeLabels", FieldSelectValue.class );
+            edgeLabels.getExclude().forEach( edges::remove );
+            edges.addAll( edgeLabels.getInclude() );
+        }
+
+        return LpgType.of( nodes, edges ).asOutTypes();
     }
 
 

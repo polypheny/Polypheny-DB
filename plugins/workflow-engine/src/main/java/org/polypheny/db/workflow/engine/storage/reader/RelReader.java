@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.engine.storage.reader;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -34,6 +35,7 @@ import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.workflow.engine.storage.CheckpointMetadata.RelMetadata;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
+@Slf4j
 public class RelReader extends CheckpointReader {
 
     public static final int PREVIEW_ROW_LIMIT = 100;
@@ -49,13 +51,18 @@ public class RelReader extends CheckpointReader {
 
 
     public long getRowCount() {
-        String query = "SELECT COUNT(*) FROM " + quotedIdentifier;
-        Iterator<PolyValue[]> it = executeSqlQuery( query );
-        try {
-            return it.next()[0].asNumber().longValue();
-        } catch ( NoSuchElementException | IndexOutOfBoundsException | NullPointerException ignored ) {
-            return 0;
+        long count = metadata.getTupleCount();
+        if ( count < 0 ) {
+            log.warn( "RelMetadata for {} is missing the tuple count. Performing count query as fallback.", entity.getName() );
+            String query = "SELECT COUNT(*) FROM " + quotedIdentifier;
+            Iterator<PolyValue[]> it = executeSqlQuery( query );
+            try {
+                return it.next()[0].asNumber().longValue();
+            } catch ( NoSuchElementException | IndexOutOfBoundsException | NullPointerException ignored ) {
+                return 0;
+            }
         }
+        return count;
     }
 
 
