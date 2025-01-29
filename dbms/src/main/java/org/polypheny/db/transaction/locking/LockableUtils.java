@@ -18,6 +18,7 @@ package org.polypheny.db.transaction.locking;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -186,8 +187,8 @@ public class LockableUtils {
      * @return map containing the appropriate lockable and lock type for the specified namespace
      */
     public static Map<Lockable, LockType> getMapOfNamespaceLockableFromName( String namespaceName, Context context, LockType lockType ) {
-        LogicalNamespace namespace = context.getSnapshot().getNamespace( namespaceName ).orElseThrow();
-        return getMapOfNamespaceLockable( namespace, lockType );
+        Optional<LogicalNamespace> namespace = context.getSnapshot().getNamespace( namespaceName );
+        return namespace.map( logicalNamespace -> getMapOfNamespaceLockable( logicalNamespace, lockType ) ).orElseGet( HashMap::new );
     }
 
 
@@ -203,8 +204,8 @@ public class LockableUtils {
      */
     public static Map<Lockable, LockType> getMapOfNamespaceLockableFromContext( Context context, ParsedQueryContext parsedQueryContext, LockType lockType ) {
         long namespaceId = parsedQueryContext.getNamespaceId();
-        LogicalNamespace namespace = context.getSnapshot().getNamespace( namespaceId ).orElseThrow();
-        return getMapOfNamespaceLockable( namespace, lockType );
+        Optional<LogicalNamespace> namespace = context.getSnapshot().getNamespace( namespaceId );
+        return namespace.map( logicalNamespace -> getMapOfNamespaceLockable( logicalNamespace, lockType ) ).orElseGet( HashMap::new );
     }
 
 
@@ -238,8 +239,8 @@ public class LockableUtils {
      */
     public static Map<Lockable, LockType> getMapOfCollectionLockableFromContext( Context context, ParsedQueryContext parsedQueryContext, LockType lockType ) {
         long namespaceId = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
-        LogicalCollection collection = context.getSnapshot().doc().getCollection( namespaceId ).orElseThrow();
-        return getMapOfLockableFromObject( collection, lockType );
+        Optional<LogicalCollection> collection = context.getSnapshot().doc().getCollection( namespaceId );
+        return collection.map( logicalCollection -> getMapOfLockableFromObject( logicalCollection, lockType ) ).orElseGet( HashMap::new );
     }
 
 
