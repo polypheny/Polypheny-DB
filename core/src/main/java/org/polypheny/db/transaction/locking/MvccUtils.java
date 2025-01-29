@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
@@ -82,6 +83,7 @@ public class MvccUtils {
 
 
     private static long validateRelWrites( long sequenceNumber, Entity writtenEntity, Transaction transaction ) {
+        // ToDo TH: think about what happens to deletions
         String queryTemplate = """
                 SELECT MAX(_vid) AS max_vid
                 FROM %s
@@ -94,7 +96,7 @@ public class MvccUtils {
         List<List<PolyValue>> res;
         try ( ResultIterator iterator = executeStatement( writtenEntity, transaction, QueryLanguage.from( "sql" ), query ).getIterator() ) {
             res = iterator.getNextBatch();
-            return res.get( 0 ).get( 0 ).asLong().longValue();
+            return Objects.requireNonNull( res.get( 0 ).get( 0 ).asBigDecimal().getValue() ).longValue();
         }
     }
 
@@ -130,65 +132,9 @@ public class MvccUtils {
 
 
     public static long validateGraphWrites( long sequenceNumber, Entity writtenEntity, Transaction transaction ) {
-        // Step 1: get written node entry ids
-        String writeSetQuery = String.format(
-                "MATCH (m) WHERE m._vid = %d RETURN m._eid AS eids",
-                -sequenceNumber
-        );
-        List<List<PolyValue>> res;
-        List<Long> nodeEntryIds = new ArrayList<>();
-        try (ResultIterator iterator = executeStatement(writtenEntity, transaction, QueryLanguage.from("cypher"), writeSetQuery).getIterator()) {
-            while ( iterator.hasMoreRows() ) {
-                res = iterator.getNextBatch();
-                res.forEach( r -> nodeEntryIds.add( Long.parseLong(r.get(0).asString().getValue() ) ));
-            }
-        }
-
-        // Step 2: find the maximum _vid for nodes
-        long maxVidNodes = -1;
-        for (long eid : nodeEntryIds) {
-            String getMaxNodesQuery = String.format(
-                    "MATCH (n) WHERE n._eid = %d RETURN MAX(n._vid) AS max_vid_nodes",
-                    eid
-            );
-            maxVidNodes = getMaxVidOfGraphElements( writtenEntity, transaction, maxVidNodes, getMaxNodesQuery );
-        }
-
-        // Step 3: get written relationship entry ids
-        String relWriteSetQuery = String.format(
-                "MATCH ()-[r]->() WHERE r._vid = %d RETURN r._eid AS eids",
-                -sequenceNumber
-        );
-        List<Long> relEntryIds = new ArrayList<>();
-        try (ResultIterator iterator = executeStatement(writtenEntity, transaction, QueryLanguage.from("cypher"), relWriteSetQuery).getIterator()) {
-            while (iterator.hasMoreRows()) {
-                res = iterator.getNextBatch();
-                res.forEach(r -> relEntryIds.add(Long.parseLong(r.get(0).asString().getValue())));
-            }
-        }
-
-        // Step 4: Find the maximum _vid for relationships
-        long maxVidRels = -1;
-        for (long eid : relEntryIds) {
-            String getMaxRelsQuery = String.format(
-                    "MATCH ()-[r]->() WHERE r._eid = %d RETURN MAX(r._vid) AS max_vid_rels",
-                    eid
-            );
-            maxVidRels = getMaxVidOfGraphElements( writtenEntity, transaction, maxVidRels, getMaxRelsQuery );
-        }
-
-        return Math.max(maxVidNodes, maxVidRels);
+        throw new NotImplementedException();
+        //ToDo TH: implement this
     }
-
-
-    private static long getMaxVidOfGraphElements( Entity writtenEntity, Transaction transaction, long maxVidNodes, String getMaxNodesQuery ) {
-        try ( ResultIterator iterator = executeStatement(writtenEntity, transaction, QueryLanguage.from("cypher"), getMaxNodesQuery).getIterator()) {
-            long currentMax = Objects.requireNonNull( iterator.getNextBatch().get( 0 ).get( 0 ).asBigDecimal().getValue() ).longValue();
-            maxVidNodes = Math.max( maxVidNodes, currentMax );
-        }
-        return maxVidNodes;
-    }
-
 
     public static long updateWrittenVersionIds( long sequenceNumber, Set<Entity> writtenEntities, Transaction transaction ) {
         long commitSequenceNumber = SequenceNumberGenerator.getInstance().getNextNumber();
@@ -217,28 +163,8 @@ public class MvccUtils {
 
 
     private static void updateWrittenGraphVersionIds( long sequenceNumber, long commitSequenceNumber, Entity writtenEntity, Transaction transaction ) {
-        return;
-        /**
-        String updateTemplate = """
-                MATCH (n)
-                WHERE n._vid = %d
-                SET n._vid = %d
-
-                WITH n
-
-                MATCH ()-[r]->()
-                WHERE r._vid = %d
-                SET r._vid = %d
-                """;
-
-        String updateQuery = String.format( updateTemplate,
-                -sequenceNumber,
-                commitSequenceNumber,
-                -sequenceNumber,
-                commitSequenceNumber );
-
-        executeStatement( writtenEntity, transaction, QueryLanguage.from( "cypher" ), updateQuery );
-         **/
+        throw new NotImplementedException();
+        //ToDo TH: implement this
     }
 
 
