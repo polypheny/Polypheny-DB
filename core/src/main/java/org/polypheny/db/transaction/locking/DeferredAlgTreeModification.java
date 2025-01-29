@@ -208,7 +208,6 @@ public class DeferredAlgTreeModification {
                         )
         );
 
-
         return LogicalRelFilter.create(
                 input,
                 scopeCondition,
