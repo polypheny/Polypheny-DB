@@ -1,13 +1,19 @@
 package org.polypheny.db.transaction.locking;
 
 import com.google.common.collect.ImmutableSet;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.document.DocumentFilter;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
@@ -15,19 +21,23 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
-import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.ImplementationContext;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
-import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNameRef;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
@@ -36,6 +46,7 @@ public class DeferredAlgTreeModification {
 
     private static final AlgDataType BOOLEAN_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BOOLEAN, true );
     private static final AlgDataType INTEGER_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.INTEGER, true );
+    private static final PolyString IDENTIFIER_KEY = PolyString.of("_id");
 
 
     private final AlgNode target;
@@ -57,23 +68,35 @@ public class DeferredAlgTreeModification {
     }
 
 
-    public <T extends AlgNode> boolean notTargets( T parent ) {
+    public <T extends AlgNode> boolean notTargetsChildOf( T parent ) {
         return !parent.getInputs().contains( target );
     }
 
 
-    public <T extends AlgNode> T applyOrSkip( T parent ) {
-        if ( notTargets( parent ) ) {
+    public <T extends AlgNode> boolean notTargets( T node ) {
+        return !target.equals( node );
+    }
+
+
+    public <T extends AlgNode> T applyToChildOrSkip( T parent ) {
+        if ( notTargetsChildOf( parent ) ) {
             return parent;
         }
+        AlgNode newInput = applyOrSkip( target );
+        return replaceInput( parent, newInput );
+    }
 
+
+    public <T extends AlgNode> T applyOrSkip( T node ) {
+        if ( notTargets( node ) ) {
+            return node;
+        }
         AlgNode newInput = switch ( modification ) {
             case LIMIT_REL_SCAN_TO_SNAPSHOT -> applyLimitRelScanToSnapshot();
-            case LIMIT_DOC_SCAN_TO_SNAPSHOT -> applyLimitDocScanToSnapshot( parent );
-            case LIMIT_LPG_SCAN_TO_SNAPSHOT -> applyLimitLpgScanToSnapshot( parent );
+            case LIMIT_DOC_SCAN_TO_SNAPSHOT -> applyLimitDocScanToSnapshot( node );
+            case LIMIT_LPG_SCAN_TO_SNAPSHOT -> applyLimitLpgScanToSnapshot( node );
         };
-
-        return replaceInput( parent, newInput );
+        return (T) newInput;
     }
 
 
@@ -197,15 +220,15 @@ public class DeferredAlgTreeModification {
         );
 
         RexCall scopeCondition = new RexCall(
+                BOOLEAN_ALG_TYPE,
+                OperatorRegistry.get( OperatorName.OR ),
+                selfReadCondition,
+                new RexCall(
                         BOOLEAN_ALG_TYPE,
-                        OperatorRegistry.get( OperatorName.OR ),
-                        selfReadCondition,
-                        new RexCall(
-                                BOOLEAN_ALG_TYPE,
-                                OperatorRegistry.get( OperatorName.AND ),
-                                versionInSnapshotCondition,
-                                versionCommittedCondition
-                        )
+                        OperatorRegistry.get( OperatorName.AND ),
+                        versionInSnapshotCondition,
+                        versionCommittedCondition
+                )
         );
 
         return LogicalRelFilter.create(
@@ -216,9 +239,80 @@ public class DeferredAlgTreeModification {
     }
 
 
-    private AlgNode applyLimitDocScanToSnapshot( AlgNode parent ) {
-        // TODO TH: implement
-        throw new NotImplementedException();
+    private AlgNode applyLimitDocScanToSnapshot( AlgNode node ) {
+        Set<Pair<Long, Long>> documents = getDocumentsInScope( node );
+        return createScopeFilter(documents, node);
+    }
+
+    private Set<Pair<Long, Long>> getDocumentsInScope( AlgNode node ) {
+        String queryTemplate = """
+                db.%s.aggregate([
+                {
+                    "$match": {
+                    "$or": [
+                        { "_vid": { "$gt": 0, "$lt": %d } },
+                        { "_vid": %d }
+                    ]
+                    }
+                },
+                {
+                    "$group": {
+                    "_id": "$_eid",
+                    "_vid": { "$max": "$_vid" }
+                    }
+                },
+                {
+                    "$sort": { "_vid": -1 }
+                }
+                ]);
+                """;
+
+        String query = String.format(
+                queryTemplate,
+                node.getEntity().getName(),
+                statement.getTransaction().getSequenceNumber(),
+                -statement.getTransaction().getSequenceNumber() );
+        List<List<PolyValue>> res;
+        Set<Pair<Long, Long>> documents = new HashSet<>();
+        try ( ResultIterator iterator = executeStatement( QueryLanguage.from( "mql" ), query, node.getEntity().getNamespaceId() ).getIterator() ) {
+            res = iterator.getNextBatch();
+            res.forEach( r -> {
+                PolyDocument document = r.get(0).asDocument();
+                documents.add(new Pair<>(
+                        document.get(IDENTIFIER_KEY).asLong().longValue(),
+                        document.get(IdentifierUtils.getVersionKeyAsPolyString()).asBigDecimal().longValue()
+                ));
+            } );
+        }
+        return documents;
+    }
+
+    private LogicalDocumentFilter createScopeFilter( Set<Pair<Long, Long>> documents, AlgNode input ) {
+        List<RexCall> documentConditions = documents.stream()
+                .map( d -> new RexCall(
+                        BOOLEAN_ALG_TYPE,
+                        OperatorRegistry.get( OperatorName.AND ),
+                        new RexCall(
+                                BOOLEAN_ALG_TYPE,
+                                OperatorRegistry.get(OperatorName.EQUALS),
+                                new RexNameRef( "_eid", null, IdentifierUtils.IDENTIFIER_ALG_TYPE ),
+                                new RexLiteral( PolyLong.of(d.left), IdentifierUtils.IDENTIFIER_ALG_TYPE, PolyType.BIGINT )
+                        ),
+                        new RexCall(
+                                BOOLEAN_ALG_TYPE,
+                                OperatorRegistry.get(OperatorName.EQUALS),
+                                new RexNameRef( "_vid", null, IdentifierUtils.VERSION_ALG_TYPE ),
+                                new RexLiteral( PolyLong.of(d.right), IdentifierUtils.VERSION_ALG_TYPE, PolyType.BIGINT )
+
+                        ))
+                ).toList();
+
+        RexNode condition = new RexCall(
+                BOOLEAN_ALG_TYPE,
+                OperatorRegistry.get(OperatorName.OR),
+                documentConditions
+        );
+        return LogicalDocumentFilter.create(input, condition);
     }
 
 
@@ -226,4 +320,25 @@ public class DeferredAlgTreeModification {
         // TODO TH: implement
         throw new NotImplementedException();
     }
+
+
+    private ExecutedContext executeStatement( QueryLanguage language, String query, long namespaceId ) {
+        ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( statement.getTransaction().getOrigin() )
+                        .namespaceId( namespaceId )
+                        .transactionManager( statement.getTransaction().getTransactionManager() )
+                        .isMvccInternal( true )
+                        .build(), statement.getTransaction() ).get( 0 );
+
+        if ( context.getException().isPresent() ) {
+            //ToDo TH: properly handle this
+            throw new RuntimeException( context.getException().get() );
+        }
+
+        return context.execute( context.getStatement() );
+    }
+
 }
