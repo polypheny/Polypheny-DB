@@ -62,13 +62,13 @@ public class MvccUtils {
     }
 
 
-    private static ExecutedContext executeStatement( Entity entitiy, Transaction transaction, QueryLanguage language, String query ) {
+    private static ExecutedContext executeStatement( Entity entity, Transaction transaction, QueryLanguage language, String query ) {
         ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
                 QueryContext.builder()
                         .query( query )
                         .language( language )
                         .origin( transaction.getOrigin() )
-                        .namespaceId( entitiy.getNamespaceId() )
+                        .namespaceId( entity.getNamespaceId() )
                         .transactionManager( transaction.getTransactionManager() )
                         .isMvccInternal( true )
                         .build(), transaction ).get( 0 );
