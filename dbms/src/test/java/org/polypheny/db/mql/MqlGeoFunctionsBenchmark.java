@@ -121,6 +121,7 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
         benchmarkLastQuery( Arrays.asList( insertMany, near2dsphere, geoWithinBox ) );
     }
 
+
     // 1000
     //    default: 57.147675ms
     //    mongo: 8.592755ms
@@ -138,46 +139,43 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
     //    mongo: 125.72021602000001ms
     @Test
     public void docGeoWithinWithIndex() {
-        List<String> insertMany = generateInsertGeoJsonTestDataQueries( 50_000 );
-        String near2d = """
-                db.%s.find({
-                    location: {
-                       $near: [0,0]
-                    }
-                })
-                """;
-        String near2dsphere = """
-                db.%s.find({
-                    location: {
-                       $near: {
-                            $geometry: {
-                                  type: "Point",
-                                  coordinates: [0,0]
-                            }
-                      }
-                    }
-                })
-                """;
-        String geoWithinBox = """
-                db.%s.find({
-                    location: {
-                       $geoWithin: {
-                          $box: [
-                            [10,10],
-                            [20,20]
-                          ]
-                       }
-                    }
-                })
-                """;
-        ArrayList<String> queries = new ArrayList<>();
-        // Create 2dsphere index
-        queries.add( near2dsphere );
-        // Insert data
-        queries.addAll( insertMany );
-        // Final query will be benchmarked
-        queries.add( geoWithinBox );
-        benchmarkLastQuery( queries );
+        for ( int itemCount : List.of( 1000, 10_000, 25_000, 50_000, 100_000 ) ) {
+            clearCollections();
+            System.out.println( itemCount );
+            List<String> insertMany = generateInsertGeoJsonTestDataQueries( itemCount );
+            String near2d = """
+                    db.%s.find({
+                        location: {
+                           $near: [0,0]
+                        }
+                    })
+                    """;
+            String near2dsphere = """
+                    db.%s.find({
+                        location: {
+                           $near: {
+                                $geometry: {
+                                      type: "Point",
+                                      coordinates: [90,90]
+                                }
+                          }
+                        }
+                    })
+                    """;
+            List<String> geoWithinQueries = generateGeoWithinGeojsonQueries( 10 );
+
+            ArrayList<String> queries = new ArrayList<>();
+            // Create 2dsphere index
+            queries.add( near2dsphere );
+            // Insert data
+            queries.addAll( insertMany );
+            // Final query will be benchmarked
+//        queries.add( geoWithinBox );
+            queries.addAll( geoWithinQueries );
+
+            benchmarkLastQuery( queries );
+        }
+
     }
 
 
@@ -225,6 +223,80 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
     }
 
 
+    public List<String> generateGeoWithinLegacyQueries( int itemCount ) {
+        List<String> queries = new ArrayList<>();
+        int batchSize = 100;
+        int seed = 1000;
+        Random random = new Random( seed );
+
+        for ( int i = 0; i < itemCount; i++ ) {
+            // Generate valid box
+            double lowerLeftLatitude = -90 + random.nextDouble() * 180;
+            double lowerLeftLongitude = -180 + random.nextDouble() * 360;
+            double upperRightLatitude = lowerLeftLatitude + random.nextDouble() * (90 - lowerLeftLatitude);
+            double upperRightLongitude = lowerLeftLongitude + random.nextDouble() * (180 - lowerLeftLongitude);
+
+            String itemTemplate = """
+                        location: {
+                           $geoWithin: {
+                              $box: [
+                                [%s,%s],
+                                [%s,%s]
+                              ]
+                           }
+                        }
+                    """.formatted( lowerLeftLongitude, lowerLeftLatitude, upperRightLongitude, upperRightLatitude );
+            queries.add( "db.%s.find({" + itemTemplate + "})" );
+        }
+
+        return queries;
+    }
+
+
+    public List<String> generateGeoWithinGeojsonQueries( int itemCount ) {
+        List<String> queries = new ArrayList<>();
+        int batchSize = 100;
+        int seed = 1000;
+        Random random = new Random( seed );
+
+        for ( int i = 0; i < itemCount; i++ ) {
+            // Generate valid box
+            double lowerLeftLatitude = -90 + random.nextDouble() * 180;
+            double lowerLeftLongitude = -180 + random.nextDouble() * 360;
+            double upperRightLatitude = lowerLeftLatitude + random.nextDouble() * (90 - lowerLeftLatitude);
+            double upperRightLongitude = lowerLeftLongitude + random.nextDouble() * (180 - lowerLeftLongitude);
+
+            // Format the GeoJSON Polygon for $geoWithin
+            String itemTemplate = """
+                        location: {
+                           $geoWithin: {
+                              $geometry: {
+                                type: "Polygon",
+                                coordinates: [[
+                                  [%s, %s],
+                                  [%s, %s],
+                                  [%s, %s],
+                                  [%s, %s],
+                                  [%s, %s]
+                                ]]
+                              }
+                           }
+                        }
+                    """.formatted(
+                    lowerLeftLongitude, lowerLeftLatitude,  // Bottom-left
+                    upperRightLongitude, lowerLeftLatitude, // Bottom-right
+                    upperRightLongitude, upperRightLatitude, // Top-right
+                    lowerLeftLongitude, upperRightLatitude, // Top-left
+                    lowerLeftLongitude, lowerLeftLatitude   // Close the loop
+            );
+
+            queries.add( "db.%s.find({" + itemTemplate + "})" );
+        }
+
+        return queries;
+    }
+
+
     public List<String> generateInsertGeoJsonTestDataQueries( int itemCount ) {
         List<String> queries = new ArrayList<>();
         int batchSize = 100;
@@ -254,10 +326,7 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
                     {
                       name: "GeoJSON [%s,%s]",
                       num: %s,
-                      location: {
-                        type: "Point",
-                        coordinates: [%s,%s]
-                      }
+                      location: [%s,%s]
                     }
                     """.formatted( num, num, num, longitude, latitude );
             items.add( itemTemplate );
@@ -298,8 +367,8 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
      * the query contains a placeholder %s for the collection.
      */
     private void benchmarkLastQuery( List<String> queries ) {
-        int runCount = 110;
-        int warmUpRuns = 10;
+        int runCount = 1;
+        int warmUpRuns = 0;
 
         for ( String collection : collections ) {
             List<Double> durations = new ArrayList<>();
@@ -313,18 +382,18 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
                     long startTime = System.nanoTime();
                     // Use for verification
                     DocResult finalResult = execute( query, namespace );
-                    if ( runs == runCount ) {
-//                        System.out.println( finalResult.toString() );
-                    }
+//                    if ( runs == runCount ) {
+////                        System.out.println( finalResult.toString() );
+//                    }
 
                     long endTime = System.nanoTime();
                     durationMs = (endTime - startTime) / 1_000_000.0;
-                    if ( j >= warmUpRuns ) {
+                    if ( queries.size() - 1 == i ) {
                         durations.add( durationMs );
                     }
                 }
             }
-            assert durations.size() == runCount - warmUpRuns;
+            assert durations.size() == 1;
             double averageDurationMs = durations.stream()
                     .mapToDouble( Double::doubleValue )
                     .average()
