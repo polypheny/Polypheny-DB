@@ -54,7 +54,16 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 @ActivityDefinition(type = "relSort", displayName = "Sort / Limit Rows", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
         inPorts = { @InPort(type = PortType.REL, description = "The input table") },
         outPorts = { @OutPort(type = PortType.REL, description = "The table sorted by the specified columns and possibly limited number of rows.") },
-        shortDescription = "This activity can be used to both sort a table and limit its number of rows."
+        shortDescription = "This activity can be used to both sort a table and limit its number of rows. Note that some adapters do not keep track of the row order.",
+        longDescription = """
+                This activity can be used to both sort a table and limit its number of rows.
+                
+                > # Note
+                >
+                > Some adapters do not keep track of the sort order.
+                > This implies that the order only persists until the output is materialized in a checkpoint.
+                > If a downstream activity expects sorted input data, consider enabling activity fusion or pipelining. This removes checkpoints between compatible activities.
+                """
 )
 @CollationSetting(key = "sort", displayName = "Sort Columns", shortDescription = "Specify the column(s) to sort the rows by. If no column is selected, the original order is used.", allowRegex = true)
 @IntSetting(key = "limit", displayName = "Row Limit", defaultValue = -1, min = -1, shortDescription = "The total number of rows to include, or -1 to include all rows.")

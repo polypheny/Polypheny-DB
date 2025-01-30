@@ -23,6 +23,7 @@ import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType
 import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.RENDERING_UPDATE;
 import static org.polypheny.db.workflow.models.responses.WsResponse.ResponseType.STATE_UPDATE;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,6 +102,7 @@ public class WsResponse {
 
         public final WorkflowState workflowState;
         public final Map<UUID, ActivityState> activityStates = new HashMap<>();
+        public final List<UUID> rolledBack = new ArrayList<>();
         public final Map<UUID, List<TypePreviewModel>> inTypePreviews = new HashMap<>();
         public final Map<UUID, List<TypePreviewModel>> outTypePreviews = new HashMap<>();
         public final Map<UUID, String> activityInvalidReasons = new HashMap<>();
@@ -115,6 +117,9 @@ public class WsResponse {
             for ( ActivityWrapper wrapper : workflow.getActivities() ) {
                 UUID id = wrapper.getId();
                 activityStates.put( id, wrapper.getState() );
+                if (wrapper.isRolledBack()) {
+                    rolledBack.add( id );
+                }
                 inTypePreviews.put( id, wrapper.getInTypeModels() );
                 outTypePreviews.put( id, wrapper.getOutTypeModels() );
                 ActivityException e = wrapper.getInvalidStateReason();

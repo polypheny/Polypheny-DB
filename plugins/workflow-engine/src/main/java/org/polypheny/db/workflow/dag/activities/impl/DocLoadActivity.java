@@ -56,6 +56,7 @@ import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.DocBatchWriter;
+import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.DocReader;
 
@@ -64,12 +65,12 @@ import org.polypheny.db.workflow.engine.storage.reader.DocReader;
         outPorts = {})
 
 @EntitySetting(key = COLL_KEY, displayName = "Collection", dataModel = DataModel.DOCUMENT, pos = 0)
-@BoolSetting(key = "create", displayName = "Create Collection", pos = 1,
+@BoolSetting(key = "drop", displayName = "Drop Existing Collection", pos = 1,
+        shortDescription = "Drop any documents that are already in the specified collection.", defaultValue = false)
+@BoolSetting(key = "create", displayName = "Create Collection", pos = 2,
         shortDescription = "Create a new collection with the specified name, if it does not yet exist.")
 @StringSetting(key = "adapter", displayName = "Adapter", shortDescription = "Specify which adapter is used when a new collection is created.",
-        subPointer = "create", subValues = { "true" }, pos = 2, autoCompleteType = AutoCompleteType.ADAPTERS)
-@BoolSetting(key = "drop", displayName = "Drop Existing Collection", pos = 3,
-        shortDescription = "Drop any documents that are already in the specified collection.", defaultValue = false)
+        subPointer = "create", subValues = { "true" }, pos = 3, autoCompleteType = AutoCompleteType.ADAPTERS)
 @SuppressWarnings("unused")
 public class DocLoadActivity implements Activity, Pipeable {
 
@@ -145,20 +146,28 @@ public class DocLoadActivity implements Activity, Pipeable {
                 }
             }
             logInfo.accept( "Creating collection '" + setting.getName() + "'" );
-            // no need for try catch here: transaction is rolled back by WorkflowScheduler if an exception is thrown
-            Transaction transaction = txSupplier.get();
             assert namespace != null;
-            transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.EXCLUSIVE );
-            ddlManager.createCollection(
-                    namespace.getId(),
-                    setting.getName(),
-                    false,
-                    List.of( adapterManager.getStore( adapter ).orElseThrow( () ->
-                            new InvalidSettingException( "Adapter does not exist: " + adapter, "adapter" ) ) ),
-                    PlacementType.AUTOMATIC,
-                    transaction.createStatement()
-            );
-            return Catalog.snapshot().doc().getCollection( namespace.id, setting.getName() ).orElseThrow();
+            // Unfortunately, we have to create the table outside our activity transaction context.
+            Transaction transaction = QueryUtils.startTransaction( namespace.id, "DocLoadCreate" );
+            try {
+                transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.EXCLUSIVE );
+                ddlManager.createCollection(
+                        namespace.getId(),
+                        setting.getName(),
+                        false,
+                        List.of( adapterManager.getStore( adapter ).orElseThrow( () ->
+                                new InvalidSettingException( "Adapter does not exist: " + adapter, "adapter" ) ) ),
+                        PlacementType.AUTOMATIC,
+                        transaction.createStatement()
+                );
+                transaction.commit();
+                return Catalog.snapshot().doc().getCollection( namespace.id, setting.getName() ).orElseThrow();
+            } finally {
+                if ( transaction.isActive() ) {
+                    logInfo.accept( "Unable to create collection. Rolling back transaction." );
+                    transaction.rollback( null );
+                }
+            }
 
         } else if ( dropExisting ) {
             logInfo.accept( "Truncating existing collection" );

@@ -44,7 +44,7 @@ import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
 import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 
 @ActivityDefinition(type = "lpgUnion", displayName = "Graph Union", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH },
-        inPorts = { @InPort(type = PortType.LPG, description = "A single graph."), @InPort(type = PortType.LPG, isMulti = true, description = "One or more graphs.") },
+        inPorts = { @InPort(type = PortType.LPG, isMulti = true, description = "One or more graphs.") },
         outPorts = { @OutPort(type = PortType.LPG) },
         shortDescription = "Combines the nodes and edges of all input graphs into a single graph."
 )

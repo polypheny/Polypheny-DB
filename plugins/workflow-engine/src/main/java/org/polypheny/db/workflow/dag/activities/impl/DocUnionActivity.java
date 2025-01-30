@@ -41,7 +41,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 
 @ActivityDefinition(type = "docUnion", displayName = "Document Union", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT },
-        inPorts = { @InPort(type = PortType.DOC, description = "A single document collection."), @InPort(type = PortType.DOC, isMulti = true, description = "One or more collections.") },
+        inPorts = { @InPort(type = PortType.DOC, isMulti = true, description = "One or more collections.") },
         outPorts = { @OutPort(type = PortType.DOC) },
         shortDescription = "Writes the documents of all input collections into a single output collection."
 )

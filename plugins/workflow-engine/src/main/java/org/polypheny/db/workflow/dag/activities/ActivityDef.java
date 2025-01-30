@@ -40,7 +40,6 @@ import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.settings.GroupDef;
 import org.polypheny.db.workflow.dag.settings.SettingDef;
-import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 
 @Value
 public class ActivityDef {
@@ -57,9 +56,14 @@ public class ActivityDef {
     String iconPath;
     List<GroupDef> groups;
     Map<String, SettingDef> settings;
+    boolean fusable;
+    boolean pipeable;
+    boolean variableWriter;
 
 
-    public static ActivityDef fromAnnotations( Class<? extends Activity> activityClass, ActivityDefinition def, Annotation groups, DefaultGroup defaultGroup, AdvancedGroup advancedGroup, Annotation[] allAnnotations ) {
+    public static ActivityDef fromAnnotations( Class<? extends Activity> activityClass,
+            ActivityDefinition def, Annotation groups, DefaultGroup defaultGroup, AdvancedGroup advancedGroup, Annotation[] allAnnotations,
+            boolean isFusable, boolean isPipeable, boolean isVariableWriter) {
         Map<String, SettingDef> settings = new LinkedHashMap<>(); // This ensures that the order of Settings of the same type is preserved, which is useful for the UI.
         for ( SettingDef setting : SettingDef.fromAnnotations( allAnnotations ) ) {
             String key = setting.getKey();
@@ -77,7 +81,10 @@ public class ActivityDef {
                 OutPortDef.fromAnnotations( def.outPorts() ),
                 def.iconPath(),
                 GroupDef.fromAnnotation( groups, defaultGroup, advancedGroup ),
-                settings
+                settings,
+                isFusable,
+                isPipeable,
+                isVariableWriter
         );
     }
 
@@ -94,21 +101,6 @@ public class ActivityDef {
                 e -> e instanceof DataEdge d && d.isMulti()
         ).count();
         return inPorts.length + Math.max( 0, count - 1 ); // - 1 to avoid counting first multi twice
-    }
-
-
-    @JsonIgnore
-    public int getDynamicInPortCount( List<ExecutionEdge> inEdges ) {
-        int count = inPorts.length;
-        if ( !hasMultiInPort() ) {
-            return count;
-        }
-        for ( ExecutionEdge edge : inEdges ) {
-            if ( !edge.isControl() && edge.getToPort() >= inPorts.length ) {
-                count++;
-            }
-        }
-        return count;
     }
 
 

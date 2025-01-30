@@ -53,6 +53,7 @@ import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.LpgBatchWriter;
+import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
 
@@ -61,12 +62,12 @@ import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
         outPorts = {})
 
 @EntitySetting(key = GRAPH_KEY, displayName = "Graph", dataModel = DataModel.GRAPH, pos = 0)
-@BoolSetting(key = "create", displayName = "Create Graph", pos = 1,
+@BoolSetting(key = "drop", displayName = "Drop Existing Graph", pos = 1,
+        shortDescription = "Drop any nodes that are already in the specified graph.", defaultValue = false)
+@BoolSetting(key = "create", displayName = "Create Graph", pos = 2,
         shortDescription = "Create a new graph with the specified name, if it does not yet exist.")
 @StringSetting(key = "adapter", displayName = "Adapter", shortDescription = "Specify which adapter is used when a new graph is created.",
-        subPointer = "create", subValues = { "true" }, pos = 2, autoCompleteType = AutoCompleteType.ADAPTERS)
-@BoolSetting(key = "drop", displayName = "Drop Existing Graph", pos = 3,
-        shortDescription = "Drop any nodes that are already in the specified graph.", defaultValue = false)
+        subPointer = "create", subValues = { "true" }, pos = 3, autoCompleteType = AutoCompleteType.ADAPTERS)
 @SuppressWarnings("unused")
 public class LpgLoadActivity implements Activity, Pipeable {
 
@@ -120,19 +121,28 @@ public class LpgLoadActivity implements Activity, Pipeable {
                 throw new InvalidSettingException( "Specified graph does not exist", GRAPH_KEY );
             }
             logInfo.accept( "Creating graph '" + entitySetting.getNamespace() + "'" );
-            // no need for try catch here: transaction is rolled back by WorkflowScheduler if an exception is thrown
-            Transaction transaction = txSupplier.get();
-            long graphId = ddlManager.createGraph(
-                    entitySetting.getNamespace(),
-                    true,
-                    List.of( adapterManager.getStore( adapter ).orElseThrow( () ->
-                            new InvalidSettingException( "Adapter does not exist: " + adapter, "adapter" ) ) ),
-                    false,
-                    false,
-                    RuntimeConfig.GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean(),
-                    transaction.createStatement()
-            );
-            return Catalog.snapshot().graph().getGraph( graphId ).orElseThrow();
+
+            // Unfortunately, we have to create the table outside our activity transaction context.
+            Transaction transaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId, "LpgLoadCreate" );
+            try {
+                long graphId = ddlManager.createGraph(
+                        entitySetting.getNamespace(),
+                        true,
+                        List.of( adapterManager.getStore( adapter ).orElseThrow( () ->
+                                new InvalidSettingException( "Adapter does not exist: " + adapter, "adapter" ) ) ),
+                        false,
+                        false,
+                        RuntimeConfig.GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean(),
+                        transaction.createStatement()
+                );
+                transaction.commit();
+                return Catalog.snapshot().graph().getGraph( graphId ).orElseThrow();
+            } finally {
+                if ( transaction.isActive() ) {
+                    logInfo.accept( "Unable to create graph. Rolling back transaction." );
+                    transaction.rollback( null );
+                }
+            }
         } else if ( drop ) {
             logInfo.accept( "Truncating existing graph" );
             Transaction transaction = txSupplier.get();

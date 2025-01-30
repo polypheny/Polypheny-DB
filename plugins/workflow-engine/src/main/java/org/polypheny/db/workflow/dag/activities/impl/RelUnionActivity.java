@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.dag.activities.impl;
 
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -45,8 +46,9 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
+@Slf4j
 @ActivityDefinition(type = "relUnion", displayName = "Relational Union", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
-        inPorts = { @InPort(type = PortType.REL), @InPort(type = PortType.REL, isMulti = true) },
+        inPorts = { @InPort(type = PortType.REL, isMulti = true) },
         outPorts = { @OutPort(type = PortType.REL) }
 )
 
@@ -91,6 +93,10 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster, FuseExecutionContext ctx ) throws Exception {
+        if (inputs.size() == 1) {
+            ctx.logInfo( "Detected only one input. Skipping Union." );
+            return inputs.get(0);
+        }
         return LogicalRelUnion.create( inputs, settings.get( "all", BoolValue.class ).getValue() );
     }
 

@@ -80,8 +80,8 @@ import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 @DefaultGroup(subgroups = { @Subgroup(key = "create", displayName = "Create Table") })
 
 @EntitySetting(key = TABLE_KEY, displayName = "Table", dataModel = DataModel.RELATIONAL, pos = 0)
-@BoolSetting(key = "drop", displayName = "Drop Existing Table", pos = 1,
-        shortDescription = "Drop any rows that are already in the specified table.", defaultValue = false)
+@BoolSetting(key = "drop", displayName = "Truncate Existing Table", pos = 1,
+        shortDescription = "Delete any rows that are already in the specified table.", defaultValue = false)
 @BoolSetting(key = "keepPk", displayName = "Keep Primary Key", pos = 2,
         shortDescription = "Use the '" + StorageManager.PK_COL + "' column as primary key.", defaultValue = false)
 
@@ -161,21 +161,29 @@ public class RelLoadActivity implements Activity, Pipeable {
             }
             // TODO: writing to a created table currently does not work.
             logInfo.accept( "Creating table '" + setting.getName() + "'" );
-            // no need for try catch here: transaction is rolled back by WorkflowScheduler if an exception is thrown
-            Transaction transaction = txSupplier.get();
             assert namespace != null;
-            transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.EXCLUSIVE );
-            ddlManager.createTable(
-                    namespace.id,
-                    setting.getName(),
-                    StorageManagerImpl.getFieldInfo( outType ),
-                    getPkConstraint( keepPk, pkCols ),
-                    false,
-                    List.of( adapterManager.getStore( adapter ).orElseThrow( () ->
-                            new InvalidSettingException( "Adapter does not exist: " + adapter, "adapter" ) ) ),
-                    PlacementType.AUTOMATIC,
-                    transaction.createStatement() );
-            return Catalog.snapshot().rel().getTable( namespace.id, setting.getName() ).orElseThrow();
+            // Unfortunately, we have to create the table outside our activity transaction context.
+            Transaction transaction = QueryUtils.startTransaction( namespace.id, "RelLoadCreate" );
+            try {
+                transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.EXCLUSIVE );
+                ddlManager.createTable(
+                        namespace.id,
+                        setting.getName(),
+                        StorageManagerImpl.getFieldInfo( outType ),
+                        getPkConstraint( keepPk, pkCols ),
+                        false,
+                        List.of( adapterManager.getStore( adapter ).orElseThrow( () ->
+                                new InvalidSettingException( "Adapter does not exist: " + adapter, "adapter" ) ) ),
+                        PlacementType.AUTOMATIC,
+                        transaction.createStatement() );
+                transaction.commit();
+                return Catalog.snapshot().rel().getTable( namespace.id, setting.getName() ).orElseThrow();
+            } finally {
+                if ( transaction.isActive() ) {
+                    logInfo.accept( "Unable to create table. Rolling back transaction." );
+                    transaction.rollback( null );
+                }
+            }
 
         } else {
             if ( !ActivityUtils.areTypesCompatible( List.of( outType, table.getTupleType() ) ) ) {

@@ -37,8 +37,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 @ActivityDefinition(type = "relMerge", displayName = "Relational Merge", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
-        inPorts = { @InPort(type = PortType.REL, description = "A single table that might not be active."),
-                @InPort(type = PortType.REL, isMulti = true, description = "One or more tables, some or all might not be active.") },
+        inPorts = { @InPort(type = PortType.REL, isMulti = true, description = "One or more tables, some or all might not be active.") },
         outPorts = { @OutPort(type = PortType.REL, description = "The union of all active inputs.") },
         shortDescription = "Writes the rows of all active input tables into a single output table. "
                 + "Unlike a Union activity, this activity produces a result even if some inputs are inactive. This is useful for merging conditional branches."

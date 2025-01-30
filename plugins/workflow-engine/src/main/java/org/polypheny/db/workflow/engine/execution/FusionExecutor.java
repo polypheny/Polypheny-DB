@@ -150,7 +150,7 @@ public class FusionExecutor extends Executor {
     private Pair<AlgNode, Long> constructAlgNode( UUID root, AlgCluster cluster, Transaction transaction ) throws Exception {
         ActivityWrapper wrapper = workflow.getActivity( root );
         List<ExecutionEdge> inEdges = execTree.getInwardEdges( root );
-        AlgNode[] inputsArr = new AlgNode[wrapper.getDef().getDynamicInPortCount( inEdges )];
+        AlgNode[] inputsArr = new AlgNode[wrapper.getDef().getDynamicInPortCount( workflow.getInEdges( root ) )];
         Long[] inCountsArr = new Long[inputsArr.length];
         for ( ExecutionEdge edge : inEdges ) {
             assert !edge.isControl() : "Execution tree for fusion must not contain control edges";

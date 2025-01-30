@@ -35,8 +35,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 
 @ActivityDefinition(type = "docMerge", displayName = "Document Merge", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT },
-        inPorts = { @InPort(type = PortType.DOC, description = "A single document collection."),
-                @InPort(type = PortType.DOC, isMulti = true, description = "One or more collections.") },
+        inPorts = { @InPort(type = PortType.DOC, isMulti = true, description = "One or more collections.")},
         outPorts = { @OutPort(type = PortType.DOC, description = "The union of all active inputs.") },
         shortDescription = "Writes the documents of all active input collections into a single output collection. "
                 + "Unlike a Union activity, this activity produces a result even if some inputs are inactive. This is useful for merging conditional branches."

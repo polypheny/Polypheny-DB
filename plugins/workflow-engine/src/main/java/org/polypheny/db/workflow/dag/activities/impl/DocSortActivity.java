@@ -57,7 +57,16 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 @ActivityDefinition(type = "docSort", displayName = "Sort / Limit Documents", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT },
         inPorts = { @InPort(type = PortType.DOC, description = "The input collection") },
         outPorts = { @OutPort(type = PortType.DOC, description = "The collection sorted by the specified fields and possibly limited number of documents.") },
-        shortDescription = "This activity can be used to both sort a collection and limit its number of documents."
+        shortDescription = "This activity can be used to both sort a collection and limit its number of documents. Note that some adapters do not keep track of the document order.",
+        longDescription = """
+                This activity can be used to both sort a collection and limit its number of documents.
+                
+                > # Note
+                >
+                > Some adapters do not keep track of the sort order.
+                > This implies that the order only persists until the output is materialized in a checkpoint.
+                > If a downstream activity expects sorted input data, consider enabling activity fusion or pipelining. This removes checkpoints between compatible activities.
+                """
 )
 @CollationSetting(key = "sort", displayName = "Sort Fields", shortDescription = "Specify the field(s) to sort the documents by. If no field is selected, the original order is used.", allowRegex = false)
 @IntSetting(key = "limit", displayName = "Row Limit", defaultValue = -1, min = -1, shortDescription = "The total number of documents to include, or -1 to include all documents.")

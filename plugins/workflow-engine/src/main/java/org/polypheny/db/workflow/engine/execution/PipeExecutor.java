@@ -63,6 +63,7 @@ public class PipeExecutor extends Executor {
     private final Map<UUID, AlgDataType> outTypes = new HashMap<>(); // maps activities to their (only!) output type
     private final Map<UUID, Long> outCounts = new HashMap<>(); // maps activities to the estimated number of tuples they produce, or -1 if no estimation is possible
     private final Map<UUID, QueuePipe> outQueues = new HashMap<>(); // maps activities to their (only!) output queue
+    private final Map<UUID, Integer> dynamicInPortCounts = new HashMap<>(); // maps activities to their dynamic inPort count (rather expensive to compute so we cache it)
     private final Map<UUID, ExecutionContextImpl> contexts = new HashMap<>();
     private final Map<UUID, Settings> settingsSnapshot = new HashMap<>();
     private final int queueCapacity;
@@ -163,9 +164,11 @@ public class PipeExecutor extends Executor {
     private AlgDataType registerOutputTypes( UUID root ) throws Exception {
         ActivityWrapper wrapper = workflow.getActivity( root );
 
+        int dynamicInPorts = wrapper.getDef().getDynamicInPortCount(workflow.getInEdges( root ));
+        this.dynamicInPortCounts.put( root, dynamicInPorts );
         List<ExecutionEdge> inEdges = execTree.getInwardEdges( root );
-        AlgDataType[] inTypes = new AlgDataType[wrapper.getDef().getDynamicInPortCount( inEdges )];
-        Long[] inCounts = new Long[inTypes.length];
+        AlgDataType[] inTypes = new AlgDataType[dynamicInPorts];
+        Long[] inCounts = new Long[dynamicInPorts];
         boolean isInnerNode = false;
         for ( ExecutionEdge edge : inEdges ) {
             assert !edge.isControl() : "Execution tree for pipelining must not contain control edges";
@@ -173,7 +176,7 @@ public class PipeExecutor extends Executor {
             inCounts[edge.getToPort()] = outCounts.get( edge.getSource() );
             isInnerNode = true;
         }
-        for ( int i = 0; i < inTypes.length; i++ ) {
+        for ( int i = 0; i < dynamicInPorts; i++ ) {
             if ( inTypes[i] == null ) {
                 // existing checkpoint
                 CheckpointReader reader = getReader( wrapper, i );
@@ -235,7 +238,7 @@ public class PipeExecutor extends Executor {
         for ( UUID currentId : TopologicalOrderIterator.of( execTree ) ) {
             ActivityWrapper wrapper = workflow.getActivity( currentId );
             List<ExecutionEdge> inEdges = execTree.getInwardEdges( currentId );
-            InputPipe[] inPipesArr = new InputPipe[wrapper.getDef().getDynamicInPortCount( inEdges )];
+            InputPipe[] inPipesArr = new InputPipe[dynamicInPortCounts.get( currentId )];
             for ( ExecutionEdge edge : inEdges ) {
                 assert !edge.isControl() : "Execution tree for pipelining must not contain control edges";
                 QueuePipe inPipe = outQueues.get( edge.getSource() );

@@ -64,6 +64,12 @@ public class ActivityWrapper {
     @Setter
     private ActivityState state = ActivityState.IDLE;
 
+    /**
+     * If the activity is part of a common transaction, this indicates whether the transaction was rolled back.
+     */
+    @Setter
+    private boolean isRolledBack = false;
+
     private final VariableStore variables = new VariableStore(); // depending on state, this either represents the variables before (possibly not yet stable) or after execution (always stable)
     @Setter
     private List<TypePreview> outTypePreview; // TODO: ensure this is always up to date
@@ -172,7 +178,8 @@ public class ActivityWrapper {
                     Collectors.toMap( InvalidSettingException::getSettingKey, InvalidSettingException::getMessage ) );
             ExecutionInfoModel infoModel = executionInfo == null ? null : executionInfo.toModel( true );
             return new ActivityModel( type, id, serializableSettings, config, rendering,
-                    this.state, getInTypeModels(), getOutTypeModels(), invalidReason, invalidSettingsMap, variables.getVariables(), infoModel );
+                    this.state, this.isRolledBack, getInTypeModels(), getOutTypeModels(), invalidReason,
+                    invalidSettingsMap, variables.getVariables(), infoModel );
 
         } else {
             return new ActivityModel( type, id, serializableSettings, config, rendering );
@@ -224,6 +231,7 @@ public class ActivityWrapper {
         activity.reset();
         variables.reset( workflowVariables );
         state = ActivityState.IDLE;
+        isRolledBack = false;
         executionInfo = null;
     }
 

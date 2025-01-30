@@ -23,6 +23,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -209,13 +210,18 @@ public class ActivityRegistry {
                 groups = cls.getAnnotation( Group.List.class );
             }
 
+            List<Class<?>> interfaces = Arrays.asList( cls.getInterfaces() );
+
             ActivityDef def = ActivityDef.fromAnnotations(
                     cls,
                     definition,
                     groups,
                     cls.getAnnotation( DefaultGroup.class ),
                     cls.getAnnotation( AdvancedGroup.class ),
-                    cls.getAnnotations() );
+                    cls.getAnnotations(),
+                    interfaces.contains( Fusable.class ),
+                    interfaces.contains( Pipeable.class ),
+                    interfaces.contains( VariableWriter.class ));
             registry.put( key, def );
         }
         return Collections.unmodifiableMap( registry );

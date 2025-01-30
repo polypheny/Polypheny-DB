@@ -44,6 +44,8 @@ import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
+import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo.LogLevel;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionMonitor;
 import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizer;
 import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizer.SubmissionFactory;
@@ -560,6 +562,13 @@ public class WorkflowScheduler {
             if ( isAtomic ) {
                 for ( UUID n : activities ) {
                     ActivityWrapper wrapper = workflow.getActivity( n );
+                    if (hasFailed) {
+                        wrapper.setRolledBack( true );
+                        ExecutionInfo info = wrapper.getExecutionInfo();
+                        if (info != null) {
+                            info.appendLog( wrapper.getId(), LogLevel.ERROR, "Activity was rolled back because the common transaction was aborted." );
+                        }
+                    }
 
                     for ( ExecutionEdge execEdge : dag.getOutwardEdges( n ) ) {
                         if ( activities.contains( execEdge.getTarget() ) ) {
