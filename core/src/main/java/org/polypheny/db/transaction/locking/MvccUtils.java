@@ -111,10 +111,7 @@ public class MvccUtils {
         List<List<PolyValue>> res;
         HashSet<Long> entryIds = new HashSet<>();
         try ( ResultIterator iterator = executeStatement( writtenEntity, transaction, QueryLanguage.from( "mql" ), writeSetQuery ).getIterator() ) {
-            while ( iterator.hasMoreRows() ) {
-                res = iterator.getNextBatch();
-                res.forEach( r -> entryIds.add( r.get( 0 ).asDocument().get( IdentifierUtils.getIdentifierKeyAsPolyString() ).asLong().longValue() ) );
-            }
+            iterator.getIterator().forEachRemaining( r -> entryIds.add( r[0].asDocument().get( IdentifierUtils.getIdentifierKeyAsPolyString() ).asLong().longValue() ) );
         }
 
         // step 2: get max of version ids present for each of the written entry ids
