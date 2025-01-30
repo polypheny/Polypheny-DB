@@ -455,19 +455,22 @@ class GlobalSchedulerTest {
         executeAllAndCheck( workflow, List.of( ids.get( 0 ), ids.get( 1 ) ), List.of( ids.get( 2 ), ids.get( 3 ) ), List.of() );
     }
 
-    /*@Test // TODO: write test when fusion is implemented for query-activity
-    void incompatibleTypesFusionTest() throws Exception {
-        Workflow workflow = WorkflowUtils.getIncompatibleDynamicPortTypes( true, false );
-        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
-        executeAllAndCheck( workflow, List.of(), ids, List.of() );
-    }*/
-
 
     @Test
     void multiInputTest() throws Exception {
         Workflow workflow = WorkflowUtils.getMultiInputWorkflow();
         List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
         executeAllAndCheck( workflow, ids );
+    }
+
+
+    @Test
+    @Disabled // TODO: enable to debug
+    void relToDocAlgNodesTest() throws Exception {
+        // See RelToDocActivity.fuse(): AlgNode tree should consist of LogicalRelValues -> LogicalTransformer
+        Workflow workflow = WorkflowUtils.getRelToDocFusion();
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        executeAllAndCheck( workflow, List.of( ids.get( 1 ) ) );
     }
 
 

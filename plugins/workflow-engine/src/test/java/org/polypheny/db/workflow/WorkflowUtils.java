@@ -418,6 +418,18 @@ public class WorkflowUtils {
     }
 
 
+    public static Workflow getRelToDocFusion() {
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "relValues" ),
+                new ActivityModel( "relToDoc" )
+        );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 1 ), 0 )
+        );
+        return getWorkflow( activities, edges, true, false, 1 );
+    }
+
+
     public static List<UUID> getTopologicalActivityIds( Workflow workflow ) {
         List<UUID> list = new ArrayList<>();
         for ( UUID n : TopologicalOrderIterator.of( workflow.toDag() ) ) {

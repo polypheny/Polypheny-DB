@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgCluster;
@@ -124,8 +124,8 @@ public class RelToDocActivity implements Activity, Fusable, Pipeable {
             node = ActivityUtils.removePkCol( node, cluster );
         }
         // TODO: fix rel -> doc
-        return new LogicalDocumentProject( cluster, cluster.traitSetOf( ModelTrait.DOCUMENT ), node, Map.of(), List.of() );
-        //return LogicalTransformer.create( cluster, List.of(node), null, ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, getDocType(), true );
+        //return new LogicalDocumentProject( cluster, cluster.traitSetOf( ModelTrait.DOCUMENT ), node, Map.of(), List.of() );
+        return LogicalTransformer.create( cluster, List.of( node ), null, ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, getDocType(), true );
     }
 
 
