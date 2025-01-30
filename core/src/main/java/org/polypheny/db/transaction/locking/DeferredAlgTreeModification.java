@@ -21,9 +21,11 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
@@ -46,6 +48,7 @@ public class DeferredAlgTreeModification {
 
     private static final AlgDataType BOOLEAN_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BOOLEAN, true );
     private static final AlgDataType INTEGER_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.INTEGER, true );
+    private static final AlgDataType DOCUMENT_ALG_TYPE = new DocumentType(List.of(), List.of());
     private static final PolyString IDENTIFIER_KEY = PolyString.of("_id");
 
 
@@ -294,15 +297,15 @@ public class DeferredAlgTreeModification {
                         OperatorRegistry.get( OperatorName.AND ),
                         new RexCall(
                                 BOOLEAN_ALG_TYPE,
-                                OperatorRegistry.get(OperatorName.EQUALS),
+                                OperatorRegistry.get(QueryLanguage.from( "mql" ), OperatorName.MQL_EQUALS),
                                 new RexNameRef( "_eid", null, IdentifierUtils.IDENTIFIER_ALG_TYPE ),
-                                new RexLiteral( PolyLong.of(d.left), IdentifierUtils.IDENTIFIER_ALG_TYPE, PolyType.BIGINT )
+                                new RexLiteral( PolyLong.of(d.left), DOCUMENT_ALG_TYPE, PolyType.DOCUMENT )
                         ),
                         new RexCall(
                                 BOOLEAN_ALG_TYPE,
-                                OperatorRegistry.get(OperatorName.EQUALS),
+                                OperatorRegistry.get(QueryLanguage.from( "mql" ), OperatorName.MQL_EQUALS),
                                 new RexNameRef( "_vid", null, IdentifierUtils.VERSION_ALG_TYPE ),
-                                new RexLiteral( PolyLong.of(d.right), IdentifierUtils.VERSION_ALG_TYPE, PolyType.BIGINT )
+                                new RexLiteral( PolyLong.of(d.right), DOCUMENT_ALG_TYPE, PolyType.DOCUMENT )
 
                         ))
                 ).toList();
