@@ -16,6 +16,8 @@
 
 package org.polypheny.db.mql;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,6 +76,15 @@ public class AggregateTest extends MqlTestTemplate {
         DocResult result = aggregate("{ \"$match\": { \"b\": 5 } }, { \"$group\": { \"_id\": null, \"count\": { \"$sum\": 1 } } }");
     }
 
+    @Test
+    public void aggregateMultiplyTest() {
+        insertMany( DATA_4 );
+        DocResult result = aggregate(
+                $match("{\"b\": 5}"),
+                $project("{\"_id\": 0, \"a\": 1, \"b\": 1, \"product\": { \"$multiply\": [\"$a\", \"$b\"] }}")
+        );
+        assertTrue(result.data.length > 0);
+    }
 
     @Test
     public void projectTest() {
