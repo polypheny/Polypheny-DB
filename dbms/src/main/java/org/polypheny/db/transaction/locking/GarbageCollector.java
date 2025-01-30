@@ -16,13 +16,10 @@
 
 package org.polypheny.db.transaction.locking;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import org.apache.commons.lang3.NotImplementedException;
+import java.util.stream.Collectors;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
@@ -37,17 +34,19 @@ import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.document.PolyDocument;
 
 public class GarbageCollector {
 
     private static final String TRANSACTION_ORIGIN = "MVCC Garbage Collector";
 
     private static final String REL_RELEASED_EID_QUERY = """
-           SELECT ABS(t._eid) AS released_eid
-           FROM %s AS t
-           WHERE t._eid < 0
-             AND t._vid < %d;
-           """;
+            SELECT ABS(t._eid) AS released_eid
+            FROM %s AS t
+            WHERE t._eid < 0
+              AND t._vid < %d;
+            """;
 
     private static final String REL_CLEANUP_QUERY = """
             DELETE FROM %s
@@ -76,73 +75,61 @@ public class GarbageCollector {
             );
             """;
 
-    private static final String DOCUMENT_CLEANUP_STATEMENT = """
-    db.%s.aggregate([
-        {
-            $group: {
-                _id: { $abs: "$_eid" },
-                max_vid: { $max: "$_vid" }
-            }
-        },
-        {
-            $lookup: {
-                from: "%s",
-                let: { eid: "$_id", max_vid: "$max_vid" },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: [ { $abs: "$_eid" }, "$$eid" ] },
-                                    { $lt: ["$_vid", %d] },
-                                    {
-                                        $or: [
-                                            { $gte: ["$$max_vid", %d] },
-                                            { $lt: ["$_vid", "$$max_vid"] },
-                                            { $lt: ["$_eid", 0] }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
+    private static final String DOC_NEWEST_VERSION_STATEMENT = """
+            db.%s.aggregate([
+                {
+                    "$group": {
+                        "_id": "$_eid",
+                        "max_vid": { "$max": "$_vid" }
                     }
-                ],
-                as: "toDelete"
-            }
-        },
-        {
-            $project: {
-                _id: 0,
-                deleteIds: "$toDelete._id"
-            }
-        }
-    ]).forEach(doc => {
-        db.%s.deleteMany({ _id: { $in: doc.deleteIds } });
-    });
-    """;
+                },
+                {
+                    "$project": {
+                        "_id": { "$abs": "$_id" },
+                        "_vid": "$max_vid"
+                    }
+                }
+            ])
+            """;
+
+    private static final String DOC_FIND_GARBAGE_STATEMENT = """
+            db.%s.aggregate([
+                { "$match": {
+                    "_vid": { "$lt": %d },
+                    "$or": [
+                        %s
+                    ]
+                }},
+                { "$project": { "_id": 1 } }
+            ])
+            """;
+
+    private static final String DOC_DELETE_STATEMENT = """
+            db.%s.deleteMany({ "_id": { "$in": [ %s ] } })
+            """;
 
     private static final String GRAPH_CLEANUP_STATEMENT = """
-    MATCH (t)
-    OPTIONAL MATCH (m)
-    WHERE t._vid < %d AND (
-        EXISTS {
-            MATCH (m)
-            WHERE ABS(m._eid) = ABS(t._eid)
-            WITH m, MAX(m._vid) AS max_vid
-            RETURN max_vid
-        } >= %d
-        OR t._vid < (
-            MATCH (m)
-            WHERE ABS(m._eid) = ABS(t._eid)
-            RETURN MAX(m._vid)
-        )
-        OR t._eid < 0
-    )
-    DETACH DELETE t
-    """;
+            MATCH (t)
+            OPTIONAL MATCH (m)
+            WHERE t._vid < %d AND (
+                EXISTS {
+                    MATCH (m)
+                    WHERE ABS(m._eid) = ABS(t._eid)
+                    WITH m, MAX(m._vid) AS max_vid
+                    RETURN max_vid
+                } >= %d
+                OR t._vid < (
+                    MATCH (m)
+                    WHERE ABS(m._eid) = ABS(t._eid)
+                    RETURN MAX(m._vid)
+                )
+                OR t._eid < 0
+            )
+            DETACH DELETE t
+            """;
 
-    private static final String RELATIONAL_CLEANUP_LANGUAGE = "sql";
-    private static final String DOCUMENT_CLEANUP_LANGUAGE = "mongo";
+    private static final String REL_CLEANUP_LANGUAGE = "sql";
+    private static final String DOC_CLEANUP_LANGUAGE = "mongo";
     private static final String GRAPH_CLEANUP_LANGUAGE = "cypher";
 
     private final TransactionManager transactionManager;
@@ -159,7 +146,7 @@ public class GarbageCollector {
 
 
     public synchronized void runIfRequired( long totalTransactions ) {
-        if (isRunning) {
+        if ( isRunning ) {
             return;
         }
 
@@ -187,7 +174,7 @@ public class GarbageCollector {
 
         // for each entity run cleanup
         isRunning = true;
-        Transaction transaction = transactionManager.startTransaction(  Catalog.defaultUserId, false, TRANSACTION_ORIGIN );
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, TRANSACTION_ORIGIN );
         entities.forEach( e -> garbageCollect( e, lowestActiveTransaction, transaction ) );
         transaction.commit();
         isRunning = false;
@@ -212,8 +199,8 @@ public class GarbageCollector {
 
         Set<Long> releasedIds = new HashSet<>(); //ToDo TH: this will become a problem with table size
         Statement statement1 = transaction.createStatement();
-        ResultIterator iterator = executeStatement( releasedEidQuery, RELATIONAL_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement1, transaction).getIterator();
-        iterator.getIterator(). forEachRemaining( r -> releasedIds.add( r[0].asLong().longValue() ));
+        ResultIterator iterator = executeStatement( releasedEidQuery, REL_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement1, transaction ).getIterator();
+        iterator.getIterator().forEachRemaining( r -> releasedIds.add( r[0].asLong().longValue() ) );
         iterator.close();
         statement1.close();
 
@@ -226,9 +213,9 @@ public class GarbageCollector {
                 lowestActiveVersion,
                 entity.getName(),
                 entity.getName()
-                );
+        );
         Statement statement2 = transaction.createStatement();
-        executeStatement( query, RELATIONAL_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement2, transaction);
+        executeStatement( query, REL_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement2, transaction );
         statement2.close();
 
         entity.getEntryIdentifiers().releaseEntryIdentifiers( releasedIds );
@@ -236,8 +223,60 @@ public class GarbageCollector {
 
 
     private void docGarbageCollect( LogicalEntity entity, long lowestActiveVersion, Transaction transaction ) {
-        // ToDo TH: implement
-        //throw new NotImplementedException();
+        PolyString identifierKey = PolyString.of( "_id" );
+        Statement statement1 = transaction.createStatement();
+        String getNewestVersionQuery = String.format( DOC_NEWEST_VERSION_STATEMENT, entity.getName() );
+
+        StringBuilder matchConditions = new StringBuilder();
+        try ( ResultIterator iterator = executeStatement( getNewestVersionQuery, DOC_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement1, transaction ).getIterator() ) {
+            iterator.getIterator().forEachRemaining( r -> {
+                PolyDocument document = r[0].asDocument();
+                matchConditions.append( String.format(
+                        "{ \"$and\": [ { \"_eid\": %d }, { \"_vid\": { \"$ne\": %d } } ] },",
+                        document.get( identifierKey ).asLong().longValue(),
+                        document.get( IdentifierUtils.getVersionKeyAsPolyString() ).asBigDecimal().longValue()
+                ) );
+            } );
+        }
+
+        if ( matchConditions.isEmpty() ) {
+            statement1.close();
+            return;
+        }
+
+        matchConditions.setLength( matchConditions.length() - 2 );
+        matchConditions.append( "}" );
+        statement1.close();
+
+        Statement statement2 = transaction.createStatement();
+        String findGarbageQuery = String.format( DOC_FIND_GARBAGE_STATEMENT,
+                entity.getName(),
+                lowestActiveVersion,
+                matchConditions
+        );
+
+        Set<Long> documentsToDelete = new HashSet<>();
+        try ( ResultIterator iterator2 = executeStatement( findGarbageQuery, DOC_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement2, transaction ).getIterator() ) {
+            iterator2.getIterator().forEachRemaining(
+                    r -> {
+                        PolyDocument document = r[0].asDocument();
+                        documentsToDelete.add( document.get( identifierKey ).asLong().longValue() );
+                    }
+            );
+        }
+        statement2.close();
+
+        if ( documentsToDelete.isEmpty() ) {
+            return;
+        }
+
+        Statement statement3 = transaction.createStatement();
+        String deleteQuery = String.format(
+                DOC_DELETE_STATEMENT,
+                entity.getName(),
+                documentsToDelete.stream().map( id -> "\"" + id + "\"" ).collect( Collectors.joining( ", " ) )
+        );
+        executeStatement( deleteQuery, DOC_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement3, transaction );
     }
 
 
@@ -247,7 +286,7 @@ public class GarbageCollector {
     }
 
 
-    private ExecutedContext executeStatement( String query, String language, long namespaceId, Statement statement, Transaction transaction) {
+    private ExecutedContext executeStatement( String query, String language, long namespaceId, Statement statement, Transaction transaction ) {
         ImplementationContext implementationContext = LanguageManager.getINSTANCE().anyPrepareQuery(
                 QueryContext.builder()
                         .query( query )
