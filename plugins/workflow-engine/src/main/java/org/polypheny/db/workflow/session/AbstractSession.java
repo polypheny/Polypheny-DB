@@ -127,7 +127,7 @@ public abstract class AbstractSession {
 
 
     public Map<String, JsonNode> getVariables() {
-        return workflow.getVariables().getVariables();
+        return workflow.getVariables();
     }
 
 

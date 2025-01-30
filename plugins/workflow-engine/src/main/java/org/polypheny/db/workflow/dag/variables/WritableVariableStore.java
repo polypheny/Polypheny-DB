@@ -53,6 +53,8 @@ public interface WritableVariableStore {
 
     void setError( ObjectNode value );
 
+    void setEnvVariable( String key, JsonNode envVariable );
+
     /**
      * Merge this variableStore with the specified store.
      * In the case of duplicates, newStore takes priority.
@@ -64,17 +66,10 @@ public interface WritableVariableStore {
     void clear();
 
     /**
-     * Clears the store and then sets it to newStore
+     * Clears the store and then sets the specified workflow variables
      *
-     * @param newStore the store whose values are used to populate this store after clearing it
+     * @param workflowVariables the workflow variables
      */
-    void reset( ReadableVariableStore newStore );
-
-    /**
-     * Clears the store and then sets its variables to the values of the given map.
-     *
-     * @param newVariables the map whose entries are used to populate this store after clearing it
-     */
-    void reset( Map<String, JsonNode> newVariables );
+    void reset( Map<String, JsonNode> workflowVariables );
 
 }

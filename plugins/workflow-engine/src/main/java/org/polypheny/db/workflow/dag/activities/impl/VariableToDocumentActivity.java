@@ -32,6 +32,7 @@ import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
+import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
@@ -40,8 +41,10 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 
 @ActivityDefinition(type = "varToDoc", displayName = "Write Variables to Document", categories = { ActivityCategory.VARIABLES, ActivityCategory.DOCUMENT },
         inPorts = {},
-        outPorts = { @OutPort(type = PortType.DOC) }
+        outPorts = { @OutPort(type = PortType.DOC) },
+        shortDescription = "Write the current variables (excluding environment variables) to a document."
 )
+@BoolSetting(key = "includeWf", displayName = "Include Workflow Variables")
 
 @SuppressWarnings("unused")
 public class VariableToDocumentActivity implements Activity {
@@ -54,7 +57,7 @@ public class VariableToDocumentActivity implements Activity {
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        Map<String, JsonNode> variables = ctx.getVariableStore().getVariables();
+        Map<String, JsonNode> variables = ctx.getVariableStore().getPublicVariables( settings.getBool( "includeWf" ), false );
 
         Map<PolyString, PolyValue> map = new HashMap<>();
         for ( Entry<String, JsonNode> entry : variables.entrySet() ) {

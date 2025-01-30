@@ -59,6 +59,6 @@ public interface VariableWriter extends Activity {
      * The slightly different execute method that comes with a writable variable store.
      * In the case that this method is called, it can be assumed that {@code updateVariables} was NOT called.
      */
-    void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContextImpl ctx, WritableVariableStore writer );
+    void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContextImpl ctx, WritableVariableStore writer ) throws Exception;
 
 }

@@ -275,7 +275,9 @@ class GlobalSchedulerTest {
         int colIdx = StorageUtils.readCheckpointType( sm, ids.get( ids.size() - 1 ), 0 ).getFieldNames().indexOf( "field_names" );
         List<List<PolyValue>> rows = StorageUtils.readCheckpoint( sm, ids.get( ids.size() - 1 ), 0 );
         System.out.println( rows );
-        assertEquals( fieldNames.toString(), rows.get( 0 ).get( colIdx ).toString() );
+
+        String expected = "[\"" + String.join( "\",\"", fieldNames ) + "\"]"; // json array
+        assertEquals( expected, rows.get( 0 ).get( colIdx ).toString() );
     }
 
 
@@ -465,7 +467,8 @@ class GlobalSchedulerTest {
 
 
     @Test
-    @Disabled // TODO: enable to debug
+    @Disabled
+        // TODO: enable to debug
     void relToDocAlgNodesTest() throws Exception {
         // See RelToDocActivity.fuse(): AlgNode tree should consist of LogicalRelValues -> LogicalTransformer
         Workflow workflow = WorkflowUtils.getRelToDocFusion();

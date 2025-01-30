@@ -1,0 +1,22 @@
+{
+    "description": "This is an example of a file containing environment variables.",
+    "index": 42,
+    "isSensitive": false,
+    "someValues": [
+        2,
+        3,
+        5,
+        8,
+        13
+    ],
+    "owner": "Alice",
+    "database": {
+        "name": "main_database",
+        "host": "db1.example.com",
+        "port": 5432,
+        "credentials": {
+            "username": "admin",
+            "password": "securepassword123"
+        }
+    }
+}

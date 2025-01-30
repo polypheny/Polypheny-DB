@@ -18,7 +18,6 @@ package org.polypheny.db.workflow;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
 import io.javalin.http.HttpCode;
@@ -26,7 +25,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
@@ -35,21 +33,12 @@ import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
-import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.workflow.dag.activities.ActivityRegistry;
-import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
-import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
-import org.polypheny.db.workflow.engine.storage.StorageManager;
-import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
-import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
-import org.polypheny.db.workflow.models.ActivityConfigModel;
-import org.polypheny.db.workflow.models.ActivityModel;
-import org.polypheny.db.workflow.models.RenderModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.models.requests.CreateSessionRequest;
 import org.polypheny.db.workflow.models.requests.RenameWorkflowRequest;
@@ -75,8 +64,6 @@ public class WorkflowManager {
         sessionManager = SessionManager.getInstance();
         registerEndpoints();
 
-        createExecuteDummyWorkflowTest();
-
         // waiting with test to ensure everything has started
         new java.util.Timer().schedule(
                 new java.util.TimerTask() {
@@ -88,72 +75,6 @@ public class WorkflowManager {
                 },
                 1000
         );
-    }
-
-
-    /**
-     * Add a route that tests the relExtract activity.
-     * A target relational entity can be specified via path parameters.
-     * The entity is read by the relExtract activity and the result is written to a checkpoint.
-     */
-    private void createExecuteDummyWorkflowTest() {
-        HttpServer server = HttpServer.getInstance();
-        server.addSerializedRoute( PATH + "/executeDummy/{namespaceName}/{tableName}/{storeName}", ctx -> {
-            System.out.println( "handling dummy execution..." );
-
-            ObjectMapper mapper = new ObjectMapper();
-            ObjectNode setting = mapper.createObjectNode();
-            setting.put( "namespace", ctx.pathParam( "namespaceName" ) );
-            setting.put( "name", ctx.pathParam( "tableName" ) );
-
-            String storeName = ctx.pathParam( "storeName" );
-            Map<DataModel, String> stores = Map.of(
-                    DataModel.RELATIONAL, storeName,
-                    DataModel.DOCUMENT, storeName,
-                    DataModel.GRAPH, storeName
-            );
-
-            try ( StorageManager sm = new StorageManagerImpl( UUID.randomUUID(), stores ) ) {
-                UUID activityId = UUID.randomUUID();
-
-                ActivityWrapper wrapper = ActivityWrapper.fromModel( new ActivityModel(
-                        "relExtract",
-                        activityId,
-                        Map.of( "table", setting ),
-                        ActivityConfigModel.of(),
-                        RenderModel.of()
-                ) );
-
-                long start = System.currentTimeMillis();
-                wrapper.getActivity().execute( List.of(), wrapper.resolveSettings(), new ExecutionContextImpl( wrapper, sm, null ) );
-
-                sm.commitTransaction( activityId );
-                long extractTimeMs = System.currentTimeMillis() - start;
-                System.out.println( "Extract time in ms: " + extractTimeMs );
-
-                UUID activityId2 = UUID.randomUUID();
-                ActivityWrapper loadWrapper = ActivityWrapper.fromModel( new ActivityModel(
-                        "relLoad",
-                        activityId2,
-                        Map.of( "table", setting ),
-                        ActivityConfigModel.of(),
-                        RenderModel.of()
-                ) );
-
-                start = System.currentTimeMillis();
-                try ( CheckpointReader reader = sm.readCheckpoint( activityId, 0 ) ) {
-                    loadWrapper.getActivity().execute( List.of( reader ), loadWrapper.resolveSettings(), new ExecutionContextImpl( loadWrapper, sm, null ) );
-                }
-                sm.commitTransaction( activityId2 );
-                long loadTimeMs = System.currentTimeMillis() - start;
-                System.out.println( "Load time in ms: " + loadTimeMs );
-
-                ctx.json( Map.of( "Extract Time", extractTimeMs, "Load Time", loadTimeMs ) );
-            } catch ( Exception e ) {
-                e.printStackTrace();
-            }
-        }, HandlerType.GET );
-
     }
 
 

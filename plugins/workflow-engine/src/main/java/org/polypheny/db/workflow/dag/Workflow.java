@@ -29,7 +29,6 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
-import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
@@ -90,7 +89,7 @@ public interface Workflow {
 
     WorkflowState getState();
 
-    VariableStore getVariables();
+    Map<String, JsonNode> getVariables();
 
     void updateVariables( Map<String, JsonNode> variables );
 
@@ -216,7 +215,7 @@ public interface Workflow {
         WorkflowState state = includeState ? getState() : null;
         return new WorkflowModel( getActivities().stream().map( a -> a.toModel( includeState ) ).toList(),
                 getEdges().stream().map( e -> e.toModel( includeState ) ).toList(),
-                getConfig(), getVariables().getVariables(), state );
+                getConfig(), getVariables(), state );
     }
 
 

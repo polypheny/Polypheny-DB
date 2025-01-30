@@ -45,7 +45,6 @@ import org.polypheny.db.workflow.dag.activities.TypePreview.MissingType;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
-import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge;
 import org.polypheny.db.workflow.engine.scheduler.ExecutionEdge.ExecutionEdgeFactory;
 import org.polypheny.db.workflow.engine.scheduler.GraphUtils;
@@ -68,7 +67,7 @@ public class WorkflowImpl implements Workflow {
     @Setter
     private WorkflowState state = WorkflowState.IDLE;
     @Getter
-    private final VariableStore variables = new VariableStore(); // contains "static" variables (= defined before execution starts)
+    private Map<String, JsonNode> variables; // workflow variables
 
 
     public WorkflowImpl() {
@@ -80,7 +79,7 @@ public class WorkflowImpl implements Workflow {
         this.activities = activities;
         this.edges = edges;
         this.config = config;
-        this.variables.reset( variables );
+        this.variables = variables;
 
         TopologicalOrderIterator.of( toDag() ).forEach( this::updatePreview );
     }
@@ -206,7 +205,10 @@ public class WorkflowImpl implements Workflow {
 
     @Override
     public void updateVariables( Map<String, JsonNode> variables ) {
-        this.variables.reset( variables );
+        this.variables = Map.copyOf( variables );
+        for ( ActivityWrapper wrapper : activities.values() ) {
+            wrapper.getVariables().updateWorkflowVariables( this.variables );
+        }
     }
 
 

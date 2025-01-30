@@ -45,16 +45,29 @@ public interface ReadableVariableStore {
 
     boolean contains( String key );
 
-    JsonNode getVariable( String key );
-
     ObjectNode getError();
 
     /**
      * Get an unmodifiable snapshot of the underlying variables map.
+     * It contains all variables, including possibly sensitive environment variables and should thus be used with caution.
      *
      * @return an unmodifiable map containing mappings for all stored variables.
      */
-    Map<String, JsonNode> getVariables();
+    Map<String, JsonNode> getAllVariables();
+
+    /**
+     * Get an unmodifiable snapshot of the environment variables.
+     */
+    Map<String, JsonNode> getEnvVariables();
+
+    /**
+     * Get an unmodifiable snapshot of the non-sensitive variables.
+     * In particular, the values of all environment variables is set to null.
+     *
+     * @param includeWorkflow whether to include the workflow variables
+     * @param includeEnv whether to include the (censored) environment variables
+     */
+    Map<String, JsonNode> getPublicVariables( boolean includeWorkflow, boolean includeEnv );
 
     /**
      * Recursively replaces any variable references in the specified JsonNode with the value stored in this store.

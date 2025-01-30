@@ -39,6 +39,7 @@ import org.polypheny.db.workflow.dag.activities.impl.DocExtractActivity;
 import org.polypheny.db.workflow.dag.activities.impl.LpgExtractActivity;
 import org.polypheny.db.workflow.dag.settings.EntityValue;
 import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
+import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.engine.storage.StorageUtils;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
@@ -385,7 +386,7 @@ public class WorkflowUtils {
         List<ActivityModel> activities = List.of(
                 new ActivityModel( "relValues" ),
                 new ActivityModel( "query", Map.of( "query", mapper.readTree(
-                        "{\"query\": \"SELECT * FROM {?0?}\", \"queryLanguage\": {\"" + ReadableVariableStore.VARIABLE_REF_FIELD + "\": \"language\"}}"
+                        "{\"query\": \"SELECT * FROM {?0?}\", \"queryLanguage\": {\"" + ReadableVariableStore.VARIABLE_REF_FIELD + "\": \"" + VariableStore.WORKFLOW_KEY + "/language\"}}"
                 ) ) ),
                 new ActivityModel( "identity" ),
                 new ActivityModel( "lpgIdentity" ) );

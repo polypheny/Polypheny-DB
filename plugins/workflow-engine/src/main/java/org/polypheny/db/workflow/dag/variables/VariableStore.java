@@ -42,8 +42,10 @@ import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 public class VariableStore implements ReadableVariableStore, WritableVariableStore {
 
     public static final String ERROR_MSG_KEY = "$errorMsg";
+    public static final String WORKFLOW_KEY = "$workflow"; // for workflow vars
+    public static final String ENV_KEY = "$env"; // environment variables, hidden from user
     public static final Set<String> RESERVED_KEYS = new HashSet<>( Set.of(
-            ERROR_MSG_KEY
+            ERROR_MSG_KEY, WORKFLOW_KEY, ENV_KEY
     ) );
 
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -58,6 +60,11 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
 
     public WritableVariableStore asWritable() {
         return this;
+    }
+
+
+    public VariableStore() {
+        clear();
     }
 
 
@@ -102,29 +109,38 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
 
 
     @Override
+    public void setEnvVariable( String key, JsonNode envVariable ) {
+        ObjectNode envVariables = (ObjectNode) this.variables.get( ENV_KEY );
+        envVariables.set( key, envVariable );
+        this.variables.put( ENV_KEY, envVariables );
+    }
+
+
+    @Override
     public void merge( ReadableVariableStore newStore ) {
-        // does NOT fail with reserved keywords
-        variables.putAll( newStore.getVariables() );
+        for ( Entry<String, JsonNode> entry : newStore.getAllVariables().entrySet() ) {
+            String key = entry.getKey();
+            if ( key.equals( WORKFLOW_KEY ) ) {
+                continue;
+            }
+            // we do NOT skip EnvVariables. They are propagated like normal variables
+            variables.put( key, entry.getValue() );
+        }
     }
 
 
     @Override
     public void clear() {
         variables.clear();
+        variables.put( WORKFLOW_KEY, mapper.createObjectNode() );
+        variables.put( ENV_KEY, mapper.createObjectNode() );
     }
 
 
     @Override
-    public void reset( ReadableVariableStore newStore ) {
+    public void reset( Map<String, JsonNode> workflowVariables ) {
         clear();
-        merge( newStore );
-    }
-
-
-    @Override
-    public void reset( Map<String, JsonNode> newVariables ) {
-        clear();
-        variables.putAll( newVariables );
+        updateWorkflowVariables( workflowVariables );
     }
 
 
@@ -135,20 +151,45 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
 
 
     @Override
-    public JsonNode getVariable( String key ) {
-        return variables.get( key );
-    }
-
-
-    @Override
     public ObjectNode getError() {
-        return (ObjectNode) getVariable( ERROR_MSG_KEY );
+        return (ObjectNode) variables.get( ERROR_MSG_KEY );
     }
 
 
     @Override
-    public Map<String, JsonNode> getVariables() {
+    public Map<String, JsonNode> getAllVariables() {
         return Map.copyOf( variables );
+    }
+
+
+    @Override
+    public Map<String, JsonNode> getEnvVariables() {
+        ObjectNode env = (ObjectNode) variables.get( ENV_KEY );
+        Map<String, JsonNode> map = new HashMap<>();
+        for ( Entry<String, JsonNode> entry : env.properties() ) {
+            map.put( entry.getKey(), entry.getValue() );
+        }
+
+        return Collections.unmodifiableMap( map );
+    }
+
+
+    @Override
+    public Map<String, JsonNode> getPublicVariables( boolean includeWorkflow, boolean includeEnv ) {
+        Map<String, JsonNode> map = new HashMap<>( variables );
+        if ( !includeWorkflow ) {
+            map.remove( WORKFLOW_KEY );
+        }
+
+        ObjectNode env = (ObjectNode) map.remove( ENV_KEY );
+        if ( includeEnv ) {
+            ObjectNode censoredEnv = mapper.createObjectNode();
+            for ( Entry<String, JsonNode> entry : env.properties() ) {
+                censoredEnv.set( entry.getKey(), TextNode.valueOf( entry.getValue().getNodeType().toString() ) );
+            }
+            map.put( ENV_KEY, censoredEnv );
+        }
+        return Collections.unmodifiableMap( map );
     }
 
 
@@ -176,7 +217,7 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
                 }
 
                 // Replace the entire object with the value from the map, if it exists
-                if ( replacement == null ) {
+                if ( replacement == null || replacement.isMissingNode() ) {
                     if ( useDefaultIfMissing && objectNode.has( VARIABLE_DEFAULT_FIELD ) ) {
                         replacement = objectNode.get( VARIABLE_DEFAULT_FIELD );
                     } else {
@@ -240,7 +281,7 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
      *
      * @param inEdges All input edges (data and control) to the activity
      */
-    public void mergeInputStores( List<Edge> inEdges, int inPortCount, ReadableVariableStore workflowVariables ) {
+    public void mergeInputStores( List<Edge> inEdges, int inPortCount, Map<String, JsonNode> workflowVariables ) {
         ReadableVariableStore[] dataToMerge = new ReadableVariableStore[inPortCount];
         Set<ReadableVariableStore> successToMerge = new HashSet<>();
         Set<ReadableVariableStore> failToMerge = new HashSet<>();
@@ -271,9 +312,7 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
         }
 
         this.clear();
-        if ( inEdges.isEmpty() ) {
-            this.merge( workflowVariables ); // only add the workflow variables to source activities
-        }
+        updateWorkflowVariables( workflowVariables );
         for ( ReadableVariableStore readableVariableStore : dataToMerge ) {
             if ( readableVariableStore != null ) {
                 this.merge( readableVariableStore );
@@ -281,6 +320,13 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
         }
         successToMerge.forEach( this::merge );
         failToMerge.forEach( this::merge );
+    }
+
+
+    public void updateWorkflowVariables( Map<String, JsonNode> workflowVariables ) {
+        ObjectNode node = mapper.createObjectNode();
+        workflowVariables.forEach( node::set );
+        this.variables.put( WORKFLOW_KEY, node );
     }
 
 
