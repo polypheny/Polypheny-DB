@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
@@ -73,6 +74,22 @@ public class GarbageCollector {
                 AND %s._eid = t._eid 
                 AND %s._vid = t._vid
             );
+            """;
+
+    private static final String DOC_RELEASED_EID_QUERY = """
+            db.%s.aggregate([
+              {
+                $match: {
+                  _eid: { $lt: 0 },
+                  _vid: { $lt: %s }
+                }
+              },
+              {
+                $project: {
+                  _eid: { $abs: "$_eid" }
+                }
+              }
+            ]);
             """;
 
     private static final String DOC_NEWEST_VERSION_STATEMENT = """
@@ -223,6 +240,8 @@ public class GarbageCollector {
 
 
     private void docGarbageCollect( LogicalEntity entity, long lowestActiveVersion, Transaction transaction ) {
+        releaseUnusedDocEntryIds(entity, lowestActiveVersion, transaction);
+
         PolyString identifierKey = PolyString.of( "_id" );
         Statement statement1 = transaction.createStatement();
         String getNewestVersionQuery = String.format( DOC_NEWEST_VERSION_STATEMENT, entity.getName() );
@@ -277,6 +296,24 @@ public class GarbageCollector {
                 documentsToDelete.stream().map( id -> "\"" + id + "\"" ).collect( Collectors.joining( ", " ) )
         );
         executeStatement( deleteQuery, DOC_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement3, transaction );
+    }
+
+
+    private void releaseUnusedDocEntryIds(LogicalEntity entity, long lowestActiveVersion, Transaction transaction) {
+        Statement statement = transaction.createStatement();
+        Set<Long> releasedIds = new HashSet<>();
+        String releasedEidQuery = String.format(
+                DOC_RELEASED_EID_QUERY,
+                entity.getName(),
+                lowestActiveVersion
+        );
+        try ( ResultIterator iterator = executeStatement( releasedEidQuery, DOC_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement, transaction ).getIterator() ) {
+            iterator.getIterator().forEachRemaining( r -> {
+                PolyDocument document = r[0].asDocument();
+                releasedIds.add( document.get(IdentifierUtils.getVersionKeyAsPolyString() ).asLong().longValue() );
+            } );
+        }
+        entity.getEntryIdentifiers().releaseEntryIdentifiers( releasedIds );
     }
 
 
