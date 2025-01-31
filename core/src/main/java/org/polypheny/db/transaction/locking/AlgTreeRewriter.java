@@ -17,9 +17,11 @@
 package org.polypheny.db.transaction.locking;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
@@ -69,25 +71,34 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.DeferredAlgTreeModification.Modification;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.util.BsonUtil;
 
 public class AlgTreeRewriter extends AlgShuttleImpl {
 
-    public static final AlgDataType BOOLEAN_TRUE_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BOOLEAN, true );
-    public static final AlgDataType SINGLE_VERSION_ROW_ALG_TYPE = AlgDataTypeFactoryImpl.DEFAULT.createStructType( List.of( 0L ), List.of( IdentifierUtils.VERSION_ALG_TYPE ), List.of( "_vid" ) );
+    private static final AlgDataType ANY_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.ANY, false );
+    private static final AlgDataType DOCUMENT_ALG_TYPE = new DocumentType( List.of(), List.of() );
+    public static final AlgDataType CHAR_255_ALG_TYPE = AlgDataTypeFactoryImpl.DEFAULT.createPolyType( PolyType.CHAR, 255 );
+    private static final AlgDataType ARRAY_TYPE = new ArrayType( CHAR_255_ALG_TYPE, false );
 
     private final Statement statement;
     private final Set<DeferredAlgTreeModification> pendingModifications;
@@ -104,7 +115,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     public AlgRoot process( AlgRoot root ) {
         AlgNode rootAlg = root.alg.accept( this );
 
-        if (pendingModifications.isEmpty()) {
+        if ( pendingModifications.isEmpty() ) {
             return root.withAlg( rootAlg );
         }
 
@@ -118,7 +129,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
             iterator.remove();
         }
 
-        if (pendingModifications.isEmpty()) {
+        if ( pendingModifications.isEmpty() ) {
             return root.withAlg( rootAlg );
         }
 
@@ -389,7 +400,6 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
                 continue;
             }
 
-            // no change
             projects.add( new RexIndexRef( field.getIndex(), field.getType() ) );
         }
 
@@ -432,7 +442,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         for ( int i = 0; i < inputFields.size(); i++ ) {
             AlgDataTypeField field = inputFields.get( i );
             if ( i == 0 ) {
-                // somehow swap the sign of the entity id
+                // swap the sign of the entity id
                 projects.add( new RexCall(
                         IdentifierUtils.IDENTIFIER_ALG_TYPE,
                         OperatorRegistry.get( OperatorName.UNARY_MINUS ),
@@ -449,7 +459,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
                 ) );
                 continue;
             }
-            
+
             projects.add( new RexIndexRef( field.getIndex(), field.getType() ) );
         }
 
@@ -606,25 +616,116 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
                 return modify1.copy( modify1.getTraitSet(), List.of( identifier ) );
             case UPDATE:
                 IdentifierUtils.throwIfContainsDisallowedKey( modify1.getUpdates().keySet() );
-                return modify1;
-                // return getRewriteOfUpdateDocModify( modify1 );
+                return getRewriteOfUpdateDocModify( modify1 );
 
             case DELETE:
+                return getRewriteOfDeleteDocModify( modify1 );
+
+            default:
                 return modify1;
-                // return getRewriteOfDeleteDocModify( modify1 );
 
         }
-        return modify1;
     }
 
 
-    private LogicalDocumentModify getRewriteOfDeleteDocModify( LogicalDocumentModify modify1 ) {
-        throw new NotImplementedException();
-        //ToDo TH: implement
+    private LogicalDocumentModify getRewriteOfDeleteDocModify( LogicalDocumentModify modify ) {
+        Map<String, RexNode> eidIncludes = new HashMap<>();
+        eidIncludes.put( null, new RexCall(
+                DOCUMENT_ALG_TYPE,
+                OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ADD_FIELDS ),
+                new RexIndexRef( 0, DOCUMENT_ALG_TYPE ),
+                new RexLiteral(
+                        PolyList.of( IdentifierUtils.getIdentifierKeyAsPolyString() ),
+                        ARRAY_TYPE,
+                        PolyType.ARRAY
+                ),
+                new RexCall(
+                        ANY_ALG_TYPE,
+                        OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MINUS ),
+                        new RexLiteral(
+                                PolyLong.of( 0 ),
+                                DOCUMENT_ALG_TYPE,
+                                PolyType.DOCUMENT
+                        ),
+                        new RexNameRef(
+                                List.of( IdentifierUtils.IDENTIFIER_KEY ),
+                                null,
+                                DOCUMENT_ALG_TYPE
+                        )
+                )
+        ) );
+
+        LogicalDocumentProject eidProject = LogicalDocumentProject.create(
+                modify.getInput(),
+                eidIncludes,
+                List.of()
+        );
+
+        Map<String, RexNode> vidIncludes = new HashMap<>();
+        vidIncludes.put( null, new RexCall(
+                        DOCUMENT_ALG_TYPE,
+                        OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ADD_FIELDS ),
+                        new RexIndexRef( 0, DOCUMENT_ALG_TYPE ),
+                        new RexLiteral(
+                                PolyList.of( IdentifierUtils.getVersionKeyAsPolyString() ),
+                                ARRAY_TYPE,
+                                PolyType.ARRAY
+                        ),
+                        new RexLiteral(
+                                IdentifierUtils.getVersionAsPolyLong( statement.getTransaction().getSequenceNumber(), false ),
+                                DOCUMENT_ALG_TYPE,
+                                PolyType.DOCUMENT
+                        )
+                )
+        );
+
+        LogicalDocumentProject vidProject = LogicalDocumentProject.create(
+                eidProject,
+                vidIncludes,
+                List.of()
+        );
+
+        List<RexNode> topLevelIncludes = List.of(
+                new RexNameRef(
+                        List.of( "_id" ),
+                        null,
+                        DOCUMENT_ALG_TYPE
+                ),
+                new RexNameRef(
+                        List.of( "otherFields" ),
+                        null,
+                        DOCUMENT_ALG_TYPE
+                ),
+                new RexNameRef(
+                        List.of( IdentifierUtils.IDENTIFIER_KEY ),
+                        null,
+                        DOCUMENT_ALG_TYPE
+                ),
+                new RexNameRef(
+                        List.of( IdentifierUtils.VERSION_KEY ),
+                        null,
+                        DOCUMENT_ALG_TYPE
+                )
+        );
+
+        LogicalDocumentProject topLevelProject = LogicalDocumentProject.create(
+                vidProject,
+                topLevelIncludes,
+                List.of( "_id", "otherFields", IdentifierUtils.IDENTIFIER_KEY, IdentifierUtils.VERSION_KEY )
+        );
+
+        return LogicalDocumentModify.create(
+                modify.getEntity(),
+                topLevelProject,
+                Operation.INSERT,
+                null,
+                null,
+                null
+        );
     }
 
 
-    private LogicalDocumentModify getRewriteOfUpdateDocModify( LogicalDocumentModify modify1 ) {
+    private LogicalDocumentModify getRewriteOfUpdateDocModify( LogicalDocumentModify modify ) {
         throw new NotImplementedException();
         //ToDo TH: implement
     }
