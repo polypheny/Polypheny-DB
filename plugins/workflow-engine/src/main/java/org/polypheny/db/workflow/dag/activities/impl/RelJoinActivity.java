@@ -64,7 +64,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 @ActivityDefinition(type = "relJoin", displayName = "Join Tables", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
         inPorts = { @InPort(type = PortType.REL, description = "The left table."), @InPort(type = PortType.REL, description = "The right table.") },
         outPorts = { @OutPort(type = PortType.REL) },
-        shortDescription = "Joins the two input tables on the specified columns."
+        shortDescription = "Joins the two input tables on equal values in the specified columns. For more advanced joins, the 'Query Activity' can be used instead."
 )
 
 @FieldSelectSetting(key = "leftCols", displayName = "Left Column(s)", simplified = true, reorder = true, targetInput = 0,

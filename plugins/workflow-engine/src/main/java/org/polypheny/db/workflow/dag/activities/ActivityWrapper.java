@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.util.Pair;
@@ -48,6 +49,7 @@ import org.polypheny.db.workflow.models.ExecutionInfoModel;
 import org.polypheny.db.workflow.models.RenderModel;
 import org.polypheny.db.workflow.models.TypePreviewModel;
 
+@Slf4j
 @Getter
 public class ActivityWrapper {
 
@@ -143,6 +145,10 @@ public class ActivityWrapper {
         } catch ( ActivityException e ) {
             invalidStateReason = e; // any other problem, e.g. an invalid input
             throw e;
+        } catch ( Exception e ) {
+            log.warn( "Unhandled exception while updating out type preview", e );
+            invalidStateReason = new ActivityException( "Unexpected Error while updating preview: " + e.getMessage() ); // ideally this should never happen
+            throw invalidStateReason;
         }
         if ( !invalidSettings.isEmpty() ) {
             throw invalidSettings.get( 0 );

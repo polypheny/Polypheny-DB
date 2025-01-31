@@ -17,6 +17,8 @@
 package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
@@ -31,6 +33,7 @@ public class StringSettingDef extends SettingDef {
     AutoCompleteType autoComplete;
     int autoCompleteInput;
     boolean nonBlank;
+    boolean containsRegex;
 
 
     public StringSettingDef( StringSetting a ) {
@@ -41,6 +44,7 @@ public class StringSettingDef extends SettingDef {
         this.autoComplete = a.autoCompleteType();
         this.autoCompleteInput = a.autoCompleteInput();
         this.nonBlank = a.nonBlank();
+        this.containsRegex = a.containsRegex();
 
         assert minLength < maxLength;
     }
@@ -70,6 +74,12 @@ public class StringSettingDef extends SettingDef {
             throwInvalid( "String must have a length of less than " + maxLength );
         } else if ( nonBlank && s.isBlank() ) {
             throwInvalid( "String must not be empty" );
+        } else if (containsRegex ) {
+            try {
+                Pattern.compile( s );
+            } catch ( PatternSyntaxException e ) {
+                throwInvalid( "Invalid Regex: " + e.getMessage() );
+            }
         }
     }
 

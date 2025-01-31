@@ -87,7 +87,7 @@ public class CollationValue implements SettingValue {
         Set<Integer> included = new HashSet<>();
         for (FieldCollation field : fields) {
             if (field.regex ) {
-                for (int idx : ActivityUtils.getRegexMatches(field.getCompiledPattern(), names) ) {
+                for (int idx : ActivityUtils.getRegexMatchPositions(field.getCompiledPattern(), names) ) {
                     if (!included.contains(idx)) {
                         included.add(idx);
                         collations.add( new AlgFieldCollation( idx, field.direction ) );

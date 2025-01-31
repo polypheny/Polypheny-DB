@@ -21,13 +21,13 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.polypheny.db.workflow.dag.settings.FieldRenameValue.RenameMode;
 import org.polypheny.db.workflow.dag.settings.SettingDef;
-import org.polypheny.db.workflow.dag.settings.StringSettingDef.AutoCompleteType;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Repeatable(StringSetting.List.class)
-public @interface StringSetting {
+@Repeatable(FieldRenameSetting.List.class)
+public @interface FieldRenameSetting {
 
     /**
      * A unique key that identifies this setting.
@@ -49,11 +49,11 @@ public @interface StringSetting {
      */
     String longDescription() default "";
 
-    String group() default "";  // the group this setting belongs to. Default is {@code GroupDef.DEFAULT_GROUP}, advanced is {@code GroupDef.ADVANCED_GROUP}. Others must be created manually
+    String group() default "";
 
-    String subGroup() default "";  // the subgroup this setting belongs to. Default is {@code GroupDef.DEFAULT_SUBGROUP}
+    String subGroup() default "";
 
-    int pos() default SettingDef.DEFAULT_POS;  // manually impose order within subGroup (lower pos => further to the top)
+    int pos() default SettingDef.DEFAULT_POS;
 
     /**
      * See {@link SettingDef#getSubPointer()}
@@ -65,42 +65,18 @@ public @interface StringSetting {
      */
     String[] subValues() default {};
 
-    // String-specific settings
-    String defaultValue() default "";
-
-
-    /**
-     * The minimum length of the string (inclusive)
-     */
-    int minLength() default 0;
-
-    /**
-     * The maximum length of the string (exclusive)
-     */
-    int maxLength() default Integer.MAX_VALUE;
-
-    /**
-     * Whether the string must consist of at least one non-whitespace character
-     */
-    boolean nonBlank() default false;
-
-
-    AutoCompleteType autoCompleteType() default AutoCompleteType.NONE;
-
-    /**
-     * The input to use for autoComplete hints.
-     * Only has an effect if autoCompleteType != NONE.
-     */
-    int autoCompleteInput() default 0;
-
-    boolean containsRegex() default false;
+    // Setting-specifics
+    RenameMode defaultMode() default RenameMode.CONSTANT;
+    boolean allowRegex() default false;
+    boolean allowIndex() default false;
+    int targetInput() default 0;
 
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     @interface List {
 
-        StringSetting[] value();
+        FieldRenameSetting[] value();
 
     }
 

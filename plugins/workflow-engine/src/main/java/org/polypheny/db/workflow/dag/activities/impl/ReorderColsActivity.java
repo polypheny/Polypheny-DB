@@ -30,18 +30,23 @@ import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
+import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
+import org.polypheny.db.workflow.dag.activities.TypePreview.RelType;
 import org.polypheny.db.workflow.dag.activities.TypePreview.UnknownType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
+import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
+import org.polypheny.db.workflow.dag.annotations.StringSetting;
 import org.polypheny.db.workflow.dag.settings.FieldSelectValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
+import org.polypheny.db.workflow.dag.settings.StringValue;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.FuseExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
@@ -55,21 +60,51 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         outPorts = { @OutPort(type = PortType.REL, description = "A table containing the selected subset of columns from the input table in the specified order.") },
         shortDescription = "Select and reorder the columns of the input table."
 )
+@EnumSetting(key = "mode", displayName = "Selection Mode", options = { "fieldSelect", "regex", "index" }, displayOptions = { "Include / Exclude", "Regex", "Index" }, defaultValue = "fieldSelect", pos = 0)
+
 @FieldSelectSetting(key = "cols", displayName = "Columns", reorder = true, defaultAll = true,
+        subPointer = "mode", subValues = { "\"fieldSelect\"" },
         shortDescription = "Specify the names of the columns to include. Alternatively, you can include all columns except for the excluded ones. The \"" + StorageManager.PK_COL + "\" column must always be included.")
+@StringSetting(key = "regex", displayName = "Regex", maxLength = 1024, containsRegex = true,
+        subPointer = "mode", subValues = { "\"regex\"" },
+        shortDescription = "Specify the columns to include using a regular expression. It is not possible to reorder the columns in this mode.")
+@StringSetting(key = "index", displayName = "Select Columns by Index", maxLength = 1024,
+        subPointer = "mode", subValues = { "\"index\"" },
+        shortDescription = "Specify the columns to include using a comma separated list of column indexes. Their order defines the order in the resulting output table.")
 
 @SuppressWarnings("unused")
 public class ReorderColsActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
-        Optional<FieldSelectValue> optionalCols = settings.get( "cols", FieldSelectValue.class );
+        AlgDataType type = inTypes.get( 0 ).getNullableType();
 
-        if ( inTypes.get( 0 ).isEmpty() || optionalCols.isEmpty() ) {
-            return UnknownType.ofRel().asOutTypes();
+        String mode = settings.getNullableString( "mode" );
+        if ( type != null && mode != null ) {
+            AlgDataType outType = switch ( mode ) {
+                case "fieldSelect" -> {
+                    Optional<FieldSelectValue> optionalCols = settings.get( "cols", FieldSelectValue.class );
+                    yield optionalCols.map( c -> getOutType( type, c ) ).orElse( null );
+                }
+                case "regex" -> {
+                    Optional<StringValue> regex = settings.get( "regex", StringValue.class );
+                    yield regex.map( v -> getOutType( type, v.getValue() ) ).orElse( null );
+                }
+                case "index" -> {
+                    Optional<StringValue> index = settings.get( "index", StringValue.class );
+                    try {
+                        yield index.map( v -> getOutType( type, v.toIntList( ",", 0, type.getFieldCount() ) ) ).orElse( null );
+                    } catch ( NumberFormatException e ) {
+                        throw new InvalidSettingException( "Index must contain a list of valid column indices", "index" );
+                    }
+                }
+                default -> null; // ignored
+            };
+            if ( outType != null ) {
+                return RelType.of( outType ).asOutTypes();
+            }
         }
-
-        return TypePreview.ofType( getOutType( inTypes.get( 0 ).getNullableType(), optionalCols.get() ) ).asOutTypes();
+        return UnknownType.ofRel().asOutTypes();
     }
 
 
@@ -81,7 +116,7 @@ public class ReorderColsActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster, FuseExecutionContext ctx ) throws Exception {
-        AlgDataType type = getOutType( inputs.get( 0 ).getTupleType(), settings.get( "cols", FieldSelectValue.class ) );
+        AlgDataType type = getOutType( inputs.get( 0 ).getTupleType(), settings );
         List<Integer> inCols = type.getFieldNames().stream().map(
                 name -> inputs.get( 0 ).getTupleType().getFieldNames().indexOf( name )
         ).toList();
@@ -93,7 +128,7 @@ public class ReorderColsActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
-        return getOutType( inTypes.get( 0 ), settings.get( "cols", FieldSelectValue.class ) );
+        return getOutType( inTypes.get( 0 ), settings );
     }
 
 
@@ -104,7 +139,7 @@ public class ReorderColsActivity implements Activity, Fusable, Pipeable {
         ).toList();
 
         for ( List<PolyValue> row : inputs.get( 0 ) ) {
-            if (!output.put( inCols.stream().map( row::get ).toList() )) {
+            if ( !output.put( inCols.stream().map( row::get ).toList() ) ) {
                 inputs.forEach( InputPipe::finishIteration );
                 break;
             }
@@ -112,8 +147,38 @@ public class ReorderColsActivity implements Activity, Fusable, Pipeable {
     }
 
 
-    private AlgDataType getOutType( AlgDataType type, @NotNull FieldSelectValue cols ) throws ActivityException {
+    private AlgDataType getOutType( AlgDataType inputType, Settings settings ) throws InvalidSettingException {
+        String mode = settings.getString( "mode" );
+        return switch ( mode ) {
+            case "fieldSelect" -> getOutType( inputType, settings.get( "cols", FieldSelectValue.class ) );
+            case "regex" -> getOutType( inputType, settings.getString( "regex" ) );
+            case "index" -> {
+                StringValue index = settings.get( "index", StringValue.class );
+                try {
+                    yield getOutType( inputType, index.toIntList( ",", 0, inputType.getFieldCount() ) );
+                } catch ( NumberFormatException e ) {
+                    throw new InvalidSettingException( "Index must contain a list of valid column indices", "index" );
+                }
+            }
+            default -> throw new IllegalStateException(); // ignored
+        };
+    }
+
+
+    private AlgDataType getOutType( AlgDataType type, @NotNull FieldSelectValue cols ) {
         List<String> selected = cols.getSelected( type.getFieldNames() );
+        return ActivityUtils.filterFields( type, selected, true );
+    }
+
+
+    private AlgDataType getOutType( AlgDataType type, String regex ) {
+        List<String> matches = ActivityUtils.getRegexMatches( regex, type.getFieldNames() );
+        return ActivityUtils.filterFields( type, matches, true );
+    }
+
+
+    private AlgDataType getOutType( AlgDataType type, List<Integer> indices ) {
+        List<String> selected = indices.stream().map( i -> type.getFieldNames().get( i ) ).toList();
         return ActivityUtils.filterFields( type, selected, true );
     }
 

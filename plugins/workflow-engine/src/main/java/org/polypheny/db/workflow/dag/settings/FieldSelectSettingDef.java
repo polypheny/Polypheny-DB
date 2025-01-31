@@ -65,6 +65,11 @@ public class FieldSelectSettingDef extends SettingDef {
                     }
                 }
             }
+            for ( String include : select.getInclude() ) {
+                if ( select.getExclude().contains( include ) ) {
+                    throwInvalid( "Field \"" + include + "\" is both included and excluded" );
+                }
+            }
             return;
         }
         throw new IllegalArgumentException( "Value is not a FieldSelectValue" );

@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import lombok.Getter;
+import lombok.NonNull;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
@@ -203,7 +204,7 @@ public abstract class TypePreview implements Wrapper {
         }
 
 
-        public static RelType of( AlgDataType type ) {
+        public static RelType of( @NonNull AlgDataType type ) {
             return new RelType( type );
         }
 
@@ -235,6 +236,9 @@ public abstract class TypePreview implements Wrapper {
 
 
         public static DocType of( Set<String> knownFields ) {
+            if (knownFields == null || knownFields.isEmpty()) {
+                return empty;
+            }
             return new DocType( knownFields );
         }
 

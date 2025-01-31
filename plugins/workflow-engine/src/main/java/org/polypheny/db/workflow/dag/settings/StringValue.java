@@ -37,6 +37,15 @@ public class StringValue implements SettingValue {
     }
 
 
+    public List<Integer> toIntList( String regex, int min, int max ) throws NumberFormatException {
+        List<Integer> list = splitAndTrim( regex ).stream().map( Integer::parseInt ).toList();
+        if ( list.stream().anyMatch( v -> v < min || v >= max ) ) {
+            throw new NumberFormatException("Integer value is out of range: " + min + " - " + max);
+        }
+        return list;
+    }
+
+
     public static StringValue of( String s ) {
 
         return new StringValue( Objects.requireNonNullElse( s, "" ) );

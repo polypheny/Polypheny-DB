@@ -98,11 +98,12 @@ public class ActivityUtils {
 
 
     /**
+     * Reorders the field present in fields according to the order in the list. Duplicates are removed. Fields not in the list are excluded.
      * If ensureFirstIsPk is true, it is assumed that type has the PK_COL field, but it might not be present in fields or at the wrong position.
      * In this case, it will be added.
      */
     public static AlgDataType filterFields( AlgDataType type, List<String> fields, boolean ensureFirstIsPk ) {
-        List<String> include = new ArrayList<>( fields );
+        List<String> include = new ArrayList<>( fields.stream().distinct().toList() );
         if ( ensureFirstIsPk && (fields.isEmpty() || !fields.get( 0 ).equals( StorageManager.PK_COL )) ) {
             include.remove( StorageManager.PK_COL ); // remove if not at first index
             include.add( 0, StorageManager.PK_COL );
@@ -114,6 +115,24 @@ public class ActivityUtils {
                 builder.add( field );
             }
         }
+        return builder.build();
+    }
+
+
+    /**
+     * Renames the fields of the input type (must have PK_COL as first column) using the given mapping.
+     * PK_COL cannot be renamed. The resulting type is guaranteed to have unique field names.
+     */
+    public static AlgDataType renameFields( AlgDataType type, Map<String, String> mapping ) {
+        Builder builder = factory.builder();
+        for ( AlgDataTypeField field : type.getFields() ) {
+            String name = field.getName();
+            if (!name.equals( StorageManager.PK_COL ) && mapping.containsKey( name ) ) {
+                name = mapping.get( name );
+            }
+            builder.add(name, null, field.getType() );
+        }
+        builder.uniquify();
         return builder.build();
     }
 
@@ -175,12 +194,12 @@ public class ActivityUtils {
     }
 
 
-    public static List<Integer> getRegexMatches( String regex, List<String> candidates ) {
-        return getRegexMatches( Pattern.compile( regex ), candidates );
+    public static List<Integer> getRegexMatchPositions( String regex, List<String> candidates ) {
+        return getRegexMatchPositions( Pattern.compile( regex ), candidates );
     }
 
 
-    public static List<Integer> getRegexMatches( Pattern pattern, List<String> candidates ) {
+    public static List<Integer> getRegexMatchPositions( Pattern pattern, List<String> candidates ) {
         List<Integer> matches = new ArrayList<>();
         for ( int i = 0; i < candidates.size(); i++ ) {
             if ( pattern.matcher( candidates.get( i ) ).matches() ) {
@@ -188,6 +207,16 @@ public class ActivityUtils {
             }
         }
         return Collections.unmodifiableList( matches );
+    }
+
+
+    public static List<String> getRegexMatches( String regex, List<String> candidates ) {
+        return getRegexMatches( Pattern.compile( regex ), candidates );
+    }
+
+
+    public static List<String> getRegexMatches( Pattern pattern, List<String> candidates ) {
+        return candidates.stream().filter( pattern.asMatchPredicate() ).toList();
     }
 
 

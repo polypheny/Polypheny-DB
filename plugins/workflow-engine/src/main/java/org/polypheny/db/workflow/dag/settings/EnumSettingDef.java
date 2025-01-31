@@ -40,6 +40,7 @@ public class EnumSettingDef extends SettingDef {
     public EnumSettingDef( EnumSetting a ) {
         super( SettingType.ENUM, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultValue() ),
                 a.group(), a.subGroup(), a.pos(), a.subPointer(), a.subValues() );
+        assert a.options().length >= a.displayOptions().length : "Too many display options";
         options = a.options();
         optionsSet = Set.of( a.options() );
         displayOptions = Arrays.copyOf( options, options.length );

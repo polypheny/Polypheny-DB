@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.TextNode;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +42,7 @@ import org.polypheny.db.workflow.dag.annotations.CollationSetting;
 import org.polypheny.db.workflow.dag.annotations.DoubleSetting;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
 import org.polypheny.db.workflow.dag.annotations.EnumSetting;
+import org.polypheny.db.workflow.dag.annotations.FieldRenameSetting;
 import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.annotations.QuerySetting;
@@ -86,7 +88,8 @@ public abstract class SettingDef {
     /**
      * SubValues is an array of values to compare the object at {@link #getSubPointer()} to.
      * The setting is only rendered if at least one object is equal to a value of this array.
-     * The SettingDef constructor expects values specified as json. This implies that strings must be quoted!
+     * The SettingDef constructor expects values specified as json. If this fails (e.g. a string with missing quotes),
+     * the value is interpreted as a json string. Ideally, this should not be relied upon.
      */
     private final List<JsonNode> subValues;
 
@@ -110,7 +113,7 @@ public abstract class SettingDef {
             try {
                 return MAPPER.readTree( v );
             } catch ( JsonProcessingException e ) {
-                throw new GenericRuntimeException( "Invalid subValue for setting " + key + ": " + v, e );
+                return TextNode.valueOf( v );
             }
         } ).toList();
     }
@@ -195,6 +198,10 @@ public abstract class SettingDef {
                 settings.add( new CollationSettingDef( a ) );
             } else if ( annotation instanceof CollationSetting.List a ) {
                 Arrays.stream( a.value() ).forEach( el -> settings.add( new CollationSettingDef( el ) ) );
+            } else if ( annotation instanceof FieldRenameSetting a ) {
+                settings.add( new FieldRenameSettingDef( a ) );
+            } else if ( annotation instanceof FieldRenameSetting.List a ) {
+                Arrays.stream( a.value() ).forEach( el -> settings.add( new FieldRenameSettingDef( el ) ) );
             }
         }
         return settings;
@@ -225,7 +232,9 @@ public abstract class SettingDef {
         DOUBLE,
         QUERY,
         ENUM,
-        COLLATION, FIELD_SELECT
+        COLLATION,
+        FIELD_RENAME,
+        FIELD_SELECT
     }
 
 
@@ -355,23 +364,55 @@ public abstract class SettingDef {
         }
 
 
+        /**
+         * Throws a NoSuchElementException if the setting is not present.
+         */
         public boolean getBool( String key ) {
             return getOrThrow( key, BoolValue.class ).getValue();
         }
 
 
+        /**
+         * Throws a NoSuchElementException if the setting is not present.
+         */
         public int getInt( String key ) {
             return getOrThrow( key, IntValue.class ).getValue();
         }
 
 
+        /**
+         * Throws a NoSuchElementException if the setting is not present.
+         */
         public String getString( String key ) {
             return getOrThrow( key, StringValue.class ).getValue();
         }
 
 
+        /**
+         * Throws a NoSuchElementException if the setting is not present.
+         */
         public double getDouble( String key ) {
             return getOrThrow( key, DoubleValue.class ).getValue();
+        }
+
+
+        public Boolean getNullableBool( String key ) {
+            return get( key, BoolValue.class ).map( BoolValue::getValue ).orElse( null );
+        }
+
+
+        public Integer getNullableInt( String key ) {
+            return get( key, IntValue.class ).map( IntValue::getValue ).orElse( null );
+        }
+
+
+        public String getNullableString( String key ) {
+            return get( key, StringValue.class ).map( StringValue::getValue ).orElse( null );
+        }
+
+
+        public Double getNullableDouble( String key ) {
+            return get( key, DoubleValue.class ).map( DoubleValue::getValue ).orElse( null );
         }
 
 
