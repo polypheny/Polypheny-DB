@@ -239,63 +239,72 @@ public class GarbageCollector {
     }
 
 
-    private void docGarbageCollect( LogicalEntity entity, long lowestActiveVersion, Transaction transaction ) {
+    private void docGarbageCollect(LogicalEntity entity, long lowestActiveVersion, Transaction transaction) {
         releaseUnusedDocEntryIds(entity, lowestActiveVersion, transaction);
 
-        PolyString identifierKey = PolyString.of( "_id" );
-        Statement statement1 = transaction.createStatement();
-        String getNewestVersionQuery = String.format( DOC_NEWEST_VERSION_STATEMENT, entity.getName() );
+        String matchConditions = getMatchConditions(entity, transaction);
+        if (matchConditions.isEmpty()) {
+            return;
+        }
+
+        Set<Long> documentsToDelete = findGarbageDocuments(entity, lowestActiveVersion, matchConditions, transaction);
+        if (!documentsToDelete.isEmpty()) {
+            return;
+        }
+        deleteGarbageDocuments(entity, documentsToDelete, transaction);
+    }
+
+    private String getMatchConditions(LogicalEntity entity, Transaction transaction) {
+        PolyString identifierKey = PolyString.of("_id");
+        Statement statement = transaction.createStatement();
+        String getNewestVersionQuery = String.format(DOC_NEWEST_VERSION_STATEMENT, entity.getName());
 
         StringBuilder matchConditions = new StringBuilder();
-        try ( ResultIterator iterator = executeStatement( getNewestVersionQuery, DOC_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement1, transaction ).getIterator() ) {
-            iterator.getIterator().forEachRemaining( r -> {
+        try (ResultIterator iterator = executeStatement(getNewestVersionQuery, DOC_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement, transaction).getIterator()) {
+            iterator.getIterator().forEachRemaining(r -> {
                 PolyDocument document = r[0].asDocument();
-                matchConditions.append( String.format(
+                matchConditions.append(String.format(
                         "{ \"$and\": [ { \"_eid\": %d }, { \"_vid\": { \"$ne\": %d } } ] },",
-                        document.get( identifierKey ).asLong().longValue(),
-                        document.get( IdentifierUtils.getVersionKeyAsPolyString() ).asBigDecimal().longValue()
-                ) );
-            } );
+                        document.get(identifierKey).asLong().longValue(),
+                        document.get(IdentifierUtils.getVersionKeyAsPolyString()).asBigDecimal().longValue()
+                ));
+            });
+        }
+        statement.close();
+
+        if ( !matchConditions.isEmpty() ) {
+            matchConditions.setLength(matchConditions.length() - 2);
+            matchConditions.append("}");
         }
 
-        if ( matchConditions.isEmpty() ) {
-            statement1.close();
-            return;
-        }
+        return matchConditions.toString();
+    }
 
-        matchConditions.setLength( matchConditions.length() - 2 );
-        matchConditions.append( "}" );
-        statement1.close();
-
-        Statement statement2 = transaction.createStatement();
-        String findGarbageQuery = String.format( DOC_FIND_GARBAGE_STATEMENT,
-                entity.getName(),
-                lowestActiveVersion,
-                matchConditions
-        );
+    private Set<Long> findGarbageDocuments(LogicalEntity entity, long lowestActiveVersion, String matchConditions, Transaction transaction) {
+        Statement statement = transaction.createStatement();
+        String findGarbageQuery = String.format(DOC_FIND_GARBAGE_STATEMENT, entity.getName(), lowestActiveVersion, matchConditions);
 
         Set<Long> documentsToDelete = new HashSet<>();
-        try ( ResultIterator iterator2 = executeStatement( findGarbageQuery, DOC_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement2, transaction ).getIterator() ) {
-            iterator2.getIterator().forEachRemaining(
-                    r -> {
-                        PolyDocument document = r[0].asDocument();
-                        documentsToDelete.add( document.get( identifierKey ).asLong().longValue() );
-                    }
-            );
+        PolyString identifierKey = PolyString.of("_id");
+        try (ResultIterator iterator = executeStatement(findGarbageQuery, DOC_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement, transaction).getIterator()) {
+            iterator.getIterator().forEachRemaining(r -> {
+                PolyDocument document = r[0].asDocument();
+                documentsToDelete.add(document.get(identifierKey).asLong().longValue());
+            });
         }
-        statement2.close();
+        statement.close();
 
-        if ( documentsToDelete.isEmpty() ) {
-            return;
-        }
+        return documentsToDelete;
+    }
 
-        Statement statement3 = transaction.createStatement();
+    private void deleteGarbageDocuments(LogicalEntity entity, Set<Long> documentsToDelete, Transaction transaction) {
+        Statement statement = transaction.createStatement();
         String deleteQuery = String.format(
                 DOC_DELETE_STATEMENT,
                 entity.getName(),
-                documentsToDelete.stream().map( id -> "\"" + id + "\"" ).collect( Collectors.joining( ", " ) )
+                documentsToDelete.stream().map(id -> "\"" + id + "\"").collect(Collectors.joining(", "))
         );
-        executeStatement( deleteQuery, DOC_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement3, transaction );
+        executeStatement(deleteQuery, DOC_CLEANUP_LANGUAGE, entity.getNamespaceId(), statement, transaction);
     }
 
 
