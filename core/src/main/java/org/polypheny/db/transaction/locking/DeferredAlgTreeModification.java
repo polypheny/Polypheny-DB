@@ -1,18 +1,17 @@
 package org.polypheny.db.transaction.locking;
 
 import com.google.common.collect.ImmutableSet;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
+import org.bouncycastle.jcajce.provider.digest.MD2.HashMac;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.document.DocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
@@ -25,7 +24,6 @@ import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
@@ -48,8 +46,8 @@ public class DeferredAlgTreeModification {
 
     private static final AlgDataType BOOLEAN_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BOOLEAN, true );
     private static final AlgDataType INTEGER_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.INTEGER, true );
-    private static final AlgDataType DOCUMENT_ALG_TYPE = new DocumentType(List.of(), List.of());
-    private static final PolyString IDENTIFIER_KEY = PolyString.of("_id");
+    private static final AlgDataType DOCUMENT_ALG_TYPE = new DocumentType( List.of(), List.of() );
+    private static final PolyString IDENTIFIER_KEY = PolyString.of( "_id" );
 
 
     private final AlgNode target;
@@ -243,11 +241,12 @@ public class DeferredAlgTreeModification {
 
 
     private AlgNode applyLimitDocScanToSnapshot( AlgNode node ) {
-        Set<Pair<Long, Long>> documents = getDocumentsInScope( node );
-        return createScopeFilter(documents, node);
+        HashMap<Long, Long> documents = getDocumentsInScope( node );
+        return createScopeFilter( documents, node );
     }
 
-    private Set<Pair<Long, Long>> getDocumentsInScope( AlgNode node ) {
+
+    private HashMap<Long, Long> getDocumentsInScope( AlgNode node ) {
         String queryTemplate = """
                 db.%s.aggregate([
                 {
@@ -276,46 +275,58 @@ public class DeferredAlgTreeModification {
                 statement.getTransaction().getSequenceNumber(),
                 -statement.getTransaction().getSequenceNumber() );
         List<List<PolyValue>> res;
-        Set<Pair<Long, Long>> documents = new HashSet<>();
+        HashMap<Long, Long> documents = new HashMap<>();
+
+        // ToDo: replace this with something more efficient once $abs works properly in mql
         try ( ResultIterator iterator = executeStatement( QueryLanguage.from( "mql" ), query, node.getEntity().getNamespaceId() ).getIterator() ) {
             res = iterator.getNextBatch();
-            res.forEach( r -> {
+            res.forEach(r -> {
                 PolyDocument document = r.get(0).asDocument();
-                documents.add(new Pair<>(
-                        document.get(IDENTIFIER_KEY).asLong().longValue(),
-                        document.get(IdentifierUtils.getVersionKeyAsPolyString()).asBigDecimal().longValue()
-                ));
-            } );
+
+                long eid = document.get(IDENTIFIER_KEY).asLong().longValue();
+                if (eid < 0) {
+                    eid = -eid;
+                }
+
+                long newVid = document.get(IdentifierUtils.getVersionKeyAsPolyString()).asBigDecimal().longValue();
+
+                documents.compute(eid, (key, existingVersion) ->
+                        (existingVersion == null) ? newVid : Math.max(existingVersion, newVid)
+                );
+            });
         }
         return documents;
     }
 
-    private LogicalDocumentFilter createScopeFilter( Set<Pair<Long, Long>> documents, AlgNode input ) {
-        List<RexCall> documentConditions = documents.stream()
-                .map( d -> new RexCall(
-                        BOOLEAN_ALG_TYPE,
-                        OperatorRegistry.get( OperatorName.AND ),
-                        new RexCall(
-                                BOOLEAN_ALG_TYPE,
-                                OperatorRegistry.get(QueryLanguage.from( "mql" ), OperatorName.MQL_EQUALS),
-                                new RexNameRef( "_eid", null, IdentifierUtils.IDENTIFIER_ALG_TYPE ),
-                                new RexLiteral( PolyLong.of(d.left), DOCUMENT_ALG_TYPE, PolyType.DOCUMENT )
-                        ),
-                        new RexCall(
-                                BOOLEAN_ALG_TYPE,
-                                OperatorRegistry.get(QueryLanguage.from( "mql" ), OperatorName.MQL_EQUALS),
-                                new RexNameRef( "_vid", null, IdentifierUtils.VERSION_ALG_TYPE ),
-                                new RexLiteral( PolyLong.of(d.right), DOCUMENT_ALG_TYPE, PolyType.DOCUMENT )
 
-                        ))
-                ).toList();
+    private LogicalDocumentFilter createScopeFilter( HashMap<Long, Long> documents, AlgNode input ) {
+        List<RexCall> documentConditions = documents.entrySet().stream()
+                .map( d -> new RexCall(
+                                BOOLEAN_ALG_TYPE,
+                                OperatorRegistry.get( OperatorName.AND ),
+                                new RexCall(
+                                        BOOLEAN_ALG_TYPE,
+                                        OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_EQUALS ),
+                                        new RexNameRef( "_eid", null, IdentifierUtils.IDENTIFIER_ALG_TYPE ),
+                                        new RexLiteral( PolyLong.of( d.getKey() ), DOCUMENT_ALG_TYPE, PolyType.DOCUMENT )
+                                ),
+                                new RexCall(
+                                        BOOLEAN_ALG_TYPE,
+                                        OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_EQUALS ),
+                                        new RexNameRef( "_vid", null, IdentifierUtils.VERSION_ALG_TYPE ),
+                                        new RexLiteral( PolyLong.of( d.getValue() ), DOCUMENT_ALG_TYPE, PolyType.DOCUMENT )
+
+                                )
+                        )
+                )
+                .toList();
 
         RexNode condition = new RexCall(
                 BOOLEAN_ALG_TYPE,
-                OperatorRegistry.get(OperatorName.OR),
+                OperatorRegistry.get( OperatorName.OR ),
                 documentConditions
         );
-        return LogicalDocumentFilter.create(input, condition);
+        return LogicalDocumentFilter.create( input, condition );
     }
 
 
