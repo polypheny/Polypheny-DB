@@ -104,8 +104,8 @@ public class IdentifierUtils {
         );
     }
 
-    public static PolyLong getVersionAsPolyLong(long version, boolean isComitted) {
-        return PolyLong.of( isComitted ? version : version * -1);
+    public static PolyLong getVersionAsPolyLong(long version, boolean isCommitted) {
+        return PolyLong.of( isCommitted ? version : version * -1);
     }
 
     public static List<FieldInformation> addMvccFieldsIfAbsent(List<FieldInformation> fields) {
