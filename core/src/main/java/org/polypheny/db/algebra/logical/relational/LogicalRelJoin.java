@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.logical.relational;
 
 
+import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
@@ -42,11 +43,14 @@ import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.relational.RelAlg;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.util.Triple;
 
 
 /**
@@ -116,6 +120,13 @@ public final class LogicalRelJoin extends Join implements RelAlg {
     }
 
 
+    public static LogicalRelJoin create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        Triple<RexNode, Set<CorrelationId>, JoinAlgType> extracted = extractArgs( args );
+        BooleanArg semiJoinDone = args.getArg( "semiJoinDone", BooleanArg.class );
+        return create( children.get( 0 ), children.get( 1 ), extracted.left, extracted.middle, extracted.right, semiJoinDone.toBool() );
+    }
+
+
     @Override
     public LogicalRelJoin copy( AlgTraitSet traitSet, RexNode conditionExpr, AlgNode left, AlgNode right, JoinAlgType joinType, boolean semiJoinDone ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
@@ -142,4 +153,11 @@ public final class LogicalRelJoin extends Join implements RelAlg {
     }
 
 
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = super.bindArguments();
+        return args.put( "semiJoinDone", new BooleanArg( semiJoinDone ) );
+    }
+
 }
+

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.polypheny.db.processing;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,8 +35,6 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.constant.ExplainFormat;
-import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
@@ -69,9 +69,9 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationQueryPlan;
+import org.polypheny.db.information.InformationPolyAlg;
+import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
@@ -585,16 +585,21 @@ public class ConstraintEnforceAttacher {
         AlgRoot enforcementRoot = new AlgRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
         // Send the generated tree with all unoptimized constraint enforcement checks to the UI
         if ( statement.getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Constraint Enforcement Plan" ).setLabel( "plans" );
-            page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Constraint Enforcement Plan" );
-            queryAnalyzer.addPage( page );
-            queryAnalyzer.addGroup( group );
-            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    group,
-                    AlgOptUtil.dumpPlan( "Constraint Enforcement Plan", enforcementRoot.alg, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
-            queryAnalyzer.registerInformation( informationQueryPlan );
+            ObjectMapper objectMapper = new ObjectMapper();
+            try {
+                ObjectNode objectNode = enforcementRoot.alg.serializePolyAlgebra( objectMapper );
+                String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString( objectNode );
+                InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
+                InformationPage page = new InformationPage( "Constraint Enforcement Plan" ).setStmtLabel( statement.getIndex() );
+                page.fullWidth();
+                InformationGroup group = new InformationGroup( page, "Constraint Enforcement Plan" );
+                queryAnalyzer.addPage( page );
+                queryAnalyzer.addGroup( group );
+                InformationPolyAlg infoPolyAlg = new InformationPolyAlg( group, jsonString, PlanType.LOGICAL );
+                queryAnalyzer.registerInformation( infoPolyAlg );
+            } catch ( Exception e ) {
+                e.printStackTrace();
+            }
         }
         return enforcementRoot;
     }

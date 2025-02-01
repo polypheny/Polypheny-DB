@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +21,20 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
 
 public class LogicalDocumentValues extends DocumentValues implements RelationalTransformable {
-
 
     /**
      * Java representation of multiple documents, which can be retrieved in the original BSON format form
@@ -75,6 +79,16 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
     }
 
 
+    public static AlgNode create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        ListArg<StringArg> documents = args.getListArg( "docs", StringArg.class );
+        ListArg<RexArg> dynamic = args.getListArg( "dynamic", RexArg.class );
+        final AlgTraitSet traitSet = cluster.traitSetOf( ModelTrait.DOCUMENT ).plus( Convention.NONE );
+        return new LogicalDocumentValues( cluster, traitSet,
+                documents.map( s -> PolyDocument.fromJson( s.getArg() ).asDocument() ),
+                dynamic.map( r -> (RexDynamicParam) r.getNode() ) );
+    }
+
+
     public static LogicalDocumentValues createOneTuple( AlgCluster cluster ) {
         return new LogicalDocumentValues( cluster, cluster.traitSet(), List.of( new PolyDocument() ) );
     }
@@ -103,6 +117,14 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( "docs", new ListArg<>( documents, d -> new StringArg( d.toJson() ) ) )
+                .put( "dynamic", new ListArg<>( dynamicDocuments, RexArg::new ) );
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,14 +42,20 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.util.Litmus;
 
@@ -120,8 +126,8 @@ public abstract class Calc extends SingleAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getTupleCount( this );
-        double dCpu = mq.getTupleCount( getInput() ) * program.getExprCount();
+        double dRows = mq.getTupleCount( this ).orElse( Double.MAX_VALUE );
+        double dCpu = mq.getTupleCount( getInput() ).orElse( Double.MAX_VALUE ) * program.getExprCount();
         double dIo = 0;
         return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
     }
@@ -162,6 +168,34 @@ public abstract class Calc extends SingleAlg {
         return this.getClass().getSimpleName() + "$" +
                 input.algCompareString() + "$" +
                 (program != null ? program.toString() : "") + "&";
+    }
+
+
+    public static RexProgram getProgramFromArgs( PolyAlgArgs args, AlgNode input, RexBuilder b ) {
+        List<RexNode> exprs = args.getListArg( "exprs", RexArg.class ).map( RexArg::getNode );
+        List<RexArg> projectsArg = args.getListArg( "projects", RexArg.class ).getArgs();
+        RexNode condition = args.getArg( "condition", RexArg.class ).getNode();
+
+        RexProgramBuilder builder = new RexProgramBuilder( input.getTupleType(), b );
+        exprs.forEach( builder::registerInput );
+        projectsArg.forEach( p -> builder.addProject( p.getNode(), p.getAlias() ) );
+        if ( condition != null ) {
+            builder.addCondition( condition );
+        }
+        return builder.getProgram( false );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        PolyAlgArg exprs = new ListArg<>( program.getExprList(), RexArg::new, args.getDecl().canUnpackValues() );
+        PolyAlgArg projects = new ListArg<>( program.getProjectList(), RexArg::new, program.getOutputRowType().getFieldNames(), args.getDecl().canUnpackValues() );
+
+        args.put( "exprs", exprs )
+                .put( "projects", projects )
+                .put( "condition", new RexArg( program.getCondition() ) );
+        return args;
     }
 
 }

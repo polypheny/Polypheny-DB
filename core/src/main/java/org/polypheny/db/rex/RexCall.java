@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ public class RexCall extends RexNode {
     public final ImmutableList<RexNode> operands;
     public final AlgDataType type;
 
-    private static final Set<Kind> SIMPLE_BINARY_OPS;
+    public static final Set<Kind> SIMPLE_BINARY_OPS;
 
 
     static {
@@ -138,7 +138,7 @@ public class RexCall extends RexNode {
      * @param b second type
      * @return true if the types are equal or the only difference is nullability
      */
-    private static boolean equalSansNullability( AlgDataType a, AlgDataType b ) {
+    public static boolean equalSansNullability( AlgDataType a, AlgDataType b ) {
         String x = a.getFullTypeString();
         String y = b.getFullTypeString();
         if ( x.length() < y.length() ) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,18 +32,26 @@ import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.processing.QueryContext.PhysicalQueryContext;
+import org.polypheny.db.processing.QueryContext.TranslatedQueryContext;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.crud.LanguageCrud;
-import org.polypheny.db.webui.models.requests.AlgRequest;
 import org.polypheny.db.webui.models.requests.GraphRequest;
+import org.polypheny.db.webui.models.requests.PolyAlgRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.RegisterRequest;
 import org.polypheny.db.webui.models.requests.RequestModel;
@@ -143,59 +151,97 @@ public class WebSocket implements Consumer<WsConfig> {
 
                 ctx.send( results );
                 break;
+            case "PolyAlgRequest":
+                PolyAlgRequest polyAlgRequest = ctx.messageAsClass( PolyAlgRequest.class );
+                Transaction transaction = crud.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, true, POLYPHENY_UI );
+                AlgRoot root;
+                Statement statement;
+                try {
+                    statement = transaction.createStatement();
+                    root = PolyPlanBuilder.buildFromPolyAlg( polyAlgRequest.polyAlg, polyAlgRequest.planType, statement );
+                } catch ( Exception e ) {
+                    log.error( "Caught exception while building the plan builder tree", e );
+                    ctx.send( RelationalResult.builder().error( e.getMessage() ).build() );
+                    break;
+                }
+
+                QueryLanguage ql = switch ( polyAlgRequest.model ) {
+                    case RELATIONAL -> QueryLanguage.from( "sql" );
+                    case DOCUMENT -> QueryLanguage.from( "mongo" );
+                    case GRAPH -> QueryLanguage.from( "cypher" );
+                };
+                QueryContext qc = QueryContext.builder()
+                        .query( polyAlgRequest.polyAlg )
+                        .language( ql )
+                        .isAnalysed( true )
+                        .usesCache( true )
+                        .origin( POLYPHENY_UI )
+                        .batch( polyAlgRequest.noLimit ? -1 : crud.getPageSize() )
+                        .transactionManager( crud.getTransactionManager() )
+                        .transactions( List.of( transaction ) )
+                        .statement( statement )
+                        .informationTarget( i -> i.setSession( ctx.session ) ).build();
+
+                TranslatedQueryContext translated;
+                if ( polyAlgRequest.planType == PlanType.PHYSICAL ) {
+                    Pair<List<PolyValue>, List<AlgDataType>> dynamicParams;
+                    try {
+                        dynamicParams = PolyPlanBuilder.translateDynamicParams( polyAlgRequest.dynamicValues, polyAlgRequest.dynamicTypes );
+                    } catch ( Exception e ) {
+                        log.error( "Caught exception while translating dynamic parameters:", e );
+                        ctx.send( RelationalResult.builder().error( e.getMessage() ).build() );
+                        break;
+                    }
+                    translated = PhysicalQueryContext.fromQuery( polyAlgRequest.polyAlg, root, dynamicParams.left, dynamicParams.right, qc );
+                } else {
+                    translated = TranslatedQueryContext.fromQuery( polyAlgRequest.polyAlg, root, polyAlgRequest.planType == PlanType.ALLOCATION, qc );
+                }
+                List<? extends Result<?, ?>> polyAlgResults = LanguageCrud.anyQueryResult( translated, polyAlgRequest );
+                ctx.send( polyAlgResults.get( 0 ) );
+                break;
+
             case "RegisterRequest":
                 RegisterRequest registerRequest = ctx.messageAsClass( RegisterRequest.class );
                 crud.authCrud.register( registerRequest, ctx );
                 break;
-            case "RelAlgRequest":
             case "EntityRequest":
                 Result<?, ?> result;
-                if ( request.type.equals( "RelAlgRequest" ) ) {
-                    AlgRequest algRequest = ctx.messageAsClass( AlgRequest.class );
-                    try {
-                        result = crud.executeAlg( algRequest, ctx.session );
-                    } catch ( Throwable t ) {
-                        ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
-                        return;
-                    }
-                } else {//TableRequest, is equal to UIRequest
-                    UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );
-                    try {
-                        LogicalNamespace namespace = Catalog.snapshot().getNamespace( uiRequest.namespace ).orElse( null );
-                        result = switch ( namespace == null ? DataModel.RELATIONAL : namespace.dataModel ) {
-                            case RELATIONAL -> crud.getTable( uiRequest );
-                            case DOCUMENT -> {
-                                String entity = Catalog.snapshot().doc().getCollection( uiRequest.entityId ).map( c -> c.name ).orElse( "" );
-                                yield LanguageCrud.anyQueryResult(
-                                        QueryContext.builder()
-                                                .query( String.format( "db.%s.find({})", entity ) )
-                                                .language( QueryLanguage.from( "mongo" ) )
-                                                .origin( POLYPHENY_UI )
-                                                .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
-                                                .transactionManager( crud.getTransactionManager() )
-                                                .informationTarget( i -> i.setSession( ctx.session ) )
-                                                .namespaceId( namespace.id )
-                                                .build(), uiRequest ).get( 0 );
-                            }
-                            case GRAPH -> LanguageCrud.anyQueryResult(
+                UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );
+                try {
+                    LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( uiRequest.namespace ).orElse( null );
+                    result = switch ( namespace == null ? DataModel.RELATIONAL : namespace.dataModel ) {
+                        case RELATIONAL -> crud.getTable( uiRequest );
+                        case DOCUMENT -> {
+                            String entity = Catalog.snapshot().doc().getCollection( uiRequest.entityId ).map( c -> c.name ).orElse( "" );
+                            yield LanguageCrud.anyQueryResult(
                                     QueryContext.builder()
-                                            .query( "MATCH (n) RETURN n" )
-                                            .language( QueryLanguage.from( "cypher" ) )
+                                            .query( String.format( "db.%s.find({})", entity ) )
+                                            .language( QueryLanguage.from( "mongo" ) )
                                             .origin( POLYPHENY_UI )
                                             .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
-                                            .namespaceId( namespace.id )
                                             .transactionManager( crud.getTransactionManager() )
                                             .informationTarget( i -> i.setSession( ctx.session ) )
+                                            .namespaceId( namespace.id )
                                             .build(), uiRequest ).get( 0 );
-                        };
-                        if ( result == null ) {
-                            throw new GenericRuntimeException( "Could not load data." );
                         }
-
-                    } catch ( Throwable t ) {
-                        ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
-                        return;
+                        case GRAPH -> LanguageCrud.anyQueryResult(
+                                QueryContext.builder()
+                                        .query( "MATCH (n) RETURN n" )
+                                        .language( QueryLanguage.from( "cypher" ) )
+                                        .origin( POLYPHENY_UI )
+                                        .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
+                                        .namespaceId( namespace.id )
+                                        .transactionManager( crud.getTransactionManager() )
+                                        .informationTarget( i -> i.setSession( ctx.session ) )
+                                        .build(), uiRequest ).get( 0 );
+                    };
+                    if ( result == null ) {
+                        throw new GenericRuntimeException( "Could not load data." );
                     }
+
+                } catch ( Throwable t ) {
+                    ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
+                    return;
                 }
                 if ( result.xid != null ) {
                     xIds.add( result.xid );

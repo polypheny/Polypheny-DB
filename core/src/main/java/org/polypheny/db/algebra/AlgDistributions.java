@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
+import org.polypheny.db.algebra.AlgDistribution.Type;
 import org.polypheny.db.plan.AlgMultipleTrait;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTrait;
@@ -102,6 +103,19 @@ public class AlgDistributions {
         ComparableList<Integer> list = ComparableList.copyOf( numbers );
         AlgDistributionImpl trait = new AlgDistributionImpl( AlgDistribution.Type.RANGE_DISTRIBUTED, list );
         return AlgDistributionTraitDef.INSTANCE.canonize( trait );
+    }
+
+
+    public static AlgDistribution getDistribution( Type type, Collection<Integer> numbers ) {
+        return switch ( type ) {
+            case SINGLETON -> AlgDistributions.SINGLETON;
+            case HASH_DISTRIBUTED -> hash( numbers );
+            case RANGE_DISTRIBUTED -> range( numbers );
+            case RANDOM_DISTRIBUTED -> AlgDistributions.RANDOM_DISTRIBUTED;
+            case ROUND_ROBIN_DISTRIBUTED -> AlgDistributions.ROUND_ROBIN_DISTRIBUTED;
+            case BROADCAST_DISTRIBUTED -> AlgDistributions.BROADCAST_DISTRIBUTED;
+            case ANY -> AlgDistributions.ANY;
+        };
     }
 
 

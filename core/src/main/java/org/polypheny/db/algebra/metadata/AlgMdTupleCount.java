@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.metadata;
 
 
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
@@ -87,44 +88,30 @@ public class AlgMdTupleCount implements MetadataHandler<TupleCount> {
 
 
     public Double getTupleCount( AlgSubset subset, AlgMetadataQuery mq ) {
-        return mq.getTupleCount( Util.first( subset.getBest(), subset.getOriginal() ) );
+        return mq.getTupleCount( Util.first( subset.getBest(), subset.getOriginal() ) ).orElse( Double.MAX_VALUE );
     }
 
 
     public Double getTupleCount( Union alg, AlgMetadataQuery mq ) {
         double rowCount = 0.0;
         for ( AlgNode input : alg.getInputs() ) {
-            Double partialRowCount = mq.getTupleCount( input );
-            if ( partialRowCount == null ) {
+            Optional<Double> partialRowCount = mq.getTupleCount( input );
+            if ( partialRowCount.isEmpty() ) {
                 return null;
             }
-            rowCount += partialRowCount;
+            rowCount += partialRowCount.get();
         }
         return rowCount;
     }
 
 
     public Double getTupleCount( Intersect alg, AlgMetadataQuery mq ) {
-        Double rowCount = null;
-        for ( AlgNode input : alg.getInputs() ) {
-            Double partialRowCount = mq.getTupleCount( input );
-            if ( rowCount == null || partialRowCount != null && partialRowCount < rowCount ) {
-                rowCount = partialRowCount;
-            }
-        }
-        return rowCount;
+        return alg.getInputs().stream().map( mq::getTupleCount ).filter( Optional::isPresent ).map( Optional::get ).reduce( null, ( a, b ) -> a != null ? Double.min( a, b ) : b );
     }
 
 
     public Double getTupleCount( Minus alg, AlgMetadataQuery mq ) {
-        Double rowCount = null;
-        for ( AlgNode input : alg.getInputs() ) {
-            Double partialRowCount = mq.getTupleCount( input );
-            if ( rowCount == null || partialRowCount != null && partialRowCount < rowCount ) {
-                rowCount = partialRowCount;
-            }
-        }
-        return rowCount;
+        return alg.getInputs().stream().map( mq::getTupleCount ).filter( Optional::isPresent ).map( Optional::get ).reduce( null, ( a, b ) -> a != null ? Double.min( a, b ) : b );
     }
 
 
@@ -139,15 +126,16 @@ public class AlgMdTupleCount implements MetadataHandler<TupleCount> {
 
 
     public Double getTupleCount( Project alg, AlgMetadataQuery mq ) {
-        return mq.getTupleCount( alg.getInput() );
+        return mq.getTupleCount( alg.getInput() ).orElse( Double.MAX_VALUE );
     }
 
 
     public Double getTupleCount( Sort alg, AlgMetadataQuery mq ) {
-        Double rowCount = mq.getTupleCount( alg.getInput() );
-        if ( rowCount == null ) {
+        Optional<Double> count = mq.getTupleCount( alg.getInput() );
+        if ( count.isEmpty() ) {
             return null;
         }
+        double rowCount = count.get();
         if ( alg.offset instanceof RexDynamicParam ) {
             return rowCount;
         }
@@ -168,10 +156,12 @@ public class AlgMdTupleCount implements MetadataHandler<TupleCount> {
 
 
     public Double getTupleCount( EnumerableLimit alg, AlgMetadataQuery mq ) {
-        Double rowCount = mq.getTupleCount( alg.getInput() );
-        if ( rowCount == null ) {
+        Optional<Double> count = mq.getTupleCount( alg.getInput() );
+        if ( count.isEmpty() ) {
             return null;
         }
+        double rowCount = count.get();
+
         if ( alg.offset instanceof RexDynamicParam ) {
             return rowCount;
         }
@@ -193,7 +183,7 @@ public class AlgMdTupleCount implements MetadataHandler<TupleCount> {
 
     // Covers Converter, Interpreter
     public Double getTupleCount( SingleAlg alg, AlgMetadataQuery mq ) {
-        return mq.getTupleCount( alg.getInput() );
+        return mq.getTupleCount( alg.getInput() ).orElse( Double.MAX_VALUE );
     }
 
 
@@ -208,7 +198,7 @@ public class AlgMdTupleCount implements MetadataHandler<TupleCount> {
 
         return NumberUtil.multiply(
                 mq.getSelectivity( alg.getLeft(), semiJoinSelectivity ),
-                mq.getTupleCount( alg.getLeft() ) );
+                mq.getTupleCount( alg.getLeft() ).orElse( Double.MAX_VALUE ) );
     }
 
 
@@ -218,7 +208,7 @@ public class AlgMdTupleCount implements MetadataHandler<TupleCount> {
         // rowCount is the cardinality of the group by columns
         Double distinctRowCount = mq.getDistinctRowCount( alg.getInput(), groupKey, null );
         if ( distinctRowCount == null ) {
-            distinctRowCount = mq.getTupleCount( alg.getInput() ) / 10;
+            distinctRowCount = mq.getTupleCount( alg.getInput() ).orElse( Double.MAX_VALUE ) / 10;
         }
 
         // Grouping sets multiply
@@ -228,7 +218,7 @@ public class AlgMdTupleCount implements MetadataHandler<TupleCount> {
     }
 
 
-    public Double getTupleCount( RelScan alg, AlgMetadataQuery mq ) {
+    public Double getTupleCount( RelScan<?> alg, AlgMetadataQuery mq ) {
         return alg.estimateTupleCount( mq );
     }
 

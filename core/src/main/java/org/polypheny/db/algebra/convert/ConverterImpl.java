@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.convert;
 
 
+import java.util.Optional;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -70,12 +71,13 @@ public abstract class ConverterImpl extends SingleAlg implements Converter {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        Double dRows = mq.getTupleCount( getInput() );
-        if ( dRows == null ) {
-            dRows = Double.MAX_VALUE;
-        }
+        Optional<Double> dRows = mq.getTupleCount( getInput() );
         double dIo = 0;
-        return planner.getCostFactory().makeCost( dRows, dRows, dIo );
+        if ( dRows.isEmpty() ) {
+            return planner.getCostFactory().makeCost( Double.MAX_VALUE, Double.MAX_VALUE, dIo );
+        }
+
+        return planner.getCostFactory().makeCost( dRows.get(), dRows.get(), dIo );
     }
 
 

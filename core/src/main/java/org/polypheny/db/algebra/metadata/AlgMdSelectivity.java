@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ package org.polypheny.db.algebra.metadata;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.Filter;
@@ -72,7 +73,7 @@ public class AlgMdSelectivity implements MetadataHandler<BuiltInMetadata.Selecti
 
 
     public Double getSelectivity( Union alg, AlgMetadataQuery mq, RexNode predicate ) {
-        if ( (alg.getInputs().size() == 0) || (predicate == null) ) {
+        if ( (alg.getInputs().isEmpty()) || (predicate == null) ) {
             return 1.0;
         }
 
@@ -81,8 +82,8 @@ public class AlgMdSelectivity implements MetadataHandler<BuiltInMetadata.Selecti
         int[] adjustments = new int[alg.getTupleType().getFieldCount()];
         RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
         for ( AlgNode input : alg.getInputs() ) {
-            Double nRows = mq.getTupleCount( input );
-            if ( nRows == null ) {
+            Optional<Double> nRows = mq.getTupleCount( input );
+            if ( nRows.isEmpty() ) {
                 return null;
             }
 
@@ -90,8 +91,8 @@ public class AlgMdSelectivity implements MetadataHandler<BuiltInMetadata.Selecti
             RexNode modifiedPred = predicate.accept( new AlgOptUtil.RexInputConverter( rexBuilder, null, input.getTupleType().getFields(), adjustments ) );
             double sel = mq.getSelectivity( input, modifiedPred );
 
-            sumRows += nRows;
-            sumSelectedRows += nRows * sel;
+            sumRows += nRows.get();
+            sumSelectedRows += nRows.get() * sel;
         }
 
         if ( sumRows < 1.0 ) {

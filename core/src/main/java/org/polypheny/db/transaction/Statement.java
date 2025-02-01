@@ -41,6 +41,13 @@ public interface Statement {
 
     StatementEvent getMonitoringEvent();
 
+    /**
+     * Get the index of this statement in the list of statements for that transaction
+     *
+     * @return the index this statement has in the statements list of the transaction
+     */
+    long getIndex();
+
     void setMonitoringEvent( StatementEvent event );
 
     void close();

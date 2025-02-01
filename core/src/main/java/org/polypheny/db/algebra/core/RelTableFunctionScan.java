@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
@@ -58,7 +59,7 @@ import org.polypheny.db.rex.RexShuttle;
 
 /**
  * Relational expression that calls a table-valued function.
- *
+ * <p>
  * The function returns a result set.
  * It can appear as a leaf in a query tree, or can be applied to relational inputs.
  *
@@ -151,23 +152,16 @@ public abstract class RelTableFunctionScan extends AbstractAlgNode {
         // Calculate result as the sum of the input row count estimates, assuming there are any, otherwise use the superclass default. So for a no-input UDX, behave like an AbstractAlgNode;
         // for a one-input UDX, behave like a SingleRel; for a multi-input UDX, behave like UNION ALL.
         // TODO jvs 10-Sep-2007: UDX-supplied costing metadata.
-        if ( inputs.size() == 0 ) {
+        if ( inputs.isEmpty() ) {
             return super.estimateTupleCount( mq );
         }
-        double nRows = 0.0;
-        for ( AlgNode input : inputs ) {
-            Double d = mq.getTupleCount( input );
-            if ( d != null ) {
-                nRows += d;
-            }
-        }
-        return nRows;
+        return inputs.stream().map( mq::getTupleCount ).filter( Optional::isPresent ).mapToDouble( Optional::get ).sum(); // todo maybe only use the sum if all are not infinite
     }
 
 
     /**
      * Returns function invocation expression.
-     *
+     * <p>
      * Within this rexCall, instances of {@link RexIndexRef} refer to entire input {@link AlgNode}s rather than their fields.
      *
      * @return function invocation expression

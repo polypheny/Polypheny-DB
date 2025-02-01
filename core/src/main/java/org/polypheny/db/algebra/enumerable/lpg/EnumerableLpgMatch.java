@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,9 @@ import org.polypheny.db.algebra.core.lpg.LpgMatch;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -62,6 +65,17 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
      */
     protected EnumerableLpgMatch( AlgCluster cluster, AlgTraitSet traits, AlgNode input, List<RexCall> matches, List<PolyString> names ) {
         super( cluster, traits, input, matches, names );
+    }
+
+
+    public static EnumerableLpgMatch create( AlgNode input, List<RexCall> matches, List<PolyString> names ) {
+        return new EnumerableLpgMatch( input.getCluster(), input.getTraitSet(), input, matches, names );
+    }
+
+
+    public static EnumerableLpgMatch create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        ListArg<RexArg> matchesArg = args.getListArg( "matches", RexArg.class );
+        return create( children.get( 0 ), matchesArg.map( r -> (RexCall) r.getNode() ), matchesArg.map( r -> PolyString.of( r.getAlias() ) ) );
     }
 
 

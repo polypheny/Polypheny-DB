@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,11 @@ import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
+import org.polypheny.db.processing.QueryContext.PhysicalQueryContext;
+import org.polypheny.db.processing.QueryContext.TranslatedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
@@ -98,29 +101,39 @@ public class LanguageManager {
             context.getInformationTarget().accept( statement.getTransaction().getQueryAnalyzer() );
         }
 
-        if ( transaction.isAnalyze() ) {
-            statement.getOverviewDuration().start( "Parsing" );
-        }
         List<ParsedQueryContext> parsedQueries;
 
-        try {
-            // handle empty query
-            if ( context.getQuery().trim().isEmpty() ) {
-                throw new GenericRuntimeException( String.format( "%s query is empty", context.getLanguage().serializedName() ) );
+        if ( context instanceof ParsedQueryContext ) {
+            parsedQueries = List.of( (ParsedQueryContext) context );
+        } else {
+            try {
+                if ( transaction.isAnalyze() ) {
+                    statement.getOverviewDuration().start( "Parsing" );
+                }
+
+                // handle empty query
+                if ( context.getQuery().trim().isEmpty() ) {
+                    throw new GenericRuntimeException( String.format( "%s query is empty", context.getLanguage().serializedName() ) );
+                }
+
+                parsedQueries = context.getLanguage().parser().apply( context );
+            } catch ( Throwable e ) {
+                if ( transaction.isAnalyze() ) {
+                    transaction.getQueryAnalyzer().attachStacktrace( e );
+                }
+                cancelTransaction( transaction, String.format( "Error on preparing query: %s", e.getMessage() ) );
+                context.removeTransaction( transaction );
+                return List.of( ImplementationContext.ofError( e, ParsedQueryContext.fromQuery( context.getQuery(), null, context ), statement ) );
             }
 
-            parsedQueries = context.getLanguage().parser().apply( context );
-        } catch ( Throwable e ) {
             if ( transaction.isAnalyze() ) {
-                transaction.getQueryAnalyzer().attachStacktrace( e );
+                statement.getOverviewDuration().stop( "Parsing" );
             }
-            cancelTransaction( transaction, String.format( "Error on preparing query: %s", e.getMessage() ) );
-            context.removeTransaction( transaction );
-            return List.of( ImplementationContext.ofError( e, ParsedQueryContext.fromQuery( context.getQuery(), null, context ), statement ) );
+
         }
 
-        if ( transaction.isAnalyze() ) {
-            statement.getOverviewDuration().stop( "Parsing" );
+        if ( context instanceof TranslatedQueryContext ) {
+            return implementTranslatedQuery( statement, transaction, (TranslatedQueryContext) context );
         }
 
         Processor processor = context.getLanguage().processorSupplier().get();
@@ -236,7 +249,12 @@ public class LanguageManager {
 
 
     public List<ExecutedContext> anyQuery( QueryContext context ) {
-        List<ImplementationContext> prepared = anyPrepareQuery( context, context.getTransactions().get( context.getTransactions().size() - 1 ) );
+        List<ImplementationContext> prepared;
+        if ( context instanceof TranslatedQueryContext ) {
+            prepared = anyPrepareQuery( context, context.getStatement() );
+        } else {
+            prepared = anyPrepareQuery( context, context.getTransactions().get( context.getTransactions().size() - 1 ) );
+        }
         List<ExecutedContext> executedContexts = new ArrayList<>();
 
         for ( ImplementationContext implementation : prepared ) {
@@ -258,6 +276,37 @@ public class LanguageManager {
         }
 
         return executedContexts;
+    }
+
+
+    private List<ImplementationContext> implementTranslatedQuery( Statement statement, Transaction transaction, TranslatedQueryContext translated ) {
+        try {
+            PolyImplementation implementation;
+
+            if ( translated instanceof PhysicalQueryContext physical ) {
+                for ( int i = 0; i < physical.getDynamicValues().size(); i++ ) {
+                    PolyValue v = physical.getDynamicValues().get( i );
+                    AlgDataType type = physical.getDynamicTypes().get( i );
+                    statement.getDataContext().addParameterValues( i, type, List.of( v ) );
+                }
+                implementation = statement.getQueryProcessor().prepareQuery( physical.getRoot(), translated.isRouted(), true, true );
+            } else {
+                implementation = statement.getQueryProcessor().prepareQuery( translated.getRoot(), translated.isRouted(), true );
+            }
+
+            return List.of( new ImplementationContext( implementation, translated, statement, null ) );
+        } catch ( Throwable e ) {
+            if ( transaction.isAnalyze() ) {
+                transaction.getQueryAnalyzer().attachStacktrace( e );
+            }
+            if ( !(e instanceof DeadlockException) ) {
+                // we only log unexpected cases with stacktrace
+                log.warn( "Caught exception: ", e );
+            }
+
+            cancelTransaction( transaction, String.format( "Caught %s exception: %s", e.getClass().getSimpleName(), e.getMessage() ) );
+            return List.of( (ImplementationContext.ofError( e, translated, statement )) );
+        }
     }
 
 

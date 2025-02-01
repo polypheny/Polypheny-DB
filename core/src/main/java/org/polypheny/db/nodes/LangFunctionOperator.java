@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
 package org.polypheny.db.nodes;
 
 import java.util.List;
+import java.util.function.Function;
+import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -25,11 +28,40 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
+import org.polypheny.db.type.PolyType;
 
 public class LangFunctionOperator extends OperatorImpl {
 
-    public LangFunctionOperator( String name, Kind kind ) {
+    private final @NotNull Function<OperatorBinding, AlgDataType> fromBindingCreator;
+    private final @NotNull Function<List<AlgDataType>, AlgDataType> fromOperandsCreator;
+
+
+    public LangFunctionOperator( String name, Kind kind, @NotNull Function<OperatorBinding, AlgDataType> fromBindingCreator, @NotNull Function<List<AlgDataType>, AlgDataType> fromOperandsCreator ) {
         super( name, kind, null, null, null );
+        this.fromOperandsCreator = fromOperandsCreator;
+        this.fromBindingCreator = fromBindingCreator;
+    }
+
+
+    public LangFunctionOperator( String name, Kind kind, PolyType returnType, @Nullable PolyType returnComponentType ) {
+        this( name, kind, (op -> fromFixedTyped( returnType, returnComponentType )), (types -> fromFixedTyped( returnType, returnComponentType )) );
+    }
+
+
+    private static AlgDataType fromFixedTyped( PolyType returnType, @Nullable PolyType returnComponentType ) {
+        if ( returnComponentType != null ) {
+            return AlgDataTypeFactory.DEFAULT.createArrayType( AlgDataTypeFactory.DEFAULT.createPolyType( returnComponentType ), -1 );
+        }
+
+        return switch ( returnType ) {
+            case VARCHAR -> AlgDataTypeFactory.DEFAULT.createPolyType( returnType, 2050 );
+            default -> AlgDataTypeFactory.DEFAULT.createPolyType( returnType );
+        };
+    }
+
+
+    public LangFunctionOperator( String name, Kind kind, PolyType returnType ) {
+        this( name, kind, returnType, null );
     }
 
 
@@ -47,7 +79,7 @@ public class LangFunctionOperator extends OperatorImpl {
 
     @Override
     public AlgDataType inferReturnType( OperatorBinding opBinding ) {
-        throw new GenericRuntimeException( "Not Implemented" );
+        return fromBindingCreator.apply( opBinding );
     }
 
 
@@ -59,7 +91,7 @@ public class LangFunctionOperator extends OperatorImpl {
 
     @Override
     public AlgDataType inferReturnType( AlgDataTypeFactory typeFactory, List<AlgDataType> operandTypes ) {
-        return null;
+        return fromOperandsCreator.apply( operandTypes );
     }
 
 }

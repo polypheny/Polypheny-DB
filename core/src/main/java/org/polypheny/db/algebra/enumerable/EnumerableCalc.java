@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPredicateList;
@@ -85,6 +86,12 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
         super( cluster, traitSet, input, program );
         assert getConvention() instanceof EnumerableConvention;
         assert !program.containsAggs();
+    }
+
+
+    public static EnumerableCalc create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        RexProgram p = getProgramFromArgs( args, children.get( 0 ), cluster.getRexBuilder() );
+        return new EnumerableCalc( cluster, children.get( 0 ).getTraitSet(), children.get( 0 ), p );
     }
 
 

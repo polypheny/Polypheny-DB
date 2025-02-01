@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -352,6 +352,10 @@ public class HttpServer implements Runnable {
         webuiServer.get( "/getDocumentDatabases", crud.languageCrud::getDocumentDatabases );
 
         webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );
+
+        webuiServer.get( "/getPolyAlgRegistry", crud::getPolyAlgRegistry );
+
+        webuiServer.post( "/buildPolyPlan", crud::buildPlanFromPolyAlg );
 
         webuiServer.get( "/isReady", ctx -> ctx.result( String.valueOf( isReady ) ) );
 

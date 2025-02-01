@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -50,6 +51,7 @@ import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 
 
 @Getter
@@ -113,6 +115,13 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
         return new LogicalLpgValues( cluster, traitSet, Pair.right( nodes ), Pair.right( edges ), ImmutableList.of(), rowType );
 
+    }
+
+
+    public static LogicalLpgValues create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        Triple<Collection<PolyNode>, Collection<PolyEdge>, ImmutableList<ImmutableList<RexLiteral>>> extracted = extractArgs( args, cluster );
+        AlgDataType type = deriveTupleType( cluster, extracted.left, extracted.middle, extracted.right );
+        return new LogicalLpgValues( cluster, cluster.traitSet(), extracted.left, extracted.middle, extracted.right, type );
     }
 
 

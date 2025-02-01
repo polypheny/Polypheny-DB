@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import org.polypheny.db.algebra.core.common.ContextSwitcher;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -42,6 +44,11 @@ public class EnumerableContextSwitcher extends ContextSwitcher implements Enumer
      */
     public EnumerableContextSwitcher( AlgNode input ) {
         super( input );
+    }
+
+
+    public static EnumerableContextSwitcher create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return new EnumerableContextSwitcher( children.get( 0 ) );
     }
 
 

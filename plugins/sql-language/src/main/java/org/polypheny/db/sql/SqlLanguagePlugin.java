@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2519,12 +2519,12 @@ public class SqlLanguagePlugin extends PolyPlugin {
          */
         register(
                 OperatorName.CROSS_MODEL_ITEM,
-                new LangFunctionOperator( OperatorName.CROSS_MODEL_ITEM.name(), Kind.CROSS_MODEL_ITEM ) );
+                new LangFunctionOperator( OperatorName.CROSS_MODEL_ITEM.name(), Kind.CROSS_MODEL_ITEM, PolyType.DOCUMENT ) );
 
         /*
          * Operator which transforms a value to JSON.
          */
-        register( OperatorName.TO_JSON, new LangFunctionOperator( OperatorName.TO_JSON.name(), Kind.OTHER ) );
+        register( OperatorName.TO_JSON, new LangFunctionOperator( OperatorName.TO_JSON.name(), Kind.OTHER, PolyType.TEXT ) );
 
         // GEO functions
         register( OperatorName.ST_GEOMFROMTEXT, new SqlStGeomFromText() );

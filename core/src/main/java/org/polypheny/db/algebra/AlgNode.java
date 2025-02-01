@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,8 @@
 package org.polypheny.db.algebra;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -45,6 +47,9 @@ import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.externalize.AlgWriterImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
+import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -237,6 +242,62 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      * @param pw Plan writer
      */
     void explain( AlgWriter pw );
+
+    /**
+     * Recursively constructs a string representation of the tree rooted at this AlgNode using the provided StringBuilder.
+     * The basic structure of PolyAlgebra is {@code OPERATOR[attributes](children)}.
+     *
+     * @param sb StringBuilder for building the representation
+     * @param prefix Prefix to be added in front of each operator (resulting in operators having a visual indentation) or null if not desired
+     */
+    void buildPolyAlgebra( StringBuilder sb, String prefix );
+
+    default void buildPolyAlgebra( StringBuilder sb ) {
+        buildPolyAlgebra( sb, null );
+    }
+
+    default String buildPolyAlgebra( String prefix ) {
+        StringBuilder sb = new StringBuilder();
+        buildPolyAlgebra( sb, prefix );
+        return sb.toString();
+    }
+
+    /**
+     * Recursively constructs a JSON object structure that represents the tree rooted at this AlgNode using the provided ObjectMapper.
+     *
+     * @param mapper the ObjectMapper used for creating JsonNodes.
+     * @param gs the GlobalStats object containing the global maximums for stats or null if no metadata should be included
+     * @return a ObjectNode representing the AlgNode tree rooted at this node.
+     */
+    ObjectNode serializePolyAlgebra( ObjectMapper mapper, GlobalStats gs );
+
+    /**
+     * Serialize this node without generating metadata.
+     *
+     * @param mapper the ObjectMapper used for creating JsonNodes.
+     * @return a ObjectNode representing the AlgNode tree rooted at this node.
+     */
+    default ObjectNode serializePolyAlgebra( ObjectMapper mapper ) {
+        return serializePolyAlgebra( mapper, null );
+    }
+
+    /**
+     * Retrieves the PolyAlgDeclaration for this AlgNode implementation.
+     * This declaration is read only and can thus be a static object.
+     *
+     * @return PolyAlgDeclaration for this AlgNode implementation
+     */
+    PolyAlgDeclaration getPolyAlgDeclaration();
+
+    /**
+     * Binds the arguments defining the state of this instance to the corresponding parameters. This is done for the purpose of creating the PolyAlgebra representation.
+     * The returned PolyAlgArgs contains every {@link org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg} relevant for this AlgNode instance.
+     * The corresponding {@link org.polypheny.db.algebra.polyalg.PolyAlgDeclaration} must be identical to {@code getPolyAlgDeclaration()}.
+     * Its parameters can be used to retrieve corresponding argument values.
+     *
+     * @return PolyAlgArgs that maps parameters of the declaration to {@link org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg} that wraps the corresponding attribute
+     */
+    PolyAlgArgs bindArguments();
 
     /**
      * Receives notification that this expression is about to be registered. The implementation of this method must at least register all child expressions.

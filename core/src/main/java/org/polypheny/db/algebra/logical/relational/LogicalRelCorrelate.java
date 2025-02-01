@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.logical.relational;
 
 
+import java.util.List;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
@@ -42,6 +43,13 @@ import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.relational.RelAlg;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
+import org.polypheny.db.algebra.polyalg.arguments.CorrelationArg;
+import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
+import org.polypheny.db.algebra.polyalg.arguments.FieldArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -114,6 +122,15 @@ public final class LogicalRelCorrelate extends Correlate implements RelAlg {
     }
 
 
+    public static LogicalRelCorrelate create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        CorrelationArg id = args.getArg( "id", CorrelationArg.class );
+        ListArg<FieldArg> columns = args.getListArg( "columns", FieldArg.class );
+        EnumArg<SemiJoinType> type = args.getEnumArg( "joinType", SemiJoinType.class );
+
+        return create( children.get( 0 ), children.get( 1 ), id.getCorrId(), ImmutableBitSet.of( columns.map( FieldArg::getField ) ), type.getArg() );
+    }
+
+
     @Override
     public LogicalRelCorrelate copy(
             AlgTraitSet traitSet,
@@ -130,6 +147,18 @@ public final class LogicalRelCorrelate extends Correlate implements RelAlg {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        PolyAlgArg columns = new ListArg<>( requiredColumns.asList(), FieldArg::new );
+
+        args.put( "id", new CorrelationArg( correlationId ) )
+                .put( "columns", columns )
+                .put( "joinType", new EnumArg<>( getJoinType(), ParamType.SEMI_JOIN_TYPE_ENUM ) );
+        return args;
     }
 
 }

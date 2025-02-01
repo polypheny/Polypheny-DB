@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.crud.LanguageCrud;
 
@@ -138,73 +139,78 @@ public class MongoLanguagePlugin extends PolyPlugin {
     }
 
 
+    public String preprocessing( String query, QueryContext context ) {
+        return query;
+    }
+
+
     public static void registerOperators() {
         if ( isInit ) {
             throw new GenericRuntimeException( "Mql operators were already registered." );
         }
-        register( OperatorName.MQL_EQUALS, new LangFunctionOperator( "MQL_EQUALS", Kind.EQUALS ) );
+        register( OperatorName.MQL_EQUALS, new LangFunctionOperator( "MQL_EQUALS", Kind.EQUALS, PolyType.BOOLEAN ) );
 
-        register( OperatorName.MQL_SIZE_MATCH, new LangFunctionOperator( "MQL_SIZE_MATCH", Kind.MQL_SIZE_MATCH ) );
+        register( OperatorName.MQL_SIZE_MATCH, new LangFunctionOperator( "MQL_SIZE_MATCH", Kind.MQL_SIZE_MATCH, PolyType.BOOLEAN ) );
 
-        register( OperatorName.MQL_JSON_MATCH, new LangFunctionOperator( "MQL_JSON_MATCH", Kind.EQUALS ) );
+        register( OperatorName.MQL_JSON_MATCH, new LangFunctionOperator( "MQL_JSON_MATCH", Kind.EQUALS, PolyType.BOOLEAN ) );
 
-        register( OperatorName.MQL_REGEX_MATCH, new LangFunctionOperator( "MQL_REGEX_MATCH", Kind.MQL_REGEX_MATCH ) );
+        register( OperatorName.MQL_REGEX_MATCH, new LangFunctionOperator( "MQL_REGEX_MATCH", Kind.MQL_REGEX_MATCH, PolyType.BOOLEAN ) );
 
-        register( OperatorName.MQL_TYPE_MATCH, new LangFunctionOperator( "MQL_TYPE_MATCH", Kind.MQL_TYPE_MATCH ) );
+        register( OperatorName.MQL_TYPE_MATCH, new LangFunctionOperator( "MQL_TYPE_MATCH", Kind.MQL_TYPE_MATCH, PolyType.BOOLEAN ) );
 
-        register( OperatorName.MQL_QUERY_VALUE, new LangFunctionOperator( "MQL_QUERY_VALUE", Kind.MQL_QUERY_VALUE ) );
+        register( OperatorName.MQL_QUERY_VALUE, new LangFunctionOperator( "MQL_QUERY_VALUE", Kind.MQL_QUERY_VALUE, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MQL_SLICE, new LangFunctionOperator( "MQL_SLICE", Kind.MQL_SLICE ) );
+        register( OperatorName.MQL_SLICE, new LangFunctionOperator( "MQL_SLICE", Kind.MQL_SLICE, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MQL_ITEM, new LangFunctionOperator( "MQL_ITEM", Kind.MQL_ITEM ) );
+        register( OperatorName.MQL_ITEM, new LangFunctionOperator( "MQL_ITEM", Kind.MQL_ITEM, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MQL_ADD_FIELDS, new LangFunctionOperator( "MQL_ADD_FIELDS", Kind.MQL_ADD_FIELDS ) );
+        register( OperatorName.MQL_ADD_FIELDS, new LangFunctionOperator( "MQL_ADD_FIELDS", Kind.MQL_ADD_FIELDS, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MQL_UPDATE_MIN, new LangFunctionOperator( "MQL_UPDATE_MIN", Kind.MIN ) );
+        register( OperatorName.MQL_UPDATE_MIN, new LangFunctionOperator( "MQL_UPDATE_MIN", Kind.MIN, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MQL_UPDATE_MAX, new LangFunctionOperator( "MQL_UPDATE_MAX", Kind.MAX ) );
+        register( OperatorName.MQL_UPDATE_MAX, new LangFunctionOperator( "MQL_UPDATE_MAX", Kind.MAX, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MQL_UPDATE_ADD_TO_SET, new LangFunctionOperator( "MQL_UPDATE_ADD_TO_SET", Kind.MQL_ADD_FIELDS ) );
+        register( OperatorName.MQL_UPDATE_ADD_TO_SET, new LangFunctionOperator( "MQL_UPDATE_ADD_TO_SET", Kind.MQL_ADD_FIELDS, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MQL_UPDATE_RENAME, new LangFunctionOperator( "MQL_UPDATE_RENAME", Kind.MQL_UPDATE_RENAME ) );
+        register( OperatorName.MQL_UPDATE_RENAME, new LangFunctionOperator( "MQL_UPDATE_RENAME", Kind.MQL_UPDATE_RENAME, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MQL_UPDATE_REPLACE, new LangFunctionOperator( "MQL_UPDATE_REPLACE", Kind.MQL_UPDATE_REPLACE ) );
+        register( OperatorName.MQL_UPDATE_REPLACE, new LangFunctionOperator( "MQL_UPDATE_REPLACE", Kind.MQL_UPDATE_REPLACE, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MQL_REMOVE, new LangFunctionOperator( "MQL_UPDATE_REMOVE", Kind.MQL_UPDATE_REMOVE ) );
+        register( OperatorName.MQL_REMOVE, new LangFunctionOperator( "MQL_UPDATE_REMOVE", Kind.MQL_UPDATE_REMOVE, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MQL_UPDATE, new LangFunctionOperator( "MQL_UPDATE", Kind.MQL_UPDATE ) );
+        register( OperatorName.MQL_UPDATE, new LangFunctionOperator( "MQL_UPDATE", Kind.MQL_UPDATE, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MQL_ELEM_MATCH, new LangFunctionOperator( "MQL_ELEM_MATCH", Kind.MQL_ELEM_MATCH ) );
+        register( OperatorName.MQL_ELEM_MATCH, new LangFunctionOperator( "MQL_ELEM_MATCH", Kind.MQL_ELEM_MATCH, PolyType.BOOLEAN ) );
 
-        register( OperatorName.MQL_UNWIND, new LangFunctionOperator( "UNWIND", Kind.UNWIND ) );
+        register( OperatorName.MQL_UNWIND, new LangFunctionOperator( "UNWIND", Kind.UNWIND, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MQL_EXISTS, new LangFunctionOperator( "MQL_EXISTS", Kind.MQL_EXISTS ) );
+        register( OperatorName.MQL_EXISTS, new LangFunctionOperator( "MQL_EXISTS", Kind.MQL_EXISTS, PolyType.BOOLEAN ) );
 
-        register( OperatorName.MQL_LT, new LangFunctionOperator( "MQL_LT", Kind.LESS_THAN ) );
+        register( OperatorName.MQL_LT, new LangFunctionOperator( "MQL_LT", Kind.LESS_THAN, PolyType.BOOLEAN ) );
 
-        register( OperatorName.MQL_GT, new LangFunctionOperator( "MQL_GT", Kind.GREATER_THAN ) );
+        register( OperatorName.MQL_GT, new LangFunctionOperator( "MQL_GT", Kind.GREATER_THAN, PolyType.BOOLEAN ) );
 
-        register( OperatorName.MQL_LTE, new LangFunctionOperator( "MQL_LTE", Kind.LESS_THAN_OR_EQUAL ) );
+        register( OperatorName.MQL_LTE, new LangFunctionOperator( "MQL_LTE", Kind.LESS_THAN_OR_EQUAL, PolyType.BOOLEAN ) );
 
-        register( OperatorName.MQL_GTE, new LangFunctionOperator( "MQL_GTE", Kind.GREATER_THAN_OR_EQUAL ) );
+        register( OperatorName.MQL_GTE, new LangFunctionOperator( "MQL_GTE", Kind.GREATER_THAN_OR_EQUAL, PolyType.BOOLEAN ) );
 
-        register( OperatorName.MQL_NOT_UNSET, new LangFunctionOperator( "MQL_NOT_UNSET", Kind.OTHER ) );
+        register( OperatorName.MQL_NOT_UNSET, new LangFunctionOperator( "MQL_NOT_UNSET", Kind.OTHER, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MQL_MERGE, new LangFunctionOperator( OperatorName.MQL_MERGE.name(), Kind.OTHER ) );
+        register( OperatorName.MQL_MERGE, new LangFunctionOperator( OperatorName.MQL_MERGE.name(), Kind.OTHER, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MQL_REPLACE_ROOT, new LangFunctionOperator( OperatorName.MQL_REPLACE_ROOT.name(), Kind.OTHER ) );
+        register( OperatorName.MQL_REPLACE_ROOT, new LangFunctionOperator( OperatorName.MQL_REPLACE_ROOT.name(), Kind.OTHER, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MQL_PROJECT_INCLUDES, new LangFunctionOperator( OperatorName.MQL_PROJECT_INCLUDES.name(), Kind.OTHER ) );
+        register( OperatorName.MQL_PROJECT_INCLUDES, new LangFunctionOperator( OperatorName.MQL_PROJECT_INCLUDES.name(), Kind.OTHER, PolyType.DOCUMENT ) );
 
         register( OperatorName.DESERIALIZE, new DeserializeFunctionOperator( "DESERIALIZE_DOC" ) );
 
-        register( OperatorName.EXTRACT_NAME, new LangFunctionOperator( "EXTRACT_NAME", Kind.EXTRACT ) );
+        register( OperatorName.EXTRACT_NAME, new LangFunctionOperator( "EXTRACT_NAME", Kind.EXTRACT, PolyType.DOCUMENT ) );
 
-        register( OperatorName.REMOVE_NAMES, new LangFunctionOperator( "REMOVE_NAMES", Kind.EXTRACT ) );
+        register( OperatorName.REMOVE_NAMES, new LangFunctionOperator( "REMOVE_NAMES", Kind.EXTRACT, PolyType.DOCUMENT ) );
 
-        register( OperatorName.PLUS, new LangFunctionOperator( OperatorName.PLUS.name(), Kind.PLUS ) );
+        register( OperatorName.PLUS, new LangFunctionOperator( OperatorName.PLUS.name(), Kind.PLUS, PolyType.DOCUMENT ) );
 
-        register( OperatorName.MINUS, new LangFunctionOperator( OperatorName.MINUS.name(), Kind.MINUS ) );
+        register( OperatorName.MINUS, new LangFunctionOperator( OperatorName.MINUS.name(), Kind.MINUS, PolyType.DOCUMENT ) );
 
         isInit = true;
     }

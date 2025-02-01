@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ public class CottontailSort extends Sort implements CottontailAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        final double rowCount = mq.getTupleCount( this ) + 0.01;
+        final double rowCount = mq.getTupleCount( this ).orElse( Double.MAX_VALUE ) + 0.01;
         return planner.getCostFactory().makeCost( rowCount, 0, 0 );
     }
 

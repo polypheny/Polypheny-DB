@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.relational.RelAlg;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -66,6 +68,11 @@ public final class LogicalRelIntersect extends Intersect implements RelAlg {
         final AlgCluster cluster = inputs.get( 0 ).getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalRelIntersect( cluster, traitSet, inputs, all );
+    }
+
+
+    public static LogicalRelIntersect create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return create( children, args.getArg( "all", BooleanArg.class ).toBool() );
     }
 
 

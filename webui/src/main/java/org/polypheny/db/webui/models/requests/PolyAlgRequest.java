@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,37 +16,27 @@
 
 package org.polypheny.db.webui.models.requests;
 
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
-import org.polypheny.db.webui.models.UIAlgNode;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.information.InformationPolyAlg.PlanType;
 
 
-@Jacksonized
 @SuperBuilder
-public class AlgRequest extends UIRequest {
+@Jacksonized
+public class PolyAlgRequest extends UIRequest {
 
     @JsonProperty
-    public UIAlgNode topNode;
+    public String polyAlg;
     @JsonProperty
-    public boolean useCache;
-    /**
-     * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)
-     */
+    public DataModel model;
     @JsonProperty
-    public boolean analyze;
+    public PlanType planType;
     @JsonProperty
-    public boolean createView;
+    public List<String> dynamicValues; // for physical plans
     @JsonProperty
-    public String viewName;
-    @JsonProperty
-    public String store;
-    @JsonProperty
-    public String freshness;
-    @JsonProperty
-    public String interval;
-    @JsonProperty
-    public String timeUnit;
+    public List<String> dynamicTypes; // AlgDataType string (e.g. CHAR(4))
 
 }

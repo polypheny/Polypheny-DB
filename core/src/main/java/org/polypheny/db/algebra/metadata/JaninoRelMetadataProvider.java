@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -358,9 +358,9 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                     .append( "      if (v == " )
                     .append( NullSentinel.class.getName() )
                     .append( ".ACTIVE) {\n" )
-                    .append( "        throw " )
+                    .append( "        throw new " )
                     .append( CyclicMetadataException.class.getName() )
-                    .append( ".INSTANCE;\n" )
+                    .append( "(\"failed during load3.\");\n" )
                     .append( "      }\n" )
                     .append( "      if (v == " )
                     .append( NullSentinel.class.getName() )

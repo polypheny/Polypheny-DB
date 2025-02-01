@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,6 +169,12 @@ public class InformationPage extends Refreshable {
         this.icon = page.getIcon();
         this.groups.putAll( page.groups );
         this.implicit = false;
+    }
+
+
+    public InformationPage setStmtLabel( long stmtIdx ) {
+        this.label = "Query " + (stmtIdx + 1);
+        return this;
     }
 
 

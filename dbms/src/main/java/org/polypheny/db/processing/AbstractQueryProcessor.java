@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.polypheny.db.processing;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
@@ -73,6 +75,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
+import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
@@ -89,7 +92,8 @@ import org.polypheny.db.information.InformationCode;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationQueryPlan;
+import org.polypheny.db.information.InformationPolyAlg;
+import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.monitoring.events.DmlEvent;
@@ -200,6 +204,18 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     @Override
+    public PolyImplementation prepareQuery( AlgRoot logicalRoot, boolean isRouted, boolean withMonitoring ) {
+        return prepareQuery( logicalRoot, logicalRoot.alg.getCluster().getTypeFactory().builder().build(), isRouted, false, false, withMonitoring );
+    }
+
+
+    @Override
+    public PolyImplementation prepareQuery( AlgRoot logicalRoot, boolean isRouted, boolean isPhysical, boolean withMonitoring ) {
+        return prepareQuery( logicalRoot, logicalRoot.alg.getCluster().getTypeFactory().builder().build(), isRouted, isPhysical, false, withMonitoring );
+    }
+
+
+    @Override
     public PolyImplementation prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean withMonitoring ) {
         return prepareQuery( logicalRoot, parameterRowType, false, false, withMonitoring );
     }
@@ -207,14 +223,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public PolyImplementation prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
-        if ( statement.getTransaction().isAnalyze() ) {
-            attachQueryPlans( logicalRoot );
+        return prepareQuery( logicalRoot, parameterRowType, isRouted, false, isSubquery, withMonitoring );
+    }
+
+
+    @Override
+    public PolyImplementation prepareQuery( AlgRoot root, AlgDataType parameterRowType, boolean isRouted, boolean isPhysical, boolean isSubquery, boolean withMonitoring ) {
+        if ( isPhysical ) {
+            return implementPhysicalPlan( root, parameterRowType );
+        }
+        if ( !isRouted && statement.getTransaction().isAnalyze() ) {
+            attachPolyAlgPlan( root.alg );
         }
 
         if ( statement.getTransaction().isAnalyze() ) {
             statement.getOverviewDuration().start( "Processing" );
         }
-        final ProposedImplementations proposedImplementations = prepareQueries( logicalRoot, parameterRowType, isRouted, isSubquery );
+        final ProposedImplementations proposedImplementations = prepareQueries( root, parameterRowType, isRouted, isSubquery );
 
         if ( statement.getTransaction().isAnalyze() ) {
             statement.getOverviewDuration().stop( "Processing" );
@@ -235,17 +260,36 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void attachQueryPlans( AlgRoot logicalRoot ) {
-        InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-        InformationPage page = new InformationPage( "Logical Query Plan" ).setLabel( "plans" );
-        page.fullWidth();
-        InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
-        queryAnalyzer.addPage( page );
-        queryAnalyzer.addGroup( group );
-        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                group,
-                AlgOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.alg, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
-        queryAnalyzer.registerInformation( informationQueryPlan );
+    private void attachPolyAlgPlan( AlgNode alg ) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        GlobalStats gs = GlobalStats.computeGlobalStats( alg );
+        try {
+            ObjectNode objectNode = alg.serializePolyAlgebra( objectMapper, gs );
+            String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString( objectNode );
+
+            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
+            InformationPage page = new InformationPage( "Logical Query Plan" ).setStmtLabel( statement.getIndex() );
+            page.fullWidth();
+            InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
+            queryAnalyzer.addPage( page );
+            queryAnalyzer.addGroup( group );
+
+            InformationPolyAlg infoPolyAlg = new InformationPolyAlg( group, jsonString, PlanType.LOGICAL );
+            if ( shouldAttachTextualPolyAlg() ) {
+                // when testing, we want to access the human-readable form
+                String serialized = alg.buildPolyAlgebra( (String) null );
+                if ( serialized == null ) {
+                    throw new GenericRuntimeException( "Could not serialize PolyAlgebra" );
+                }
+                infoPolyAlg.setTextualPolyAlg( serialized );
+            }
+
+            queryAnalyzer.registerInformation( infoPolyAlg );
+
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( e.getMessage(), e );
+        }
+
     }
 
 
@@ -516,6 +560,22 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         return new ProposedImplementations(
                 plans.stream().filter( Plan::isValid ).toList(),
                 logicalQueryInformation );
+    }
+
+
+    private PolyImplementation implementPhysicalPlan( AlgRoot root, AlgDataType parameterRowType ) {
+        final Convention resultConvention = ENABLE_BINDABLE ? BindableConvention.INSTANCE : EnumerableConvention.INSTANCE;
+
+        PreparedResult<PolyValue> preparedResult = implement( root, parameterRowType );
+        UiRoutingPageUtil.addPhysicalPlanPage( root.alg, statement.getTransaction().getQueryAnalyzer(), statement.getIndex(), shouldAttachTextualPolyAlg() );
+        return createPolyImplementation(
+                preparedResult,
+                root.kind,
+                root.alg,
+                root.validatedRowType,
+                resultConvention,
+                new ExecutionTimeMonitor(),
+                Objects.requireNonNull( root.alg.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel() );
     }
 
 
@@ -906,7 +966,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             .toList();
                     proposedPlans.addAll( plans );
                 } catch ( Throwable e ) {
-                    log.warn( String.format( "Router: %s was not able to route the query.", router.getClass().getSimpleName() ) );
+                    log.warn( "Router: {} was not able to route the query.", router.getClass().getSimpleName() );
                 }
             }
 
@@ -1417,7 +1477,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             if ( statement.getTransaction().isAnalyze() ) {
                 UiRoutingPageUtil.outputSingleResult(
                         proposed.plans.get( 0 ),
-                        statement.getTransaction().getQueryAnalyzer() );
+                        statement.getTransaction().getQueryAnalyzer(),
+                        statement.getIndex(), shouldAttachTextualPolyAlg() );
                 addGeneratedCodeToQueryAnalyzer( proposed.plans.get( 0 ).generatedCodes() );
             }
             return new Pair<>( proposed.plans.get( 0 ).result(), proposed.plans.get( 0 ).proposedRoutingPlan() );
@@ -1435,7 +1496,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             if ( statement.getTransaction().isAnalyze() ) {
                 AlgNode optimalNode = proposed.plans.get( index ).optimalNode();
-                UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer() );
+                UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer(),
+                        statement.getIndex(), shouldAttachTextualPolyAlg() );
                 addGeneratedCodeToQueryAnalyzer( proposed.plans.get( index ).generatedCodes() );
             }
 
@@ -1447,7 +1509,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private void addGeneratedCodeToQueryAnalyzer( String code ) {
         if ( code != null ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Implementation" );
+            InformationPage page = new InformationPage( "Implementation" ).setStmtLabel( statement.getIndex() );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Java Code" );
             queryAnalyzer.addPage( page );
@@ -1478,6 +1540,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement );
 
         return (CachedProposedRoutingPlan) routingPlan;
+    }
+
+
+    private boolean shouldAttachTextualPolyAlg() {
+        return statement.getTransaction().getOrigin().equals( "PolyAlgParsingTest" );
     }
 
 

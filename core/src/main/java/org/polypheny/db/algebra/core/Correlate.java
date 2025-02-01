@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ package org.polypheny.db.algebra.core;
 
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
+import java.util.Optional;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -158,7 +159,10 @@ public abstract class Correlate extends BiAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double rowCount = mq.getTupleCount( this );
+        Optional<Double> rowCount = mq.getTupleCount( this );
+        if ( rowCount.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
 
         final double rightRowCount = right.estimateTupleCount( mq );
         final double leftRowCount = left.estimateTupleCount( mq );
@@ -166,13 +170,16 @@ public abstract class Correlate extends BiAlg {
             return planner.getCostFactory().makeInfiniteCost();
         }
 
-        Double restartCount = mq.getTupleCount( getLeft() );
+        Optional<Double> restartCount = mq.getTupleCount( getLeft() );
+        if ( restartCount.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
         // RelMetadataQuery.getCumulativeCost(getRight()); does not work for
         // RelSubset, so we ask planner to cost-estimate right relation
         AlgOptCost rightCost = planner.getCost( getRight(), mq );
-        AlgOptCost rescanCost = rightCost.multiplyBy( Math.max( 1.0, restartCount - 1 ) );
+        AlgOptCost rescanCost = rightCost.multiplyBy( Math.max( 1.0, restartCount.get() - 1 ) );
 
-        return planner.getCostFactory().makeCost( rowCount /* generate results */ + leftRowCount /* relScan left results */, 0, 0 ).plus( rescanCost );
+        return planner.getCostFactory().makeCost( rowCount.get() /* generate results */ + leftRowCount /* relScan left results */, 0, 0 ).plus( rescanCost );
     }
 
 

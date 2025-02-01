@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -531,7 +531,7 @@ public class LoptSemiJoinOptimizer {
         }
 
         // Compute the cost of doing an extra relScan on the dimension table, including the distinct sort on top of the relScan; if the dimension columns are already unique, no need to add on the dup removal cost.
-        final Double dimSortCost = mq.getTupleCount( dimRel );
+        final Double dimSortCost = mq.getTupleCount( dimRel ).orElse( Double.MAX_VALUE );
         final Double dupRemCost = uniq ? 0 : dimSortCost;
         final AlgOptCost dimCost = mq.getCumulativeCost( dimRel );
         if ( (dimSortCost == null) || (dupRemCost == null) || (dimCost == null) ) {

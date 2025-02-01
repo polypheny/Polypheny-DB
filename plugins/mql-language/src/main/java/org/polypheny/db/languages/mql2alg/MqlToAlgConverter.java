@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1664,7 +1664,7 @@ public class MqlToAlgConverter {
      */
     private RexNode convertJsonSchema( BsonValue bsonValue, AlgDataType rowType ) {
         if ( bsonValue.isDocument() ) {
-            return new RexCall( nullableAny, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_JSON_MATCH ), Collections.singletonList( RexIndexRef.of( getIndexOfParentField( "d", rowType ), rowType ) ) );
+            return new RexCall( nullableAny, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_JSON_MATCH ), Collections.singletonList( RexIndexRef.of( getIndexOfParentField( DocumentType.DOCUMENT_FIELD, rowType ), rowType ) ) );
         } else {
             throw new GenericRuntimeException( "After $jsonSchema there needs to follow a document" );
         }

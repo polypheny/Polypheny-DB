@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,17 +115,9 @@ public class ValidatorUtil {
             String name = field.getName();
 
             // Ensure that name is unique from all previous field names
-            if ( uniqueNames.contains( name ) ) {
-                String nameBase = name;
-                for ( int j = 0; ; j++ ) {
-                    name = nameBase + j;
-                    if ( !uniqueNames.contains( name ) ) {
-                        break;
-                    }
-                }
-            }
+            name = uniquify( name, uniqueNames, ATTEMPT_SUGGESTER );
+
             nameList.add( name );
-            uniqueNames.add( name );
             typeList.add( field.getType() );
             ids.add( field.getId() );
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,8 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -89,6 +91,13 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
                         .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.limit( mq, input ) )
                         .replaceIf( AlgDistributionTraitDef.INSTANCE, () -> AlgMdDistribution.limit( mq, input ) );
         return new EnumerableLimit( cluster, traitSet, input, offset, fetch );
+    }
+
+
+    public static EnumerableLimit create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        RexArg limit = args.getArg( "limit", RexArg.class );
+        RexArg offset = args.getArg( "offset", RexArg.class );
+        return create( children.get( 0 ), offset.getNode(), limit.getNode() );
     }
 
 
@@ -147,6 +156,15 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
         } else {
             return Expressions.constant( RexLiteral.intValue( offset ) );
         }
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+
+        return args.put( "limit", new RexArg( fetch ) )
+                .put( "offset", new RexArg( offset ) );
     }
 
 }

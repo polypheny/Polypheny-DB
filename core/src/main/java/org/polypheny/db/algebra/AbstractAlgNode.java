@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,9 @@
 package org.polypheny.db.algebra;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.io.PrintWriter;
@@ -41,6 +44,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
@@ -48,10 +52,21 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.core.SetOp;
+import org.polypheny.db.algebra.core.common.Transformer;
 import org.polypheny.db.algebra.externalize.AlgWriterImpl;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.metadata.MetadataFactory;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration;
+import org.polypheny.db.algebra.polyalg.PolyAlgMetadata;
+import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
+import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
+import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
@@ -307,8 +322,12 @@ public abstract class AbstractAlgNode implements AlgNode {
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // by default, assume cost is proportional to number of rows
-        double tupleCount = mq.getTupleCount( this );
-        return planner.getCostFactory().makeCost( tupleCount, tupleCount, 0 );
+        Optional<Double> tupleCount = mq.getTupleCount( this );
+        if ( tupleCount.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+
+        return planner.getCostFactory().makeCost( tupleCount.get(), tupleCount.get(), 0 );
     }
 
 
@@ -343,6 +362,137 @@ public abstract class AbstractAlgNode implements AlgNode {
             return pw.item( "model", trait.dataModel().name() );
         }
         return pw;
+    }
+
+
+    @Override
+    public void buildPolyAlgebra( StringBuilder sb, String prefix ) {
+        final String INDENT = " ";
+        String nextPrefix = prefix == null ? null : prefix + INDENT;
+        PolyAlgDeclaration decl = getPolyAlgDeclaration();
+        boolean makeUnique = makeFieldsUnique( decl );
+        List<String> inputFieldNames = makeUnique ?
+                PolyAlgUtils.uniquifiedInputFieldNames( this ) :
+                PolyAlgUtils.getInputFieldNamesList( this );
+        sb.append( prefix == null ? "" : prefix ).append( decl.opName );
+        if ( decl.hasParams() ) {
+            sb.append( bindArguments().toPolyAlgebra( this, inputFieldNames ) );
+        } else {
+            sb.append( "[]" );
+        }
+
+        int size = getInputs().size();
+        if ( size == 0 ) {
+            return;  // skip parentheses for leaves
+        }
+
+        sb.append( "(\n" );
+        int inputIdx = 0;
+        for ( AlgNode child : getInputs() ) {
+            ListArg<RexArg> projections = makeUnique ?
+                    PolyAlgUtils.getAuxProjections( child, inputFieldNames, inputIdx ) :
+                    null;
+            inputIdx += child.getTupleType().getFieldCount();
+
+            if ( projections == null ) {
+                child.buildPolyAlgebra( sb, nextPrefix );
+            } else {
+                if ( nextPrefix != null ) {
+                    sb.append( nextPrefix );
+                }
+                sb.append( PolyAlgRegistry.getDeclaration( LogicalRelProject.class ).opName )
+                        .append( projections.toPolyAlg( child, child.getTupleType().getFieldNames() ) )
+                        .append( "(\n" );
+                child.buildPolyAlgebra( sb, nextPrefix == null ? null : nextPrefix + INDENT );
+                sb.append( ")" );
+            }
+
+            size--;
+            if ( size > 0 ) {
+                sb.append( ", \n" );
+            }
+        }
+        sb.append( ")" );
+    }
+
+
+    @Override
+    public ObjectNode serializePolyAlgebra( ObjectMapper mapper, GlobalStats gs ) {
+        ObjectNode node = mapper.createObjectNode();
+
+        PolyAlgDeclaration decl = getPolyAlgDeclaration();
+        boolean makeUnique = makeFieldsUnique( decl ); // set operations like UNION require duplicate field names
+        List<String> inputFieldNames = makeUnique ?
+                PolyAlgUtils.uniquifiedInputFieldNames( this ) :
+                PolyAlgUtils.getInputFieldNamesList( this );
+
+        node.put( "opName", decl.opName );
+        if ( decl.hasParams() ) {
+            node.set( "arguments", bindArguments().serialize( this, inputFieldNames, mapper ) );
+        } else {
+            node.set( "arguments", mapper.createObjectNode() );
+        }
+        node.set( "metadata", serializeMetadata( mapper, gs ) ); // set to null if gs is null
+
+        ArrayNode inputs = mapper.createArrayNode();
+
+        int inputIdx = 0;
+        for ( AlgNode child : getInputs() ) {
+            ListArg<RexArg> projections = makeUnique ?
+                    PolyAlgUtils.getAuxProjections( child, inputFieldNames, inputIdx ) :
+                    null;
+            inputIdx += child.getTupleType().getFieldCount();
+
+            if ( projections == null ) {
+                inputs.add( child.serializePolyAlgebra( mapper, gs ) );
+            } else {
+                inputs.add( PolyAlgUtils.wrapInRename( child, projections, child, child.getTupleType().getFieldNames(), mapper, gs ) );
+            }
+        }
+        node.set( "inputs", inputs );
+
+        return node;
+    }
+
+
+    private ObjectNode serializeMetadata( ObjectMapper mapper, GlobalStats gs ) {
+        if ( gs == null ) {
+            return null;
+        }
+        PolyAlgMetadata meta = new PolyAlgMetadata( mapper, gs );
+        AlgMetadataQuery mq = this.getCluster().getMetadataQuery();
+
+        mq.getTupleCount( this ).ifPresent( aDouble -> meta.addCosts( mq.getNonCumulativeCost( this ), mq.getCumulativeCost( this ), aDouble ) );
+
+        return meta.serialize();
+    }
+
+
+    private boolean makeFieldsUnique( PolyAlgDeclaration decl ) {
+        // set operations like UNION require duplicate field names
+        return decl.mightRequireAuxiliaryProject() &&
+                !(this instanceof SetOp) &&
+                !(this instanceof Transformer);
+    }
+
+
+    /**
+     * If a declaration should be shared by multiple implementations,
+     * this method must be redefined.
+     * Otherwise, this implementation should cover most cases.
+     *
+     * @return The declaration associated with the runtime class of the instance.
+     */
+    @Override
+    public PolyAlgDeclaration getPolyAlgDeclaration() {
+        return PolyAlgRegistry.getDeclaration( getClass(), getModel(), getInputs().size() );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        // Any AlgNode registered in the PolyAlgRegistry should probably not use this generic implementation!
+        return new PolyAlgArgs( getPolyAlgDeclaration() );
     }
 
 

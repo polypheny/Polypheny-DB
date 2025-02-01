@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,10 @@ package org.polypheny.db.algebra.core;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -45,6 +47,11 @@ import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgCluster;
@@ -54,8 +61,10 @@ import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexDigestIncludeType;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.ValidatorUtil;
 
 
 /**
@@ -136,12 +145,15 @@ public abstract class Values extends AbstractAlgNode {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getTupleCount( this );
+        Optional<Double> dRows = mq.getTupleCount( this );
+        if ( dRows.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
 
         // Assume CPU is negligible since values are precomputed.
         double dCpu = 1;
         double dIo = 0;
-        return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
+        return planner.getCostFactory().makeCost( dRows.get(), dCpu, dIo );
     }
 
 
@@ -186,6 +198,33 @@ public abstract class Values extends AbstractAlgNode {
     @Override
     public void childrenAccept( AlgVisitor visitor ) {
         // empty on purpose
+    }
+
+
+    protected static Pair<AlgDataType, ImmutableList<ImmutableList<RexLiteral>>> extractArgs( PolyAlgArgs args, AlgCluster cluster ) {
+        List<String> names = args.getListArg( "names", StringArg.class ).map( StringArg::getArg );
+        List<List<RexLiteral>> tuples = PolyAlgUtils.getNestedListArgAsList(
+                args.getListArg( "tuples", ListArg.class ),
+                r -> (RexLiteral) ((RexArg) r).getNode() );
+
+        AlgDataType rowType = RexUtil.createStructType( cluster.getTypeFactory(), tuples.get( 0 ), names, ValidatorUtil.F_SUGGESTER );
+        return Pair.of( rowType, PolyAlgUtils.toImmutableNestedList( tuples ) );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+
+        args.put( "names", new ListArg<>( rowType.getFieldNames(), StringArg::new ) );
+
+        List<ListArg<RexArg>> tuplesArg = new ArrayList<>();
+        for ( ImmutableList<RexLiteral> tuple : getTuples() ) {
+            tuplesArg.add( new ListArg<>( tuple, RexArg::new ) );
+        }
+        args.put( "tuples", new ListArg<>( tuplesArg ) );
+
+        return args;
     }
 
 }

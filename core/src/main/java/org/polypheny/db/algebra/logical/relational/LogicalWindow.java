@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.calcite.linq4j.Ord;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Window;
 import org.polypheny.db.algebra.core.relational.RelAlg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
+import org.polypheny.db.algebra.polyalg.arguments.WindowGroupArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -276,6 +281,13 @@ public final class LogicalWindow extends Window implements RelAlg {
     }
 
 
+    public static LogicalWindow create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        List<RexNode> constants = args.getListArg( "constants", RexArg.class ).map( RexArg::getNode );
+        List<Group> groups = args.getListArg( "groups", WindowGroupArg.class ).map( WindowGroupArg::getGroup );
+        throw new NotImplementedException( "Creation of LogicalWindow from PolyAlgArgs is not yet supported" );
+    }
+
+
     private static List<RexNode> toInputRefs( final List<? extends RexNode> operands ) {
         return new AbstractList<RexNode>() {
             @Override
@@ -295,6 +307,14 @@ public final class LogicalWindow extends Window implements RelAlg {
                 return new RexIndexRef( ref.getIndex(), ref.getType() );
             }
         };
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( "constants", new ListArg<>( constants, RexArg::new ) )
+                .put( "groups", new ListArg<>( groups, WindowGroupArg::new ) );
     }
 
 
