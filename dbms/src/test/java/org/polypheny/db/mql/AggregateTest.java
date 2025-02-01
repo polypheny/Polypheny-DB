@@ -60,7 +60,7 @@ public class AggregateTest extends MqlTestTemplate {
 
     private final List<String> DATA_4 = Arrays.asList(
             "{\"a\": 1, \"b\": 5}",
-            "{\"a\": 2, \"b\": 5}",
+            "{\"a\": 2, \"b\": -5}",
             "{\"a\": 3, \"b\": 5}"
     );
 
@@ -81,9 +81,26 @@ public class AggregateTest extends MqlTestTemplate {
         insertMany( DATA_4 );
         DocResult result = aggregate(
                 $match("{\"b\": 5}"),
-                $project("{\"_id\": 0, \"a\": 1, \"b\": 1, \"product\": { \"$multiply\": [\"$a\", \"$b\"] }}")
+                $project("{\"a\": 1, \"b\": 1, \"product\": { \"$multiply\": [\"$a\", \"$b\"] }}")
         );
         assertTrue(result.data.length > 0);
+    }
+
+    @Test
+    public void aggregateAbsTest() {
+        List<String> expected = Arrays.asList(
+                "{a: 1, abs_b: 5}",
+                "{a: 2, abs_b: 5}",
+                "{a: 3, abs_b: 5}"
+        );
+
+        insertMany(DATA_4);
+
+        DocResult result = aggregate(
+                $project("{\"a\": 1, \"abs_b\": { \"$abs\": \"$b\" }}")
+        );
+
+        MongoConnection.checkDocResultSet(result, expected, true, true);
     }
 
     @Test
