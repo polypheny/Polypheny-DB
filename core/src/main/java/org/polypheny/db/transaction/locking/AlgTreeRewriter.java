@@ -28,6 +28,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
@@ -104,6 +105,8 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     private final Set<DeferredAlgTreeModification> pendingModifications;
     private boolean containsIdentifierKey;
 
+    AlgNode debugAlg = null;
+
 
     public AlgTreeRewriter( Statement statement ) {
         this.statement = statement;
@@ -116,7 +119,16 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         AlgNode rootAlg = root.alg.accept( this );
 
         if ( pendingModifications.isEmpty() ) {
-            return root.withAlg( rootAlg );
+            // TODO: remove this
+            if ( debugAlg != null ) {
+                return root.withAlg( debugAlg );
+            }
+
+            Kind kind = switch ( root.kind ) {
+                case UPDATE, DELETE -> Kind.INSERT;
+                default -> root.kind;
+            };
+            return root.withAlg( rootAlg ).withKind( kind );
         }
 
         Iterator<DeferredAlgTreeModification> iterator = pendingModifications.iterator();
@@ -685,38 +697,33 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
                 List.of()
         );
 
-        List<RexNode> topLevelIncludes = List.of(
-                new RexNameRef(
-                        List.of( "_id" ),
-                        null,
-                        DOCUMENT_ALG_TYPE
-                ),
-                new RexNameRef(
-                        List.of( "otherFields" ),
-                        null,
-                        DOCUMENT_ALG_TYPE
-                ),
-                new RexNameRef(
-                        List.of( IdentifierUtils.IDENTIFIER_KEY ),
-                        null,
-                        DOCUMENT_ALG_TYPE
-                ),
-                new RexNameRef(
-                        List.of( IdentifierUtils.VERSION_KEY ),
-                        null,
-                        DOCUMENT_ALG_TYPE
+        Map<String, RexNode> idIncludes = new HashMap<>();
+        idIncludes.put( null, new RexCall(
+                        DOCUMENT_ALG_TYPE,
+                        OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ADD_FIELDS ),
+                        new RexIndexRef( 0, DOCUMENT_ALG_TYPE ),
+                        new RexLiteral(
+                                PolyList.of( PolyString.of( "_id" ) ),
+                                ARRAY_TYPE,
+                                PolyType.ARRAY
+                        ),
+                        new RexLiteral(
+                                PolyString.of( BsonUtil.getObjectId() ),
+                                DOCUMENT_ALG_TYPE,
+                                PolyType.DOCUMENT
+                        )
                 )
         );
 
-        LogicalDocumentProject topLevelProject = LogicalDocumentProject.create(
+        LogicalDocumentProject idProject = LogicalDocumentProject.create(
                 vidProject,
-                topLevelIncludes,
-                List.of( "_id", "otherFields", IdentifierUtils.IDENTIFIER_KEY, IdentifierUtils.VERSION_KEY )
+                idIncludes,
+                List.of()
         );
 
         return LogicalDocumentModify.create(
                 modify.getEntity(),
-                topLevelProject,
+                idProject,
                 Operation.INSERT,
                 null,
                 null,
