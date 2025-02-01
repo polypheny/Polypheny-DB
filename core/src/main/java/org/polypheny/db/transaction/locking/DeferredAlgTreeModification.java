@@ -2,11 +2,9 @@ package org.polypheny.db.transaction.locking;
 
 import com.google.common.collect.ImmutableSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.commons.lang3.NotImplementedException;
-import org.bouncycastle.jcajce.provider.digest.MD2.HashMac;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
@@ -40,7 +38,6 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.Pair;
 
 public class DeferredAlgTreeModification {
 
@@ -242,7 +239,7 @@ public class DeferredAlgTreeModification {
 
     private AlgNode applyLimitDocScanToSnapshot( AlgNode node ) {
         HashMap<Long, Long> documents = getDocumentsInScope( node );
-        return createScopeFilter( documents, node );
+        return buildDocScopeFilter( documents, node );
     }
 
 
@@ -262,9 +259,6 @@ public class DeferredAlgTreeModification {
                     "_id": "$_eid",
                     "_vid": { "$max": "$_vid" }
                     }
-                },
-                {
-                    "$sort": { "_vid": -1 }
                 }
                 ]);
                 """;
@@ -299,7 +293,7 @@ public class DeferredAlgTreeModification {
     }
 
 
-    private LogicalDocumentFilter createScopeFilter( HashMap<Long, Long> documents, AlgNode input ) {
+    private LogicalDocumentFilter buildDocScopeFilter( HashMap<Long, Long> documents, AlgNode input ) {
         List<RexCall> documentConditions = documents.entrySet().stream()
                 .map( d -> new RexCall(
                                 BOOLEAN_ALG_TYPE,
