@@ -77,8 +77,8 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
         // TODO: Implement all=false or disable pipelining
         for ( InputPipe input : inputs ) {
             for ( List<PolyValue> tuple : input ) {
-                if (!output.put( tuple )) {
-                    inputs.forEach( InputPipe::finishIteration );
+                if ( !output.put( tuple ) ) {
+                    finish( inputs );
                     return;
                 }
             }
@@ -94,9 +94,9 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster, FuseExecutionContext ctx ) throws Exception {
-        if (inputs.size() == 1) {
+        if ( inputs.size() == 1 ) {
             ctx.logInfo( "Detected only one input. Skipping Union." );
-            return inputs.get(0);
+            return inputs.get( 0 );
         }
         return LogicalRelUnion.create( inputs, settings.get( "all", BoolValue.class ).getValue() );
     }

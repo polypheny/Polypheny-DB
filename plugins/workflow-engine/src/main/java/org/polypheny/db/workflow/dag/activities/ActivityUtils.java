@@ -129,10 +129,10 @@ public class ActivityUtils {
         Builder builder = factory.builder();
         for ( AlgDataTypeField field : type.getFields() ) {
             String name = field.getName();
-            if (!name.equals( StorageManager.PK_COL ) && mapping.containsKey( name ) ) {
+            if ( !name.equals( StorageManager.PK_COL ) && mapping.containsKey( name ) ) {
                 name = mapping.get( name );
             }
-            builder.add(name, null, field.getType() );
+            builder.add( name, null, field.getType() );
         }
         builder.uniquify();
         return builder.build();
@@ -232,7 +232,7 @@ public class ActivityUtils {
      * Returns a AlgDataType representing the input type with any quotes in field names removed.
      * The resulting columns might no longer be unique.
      */
-    public static AlgDataType removeQuotesInNames(AlgDataType type) {
+    public static AlgDataType removeQuotesInNames( AlgDataType type ) {
         Builder builder = factory.builder();
         for ( AlgDataTypeField field : type.getFields() ) {
             builder.add( field.getName().replace( "\"", "" ), null, field.getType() );
@@ -240,12 +240,19 @@ public class ActivityUtils {
         return builder.build();
     }
 
-    public static List<String> removeQuotesInNames(List<String> names) {
+
+    public static List<String> removeQuotesInNames( List<String> names ) {
         return names.stream().map( name -> name.replace( "\"", "" ) ).toList();
     }
 
-    public static Optional<String> findInvalidFieldName( List<String> names) {
+
+    public static Optional<String> findInvalidFieldName( List<String> names ) {
         return names.stream().filter( nameValidator.asMatchPredicate().negate() ).findFirst();
+    }
+
+
+    public static boolean isValidFieldName( String name ) {
+        return nameValidator.matcher( name ).matches();
     }
 
 

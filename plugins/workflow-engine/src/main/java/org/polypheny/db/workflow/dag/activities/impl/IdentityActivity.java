@@ -122,9 +122,9 @@ public class IdentityActivity implements Activity, Fusable, Pipeable {
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         for ( List<PolyValue> value : inputs.get( 0 ) ) {
-            if (!output.put( value )) {
-                inputs.forEach( InputPipe::finishIteration );
-                break;
+            if ( !output.put( value ) ) {
+                finish( inputs );
+                return;
             }
         }
     }

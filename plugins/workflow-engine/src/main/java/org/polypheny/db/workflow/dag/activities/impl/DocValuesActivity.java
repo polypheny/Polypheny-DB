@@ -20,8 +20,10 @@ import static org.polypheny.db.workflow.dag.activities.impl.RelValuesActivity.LA
 import static org.polypheny.db.workflow.dag.activities.impl.RelValuesActivity.NAMES;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
@@ -34,6 +36,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -74,10 +77,12 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 @SuppressWarnings("unused")
 public class DocValuesActivity implements Activity, Fusable, Pipeable {
 
+    public static final List<String> SKILLS = List.of( "Java", "JavaScript", "Angular", "Git", "C++", "Python" );
+
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
-        return DocType.of( Set.of( "name", "lastName", "age", "salary" ) ).asOutTypes();
+        return DocType.of( Set.of( "name", "lastName", "age", "salary", "skills" ) ).asOutTypes();
     }
 
 
@@ -102,9 +107,10 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
         int n = settings.get( "count", IntValue.class ).getValue();
         boolean fixSeed = settings.get( "fixSeed", BoolValue.class ).getValue();
 
+        List<String> shuffled = new ArrayList<>( SKILLS );
         Random random = fixSeed ? new Random( 42 ) : new Random();
         for ( int i = 0; i < n; i++ ) {
-            PolyDocument doc = getValue( random );
+            PolyDocument doc = getValue( random, shuffled );
             if ( !output.put( doc ) ) {
                 break;
             }
@@ -136,30 +142,47 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
 
     private static List<PolyDocument> getValues( int n, boolean fixSeed ) {
         Random random = fixSeed ? new Random( 42 ) : new Random();
+        List<String> shuffled = new ArrayList<>( SKILLS );
         List<PolyDocument> documents = new ArrayList<>();
         for ( int i = 0; i < n; i++ ) {
-            documents.add( getValue( random ) );
+            documents.add( getValue( random, shuffled ) );
         }
         return documents;
     }
 
 
-    private static PolyDocument getValue( Random random ) {
+    private static PolyDocument getValue( Random random, List<String> skills ) {
         String firstName = NAMES.get( random.nextInt( NAMES.size() ) );
         String lastName = LAST_NAMES.get( random.nextInt( LAST_NAMES.size() ) );
         int age = random.nextInt( 18, 66 );
         int salary = random.nextInt( 5000, 10000 );
-        return getDocument( firstName, lastName, age, salary );
+        Collections.shuffle( skills, random );
+        List<String> subSkills = skills.subList( 0, random.nextInt( 0, skills.size() ) );
+
+        return getDocument( firstName, lastName, age, salary, subSkills );
     }
 
 
-    private static PolyDocument getDocument( String name, String lastName, int age, int salary ) {
+    private static PolyDocument getDocument( String name, String lastName, int age, int salary, List<String> skills ) {
         Map<PolyString, PolyValue> map = new HashMap<>();
         map.put( PolyString.of( "name" ), PolyString.of( name ) );
         map.put( PolyString.of( "lastName" ), PolyString.of( lastName ) );
         map.put( PolyString.of( "age" ), PolyInteger.of( age ) );
         map.put( PolyString.of( "salary" ), PolyInteger.of( salary ) );
+        map.put( PolyString.of( "skills" ), getSkillsArray( skills ) );
+
         return new PolyDocument( map );
+    }
+
+
+    private static PolyList<PolyDocument> getSkillsArray( List<String> skills ) {
+        List<PolyDocument> list = skills.stream().map( s ->
+                PolyDocument.ofDocument( Map.of(
+                        PolyString.of( "type" ), PolyString.of( s ),
+                        PolyString.of( "displayName" ), PolyString.of( s.toUpperCase( Locale.ROOT ) )
+                ) )
+        ).toList();
+        return PolyList.of( list );
     }
 
 }

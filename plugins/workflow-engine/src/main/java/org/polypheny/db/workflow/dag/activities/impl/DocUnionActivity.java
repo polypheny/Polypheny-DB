@@ -72,7 +72,7 @@ public class DocUnionActivity implements Activity, Pipeable {
         for ( InputPipe input : inputs ) {
             for ( List<PolyValue> tuple : input ) {
                 if ( !output.put( tuple ) ) {
-                    inputs.forEach( InputPipe::finishIteration );
+                    finish( inputs );
                     return;
                 }
             }

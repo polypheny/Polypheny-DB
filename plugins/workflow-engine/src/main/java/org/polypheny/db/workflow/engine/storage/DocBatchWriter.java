@@ -100,7 +100,6 @@ public class DocBatchWriter implements AutoCloseable {
         AlgRoot root = AlgRoot.of( modify, Kind.INSERT );
 
         System.out.println( "Executing batch of size " + batchSize );
-        System.out.println("The batch is :" + paramValues);
         ExecutedContext executedContext = QueryUtils.executeAlgRoot( root, statement );
 
         if ( executedContext.getException().isPresent() ) {

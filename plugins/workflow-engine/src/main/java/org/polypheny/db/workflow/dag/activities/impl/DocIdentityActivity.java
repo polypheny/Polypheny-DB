@@ -78,8 +78,8 @@ public class DocIdentityActivity implements Activity, Fusable, Pipeable {
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         for ( List<PolyValue> value : inputs.get( 0 ) ) {
             if ( !output.put( value ) ) {
-                inputs.forEach( InputPipe::finishIteration );
-                break;
+                finish( inputs );
+                return;
             }
         }
     }

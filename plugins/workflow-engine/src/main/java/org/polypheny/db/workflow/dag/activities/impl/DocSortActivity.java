@@ -55,7 +55,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 @ActivityDefinition(type = "docSort", displayName = "Sort / Limit Documents", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT },
-        inPorts = { @InPort(type = PortType.DOC, description = "The input collection") },
+        inPorts = { @InPort(type = PortType.DOC, description = "The input collection.") },
         outPorts = { @OutPort(type = PortType.DOC, description = "The collection sorted by the specified fields and possibly limited number of documents.") },
         shortDescription = "This activity can be used to both sort a collection and limit its number of documents. Note that some adapters do not keep track of the document order.",
         longDescription = """
@@ -124,13 +124,13 @@ public class DocSortActivity implements Activity, Fusable, Pipeable {
             if ( count <= skip ) {
                 continue;
             } else if ( limit >= 0 && count - skip > limit ) {
-                inputs.forEach( InputPipe::finishIteration );
-                break;
+                finish( inputs );
+                return;
             }
 
             if ( !output.put( row ) ) {
-                inputs.forEach( InputPipe::finishIteration );
-                break;
+                finish( inputs );
+                return;
             }
         }
     }

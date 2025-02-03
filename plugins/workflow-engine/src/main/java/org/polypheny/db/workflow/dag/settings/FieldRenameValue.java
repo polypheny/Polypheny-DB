@@ -17,6 +17,8 @@
 package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +29,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 
 @Value
@@ -77,9 +80,14 @@ public class FieldRenameValue implements SettingValue {
     }
 
 
+    public boolean hasEmptyRule() {
+        return rules.stream().anyMatch( RenameRule::isEmpty );
+    }
+
+
     public void validateRegex() throws PatternSyntaxException {
         for ( RenameRule rule : rules ) {
-            rule.getPattern(ignoreCase);
+            rule.getPattern( ignoreCase );
         }
     }
 
@@ -133,8 +141,50 @@ public class FieldRenameValue implements SettingValue {
                 }
             }
         }
-        System.out.println("map: " + mapping);
         return mapping;
+    }
+
+
+    public Set<String> getRenamedSet( Set<String> inNames ) {
+        if ( mode == RenameMode.INDEX ) {
+            throw new GenericRuntimeException( "Cannot select names by index when given a set" );
+        }
+        Map<String, String> map = getMapping( new ArrayList<>( inNames ) );
+        Set<String> renamed = new HashSet<>();
+        for ( String name : inNames ) {
+            renamed.add( map.getOrDefault( name, name ) );
+        }
+        return Collections.unmodifiableSet( renamed );
+    }
+
+
+    /**
+     * Attempts to rename the given string.
+     *
+     * @return the renamed name or null if it wasn't renamed.
+     */
+    public String rename( String name ) {
+        return switch ( mode ) {
+            case CONSTANT -> {
+                for ( RenameRule rule : rules ) {
+                    String renamed = rule.applyConstantRule( name, ignoreCase );
+                    if ( renamed != null ) {
+                        yield renamed;
+                    }
+                }
+                yield null;
+            }
+            case REGEX -> {
+                for ( RenameRule rule : rules ) {
+                    String renamed = rule.applyRegexRule( name, ignoreCase );
+                    if ( renamed != null ) {
+                        yield renamed;
+                    }
+                }
+                yield null;
+            }
+            default -> throw new GenericRuntimeException( "Unsupported mode " + mode );
+        };
     }
 
 
@@ -177,7 +227,7 @@ public class FieldRenameValue implements SettingValue {
 
 
         @JsonIgnore
-        public Pattern getPattern(boolean ignoreCase) {
+        public Pattern getPattern( boolean ignoreCase ) {
             if ( compiledPattern == null ) {
                 if ( ignoreCase ) {
                     compiledPattern = Pattern.compile( source, Pattern.CASE_INSENSITIVE );
@@ -186,6 +236,12 @@ public class FieldRenameValue implements SettingValue {
                 }
             }
             return compiledPattern;
+        }
+
+
+        @JsonIgnore
+        public boolean isEmpty() {
+            return source.isEmpty() || replacement.isEmpty();
         }
 
 
@@ -198,7 +254,6 @@ public class FieldRenameValue implements SettingValue {
 
 
         public String applyConstantRule( String inName, boolean ignoreCase ) {
-            System.out.println("applying " + inName + " to rule " + source + " -> " + replacement);
             if ( inName.equals( source ) || (ignoreCase && inName.equalsIgnoreCase( source )) ) {
                 return ALL_MATCH.matcher( inName ).replaceAll( replacement );
             }
@@ -207,7 +262,7 @@ public class FieldRenameValue implements SettingValue {
 
 
         public String applyRegexRule( String inName, boolean ignoreCase ) {
-            Matcher matcher = getPattern(ignoreCase).matcher( inName );
+            Matcher matcher = getPattern( ignoreCase ).matcher( inName );
             if ( matcher.find() ) {
                 return matcher.replaceAll( replacement );
             }

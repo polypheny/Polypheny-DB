@@ -52,8 +52,8 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 @ActivityDefinition(type = "renameCols", displayName = "Rename Columns", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
-        inPorts = { @InPort(type = PortType.REL, description = "The input table") },
-        outPorts = { @OutPort(type = PortType.REL, description = "A table with the same columns as the input table, but with possibly different names") },
+        inPorts = { @InPort(type = PortType.REL, description = "The input table.") },
+        outPorts = { @OutPort(type = PortType.REL, description = "A table with the same columns as the input table, but with possibly different names.") },
         shortDescription = "Rename the columns of a table by defining rules."
 )
 @FieldRenameSetting(key = "rename", displayName = "Renaming Rules", allowRegex = true, allowIndex = true,
@@ -61,9 +61,9 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
                 + "The replacement can always reference capture groups such as '$0' for the original name.",
         longDescription = """
                 The source columns can be selected by their actual (constant) name, their index or by using a regular expression.
-                In the latter case it is possible to specify capturing groups.
+                In the latter case it is possible to specify capturing groups using parentheses.
                 
-                In any mode, the replacement can reference a capture group ('$0', '$1'...). For instance, the replacement 'abc$0 adds the prefix 'abc' to each matching column.
+                In any mode, the replacement can reference a capture group (`$0`, `$1`...). For instance, the replacement `abc$0` adds the prefix `abc` to each matching column.
                 
                 Regular expressions are given in the [Java Regex dialect](https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html).
                 """)
@@ -110,7 +110,7 @@ public class RelRenameActivity implements Activity, Fusable, Pipeable {
         ctx.logInfo( "Renaming fields to " + output.getType().getFieldNames() );
         for ( List<PolyValue> row : inputs.get( 0 ) ) {
             if ( !output.put( row ) ) {
-                inputs.forEach( InputPipe::finishIteration );
+                finish( inputs );
                 return;
             }
         }
@@ -122,7 +122,7 @@ public class RelRenameActivity implements Activity, Fusable, Pipeable {
         Map<String, String> mapping = rename.getMapping( inNames );
         AlgDataType outType = ActivityUtils.renameFields( inputType, mapping );
         Optional<String> invalid = ActivityUtils.findInvalidFieldName( outType.getFieldNames() );
-        if (invalid.isPresent()) {
+        if ( invalid.isPresent() ) {
             throw new InvalidSettingException( "Invalid column name: " + invalid.get(), "rename" );
         }
         return outType;

@@ -174,8 +174,8 @@ public class RelToDocActivity implements Activity, Fusable, Pipeable {
                 }
             }
             if ( !output.put( PolyDocument.ofDocument( map ) ) ) {
-                inputs.forEach( InputPipe::finishIteration );
-                break;
+                finish( inputs );
+                return;
             }
         }
     }

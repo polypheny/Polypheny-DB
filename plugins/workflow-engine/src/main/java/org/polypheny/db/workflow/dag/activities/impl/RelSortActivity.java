@@ -123,13 +123,13 @@ public class RelSortActivity implements Activity, Fusable, Pipeable {
             if ( count <= skip ) {
                 continue;
             } else if ( limit >= 0 && count - skip > limit ) {
-                inputs.forEach( InputPipe::finishIteration );
-                break;
+                finish( inputs );
+                return;
             }
 
             if ( !output.put( row ) ) {
-                inputs.forEach( InputPipe::finishIteration );
-                break;
+                finish( inputs );
+                return;
             }
         }
     }

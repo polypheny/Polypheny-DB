@@ -140,8 +140,8 @@ public class ReorderColsActivity implements Activity, Fusable, Pipeable {
 
         for ( List<PolyValue> row : inputs.get( 0 ) ) {
             if ( !output.put( inCols.stream().map( row::get ).toList() ) ) {
-                inputs.forEach( InputPipe::finishIteration );
-                break;
+                finish( inputs );
+                return;
             }
         }
     }

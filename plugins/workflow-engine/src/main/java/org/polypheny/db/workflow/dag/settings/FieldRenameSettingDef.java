@@ -34,6 +34,7 @@ public class FieldRenameSettingDef extends SettingDef {
     boolean allowIndex;
     int targetInput;
 
+
     public FieldRenameSettingDef( FieldRenameSetting a ) {
         super( SettingType.FIELD_RENAME, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), getDefaultValue( a.defaultMode() ),
                 a.group(), a.subGroup(), a.pos(), a.subPointer(), a.subValues() );
@@ -53,8 +54,8 @@ public class FieldRenameSettingDef extends SettingDef {
     @Override
     public void validateValue( SettingValue value ) throws InvalidSettingException {
         if ( value instanceof FieldRenameValue rename ) {
-            if (rename.getMode() == RenameMode.REGEX) {
-                if (!allowRegex) {
+            if ( rename.getMode() == RenameMode.REGEX ) {
+                if ( !allowRegex ) {
                     throwInvalid( "Regex mode is not allowed" );
                 }
                 try {
@@ -62,8 +63,8 @@ public class FieldRenameSettingDef extends SettingDef {
                 } catch ( PatternSyntaxException e ) {
                     throwInvalid( "Invalid regex: " + e.getMessage() );
                 }
-            } else if (rename.getMode() == RenameMode.INDEX) {
-                if (!allowIndex) {
+            } else if ( rename.getMode() == RenameMode.INDEX ) {
+                if ( !allowIndex ) {
                     throwInvalid( "Index mode is not allowed" );
                 }
                 try {
@@ -72,8 +73,11 @@ public class FieldRenameSettingDef extends SettingDef {
                     throwInvalid( "Invalid index: " + e.getMessage() );
                 }
             }
-            if (rename.hasDuplicates()) {
+
+            if ( rename.hasDuplicates() ) {
                 throwInvalid( "Duplicate source fields are not permitted" );
+            } else if ( rename.hasEmptyRule() ) {
+                throwInvalid( "Empty rules are not permitted" );
             }
             return;
         }

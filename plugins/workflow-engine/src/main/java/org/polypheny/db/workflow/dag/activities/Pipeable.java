@@ -119,6 +119,16 @@ public interface Pipeable extends Activity {
      */
     void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception;
 
+    /**
+     * Signals all inputs that no more tuples will be consumed by this Pipeable.
+     * It is important ensure that this holds. The easiest way to do this is by returning from {@code pipe()} directly after calling this method.
+     *
+     * @param inputs all input pipes
+     */
+    default void finish( List<InputPipe> inputs ) {
+        inputs.forEach( InputPipe::finishIteration );
+    }
+
 
     class PipeInterruptedException extends RuntimeException {
 

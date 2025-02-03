@@ -126,9 +126,9 @@ public class DebugActivity implements Activity, Pipeable, Fusable {
             } catch ( InterruptedException e ) {
                 throw new PipeInterruptedException( e );
             }
-            if (!output.put( value )) {
-                inputs.forEach( InputPipe::finishIteration );
-                break;
+            if ( !output.put( value ) ) {
+                finish( inputs );
+                return;
             }
         }
     }

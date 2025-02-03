@@ -78,7 +78,7 @@ public class LpgUnionActivity implements Activity, Pipeable {
         for ( LpgInputPipe graph : graphs ) {
             for ( PolyNode node : graph.getNodeIterable() ) {
                 if ( !output.put( node ) ) {
-                    inputs.forEach( InputPipe::finishIteration );
+                    finish( inputs );
                     return;
                 }
             }
@@ -86,7 +86,7 @@ public class LpgUnionActivity implements Activity, Pipeable {
         for ( LpgInputPipe graph : graphs ) {
             for ( PolyEdge edge : graph.getEdgeIterable() ) {
                 if ( !output.put( edge ) ) {
-                    inputs.forEach( InputPipe::finishIteration );
+                    finish( inputs );
                     return;
                 }
             }
