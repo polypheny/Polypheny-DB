@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import lombok.Getter;
@@ -47,6 +48,7 @@ import org.polypheny.db.workflow.engine.storage.StorageManager;
 public class ActivityUtils {
 
     private static final AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
+    private static final Pattern nameValidator = Pattern.compile( "^[a-zA-Z_][a-zA-Z0-9_]*$" ); // for entities / columns / fields etc.
 
 
     public static DataModel getDataModel( AlgDataType type ) {
@@ -223,6 +225,27 @@ public class ActivityUtils {
     public static RexLiteral getRexLiteral( int i ) {
         PolyValue value = PolyInteger.of( i );
         return new RexLiteral( value, factory.createPolyType( value.type ), value.type );
+    }
+
+
+    /**
+     * Returns a AlgDataType representing the input type with any quotes in field names removed.
+     * The resulting columns might no longer be unique.
+     */
+    public static AlgDataType removeQuotesInNames(AlgDataType type) {
+        Builder builder = factory.builder();
+        for ( AlgDataTypeField field : type.getFields() ) {
+            builder.add( field.getName().replace( "\"", "" ), null, field.getType() );
+        }
+        return builder.build();
+    }
+
+    public static List<String> removeQuotesInNames(List<String> names) {
+        return names.stream().map( name -> name.replace( "\"", "" ) ).toList();
+    }
+
+    public static Optional<String> findInvalidFieldName( List<String> names) {
+        return names.stream().filter( nameValidator.asMatchPredicate().negate() ).findFirst();
     }
 
 

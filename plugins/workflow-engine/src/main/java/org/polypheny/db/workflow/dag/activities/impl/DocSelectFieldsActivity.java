@@ -72,7 +72,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         shortDescription = "Specify which fields to include. Alternatively, you can include any field not present in the list of excluded fields. Subfields can be specified using 'field.subfield'.")
 @StringSetting(key = "regex", displayName = "Regex", maxLength = 1024, containsRegex = true,
         subPointer = "mode", subValues = { "\"regex\"" },
-        shortDescription = "Specify the fields to include using a regular expression. This selection mode is less efficient as 'Include / Exclude' and does not allow the selection of subfields.")
+        shortDescription = "Specify the fields to include using a regular expression. This selection mode is less efficient as 'Include / Exclude' and does not allow for the selection of subfields.")
 
 @SuppressWarnings("unused")
 public class DocSelectFieldsActivity implements Activity, Fusable, Pipeable {

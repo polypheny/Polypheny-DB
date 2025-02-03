@@ -74,6 +74,7 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
+        // TODO: Implement all=false or disable pipelining
         for ( InputPipe input : inputs ) {
             for ( List<PolyValue> tuple : input ) {
                 if (!output.put( tuple )) {

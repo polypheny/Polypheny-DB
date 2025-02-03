@@ -55,6 +55,7 @@ import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
 import org.polypheny.db.workflow.dag.activities.TypePreview.LpgType;
@@ -199,6 +200,9 @@ public class StorageManagerImpl implements StorageManager {
         if ( !StorageManager.isPkCol( pkField ) ) {
             throw new IllegalArgumentException( "The first column of an output table must be its (numeric) primary key with name " + PK_COL );
         }
+
+        type = ActivityUtils.removeQuotesInNames( type );
+
         String duplicateField = findDuplicateField( type );
         if ( duplicateField != null ) {
             throw new IllegalArgumentException( "Found duplicate column in output table: " + duplicateField );

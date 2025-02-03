@@ -57,7 +57,6 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 @Slf4j
 
@@ -65,7 +64,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
         inPorts = {},
         outPorts = { @OutPort(type = PortType.REL) }
 )
-@IntSetting(key = "rowCount", displayName = "Row Count", defaultValue = 3, min = 1, max = 1_000_000)
+@IntSetting(key = "rowCount", displayName = "Row Count", defaultValue = 3, min = 1, max = 10_000_000)
 @BoolSetting(key = "fixSeed", displayName = "Fix Random Seed", defaultValue = false)
 
 @SuppressWarnings("unused")
@@ -83,12 +82,7 @@ public class RelValuesActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        List<List<PolyValue>> values = getValues(
-                settings.get( "rowCount", IntValue.class ).getValue(),
-                settings.get( "fixSeed", BoolValue.class ).getValue()
-        );
-        RelWriter writer = ctx.createRelWriter( 0, getType(), true );
-        writer.write( values.iterator(), ctx );
+        Pipeable.super.execute( inputs, settings, ctx );
     }
 
 

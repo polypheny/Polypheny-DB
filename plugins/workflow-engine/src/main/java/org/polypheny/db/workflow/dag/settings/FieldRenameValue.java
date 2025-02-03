@@ -34,6 +34,7 @@ public class FieldRenameValue implements SettingValue {
 
     List<RenameRule> rules;
     RenameMode mode;
+    boolean ignoreCase; // treat source case insensitive, not relevant for index mode
 
 
     /*@JsonCreator // TODO: decide whether to keep other constructors and if yes, fix them
@@ -78,7 +79,7 @@ public class FieldRenameValue implements SettingValue {
 
     public void validateRegex() throws PatternSyntaxException {
         for ( RenameRule rule : rules ) {
-            rule.getPattern();
+            rule.getPattern(ignoreCase);
         }
     }
 
@@ -105,7 +106,7 @@ public class FieldRenameValue implements SettingValue {
             switch ( mode ) {
                 case CONSTANT -> {
                     for ( String inName : Set.copyOf( remaining ) ) {
-                        String renamed = rule.applyConstantRule( inName );
+                        String renamed = rule.applyConstantRule( inName, ignoreCase );
                         if ( renamed != null ) {
                             mapping.put( inName, renamed );
                             remaining.remove( inName );
@@ -115,7 +116,7 @@ public class FieldRenameValue implements SettingValue {
                 }
                 case REGEX -> {
                     for ( String inName : Set.copyOf( remaining ) ) {
-                        String renamed = rule.applyRegexRule( inName );
+                        String renamed = rule.applyRegexRule( inName, ignoreCase );
                         if ( renamed != null ) {
                             mapping.put( inName, renamed );
                             remaining.remove( inName );
@@ -142,9 +143,6 @@ public class FieldRenameValue implements SettingValue {
 
         String source; // either constant, regex (with optional match groups) or index
         String replacement; // represents a replace string for replaceAll. Use $0 to reference the entire input, $1 for the first group in case of regex etc.
-
-        // only relevant for constant and regex:
-        boolean caseInsensitive; // treat source case insensitive
 
         @JsonIgnore
         @NonFinal
@@ -179,9 +177,9 @@ public class FieldRenameValue implements SettingValue {
 
 
         @JsonIgnore
-        public Pattern getPattern() {
+        public Pattern getPattern(boolean ignoreCase) {
             if ( compiledPattern == null ) {
-                if ( caseInsensitive ) {
+                if ( ignoreCase ) {
                     compiledPattern = Pattern.compile( source, Pattern.CASE_INSENSITIVE );
                 } else {
                     compiledPattern = Pattern.compile( source );
@@ -199,17 +197,17 @@ public class FieldRenameValue implements SettingValue {
         }
 
 
-        public String applyConstantRule( String inName ) {
+        public String applyConstantRule( String inName, boolean ignoreCase ) {
             System.out.println("applying " + inName + " to rule " + source + " -> " + replacement);
-            if ( inName.equals( source ) || (caseInsensitive && inName.equalsIgnoreCase( source )) ) {
+            if ( inName.equals( source ) || (ignoreCase && inName.equalsIgnoreCase( source )) ) {
                 return ALL_MATCH.matcher( inName ).replaceAll( replacement );
             }
             return null;
         }
 
 
-        public String applyRegexRule( String inName ) {
-            Matcher matcher = getPattern().matcher( inName );
+        public String applyRegexRule( String inName, boolean ignoreCase ) {
+            Matcher matcher = getPattern(ignoreCase).matcher( inName );
             if ( matcher.find() ) {
                 return matcher.replaceAll( replacement );
             }

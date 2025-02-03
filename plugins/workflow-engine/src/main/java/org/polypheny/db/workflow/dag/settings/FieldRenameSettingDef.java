@@ -83,7 +83,7 @@ public class FieldRenameSettingDef extends SettingDef {
 
 
     private static SettingValue getDefaultValue( RenameMode defaultMode ) {
-        return new FieldRenameValue( List.of(), defaultMode );
+        return new FieldRenameValue( List.of(), defaultMode, false );
     }
 
 }
