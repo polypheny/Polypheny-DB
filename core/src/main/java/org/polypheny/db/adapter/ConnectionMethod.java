@@ -19,7 +19,9 @@ package org.polypheny.db.adapter;
 
 public enum ConnectionMethod {
     LINK,
-    UPLOAD;
+    UPLOAD,
+    URL;
+
 
 
     public static ConnectionMethod from( String name ) {

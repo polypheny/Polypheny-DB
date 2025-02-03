@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
@@ -115,5 +116,10 @@ public class PostgresqlSource extends AbstractJdbcSource {
         return List.of( table );
     }
 
+
+    @Override
+    public RelationalDataSource asRelationalDataSource() {
+        return this;
+    }
 
 }
