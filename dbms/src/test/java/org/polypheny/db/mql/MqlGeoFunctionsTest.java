@@ -574,7 +574,8 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
             results.add( finalResult );
         }
 
-        assertEquals( 2, results.size() );
+        // There should be 1 result per queries run for each collection.
+        assertEquals( collections.size(), results.size() );
         return results;
     }
 
