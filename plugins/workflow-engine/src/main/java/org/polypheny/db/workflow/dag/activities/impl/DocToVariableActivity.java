@@ -75,7 +75,7 @@ public class DocToVariableActivity implements VariableWriter {
         for ( PolyDocument doc : reader.getDocIterable() ) {
             if ( settings.getBool( "skipId" ) ) {
                 Map<PolyString, PolyValue> map = new HashMap<>( doc.map );
-                map.remove( PolyString.of( DocumentType.DOCUMENT_ID ) );
+                map.remove( docId );
                 doc = PolyDocument.ofDocument( map );
             }
 

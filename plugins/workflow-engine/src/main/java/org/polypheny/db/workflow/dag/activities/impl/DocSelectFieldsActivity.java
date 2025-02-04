@@ -112,7 +112,7 @@ public class DocSelectFieldsActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        if (settings.getString( "mode" ).equals( "fieldSelect" )) {
+        if ( settings.getString( "mode" ).equals( "fieldSelect" ) ) {
             Fusable.super.execute( inputs, settings, ctx );
         } else {
             Pipeable.super.execute( inputs, settings, ctx );
@@ -153,18 +153,19 @@ public class DocSelectFieldsActivity implements Activity, Fusable, Pipeable {
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         assert settings.getString( "mode" ).equals( "regex" ) : "Pipe is currently only implemented for regex";
-        Pattern pattern = Pattern.compile(settings.getString( "regex" ));
+        Pattern pattern = Pattern.compile( settings.getString( "regex" ) );
 
-        for (List<PolyValue> tuple : inputs.get( 0 )) {
+        for ( List<PolyValue> tuple : inputs.get( 0 ) ) {
             PolyDocument doc = tuple.get( 0 ).asDocument();
             Map<PolyString, PolyValue> map = new HashMap<>();
             for ( Entry<PolyString, PolyValue> entry : doc.entrySet() ) {
                 String key = entry.getKey().value;
-                if (pattern.matcher( key ).matches() ) {
+                if ( pattern.matcher( key ).matches() ) {
                     map.put( entry.getKey(), entry.getValue() );
                 }
             }
-            if (!output.put( PolyDocument.ofDocument( map ) )) {
+            ActivityUtils.addDocId( map );
+            if ( !output.put( PolyDocument.ofDocument( map ) ) ) {
                 inputs.get( 0 ).finishIteration();
                 return;
             }

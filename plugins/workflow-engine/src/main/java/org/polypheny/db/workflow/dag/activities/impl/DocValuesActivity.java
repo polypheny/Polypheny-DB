@@ -41,6 +41,7 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
@@ -165,6 +166,7 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
 
     private static PolyDocument getDocument( String name, String lastName, int age, int salary, List<String> skills ) {
         Map<PolyString, PolyValue> map = new HashMap<>();
+        map.put( docId, PolyString.of( BsonUtil.getObjectId() ) );
         map.put( PolyString.of( "name" ), PolyString.of( name ) );
         map.put( PolyString.of( "lastName" ), PolyString.of( lastName ) );
         map.put( PolyString.of( "age" ), PolyInteger.of( age ) );

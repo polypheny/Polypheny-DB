@@ -41,7 +41,9 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidInputException;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 
@@ -49,6 +51,7 @@ public class ActivityUtils {
 
     private static final AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
     private static final Pattern nameValidator = Pattern.compile( "^[a-zA-Z_][a-zA-Z0-9_]*$" ); // for entities / columns / fields etc.
+    private static final int MAX_NAME_LENGTH = 128;
 
 
     public static DataModel getDataModel( AlgDataType type ) {
@@ -65,6 +68,11 @@ public class ActivityUtils {
             return true;
         }
         return StorageManager.isPkCol( type.getFields().get( 0 ) );
+    }
+
+
+    public static Builder getBuilder() {
+        return factory.builder();
     }
 
 
@@ -136,6 +144,18 @@ public class ActivityUtils {
         }
         builder.uniquify();
         return builder.build();
+    }
+
+
+    /**
+     * Adds the specified field to the given struct type and uniquifies all fields.
+     */
+    public static AlgDataType appendField( AlgDataType type, String fieldName, AlgDataType fieldType ) {
+        return factory.builder()
+                .addAll( type.getFields() )
+                .add( fieldName, null, fieldType )
+                .uniquify()
+                .build();
     }
 
 
@@ -247,12 +267,47 @@ public class ActivityUtils {
 
 
     public static Optional<String> findInvalidFieldName( List<String> names ) {
-        return names.stream().filter( nameValidator.asMatchPredicate().negate() ).findFirst();
+        return names.stream().filter( nameValidator.asMatchPredicate().negate() ).filter( s -> s.length() > MAX_NAME_LENGTH ).findFirst();
     }
 
 
     public static boolean isValidFieldName( String name ) {
-        return nameValidator.matcher( name ).matches();
+        return name.length() <= MAX_NAME_LENGTH && nameValidator.matcher( name ).matches();
+    }
+
+
+    /**
+     * Resolve the subfield pointer (subfields specified with '.').
+     *
+     * @param doc root document
+     * @param pointer the pointer
+     * @return the PolyValue at the specified pointer or null if the value is unset.
+     * @throws Exception if the pointer points to a location that does not exist or the structure is inconsistent with the pointer.
+     */
+    public static PolyValue getSubValue( PolyDocument doc, String pointer ) throws Exception {
+        PolyValue current = doc;
+        for ( String s : pointer.split( "\\." ) ) {
+            current = switch ( current.getType() ) {
+                case DOCUMENT -> {
+                    PolyString next = PolyString.of( s );
+                    yield current.asDocument().get( next );
+                }
+                case ARRAY -> {
+                    int next = Integer.parseInt( s );
+                    yield current.asList().get( next );
+                }
+                default -> throw new IllegalStateException( "Unexpected type: " + current.getType() );
+            };
+        }
+        return current;
+    }
+
+
+    /**
+     * Adds a generated document id to the given map if it does not yet contain an id.
+     */
+    public static void addDocId( Map<PolyString, PolyValue> map ) {
+        map.putIfAbsent( Activity.docId, PolyString.of( BsonUtil.getObjectId() ) );
     }
 
 

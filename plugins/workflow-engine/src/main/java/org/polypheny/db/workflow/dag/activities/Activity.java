@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
@@ -34,7 +35,9 @@ import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 public interface Activity {
+
     AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
+    PolyString docId = PolyString.of( DocumentType.DOCUMENT_ID );
 
     /**
      * This method computes the output tuple-types by considering (a preview of) input types and settings.

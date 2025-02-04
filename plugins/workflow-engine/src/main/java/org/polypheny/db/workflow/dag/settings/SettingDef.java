@@ -38,6 +38,7 @@ import org.polypheny.db.util.Wrapper;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
+import org.polypheny.db.workflow.dag.annotations.CastSetting;
 import org.polypheny.db.workflow.dag.annotations.CollationSetting;
 import org.polypheny.db.workflow.dag.annotations.DoubleSetting;
 import org.polypheny.db.workflow.dag.annotations.EntitySetting;
@@ -202,6 +203,10 @@ public abstract class SettingDef {
                 settings.add( new FieldRenameSettingDef( a ) );
             } else if ( annotation instanceof FieldRenameSetting.List a ) {
                 Arrays.stream( a.value() ).forEach( el -> settings.add( new FieldRenameSettingDef( el ) ) );
+            } else if ( annotation instanceof CastSetting a ) {
+                settings.add( new CastSettingDef( a ) );
+            } else if ( annotation instanceof CastSetting.List a ) {
+                Arrays.stream( a.value() ).forEach( el -> settings.add( new CastSettingDef( el ) ) );
             }
         }
         return settings;
@@ -234,6 +239,7 @@ public abstract class SettingDef {
         ENUM,
         COLLATION,
         FIELD_RENAME,
+        CAST,
         FIELD_SELECT
     }
 

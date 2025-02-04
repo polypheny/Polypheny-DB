@@ -173,6 +173,7 @@ public class RelToDocActivity implements Activity, Fusable, Pipeable {
                     map.put( PolyString.of( fieldNames.get( i ) ), value );
                 }
             }
+            ActivityUtils.addDocId( map );
             if ( !output.put( PolyDocument.ofDocument( map ) ) ) {
                 finish( inputs );
                 return;
