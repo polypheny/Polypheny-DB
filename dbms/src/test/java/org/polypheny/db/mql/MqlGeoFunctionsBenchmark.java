@@ -267,30 +267,34 @@ public class MqlGeoFunctionsBenchmark extends MqlTestTemplate {
             double upperRightLongitude = lowerLeftLongitude + random.nextDouble() * (180 - lowerLeftLongitude);
 
             // Format the GeoJSON Polygon for $geoWithin
-            String itemTemplate = """
-                        location: {
-                           $geoWithin: {
-                              $geometry: {
-                                type: "Polygon",
-                                coordinates: [[
-                                  [%s, %s],
-                                  [%s, %s],
-                                  [%s, %s],
-                                  [%s, %s],
-                                  [%s, %s]
-                                ]]
-                              }
-                           }
-                        }
-                    """.formatted(
-                    lowerLeftLongitude, lowerLeftLatitude,  // Bottom-left
-                    upperRightLongitude, lowerLeftLatitude, // Bottom-right
-                    upperRightLongitude, upperRightLatitude, // Top-right
-                    lowerLeftLongitude, upperRightLatitude, // Top-left
-                    lowerLeftLongitude, lowerLeftLatitude   // Close the loop
-            );
+//            String itemTemplate = """
+//                        location: {
+//                           $geoWithin: {
+//                              $geometry: {
+//                                type: "Polygon",
+//                                coordinates: [[
+//                                  [%s, %s],
+//                                  [%s, %s],
+//                                  [%s, %s],
+//                                  [%s, %s],
+//                                  [%s, %s]
+//                                ]]
+//                              }
+//                           }
+//                        }
+//                    """.formatted(
+//                    lowerLeftLongitude, lowerLeftLatitude,  // Bottom-left
+//                    upperRightLongitude, lowerLeftLatitude, // Bottom-right
+//                    upperRightLongitude, upperRightLatitude, // Top-right
+//                    lowerLeftLongitude, upperRightLatitude, // Top-left
+//                    lowerLeftLongitude, lowerLeftLatitude   // Close the loop
+//            );
+//
+//            queries.add( "db.%s.find({" + itemTemplate + "})" );
 
-            queries.add( "db.%s.find({" + itemTemplate + "})" );
+
+            // Searches all items, returns nothing.
+            queries.add("db.%s" + ".find({ num: -%s })".formatted( i ));
         }
 
         return queries;
