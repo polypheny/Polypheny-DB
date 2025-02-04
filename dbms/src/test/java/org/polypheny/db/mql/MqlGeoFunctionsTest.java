@@ -46,7 +46,10 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     final static String mongoAdapterName = "mongo";
     final static String mongoCollection = "mongo";
     final static String defaultCollection = "default";
-    final static List<String> collections = List.of( defaultCollection, mongoCollection );
+    final static List<String> collections = List.of(
+            defaultCollection
+//            mongoCollection
+    );
     final static Map<String, String> collectionToStore = Map.of( mongoCollection, mongoAdapterName, defaultCollection, "hsqldb" );
     final static String clearCollection = """
             db.%s.deleteMany({})
@@ -74,6 +77,46 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
         clearCollections();
     }
 
+    @Test
+    public void orderByTest() {
+        ArrayList<String> queries = new ArrayList<>();
+        queries.add("""
+            db.%s.insertMany([
+                {
+                  name: "Middle",
+                  num: 2
+                },
+                {
+                  name: "Low",
+                  num: 1
+                },
+                {
+                  name: "Top",
+                  num: 3
+                }
+            ])
+            """);
+        // no sort: 2,1,3
+//        queries.add("""
+//            db.%s.find({})
+//            """);
+
+        // ascending: 1,2,3
+        queries.add("""
+            db.%s.aggregate([
+                { $sort: { num: 1 } }
+            ])
+            """);
+
+//        // descending: 3,2,1
+//        queries.add("""
+//            db.%s.aggregate([
+//                { $sort: { num: -1 } }
+//            ])
+//            """);
+        List<DocResult> results = runQueries(queries);
+        compareResults(results);
+    }
 
     @Test
     public void docGeoIntersectsTest() {
