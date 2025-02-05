@@ -144,7 +144,7 @@ public class LpgPropertyRenameActivity implements Activity, Pipeable {
         return renameCache.computeIfAbsent( name, k -> {
             String r = renamer.rename( k );
             if ( r != null ) {
-                if ( !ActivityUtils.isValidFieldName( r ) ) {
+                if ( ActivityUtils.isInvalidFieldName( r ) ) {
                     throw new IllegalArgumentException( "Invalid field name: " + r );
                 }
                 return r;

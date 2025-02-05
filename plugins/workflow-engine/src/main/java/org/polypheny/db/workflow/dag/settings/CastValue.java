@@ -51,6 +51,9 @@ public class CastValue implements SettingValue {
         Set<String> targets = new HashSet<>();
         for ( SingleCast cast : casts ) {
             if ( !allowDuplicateSource ) {
+                if ( cast.source.isBlank() ) {
+                    throw new IllegalArgumentException( "Name must not be empty" );
+                }
                 if ( sources.contains( cast.source ) ) {
                     throw new IllegalArgumentException( "Duplicate source: " + cast.source );
                 }
@@ -65,7 +68,7 @@ public class CastValue implements SettingValue {
             } else if ( cast.hasTarget() ) {
                 throw new IllegalArgumentException( "Specifying targets is not allowed: " + cast.target );
             }
-            if ( !allowJson && cast.asJson() ) {
+            if ( !allowJson && cast.asJsonBoolean() ) {
                 throw new IllegalArgumentException( "Marking a cast as JSON is not allowed: " + cast.getOutName() );
             }
             cast.buildType();
@@ -114,6 +117,11 @@ public class CastValue implements SettingValue {
         @JsonInclude(JsonInclude.Include.NON_NULL)
         public Boolean asJson() {
             return asJson ? true : null; // only serialize isJson if it's true -> hidden in most cases
+        }
+
+
+        public boolean asJsonBoolean() {
+            return asJson; // separate method since asJson is only used for serialization
         }
 
 
@@ -185,7 +193,7 @@ public class CastValue implements SettingValue {
 
         @JsonIgnore
         public PolyValue getNullValue() {
-            return PolyValue.getNull( type.getClass() );
+            return PolyValue.getNull( PolyValue.classFrom( type ) );
         }
 
     }

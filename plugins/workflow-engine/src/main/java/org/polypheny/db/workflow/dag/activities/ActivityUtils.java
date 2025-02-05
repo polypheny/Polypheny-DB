@@ -267,12 +267,17 @@ public class ActivityUtils {
 
 
     public static Optional<String> findInvalidFieldName( List<String> names ) {
-        return names.stream().filter( nameValidator.asMatchPredicate().negate() ).filter( s -> s.length() > MAX_NAME_LENGTH ).findFirst();
+        for ( String name : names ) {
+            if ( isInvalidFieldName( name ) ) {
+                return Optional.of( name );
+            }
+        }
+        return Optional.empty();
     }
 
 
-    public static boolean isValidFieldName( String name ) {
-        return name.length() <= MAX_NAME_LENGTH && nameValidator.matcher( name ).matches();
+    public static boolean isInvalidFieldName( String name ) {
+        return name.length() > MAX_NAME_LENGTH || !nameValidator.matcher( name ).matches();
     }
 
 

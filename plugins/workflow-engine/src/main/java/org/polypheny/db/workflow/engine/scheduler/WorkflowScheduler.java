@@ -181,7 +181,6 @@ public class WorkflowScheduler {
             visited.add( n );
 
             ActivityWrapper nWrapper = workflow.getActivity( n );
-            CommonType type = nWrapper.getConfig().getCommonType(); // TODO: what if common activities partially executed? -> execute all of them again or only new ones, or fail?
             if ( nWrapper.getState() == ActivityState.SAVED ) {
                 savedActivities.add( n );
                 continue;
@@ -376,10 +375,11 @@ public class WorkflowScheduler {
             }
         }
 
-        // TODO: update entire workflow instead of dag?
         if ( !isInitialUpdate ) {
-            for ( UUID n : GraphUtils.getTopologicalIterable( dag, rootId, false ) ) {
-                workflow.updatePreview( n ); // TODO: use updateValidPreview instead? How to handle inconsistency?
+            // updates previews beyond the limits of the dag
+            for ( UUID n : getReachableNonExecutedNodes( activities ) ) {  // previously only updated within dag: GraphUtils.getTopologicalIterable( dag, rootId, false )
+                log.info( "Updating preview of " + n + ". (" + workflow.getActivity( n ) + ")" );
+                workflow.updatePreview( n );
             }
         }
     }
@@ -461,6 +461,35 @@ public class WorkflowScheduler {
         if ( state == ActivityState.SKIPPED ) {
             activities.forEach( executionMonitor::addSkippedActivity );
         }
+    }
+
+
+    private Iterable<UUID> getReachableNonExecutedNodes( Set<UUID> roots ) {
+        AttributedDirectedGraph<UUID, ExecutionEdge> graph = workflow.toDag();
+        Set<UUID> reachable = new HashSet<>();
+        Queue<UUID> open = new LinkedList<>();
+
+        for ( UUID root : roots ) {
+            graph.getOutwardEdges( root ).stream()
+                    .filter( e -> waitsForExecution( e.getTarget() ) )
+                    .forEach( e -> open.add( (UUID) e.target ) );
+        }
+        while ( !open.isEmpty() ) {
+            UUID n = open.remove();
+            if ( !reachable.contains( n ) ) {
+                reachable.add( n );
+                graph.getOutwardEdges( n ).stream()
+                        .filter( e -> waitsForExecution( e.getTarget() ) )
+                        .forEach( e -> open.add( (UUID) e.target ) );
+            }
+        }
+        return TopologicalOrderIterator.of( GraphUtils.getInducedSubgraph( graph, reachable ) );
+    }
+
+
+    private boolean waitsForExecution( UUID activityId ) {
+        ActivityState state = workflow.getActivity( activityId ).getState();
+        return !state.isExecuted() && state != ActivityState.SKIPPED;
     }
 
 
@@ -562,10 +591,10 @@ public class WorkflowScheduler {
             if ( isAtomic ) {
                 for ( UUID n : activities ) {
                     ActivityWrapper wrapper = workflow.getActivity( n );
-                    if (hasFailed) {
+                    if ( hasFailed ) {
                         wrapper.setRolledBack( true );
                         ExecutionInfo info = wrapper.getExecutionInfo();
-                        if (info != null) {
+                        if ( info != null ) {
                             info.appendLog( wrapper.getId(), LogLevel.ERROR, "Activity was rolled back because the common transaction was aborted." );
                         }
                     }

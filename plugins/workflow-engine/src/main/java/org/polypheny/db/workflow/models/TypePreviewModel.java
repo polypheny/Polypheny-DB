@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.models;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -33,9 +34,17 @@ import org.polypheny.db.workflow.dag.activities.TypePreview.LpgType;
 public class TypePreviewModel {
 
     PortType portType; // ANY if not yet known
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     List<FieldDefinition> columns; // null if not yet known or not relational
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     Set<String> fields; // null if not yet known or not document
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     Set<String> nodeLabels; // null if not yet known or not lpg
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     Set<String> edgeLabels; // null if not yet known or not lpg
     boolean notConnected; // only relevant for inputs
 
