@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.enumerable.document;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -47,14 +48,20 @@ public class DocumentSortToSortRule extends AlgOptRule {
         AlgBuilder builder = call.builder();
         builder.push( sort.getInput() );
 
+        List<RexNode> fieldExps = sort.fieldExps;
         if ( !sort.fieldExps.isEmpty() ) {
             // we have to project the target keys out to use it in the sort
             builder.transform( ModelTrait.RELATIONAL, DocumentType.ofRelational(), false, null );
             NameRefReplacer visitor = new NameRefReplacer( sort.getCluster(), false );
-            List<RexNode> inputs = Stream.concat( Stream.of( RexIndexRef.of( 0, DocumentType.ofId().asRelational().getFields() ), RexIndexRef.of( 1, DocumentType.ofId().asRelational().getFields() ) ), sort.fieldExps.stream().map( f -> f.accept( visitor ) ) ).toList();
+            List<RexNode> inputs = Stream.concat(
+                    Stream.of(
+                            RexIndexRef.of( 0, DocumentType.ofId().asRelational().getFields() ),
+                            RexIndexRef.of( 1, DocumentType.ofId().asRelational().getFields() ) ),
+                    sort.fieldExps.stream().map( f -> f.accept( visitor ) ) ).toList();
             builder.push( LogicalRelProject.create( builder.build(), inputs, IntStream.range( 0, inputs.size() ).mapToObj( i -> "in" + i ).toList() ) );
+            fieldExps = List.of( RexIndexRef.of( 2, DocumentType.ofId() ) );
         }
-        builder.push( LogicalRelSort.create( builder.build(), sort.fieldExps, sort.collation, sort.offset, sort.fetch ) );
+        builder.push( LogicalRelSort.create( builder.build(), fieldExps, sort.collation, sort.offset, sort.fetch ) );
 
         if ( !sort.fieldExps.isEmpty() ) {
             // we have to restore the initial structure
