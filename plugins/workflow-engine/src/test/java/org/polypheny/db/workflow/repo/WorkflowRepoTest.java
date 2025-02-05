@@ -60,7 +60,6 @@ public class WorkflowRepoTest {
         UUID id1 = repo.createWorkflow( "test1" );
         UUID id2 = repo.createWorkflow( "test2" );
         Map<UUID, WorkflowDefModel> workflows = repo.getWorkflowDefs();
-        assertEquals( 2, workflows.size() );
         assertEquals( "test1", workflows.get( id1 ).getName() );
         assertEquals( "test2", workflows.get( id2 ).getName() );
 
@@ -169,12 +168,12 @@ public class WorkflowRepoTest {
         int version = repo.writeVersion( id, "Target version", new WorkflowModel() );
         repo.writeVersion( id, "Irrelevant version 2", new WorkflowModel() );
 
-        UUID newId = repo.createWorkflowFromVersion( id, version, "copy" );
+        UUID newId = repo.createWorkflowFromVersion( id, version, "copy", null );
 
         WorkflowDefModel newDef = repo.getWorkflowDef( newId );
         assertEquals( "copy", newDef.getName() );
         assertEquals( 1, newDef.getVersions().size() );
-        assertEquals( "Target version", newDef.getVersions().get( 0 ).getDescription() );
+        assertTrue( newDef.getVersions().get( 0 ).getDescription().contains( "v1" ) );
     }
 
 

@@ -41,6 +41,7 @@ import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.workflow.dag.activities.ActivityRegistry;
 import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.models.requests.CreateSessionRequest;
+import org.polypheny.db.workflow.models.requests.ImportWorkflowRequest;
 import org.polypheny.db.workflow.models.requests.RenameWorkflowRequest;
 import org.polypheny.db.workflow.models.requests.SaveSessionRequest;
 import org.polypheny.db.workflow.repo.WorkflowRepo;
@@ -98,8 +99,7 @@ public class WorkflowManager {
                 if ( repo.doesNameExist( fileName ) ) {
                     continue;
                 }
-                UUID wId = repo.createWorkflow( fileName, "Sample Workflows" );
-                repo.writeVersion( wId, "Created Sample Workflow", workflow );
+                repo.importWorkflow( fileName, "Sample Workflows", workflow );
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
             }
@@ -136,11 +136,14 @@ public class WorkflowManager {
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/{activityId}", this::getActivity, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/{activityId}/{outIndex}", this::getIntermediaryResult, HandlerType.GET );
         server.addSerializedRoute( PATH + "/workflows", this::getWorkflowDefs, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/workflows/{workflowId}/{version}", this::getWorkflow, HandlerType.GET );
         server.addSerializedRoute( PATH + "/registry", this::getActivityRegistry, HandlerType.GET );
 
         server.addSerializedRoute( PATH + "/sessions", this::createSession, HandlerType.POST );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/save", this::saveSession, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/workflows", this::importWorkflow, HandlerType.POST );
         server.addSerializedRoute( PATH + "/workflows/{workflowId}/{version}", this::openWorkflow, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/workflows/{workflowId}/{version}/copy", this::copyWorkflow, HandlerType.POST );
 
         server.addSerializedRoute( PATH + "/workflows/{workflowId}", this::renameWorkflow, HandlerType.PATCH );
 
@@ -196,13 +199,20 @@ public class WorkflowManager {
         UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
         UUID activityId = UUID.fromString( ctx.pathParam( "activityId" ) );
         int outIndex = Integer.parseInt( ctx.pathParam( "outIndex" ) );
-        throw new NotImplementedException();
+        throw new NotImplementedException(); // TODO: implement non-websocket based way to get intermediary result
         //process( ctx, () -> sessionManager.getSessionOrThrow( sessionId ) );
     }
 
 
     private void getWorkflowDefs( final Context ctx ) {
         process( ctx, repo::getWorkflowDefs );
+    }
+
+
+    private void getWorkflow( final Context ctx ) {
+        UUID workflowId = UUID.fromString( ctx.pathParam( "workflowId" ) );
+        int version = Integer.parseInt( ctx.pathParam( "version" ) );
+        process( ctx, () -> repo.readVersion( workflowId, version ) );
     }
 
 
@@ -218,11 +228,27 @@ public class WorkflowManager {
     }
 
 
+    private void importWorkflow( final Context ctx ) {
+        // upload a WorkflowModel to create a new workflow
+        ImportWorkflowRequest request = ctx.bodyAsClass( ImportWorkflowRequest.class );
+        process( ctx, () -> repo.importWorkflow( request.getName(), request.getGroup(), request.getWorkflow() ) );
+    }
+
+
     private void openWorkflow( final Context ctx ) {
         // -> opens existing workflow
         UUID workflowId = UUID.fromString( ctx.pathParam( "workflowId" ) );
         int version = Integer.parseInt( ctx.pathParam( "version" ) );
         process( ctx, () -> sessionManager.createUserSession( workflowId, version ) );
+    }
+
+
+    private void copyWorkflow( final Context ctx ) {
+        // -> opens existing workflow
+        UUID workflowId = UUID.fromString( ctx.pathParam( "workflowId" ) );
+        int version = Integer.parseInt( ctx.pathParam( "version" ) );
+        RenameWorkflowRequest request = ctx.bodyAsClass( RenameWorkflowRequest.class );
+        process( ctx, () -> repo.createWorkflowFromVersion( workflowId, version, request.getName(), request.getGroup() ) );
     }
 
 

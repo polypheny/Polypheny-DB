@@ -42,7 +42,9 @@ import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
+import org.polypheny.db.workflow.dag.annotations.DefaultGroup;
 import org.polypheny.db.workflow.dag.annotations.FieldRenameSetting;
+import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
 import org.polypheny.db.workflow.dag.settings.FieldRenameValue;
 import org.polypheny.db.workflow.dag.settings.FieldRenameValue.RenameMode;
@@ -58,9 +60,20 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
         outPorts = { @OutPort(type = PortType.DOC, description = "The input collection with renamed (sub)fields.") },
         shortDescription = "Rename the (sub)fields of a collection by defining rules."
 )
+@DefaultGroup(subgroups = { @Subgroup(key = "rules", displayName = "Search and Replace") })
+
 @StringSetting(key = "pointer", displayName = "Relative Path", pos = 0, autoCompleteType = AutoCompleteType.FIELD_NAMES,
         shortDescription = "Optionally specify a (sub)field such as 'owner.address'. All rules will act relative to this field.")
-@FieldRenameSetting(key = "rename", displayName = "Renaming Rules", allowRegex = true, allowIndex = false, pos = 1,
+
+@BoolSetting(key = "all", displayName = "Match Subfields", subGroup = "rules", pos = 1,
+        subPointer = "rename/mode", subValues = { "\"REGEX\"" }, defaultValue = false,
+        shortDescription = "If enabled, the search extends to all subfields.",
+        longDescription = """
+                If enabled, the search extends to all subfields.
+                
+                To instead target specific subfields, use the `Relative Path` setting or change the mode to `Constant`.
+                """)
+@FieldRenameSetting(key = "rename", displayName = "Renaming Rules", allowRegex = true, allowIndex = false, subGroup = "rules", pos = 2,
         shortDescription = "The source fields can be selected by their actual (constant) name or with Regex. "
                 + "The replacement can reference capture groups such as '$0' for the original name.",
         longDescription = """
@@ -71,13 +84,6 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
                 In any mode, the replacement can reference a capture group (`$0`, `$1`...). For instance, the replacement `abc$0` adds the prefix `abc` to a field name.
                 
                 Regular expressions are given in the [Java Regex dialect](https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html).
-                """)
-@BoolSetting(key = "all", displayName = "Match Subfields", pos = 2, subPointer = "rename/mode", subValues = { "\"REGEX\"" }, defaultValue = false,
-        shortDescription = "If enabled, the search extends to all subfields.",
-        longDescription = """
-                If enabled, the search extends to all subfields.
-                
-                To instead target specific subfields, use the `Relative Path` setting or change the mode to `Constant`.
                 """)
 
 @SuppressWarnings("unused")

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.Getter;
+import org.polypheny.db.workflow.dag.WorkflowImpl;
 import org.polypheny.db.workflow.models.WorkflowDefModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 
@@ -177,14 +178,27 @@ public interface WorkflowRepo {
      * @param id the ID of the existing workflow to copy from.
      * @param version the version number of the existing workflow to copy.
      * @param newName the name for the newly created workflow.
+     * @param newGroup the group for the newly created workflow.
      * @return the ID of the newly created workflow.
      * @throws WorkflowRepoException if the workflow cannot be created.
      */
-    default UUID createWorkflowFromVersion( UUID id, int version, String newName ) throws WorkflowRepoException {
+    default UUID createWorkflowFromVersion( UUID id, int version, String newName, String newGroup ) throws WorkflowRepoException {
         WorkflowDefModel old = getWorkflowDefs().get( id );
-        UUID newId = createWorkflow( newName );
-        writeVersion( newId, old.getVersions().get( version ).getDescription(), readVersion( id, version ) );
+        UUID newId = createWorkflow( newName, newGroup );
+        writeVersion( newId, "Copy of '" + old.getName() + " v" + version + "'", readVersion( id, version ) );
         return newId;
+    }
+
+    default UUID importWorkflow( String name, String group, WorkflowModel workflow ) throws WorkflowRepoException {
+        WorkflowModel validated;
+        try {
+            validated = WorkflowImpl.fromModel( workflow ).toModel( false );
+        } catch ( Exception e ) {
+            throw new WorkflowRepoException( "Workflow has an invalid format: " + e.getMessage(), HttpCode.BAD_REQUEST );
+        }
+        UUID workflowId = createWorkflow( name, group );
+        writeVersion( workflowId, "Imported", validated );
+        return workflowId;
     }
 
 

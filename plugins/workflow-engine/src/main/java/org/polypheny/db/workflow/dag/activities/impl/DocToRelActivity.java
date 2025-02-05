@@ -68,7 +68,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 )
 @DefaultGroup(subgroups = { @Subgroup(key = "manual", displayName = "Manual Mapping") })
 
-@BoolSetting(key = "trivial", displayName = "Automatic Mapping", defaultValue = false, pos = 0,
+@BoolSetting(key = "trivial", displayName = "Fixed Mapping", defaultValue = false, pos = 0,
         shortDescription = "Map each document to a column containing its id and a column containing its JSON representation.")
 @CastSetting(key = "columns", displayName = "Fields to Columns", defaultType = PolyType.BIGINT, pos = 1, subGroup = "manual",
         allowTarget = true, duplicateSource = true, allowJson = true, subPointer = "trivial", subValues = { "false" },

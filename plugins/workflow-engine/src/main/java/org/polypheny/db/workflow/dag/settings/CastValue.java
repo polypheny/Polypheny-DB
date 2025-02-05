@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Value;
@@ -35,6 +36,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
@@ -127,7 +130,12 @@ public class CastValue implements SettingValue {
 
         @JsonIgnore
         @NonFinal
-        AlgDataType algDataType;
+        AlgDataType algDataType; // set with buildType
+
+
+        @JsonIgnore
+        @NonFinal
+        Function<PolyValue, PolyValue> converter; // set with buildType
 
 
         @JsonIgnore
@@ -147,6 +155,9 @@ public class CastValue implements SettingValue {
         }
 
 
+        /**
+         * Should be called before any other methods are called
+         */
         public void buildType() {
             try {
                 if ( asJson ) {
@@ -167,6 +178,7 @@ public class CastValue implements SettingValue {
                         cardinality,
                         dimension,
                         nullable );
+                converter = PolyValue.getConverter( type );
             } catch ( Exception e ) {
                 throw new IllegalArgumentException( e.getMessage() );
             }
@@ -175,7 +187,7 @@ public class CastValue implements SettingValue {
 
         public PolyValue castValue( PolyValue value ) {
             if ( value == null ) {
-                return null;
+                return PolyNull.NULL;
             }
             if ( asJson ) {
                 return value.toPolyJson();
@@ -183,11 +195,16 @@ public class CastValue implements SettingValue {
 
             // TODO: correctly cast value.
             if ( !isCollection() ) {
-                if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
+                if ( type.getFamily() == PolyTypeFamily.CHARACTER ) { // -> string casts succeed more often
                     return ActivityUtils.valueToString( value );
                 }
+            } else if ( collectionsType.equals( "ARRAY" ) ) {
+                if ( value.isList() ) {
+                    return PolyList.of( value.asList().stream().map( converter ).toList() );
+                }
+                return PolyList.of( converter.apply( value ) );
             }
-            return value;
+            return converter.apply( value );
         }
 
 

@@ -64,13 +64,13 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
                 + "The placeholders are replaced as `\"namespace\".\"name\"`. An MQL query with placeholder could look like `" + CheckpointQuery.ENTITY_L + "0" + CheckpointQuery.ENTITY_R + ".find({})`.")
 @SuppressWarnings("unused")
 public class QueryActivity implements Activity {
+    // Implementing Fusable is theoretically possible, but building the AlgNode tree from a query requires materialized checkpoints.
 
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
         Optional<QueryValue> query = settings.get( "query", QueryValue.class );
         if ( query.isPresent() ) {
-            // TODO: is there a way to determine tuple type without the input entity existing yet?
             QueryLanguage queryLanguage = query.get().getLanguage();
             TypePreview type = switch ( queryLanguage.dataModel() ) {
                 case RELATIONAL, GRAPH -> UnknownType.ofRel();

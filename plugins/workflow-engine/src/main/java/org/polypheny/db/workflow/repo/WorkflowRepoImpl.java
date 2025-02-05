@@ -38,6 +38,9 @@ public class WorkflowRepoImpl implements WorkflowRepo {
 
     private static final String DEF_FILE = "meta.json";
     public static final String WORKFLOWS_PATH = "data/workflows";
+    public static final int MAX_NAME_LENGTH = 128;
+    public static final int MAX_DESCRIPTION_LENGTH = 1024;
+
     private final ObjectMapper mapper = new ObjectMapper();
     private final PolyphenyHomeDirManager phm = PolyphenyHomeDirManager.getInstance();
     private final File rootPath = phm.registerNewFolder( WORKFLOWS_PATH );
@@ -100,6 +103,12 @@ public class WorkflowRepoImpl implements WorkflowRepo {
 
     @Override
     public UUID createWorkflow( String name, @Nullable String group ) throws WorkflowRepoException {
+        if ( name.length() > MAX_NAME_LENGTH ) {
+            throw new WorkflowRepoException( "Name must not exceed " + MAX_NAME_LENGTH + " characters", HttpCode.BAD_REQUEST );
+        }
+        if ( group != null && group.length() > MAX_NAME_LENGTH ) {
+            throw new WorkflowRepoException( "Group must not exceed " + MAX_NAME_LENGTH + " characters", HttpCode.BAD_REQUEST );
+        }
         if ( doesNameExist( name ) ) {
             throw new WorkflowRepoException( "Name already exists: " + name, HttpCode.CONFLICT );
         }
@@ -139,6 +148,9 @@ public class WorkflowRepoImpl implements WorkflowRepo {
 
     @Override
     public int writeVersion( UUID id, String description, WorkflowModel wf ) throws WorkflowRepoException {
+        if ( description.length() > MAX_DESCRIPTION_LENGTH ) {
+            throw new WorkflowRepoException( "Description must not exceed " + MAX_DESCRIPTION_LENGTH + " characters", HttpCode.BAD_REQUEST );
+        }
         WorkflowDefModel def = getWorkflowDef( id );
         int version = def.addVersion( description );
 
@@ -192,6 +204,9 @@ public class WorkflowRepoImpl implements WorkflowRepo {
         if ( def.getName().equals( name ) ) {
             return; // same name as before
         }
+        if ( name.length() > MAX_NAME_LENGTH ) {
+            throw new WorkflowRepoException( "Name must not exceed " + MAX_NAME_LENGTH + " characters", HttpCode.BAD_REQUEST );
+        }
         if ( doesNameExist( name ) ) {
             throw new WorkflowRepoException( "A workflow with name " + name + " already exists", HttpCode.CONFLICT );
         }
@@ -205,6 +220,9 @@ public class WorkflowRepoImpl implements WorkflowRepo {
         WorkflowDefModel def = getWorkflowDef( id );
         if ( def.getGroup().equals( group ) ) {
             return;
+        }
+        if ( group.length() > MAX_NAME_LENGTH ) {
+            throw new WorkflowRepoException( "Group must not exceed " + MAX_NAME_LENGTH + " characters", HttpCode.BAD_REQUEST );
         }
         def.setGroup( group );
         serializeToFile( new File( getWorkflowDir( id ), DEF_FILE ), def );  // updated definition

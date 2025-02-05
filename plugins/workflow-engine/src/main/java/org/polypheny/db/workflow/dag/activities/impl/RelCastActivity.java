@@ -56,10 +56,10 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 @Slf4j
-@ActivityDefinition(type = "relCast", displayName = "Cast Column Types", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
+@ActivityDefinition(type = "relCast", displayName = "Change Column Types", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
         inPorts = { @InPort(type = PortType.REL) },
-        outPorts = { @OutPort(type = PortType.REL, description = "A table with the same columns as the input table, but with possibly altered column types.") },
-        shortDescription = "Cast specific columns of the input table to a different type. In case the cast is not possible, the activity fails."
+        outPorts = { @OutPort(type = PortType.REL, description = "A table with the same columns as the input table, but with possibly changed column types.") },
+        shortDescription = "Cast the values of specific columns of the input table to a different type. In case the cast is not possible, the activity fails."
 )
 
 @CastSetting(key = "cast", displayName = "Casts", defaultType = PolyType.BIGINT,
