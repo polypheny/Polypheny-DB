@@ -76,7 +76,7 @@ public interface Pipeable extends Activity {
 
         List<Long> inCounts = inputs.stream().map( reader -> reader == null ? null : reader.getTupleCount() ).toList();
         long tupleCount = estimateTupleCount( inputTypes, settings, inCounts, pipeCtx::getTransaction );
-        CheckpointWriter writer = ctx.createWriter( 0, type, true );
+        CheckpointWriter writer = ctx.createWriter( 0, type );
 
         try ( OutputPipe outPipe = new CheckpointOutputPipe( type, writer, ctx, tupleCount ) ) {
             pipe( inPipes, outPipe, settings, pipeCtx );

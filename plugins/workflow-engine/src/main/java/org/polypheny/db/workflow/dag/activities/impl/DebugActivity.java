@@ -73,7 +73,7 @@ public class DebugActivity implements Activity, Pipeable, Fusable {
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         RelReader input = (RelReader) inputs.get( 0 );
-        RelWriter output = ctx.createRelWriter( 0, input.getTupleType(), false );
+        RelWriter output = ctx.createRelWriter( 0, input.getTupleType() );
 
         int delay = settings.get( "delay", IntValue.class ).getValue();
         if ( delay > 1000 ) {

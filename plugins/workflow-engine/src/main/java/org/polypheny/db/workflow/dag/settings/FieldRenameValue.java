@@ -36,7 +36,7 @@ import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 public class FieldRenameValue implements SettingValue {
 
     List<RenameRule> rules;
-    RenameMode mode;
+    SelectMode mode;
     boolean ignoreCase; // treat source case insensitive, not relevant for index mode
 
 
@@ -47,7 +47,7 @@ public class FieldRenameValue implements SettingValue {
             String r = replacements.get( i );
             rules.add( new RenameRule( i, r ) );
         }
-        mode = RenameMode.INDEX;
+        mode = SelectMode.INDEX;
     }
 
 
@@ -57,12 +57,12 @@ public class FieldRenameValue implements SettingValue {
         for ( Entry<String, String> e : replacements.entrySet() ) {
             rules.add( new RenameRule( e.getKey(), e.getValue() ) );
         }
-        mode = RenameMode.CONSTANT;
+        mode = SelectMode.EXACT;
     }
 
 
     @JsonCreator
-    public FieldRenameValue( List<RenameRule> rules, RenameMode mode ) {
+    public FieldRenameValue( List<RenameRule> rules, SelectMode mode ) {
         this.rules = rules;
         this.mode = mode;
     }*/
@@ -112,7 +112,7 @@ public class FieldRenameValue implements SettingValue {
 
         for ( RenameRule rule : rules ) {
             switch ( mode ) {
-                case CONSTANT -> {
+                case EXACT -> {
                     for ( String inName : Set.copyOf( remaining ) ) {
                         String renamed = rule.applyConstantRule( inName, ignoreCase );
                         if ( renamed != null ) {
@@ -146,7 +146,7 @@ public class FieldRenameValue implements SettingValue {
 
 
     public Set<String> getRenamedSet( Set<String> inNames ) {
-        if ( mode == RenameMode.INDEX ) {
+        if ( mode == SelectMode.INDEX ) {
             throw new GenericRuntimeException( "Cannot select names by index when given a set" );
         }
         Map<String, String> map = getMapping( new ArrayList<>( inNames ) );
@@ -165,7 +165,7 @@ public class FieldRenameValue implements SettingValue {
      */
     public String rename( String name ) {
         return switch ( mode ) {
-            case CONSTANT -> {
+            case EXACT -> {
                 for ( RenameRule rule : rules ) {
                     String renamed = rule.applyConstantRule( name, ignoreCase );
                     if ( renamed != null ) {
@@ -274,13 +274,6 @@ public class FieldRenameValue implements SettingValue {
             return ALL_MATCH.matcher( inName ).replaceAll( replacement );
         }
 
-    }
-
-
-    public enum RenameMode {
-        CONSTANT,
-        REGEX,
-        INDEX // column index
     }
 
 

@@ -98,7 +98,7 @@ public class IdentityActivity implements Activity, Fusable, Pipeable {
         CheckpointReader reader = inputs.get( 0 );
         switch ( reader.getDataModel() ) {
             case RELATIONAL -> {
-                ctx.createRelWriter( 0, reader.getTupleType(), false )
+                ctx.createRelWriter( 0, reader.getTupleType() )
                         .write( reader.getIterator() );
             }
             case DOCUMENT -> {

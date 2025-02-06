@@ -62,10 +62,10 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 @BoolSetting(key = "edges", displayName = "Rename Edge Properties", defaultValue = true, pos = 2)
 
 @FieldRenameSetting(key = "rename", displayName = "Renaming Rules", allowRegex = true, allowIndex = false, pos = 3,
-        shortDescription = "The source fields can be selected by their actual (constant) name or with Regex. "
+        shortDescription = "The source fields can be selected by their actual (exact) name or with Regex. "
                 + "The replacement can reference capture groups such as '$0' for the original name.",
         longDescription = """
-                The source fields can be selected by their actual (constant) name or by using a regular expression.
+                The source fields can be selected by their actual (exact) name or by using a regular expression.
                 Regex mode can be used to specify capturing groups using parentheses.
                 
                 In any mode, the replacement can reference a capture group (`$0`, `$1`...). For instance, the replacement `abc$0` adds the prefix `abc` to a field name.

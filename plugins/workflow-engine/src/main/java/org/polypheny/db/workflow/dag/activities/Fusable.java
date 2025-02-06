@@ -96,7 +96,7 @@ public interface Fusable extends Activity {
         long countDelta = Math.max( estimatedTupleCount / 100, 1 );
         long count = 0;
         Iterator<PolyValue[]> iterator = executedContext.getIterator().getIterator();
-        CheckpointWriter writer = ctx.createWriter( 0, root.validatedRowType, true );
+        CheckpointWriter writer = ctx.createWriter( 0, root.validatedRowType );
         try {
             while ( iterator.hasNext() ) {
                 writer.write( Arrays.asList( iterator.next() ) );

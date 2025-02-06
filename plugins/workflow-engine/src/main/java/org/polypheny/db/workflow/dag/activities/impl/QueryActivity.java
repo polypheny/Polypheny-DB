@@ -101,7 +101,7 @@ public class QueryActivity implements Activity {
             if ( !ActivityUtils.hasRequiredFields( pair.left ) ) {
                 AlgDataType outType = ActivityUtils.addPkCol( pair.left );
                 ctx.logInfo( "Adding primary key column to type." );
-                RelWriter writer = ctx.createRelWriter( 0, outType, true );
+                RelWriter writer = ctx.createRelWriter( 0, outType );
                 for ( List<PolyValue> row : pair.right ) {
                     writer.wWithoutPk( row );
                     ctx.checkInterrupted();
@@ -109,7 +109,7 @@ public class QueryActivity implements Activity {
                 return;
             }
         }
-        CheckpointWriter writer = ctx.createWriter( 0, pair.left, true );
+        CheckpointWriter writer = ctx.createWriter( 0, pair.left );
         writer.write( pair.right );
     }
 

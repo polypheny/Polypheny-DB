@@ -69,7 +69,7 @@ public class RelMergeActivity implements Activity {
         List<AlgDataType> types = inputs.stream().filter( Objects::nonNull ).map( CheckpointReader::getTupleType ).toList();
         AlgDataType type = ActivityUtils.mergeTypesOrThrow( types );
 
-        RelWriter writer = ctx.createRelWriter( 0, type, true );
+        RelWriter writer = ctx.createRelWriter( 0, type );
         for ( CheckpointReader reader : inputs ) {
             if ( reader == null ) {
                 continue;

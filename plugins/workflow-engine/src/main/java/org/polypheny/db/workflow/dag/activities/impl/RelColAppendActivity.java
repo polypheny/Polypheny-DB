@@ -19,9 +19,11 @@ package org.polypheny.db.workflow.dag.activities.impl;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyNull;
@@ -143,6 +145,18 @@ public class RelColAppendActivity implements Activity, Pipeable {
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         Pipeable.super.execute( inputs, settings, ctx );
+    }
+
+
+    @Override
+    public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
+        long first = inCounts.get( 0 );
+        long second = inCounts.get( 1 );
+
+        return switch ( settings.getString( "mode" ) ) {
+            case "null", "default" -> Math.max( first, second );
+            default -> Math.min( first, second );
+        };
     }
 
 

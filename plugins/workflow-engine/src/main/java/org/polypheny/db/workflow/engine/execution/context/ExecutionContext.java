@@ -38,10 +38,9 @@ public interface ExecutionContext {
      *
      * @param idx the output index.
      * @param tupleType the schema of the output.
-     * @param resetPk whether to reset the primary key (=> first column) (allowed only for single integer-type keys).
      * @return a {@link RelWriter} for writing data to the output.
      */
-    RelWriter createRelWriter( int idx, AlgDataType tupleType, boolean resetPk );
+    RelWriter createRelWriter( int idx, AlgDataType tupleType );
 
     /**
      * Creates a {@link DocWriter} for the specified output index.
@@ -69,10 +68,9 @@ public interface ExecutionContext {
      *
      * @param idx the output index.
      * @param tupleType the schema of the output. Only relevant for relational outputs.
-     * @param resetPk whether to reset the primary key. Only relevant for relational outputs.
      * @return a CheckpointWriter for writing data to the output.
      */
-    CheckpointWriter createWriter( int idx, AlgDataType tupleType, boolean resetPk );
+    CheckpointWriter createWriter( int idx, AlgDataType tupleType );
 
     /**
      * Returns a transaction to be used for extracting or loading data from data stores or data sources or executing fused activities.

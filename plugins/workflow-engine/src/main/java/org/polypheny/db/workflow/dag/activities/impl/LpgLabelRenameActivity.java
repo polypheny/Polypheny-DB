@@ -57,10 +57,10 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 @BoolSetting(key = "nodes", displayName = "Rename Node Labels", defaultValue = true, pos = 0)
 @BoolSetting(key = "edges", displayName = "Rename Edge Labels", defaultValue = true, pos = 1)
 @FieldRenameSetting(key = "rename", displayName = "Renaming Rules", allowRegex = true, allowIndex = false, pos = 2,
-        shortDescription = "The source labels can be selected by their actual (constant) name or with Regex. " // TODO update description
+        shortDescription = "The source labels can be selected by their actual (exact) name or with Regex. " // TODO update description
                 + "The replacement can reference capture groups such as '$0' for the original label name.",
         longDescription = """
-                The source labels can be selected by their actual (constant) name or by using a regular expression.
+                The source labels can be selected by their actual (exact) name or by using a regular expression.
                 Regex mode can be used to specify capturing groups using parentheses.
                 
                 In any mode, the replacement can reference a capture group (`$0`, `$1`...). For instance, the replacement `abc$0` adds the prefix `abc` to a label.

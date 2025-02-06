@@ -31,6 +31,7 @@ public class EnumSettingDef extends SettingDef {
 
     String[] options;
     String[] displayOptions;
+    String[] displayDescriptions;
     String label;
 
     @JsonIgnore
@@ -50,8 +51,10 @@ public class EnumSettingDef extends SettingDef {
                 displayOptions[i] = d;
             }
         }
+        displayDescriptions = a.displayDescriptions().length == 0 ? null : a.displayDescriptions();
         label = a.label();
 
+        assert displayDescriptions == null || displayDescriptions.length == options.length : "Invalid number of display descriptions";
         assert optionsSet.contains( a.defaultValue() ) : "The default value '" + a.defaultValue() + "' is not a valid option";
     }
 

@@ -57,10 +57,10 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         shortDescription = "Rename the columns of a table by defining rules."
 )
 @FieldRenameSetting(key = "rename", displayName = "Renaming Rules", allowRegex = true, allowIndex = true,
-        shortDescription = "The source columns can be selected by their actual (constant) name, their index or with Regex. "
+        shortDescription = "The source columns can be selected by their actual (exact) name, their index or with Regex. "
                 + "The replacement can always reference capture groups such as '$0' for the original name.",
         longDescription = """
-                The source columns can be selected by their actual (constant) name, their index or by using a regular expression.
+                The source columns can be selected by their actual (exact) name, their index or by using a regular expression.
                 In the latter case it is possible to specify capturing groups using parentheses.
                 
                 In any mode, the replacement can reference a capture group (`$0`, `$1`...). For instance, the replacement `abc$0` adds the prefix `abc` to each matching column.

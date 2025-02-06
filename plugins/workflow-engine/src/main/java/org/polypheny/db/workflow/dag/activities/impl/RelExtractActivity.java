@@ -81,7 +81,7 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         LogicalTable table = settings.get( TABLE_KEY, EntityValue.class ).getTable();
         AlgDataType type = getOutputType( table );
-        RelWriter writer = ctx.createRelWriter( 0, type, true );
+        RelWriter writer = ctx.createRelWriter( 0, type );
         try ( ResultIterator result = getResultIterator( ctx.getTransaction(), table ) ) { // transaction will get committed or rolled back externally
             writer.write( CheckpointReader.arrayToListIterator( result.getIterator(), true ), ctx );
 
@@ -124,7 +124,7 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
         try ( ResultIterator result = getResultIterator( ctx.getTransaction(), table ) ) { // transaction will get committed or rolled back externally
             Iterator<List<PolyValue>> it = CheckpointReader.arrayToListIterator( result.getIterator(), true );
             while ( it.hasNext() ) {
-                if (!output.put( it.next() )) {
+                if ( !output.put( it.next() ) ) {
                     return;
                 }
             }

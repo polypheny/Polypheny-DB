@@ -66,7 +66,7 @@ public class RelEmptyTableActivity implements Activity {
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        ctx.createRelWriter( 0, getType( settings.get( "columns", CastValue.class ) ), true );
+        ctx.createRelWriter( 0, getType( settings.get( "columns", CastValue.class ) ) );
     }
 
 

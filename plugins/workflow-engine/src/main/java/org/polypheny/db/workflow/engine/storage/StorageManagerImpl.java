@@ -304,9 +304,9 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    public CheckpointWriter createCheckpoint( UUID activityId, int outputIdx, AlgDataType type, boolean resetPk, @Nullable String storeName, DataModel model ) {
+    public CheckpointWriter createCheckpoint( UUID activityId, int outputIdx, AlgDataType type, @Nullable String storeName, DataModel model ) {
         return switch ( model ) {
-            case RELATIONAL -> createRelCheckpoint( activityId, outputIdx, type, resetPk, storeName );
+            case RELATIONAL -> createRelCheckpoint( activityId, outputIdx, type, true, storeName );
             case DOCUMENT -> createDocCheckpoint( activityId, outputIdx, storeName );
             case GRAPH -> createLpgCheckpoint( activityId, outputIdx, storeName );
         };

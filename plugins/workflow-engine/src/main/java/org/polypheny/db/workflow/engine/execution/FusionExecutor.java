@@ -106,7 +106,7 @@ public class FusionExecutor extends Executor {
         long countDelta = Math.max( estimatedTupleCount / 100, 1 );
         long count = 0;
         Iterator<PolyValue[]> iterator = executedContext.getIterator().getIterator();
-        try ( CheckpointWriter writer = sm.createCheckpoint( rootId, 0, root.validatedRowType, true, rootWrapper.getConfig().getPreferredStore( 0 ), model ) ) {
+        try ( CheckpointWriter writer = sm.createCheckpoint( rootId, 0, root.validatedRowType, rootWrapper.getConfig().getPreferredStore( 0 ), model ) ) {
             while ( iterator.hasNext() ) {
                 writer.write( Arrays.asList( iterator.next() ) );
                 count++;

@@ -69,6 +69,8 @@ public @interface EnumSetting {
 
     String[] displayOptions() default {};
 
+    String[] displayDescriptions() default {};
+
     String defaultValue();
 
     String label() default "";

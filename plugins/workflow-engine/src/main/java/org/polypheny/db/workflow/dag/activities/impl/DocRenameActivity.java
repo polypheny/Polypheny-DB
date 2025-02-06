@@ -47,7 +47,7 @@ import org.polypheny.db.workflow.dag.annotations.FieldRenameSetting;
 import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
 import org.polypheny.db.workflow.dag.settings.FieldRenameValue;
-import org.polypheny.db.workflow.dag.settings.FieldRenameValue.RenameMode;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue.SelectMode;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.dag.settings.StringSettingDef.AutoCompleteType;
@@ -71,14 +71,14 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
         longDescription = """
                 If enabled, the search extends to all subfields.
                 
-                To instead target specific subfields, use the `Relative Path` setting or change the mode to `Constant`.
+                To instead target specific subfields, use the `Relative Path` setting or change the mode to `Exact`.
                 """)
 @FieldRenameSetting(key = "rename", displayName = "Renaming Rules", allowRegex = true, allowIndex = false, subGroup = "rules", pos = 2,
-        shortDescription = "The source fields can be selected by their actual (constant) name or with Regex. "
+        shortDescription = "The source fields can be selected by their actual (exact) name or with Regex. "
                 + "The replacement can reference capture groups such as '$0' for the original name.",
         longDescription = """
-                The source fields can be selected by their actual (constant) name or by using a regular expression.
-                In constant mode, subfields can be specified using dots to separate fields in the search string.
+                The source fields can be selected by their actual (exact) name or by using a regular expression.
+                In `Exact` mode, subfields can be specified using dots to separate fields in the search string.
                 Regex mode can be used to specify capturing groups using parentheses.
                 
                 In any mode, the replacement can reference a capture group (`$0`, `$1`...). For instance, the replacement `abc$0` adds the prefix `abc` to a field name.
@@ -121,7 +121,7 @@ public class DocRenameActivity implements Activity, Pipeable {
         List<String> pointer = hasPointer ? Arrays.asList( settings.getString( "pointer" ).split( "\\." ) ) : null;
         renamer = settings.get( "rename", FieldRenameValue.class );
 
-        if ( renamer.getMode() == RenameMode.REGEX ) {
+        if ( renamer.getMode() == SelectMode.REGEX ) {
             boolean all = settings.getBool( "all" );
             for ( List<PolyValue> row : inputs.get( 0 ) ) {
                 PolyDocument doc = row.get( 0 ).asDocument();
@@ -142,7 +142,7 @@ public class DocRenameActivity implements Activity, Pipeable {
             }
 
         } else {
-            // constant mode
+            // exact mode
             for ( List<PolyValue> row : inputs.get( 0 ) ) {
                 PolyDocument doc = row.get( 0 ).asDocument();
                 PolyValue renamedDoc;
@@ -204,7 +204,7 @@ public class DocRenameActivity implements Activity, Pipeable {
                 Map<PolyString, PolyValue> map = new HashMap<>();
                 for ( Entry<PolyString, PolyValue> entry : doc.entrySet() ) {
                     String key = entry.getKey().value;
-                    String path = (parentPath.isEmpty() ? "" : (parentPath + ".")) + entry.getKey().value;
+                    String path = (parentPath.isEmpty() ? "" : (parentPath + ".")) + key;
                     PolyValue renamedValue = renameRecursive( path, entry.getValue() );
 
                     String renamed = getRenamed( path, key );

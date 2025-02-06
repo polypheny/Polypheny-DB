@@ -32,12 +32,14 @@ import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 public interface Activity {
 
     AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
     PolyString docId = PolyString.of( DocumentType.DOCUMENT_ID );
+    String PK_COL = StorageManager.PK_COL;
 
     /**
      * This method computes the output tuple-types by considering (a preview of) input types and settings.

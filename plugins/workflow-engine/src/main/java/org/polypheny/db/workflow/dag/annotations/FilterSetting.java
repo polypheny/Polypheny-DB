@@ -21,13 +21,14 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.polypheny.db.workflow.dag.settings.FilterValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue.SelectMode;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Repeatable(FieldRenameSetting.List.class)
-public @interface FieldRenameSetting {
+@Repeatable(FilterSetting.List.class)
+public @interface FilterSetting {
 
     /**
      * A unique key that identifies this setting.
@@ -66,11 +67,10 @@ public @interface FieldRenameSetting {
     String[] subValues() default {};
 
     // Setting-specifics
-    SelectMode defaultMode() default SelectMode.EXACT;
 
-    boolean allowRegex() default false;
+    SelectMode[] modes();
 
-    boolean allowIndex() default false;
+    FilterValue.Operator[] excludedOperators() default {};
 
     int targetInput() default 0;
 
@@ -79,7 +79,7 @@ public @interface FieldRenameSetting {
     @Retention(RetentionPolicy.RUNTIME)
     @interface List {
 
-        FieldRenameSetting[] value();
+        FilterSetting[] value();
 
     }
 

@@ -137,6 +137,10 @@ public class CastValue implements SettingValue {
         @NonFinal
         Function<PolyValue, PolyValue> converter; // set with buildType
 
+        @JsonIgnore
+        @NonFinal
+        PolyValue nullValue; // set with buildType
+
 
         @JsonIgnore
         public String getOutName() {
@@ -178,7 +182,9 @@ public class CastValue implements SettingValue {
                         cardinality,
                         dimension,
                         nullable );
+
                 converter = PolyValue.getConverter( type );
+                nullValue = PolyValue.getNull( PolyValue.classFrom( type ) );
             } catch ( Exception e ) {
                 throw new IllegalArgumentException( e.getMessage() );
             }
@@ -193,7 +199,6 @@ public class CastValue implements SettingValue {
                 return value.toPolyJson();
             }
 
-            // TODO: correctly cast value.
             if ( !isCollection() ) {
                 if ( type.getFamily() == PolyTypeFamily.CHARACTER ) { // -> string casts succeed more often
                     return ActivityUtils.valueToString( value );
@@ -205,12 +210,6 @@ public class CastValue implements SettingValue {
                 return PolyList.of( converter.apply( value ) );
             }
             return converter.apply( value );
-        }
-
-
-        @JsonIgnore
-        public PolyValue getNullValue() {
-            return PolyValue.getNull( PolyValue.classFrom( type ) );
         }
 
     }

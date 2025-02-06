@@ -23,13 +23,13 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.annotations.FieldRenameSetting;
-import org.polypheny.db.workflow.dag.settings.FieldRenameValue.RenameMode;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue.SelectMode;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class FieldRenameSettingDef extends SettingDef {
 
-    RenameMode defaultMode;
+    SelectMode defaultMode;
     boolean allowRegex;
     boolean allowIndex;
     int targetInput;
@@ -54,7 +54,7 @@ public class FieldRenameSettingDef extends SettingDef {
     @Override
     public void validateValue( SettingValue value ) throws InvalidSettingException {
         if ( value instanceof FieldRenameValue rename ) {
-            if ( rename.getMode() == RenameMode.REGEX ) {
+            if ( rename.getMode() == SelectMode.REGEX ) {
                 if ( !allowRegex ) {
                     throwInvalid( "Regex mode is not allowed" );
                 }
@@ -63,7 +63,7 @@ public class FieldRenameSettingDef extends SettingDef {
                 } catch ( PatternSyntaxException e ) {
                     throwInvalid( "Invalid regex: " + e.getMessage() );
                 }
-            } else if ( rename.getMode() == RenameMode.INDEX ) {
+            } else if ( rename.getMode() == SelectMode.INDEX ) {
                 if ( !allowIndex ) {
                     throwInvalid( "Index mode is not allowed" );
                 }
@@ -86,7 +86,7 @@ public class FieldRenameSettingDef extends SettingDef {
     }
 
 
-    private static SettingValue getDefaultValue( RenameMode defaultMode ) {
+    private static SettingValue getDefaultValue( SelectMode defaultMode ) {
         return new FieldRenameValue( List.of(), defaultMode, false );
     }
 

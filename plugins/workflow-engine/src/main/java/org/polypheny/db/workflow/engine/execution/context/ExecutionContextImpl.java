@@ -80,11 +80,11 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
 
 
     @Override
-    public RelWriter createRelWriter( int idx, AlgDataType tupleType, boolean resetPk ) {
+    public RelWriter createRelWriter( int idx, AlgDataType tupleType ) {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
         if ( type.couldBeCompatibleWith( PortType.REL ) ) {
-            RelWriter writer = sm.createRelCheckpoint( activityWrapper.getId(), idx, tupleType, resetPk, getStore( idx ) );
+            RelWriter writer = sm.createRelCheckpoint( activityWrapper.getId(), idx, tupleType, true, getStore( idx ) );
             writers.add( writer );
             return writer;
         }
@@ -119,10 +119,10 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
 
 
     @Override
-    public CheckpointWriter createWriter( int idx, AlgDataType tupleType, boolean resetPk ) {
+    public CheckpointWriter createWriter( int idx, AlgDataType tupleType ) {
         PortType type = Objects.requireNonNull( remainingOutPorts[idx] );
         remainingOutPorts[idx] = null;
-        CheckpointWriter writer = sm.createCheckpoint( activityWrapper.getId(), idx, tupleType, resetPk, getStore( idx ), type.getDataModel( tupleType ) );
+        CheckpointWriter writer = sm.createCheckpoint( activityWrapper.getId(), idx, tupleType, getStore( idx ), type.getDataModel( tupleType ) );
         writers.add( writer );
         return writer;
     }

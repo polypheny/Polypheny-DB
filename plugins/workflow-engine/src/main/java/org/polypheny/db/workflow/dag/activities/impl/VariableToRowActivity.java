@@ -88,7 +88,7 @@ public class VariableToRowActivity implements Activity {
         }
         builder.uniquify(); // make sure no conflicts with pk column name
 
-        RelWriter writer = ctx.createRelWriter( 0, builder.build(), true );
+        RelWriter writer = ctx.createRelWriter( 0, builder.build() );
         writer.write( row );
     }
 

@@ -45,6 +45,7 @@ import org.polypheny.db.workflow.dag.annotations.EntitySetting;
 import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.FieldRenameSetting;
 import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
+import org.polypheny.db.workflow.dag.annotations.FilterSetting;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.annotations.QuerySetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
@@ -207,6 +208,10 @@ public abstract class SettingDef {
                 settings.add( new CastSettingDef( a ) );
             } else if ( annotation instanceof CastSetting.List a ) {
                 Arrays.stream( a.value() ).forEach( el -> settings.add( new CastSettingDef( el ) ) );
+            } else if ( annotation instanceof FilterSetting a ) {
+                settings.add( new FilterSettingDef( a ) );
+            } else if ( annotation instanceof FilterSetting.List a ) {
+                Arrays.stream( a.value() ).forEach( el -> settings.add( new FilterSettingDef( el ) ) );
             }
         }
         return settings;
@@ -240,7 +245,8 @@ public abstract class SettingDef {
         COLLATION,
         FIELD_RENAME,
         CAST,
-        FIELD_SELECT
+        FIELD_SELECT,
+        FILTER
     }
 
 
@@ -258,6 +264,12 @@ public abstract class SettingDef {
             } catch ( JsonProcessingException e ) {
                 throw new IllegalArgumentException( e );
             }
+        }
+
+        enum SelectMode {
+            EXACT,
+            REGEX,
+            INDEX // column index
         }
 
     }

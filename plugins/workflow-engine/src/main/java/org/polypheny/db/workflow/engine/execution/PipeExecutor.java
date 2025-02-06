@@ -164,7 +164,7 @@ public class PipeExecutor extends Executor {
     private AlgDataType registerOutputTypes( UUID root ) throws Exception {
         ActivityWrapper wrapper = workflow.getActivity( root );
 
-        int dynamicInPorts = wrapper.getDef().getDynamicInPortCount(workflow.getInEdges( root ));
+        int dynamicInPorts = wrapper.getDef().getDynamicInPortCount( workflow.getInEdges( root ) );
         this.dynamicInPortCounts.put( root, dynamicInPorts );
         List<ExecutionEdge> inEdges = execTree.getInwardEdges( root );
         AlgDataType[] inTypes = new AlgDataType[dynamicInPorts];
@@ -223,8 +223,7 @@ public class PipeExecutor extends Executor {
         DataModel model = wrapper.getDef().getOutPortType( 0 ).getDataModel( rootType );
         String store = wrapper.getConfig().getPreferredStore( 0 );
 
-        System.out.println( "creating CheckpointWriterPipe for model " + model );
-        writer = sm.createCheckpoint( rootId, 0, rootType, true, store, model );
+        writer = sm.createCheckpoint( rootId, 0, rootType, store, model );
         return new CheckpointOutputPipe( rootType, writer, contexts.get( rootId ), outCounts.get( rootId ) );
     }
 
