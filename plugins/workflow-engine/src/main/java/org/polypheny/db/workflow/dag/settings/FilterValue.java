@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import lombok.Value;
@@ -37,6 +38,7 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.workflow.dag.activities.ActivityUtils;
@@ -105,38 +107,46 @@ public class FilterValue implements SettingValue {
      * Returns a predicate that filters a given document.
      *
      * @param includeSubfields whether to scan subfields if mode is Regex.
+     * @param pointer a pointer that makes all target fields act relative to it.
      */
-    public Predicate<PolyDocument> getDocPredicate( boolean includeSubfields ) {
-        // TODO: either communicate that if a nested object does not exist, the filter lets it pass, or change how they are evaluated
+    public Predicate<PolyDocument> getDocPredicate( boolean includeSubfields, String pointer ) {
         assert targetMode != SelectMode.INDEX;
         if ( conditions.isEmpty() ) {
             return d -> true;
         }
 
         if ( targetMode == SelectMode.REGEX ) {
-            if ( includeSubfields ) {
-                return ( doc ) -> {
-                    Boolean tested = recursiveTest( doc );
-                    return Objects.requireNonNullElse( tested, !combineWithOr );
-                };
-
-            } else {
-                return ( doc ) -> {
-                    for ( Entry<PolyString, PolyValue> entry : doc.entrySet() ) {
-                        Boolean tested = test( getPredicates( entry.getKey().value ), entry.getValue() );
-                        if ( tested != null ) {
-                            return tested;
-                        }
-                    }
-                    return !combineWithOr;
-                };
-            }
+            return ( doc ) -> {
+                PolyValue root;
+                try {
+                    root = ActivityUtils.getSubValue( doc, pointer );
+                } catch ( Exception e ) {
+                    return true;
+                }
+                Boolean tested = recursiveTest( root, includeSubfields );
+                return Objects.requireNonNullElse( tested, !combineWithOr );
+            };
         }
 
         assert targetMode == SelectMode.EXACT;
+        return doc -> {
+            PolyValue root;
+            try {
+                root = ActivityUtils.getSubValue( doc, pointer );
+            } catch ( Exception e ) {
+                return true;
+            }
+            Boolean tested = recursiveTest( "", root );
+            return Objects.requireNonNullElse( tested, !combineWithOr );
+        };
+    }
 
-        return ( doc ) -> {
-            Boolean tested = recursiveTest( "", doc );
+
+    @JsonIgnore
+    public Predicate<PolyDictionary> getLpgPredicate() {
+        assert targetMode != SelectMode.INDEX;
+        return dict -> {
+            Boolean tested = recursiveTest( dict, false );
             return Objects.requireNonNullElse( tested, !combineWithOr );
         };
     }
@@ -178,25 +188,28 @@ public class FilterValue implements SettingValue {
     }
 
 
-    private Boolean recursiveTest( PolyValue value ) {
+    private Boolean recursiveTest( PolyValue value, boolean nested ) {
         Boolean tested;
         return switch ( value.getType() ) {
-            case DOCUMENT -> {
-                for ( Entry<PolyString, PolyValue> entry : value.asDocument().entrySet() ) {
+            case DOCUMENT, MAP -> {
+                Set<Entry<PolyString, PolyValue>> entries = (value.isDocument() ? value.asDocument() : value.asMap().asDictionary()).entrySet();
+                for ( Entry<PolyString, PolyValue> entry : entries ) {
                     tested = test( getPredicates( entry.getKey().value ), entry.getValue() );
                     if ( tested != null ) {
                         yield tested;
                     }
-                    tested = recursiveTest( entry.getValue() );
-                    if ( tested != null ) {
-                        yield tested;
+                    if ( nested ) {
+                        tested = recursiveTest( entry.getValue(), true );
+                        if ( tested != null ) {
+                            yield tested;
+                        }
                     }
                 }
                 yield null;
             }
             case ARRAY -> {
                 for ( PolyValue polyValue : value.asList() ) {
-                    tested = recursiveTest( polyValue );
+                    tested = recursiveTest( polyValue, nested );
                     if ( tested != null ) {
                         yield tested;
                     }
@@ -344,7 +357,7 @@ public class FilterValue implements SettingValue {
                 case NOT_INCLUDED -> !contains( v );
                 case HAS_KEY -> hasKey( v );
                 case IS_ARRAY -> v != null && v.isList();
-                case IS_OBJECT -> v != null && v.isMap();
+                case IS_OBJECT -> v != null && (v.isMap() || v.isDocument());
                 default -> throw new NotImplementedException( "Operator " + operator + " is not implemented" );
             };
         }
@@ -371,7 +384,6 @@ public class FilterValue implements SettingValue {
 
 
         private boolean hasKey( PolyValue v ) {
-            System.out.println( "checking hasKey for " + v + ", " + v.getType() + ", " + v.isList() + ", " + v.isMap() );
             if ( v.isList() ) {
                 int i = valueAsNumber().intValue();
                 return i >= 0 && v.asList().size() > i;

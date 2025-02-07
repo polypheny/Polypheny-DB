@@ -16,15 +16,12 @@
 
 package org.polypheny.db.workflow.dag.activities.impl;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
@@ -32,7 +29,6 @@ import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
-import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.activities.TypePreview.LpgType;
@@ -40,10 +36,13 @@ import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
-import org.polypheny.db.workflow.dag.annotations.FieldRenameSetting;
 import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
-import org.polypheny.db.workflow.dag.settings.FieldRenameValue;
+import org.polypheny.db.workflow.dag.annotations.FilterSetting;
 import org.polypheny.db.workflow.dag.settings.FieldSelectValue;
+import org.polypheny.db.workflow.dag.settings.FilterValue;
+import org.polypheny.db.workflow.dag.settings.FilterValue.Operator;
+import org.polypheny.db.workflow.dag.settings.GroupDef;
+import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue.SelectMode;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
@@ -51,33 +50,28 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.LpgInputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 
-@ActivityDefinition(type = "lpgPropertyRename", displayName = "Rename Graph Properties", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH },
+@ActivityDefinition(type = "lpgPropertyFilter", displayName = "Filter Graph by Properties", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH },
         inPorts = { @InPort(type = PortType.LPG, description = "The input graph.") },
-        outPorts = { @OutPort(type = PortType.LPG, description = "The graph with renamed property fields.") },
-        shortDescription = "Rename the fields of node or edge properties by defining rules."
+        outPorts = { @OutPort(type = PortType.LPG, description = "A graph containing all matching nodes and edges from the input graph.") },
+        shortDescription = "Computes a subgraph of the input that only includes nodes and edges that meet the specified filter criteria."
 )
+
 @FieldSelectSetting(key = "labels", displayName = "Targets", simplified = true, targetInput = 0, pos = 0,
         shortDescription = "Specify the target nodes or edges by their label(s). If no label is specified, all become targets.")
-@BoolSetting(key = "nodes", displayName = "Rename Node Properties", defaultValue = true, pos = 1)
-@BoolSetting(key = "edges", displayName = "Rename Edge Properties", defaultValue = true, pos = 2)
+@FilterSetting(key = "filter", displayName = "Conditions", pos = 1,
+        modes = { SelectMode.EXACT, SelectMode.REGEX }, targetInput = -1,
+        excludedOperators = { Operator.IS_OBJECT },
+        shortDescription = "Define a list of conditions on properties. If a property does not exist, the condition evaluates to true.")
 
-@FieldRenameSetting(key = "rename", displayName = "Renaming Rules", allowRegex = true, allowIndex = false, targetInput = -1, pos = 3,
-        shortDescription = "The source fields can be selected by their actual (exact) name or with Regex. "
-                + "The replacement can reference capture groups such as '$0' for the original name.",
-        longDescription = """
-                The source fields can be selected by their actual (exact) name or by using a regular expression.
-                Regex mode can be used to specify capturing groups using parentheses.
-                
-                In any mode, the replacement can reference a capture group (`$0`, `$1`...). For instance, the replacement `abc$0` adds the prefix `abc` to a field name.
-                
-                Regular expressions are given in the [Java Regex dialect](https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html).
-                """)
+@BoolSetting(key = "fail", displayName = "Fail on Rejection", pos = 1, group = GroupDef.ADVANCED_GROUP,
+        shortDescription = "If enabled, a rejected node or edge results in the activity to fail.")
+@BoolSetting(key = "nodes", displayName = "Filter Nodes", defaultValue = true, pos = 2, group = GroupDef.ADVANCED_GROUP)
+@BoolSetting(key = "edges", displayName = "Filter Edges", defaultValue = true, pos = 3, group = GroupDef.ADVANCED_GROUP)
+@BoolSetting(key = "negate", displayName = "Negate Filter", pos = 4, group = GroupDef.ADVANCED_GROUP,
+        shortDescription = "If enabled, the filter is negated.")
 
 @SuppressWarnings("unused")
-public class LpgPropertyRenameActivity implements Activity, Pipeable {
-
-    private final Map<String, String> renameCache = new HashMap<>();
-    private FieldRenameValue renamer;
+public class LpgFilterPropertyActivity implements Activity, Pipeable {
 
 
     @Override
@@ -99,14 +93,22 @@ public class LpgPropertyRenameActivity implements Activity, Pipeable {
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         LpgInputPipe input = inputs.get( 0 ).asLpgInputPipe();
         Set<String> labels = new HashSet<>( settings.get( "labels", FieldSelectValue.class ).getInclude() );
+        boolean fail = settings.getBool( "fail" );
         boolean isNodes = settings.getBool( "nodes" );
         boolean isEdges = settings.getBool( "edges" );
-        renamer = settings.get( "rename", FieldRenameValue.class );
+        FilterValue filter = settings.get( "filter", FilterValue.class );
+        Predicate<PolyDictionary> predicate = filter.getLpgPredicate();
+        if ( settings.getBool( "negate" ) ) {
+            predicate = predicate.negate();
+        }
 
         for ( PolyNode node : input.getNodeIterable() ) {
             if ( isNodes && (labels.isEmpty() || node.getLabels().stream().anyMatch( l -> labels.contains( l.value ) )) ) {
-                PolyDictionary renamed = getRenamedProperties( node.properties );
-                node = new PolyNode( node.id, renamed, node.getLabels(), null );
+                if ( !predicate.test( node.properties ) ) {
+                    continue;
+                } else if ( fail ) {
+                    throw new GenericRuntimeException( "Detected node that does not match the filter criteria: " + node );
+                }
             }
 
             if ( !output.put( node ) ) {
@@ -117,8 +119,11 @@ public class LpgPropertyRenameActivity implements Activity, Pipeable {
 
         for ( PolyEdge edge : input.getEdgeIterable() ) {
             if ( isEdges && (labels.isEmpty() || edge.getLabels().stream().anyMatch( l -> labels.contains( l.value ) )) ) {
-                PolyDictionary renamed = getRenamedProperties( edge.properties );
-                edge = new PolyEdge( edge.id, renamed, edge.labels, edge.source, edge.target, edge.direction, null );
+                if ( !predicate.test( edge.properties ) ) {
+                    continue;
+                } else if ( fail ) {
+                    throw new GenericRuntimeException( "Detected edge that does not match the filter criteria: " + edge );
+                }
             }
 
             if ( !output.put( edge ) ) {
@@ -126,38 +131,6 @@ public class LpgPropertyRenameActivity implements Activity, Pipeable {
                 return;
             }
         }
-    }
-
-
-    private PolyDictionary getRenamedProperties( PolyDictionary dict ) {
-        // PolyDictionary does not have nested maps
-        Map<PolyString, PolyValue> map = new HashMap<>();
-        for ( Entry<PolyString, PolyValue> entry : dict.entrySet() ) {
-            String renamed = getRenamed( entry.getKey().value );
-            map.put( PolyString.of( renamed ), entry.getValue() );
-        }
-        return PolyDictionary.ofDict( map );
-    }
-
-
-    private String getRenamed( String name ) throws IllegalArgumentException {
-        return renameCache.computeIfAbsent( name, k -> {
-            String r = renamer.rename( k );
-            if ( r != null ) {
-                if ( ActivityUtils.isInvalidFieldName( r ) ) {
-                    throw new IllegalArgumentException( "Invalid field name: " + r );
-                }
-                return r;
-            }
-            return name;
-        } );
-    }
-
-
-    @Override
-    public void reset() {
-        renameCache.clear();
-        renamer = null;
     }
 
 }

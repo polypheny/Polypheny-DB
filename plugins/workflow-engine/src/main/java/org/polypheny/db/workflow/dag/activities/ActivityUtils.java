@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -39,6 +40,9 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -216,6 +220,21 @@ public class ActivityUtils {
     }
 
 
+    public static PolyValue stringToPolyValue( String value, PolyType type ) {
+        if ( value == null ) {
+            return PolyNull.NULL;
+        }
+        PolyString polyString = PolyString.of( value );
+        if ( type.getFamily() == PolyTypeFamily.CHARACTER ) { // -> string casts succeed more often
+            return polyString;
+        } else if ( type == PolyType.BOOLEAN ) { // PolyString -> PolyBoolean conversion is not directly supported by the converter
+            String str = value.trim().toLowerCase( Locale.ROOT );
+            return PolyBoolean.of( str.equals( "true" ) || str.equals( "1" ) );
+        }
+        return PolyValue.getConverter( type ).apply( polyString );
+    }
+
+
     public static List<Integer> getRegexMatchPositions( String regex, List<String> candidates ) {
         return getRegexMatchPositions( Pattern.compile( regex ), candidates );
     }
@@ -245,6 +264,11 @@ public class ActivityUtils {
     public static RexLiteral getRexLiteral( int i ) {
         PolyValue value = PolyInteger.of( i );
         return new RexLiteral( value, factory.createPolyType( value.type ), value.type );
+    }
+
+
+    public static RexLiteral getRexLiteral( PolyValue value, AlgDataType type ) {
+        return new RexLiteral( value, type, value.type );
     }
 
 
@@ -290,6 +314,9 @@ public class ActivityUtils {
      * @throws Exception if the pointer points to a location that does not exist or the structure is inconsistent with the pointer.
      */
     public static PolyValue getSubValue( PolyDocument doc, String pointer ) throws Exception {
+        if ( pointer.isEmpty() ) {
+            return doc;
+        }
         PolyValue current = doc;
         for ( String s : pointer.split( "\\." ) ) {
             current = switch ( current.getType() ) {

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -36,6 +37,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
@@ -48,8 +50,10 @@ public class CastValue implements SettingValue {
     List<SingleCast> casts;
 
 
-    public void validate( boolean allowDuplicateSource, boolean allowTarget, boolean allowJson ) throws IllegalArgumentException {
-
+    public void validate( boolean allowDuplicateSource, boolean allowTarget, boolean allowJson, boolean singleCast ) throws IllegalArgumentException {
+        if ( singleCast && casts.size() != 1 ) {
+            throw new IllegalArgumentException( "Exactly 1 cast is expected but got " + casts.size() );
+        }
         Set<String> sources = new HashSet<>();
         Set<String> targets = new HashSet<>();
         for ( SingleCast cast : casts ) {
@@ -114,6 +118,21 @@ public class CastValue implements SettingValue {
 
         @Getter(AccessLevel.NONE)
         boolean asJson;
+
+
+        @java.beans.ConstructorProperties({ "source", "target", "type", "nullable", "collectionsType", "precision", "scale", "dimension", "cardinality", "asJson" })
+        public SingleCast( String source, String target, PolyType type, boolean nullable, String collectionsType, Integer precision, Integer scale, Integer dimension, Integer cardinality, boolean asJson ) {
+            this.source = source;
+            this.target = target;
+            this.type = type;
+            this.nullable = nullable;
+            this.collectionsType = collectionsType;
+            this.precision = precision;
+            this.scale = scale;
+            this.dimension = dimension;
+            this.cardinality = cardinality;
+            this.asJson = asJson;
+        }
 
 
         @JsonProperty("asJson")
@@ -202,6 +221,9 @@ public class CastValue implements SettingValue {
             if ( !isCollection() ) {
                 if ( type.getFamily() == PolyTypeFamily.CHARACTER ) { // -> string casts succeed more often
                     return ActivityUtils.valueToString( value );
+                } else if ( type == PolyType.BOOLEAN && value.isString() ) {
+                    String str = value.asString().value.trim().toLowerCase( Locale.ROOT );
+                    return PolyBoolean.of( str.equals( "true" ) || str.equals( "1" ) );
                 }
             } else if ( collectionsType.equals( "ARRAY" ) ) {
                 if ( value.isList() ) {
@@ -210,6 +232,43 @@ public class CastValue implements SettingValue {
                 return PolyList.of( converter.apply( value ) );
             }
             return converter.apply( value );
+        }
+
+
+        public static SingleCast of( String source, PolyType type, boolean nullable ) {
+            return SingleCast.of( source, type, null, nullable );
+        }
+
+
+        public static SingleCast of( String source, PolyType type, Integer precision, boolean nullable ) {
+            return new SingleCast(
+                    source,
+                    null,
+                    type,
+                    nullable,
+                    "",
+                    precision,
+                    null,
+                    null,
+                    null,
+                    false
+            );
+        }
+
+
+        public static SingleCast of( String source ) {
+            return new SingleCast(
+                    source,
+                    null,
+                    null,
+                    true,
+                    "",
+                    null,
+                    null,
+                    null,
+                    null,
+                    true
+            );
         }
 
     }

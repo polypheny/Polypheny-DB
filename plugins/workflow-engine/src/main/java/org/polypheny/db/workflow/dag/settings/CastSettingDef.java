@@ -23,6 +23,7 @@ import lombok.Value;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.annotations.CastSetting;
+import org.polypheny.db.workflow.dag.settings.CastValue.SingleCast;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -33,16 +34,18 @@ public class CastSettingDef extends SettingDef {
     boolean allowDuplicateSource;
     boolean allowTarget;
     boolean allowJson;
+    boolean singleCast;
 
 
     public CastSettingDef( CastSetting a ) {
-        super( SettingType.CAST, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), constructDefault(),
+        super( SettingType.CAST, a.key(), a.displayName(), a.shortDescription(), a.longDescription(), constructDefault( a.singleCast(), a.defaultType() ),
                 a.group(), a.subGroup(), a.pos(), a.subPointer(), a.subValues() );
         this.targetInput = a.targetInput();
         this.defaultType = a.defaultType();
         this.allowDuplicateSource = a.duplicateSource();
         this.allowTarget = a.allowTarget();
         this.allowJson = a.allowJson();
+        this.singleCast = a.singleCast();
     }
 
 
@@ -56,7 +59,7 @@ public class CastSettingDef extends SettingDef {
     public void validateValue( SettingValue value ) throws InvalidSettingException {
         if ( value instanceof CastValue cast ) {
             try {
-                cast.validate( allowDuplicateSource, allowTarget, allowJson );
+                cast.validate( allowDuplicateSource, allowTarget, allowJson, singleCast );
             } catch ( IllegalArgumentException e ) {
                 throwInvalid( e.getMessage() );
             }
@@ -67,7 +70,12 @@ public class CastSettingDef extends SettingDef {
     }
 
 
-    private static SettingValue constructDefault() {
+    private static SettingValue constructDefault( boolean singleCast, PolyType defaultType ) {
+        if ( singleCast ) {
+            return new CastValue( List.of(
+                    SingleCast.of( "", defaultType, true )
+            ) );
+        }
         return new CastValue( List.of() );
     }
 

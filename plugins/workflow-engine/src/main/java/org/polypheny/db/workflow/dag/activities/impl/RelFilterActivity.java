@@ -63,9 +63,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
         excludedOperators = { Operator.HAS_KEY, Operator.IS_OBJECT },
         modes = { SelectMode.EXACT, SelectMode.REGEX, SelectMode.INDEX })
 @BoolSetting(key = "negate", displayName = "Negate Filter", pos = 2, defaultValue = false,
-        shortDescription = "If enabled, the filter is negated, swapping the roles of output 0 and 1.")
-/*@BoolSetting(key = "keepPk", displayName = "Include the original '" + Activity.PK_COL + "' column", pos = 3, defaultValue = false,
-        shortDescription = "If enabled, adds the original key column to the output.")*/
+        shortDescription = "If enabled, the filter is negated, swapping the roles of the two outputs.")
 
 @SuppressWarnings("unused")
 public class RelFilterActivity implements Activity {

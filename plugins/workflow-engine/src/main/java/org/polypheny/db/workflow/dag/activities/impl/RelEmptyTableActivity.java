@@ -18,8 +18,10 @@ package org.polypheny.db.workflow.dag.activities.impl;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
@@ -67,6 +69,12 @@ public class RelEmptyTableActivity implements Activity {
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         ctx.createRelWriter( 0, getType( settings.get( "columns", CastValue.class ) ) );
+    }
+
+
+    @Override
+    public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
+        return 0;
     }
 
 

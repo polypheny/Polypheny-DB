@@ -83,6 +83,11 @@ public @interface CastSetting {
      */
     boolean allowJson() default false;
 
+    /**
+     * If true, the value is valid iff there is a single cast.
+     */
+    boolean singleCast() default false;
+
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)

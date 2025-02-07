@@ -29,12 +29,12 @@ import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
 @Value
 public class GroupDef {
 
-    public static String DEFAULT_GROUP = "";
-    public static String ADVANCED_GROUP = "advanced";
-    public static String DEFAULT_SUBGROUP = "";
+    public static final String DEFAULT_GROUP = "";
+    public static final String ADVANCED_GROUP = "advanced";
+    public static final String DEFAULT_SUBGROUP = "";
 
-    private static String DEFAULT_GROUP_NAME = "Settings";
-    private static String ADVANCED_GROUP_NAME = "Advanced";
+    private static final String DEFAULT_GROUP_NAME = "Basic";
+    private static final String ADVANCED_GROUP_NAME = "Advanced";
 
     String key;
     String displayName;
