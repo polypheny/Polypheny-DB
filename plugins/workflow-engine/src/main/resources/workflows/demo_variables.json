@@ -1,0 +1,191 @@
+{
+  "activities": [
+    {
+      "type": "relSort",
+      "id": "a9880bd8-e3bb-402b-b0ce-9fd5a0e81640",
+      "settings": {
+        "limit": {
+          "$ref": "$workflow/maxrows",
+          "$default": -1
+        },
+        "skip": 0,
+        "sort": []
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 607,
+        "posY": 302,
+        "name": null,
+        "notes": null
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "renameCols",
+      "id": "06a572b0-662c-4922-a978-0369f75a1c46",
+      "settings": {
+        "rename": {
+          "rules": [
+            {
+              "source": "employeeno",
+              "replacement": {
+                "$ref": "renamed_column",
+                "$default": ""
+              }
+            }
+          ],
+          "mode": "EXACT",
+          "ignoreCase": false
+        }
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 1189.8533333333335,
+        "posY": 195,
+        "name": null,
+        "notes": null
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "relExtract",
+      "id": "595dfd40-5550-4b69-88d7-b841ec810ff4",
+      "settings": {
+        "table": {
+          "namespace": "public",
+          "name": {
+            "$ref": "$workflow/table",
+            "$default": ""
+          }
+        }
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 24.12527416537249,
+        "posY": 324.9978066770201,
+        "name": null,
+        "notes": null
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "docCreate",
+      "id": "7d87e345-036d-442f-bd5f-68d5b12cbd5e",
+      "settings": {
+        "json": "{\n    \"renamed_column\": \"dynamic_col_name\"\n}"
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 27,
+        "posY": 12,
+        "name": null,
+        "notes": null
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "docToVar",
+      "id": "bf4779d5-a187-4e65-9e7c-e92c993de2f0",
+      "settings": {
+        "docVarName": "doc",
+        "skipId": true,
+        "useDocument": false,
+        "varPrefix": "",
+        "fields": {
+          "include": [
+            "renamed_column"
+          ],
+          "exclude": [],
+          "unspecifiedIndex": -1
+        }
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 607,
+        "posY": 12,
+        "name": null,
+        "notes": null
+      },
+      "rolledBack": false
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "595dfd40-5550-4b69-88d7-b841ec810ff4",
+      "toId": "a9880bd8-e3bb-402b-b0ce-9fd5a0e81640",
+      "fromPort": 0,
+      "toPort": 0,
+      "isControl": false
+    },
+    {
+      "fromId": "a9880bd8-e3bb-402b-b0ce-9fd5a0e81640",
+      "toId": "06a572b0-662c-4922-a978-0369f75a1c46",
+      "fromPort": 0,
+      "toPort": 0,
+      "isControl": false
+    },
+    {
+      "fromId": "7d87e345-036d-442f-bd5f-68d5b12cbd5e",
+      "toId": "bf4779d5-a187-4e65-9e7c-e92c993de2f0",
+      "fromPort": 0,
+      "toPort": 0,
+      "isControl": false
+    },
+    {
+      "fromId": "bf4779d5-a187-4e65-9e7c-e92c993de2f0",
+      "toId": "06a572b0-662c-4922-a978-0369f75a1c46",
+      "fromPort": 0,
+      "toPort": 0,
+      "isControl": true
+    }
+  ],
+  "config": {
+    "preferredStores": {
+      "DOCUMENT": "hsqldb_disk",
+      "GRAPH": "hsqldb_disk",
+      "RELATIONAL": "hsqldb_disk"
+    },
+    "fusionEnabled": false,
+    "pipelineEnabled": false,
+    "timeoutSeconds": 0,
+    "dropUnusedCheckpoints": false,
+    "maxWorkers": 1,
+    "pipelineQueueCapacity": 1000,
+    "logCapacity": 100
+  },
+  "variables": {
+    "table": "emp",
+    "maxrows": 10
+  },
+  "format_version": "0.0.1"
+}

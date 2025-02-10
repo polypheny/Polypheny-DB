@@ -145,7 +145,7 @@ public abstract class AbstractSession {
         try {
             String json = mapper.writeValueAsString( msg );
             if ( msg.type != ResponseType.PROGRESS_UPDATE ) {
-                log.info( "Broadcasting message: " + json );
+                //log.info( "Broadcasting message: " + json );
             }
             for ( Session subscriber : subscribers ) {
                 try {

@@ -76,7 +76,8 @@ public class FieldRenameSettingDef extends SettingDef {
 
             if ( rename.hasDuplicates() ) {
                 throwInvalid( "Duplicate source fields are not permitted" );
-            } else if ( rename.hasEmptyRule() ) {
+            } else if ( rename.getMode() != SelectMode.REGEX && rename.hasEmptyRule() ) {
+                // REGEX can replace with empty string, as only substrings of field names might get replaced
                 throwInvalid( "Empty rules are not permitted" );
             }
             return;

@@ -382,7 +382,6 @@ public class WorkflowScheduler {
         if ( !isInitialUpdate ) {
             // updates previews beyond the limits of the dag
             for ( UUID n : getReachableNonExecutedNodes( activities ) ) {  // previously only updated within dag: GraphUtils.getTopologicalIterable( dag, rootId, false )
-                log.info( "Updating preview of " + n + ". (" + workflow.getActivity( n ) + ")" );
                 workflow.updatePreview( n );
             }
         }

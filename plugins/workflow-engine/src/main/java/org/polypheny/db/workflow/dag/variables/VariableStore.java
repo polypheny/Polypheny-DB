@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
@@ -248,6 +249,8 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
 
     @Override
     public Map<String, JsonNode> resolveVariables( Map<String, JsonNode> nodes ) {
+        nodes = nodes.entrySet().stream().collect(  // create copy
+                Collectors.toMap( Entry::getKey, e -> e.getValue().deepCopy() ));
         Map<String, JsonNode> resolved = new HashMap<>();
         for ( Entry<String, JsonNode> entry : nodes.entrySet() ) {
             resolved.put( entry.getKey(), resolveVariables( entry.getValue(), true ) );
@@ -258,6 +261,8 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
 
     @Override
     public Map<String, Optional<JsonNode>> resolveAvailableVariables( Map<String, JsonNode> nodes ) {
+        nodes = nodes.entrySet().stream().collect( // create copy
+                Collectors.toMap( Entry::getKey, e -> e.getValue().deepCopy() ));
         Map<String, Optional<JsonNode>> resolved = new HashMap<>();
         for ( Map.Entry<String, JsonNode> entry : nodes.entrySet() ) {
             try {
