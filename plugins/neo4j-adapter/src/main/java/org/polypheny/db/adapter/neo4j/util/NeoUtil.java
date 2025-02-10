@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
@@ -51,8 +52,10 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
@@ -133,23 +136,23 @@ public interface NeoUtil {
 
     }
 
-    static PolyGeometry asPolyGeometry( Value value ){
+    static PolyGeometry asPolyGeometry( Value value ) {
         if ( value instanceof PointValue pointValue ) {
             Point point = pointValue.asPoint();
 
             // These are the only real SRIDs that Neo4j uses, the others are only used
             // internally for the cartesian 2D / 3D case, which we will represent as 0.
             int srid = 0;
-            if (point.srid() == 4326 || point.srid() == 4979) {
+            if ( point.srid() == 4326 || point.srid() == 4979 ) {
                 srid = point.srid();
             }
 
             GeometryFactory geometryFactory = new GeometryFactory( new PrecisionModel(), srid );
-            Coordinate coordinate = new Coordinate(point.x(), point.y());
-            if (!Double.isNaN( point.z() )){
+            Coordinate coordinate = new Coordinate( point.x(), point.y() );
+            if ( !Double.isNaN( point.z() ) ) {
                 coordinate.setZ( point.z() );
             }
-            return PolyGeometry.of(geometryFactory.createPoint( coordinate ));
+            return PolyGeometry.of( geometryFactory.createPoint( coordinate ) );
         }
 
         throw new GenericRuntimeException( String.format( "Could not transform object of type %s to PolyGeometry", value.type() ) );
@@ -215,8 +218,7 @@ public interface NeoUtil {
 
         } else if ( value instanceof ListValue ) {
             return new PolyList<>( value.asList( NeoUtil::getComparableOrString ) );
-        }
-        else if ( value instanceof PointValue ) {
+        } else if ( value instanceof PointValue ) {
             return asPolyGeometry( value );
         }
         throw new NotImplementedException( "Type not supported" );
@@ -295,7 +297,7 @@ public interface NeoUtil {
 
     }
 
-    static Function1<List<String>, String> getOpAsNeo( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType ) {
+    static Function1<List<String>, String> getOpAsNeo( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType, List<AlgDataTypeField> beforeFields ) {
         return switch ( operatorName ) {
             case AND -> o -> o.stream().map( e -> String.format( "(%s)", e ) ).collect( Collectors.joining( " AND " ) );
             case DIVIDE -> handleDivide( operatorName, operands, returnType );
@@ -374,8 +376,8 @@ public interface NeoUtil {
             case AVG -> o -> String.format( "avg(%s)", o.get( 0 ) );
             case MIN -> o -> String.format( "min(%s)", o.get( 0 ) );
             case MAX -> o -> String.format( "max(%s)", o.get( 0 ) );
-            case CYPHER_POINT -> handlePoint( operands, returnType );
-            case DISTANCE_NEO4J -> o -> String.format( "distance(%s, %s)", o.get( 0 ), o.get(1) );
+            case CYPHER_POINT -> handlePoint( operands, returnType, beforeFields );
+            case DISTANCE_NEO4J -> o -> String.format( "distance(%s, %s)", o.get( 0 ), o.get( 1 ) );
             // TODO: withinBBox()
             default -> null;
         };
@@ -393,48 +395,54 @@ public interface NeoUtil {
         return o -> o.get( 0 );
     }
 
-    static Function1<List<String>, String> handlePoint( List<RexNode> operands, AlgDataType returnType ) {
+    static Function1<List<String>, String> handlePoint( List<RexNode> operands, AlgDataType returnType, List<AlgDataTypeField> beforeFields ) {
         // return point( { argName1: argValue1, argName2: argValue2 } )
         List<String> arguments = new ArrayList<>();
-        for (int i = 0; i < operands.size(); i += 2) {
-            RexNode argName = operands.get(i);
-            RexNode argValue = operands.get(i + 1);
+        for ( int i = 0; i < operands.size(); i += 2 ) {
+            RexNode argName = operands.get( i );
+            RexNode argValue = operands.get( i + 1 );
 
-            if (argName instanceof RexLiteral argNameLiteral && argValue instanceof RexLiteral argValueLiteral){
-                if (argNameLiteral.value == null){
+            if ( argName instanceof RexLiteral argNameLiteral && argValue instanceof RexLiteral argValueLiteral ) {
+                if ( argNameLiteral.value == null ) {
                     // Unknown value, we are done.
                     break;
                 }
                 String arg = argNameLiteral.value.toString() + ":" + argValueLiteral.value.toString();
-                arguments.add(arg);
+                arguments.add( arg );
             }
 
-// Replace $0 with a with $1 with b?
-//            MATCH ( a:Location:___n_12___ {name:'Berlin'} ), ( b:Location:___n_12___ {name:'Paris'} )
-//            WITH  point({latitude:$0.lat,longitude:$0.lon})  AS pointBerlin,  point({latitude:$1.lat,longitude:$1.lon})  AS pointParis
-//            RETURN (distance(pointBerlin, pointParis))
-            if (argName instanceof RexLiteral argNameLiteral &&
+            if ( argName instanceof RexLiteral argNameLiteral &&
                     argValue instanceof RexCall cypherExtractProperty &&
-                    cypherExtractProperty.getOperator().getOperatorName() == OperatorName.CYPHER_EXTRACT_PROPERTY){
-                if (argNameLiteral.value == null){
+                    cypherExtractProperty.getOperator().getOperatorName() == OperatorName.CYPHER_EXTRACT_PROPERTY ) {
+                if ( argNameLiteral.value == null ) {
                     // Unknown value, we are done.
                     break;
                 }
 
-                ArrayList<String> cypherExtractPropertyOperands = new ArrayList<String>(2);
+                ArrayList<String> cypherExtractPropertyOperands = new ArrayList<String>( 2 );
                 for ( int operandIndex = 0; operandIndex < cypherExtractProperty.operands.size(); operandIndex++ ) {
                     RexNode operand = cypherExtractProperty.operands.get( operandIndex );
-                    cypherExtractPropertyOperands.add(  operand.toString().replaceAll( "^'|'$", "" ) );
+
+                    if ( operand instanceof RexIndexRef rexIndexRef && !beforeFields.isEmpty() ) {
+                        for ( AlgDataTypeField field : beforeFields ) {
+                            if ( field.getIndex() == rexIndexRef.getIndex() ) {
+                                cypherExtractPropertyOperands.add( field.getName() );
+                                break;
+                            }
+                        }
+                    } else {
+                        cypherExtractPropertyOperands.add( maybeUnquote( operand.toString() ) );
+                    }
                 }
-                String path = String.join(".", cypherExtractPropertyOperands);
+                String path = String.join( ".", cypherExtractPropertyOperands );
 
                 String arg = argNameLiteral.value.toString() + ":" + path;
-                arguments.add(arg);
+                arguments.add( arg );
             }
 
         }
 
-        return o -> "point({" + String.join( ",", arguments) + "})";
+        return o -> "point({" + String.join( ",", arguments ) + "})";
     }
 
     static Function1<List<String>, String> handleDivide( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType ) {
@@ -550,7 +558,7 @@ public interface NeoUtil {
 
         @Override
         public Void visitCall( RexCall call ) {
-            if ( NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type ) == null ) {
+            if ( NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type, List.of() ) == null ) {
                 supports = false;
             }
             return super.visitCall( call );
