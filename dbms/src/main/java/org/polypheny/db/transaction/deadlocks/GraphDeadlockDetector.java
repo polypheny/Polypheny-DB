@@ -66,7 +66,7 @@ public class GraphDeadlockDetector implements DeadlockDetector {
                 return cycle;
             }
         }
-        return List.of();
+        return new ArrayList<>();
     }
 
     private List<Transaction> detectCycle(Transaction currentTransaction, Set<Transaction> visited, Set<Transaction> path) {
