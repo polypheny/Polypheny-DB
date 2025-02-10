@@ -28,6 +28,7 @@ import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.ddl.DdlManager.DefaultIndexPlacementStrategy;
 import org.polypheny.db.processing.ConstraintStrategy;
 import org.polypheny.db.transaction.DeadlockDetectorType;
+import org.polypheny.db.transaction.DeadlockResolverType;
 import org.polypheny.db.transaction.locking.S2plLockingLevel;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
