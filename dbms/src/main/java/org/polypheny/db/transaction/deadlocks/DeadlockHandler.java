@@ -23,9 +23,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import lombok.NonNull;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.DeadlockDetectorType;
+import org.polypheny.db.transaction.DeadlockResolverType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.Lockable;
-import org.polypheny.db.util.DeadlockException;
 
 public class DeadlockHandler {
 
@@ -38,30 +38,41 @@ public class DeadlockHandler {
     private final Lock readLock = concurrencyLock.readLock();
     private final Lock writeLock = concurrencyLock.writeLock();
 
+
     static {
         DeadlockDetectorType deadlockDetectorType = (DeadlockDetectorType) RuntimeConfig.S2PL_DEADLOCK_DETECTOR_TYPE.getEnum();
-        switch (deadlockDetectorType) {
-            case GRAPH_DEADLOCK_DETECTOR ->
-                    INSTANCE = new DeadlockHandler(new GraphDeadlockDetector(), new FirstTransactionDeadlockResolver());
-            case SEQUENCE_DEADLOCK_DETECTOR ->
-                    INSTANCE = new DeadlockHandler(new RequestSequenceDeadlockDetector(), new FirstTransactionDeadlockResolver());
-            default ->
-                    throw new DeadlockException("Illegal deadlock detector type: " + deadlockDetectorType.name());
-        }
+        DeadlockDetector detector = switch ( deadlockDetectorType ) {
+            case GRAPH_DEADLOCK_DETECTOR -> new GraphDeadlockDetector();
+            case SEQUENCE_DEADLOCK_DETECTOR -> new RequestSequenceDeadlockDetector();
+        };
+
+        DeadlockResolverType deadlockResolverType = (DeadlockResolverType) RuntimeConfig.S2PL_DEADLOCK_RESOLVER_TYPE.getEnum();
+        DeadlockResolver resolver = switch ( deadlockResolverType ) {
+            case FIRST_TRANSACTION_DEADLOCK_RESOLVER -> new FirstTransactionDeadlockResolver();
+            case LEAST_PROGRESS_DEADLOCK_RESOLVER -> new LeastProgressDeadlockResolver();
+        };
+
+        INSTANCE = new DeadlockHandler( detector, resolver );
     }
 
-    private DeadlockHandler(DeadlockDetector deadlockDetector, DeadlockResolver deadlockResolver) {
+
+    private DeadlockHandler( DeadlockDetector deadlockDetector, DeadlockResolver deadlockResolver ) {
         this.deadlockDetector = deadlockDetector;
         this.deadlockResolver = deadlockResolver;
     }
 
-    public void addAndResolveDeadlock(@NonNull Lockable lockable, @NonNull Transaction transaction, @NonNull Set<Transaction> owners) {
+
+    public void addAndResolveDeadlock( @NonNull Lockable lockable, @NonNull Transaction transaction, @NonNull Set<Transaction> owners ) throws InterruptedException {
         writeLock.lock();
         try {
-            deadlockDetector.add(lockable, transaction, owners);
+            deadlockDetector.add( lockable, transaction, owners );
             List<Transaction> conflictingTransactions = deadlockDetector.getConflictingTransactions();
-            while (!conflictingTransactions.isEmpty()) {
-                deadlockResolver.resolveDeadlock(conflictingTransactions);
+
+            while ( !conflictingTransactions.isEmpty() ) {
+                deadlockResolver.resolveDeadlock( conflictingTransactions );
+                if ( Thread.currentThread().isInterrupted() ) {
+                    throw new InterruptedException( "Transaction was interrupted due to deadlock resolution." );
+                }
                 conflictingTransactions = deadlockDetector.getConflictingTransactions();
             }
         } finally {
@@ -70,10 +81,10 @@ public class DeadlockHandler {
     }
 
 
-    public void remove(@NonNull Lockable lockable, @NonNull Transaction transaction ) {
+    public void remove( @NonNull Lockable lockable, @NonNull Transaction transaction ) {
         readLock.lock();
         try {
-            deadlockDetector.remove(lockable, transaction );
+            deadlockDetector.remove( lockable, transaction );
         } finally {
             readLock.unlock();
         }
