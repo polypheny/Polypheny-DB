@@ -47,7 +47,7 @@ public enum RuntimeConfig {
     S2PL_DEADLOCK_DETECTOR_TYPE(
             "runtime/s2plDeadlockDetectorType",
             "Define the method used to detect deadlocks.",
-            DeadlockDetectorType.SEQUENCE_DEADLOCK_DETECTOR,
+            DeadlockDetectorType.GRAPH_DEADLOCK_DETECTOR,
             ConfigType.ENUM
     ),
 
