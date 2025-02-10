@@ -50,6 +50,13 @@ public enum RuntimeConfig {
             ConfigType.ENUM
     ),
 
+    S2PL_DEADLOCK_RESOLVER_TYPE(
+            "runtime/s2plDeadlockResolverType",
+            "Define the method used to resolve deadlocks.",
+            DeadlockResolverType.FIRST_TRANSACTION_DEADLOCK_RESOLVER,
+            ConfigType.ENUM
+    ),
+
     APPROXIMATE_DISTINCT_COUNT(
             "runtime/approximateDistinctCount",
             "Whether approximate results from \"COUNT(DISTINCT ...)\" aggregate functions are acceptable.",
