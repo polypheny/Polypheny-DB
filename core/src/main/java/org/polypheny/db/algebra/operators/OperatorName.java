@@ -1713,7 +1713,6 @@ public enum OperatorName {
 
     CYPHER_LIKE( LangFunctionOperator.class ),
 
-
     CYPHER_GEO_DISTANCE( LangFunctionOperator.class ),
 
     CYPHER_GEO_CONTAINS( LangFunctionOperator.class ),
@@ -1725,6 +1724,8 @@ public enum OperatorName {
     CYPHER_POINT( LangFunctionOperator.class ),
 
     CYPHER_WITHINBBOX( LangFunctionOperator.class ),
+
+    DISTANCE_NEO4J( LangFunctionOperator.class ),
 
     // CROSS MODEL FUNCTION
 

@@ -588,6 +588,39 @@ public class CypherFunctions {
         throw new GenericRuntimeException( "This should not be possible!" );
     }
 
+    @SuppressWarnings("unused")
+    public static PolyDouble distanceNeo4j( PolyValue p1, PolyValue p2 ) {
+        PolyPoint g1 = p1.asGeometry().asPoint();
+        PolyPoint g2 = p2.asGeometry().asPoint();
+
+        if ( !Objects.equals( g1.getSRID(), g2.getSRID() ) ) {
+            throw new GenericRuntimeException( "Cannot compute point.distance(%s, %s) because of different SRIDs.".formatted( g1, g2 ) );
+        }
+        Integer srid = g1.getSRID();
+
+        try {
+            if ( g1.hasZ() && g2.hasZ() ) {
+                if ( srid == 0 ) {
+                    return distance(g1, g2);
+                } else if ( srid == WGS_84_3D ) {
+                    // See https://github.com/neo4j/neo4j/blob/5.20/community/values/src/main/java/org/neo4j/values/storable/CRSCalculator.java
+                    double greatCircleDistance = getGreatCircleDistance( g1, g2 );
+                    double avgHeight = (g1.getZ() + g2.getZ()) / 2;
+                    final double EARTH_RADIUS_M_NEO4J = 6378140.0;
+                    double distance2D = (EARTH_RADIUS_M_NEO4J + avgHeight) * greatCircleDistance;
+                    double heightDifference = g1.getZ() - g2.getZ();
+                    return new PolyDouble( Math.sqrt( Math.pow( distance2D, 2 ) + Math.pow( heightDifference, 2 ) ) );
+                }
+            } else {
+                return new PolyDouble( g1.distance( g2 ) );
+            }
+        } catch ( GeometryTopologicalException e ) {
+            throw new GenericRuntimeException( e );
+        }
+
+        throw new GenericRuntimeException( "This should not be possible!" );
+    }
+
 
     /**
      * Use same logic as Neo4j to calculate the spherical distance.

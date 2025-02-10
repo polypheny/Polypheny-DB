@@ -479,6 +479,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_REMOVE_PROPERTY ), BuiltInMethod.CYPHER_REMOVE_PROPERTY.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_POINT ), BuiltInMethod.CYPHER_POINT.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.DISTANCE ), BuiltInMethod.CYPHER_DISTANCE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.DISTANCE_NEO4J ), BuiltInMethod.CYPHER_DISTANCE_NEO4J.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_WITHINBBOX), BuiltInMethod.CYPHER_WITHIN_BBOX.method, NullPolicy.NONE );
     }
 

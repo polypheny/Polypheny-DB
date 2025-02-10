@@ -58,6 +58,8 @@ public class CypherFunctionInvocation extends CypherExpression {
             this.op = OperatorName.valueOf( image.toUpperCase( Locale.ROOT ) );
         } else if ( operatorNames.contains( "CYPHER_" + image.toUpperCase( Locale.ROOT ) ) ) {
             this.op = OperatorName.valueOf( "CYPHER_" + image.toUpperCase( Locale.ROOT ) );
+        } else if ( image.equals( "distanceNeo4j" ) ) {
+            this.op = OperatorName.DISTANCE_NEO4J;
         } else {
             throw new GenericRuntimeException( "Used function is not supported!" );
         }
@@ -80,10 +82,11 @@ public class CypherFunctionInvocation extends CypherExpression {
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         // At this point, we do not know what is on the left side of the Pair.
         // The caller has to discard the left side, and use a variable name or something else.
-        return Pair.of( PolyString.of( "???" ), getRexCall( context ));
+        return Pair.of( PolyString.of( "???" ), getRexCall( context ) );
     }
 
-    public RexNode getRexCall( CypherContext context) {
+
+    public RexNode getRexCall( CypherContext context ) {
         switch ( getOperatorName() ) {
             case CYPHER_POINT: {
                 // VERY UGLY, but it works for now. This could be improved by using the function MAP_OF_ENTRIES,
@@ -104,12 +107,20 @@ public class CypherFunctionInvocation extends CypherExpression {
                         context.geometryType,
                         OperatorRegistry.get( QueryLanguage.from( "cypher" ), CYPHER_POINT ),
                         arguments );
-
             }
             case DISTANCE: {
                 return new RexCall(
                         context.numberType,
                         OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.DISTANCE ),
+                        List.of(
+                                arguments.get( 0 ).getRex( context, RexType.PROJECT ).getRight(),
+                                arguments.get( 1 ).getRex( context, RexType.PROJECT ).getRight()
+                        ) );
+            }
+            case DISTANCE_NEO4J: {
+                return new RexCall(
+                        context.numberType,
+                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.DISTANCE_NEO4J ),
                         List.of(
                                 arguments.get( 0 ).getRex( context, RexType.PROJECT ).getRight(),
                                 arguments.get( 1 ).getRex( context, RexType.PROJECT ).getRight()

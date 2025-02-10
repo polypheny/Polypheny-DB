@@ -165,6 +165,24 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
 
     @Test
+    public void distancePushdownTest(){
+        ArrayList<String> queries = new ArrayList<>();
+        queries.add( "CREATE (berlin:Location {name: \"Berlin\", lat: 52.5200, lon: 13.4050})" );
+        queries.add( "CREATE (paris:Location {name: \"Paris\", lat: 48.8566, lon: 2.3522})" );
+
+        queries.add( """
+                MATCH (a:Location {name: "Berlin"}), (b:Location {name: "Paris"})
+                WITH
+                    point({latitude: a.lat, longitude: a.lon}) AS pointBerlin,
+                    point({latitude: b.lat, longitude: b.lon}) AS pointParis
+                RETURN distanceNeo4j(pointBerlin, pointParis) AS distance_meters;
+                """ );
+        List<GraphResult> results = runQueries( queries );
+        Map<String, Object> res = assertResultsAreEqual( results );
+    }
+
+
+    @Test
     public void createPointTest() {
         ArrayList<String> queries = new ArrayList<>();
         queries.add( "CREATE (bob:User)" );

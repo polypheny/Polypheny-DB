@@ -374,7 +374,9 @@ public interface NeoUtil {
             case AVG -> o -> String.format( "avg(%s)", o.get( 0 ) );
             case MIN -> o -> String.format( "min(%s)", o.get( 0 ) );
             case MAX -> o -> String.format( "max(%s)", o.get( 0 ) );
-            case CYPHER_POINT -> handlePoint( operatorName, operands, returnType );
+            case CYPHER_POINT -> handlePoint( operands, returnType );
+            case DISTANCE_NEO4J -> o -> String.format( "distance(%s, %s)", o.get( 0 ), o.get(1) );
+            // TODO: withinBBox()
             default -> null;
         };
 
@@ -391,7 +393,7 @@ public interface NeoUtil {
         return o -> o.get( 0 );
     }
 
-    static Function1<List<String>, String> handlePoint( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType ) {
+    static Function1<List<String>, String> handlePoint( List<RexNode> operands, AlgDataType returnType ) {
         // return point( { argName1: argValue1, argName2: argValue2 } )
         List<String> arguments = new ArrayList<>();
         for (int i = 0; i < operands.size(); i += 2) {
@@ -406,6 +408,30 @@ public interface NeoUtil {
                 String arg = argNameLiteral.value.toString() + ":" + argValueLiteral.value.toString();
                 arguments.add(arg);
             }
+
+// Replace $0 with a with $1 with b?
+//            MATCH ( a:Location:___n_12___ {name:'Berlin'} ), ( b:Location:___n_12___ {name:'Paris'} )
+//            WITH  point({latitude:$0.lat,longitude:$0.lon})  AS pointBerlin,  point({latitude:$1.lat,longitude:$1.lon})  AS pointParis
+//            RETURN (distance(pointBerlin, pointParis))
+            if (argName instanceof RexLiteral argNameLiteral &&
+                    argValue instanceof RexCall cypherExtractProperty &&
+                    cypherExtractProperty.getOperator().getOperatorName() == OperatorName.CYPHER_EXTRACT_PROPERTY){
+                if (argNameLiteral.value == null){
+                    // Unknown value, we are done.
+                    break;
+                }
+
+                ArrayList<String> cypherExtractPropertyOperands = new ArrayList<String>(2);
+                for ( int operandIndex = 0; operandIndex < cypherExtractProperty.operands.size(); operandIndex++ ) {
+                    RexNode operand = cypherExtractProperty.operands.get( operandIndex );
+                    cypherExtractPropertyOperands.add(  operand.toString().replaceAll( "^'|'$", "" ) );
+                }
+                String path = String.join(".", cypherExtractPropertyOperands);
+
+                String arg = argNameLiteral.value.toString() + ":" + path;
+                arguments.add(arg);
+            }
+
         }
 
         return o -> "point({" + String.join( ",", arguments) + "})";
