@@ -733,6 +733,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
 
     private LogicalDocumentModify getRewriteOfUpdateDocModify( LogicalDocumentModify modify ) {
+
         throw new NotImplementedException();
         //ToDo TH: implement
     }
