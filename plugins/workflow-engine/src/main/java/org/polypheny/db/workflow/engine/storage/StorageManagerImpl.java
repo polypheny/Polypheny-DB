@@ -304,7 +304,7 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    public CheckpointWriter createCheckpoint( UUID activityId, int outputIdx, AlgDataType type, @Nullable String storeName, DataModel model ) {
+    public synchronized CheckpointWriter createCheckpoint( UUID activityId, int outputIdx, AlgDataType type, @Nullable String storeName, DataModel model ) {
         return switch ( model ) {
             case RELATIONAL -> createRelCheckpoint( activityId, outputIdx, type, true, storeName );
             case DOCUMENT -> createDocCheckpoint( activityId, outputIdx, storeName );
@@ -512,7 +512,7 @@ public class StorageManagerImpl implements StorageManager {
     }
 
 
-    private void acquireSchemaLock( Transaction transaction, long namespaceId ) throws DeadlockException {
+    private static void acquireSchemaLock( Transaction transaction, long namespaceId ) throws DeadlockException {
         LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElse( null );
         if ( namespace == null ) {
             return; // for graphs, the namespace is already removed when the checkpoint is dropped
@@ -562,6 +562,43 @@ public class StorageManagerImpl implements StorageManager {
 
         dropAllCheckpoints();
         dropNamespaces();
+
+    }
+
+
+    /**
+     * Removes all namespaces and associated checkpoints that currently exist.
+     * This should only be called on startup to clean up anything that was not removed.
+     */
+    public static void clearAll() {
+        DdlManager ddlManager = DdlManager.getInstance();
+        for ( LogicalNamespace ns : Catalog.getInstance().getSnapshot().getNamespaces( null ) ) {
+            Transaction transaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId, "ClearAllCheckpoints" );
+            try {
+                acquireSchemaLock( transaction, ns.id );
+                String name = ns.getName();
+                if ( name.startsWith( REL_PREFIX ) && name.length() == REL_PREFIX.length() + 32 ) {
+                    for ( LogicalTable table : transaction.getSnapshot().rel().getTablesFromNamespace( ns.id ) ) {
+                        ddlManager.dropTable( table, transaction.createStatement() );
+                    }
+                    ddlManager.dropNamespace( name, false, transaction.createStatement() );
+                } else if ( name.startsWith( DOC_PREFIX ) && name.length() == DOC_PREFIX.length() + 32 ) {
+                    for ( LogicalCollection collection : transaction.getSnapshot().doc().getCollections( ns.id, null ) ) {
+                        ddlManager.dropCollection( collection, transaction.createStatement() );
+                    }
+                    ddlManager.dropNamespace( name, false, transaction.createStatement() );
+
+                } else if ( name.startsWith( LPG_PREFIX ) && name.length() == LPG_PREFIX.length() + 2 * 32 + 3 ) { // assumes no activity doesn't have outport with idx > 9
+                    ddlManager.dropGraph( ns.id, false, transaction.createStatement() );
+                }
+                transaction.commit();
+            } finally {
+                if ( transaction.isActive() ) {
+                    transaction.rollback( null );
+                }
+            }
+
+        }
 
     }
 

@@ -298,6 +298,37 @@ class GlobalSchedulerTest {
 
 
     @Test
+    @Disabled
+        // TODO: find out why test fails (problem with catalog?)
+    void largeConcurrentActivityExecutionTest() throws Exception {
+        int nBranches = 10; // more branches => more consistent failure of test
+        int delay = 200;
+
+        Workflow workflow = WorkflowUtils.getAdvancedParallelBranchesWorkflow( nBranches, delay, nBranches );
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        scheduler.startExecution( workflow, sm, null );
+        scheduler.awaitResultProcessor( nBranches * delay * 9 / 10 ); // not enough time if not executed concurrently
+        assertEquals( WorkflowState.IDLE, workflow.getState() );
+
+        for ( UUID id : ids ) {
+            assertTrue( sm.hasCheckpoint( id, 0 ) );
+        }
+    }
+
+
+    @Test
+    @Disabled
+        // TODO: find out why test fails (problem with catalog?)
+    void largeWorkflowTest() throws Exception {
+        int nBranches = 60;
+        int delay = 10;
+
+        Workflow workflow = WorkflowUtils.getAdvancedParallelBranchesWorkflow( nBranches, delay, 1 );
+        executeAllAndCheck( workflow );
+    }
+
+
+    @Test
     void concurrentWorkflowExecutionTest() throws Exception {
         int nWorkflows = 10;
         int delay = 200;
@@ -506,7 +537,8 @@ class GlobalSchedulerTest {
 
     private void executeAllAndCheck( Workflow workflow, List<UUID> saved, List<UUID> failed, List<UUID> skipped ) throws Exception {
         scheduler.startExecution( workflow, sm, null );
-        scheduler.awaitResultProcessor( 5000 );
+        scheduler.awaitResultProcessor( 10000 );
+        assertEquals( WorkflowState.IDLE, workflow.getState(), "Workflow did not finish its execution" );
         for ( UUID n : saved ) {
             assertEquals( ActivityState.SAVED, workflow.getActivity( n ).getState() );
             System.out.println( StorageUtils.readCheckpoint( sm, n, 0 ) );

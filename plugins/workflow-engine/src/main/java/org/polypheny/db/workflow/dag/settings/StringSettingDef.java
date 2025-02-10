@@ -34,6 +34,8 @@ public class StringSettingDef extends SettingDef {
     int autoCompleteInput;
     boolean nonBlank;
     boolean containsRegex;
+    boolean textEditor;
+    String textEditorLanguage;
 
 
     public StringSettingDef( StringSetting a ) {
@@ -45,6 +47,8 @@ public class StringSettingDef extends SettingDef {
         this.autoCompleteInput = a.autoCompleteInput();
         this.nonBlank = a.nonBlank();
         this.containsRegex = a.containsRegex();
+        this.textEditor = a.textEditor();
+        this.textEditorLanguage = a.language();
 
         assert minLength < maxLength;
     }
@@ -74,7 +78,7 @@ public class StringSettingDef extends SettingDef {
             throwInvalid( "String must have a length of less than " + maxLength );
         } else if ( nonBlank && s.isBlank() ) {
             throwInvalid( "String must not be empty" );
-        } else if (containsRegex ) {
+        } else if ( containsRegex ) {
             try {
                 Pattern.compile( s );
             } catch ( PatternSyntaxException e ) {

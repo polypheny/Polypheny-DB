@@ -31,6 +31,9 @@ import lombok.Getter;
 import lombok.Value;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
+import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
+import org.polypheny.db.workflow.dag.activities.TypePreview.LpgType;
+import org.polypheny.db.workflow.dag.activities.TypePreview.UnknownType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
@@ -61,9 +64,10 @@ public class ActivityDef {
     boolean variableWriter;
 
 
-    public static ActivityDef fromAnnotations( Class<? extends Activity> activityClass,
+    public static ActivityDef fromAnnotations(
+            Class<? extends Activity> activityClass,
             ActivityDefinition def, Annotation groups, DefaultGroup defaultGroup, AdvancedGroup advancedGroup, Annotation[] allAnnotations,
-            boolean isFusable, boolean isPipeable, boolean isVariableWriter) {
+            boolean isFusable, boolean isPipeable, boolean isVariableWriter ) {
         Map<String, SettingDef> settings = new LinkedHashMap<>(); // This ensures that the order of Settings of the same type is preserved, which is useful for the UI.
         for ( SettingDef setting : SettingDef.fromAnnotations( allAnnotations ) ) {
             String key = setting.getKey();
@@ -158,6 +162,17 @@ public class ActivityDef {
             }
         }
         return set;
+    }
+
+
+    @JsonIgnore
+    public List<TypePreview> getDefaultOutTypePreview() {
+        return Arrays.stream( getOutPortTypes() ).map( type -> switch ( type ) {
+            case ANY -> UnknownType.of();
+            case REL -> UnknownType.ofRel();
+            case DOC -> DocType.of();
+            case LPG -> LpgType.of();
+        } ).toList();
     }
 
 

@@ -149,6 +149,10 @@ public class ActivityWrapper {
             log.warn( "Unhandled exception while updating out type preview", e );
             invalidStateReason = new ActivityException( "Unexpected Error while updating preview: " + e.getMessage() ); // ideally this should never happen
             throw invalidStateReason;
+        } finally {
+            if ( outTypePreview == null ) {
+                outTypePreview = getDef().getDefaultOutTypePreview();
+            }
         }
         if ( !invalidSettings.isEmpty() ) {
             throw invalidSettings.get( 0 );

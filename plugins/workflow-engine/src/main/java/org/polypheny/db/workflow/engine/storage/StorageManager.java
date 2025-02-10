@@ -43,7 +43,7 @@ import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 public interface StorageManager extends AutoCloseable { // TODO: remove AutoCloseable when transactions are managed by individual readers / writers
 
     String ORIGIN = "WorkflowEngine";
-    String PK_COL = "key";
+    String PK_COL = "_key";
     AlgDataTypeField PK_FIELD = new AlgDataTypeFieldImpl( null, PK_COL, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.BIGINT ) );
 
     UUID getSessionId();

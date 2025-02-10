@@ -253,7 +253,11 @@ public class WorkflowScheduler {
         updateGraph( result.isSuccess(), result.getActivities(), result.getRootId(), execDag );
         updatePartitions();
 
-        log.warn( "Remaining activities: " + remainingActivities );
+        if ( remainingActivities.size() < 10 ) {
+            log.warn( "Remaining activities: " + remainingActivities );
+        } else {
+            log.warn( "Number of remaining activities: " + remainingActivities.size() );
+        }
 
         if ( remainingActivities.isEmpty() ) {
             assert pendingCount == 0;

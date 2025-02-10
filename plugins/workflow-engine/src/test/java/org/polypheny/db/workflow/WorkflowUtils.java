@@ -277,6 +277,22 @@ public class WorkflowUtils {
     }
 
 
+    public static Workflow getAdvancedParallelBranchesWorkflow( int nBranches, int millisPerBranch, int maxWorkers ) {
+        assert nBranches > 0 && millisPerBranch > 0;
+        List<ActivityModel> activities = new ArrayList<>();
+        List<EdgeModel> edges = new ArrayList<>();
+
+        for ( int i = 0; i < nBranches; i++ ) {
+            ActivityModel values = new ActivityModel( "relValues" );
+            ActivityModel identity = new ActivityModel( "identity" );
+            ActivityModel delay = new ActivityModel( "debug", Map.of( "delay", IntNode.valueOf( millisPerBranch ) ) );
+            activities.addAll( List.of( values, identity, delay ) );
+            edges.addAll( List.of( EdgeModel.of( values, identity ), EdgeModel.of( identity, delay ) ) );
+        }
+        return getWorkflow( activities, edges, false, false, maxWorkers );
+    }
+
+
     public static Pair<Workflow, List<UUID>> getCommonTransactionsWorkflow( boolean isFailingExtract ) {
         List<ActivityModel> activities = List.of(
                 getCommonActivity( "relValues", Map.of(), CommonType.EXTRACT ),

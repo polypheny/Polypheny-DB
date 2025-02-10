@@ -102,8 +102,14 @@ public abstract class CheckpointWriter implements AutoCloseable {
     @Override
     public void close() throws Exception {
         // even in case of an error we can commit, since the checkpoint will be dropped
-        transaction.commit();
-        metadata.close();
+        try {
+            transaction.commit();
+        } catch ( Exception e ) {
+            transaction.rollback( null );
+            throw e;
+        } finally {
+            metadata.close();
+        }
     }
 
 

@@ -143,8 +143,13 @@ public class QueryUtils {
 
     public static String quoteAndJoin( List<String> colNames ) {
         return colNames.stream()
-                .map( s -> "\"" + s.replace( "\"","" ) + "\"" )
+                .map( s -> "\"" + s.replace( "\"", "" ) + "\"" )
                 .collect( Collectors.joining( ", " ) );
+    }
+
+
+    public static String quote( String field ) {
+        return "\"" + field.replace( "\"", "" ) + "\"";
     }
 
 

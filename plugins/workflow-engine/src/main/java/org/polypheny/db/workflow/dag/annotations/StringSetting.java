@@ -95,6 +95,17 @@ public @interface StringSetting {
 
     boolean containsRegex() default false;
 
+    /**
+     * Whether to display a text editor in the UI.
+     * It is better suited for longer (multi-line) strings.
+     */
+    boolean textEditor() default false;
+
+    /**
+     * The syntax highlighting language when using the text editor.
+     */
+    String language() default "";
+
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)

@@ -336,10 +336,94 @@ public class ActivityUtils {
 
 
     /**
-     * Adds a generated document id to the given map if it does not yet contain an id.
+     * Inserts the specified replacement value into the document (in-place operation).
+     * If the pointer points to an array element that does not exist yet, a new element is added
+     * (resulting in the specified index possibly being larger than the actual index after insertion).
+     *
+     * @param doc the document to modify
+     * @param pointer a pointer to the insertion location. The entire path except for the last key or index must exist.
+     * @param replacement the value to either replace an existing value or get inserted as a new value
+     * @throws Exception If the path is invalid or the replacement cannot be inserted at that location
+     */
+    public static void insertSubValue( PolyDocument doc, String pointer, PolyValue replacement ) throws Exception {
+        if ( pointer.isEmpty() ) {
+            throw new IllegalArgumentException( "Pointer must not be empty" );
+        }
+
+        int lastDotIndex = pointer.lastIndexOf( '.' );
+        String path = "";
+        String key;
+        if ( lastDotIndex == -1 ) {
+            key = pointer;
+        } else {
+            path = pointer.substring( 0, lastDotIndex );
+            key = pointer.substring( lastDotIndex + 1 );
+            if ( key.isBlank() ) {
+                throw new IllegalArgumentException( "Invalid Pointer: " + pointer );
+            }
+        }
+
+        PolyValue target = getSubValue( doc, path ); // target is either a PolyDocument or PolyList
+        if ( target.isDocument() ) {
+            target.asDocument().put( PolyString.of( key ), replacement );
+        } else if ( target.isList() ) {
+            int i = Integer.parseInt( key );
+            if ( i >= target.asList().size() ) {
+                target.asList().add( replacement );
+            } else {
+                target.asList().set( i, replacement );
+            }
+        } else {
+            throw new IllegalArgumentException( "Target value does not support inserting values: " + path );
+        }
+    }
+
+
+    /**
+     * Removes the value at the specified pointer location from the document.
+     *
+     * @param doc the document to modify
+     * @param pointer a pointer to the field to remove. The entire path except for the last key or index must exist.
+     * @throws Exception If the path is invalid
+     */
+    public static void removeSubValue( PolyDocument doc, String pointer ) throws Exception {
+        if ( pointer.isEmpty() ) {
+            throw new IllegalArgumentException( "Pointer must not be empty" );
+        }
+
+        int lastDotIndex = pointer.lastIndexOf( '.' );
+        String path = "";
+        String key;
+        if ( lastDotIndex == -1 ) {
+            key = pointer;
+        } else {
+            path = pointer.substring( 0, lastDotIndex );
+            key = pointer.substring( lastDotIndex + 1 );
+            if ( key.isBlank() ) {
+                throw new IllegalArgumentException( "Invalid Pointer: " + pointer );
+            }
+        }
+
+        PolyValue target = getSubValue( doc, path ); // target is either a PolyDocument or PolyList
+        if ( target.isDocument() ) {
+            target.asDocument().remove( PolyString.of( key ) );
+        } else if ( target.isList() ) {
+            int i = Integer.parseInt( key );
+            target.asList().remove( i );
+        } else {
+            throw new IllegalArgumentException( "Target value does not support removal: " + path );
+        }
+    }
+
+
+    /**
+     * Adds a generated document id to the given map if it does not yet contain a valid id.
      */
     public static void addDocId( Map<PolyString, PolyValue> map ) {
-        map.putIfAbsent( Activity.docId, PolyString.of( BsonUtil.getObjectId() ) );
+        if ( map.containsKey( Activity.docId ) && map.get( Activity.docId ).isString() ) {
+            return;
+        }
+        map.put( Activity.docId, PolyString.of( BsonUtil.getObjectId() ) );
     }
 
 

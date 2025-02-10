@@ -44,7 +44,7 @@ public class WorkflowPlugin extends PolyPlugin {
 
     @Override
     public void stop() {
-        System.out.println( "WorkflowPlugin: on stop" );
+        manager.shutdown();
     }
 
 }

@@ -72,12 +72,12 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 @FieldSelectSetting(key = "rightCols", displayName = "Right Column(s)", simplified = true, reorder = true, targetInput = 1,
         shortDescription = "Specify the join columns of Input 1.")
 @EnumSetting(key = "joinType", displayName = "Join Type",
-        options = {"LEFT", "FULL", "INNER", "RIGHT"}, defaultValue = "INNER")
+        options = { "LEFT", "FULL", "INNER", "RIGHT" }, defaultValue = "INNER")
 @BoolSetting(key = "keepCols", displayName = "Keep Join Columns", defaultValue = false)
 
 @SuppressWarnings("unused")
 public class RelJoinActivity implements Activity, Fusable {
-    public static final JoinAlgType[] types = JoinAlgType.values();
+
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
         TypePreview left = inTypes.get( 0 ), right = inTypes.get( 1 );
@@ -106,7 +106,7 @@ public class RelJoinActivity implements Activity, Fusable {
         AlgNode left = inputs.get( 0 ), right = inputs.get( 1 );
         List<String> leftCols = settings.get( "leftCols", FieldSelectValue.class ).getInclude();
         List<String> rightCols = settings.get( "rightCols", FieldSelectValue.class ).getInclude();
-        JoinAlgType joinType = JoinAlgType.valueOf( settings.get( "joinType", StringValue.class ).getValue());
+        JoinAlgType joinType = JoinAlgType.valueOf( settings.get( "joinType", StringValue.class ).getValue() );
         List<Pair<Integer, Integer>> indices = Pair.zip(
                 leftCols.stream().map( c -> left.getTupleType().getFieldNames().indexOf( c ) ).toList(),
                 rightCols.stream().map( c -> right.getTupleType().getFieldNames().indexOf( c ) ).toList()
@@ -118,9 +118,9 @@ public class RelJoinActivity implements Activity, Fusable {
             RexNode equals = builder.makeCall(
                     OperatorRegistry.get( OperatorName.EQUALS ),
                     builder.makeInputRef( left, index.left ),
-                    builder.makeInputRef( right.getTupleType().getFields().get( index.right ).getType(), fieldCount + index.right  ) // index in concatenated type
+                    builder.makeInputRef( right.getTupleType().getFields().get( index.right ).getType(), fieldCount + index.right ) // index in concatenated type
             );
-            if (condition == null) {
+            if ( condition == null ) {
                 condition = equals;
             } else {
                 condition = builder.makeCall( OperatorRegistry.get( OperatorName.AND ), condition, equals );
@@ -130,35 +130,36 @@ public class RelJoinActivity implements Activity, Fusable {
         boolean keepCols = settings.get( "keepCols", BoolValue.class ).getValue();
         List<RexIndexRef> refs = new ArrayList<>();
         Builder typeBuilder = factory.builder();
-        for (int i = 0; i < fieldCount; i++) {
-            AlgDataTypeField field = left.getTupleType().getFields().get(i);
+        for ( int i = 0; i < fieldCount; i++ ) {
+            AlgDataTypeField field = left.getTupleType().getFields().get( i );
             refs.add( builder.makeInputRef( field.getType(), i ) );
             typeBuilder.add( field );
         }
-        for (int i = 0; i < right.getTupleType().getFieldCount(); i++) {
-            AlgDataTypeField field = right.getTupleType().getFields().get(i);
-            if (!field.getName().equals( StorageManager.PK_COL ) && (keepCols || !rightCols.contains( field.getName()))) {
+        for ( int i = 0; i < right.getTupleType().getFieldCount(); i++ ) {
+            AlgDataTypeField field = right.getTupleType().getFields().get( i );
+            if ( !field.getName().equals( StorageManager.PK_COL ) && (keepCols || !rightCols.contains( field.getName() )) ) {
                 refs.add( builder.makeInputRef( field.getType(), i + fieldCount ) );
-                typeBuilder.add( join.getTupleType().getFields().get(i + fieldCount) ); // use field with uniquified name
+                typeBuilder.add( join.getTupleType().getFields().get( i + fieldCount ) ); // use field with uniquified name
             }
         }
         return LogicalRelProject.create( join, refs, typeBuilder.build() );
     }
 
-    private AlgDataType getType(AlgDataType left, AlgDataType right, List<String> leftCols, List<String> rightCols ) throws ActivityException {
-        if (leftCols.size() != rightCols.size()) {
+
+    private AlgDataType getType( AlgDataType left, AlgDataType right, List<String> leftCols, List<String> rightCols ) throws ActivityException {
+        if ( leftCols.size() != rightCols.size() ) {
             throw new InvalidSettingException( "The same number of columns must be selected", "rightCols" );
-        } else if (leftCols.isEmpty()) {
+        } else if ( leftCols.isEmpty() ) {
             throw new InvalidSettingException( "At least one column to join on must be selected.", "leftCols" );
         }
         List<String> leftLower = left.getFieldNames().stream().map( n -> n.toLowerCase( Locale.ROOT ) ).toList();
-        Optional<String> unknown = leftCols.stream().filter( c -> !leftLower.contains( c.toLowerCase(Locale.ROOT) ) ).findAny();
-        if (unknown.isPresent()) {
+        Optional<String> unknown = leftCols.stream().filter( c -> !leftLower.contains( c.toLowerCase( Locale.ROOT ) ) ).findAny();
+        if ( unknown.isPresent() ) {
             throw new InvalidSettingException( "Unknown column '" + unknown.get() + "'", "leftCols" );
         }
         List<String> rightLower = right.getFieldNames().stream().map( n -> n.toLowerCase( Locale.ROOT ) ).toList();
-        unknown = rightCols.stream().filter( c -> !rightLower.contains( c.toLowerCase(Locale.ROOT) ) ).findAny();
-        if (unknown.isPresent()) {
+        unknown = rightCols.stream().filter( c -> !rightLower.contains( c.toLowerCase( Locale.ROOT ) ) ).findAny();
+        if ( unknown.isPresent() ) {
             throw new InvalidSettingException( "Unknown column '" + unknown.get() + "'", "rightCols" );
         }
         return ActivityUtils.concatTypes( left, right );

@@ -18,9 +18,11 @@ package org.polypheny.db.workflow.session;
 
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.WorkflowImpl;
 import org.polypheny.db.workflow.models.SessionModel;
@@ -29,6 +31,7 @@ import org.polypheny.db.workflow.repo.WorkflowRepo;
 import org.polypheny.db.workflow.repo.WorkflowRepo.WorkflowRepoException;
 import org.polypheny.db.workflow.repo.WorkflowRepoImpl;
 
+@Slf4j
 public class SessionManager {
 
     private static SessionManager INSTANCE = null;
@@ -94,6 +97,19 @@ public class SessionManager {
     public void terminateSession( UUID sId ) {
         getSessionOrThrow( sId ).terminate();
         removeSession( sId );
+    }
+
+
+    public void terminateAll() {
+        Set<UUID> sessionIds = userSessions.keySet();
+        sessionIds.addAll( apiSessions.keySet() );
+        for ( UUID sId : sessionIds ) {
+            try {
+                terminateSession( sId );
+            } catch ( Exception e ) {
+                log.warn( "Unable to terminate session: {}", sId, e );
+            }
+        }
     }
 
 

@@ -39,6 +39,7 @@ import org.polypheny.db.util.Sources;
 import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.workflow.dag.activities.ActivityRegistry;
+import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
 import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.models.requests.CreateSessionRequest;
 import org.polypheny.db.workflow.models.requests.ImportWorkflowRequest;
@@ -65,11 +66,15 @@ public class WorkflowManager {
         sessionManager = SessionManager.getInstance();
         registerEndpoints();
 
-        // waiting with test to ensure everything has started
+        if ( PolyphenyDb.mode == RunMode.TEST ) {
+            return;
+        }
+        // waiting to ensure everything has started
         new java.util.Timer().schedule(
                 new java.util.TimerTask() {
                     @Override
                     public void run() {
+                        StorageManagerImpl.clearAll(); // remove old namespaces and checkpoints
                         registerAdapter(); // TODO: only register adapter when the first workflow is opened
                         addSampleWorkflows();
                     }
@@ -79,10 +84,12 @@ public class WorkflowManager {
     }
 
 
+    public void shutdown() {
+        sessionManager.terminateAll();
+    }
+
+
     private void addSampleWorkflows() {
-        if ( PolyphenyDb.mode == RunMode.TEST ) {
-            return;
-        }
         URL workflowDir = this.getClass().getClassLoader().getResource( "workflows/" );
         File[] files = Sources.of( workflowDir )
                 .file()
@@ -108,7 +115,7 @@ public class WorkflowManager {
 
 
     private void registerAdapter() {
-        if ( PolyphenyDb.mode == RunMode.TEST || Catalog.getInstance().getAdapters().values().stream().anyMatch( a -> a.uniqueName.equals( DEFAULT_CHECKPOINT_ADAPTER ) ) ) {
+        if ( Catalog.getInstance().getAdapters().values().stream().anyMatch( a -> a.uniqueName.equals( DEFAULT_CHECKPOINT_ADAPTER ) ) ) {
             return;
         }
 
