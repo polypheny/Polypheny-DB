@@ -559,14 +559,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         AlgEntityLockablesExtractor entityScanner = new AlgEntityLockablesExtractor();
         AlgOptUtil.go( entityScanner, logicalRoot.alg );
         Transaction transaction = statement.getTransaction();
-        entityScanner.getResult().forEach( ( k, v ) -> {
-            try {
-                transaction.acquireLockable( k, v );
-            } catch ( DeadlockException e ) {
-                // TODO TH: throw more expressive exception
-                throw new RuntimeException( e );
-            }
-        } );
+        entityScanner.getResult().forEach( transaction::acquireLockable );
     }
 
 

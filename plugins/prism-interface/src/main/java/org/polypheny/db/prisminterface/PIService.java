@@ -232,11 +232,16 @@ class PIService {
 
 
     private Request readOneMessage( BlockingQueue<Optional<byte[]>> waiting ) throws IOException {
-        try {
-            return Request.parseFrom( waiting.take().orElseThrow( EOFException::new ) );
-        } catch ( InterruptedException e ) {
-            throw new IOException( e );
+        byte[] msg;
+        while ( true ) {
+            try {
+                msg = waiting.take().orElseThrow( EOFException::new );
+                break;
+            } catch ( InterruptedException e ) {
+                // retry
+            }
         }
+        return Request.parseFrom( msg );
     }
 
 
