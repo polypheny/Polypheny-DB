@@ -49,14 +49,14 @@ public class LockableImpl implements Lockable {
                     case SHARED -> acquireShared( transaction );
                     case EXCLUSIVE -> acquireExclusive( transaction );
                 }
-                return;
-            }
-            LockType heldLockType = getLockType();
-            if ( heldLockType == lockType ) {
-                return;
-            }
-            if ( heldLockType == LockType.SHARED ) {
-                upgradeToExclusive( transaction );
+            } else {
+                LockType heldLockType = getLockType();
+                if ( heldLockType == lockType ) {
+                    return;
+                }
+                if ( heldLockType == LockType.SHARED ) {
+                    upgradeToExclusive( transaction );
+                }
             }
         } catch ( InterruptedException e ) {
             transaction.releaseAllLocks();
