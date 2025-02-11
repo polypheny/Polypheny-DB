@@ -33,6 +33,7 @@ import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.FilterSetting;
 import org.polypheny.db.workflow.dag.settings.FilterValue;
 import org.polypheny.db.workflow.dag.settings.FilterValue.Operator;
+import org.polypheny.db.workflow.dag.settings.GroupDef;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue.SelectMode;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
@@ -50,8 +51,12 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
         shortDescription = "Horizontally partitions the rows of a table based on a list of filter conditions."
 )
 
+@FilterSetting(key = "filter", displayName = "Filter Conditions", pos = 1,
+        excludedOperators = { Operator.HAS_KEY, Operator.IS_OBJECT },
+        modes = { SelectMode.EXACT, SelectMode.REGEX, SelectMode.INDEX })
+
 @EnumSetting(
-        key = "rejectedHandler", pos = 0,
+        key = "rejectedHandler", pos = 1, group = GroupDef.ADVANCED_GROUP,
         displayName = "Handling of Rejected Rows",
         options = { "store", "ignore", "fail" },
         defaultValue = "store",
@@ -59,10 +64,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
         displayDescriptions = { "Send the rejected rows to the second output.", "Skip rejected rows for better performance.", "A row that does not match the filter results in the activity to fail." },
         shortDescription = "Defines the behavior for rows that do not match the filter criteria."
 )
-@FilterSetting(key = "filter", displayName = "Filter Conditions", pos = 1,
-        excludedOperators = { Operator.HAS_KEY, Operator.IS_OBJECT },
-        modes = { SelectMode.EXACT, SelectMode.REGEX, SelectMode.INDEX })
-@BoolSetting(key = "negate", displayName = "Negate Filter", pos = 2, defaultValue = false,
+@BoolSetting(key = "negate", displayName = "Negate Filter", pos = 2, defaultValue = false, group = GroupDef.ADVANCED_GROUP,
         shortDescription = "If enabled, the filter is negated, swapping the roles of the two outputs.")
 
 @SuppressWarnings("unused")

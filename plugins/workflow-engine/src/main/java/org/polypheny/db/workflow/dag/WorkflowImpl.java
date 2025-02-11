@@ -391,7 +391,15 @@ public class WorkflowImpl implements Workflow {
     @Override
     public void deleteActivity( UUID activityId, StorageManager sm ) {
         Set<UUID> reachable = getReachableActivities( activityId, false );
-        edges.entrySet().removeIf( entry -> entry.getKey().left.equals( activityId ) || entry.getKey().right.equals( activityId ) );
+        Set<Edge> removedEdges = new HashSet<>();
+        edges.entrySet().removeIf( entry -> {
+            if ( entry.getKey().left.equals( activityId ) || entry.getKey().right.equals( activityId ) ) {
+                removedEdges.addAll( entry.getValue() );
+                return true;
+            }
+            return false;
+        } );
+        removedEdges.forEach( this::updateMultiEdges );
         activities.remove( activityId );
         sm.dropCheckpoints( activityId );
         resetAll( reachable, sm );
@@ -443,17 +451,23 @@ public class WorkflowImpl implements Workflow {
             return;
         }
         edgeList.remove( edge );
-        if ( edge instanceof DataEdge dataEdge && dataEdge.isMulti() ) {
-            int nextIdx = model.getToPort() + 1;
-            DataEdge nextEdge = getDataEdge( model.getToId(), nextIdx );
+        updateMultiEdges( edge );
+        reset( edge.getTo().getId(), sm );
+    }
+
+
+    private void updateMultiEdges( Edge deletedEdge ) {
+        if ( deletedEdge instanceof DataEdge dataEdge && dataEdge.isMulti() ) {
+            int nextIdx = dataEdge.getToPort() + 1;
+            UUID toId = dataEdge.getTo().getId();
+            DataEdge nextEdge = getDataEdge( toId, nextIdx );
             while ( nextEdge != null ) {
                 edges.get( nextEdge.toPair() ).remove( nextEdge );
                 DataEdge movedEdge = DataEdge.of( nextEdge, nextIdx - 1 );
                 edges.get( movedEdge.toPair() ).add( movedEdge );
-                nextEdge = getDataEdge( model.getToId(), ++nextIdx );
+                nextEdge = getDataEdge( toId, ++nextIdx );
             }
         }
-        reset( edge.getTo().getId(), sm );
     }
 
 

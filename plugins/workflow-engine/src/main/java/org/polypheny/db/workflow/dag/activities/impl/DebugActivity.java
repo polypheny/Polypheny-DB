@@ -52,11 +52,14 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 @ActivityDefinition(type = "debug", displayName = "Relational Identity Activity with Debugging",
         categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
         inPorts = { @InPort(type = PortType.REL) },
-        outPorts = { @OutPort(type = PortType.REL) }
+        outPorts = { @OutPort(type = PortType.REL) },
+        shortDescription = "This activity is meant for debugging. It's behavior regarding execution time, successful execution and the ability to fuse and pipe can be configured in the settings."
 )
 
-@IntSetting(key = "delay", displayName = "Delay (ms)", defaultValue = 50, min = 0)
-@IntSetting(key = "pipeDelay", displayName = "Tuple-wise Delay for Pipelining (ms)", defaultValue = 1, min = 0)
+@IntSetting(key = "delay", displayName = "Delay (ms)", defaultValue = 50, min = 0,
+        shortDescription = "A single delay that is applied at the end of the execution when in normal or fused mode.")
+@IntSetting(key = "pipeDelay", displayName = "Tuple-wise Delay for Pipelining (ms)", defaultValue = 1, min = 0,
+        shortDescription = "Tuple-wise delay that is applied when in pipelining mode.")
 @BoolSetting(key = "canPipe", displayName = "Enable Pipelining", defaultValue = false)
 @BoolSetting(key = "canFuse", displayName = "Enable Fusion", defaultValue = false)
 @BoolSetting(key = "isSuccessful", displayName = "Successful Execution", defaultValue = true)

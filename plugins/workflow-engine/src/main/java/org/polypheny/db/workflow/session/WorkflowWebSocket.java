@@ -71,7 +71,6 @@ public class WorkflowWebSocket implements Consumer<WsConfig> {
         WsRequest baseRequest = ctx.messageAsClass( WsRequest.class );
         try {
             if ( baseRequest.type != RequestType.KEEPALIVE ) {
-                System.out.println( "Received message with id: " + baseRequest.msgId );
                 session.updateLastInteraction();
             }
 

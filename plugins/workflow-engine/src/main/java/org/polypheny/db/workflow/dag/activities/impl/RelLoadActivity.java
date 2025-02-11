@@ -76,7 +76,8 @@ import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 
 @ActivityDefinition(type = "relLoad", displayName = "Load Table to Polypheny", categories = { ActivityCategory.LOAD, ActivityCategory.RELATIONAL },
         inPorts = { @InPort(type = PortType.REL) },
-        outPorts = {})
+        outPorts = {},
+        shortDescription = "Loads the table into a target table within this Polypheny instance.")
 @DefaultGroup(subgroups = { @Subgroup(key = "create", displayName = "Create Table") })
 
 @EntitySetting(key = TABLE_KEY, displayName = "Table", dataModel = DataModel.RELATIONAL, pos = 0)

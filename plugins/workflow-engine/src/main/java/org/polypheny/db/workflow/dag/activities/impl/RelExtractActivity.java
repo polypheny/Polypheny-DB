@@ -60,9 +60,11 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 @ActivityDefinition(type = "relExtract", displayName = "Extract Table", categories = { ActivityCategory.EXTRACT, ActivityCategory.RELATIONAL },
         inPorts = {},
-        outPorts = { @OutPort(type = PortType.REL) })
+        outPorts = { @OutPort(type = PortType.REL, description = "The extracted table.") },
+        shortDescription = "Extracts an existing table from Polypheny and outputs its rows.")
 
-@EntitySetting(key = TABLE_KEY, displayName = "Table", dataModel = DataModel.RELATIONAL, mustExist = true)
+@EntitySetting(key = TABLE_KEY, displayName = "Table", dataModel = DataModel.RELATIONAL, mustExist = true,
+        shortDescription = "The table to extract, identified by namespace and name.")
 
 @SuppressWarnings("unused")
 public class RelExtractActivity implements Activity, Fusable, Pipeable {

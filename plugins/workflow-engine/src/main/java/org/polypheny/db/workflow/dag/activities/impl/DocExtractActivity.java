@@ -61,9 +61,11 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 
 @ActivityDefinition(type = "docExtract", displayName = "Extract Collection", categories = { ActivityCategory.EXTRACT, ActivityCategory.DOCUMENT },
         inPorts = {},
-        outPorts = { @OutPort(type = PortType.DOC) })
+        outPorts = { @OutPort(type = PortType.DOC, description = "The extracted collection of documents.") },
+        shortDescription = "Extracts an existing collection from Polypheny and outputs its documents.")
 
-@EntitySetting(key = COLL_KEY, displayName = "Collection", dataModel = DataModel.DOCUMENT, mustExist = true)
+@EntitySetting(key = COLL_KEY, displayName = "Collection", dataModel = DataModel.DOCUMENT, mustExist = true,
+        shortDescription = "The collection to extract, identified by namespace and name.")
 
 @SuppressWarnings("unused")
 public class DocExtractActivity implements Activity, Fusable, Pipeable {
@@ -129,7 +131,7 @@ public class DocExtractActivity implements Activity, Fusable, Pipeable {
         try ( ResultIterator result = getResultIterator( ctx.getTransaction(), collection ) ) { // transaction will get committed or rolled back externally
             Iterator<List<PolyValue>> it = CheckpointReader.arrayToListIterator( result.getIterator(), true );
             while ( it.hasNext() ) {
-                if (!output.put( it.next() )) {
+                if ( !output.put( it.next() ) ) {
                     break;
                 }
             }

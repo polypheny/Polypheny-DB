@@ -44,8 +44,9 @@ import org.polypheny.db.workflow.engine.storage.reader.DocReader;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 
 @ActivityDefinition(type = "docIdentity", displayName = "Document Identity", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT },
-        inPorts = { @InPort(type = PortType.DOC) },
-        outPorts = { @OutPort(type = PortType.DOC) }
+        inPorts = { @InPort(type = PortType.DOC, description = "The input collection of documents.") },
+        outPorts = { @OutPort(type = PortType.DOC, description = "The output collection, identical to the input.") },
+        shortDescription = "Passes documents from input to output without modification. Used for testing purposes."
 )
 @SuppressWarnings("unused")
 public class DocIdentityActivity implements Activity, Fusable, Pipeable {

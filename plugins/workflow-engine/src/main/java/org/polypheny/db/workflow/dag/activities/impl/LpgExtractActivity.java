@@ -52,9 +52,11 @@ import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 
 @ActivityDefinition(type = "lpgExtract", displayName = "Extract Graph", categories = { ActivityCategory.EXTRACT, ActivityCategory.GRAPH },
         inPorts = {},
-        outPorts = { @OutPort(type = PortType.LPG) })
+        outPorts = { @OutPort(type = PortType.LPG, description = "The extracted graph.") },
+        shortDescription = "Extracts an existing graph from Polypheny and outputs it.")
 
-@EntitySetting(key = GRAPH_KEY, displayName = "Graph", dataModel = DataModel.GRAPH, mustExist = true)
+@EntitySetting(key = GRAPH_KEY, displayName = "Graph", dataModel = DataModel.GRAPH, mustExist = true,
+        shortDescription = "The graph to extract.")
 
 @SuppressWarnings("unused")
 public class LpgExtractActivity implements Activity, Pipeable {

@@ -60,12 +60,15 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 @Slf4j
 
-@ActivityDefinition(type = "relValues", displayName = "Generate Table", categories = { ActivityCategory.EXTRACT, ActivityCategory.RELATIONAL },
+@ActivityDefinition(type = "relValues", displayName = "Generate Random Table", categories = { ActivityCategory.EXTRACT, ActivityCategory.RELATIONAL },
         inPorts = {},
-        outPorts = { @OutPort(type = PortType.REL) }
+        outPorts = { @OutPort(type = PortType.REL) },
+        shortDescription = "Generates a random table emulating employee data."
 )
-@IntSetting(key = "rowCount", displayName = "Row Count", defaultValue = 3, min = 1, max = 10_000_000)
-@BoolSetting(key = "fixSeed", displayName = "Fix Random Seed", defaultValue = false)
+@IntSetting(key = "rowCount", displayName = "Row Count", defaultValue = 3, min = 1, max = 10_000_000,
+        shortDescription = "The number of rows to generate.")
+@BoolSetting(key = "fixSeed", displayName = "Fix Random Seed", defaultValue = false,
+        shortDescription = "If enabled, ensures the same random values are generated each time.")
 
 @SuppressWarnings("unused")
 public class RelValuesActivity implements Activity, Fusable, Pipeable {

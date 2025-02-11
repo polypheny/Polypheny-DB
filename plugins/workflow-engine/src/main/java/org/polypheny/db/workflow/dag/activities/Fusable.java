@@ -91,7 +91,7 @@ public interface Fusable extends Activity {
         ExecutedContext executedContext = QueryUtils.executeAlgRoot( root, statement );
         if ( executedContext.getException().isPresent() ) {
             executedContext.getException().get().printStackTrace();
-            ctx.throwException( "An error occurred while executing the fused activity: " + executedContext.getException().get().getMessage() );
+            ctx.throwException( "An error occurred while executing the activity: " + executedContext.getException().get().getMessage() );
         }
 
         long countDelta = Math.max( estimatedTupleCount / 100, 1 );

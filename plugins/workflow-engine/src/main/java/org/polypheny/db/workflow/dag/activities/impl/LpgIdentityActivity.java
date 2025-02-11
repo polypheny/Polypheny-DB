@@ -40,8 +40,9 @@ import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
 import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 
 @ActivityDefinition(type = "lpgIdentity", displayName = "Graph Identity", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH },
-        inPorts = { @InPort(type = PortType.LPG) },
-        outPorts = { @OutPort(type = PortType.LPG) }
+        inPorts = { @InPort(type = PortType.LPG, description = "The input graph.") },
+        outPorts = { @OutPort(type = PortType.LPG, description = "The output graph, identical to the input.") },
+        shortDescription = "Passes a graph from input to output without modification. Used for testing purposes."
 )
 @SuppressWarnings("unused")
 public class LpgIdentityActivity implements Activity, Pipeable {

@@ -68,12 +68,15 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 
 @Slf4j
 
-@ActivityDefinition(type = "docValues", displayName = "Generate Collection", categories = { ActivityCategory.EXTRACT, ActivityCategory.DOCUMENT },
+@ActivityDefinition(type = "docValues", displayName = "Generate Random Collection", categories = { ActivityCategory.EXTRACT, ActivityCategory.DOCUMENT },
         inPorts = {},
-        outPorts = { @OutPort(type = PortType.DOC) }
+        outPorts = { @OutPort(type = PortType.DOC) },
+        shortDescription = "Generates a random collection emulating employee data."
 )
-@IntSetting(key = "count", displayName = "Document Count", defaultValue = 3, min = 1, max = 1_000_000)
-@BoolSetting(key = "fixSeed", displayName = "Fix Random Seed", defaultValue = false)
+@IntSetting(key = "count", displayName = "Document Count", defaultValue = 3, min = 1, max = 1_000_000,
+        shortDescription = "The number of documents to generate.")
+@BoolSetting(key = "fixSeed", displayName = "Fix Random Seed", defaultValue = false,
+        shortDescription = "If enabled, ensures the same random values are generated each time.")
 
 @SuppressWarnings("unused")
 public class DocValuesActivity implements Activity, Fusable, Pipeable {

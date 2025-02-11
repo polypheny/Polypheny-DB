@@ -34,6 +34,7 @@ import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.workflow.engine.storage.CheckpointMetadata.RelMetadata;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
+import org.polypheny.db.workflow.engine.storage.StorageManager;
 
 @Slf4j
 public class RelReader extends CheckpointReader {
@@ -101,7 +102,8 @@ public class RelReader extends CheckpointReader {
     @Override
     public Triple<Result<?, ?>, Integer, Long> getPreview() {
         LogicalTable table = getTable();
-        String query = "SELECT " + quotedCols + " FROM " + quotedIdentifier
+        String quotedNoKey = QueryUtils.quoteAndJoin( table.getColumnNames().stream().filter( n -> !n.equals( StorageManager.PK_COL ) ).toList() );
+        String query = "SELECT " + quotedNoKey + " FROM " + quotedIdentifier
                 + " LIMIT " + PREVIEW_ROW_LIMIT;
         UIRequest request = UIRequest.builder()
                 .entityId( table.id )

@@ -62,7 +62,8 @@ import org.polypheny.db.workflow.engine.storage.reader.DocReader;
 
 @ActivityDefinition(type = "docLoad", displayName = "Load Collection to Polypheny", categories = { ActivityCategory.LOAD, ActivityCategory.DOCUMENT },
         inPorts = { @InPort(type = PortType.DOC) },
-        outPorts = {})
+        outPorts = {},
+        shortDescription = "Loads the collection into a target collection within this Polypheny instance.")
 
 @EntitySetting(key = COLL_KEY, displayName = "Collection", dataModel = DataModel.DOCUMENT, pos = 0)
 @BoolSetting(key = "drop", displayName = "Drop Existing Collection", pos = 1,

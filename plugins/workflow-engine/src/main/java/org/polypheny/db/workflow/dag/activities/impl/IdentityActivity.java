@@ -48,7 +48,8 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 @ActivityDefinition(type = "identity", displayName = "Identity", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL, ActivityCategory.DOCUMENT, ActivityCategory.GRAPH },
         inPorts = { @InPort(type = PortType.ANY, description = "Input table, collection or graph") },
         outPorts = { @OutPort(type = PortType.ANY, description = "Output, equal to the input.") },
-        shortDescription = "The identity activity outputs the input unchanged. It is useful to observe the effect of having an activity with ANY output port type",
+        shortDescription = "The identity activity outputs the input unchanged. It is useful to observe the effect of having an activity with ANY output port type. "
+                + "The settings have no effect and are simply there to showcase the settings system.",
         longDescription = """
                 This is the long description of the identity activity. It is possible to use *markdown*!
                 # Title

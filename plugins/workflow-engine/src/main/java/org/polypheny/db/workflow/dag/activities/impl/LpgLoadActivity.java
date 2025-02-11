@@ -59,7 +59,8 @@ import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
 
 @ActivityDefinition(type = "lpgLoad", displayName = "Load Graph to Polypheny", categories = { ActivityCategory.LOAD, ActivityCategory.GRAPH },
         inPorts = { @InPort(type = PortType.LPG) },
-        outPorts = {})
+        outPorts = {},
+        shortDescription = "Loads the graph into a target graph within this Polypheny instance.")
 
 @EntitySetting(key = GRAPH_KEY, displayName = "Graph", dataModel = DataModel.GRAPH, pos = 0)
 @BoolSetting(key = "drop", displayName = "Drop Existing Graph", pos = 1,

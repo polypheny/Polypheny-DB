@@ -68,12 +68,14 @@ import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 
 @Slf4j
 
-@ActivityDefinition(type = "lpgValues", displayName = "Generate Graph", categories = { ActivityCategory.EXTRACT, ActivityCategory.GRAPH },
+@ActivityDefinition(type = "lpgValues", displayName = "Generate Random Graph", categories = { ActivityCategory.EXTRACT, ActivityCategory.GRAPH },
         inPorts = {},
-        outPorts = { @OutPort(type = PortType.LPG) }
+        outPorts = { @OutPort(type = PortType.LPG) },
+        shortDescription = "Generates a random graph of employees."
 )
 @DefaultGroup(subgroups = { @Subgroup(key = "nodes", displayName = "Nodes"), @Subgroup(key = "edges", displayName = "Edges") })
-@BoolSetting(key = "fixSeed", displayName = "Fix Random Seed", defaultValue = false)
+@BoolSetting(key = "fixSeed", displayName = "Fix Random Seed", defaultValue = false,
+        shortDescription = "If enabled, ensures the same random values are generated each time.")
 
 @IntSetting(key = "count", displayName = "Node Count", defaultValue = 3, min = 1, max = 1_000, subGroup = "nodes", pos = 0)
 @StringSetting(key = "nodeLabels", displayName = "Node Labels", shortDescription = "A list of node labels separated by comma (',') to sample from.",

@@ -305,7 +305,7 @@ public class FilterValue implements SettingValue {
                     }
                 }
                 predicate = constructPredicate();
-                if ( operator == Operator.REGEX ) {
+                if ( operator == Operator.REGEX || operator == Operator.REGEX_NOT ) {
                     valuePattern = ignoreCase ? Pattern.compile( value, Pattern.CASE_INSENSITIVE ) : Pattern.compile( value );
                 } else if ( operator == Operator.INCLUDED || operator == Operator.NOT_INCLUDED ) {
                     values = Arrays.stream( value.split( "," ) ).map( String::trim ).filter( s -> !s.isEmpty() ).toList();
@@ -351,6 +351,7 @@ public class FilterValue implements SettingValue {
                 case GREATER_THAN_EQUALS -> compareWith( v ) > 0 || isEqual( v );
                 case LESS_THAN_EQUALS -> compareWith( v ) < 0 || isEqual( v );
                 case REGEX -> valuePattern.matcher( ActivityUtils.valueToString( v ).value ).matches();
+                case REGEX_NOT -> !valuePattern.matcher( ActivityUtils.valueToString( v ).value ).matches();
                 case NULL -> v == null || v.isNull();
                 case NON_NULL -> v != null && !v.isNull();
                 case INCLUDED -> contains( v );
@@ -445,6 +446,7 @@ public class FilterValue implements SettingValue {
         GREATER_THAN_EQUALS,
         LESS_THAN_EQUALS,
         REGEX,
+        REGEX_NOT,
         NULL( false ),
         NON_NULL( false ),
         /**
