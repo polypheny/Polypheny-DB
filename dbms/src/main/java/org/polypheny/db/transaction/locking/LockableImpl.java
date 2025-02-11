@@ -66,7 +66,7 @@ public class LockableImpl implements Lockable {
 
 
     private void upgradeToExclusive( Transaction transaction ) throws InterruptedException {
-        concurrencyLock.lock();
+        concurrencyLock.lockInterruptibly();
         try {
             if ( isExclusive ) {
                 return;
@@ -134,7 +134,7 @@ public class LockableImpl implements Lockable {
         if ( !isRoot() ) {
             parent.acquire( transaction, LockType.SHARED );
         }
-        concurrencyLock.lock();
+        concurrencyLock.lockInterruptibly();
         try {
             while ( isExclusive || hasWaitingTransactions() ) {
                 DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners.keySet() );
@@ -152,7 +152,7 @@ public class LockableImpl implements Lockable {
         if ( !isRoot() ) {
             parent.acquire( transaction, LockType.SHARED );
         }
-        concurrencyLock.lock();
+        concurrencyLock.lockInterruptibly();
         try {
             while ( !owners.isEmpty() ) {
                 DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners.keySet() );
