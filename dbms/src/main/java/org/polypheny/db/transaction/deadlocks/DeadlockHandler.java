@@ -9,6 +9,7 @@ import org.polypheny.db.transaction.DeadlockDetectorType;
 import org.polypheny.db.transaction.DeadlockResolverType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.util.DeadlockException;
 
 public class DeadlockHandler {
 
