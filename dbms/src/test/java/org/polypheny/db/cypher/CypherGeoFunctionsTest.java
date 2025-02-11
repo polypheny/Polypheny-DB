@@ -70,6 +70,15 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
     }
 
 
+    /**
+     * Measures percentages change, relative to the larger number.
+     */
+    private static boolean isWithinPercentageChange(double a, double b, double percentage) {
+        double diff = Math.abs(a - b);
+        double maxAllowedDiff = (percentage / 100) * Math.max(a, b);
+        return diff <= maxAllowedDiff;
+    }
+
     private List<GraphResult> runQueries( List<String> queries ) {
         ArrayList<GraphResult> results = new ArrayList<>();
 
@@ -163,9 +172,8 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         return currentMap;
     }
 
-
     @Test
-    public void distancePushdownTest(){
+    public void distanceNeo4jTest(){
         ArrayList<String> queries = new ArrayList<>();
         queries.add( "CREATE (berlin:Location {name: \"Berlin\", lat: 52.5200, lon: 13.4050})" );
         queries.add( "CREATE (paris:Location {name: \"Paris\", lat: 48.8566, lon: 2.3522})" );
@@ -178,8 +186,15 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                 RETURN distanceNeo4j(pointBerlin, pointParis) AS distance_meters;
                 """ );
         List<GraphResult> results = runQueries( queries );
-        // TODO: Validate that the results are NOT equal.
+        var hsqldbResult = convertResultToMap(results.get( 0 )).get( 0 );
+        var neo4jResult = convertResultToMap(results.get( 1 )).get( 0 );
+
+        // Validate that the difference change between both numbers is smaller than a trashold, e.g. 0,2% (
+        assert isWithinPercentageChange( (Double)hsqldbResult.get( "value" ), (Integer)neo4jResult.get( "value" ), 0.2 );
     }
+
+
+
 
 
     @Test
