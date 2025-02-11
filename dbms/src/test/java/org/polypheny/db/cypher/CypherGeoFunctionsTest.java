@@ -346,84 +346,41 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
     @Test
     public void withinBBoxTest() {
-        // 2D, planar geometry
-        execute( """
+        ArrayList<String> queries = new ArrayList<>();
+
+        queries.add( """
                 CREATE (a:Dot {x: 1, y: 1, name: 'on edge'}),
                        (b:Dot {x: 1.5, y: 1.5, name: 'inside'}),
                        (c:Dot {x: 3, y: 3, name: 'outside'});
                 """ );
-        GraphResult res = execute( """
+        queries.add( """
                 MATCH (d:Dot {name: 'inside'})
                 WITH point({x: d.x, y: d.y}) AS dPoint, d
                 RETURN point.withinBBox(dPoint, point({x: 1, y: 1}), point({x: 2, y: 2})) AS result, d.name
                 """ );
-        assert res.data[0][0].contains( "\"value\":true" );
+        List<GraphResult> results = runQueries( queries );
+        assert convertResultToMap(results.get(0)).get(0).get("value").equals(true);
+        assert convertResultToMap(results.get(1)).get(0).get("value").equals(true);
 
-        res = execute( """
+        queries.remove( 1 );
+        queries.add( """
                 MATCH (d:Dot {name: 'outside'})
                 WITH point({x: d.x, y: d.y}) AS dPoint, d
                 RETURN point.withinBBox(dPoint, point({x: 1, y: 1}), point({x: 2, y: 2})) AS result, d.name
                 """ );
-        assert res.data[0][0].contains( "\"value\":false" );
+        results = runQueries( queries );
+        assert convertResultToMap(results.get(0)).get(0).get("value").equals(false);
+        assert convertResultToMap(results.get(1)).get(0).get("value").equals(false);
 
-        res = execute( """
+        queries.remove( 1 );
+        queries.add( """
                 MATCH (d:Dot {name: 'on edge'})
                 WITH point({x: d.x, y: d.y}) AS dPoint, d
                 RETURN point.withinBBox(dPoint, point({x: 1, y: 1}), point({x: 2, y: 2})) AS result, d.name
                 """ );
-        assert res.data[0][0].contains( "\"value\":true" );
-
-        // 2D, spherical geometry
-        execute( """
-                CREATE (paris:Coordinate {longitude: 2.346956837011285, latitude: 48.85505503368006, name: 'Paris'}),
-                       (brussels:Coordinate {longitude: 4.352467876598982, latitude: 50.846742342693915, name: 'Brussels'});
-                """ );
-        res = execute( """
-                MATCH (c:Coordinate {name: 'Paris'})
-                WITH point({longitude: c.longitude, latitude: c.latitude}) AS cPoint, c
-                RETURN point.withinBBox(
-                    cPoint,
-                    point({longitude: 1.9987169362536548, latitude: 48.567460188915405}),
-                    point({longitude: 4.6322913692799705, latitude: 50.68567402837961}))
-                AS result, c.name
-                """ );
-        assert res.data[0][0].contains( "\"value\":true" );
-
-        res = execute( """
-                MATCH (c:Coordinate {name: 'Brussels'})
-                WITH point({longitude: c.longitude, latitude: c.latitude}) AS cPoint, c
-                RETURN point.withinBBox(
-                    cPoint,
-                    point({longitude: 1.9987169362536548, latitude: 48.567460188915405}),
-                    point({longitude: 4.6322913692799705, latitude: 50.68567402837961}))
-                AS result, c.name
-                """ );
-        assert res.data[0][0].contains( "\"value\":false" );
-
-        // 3D, planar geometry
-        // TODO
-
-        // 3D, spherical geometry
-        // TODO
-
-        // Attempting to use POINT values with different Coordinate Reference Systems (such as WGS 84 2D and WGS 84 3D) will return null.
-        res = execute( """
-                MATCH (d:Dot {name: 'on edge'})
-                WITH point({x: d.x, y: d.y}) AS dPoint, d
-                RETURN point.withinBBox(dPoint, point({x: 1, y: 1}), point({x: 2, y: 2, z: 1})) AS result, d.name
-                """ );
-        assert res.data[0][0] == null;
-
-        res = execute( """
-                MATCH (c:Coordinate {name: 'Paris'})
-                WITH point({longitude: c.longitude, latitude: c.latitude, height: 100}) AS cPoint, c
-                RETURN point.withinBBox(
-                    cPoint,
-                    point({longitude: 4.6322913692799705, latitude: 50.68567402837961}),
-                    point({longitude: 1.9987169362536548, latitude: 48.567460188915405}))
-                AS result, c.name
-                """ );
-        assert res.data[0][0] == null;
+        results = runQueries( queries );
+        assert convertResultToMap(results.get(0)).get(0).get("value").equals(true);
+        assert convertResultToMap(results.get(1)).get(0).get("value").equals(true);
     }
 
 

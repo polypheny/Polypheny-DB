@@ -378,7 +378,7 @@ public interface NeoUtil {
             case MAX -> o -> String.format( "max(%s)", o.get( 0 ) );
             case CYPHER_POINT -> handlePoint( operands, returnType, beforeFields );
             case DISTANCE_NEO4J -> o -> String.format( "distance(%s, %s)", o.get( 0 ), o.get( 1 ) );
-            // TODO: withinBBox()
+            case CYPHER_WITHINBBOX -> o -> String.format( "point.withinBBox(%s, %s, %s)", o.get( 0 ), o.get( 1 ), o.get( 2 ) );
             default -> null;
         };
 
