@@ -134,6 +134,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Getter
     private final Set<Lockable> lockedEntities = new HashSet<>();
 
+    private final Thread executor;
+
 
     TransactionImpl(
             PolyXid xid,
@@ -151,6 +153,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         this.analyze = analyze;
         this.origin = origin;
         this.flavor = flavor;
+        this.executor = Thread.currentThread();
     }
 
 
@@ -430,7 +433,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public void wakeup() {
-        Thread.currentThread().interrupt();
+        executor.interrupt();
     }
 
 
