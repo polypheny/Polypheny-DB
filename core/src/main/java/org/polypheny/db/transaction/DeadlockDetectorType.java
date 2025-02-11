@@ -17,6 +17,5 @@
 package org.polypheny.db.transaction;
 
 public enum DeadlockDetectorType {
-    GRAPH_DEADLOCK_DETECTOR,
-    SEQUENCE_DEADLOCK_DETECTOR
+    GRAPH_DEADLOCK_DETECTOR
 }
