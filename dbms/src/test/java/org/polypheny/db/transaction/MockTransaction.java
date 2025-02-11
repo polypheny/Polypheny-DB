@@ -178,7 +178,7 @@ public class MockTransaction implements Transaction {
 
     @Override
     public void wakeup() {
-
+        Thread.currentThread().interrupt();
     }
 
 

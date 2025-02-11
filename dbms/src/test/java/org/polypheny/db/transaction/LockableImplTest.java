@@ -17,6 +17,7 @@
 package org.polypheny.db.transaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockableImpl;
+import org.polypheny.db.util.DeadlockException;
 
 public class LockableImplTest {
 
@@ -242,15 +244,13 @@ public class LockableImplTest {
 
         ExecutorService executorService2 = Executors.newSingleThreadExecutor();
         Future<?> future2 = executorService2.submit( () -> {
-            try {
+            assertThrows( DeadlockException.class, () -> {
                 transaction2.acquireLockable( lockable, LockType.EXCLUSIVE );
                 assertEquals( LockType.EXCLUSIVE, lockable.getLockType() );
                 assertEquals( 1, lockable.getCopyOfOwners().size() );
                 assertTrue( lockable.getCopyOfOwners().containsKey( transaction2 ) );
                 transaction2.commit();
-            } catch ( Exception e ) {
-                fail( "Transaction 2 failed: " + e.getMessage() );
-            }
+            } );
         } );
 
         Thread.sleep( 2000 );
@@ -264,6 +264,8 @@ public class LockableImplTest {
         } catch ( Exception e ) {
             fail( "Transaction 2 failed: " + e.getMessage() );
         }
+
+
 
         future1.get( 1, TimeUnit.MINUTES );
         future2.get( 1, TimeUnit.MINUTES );

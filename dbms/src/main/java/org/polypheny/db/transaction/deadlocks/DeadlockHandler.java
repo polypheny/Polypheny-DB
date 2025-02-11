@@ -1,25 +1,8 @@
-/*
- * Copyright 2019-2024 The Polypheny Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.polypheny.db.transaction.deadlocks;
 
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 import lombok.NonNull;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.DeadlockDetectorType;
@@ -29,21 +12,18 @@ import org.polypheny.db.transaction.locking.Lockable;
 
 public class DeadlockHandler {
 
-    public static DeadlockHandler INSTANCE;
+    public static final DeadlockHandler INSTANCE;
 
     private final DeadlockDetector deadlockDetector;
     private final DeadlockResolver deadlockResolver;
 
-    private final ReentrantReadWriteLock concurrencyLock = new ReentrantReadWriteLock();
-    private final Lock readLock = concurrencyLock.readLock();
-    private final Lock writeLock = concurrencyLock.writeLock();
+    private final ReentrantLock lock = new ReentrantLock( true );
 
 
     static {
         DeadlockDetectorType deadlockDetectorType = (DeadlockDetectorType) RuntimeConfig.S2PL_DEADLOCK_DETECTOR_TYPE.getEnum();
         DeadlockDetector detector = switch ( deadlockDetectorType ) {
             case GRAPH_DEADLOCK_DETECTOR -> new GraphDeadlockDetector();
-            case SEQUENCE_DEADLOCK_DETECTOR -> new RequestSequenceDeadlockDetector();
         };
 
         DeadlockResolverType deadlockResolverType = (DeadlockResolverType) RuntimeConfig.S2PL_DEADLOCK_RESOLVER_TYPE.getEnum();
@@ -63,30 +43,35 @@ public class DeadlockHandler {
 
 
     public void addAndResolveDeadlock( @NonNull Lockable lockable, @NonNull Transaction transaction, @NonNull Set<Transaction> owners ) throws InterruptedException {
-        writeLock.lock();
+        lock.lock();
         try {
             deadlockDetector.add( lockable, transaction, owners );
-            List<Transaction> conflictingTransactions = deadlockDetector.getConflictingTransactions();
-
-            while ( !conflictingTransactions.isEmpty() ) {
-                deadlockResolver.resolveDeadlock( conflictingTransactions );
-                if ( Thread.currentThread().isInterrupted() ) {
-                    throw new InterruptedException( "Transaction was interrupted due to deadlock resolution." );
-                }
-                conflictingTransactions = deadlockDetector.getConflictingTransactions();
-            }
         } finally {
-            writeLock.unlock();
+            lock.unlock();
+        }
+
+        List<Transaction> conflictingTransactions;
+        while ( !(conflictingTransactions = deadlockDetector.getConflictingTransactions()).isEmpty() ) {
+            lock.lock();
+            try {
+                deadlockResolver.resolveDeadlock( conflictingTransactions );
+            } finally {
+                lock.unlock();
+            }
+
+            if ( Thread.currentThread().isInterrupted() ) {
+                throw new InterruptedException( "Transaction was interrupted due to deadlock resolution." );
+            }
         }
     }
 
 
     public void remove( @NonNull Lockable lockable, @NonNull Transaction transaction ) {
-        readLock.lock();
+        lock.lock();
         try {
             deadlockDetector.remove( lockable, transaction );
         } finally {
-            readLock.unlock();
+            lock.unlock();
         }
     }
 
