@@ -545,6 +545,7 @@ public enum BuiltInMethod {
     CYPHER_DISTANCE( CypherFunctions.class, "distance", PolyValue.class, PolyValue.class ),
     CYPHER_DISTANCE_NEO4J( CypherFunctions.class, "distanceNeo4j", PolyValue.class, PolyValue.class ),
     CYPHER_WITHIN_BBOX( CypherFunctions.class, "withinBBox", PolyValue.class, PolyValue.class, PolyValue.class ),
+    CYPHER_WITHIN_GEOMETRY( CypherFunctions.class, "withinGeometry", PolyValue.class, PolyValue.class),
     TO_NODE( CypherFunctions.class, "toNode", Enumerable.class ),
     TO_EDGE( CypherFunctions.class, "toEdge", Enumerable.class ),
     TO_GRAPH( CypherFunctions.class, "toGraph", Enumerable.class, Enumerable.class ),

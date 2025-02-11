@@ -658,6 +658,18 @@ public class CypherFunctions {
         return new PolyBoolean( g.coveredBy( gBBox ) );
     }
 
+    @SuppressWarnings("unused")
+    public static PolyBoolean withinGeometry( PolyValue point, PolyValue geometry ) {
+        PolyPoint g = point.asGeometry().asPoint();
+        PolyGeometry polyGeometry = geometry.asGeometry();
+
+        if ( !(g.getSRID().equals( polyGeometry.getSRID() ) )) {
+            // Return null if the CRS of all points are not the same.
+            return null;
+        }
+
+        return new PolyBoolean( g.coveredBy( polyGeometry ) );
+    }
 
     private static PolyGeometry createBbox( PolyPoint lowerLeft, PolyPoint upperRight ) {
         Coordinate bottomLeft = new Coordinate( lowerLeft.getX(), lowerLeft.getY() );

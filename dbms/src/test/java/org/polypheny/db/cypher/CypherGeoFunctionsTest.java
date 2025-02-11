@@ -73,33 +73,43 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
     /**
      * Measures percentages change, relative to the larger number.
      */
-    private static boolean isWithinPercentageChange(double a, double b, double percentage) {
-        double diff = Math.abs(a - b);
-        double maxAllowedDiff = (percentage / 100) * Math.max(a, b);
+    private static boolean isWithinPercentageChange( double a, double b, double percentage ) {
+        double diff = Math.abs( a - b );
+        double maxAllowedDiff = (percentage / 100) * Math.max( a, b );
         return diff <= maxAllowedDiff;
     }
 
     private List<GraphResult> runQueries( List<String> queries ) {
+        return runQueries( queries, true, true );
+    }
+
+    private List<GraphResult> runQueries( List<String> queries, boolean onHsqlDb, boolean onNeo4j ) {
         ArrayList<GraphResult> results = new ArrayList<>();
+        GraphResult finalResult = null;
 
         // 1. Run queries internally
-        tearDown();
-        createGraph();
-        GraphResult finalResult = null;
-        for ( String query : queries ) {
-            finalResult = execute( query, GRAPH_NAME );
+        if (onHsqlDb){
+            tearDown();
+            createGraph();
+            for ( String query : queries ) {
+                finalResult = execute( query, GRAPH_NAME );
+            }
+            results.add( finalResult );
         }
-        results.add( finalResult );
 
         // 2. Run queries in Docker
-        deleteData( neo4jDatabaseName );
-        createGraph( neo4jDatabaseName, neo4jAdapterName );
-        for ( String query : queries ) {
-            finalResult = execute( query, neo4jDatabaseName );
+        if (onNeo4j){
+            deleteData( neo4jDatabaseName );
+            createGraph( neo4jDatabaseName, neo4jAdapterName );
+            for ( String query : queries ) {
+                finalResult = execute( query, neo4jDatabaseName );
+            }
+            results.add( finalResult );
         }
-        results.add( finalResult );
 
-        assertEquals( 2, results.size() );
+        if (onHsqlDb && onNeo4j){
+            assertEquals( 2, results.size() );
+        }
         return results;
     }
 
@@ -150,14 +160,12 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
     private Object extractValueAtPath( Map<String, Object> map, List<String> path ) {
         Object currentMap = map;
-        for ( int i = 0; i < path.size(); i++ ) {
-            String key = path.get( i );
-
-            if ( currentMap instanceof Map m ) {
+        for ( String key : path ) {
+            if ( currentMap instanceof Map<?, ?> m ) {
                 currentMap = m.get( key );
-            } else if ( currentMap instanceof ArrayList listOfLists ) {
+            } else if ( currentMap instanceof ArrayList<?> listOfLists ) {
                 for ( Object o : listOfLists ) {
-                    if ( o instanceof ArrayList keyValueList ) {
+                    if ( o instanceof ArrayList<?> keyValueList ) {
                         // 0 -> Key
                         // 1 -> Value
                         if ( keyValueList.get( 0 ).equals( key ) ) {
@@ -172,8 +180,9 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         return currentMap;
     }
 
+
     @Test
-    public void distanceNeo4jTest(){
+    public void distanceNeo4jTest() {
         ArrayList<String> queries = new ArrayList<>();
         queries.add( "CREATE (berlin:Location {name: \"Berlin\", lat: 52.5200, lon: 13.4050})" );
         queries.add( "CREATE (paris:Location {name: \"Paris\", lat: 48.8566, lon: 2.3522})" );
@@ -186,15 +195,12 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                 RETURN distanceNeo4j(pointBerlin, pointParis) AS distance_meters;
                 """ );
         List<GraphResult> results = runQueries( queries );
-        var hsqldbResult = convertResultToMap(results.get( 0 )).get( 0 );
-        var neo4jResult = convertResultToMap(results.get( 1 )).get( 0 );
+        var hsqldbResult = convertResultToMap( results.get( 0 ) ).get( 0 );
+        var neo4jResult = convertResultToMap( results.get( 1 ) ).get( 0 );
 
         // Validate that the difference change between both numbers is smaller than a trashold, e.g. 0,2% (
-        assert isWithinPercentageChange( (Double)hsqldbResult.get( "value" ), (Integer)neo4jResult.get( "value" ), 0.2 );
+        assert isWithinPercentageChange( (Double) hsqldbResult.get( "value" ), (Integer) neo4jResult.get( "value" ), 0.2 );
     }
-
-
-
 
 
     @Test
@@ -359,8 +365,8 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                 RETURN point.withinBBox(dPoint, point({x: 1, y: 1}), point({x: 2, y: 2})) AS result, d.name
                 """ );
         List<GraphResult> results = runQueries( queries );
-        assert convertResultToMap(results.get(0)).get(0).get("value").equals(true);
-        assert convertResultToMap(results.get(1)).get(0).get("value").equals(true);
+        assert convertResultToMap( results.get( 0 ) ).get( 0 ).get( "value" ).equals( true );
+        assert convertResultToMap( results.get( 1 ) ).get( 0 ).get( "value" ).equals( true );
 
         queries.remove( 1 );
         queries.add( """
@@ -369,8 +375,8 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                 RETURN point.withinBBox(dPoint, point({x: 1, y: 1}), point({x: 2, y: 2})) AS result, d.name
                 """ );
         results = runQueries( queries );
-        assert convertResultToMap(results.get(0)).get(0).get("value").equals(false);
-        assert convertResultToMap(results.get(1)).get(0).get("value").equals(false);
+        assert convertResultToMap( results.get( 0 ) ).get( 0 ).get( "value" ).equals( false );
+        assert convertResultToMap( results.get( 1 ) ).get( 0 ).get( "value" ).equals( false );
 
         queries.remove( 1 );
         queries.add( """
@@ -379,8 +385,49 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                 RETURN point.withinBBox(dPoint, point({x: 1, y: 1}), point({x: 2, y: 2})) AS result, d.name
                 """ );
         results = runQueries( queries );
-        assert convertResultToMap(results.get(0)).get(0).get("value").equals(true);
-        assert convertResultToMap(results.get(1)).get(0).get("value").equals(true);
+        assert convertResultToMap( results.get( 0 ) ).get( 0 ).get( "value" ).equals( true );
+        assert convertResultToMap( results.get( 1 ) ).get( 0 ).get( "value" ).equals( true );
+    }
+
+
+    /**
+     * The function call point.withinGeometry used in this test does not exist in Cypher / Neo4j.
+     * It is possible to extend Neo4j with additional functions, however, this has not (yet) been done,
+     * which is why it will only be executed internally for now.
+     */
+    @Test
+    public void withinGeometryTest() {
+        ArrayList<String> queries = new ArrayList<>();
+        queries.add( """
+                CREATE (a:Dot {x: 1, y: 1, name: 'on edge'}),
+                       (b:Dot {x: 1.5, y: 1.5, name: 'inside'}),
+                       (c:Dot {x: 3, y: 3, name: 'outside'});
+                """ );
+        queries.add( """
+                MATCH (d:Dot {name: 'inside'})
+                WITH point({x: d.x, y: d.y}) AS dPoint, d
+                RETURN point.withinGeometry(dPoint, 'POLYGON((0 0, 2 0, 2 2, 0 2, 0 0))') AS result, d.name
+                """ );
+        List<GraphResult> results = runQueries( queries, true, false );
+        assert convertResultToMap( results.get( 0 ) ).get( 0 ).get( "value" ).equals( true );
+
+        queries.remove( 1 );
+        queries.add( """
+                MATCH (d:Dot {name: 'outside'})
+                WITH point({x: d.x, y: d.y}) AS dPoint, d
+                RETURN point.withinGeometry(dPoint, point({x: 1, y: 1}), point({x: 2, y: 2})) AS result, d.name
+                """ );
+        results = runQueries( queries, true, false );
+        assert convertResultToMap( results.get( 0 ) ).get( 0 ).get( "value" ).equals( false );
+
+        queries.remove( 1 );
+        queries.add( """
+                MATCH (d:Dot {name: 'on edge'})
+                WITH point({x: d.x, y: d.y}) AS dPoint, d
+                RETURN point.withinGeometry(dPoint, point({x: 1, y: 1}), point({x: 2, y: 2})) AS result, d.name
+                """ );
+        results = runQueries( queries, true, false );
+        assert convertResultToMap( results.get( 0 ) ).get( 0 ).get( "value" ).equals( true );
     }
 
 
@@ -395,23 +442,5 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         }
     }
 
-
-    private List<List<JsonNode>> convertResultsToJsonList( String[][] data ) {
-        List<List<JsonNode>> results = new ArrayList<>();
-        ObjectMapper objectMapper = new ObjectMapper();
-        for ( String[] d : data ) {
-            List<JsonNode> nodes = new ArrayList<>();
-            for ( String result : d ) {
-                try {
-                    JsonNode jsonNode = objectMapper.readTree( result );
-                    nodes.add( jsonNode );
-                } catch ( JsonProcessingException e ) {
-                    throw new RuntimeException( e );
-                }
-            }
-            results.add( nodes );
-        }
-        return results;
-    }
 
 }

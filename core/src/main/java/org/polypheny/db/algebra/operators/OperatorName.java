@@ -1723,7 +1723,9 @@ public enum OperatorName {
 
     CYPHER_POINT( LangFunctionOperator.class ),
 
-    CYPHER_WITHINBBOX( LangFunctionOperator.class ),
+    CYPHER_WITHIN_BBOX( LangFunctionOperator.class ),
+
+    CYPHER_WITHIN_GEOMETRY( LangFunctionOperator.class ),
 
     DISTANCE_NEO4J( LangFunctionOperator.class ),
 

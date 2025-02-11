@@ -25,7 +25,6 @@ import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -60,7 +59,12 @@ public class CypherFunctionInvocation extends CypherExpression {
             this.op = OperatorName.valueOf( "CYPHER_" + image.toUpperCase( Locale.ROOT ) );
         } else if ( image.equals( "distanceNeo4j" ) ) {
             this.op = OperatorName.DISTANCE_NEO4J;
-        } else {
+        } else if ( image.equals( "withinBBox" ) ) {
+            this.op = OperatorName.CYPHER_WITHIN_BBOX;
+        } else if ( image.equals( "withinGeometry" ) ) {
+            this.op = OperatorName.CYPHER_WITHIN_GEOMETRY;
+        }
+        else {
             throw new GenericRuntimeException( "Used function is not supported!" );
         }
         this.distinct = distinct;
@@ -126,16 +130,26 @@ public class CypherFunctionInvocation extends CypherExpression {
                                 arguments.get( 1 ).getRex( context, RexType.PROJECT ).getRight()
                         ) );
             }
-            case CYPHER_WITHINBBOX:
+            case CYPHER_WITHIN_BBOX:
                 return new RexCall(
                         context.booleanType,
-                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_WITHINBBOX ),
+                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_WITHIN_BBOX ),
                         List.of(
                                 arguments.get( 0 ).getRex( context, RexType.PROJECT ).getRight(),
                                 // CypherFunctionInvocation.getRex -> throw
                                 // Because create function logic is implemented in
                                 arguments.get( 1 ).getRex( context, RexType.PROJECT ).getRight(),
                                 arguments.get( 2 ).getRex( context, RexType.PROJECT ).getRight()
+                        ) );
+            case CYPHER_WITHIN_GEOMETRY:
+                return new RexCall(
+                        context.booleanType,
+                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_WITHIN_GEOMETRY ),
+                        List.of(
+                                arguments.get( 0 ).getRex( context, RexType.PROJECT ).getRight(),
+                                // CypherFunctionInvocation.getRex -> throw
+                                // Because create function logic is implemented in
+                                arguments.get( 1 ).getRex( context, RexType.PROJECT ).getRight()
                         ) );
             default:
                 throw new NotImplementedException( "Cypher Function to alg conversion missing: " + getOperatorName() );
