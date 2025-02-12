@@ -679,8 +679,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                     final RexNode fieldValue = lproject.getProjects().get(
                                             lproject.getTupleType().getField( column, false, false ).getIndex()
                                     );
-                                    if ( fieldValue instanceof RexLiteral ) {
-                                        rowValues.add( ((RexLiteral) fieldValue).value );
+                                    if ( fieldValue instanceof RexLiteral rexLiteral ) {
+                                        rowValues.add( rexLiteral.value );
                                     } else if ( fieldValue instanceof RexDynamicParam ) {
                                         //
                                         // TODO: This is dynamic parameter. We need to do the index update in the generated code!
@@ -694,8 +694,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                     final RexNode fieldValue = lproject.getProjects().get(
                                             lproject.getTupleType().getField( column, false, false ).getIndex()
                                     );
-                                    if ( fieldValue instanceof RexLiteral ) {
-                                        targetRowValues.add( ((RexLiteral) fieldValue).value );
+                                    if ( fieldValue instanceof RexLiteral rexLiteral ) {
+                                        targetRowValues.add( rexLiteral.value );
                                     } else if ( fieldValue instanceof RexDynamicParam ) {
                                         //
                                         // TODO: This is dynamic parameter. We need to do the index update in the generated code!
@@ -940,8 +940,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return routeGraph( logicalRoot, queryInformation, dmlRouter );
         } else if ( logicalRoot.getModel() == ModelTrait.DOCUMENT ) {
             return routeDocument( logicalRoot, queryInformation, dmlRouter );
-        } else if ( logicalRoot.alg instanceof LogicalRelModify ) {
-            AlgNode routedDml = dmlRouter.routeDml( (LogicalRelModify) logicalRoot.alg, statement );
+        } else if ( logicalRoot.alg instanceof LogicalRelModify logicalRelModify ) {
+            AlgNode routedDml = dmlRouter.routeDml( logicalRelModify, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryHash() ) );
         } else if ( logicalRoot.alg instanceof ConditionalExecute ) {
             AlgNode routedConditionalExecute = dmlRouter.handleConditionalExecute( logicalRoot.alg, context );
@@ -995,8 +995,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private List<ProposedRoutingPlan> routeGraph( AlgRoot logicalRoot, LogicalQueryInformation queryInformation, DmlRouter dmlRouter ) {
-        if ( logicalRoot.alg instanceof LogicalLpgModify ) {
-            AlgNode routedDml = dmlRouter.routeGraphDml( (LogicalLpgModify) logicalRoot.alg, statement, null, null );
+        if ( logicalRoot.alg instanceof LogicalLpgModify logicalLpgModify ) {
+            AlgNode routedDml = dmlRouter.routeGraphDml( logicalLpgModify, statement, null, null );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryHash() ) );
         }
         RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
@@ -1006,8 +1006,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private List<ProposedRoutingPlan> routeDocument( AlgRoot logicalRoot, LogicalQueryInformation queryInformation, DmlRouter dmlRouter ) {
-        if ( logicalRoot.alg instanceof LogicalDocumentModify ) {
-            AlgNode routedDml = dmlRouter.routeDocumentDml( (LogicalDocumentModify) logicalRoot.alg, statement, null, null );
+        if ( logicalRoot.alg instanceof LogicalDocumentModify logicalDocumentModify ) {
+            AlgNode routedDml = dmlRouter.routeDocumentDml( logicalDocumentModify, statement, null, null );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryHash() ) );
         }
         RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
@@ -1194,8 +1194,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private AlgCollation algCollation( AlgNode node ) {
-        return node instanceof Sort
-                ? ((Sort) node).collation
+        return node instanceof Sort sort
+                ? sort.collation
                 : AlgCollations.EMPTY;
     }
 
@@ -1399,9 +1399,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             if ( RoutingManager.POST_COST_AGGREGATION_ACTIVE.getBoolean() ) {
-                if ( eventData instanceof QueryEvent ) {
+                if ( eventData instanceof QueryEvent queryEvent ) {
                     // aggregate post costs
-                    ((QueryEvent) eventData).setUpdatePostCosts( true );
+                    queryEvent.setUpdatePostCosts( true );
                 }
             }
             finalizeAccessedPartitions( eventData );
