@@ -2063,9 +2063,11 @@ public class DdlManagerImpl extends DdlManager {
             return;
         }
 
-        if ( MvccUtils.isNamespaceUsingMvcc( namespaceId ) ) {
+        boolean isMvccNamespace = MvccUtils.isNamespaceUsingMvcc( namespaceId );
+        if ( isMvccNamespace ) {
             IdentifierUtils.throwIfContainsDisallowedField( fields );
             fields = IdentifierUtils.addMvccFieldsIfAbsent( fields );
+            constraints = IdentifierUtils.rewriteConstraints(constraints);
         }
 
         if ( stores == null ) {

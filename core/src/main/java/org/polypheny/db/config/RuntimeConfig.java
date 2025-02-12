@@ -397,7 +397,7 @@ public enum RuntimeConfig {
     UNIQUE_CONSTRAINT_ENFORCEMENT(
             "runtime/uniqueConstraintEnforcement",
             "Enable enforcement of uniqueness constraints.",
-            false,
+            true, // ToDo: unique constraint are internally used for MVCC to work properly!
             ConfigType.BOOLEAN,
             "constraintEnforcementGroup" ),
 
