@@ -17,6 +17,8 @@
 package org.polypheny.db.constraints;
 
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,10 +29,12 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 
@@ -83,6 +87,30 @@ public class UniqueConstraintTest {
                 statement.executeUpdate( "ALTER CONFIG 'runtime/uniqueConstraintEnforcement' SET false" );
                 statement.executeUpdate( "ALTER CONFIG 'runtime/foreignKeyEnforcement' SET false" );
                 statement.executeUpdate( "ALTER CONFIG 'runtime/polystoreIndexesSimplify' SET false" );
+            }
+        }
+    }
+
+
+    @Test
+    public void insertCompositeConflictTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // Create schema
+                statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
+                try {
+                    statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 2, 1)" );
+                    statement.executeUpdate( "INSERT INTO constraint_test VALUES (2, 1, 3, 2)" );
+                    statement.executeUpdate( "INSERT INTO constraint_test VALUES (3, 2, 2, 2)" );
+                    assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "INSERT INTO constraint_test VALUES (4, 1, 3, 2)" ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT COUNT(ctid) FROM constraint_test" ),
+                            ImmutableList.of( new Object[]{ 4L } )
+                    );
+                } finally {
+                    statement.executeUpdate( "DROP TABLE constraint_test" );
+                }
             }
         }
     }
