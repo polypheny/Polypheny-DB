@@ -37,6 +37,7 @@ import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
 public class IdentifierUtils {
@@ -106,6 +107,10 @@ public class IdentifierUtils {
 
     public static PolyLong getVersionAsPolyLong(long version, boolean isCommitted) {
         return PolyLong.of( isCommitted ? version : version * -1);
+    }
+
+    public static PolyBigDecimal getVersionAsPolyBigDecimal(long version, boolean isCommitted) {
+        return PolyBigDecimal.of( isCommitted ? version : version * -1);
     }
 
     public static List<FieldInformation> addMvccFieldsIfAbsent(List<FieldInformation> fields) {
