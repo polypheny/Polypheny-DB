@@ -169,7 +169,7 @@ public class LockableImpl implements Lockable {
 
     private void printAcquiredInfo( String message, Transaction transaction ) {
 
-        LOGGER.info ( MessageFormat.format(
+        LOGGER.debug ( MessageFormat.format(
                 "{0}, TX: {1}, L: {2}",
                 message,
                 transaction,
