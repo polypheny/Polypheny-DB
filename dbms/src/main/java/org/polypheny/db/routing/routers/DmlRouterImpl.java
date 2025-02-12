@@ -35,9 +35,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.core.common.BatchIterator;
-import org.polypheny.db.algebra.core.common.ConditionalExecute;
-import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
@@ -331,8 +328,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         } else {
             return new LogicalModifyCollect( modify.getCluster(), modify.getTraitSet(), modifies, true );
         }
-
-
     }
 
 
@@ -593,13 +588,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode handleConditionalExecute( AlgNode node, RoutingContext context ) {
-        LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
+    public LogicalConditionalExecute handleConditionalExecute( LogicalConditionalExecute lce, RoutingContext context ) {
         RoutedAlgBuilder builder = context.getRoutedAlgBuilder();
         builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( lce.getLeft(), builder, context );
         AlgNode action;
-        if ( lce.getRight() instanceof LogicalConditionalExecute ) {
-            action = handleConditionalExecute( lce.getRight(), context );
+        if ( lce.getRight() instanceof LogicalConditionalExecute logicalConditionalExecute ) {
+            action = handleConditionalExecute( logicalConditionalExecute, context );
         } else if ( lce.getRight() instanceof LogicalRelModify ) {
             action = routeDml( (LogicalRelModify) lce.getRight(), context.getStatement() );
         } else {
@@ -611,20 +605,19 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode handleConstraintEnforcer( AlgNode alg, RoutingContext context ) {
-        LogicalConstraintEnforcer constraint = (LogicalConstraintEnforcer) alg;
+    public LogicalConstraintEnforcer handleConstraintEnforcer( LogicalConstraintEnforcer constraint, RoutingContext context ) {
         RoutedAlgBuilder builder = context.getRoutedAlgBuilder();
         builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( constraint.getRight(), builder, context );
 
-        if ( constraint.getLeft() instanceof RelModify ) {
+        if ( constraint.getLeft() instanceof LogicalRelModify logicalRelModify ) {
             return LogicalConstraintEnforcer.create(
-                    routeDml( (LogicalRelModify) constraint.getLeft(), context.getStatement() ),
+                    routeDml( logicalRelModify, context.getStatement() ),
                     builder.build(),
                     constraint.getExceptionClasses(),
                     constraint.getExceptionMessages() );
-        } else if ( constraint.getLeft() instanceof BatchIterator ) {
+        } else if ( constraint.getLeft() instanceof LogicalBatchIterator logicalBatchIterator ) {
             return LogicalConstraintEnforcer.create(
-                    handleBatchIterator( constraint.getLeft(), context ),
+                    handleBatchIterator( logicalBatchIterator, context ),
                     builder.build(),
                     constraint.getExceptionClasses(),
                     constraint.getExceptionMessages() );
@@ -635,15 +628,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode handleBatchIterator( AlgNode alg, RoutingContext context ) {
-        LogicalBatchIterator iterator = (LogicalBatchIterator) alg;
+    public LogicalBatchIterator handleBatchIterator( LogicalBatchIterator iterator, RoutingContext context ) {
         AlgNode input;
         if ( iterator.getInput() instanceof RelModify ) {
             input = routeDml( (LogicalRelModify) iterator.getInput(), context.getStatement() );
-        } else if ( iterator.getInput() instanceof ConditionalExecute ) {
-            input = handleConditionalExecute( iterator.getInput(), context );
-        } else if ( iterator.getInput() instanceof ConstraintEnforcer ) {
-            input = handleConstraintEnforcer( iterator.getInput(), context );
+        } else if ( iterator.getInput() instanceof LogicalConditionalExecute logicalConditionalExecute ) {
+            input = handleConditionalExecute( logicalConditionalExecute, context );
+        } else if ( iterator.getInput() instanceof LogicalConstraintEnforcer logicalConstraintEnforcer ) {
+            input = handleConstraintEnforcer( logicalConstraintEnforcer, context );
         } else {
             throw new GenericRuntimeException( "BachIterator had an unknown child!" );
         }

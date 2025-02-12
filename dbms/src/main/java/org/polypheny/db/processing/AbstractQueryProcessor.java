@@ -58,17 +58,16 @@ import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.core.common.BatchIterator;
-import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
-import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg.Prefer;
 import org.polypheny.db.algebra.enumerable.EnumerableCalc;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableInterpretable;
+import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
@@ -943,14 +942,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else if ( logicalRoot.alg instanceof LogicalRelModify logicalRelModify ) {
             AlgNode routedDml = dmlRouter.routeDml( logicalRelModify, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryHash() ) );
-        } else if ( logicalRoot.alg instanceof ConditionalExecute ) {
-            AlgNode routedConditionalExecute = dmlRouter.handleConditionalExecute( logicalRoot.alg, context );
+        } else if ( logicalRoot.alg instanceof LogicalConditionalExecute logicalConditionalExecute ) {
+            AlgNode routedConditionalExecute = dmlRouter.handleConditionalExecute( logicalConditionalExecute, context );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConditionalExecute, logicalRoot, queryInformation.getQueryHash() ) );
-        } else if ( logicalRoot.alg instanceof BatchIterator ) {
-            AlgNode routedIterator = dmlRouter.handleBatchIterator( logicalRoot.alg, context );
+        } else if ( logicalRoot.alg instanceof LogicalBatchIterator batchIterator ) {
+            AlgNode routedIterator = dmlRouter.handleBatchIterator( batchIterator, context );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedIterator, logicalRoot, queryInformation.getQueryHash() ) );
-        } else if ( logicalRoot.alg instanceof ConstraintEnforcer ) {
-            AlgNode routedConstraintEnforcer = dmlRouter.handleConstraintEnforcer( logicalRoot.alg, context );
+        } else if ( logicalRoot.alg instanceof LogicalConstraintEnforcer logicalConstraintEnforcer ) {
+            AlgNode routedConstraintEnforcer = dmlRouter.handleConstraintEnforcer( logicalConstraintEnforcer, context );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConstraintEnforcer, logicalRoot, queryInformation.getQueryHash() ) );
         } else {
             final List<ProposedRoutingPlan> proposedPlans = new ArrayList<>();
