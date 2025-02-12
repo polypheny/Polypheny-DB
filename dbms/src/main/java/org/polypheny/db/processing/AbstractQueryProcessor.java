@@ -29,13 +29,10 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
@@ -99,8 +96,6 @@ import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
-import org.polypheny.db.partition.PartitionManagerFactory;
-import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -164,10 +159,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     protected static final boolean CONSTANT_REDUCTION = false;
     protected static final boolean ENABLE_STREAM = true;
     private final Statement statement;
-
-    // This map is required to allow plans with multiple physical placements of the same logical table.
-    // scanId -> tableId
-    private final Map<Long, Long> scanPerTable = new HashMap<>();
 
 
     protected AbstractQueryProcessor( Statement statement ) {
@@ -300,9 +291,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         final StopWatch stopWatch = new StopWatch();
         stopWatch.start();
 
-        // Initialize result lists. They will all be with in the same ordering.
-        List<Plan> plans = null;
-
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Expand Views" );
         }
@@ -343,6 +331,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Parameter Validation" );
         }
+
+        // Initialize result lists. They will all be with in the same ordering.
+        List<Plan> plans;
 
         if ( isRouted ) {
             plans = List.of( new Plan().proposedRoutingPlan( new ProposedRoutingPlanImpl( logicalRoot, logicalQueryInformation.getQueryHash() ) ) );
@@ -397,7 +388,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             //
             // Routing
-            plans = routePlans( indexLookupRoot, logicalQueryInformation, plans, isAnalyze );
+            plans = routePlans( indexLookupRoot, logicalQueryInformation, isAnalyze );
 
             if ( isAnalyze ) {
                 statement.getRoutingDuration().start( "Flattener" );
@@ -579,7 +570,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     @NotNull
-    private List<Plan> routePlans( AlgRoot indexLookupRoot, LogicalQueryInformation logicalQueryInformation, List<Plan> plans, boolean isAnalyze ) {
+    private List<Plan> routePlans( AlgRoot indexLookupRoot, LogicalQueryInformation logicalQueryInformation, boolean isAnalyze ) {
+        List<Plan> plans = null;
         if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() && !indexLookupRoot.kind.belongsTo( Kind.DML ) ) {
             Set<Long> partitionIds = logicalQueryInformation.getAccessedPartitions().values().stream()
                     .flatMap( List::stream )
@@ -1272,99 +1264,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    /**
-     * Traverses all TablesScans used during execution and identifies for the corresponding table all
-     * associated partitions that needs to be accessed, on the basis of the provided partitionValues identified in a LogicalFilter
-     * <p>
-     * It is necessary to associate the partitionIds again with the ScanId and not with the table itself. Because a table could be present
-     * multiple times within one query. The aggregation per table would lead to data loss
-     *
-     * @param alg AlgNode to be processed
-     * @param aggregatedPartitionValues Mapping of Scan Ids to identified partition Values
-     * @return Mapping of Scan Ids to identified partition Ids
-     */
-    private Map<Long, List<Long>> getAccessedPartitionsPerScan( AlgNode alg, Map<Long, Set<String>> aggregatedPartitionValues ) {
-        Map<Long, List<Long>> accessedPartitions = new HashMap<>(); // tableId  -> partitionIds
-        if ( !(alg instanceof LogicalRelScan) ) {
-            for ( int i = 0; i < alg.getInputs().size(); i++ ) {
-                Map<Long, List<Long>> result = getAccessedPartitionsPerScan( alg.getInput( i ), aggregatedPartitionValues );
-                if ( !result.isEmpty() ) {
-                    for ( Map.Entry<Long, List<Long>> elem : result.entrySet() ) {
-                        accessedPartitions.merge( elem.getKey(), elem.getValue(), ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).toList() );
-                    }
-                }
-            }
-        } else {
-            boolean fallback;
-            if ( alg.getEntity() != null ) {
-                Entity entity = alg.getEntity();
-
-                if ( entity == null ) {
-                    return accessedPartitions;
-                }
-
-                long scanId = entity.id;
-
-                // Get placements of this table
-                Optional<LogicalTable> optionalTable = entity.unwrap( LogicalTable.class );
-
-                if ( optionalTable.isEmpty() ) {
-                    return accessedPartitions;
-                }
-                LogicalTable table = optionalTable.get();
-
-                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
-                fallback = true;
-
-                if ( aggregatedPartitionValues.containsKey( scanId ) && aggregatedPartitionValues.get( scanId ) != null && !aggregatedPartitionValues.get( scanId ).isEmpty() ) {
-                    fallback = false;
-                    List<String> partitionValues = new ArrayList<>( aggregatedPartitionValues.get( scanId ) );
-
-                    if ( log.isDebugEnabled() ) {
-                        log.debug(
-                                "TableID: {} is partitioned on column: {} - {}",
-                                table.id,
-                                property.partitionColumnId,
-                                Catalog.snapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name );
-
-                    }
-                    List<Long> identifiedPartitions = new ArrayList<>();
-                    for ( String partitionValue : partitionValues ) {
-                        if ( log.isDebugEnabled() ) {
-                            log.debug( "Extracted PartitionValue: {}", partitionValue );
-                        }
-                        long identifiedPartition = PartitionManagerFactory.getInstance()
-                                .getPartitionManager( property.partitionType )
-                                .getTargetPartitionId( table, property, partitionValue );
-
-                        identifiedPartitions.add( identifiedPartition );
-                        if ( log.isDebugEnabled() ) {
-                            log.debug( "Identified PartitionId: {} for value: {}", identifiedPartition, partitionValue );
-                        }
-                    }
-
-                    accessedPartitions.merge(
-                            scanId,
-                            identifiedPartitions,
-                            ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).toList() );
-                    scanPerTable.putIfAbsent( scanId, table.id );
-                    // Fallback all partitionIds are needed
-                }
-
-                if ( fallback ) {
-                    accessedPartitions.merge(
-                            scanId,
-                            property.partitionIds,
-                            ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).toList() );
-                    scanPerTable.putIfAbsent( scanId, table.id );
-                }
-
-            }
-        }
-        return accessedPartitions;
-    }
-
-
     private void prepareMonitoring( Statement statement, AlgRoot logicalRoot, boolean isAnalyze, boolean isSubquery, LogicalQueryInformation queryInformation ) {
 
         // Initialize Monitoring
@@ -1417,26 +1316,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
      * @param eventData monitoring data to be updated
      */
     private void finalizeAccessedPartitions( StatementEvent eventData ) {
-        Map<Long, List<Long>> partitionsInQueryInformation = eventData.getLogicalQueryInformation().getAccessedPartitions();
-        Map<Long, Set<Long>> tempAccessedPartitions = new HashMap<>();
-
-        for ( Entry<Long, List<Long>> entry : partitionsInQueryInformation.entrySet() ) {
-            long scanId = entry.getKey();
-            if ( scanPerTable.containsKey( scanId ) ) {
-                Set<Long> partitionIds = new HashSet<>( entry.getValue() );
-
-                long tableId = scanPerTable.get( scanId );
-                tempAccessedPartitions.put( tableId, partitionIds );
-
-                eventData.updateAccessedPartitions( tempAccessedPartitions );
-            }
-        }
-
         // Otherwise, Analyzer cannot correctly analyze the event anymore
         if ( eventData.getAccessedPartitions() == null ) {
-            eventData.setAccessedPartitions( Collections.emptyMap() );
+            eventData.setAccessedPartitions( Map.of() );
         }
-
     }
 
 
