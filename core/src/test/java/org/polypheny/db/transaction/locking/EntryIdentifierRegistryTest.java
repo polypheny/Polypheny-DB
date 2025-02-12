@@ -21,24 +21,29 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.HashSet;
 import java.util.Set;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.EntityType;
 
 public class EntryIdentifierRegistryTest {
 
     private EntryIdentifierRegistry registry;
-    
+
+
     @BeforeEach
     void setUp() {
-        registry = new EntryIdentifierRegistry(0, 100 );
+        Entity dummy = new LogicalTable( 0, "dummy", 0, EntityType.ENTITY, 0L, true );
+        registry = new EntryIdentifierRegistry( dummy, 100 );
+
     }
 
 
     @Test
     void testGetNextEntryIdentifierAsLongSequential() {
-        long firstId = registry.getNextEntryIdentifier().getEntryIdentifier();
-        long secondId = registry.getNextEntryIdentifier().getEntryIdentifier();
+        long firstId = registry.getNextEntryIdentifier().entryIdentifier();
+        long secondId = registry.getNextEntryIdentifier().entryIdentifier();
 
         assertEquals( 1, firstId );
         assertEquals( 2, secondId );
@@ -57,11 +62,11 @@ public class EntryIdentifierRegistryTest {
 
     @Test
     void testReleaseSingleIdentifierBeginning() {
-        long firstIdentifier = registry.getNextEntryIdentifier().getEntryIdentifier();
+        long firstIdentifier = registry.getNextEntryIdentifier().entryIdentifier();
         registry.getNextEntryIdentifier();
 
         registry.releaseEntryIdentifiers( Set.of( firstIdentifier ) );
-        assertEquals( 1, registry.getNextEntryIdentifier().getEntryIdentifier() );
+        assertEquals( 1, registry.getNextEntryIdentifier().entryIdentifier() );
     }
 
 
@@ -70,12 +75,12 @@ public class EntryIdentifierRegistryTest {
         for ( int i = 0; i < 25; i++ ) {
             registry.getNextEntryIdentifier();
         }
-        long middleIdentifier = registry.getNextEntryIdentifier().getEntryIdentifier();
+        long middleIdentifier = registry.getNextEntryIdentifier().entryIdentifier();
         for ( int i = 0; i < 25; i++ ) {
             registry.getNextEntryIdentifier();
         }
         registry.releaseEntryIdentifiers( Set.of( middleIdentifier ) );
-        assertEquals( 26, registry.getNextEntryIdentifier().getEntryIdentifier() );
+        assertEquals( 26, registry.getNextEntryIdentifier().entryIdentifier() );
     }
 
 
@@ -86,14 +91,14 @@ public class EntryIdentifierRegistryTest {
             registry.getNextEntryIdentifier();
         }
         for ( int i = 0; i < 20; i++ ) {
-            identifiers.add( registry.getNextEntryIdentifier().getEntryIdentifier() );
+            identifiers.add( registry.getNextEntryIdentifier().entryIdentifier() );
         }
         for ( int i = 0; i < 20; i++ ) {
             registry.getNextEntryIdentifier();
         }
         registry.releaseEntryIdentifiers( identifiers );
         for ( int i = 21; i < 40; i++ ) {
-            assertEquals( i, registry.getNextEntryIdentifier().getEntryIdentifier() );
+            assertEquals( i, registry.getNextEntryIdentifier().entryIdentifier() );
         }
     }
 
@@ -104,7 +109,7 @@ public class EntryIdentifierRegistryTest {
         Set<Long> oddIdentifiers = new HashSet<>();
 
         for ( int i = 0; i < 60; i++ ) {
-            long id = registry.getNextEntryIdentifier().getEntryIdentifier();
+            long id = registry.getNextEntryIdentifier().entryIdentifier();
             if ( id % 2 == 0 ) {
                 evenIdentifiers.add( id );
                 continue;
@@ -115,7 +120,7 @@ public class EntryIdentifierRegistryTest {
         registry.releaseEntryIdentifiers( evenIdentifiers );
 
         for ( int i = 0; i < 30; i++ ) {
-            long id = registry.getNextEntryIdentifier().getEntryIdentifier();
+            long id = registry.getNextEntryIdentifier().entryIdentifier();
             assertEquals( 0, id % 2);
         }
     }

@@ -197,6 +197,12 @@ public class MockSnapshot implements Snapshot {
     }
 
 
+    @Override
+    public @NotNull List<LogicalEntity> getLogicalEntities( long namespaceId ) {
+        return List.of();
+    }
+
+
     public void mock( MockLogicalNamespace namespace ) {
         this.namespaces.add( namespace );
     }

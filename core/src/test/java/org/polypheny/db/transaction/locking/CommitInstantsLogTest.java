@@ -19,89 +19,109 @@ package org.polypheny.db.transaction.locking;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.EntityType;
 
 public class CommitInstantsLogTest {
 
-    private CommitInstantsLog log;
-
-    @BeforeEach
-    void setUp() {
-        log = new CommitInstantsLog();
-    }
 
     @Test
     void testSetOrUpdateLastCommitAndGetLastCommit() {
-        EntryIdentifier identifier = new EntryIdentifier(1L, 1L);
+        CommitInstantsLog log = new CommitInstantsLog();
+        Entity dummy1 = new LogicalTable( 0, "dummy1", 0, EntityType.ENTITY, 0L, true );
+
+        EntryIdentifier identifier = new EntryIdentifier( dummy1, 1L );
         long instant = 1000L;
 
-        log.setOrUpdateLastCommit(identifier, instant);
-        long retrievedInstant = log.getLastCommit(identifier);
+        log.setOrUpdateLastCommit( identifier, instant );
+        long retrievedInstant = log.getLastCommit( identifier );
 
-        assertEquals(instant, retrievedInstant, "The retrieved instant should match the updated instant.");
+        assertEquals( instant, retrievedInstant, "The retrieved instant should match the updated instant." );
     }
+
 
     @Test
     void testSetOrUpdateLastCommitOverridesPreviousCommit() {
-        EntryIdentifier identifier = new EntryIdentifier(1L, 1L);
+        CommitInstantsLog log = new CommitInstantsLog();
+        Entity dummy1 = new LogicalTable( 0, "dummy1", 0, EntityType.ENTITY, 0L, true );
+
+        EntryIdentifier identifier = new EntryIdentifier( dummy1, 1L );
         long firstInstant = 1000L;
         long secondInstant = 2000L;
 
-        log.setOrUpdateLastCommit(identifier, firstInstant);
-        log.setOrUpdateLastCommit(identifier, secondInstant);
-        long retrievedInstant = log.getLastCommit(identifier);
+        log.setOrUpdateLastCommit( identifier, firstInstant );
+        log.setOrUpdateLastCommit( identifier, secondInstant );
+        long retrievedInstant = log.getLastCommit( identifier );
 
-        assertEquals(secondInstant, retrievedInstant, "The retrieved instant should match the most recent update.");
+        assertEquals( secondInstant, retrievedInstant, "The retrieved instant should match the most recent update." );
     }
+
 
     @Test
     void testGetLastCommitForNonexistentEntry() {
-        EntryIdentifier identifier = new EntryIdentifier(1L, 1L);
+        CommitInstantsLog log = new CommitInstantsLog();
+        Entity dummy3 = new LogicalTable( 3, "dummy3", 0, EntityType.ENTITY, 2L, true );
 
-        long retrievedInstant = log.getLastCommit(identifier);
+        EntryIdentifier identifier = new EntryIdentifier( dummy3, 1L );
 
-        assertEquals(CommitInstantsLog.NO_COMMIT_INSTANT, retrievedInstant,
-                "The retrieved instant for a nonexistent entry should match NO_COMMIT_INSTANT.");
+        long retrievedInstant = log.getLastCommit( identifier );
+
+        assertEquals( CommitInstantsLog.NO_COMMIT_INSTANT, retrievedInstant,
+                "The retrieved instant for a nonexistent entry should match NO_COMMIT_INSTANT." );
     }
+
 
     @Test
     void testRemoveEntry() {
-        EntryIdentifier identifier = new EntryIdentifier(1L, 1L);
+        CommitInstantsLog log = new CommitInstantsLog();
+        Entity dummy1 = new LogicalTable( 0, "dummy1", 0, EntityType.ENTITY, 0L, true );
+
+        EntryIdentifier identifier = new EntryIdentifier( dummy1, 1L );
         long instant = 1000L;
 
-        log.setOrUpdateLastCommit(identifier, instant);
-        log.removeEntry(identifier);
+        log.setOrUpdateLastCommit( identifier, instant );
+        log.removeEntry( identifier );
 
-        long retrievedInstant = log.getLastCommit(identifier);
+        long retrievedInstant = log.getLastCommit( identifier );
 
-        assertEquals(CommitInstantsLog.NO_COMMIT_INSTANT, retrievedInstant,
-                "The retrieved instant after removal should match NO_COMMIT_INSTANT.");
+        assertEquals( CommitInstantsLog.NO_COMMIT_INSTANT, retrievedInstant,
+                "The retrieved instant after removal should match NO_COMMIT_INSTANT." );
     }
+
 
     @Test
     void testRemoveEntryForNonexistentEntry() {
-        EntryIdentifier identifier = new EntryIdentifier(1L, 1L);
+        CommitInstantsLog log = new CommitInstantsLog();
+        Entity dummy1 = new LogicalTable( 0, "dummy1", 0, EntityType.ENTITY, 0L, true );
 
-        assertDoesNotThrow(() -> log.removeEntry(identifier),
-                "Removing a nonexistent entry should not throw an exception.");
+        EntryIdentifier identifier = new EntryIdentifier( dummy1, 1L );
+
+        assertDoesNotThrow( () -> log.removeEntry( identifier ),
+                "Removing a nonexistent entry should not throw an exception." );
     }
+
 
     @Test
     void testMultipleEntries() {
-        EntryIdentifier identifier1 = new EntryIdentifier(1L, 1L);
+        CommitInstantsLog log = new CommitInstantsLog();
+        Entity dummy1 = new LogicalTable( 0, "dummy1", 0, EntityType.ENTITY, 0L, true );
+        Entity dummy2 = new LogicalTable( 1, "dummy2", 0, EntityType.ENTITY, 1L, true );
+
+        EntryIdentifier identifier1 = new EntryIdentifier( dummy1, 1L );
         long instant1 = 1000L;
 
-        EntryIdentifier identifier2 = new EntryIdentifier(2L, 2L);
+        EntryIdentifier identifier2 = new EntryIdentifier( dummy2, 2L );
         long instant2 = 2000L;
 
-        log.setOrUpdateLastCommit(identifier1, instant1);
-        log.setOrUpdateLastCommit(identifier2, instant2);
+        log.setOrUpdateLastCommit( identifier1, instant1 );
+        log.setOrUpdateLastCommit( identifier2, instant2 );
 
-        assertEquals(instant1, log.getLastCommit(identifier1),
-                "The first entry's instant should match its updated value.");
-        assertEquals(instant2, log.getLastCommit(identifier2),
-                "The second entry's instant should match its updated value.");
+        assertEquals( instant1, log.getLastCommit( identifier1 ),
+                "The first entry's instant should match its updated value." );
+        assertEquals( instant2, log.getLastCommit( identifier2 ),
+                "The second entry's instant should match its updated value." );
     }
 
 }
