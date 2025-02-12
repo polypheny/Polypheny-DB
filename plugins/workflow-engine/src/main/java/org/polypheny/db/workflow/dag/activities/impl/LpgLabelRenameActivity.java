@@ -129,7 +129,7 @@ public class LpgLabelRenameActivity implements Activity, Pipeable {
         for ( PolyEdge edge : input.getEdgeIterable() ) {
             if ( isEdges ) {
                 List<PolyString> labels = getRenamedLabels( edge.getLabels() );
-                edge = new PolyEdge( edge.id, edge.properties, labels, edge.source, edge.target, edge.direction, null );
+                edge = new PolyEdge( edge.id, edge.properties, labels, edge.left, edge.right, edge.direction, null );
             }
 
             if ( !output.put( edge ) ) {

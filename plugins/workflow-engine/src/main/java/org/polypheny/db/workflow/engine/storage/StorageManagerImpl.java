@@ -517,7 +517,8 @@ public class StorageManagerImpl implements StorageManager {
         if ( namespace == null ) {
             return; // for graphs, the namespace is already removed when the checkpoint is dropped
         }
-        transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.EXCLUSIVE );
+        // in theory we would need an EXCLUSIVE lock, but this does not work if a different transaction is currently reading a checkpoint in the same namespace
+        transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.SHARED );
     }
 
 

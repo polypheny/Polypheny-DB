@@ -118,7 +118,7 @@ public class LpgPropertyRenameActivity implements Activity, Pipeable {
         for ( PolyEdge edge : input.getEdgeIterable() ) {
             if ( isEdges && (labels.isEmpty() || edge.getLabels().stream().anyMatch( l -> labels.contains( l.value ) )) ) {
                 PolyDictionary renamed = getRenamedProperties( edge.properties );
-                edge = new PolyEdge( edge.id, renamed, edge.labels, edge.source, edge.target, edge.direction, null );
+                edge = new PolyEdge( edge.id, renamed, edge.labels, edge.left, edge.right, edge.direction, null );
             }
 
             if ( !output.put( edge ) ) {

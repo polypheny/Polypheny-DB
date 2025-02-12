@@ -166,7 +166,7 @@ public class RelLoadActivity implements Activity, Pipeable {
             // Unfortunately, we have to create the table outside our activity transaction context.
             Transaction transaction = QueryUtils.startTransaction( namespace.id, "RelLoadCreate" );
             try {
-                transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.EXCLUSIVE );
+                transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.SHARED ); // SHARED lock is workaround to be able to create entity while other txs are reading
                 ddlManager.createTable(
                         namespace.id,
                         setting.getName(),
