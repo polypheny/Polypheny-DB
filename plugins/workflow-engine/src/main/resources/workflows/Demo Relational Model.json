@@ -1,0 +1,343 @@
+{
+  "activities": [
+    {
+      "type": "relExtract",
+      "id": "7cf997a2-1d29-446d-b6d9-c9aab9e29c6f",
+      "settings": {
+        "table": {
+          "namespace": "public",
+          "name": "work"
+        }
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 607,
+        "posY": 302,
+        "name": "Read Work Table",
+        "notes": null
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "relJoin",
+      "id": "dda72cfb-b65b-45fb-9bae-b1514dda1838",
+      "settings": {
+        "rightCols": {
+          "include": [
+            "employeeno"
+          ],
+          "exclude": [],
+          "unspecifiedIndex": -1
+        },
+        "joinType": "INNER",
+        "leftCols": {
+          "include": [
+            "employeeno"
+          ],
+          "exclude": [],
+          "unspecifiedIndex": -1
+        },
+        "keepCols": false
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 1190.4133333333334,
+        "posY": 140,
+        "name": null,
+        "notes": "Join on employeeno"
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "query",
+      "id": "36595a9f-0ca1-42f4-8938-3d8eb351c7d5",
+      "settings": {
+        "query": {
+          "query": "SELECT involvement, AVG(monthlyincome) as salary\nFROM {?0?}\nGROUP BY involvement\nORDER BY AVG(monthlyincome) DESC\n",
+          "queryLanguage": "SQL"
+        }
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 3513.826666666667,
+        "posY": 302,
+        "name": null,
+        "notes": "Perform more complex transformation based on aggregation query"
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "relLoad",
+      "id": "d307d86b-b9ad-451f-80b0-0793896006fa",
+      "settings": {
+        "drop": true,
+        "adapter": "hsqldb_disk",
+        "keepPk": false,
+        "create": true,
+        "pkCols": {
+          "include": [
+            "employeeno"
+          ],
+          "exclude": [],
+          "unspecifiedIndex": -1
+        },
+        "table": {
+          "namespace": "demo",
+          "name": "researcher"
+        }
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 3513.826666666667,
+        "posY": 12,
+        "name": null,
+        "notes": null
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "relExtract",
+      "id": "034edd21-61c0-4fae-9120-a80f58fc9a9d",
+      "settings": {
+        "table": {
+          "namespace": "public",
+          "name": "emp"
+        }
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 27,
+        "posY": 12,
+        "name": "Read Employee Table",
+        "notes": null
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "renameCols",
+      "id": "2f7b4a2f-e58a-4544-a8b1-b9a435671218",
+      "settings": {
+        "rename": {
+          "rules": [
+            {
+              "source": "job",
+              "replacement": ""
+            }
+          ],
+          "mode": "REGEX",
+          "ignoreCase": false
+        }
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 2350.4133333333334,
+        "posY": 140,
+        "name": null,
+        "notes": "Remove \"job\" prefix"
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "relSort",
+      "id": "398a954e-18cb-4af4-8db2-39a7f2af773a",
+      "settings": {
+        "limit": 100,
+        "skip": 0,
+        "sort": []
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 607,
+        "posY": 12,
+        "name": "Sort / Limit Rows",
+        "notes": "Select the first 100 rows"
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "reorderCols",
+      "id": "13c58d61-3003-4ed5-a771-cf4edd89fa3b",
+      "settings": {
+        "mode": "fieldSelect",
+        "index": "",
+        "regex": "",
+        "cols": {
+          "include": [
+            "_key",
+            "employeeno",
+            "age",
+            "monthlyincome",
+            "jobrole",
+            "jobinvolvement"
+          ],
+          "exclude": [],
+          "unspecifiedIndex": -1
+        }
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 1770.4133333333334,
+        "posY": 140,
+        "name": null,
+        "notes": "Project on relevant columns"
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "relFilter",
+      "id": "c927fdc7-4535-44ca-b98a-5142adc3e6cb",
+      "settings": {
+        "filter": {
+          "conditions": [
+            {
+              "field": "role",
+              "operator": "REGEX",
+              "value": "Research.*",
+              "ignoreCase": false
+            }
+          ],
+          "targetMode": "EXACT",
+          "combineWithOr": false
+        },
+        "rejectedHandler": "store",
+        "negate": false
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 2930.4133333333334,
+        "posY": 140,
+        "name": null,
+        "notes": "Filter for researchers"
+      },
+      "rolledBack": false
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "7cf997a2-1d29-446d-b6d9-c9aab9e29c6f",
+      "toId": "dda72cfb-b65b-45fb-9bae-b1514dda1838",
+      "fromPort": 0,
+      "toPort": 1,
+      "isControl": false
+    },
+    {
+      "fromId": "13c58d61-3003-4ed5-a771-cf4edd89fa3b",
+      "toId": "2f7b4a2f-e58a-4544-a8b1-b9a435671218",
+      "fromPort": 0,
+      "toPort": 0,
+      "isControl": false
+    },
+    {
+      "fromId": "2f7b4a2f-e58a-4544-a8b1-b9a435671218",
+      "toId": "c927fdc7-4535-44ca-b98a-5142adc3e6cb",
+      "fromPort": 0,
+      "toPort": 0,
+      "isControl": false
+    },
+    {
+      "fromId": "034edd21-61c0-4fae-9120-a80f58fc9a9d",
+      "toId": "398a954e-18cb-4af4-8db2-39a7f2af773a",
+      "fromPort": 0,
+      "toPort": 0,
+      "isControl": false
+    },
+    {
+      "fromId": "c927fdc7-4535-44ca-b98a-5142adc3e6cb",
+      "toId": "d307d86b-b9ad-451f-80b0-0793896006fa",
+      "fromPort": 0,
+      "toPort": 0,
+      "isControl": false
+    },
+    {
+      "fromId": "398a954e-18cb-4af4-8db2-39a7f2af773a",
+      "toId": "dda72cfb-b65b-45fb-9bae-b1514dda1838",
+      "fromPort": 0,
+      "toPort": 0,
+      "isControl": false
+    },
+    {
+      "fromId": "dda72cfb-b65b-45fb-9bae-b1514dda1838",
+      "toId": "13c58d61-3003-4ed5-a771-cf4edd89fa3b",
+      "fromPort": 0,
+      "toPort": 0,
+      "isControl": false
+    },
+    {
+      "fromId": "c927fdc7-4535-44ca-b98a-5142adc3e6cb",
+      "toId": "36595a9f-0ca1-42f4-8938-3d8eb351c7d5",
+      "fromPort": 1,
+      "toPort": 0,
+      "isControl": false
+    }
+  ],
+  "config": {
+    "preferredStores": {
+      "RELATIONAL": "hsqldb_disk",
+      "DOCUMENT": "hsqldb_disk",
+      "GRAPH": "hsqldb_disk"
+    },
+    "fusionEnabled": false,
+    "pipelineEnabled": false,
+    "timeoutSeconds": 0,
+    "dropUnusedCheckpoints": false,
+    "maxWorkers": 1,
+    "pipelineQueueCapacity": 1000,
+    "logCapacity": 100
+  },
+  "variables": {},
+  "format_version": "0.0.1"
+}

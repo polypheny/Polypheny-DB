@@ -1,0 +1,267 @@
+{
+  "activities": [
+    {
+      "type": "lpgPropertyRename",
+      "id": "7ebea3f3-e794-4eb0-b6c6-d6940960e5fb",
+      "settings": {
+        "edges": false,
+        "nodes": true,
+        "rename": {
+          "rules": [
+            {
+              "source": "salary",
+              "replacement": "balance"
+            }
+          ],
+          "mode": "EXACT",
+          "ignoreCase": false
+        },
+        "labels": {
+          "include": [
+            "Customer"
+          ],
+          "exclude": [],
+          "unspecifiedIndex": -1
+        }
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 1190.8666666666668,
+        "posY": 157,
+        "name": null,
+        "notes": "Rename \"salary\" for customers to \"balance\"."
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "lpgValues",
+      "id": "67544620-1729-4795-99df-aba468eafefd",
+      "settings": {
+        "nodeLabelCount": 1,
+        "edgeLabels": "WORKS_WITH",
+        "edgeDensity": 0.5,
+        "count": 20,
+        "nodeLabels": "Employee",
+        "fixSeed": false,
+        "edgeLabelCount": 1
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 27,
+        "posY": 12,
+        "name": "Random Employee Graph",
+        "notes": null
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "lpgUnion",
+      "id": "241c3c45-f887-485e-864f-0ff12adf826b",
+      "settings": {},
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 610.8666666666667,
+        "posY": 157,
+        "name": null,
+        "notes": "To simulate a more complicated graph, we combine the two input graphs."
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "lpgPropertyFilter",
+      "id": "3edc8def-a4d3-4d94-9f90-d53f696f013e",
+      "settings": {
+        "filter": {
+          "conditions": [
+            {
+              "field": "balance",
+              "operator": "GREATER_THAN",
+              "value": "7000",
+              "ignoreCase": false
+            }
+          ],
+          "targetMode": "EXACT",
+          "combineWithOr": false
+        },
+        "fail": false,
+        "nodes": true,
+        "negate": false,
+        "edges": true,
+        "labels": {
+          "include": [
+            "Customer"
+          ],
+          "exclude": [],
+          "unspecifiedIndex": -1
+        }
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 1770.8666666666668,
+        "posY": 157,
+        "name": null,
+        "notes": "Only keep customers with a high balance."
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "lpgValues",
+      "id": "891b0419-4e00-47b5-8f14-53e2944704cb",
+      "settings": {
+        "nodeLabelCount": 1,
+        "edgeLabels": "KNOWS",
+        "edgeDensity": 0.5,
+        "count": 20,
+        "nodeLabels": "Customer",
+        "fixSeed": false,
+        "edgeLabelCount": 1
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 27,
+        "posY": 302,
+        "name": "Random Customer Graph",
+        "notes": null
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "query",
+      "id": "e1344fd5-10ba-414f-8ec9-787925bf3136",
+      "settings": {
+        "query": {
+          "query": "{?0?}.Employee.find({})",
+          "queryLanguage": "MQL"
+        }
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 2354.7333333333336,
+        "posY": 12,
+        "name": null,
+        "notes": "Cross-model query using the Mongo Query Language to create a collection."
+      },
+      "rolledBack": false
+    },
+    {
+      "type": "query",
+      "id": "d0dc2002-77b3-496d-adf0-0994975e2d35",
+      "settings": {
+        "query": {
+          "query": "MATCH (n:Customer) --> (m:Customer)\nRETURN \n    n.name as firstname1, n.lastName as lastname1, \n    m.name as firstname2, m.lastName as lastname2",
+          "queryLanguage": "CYPHER"
+        }
+      },
+      "config": {
+        "enforceCheckpoint": false,
+        "timeoutSeconds": 0,
+        "preferredStores": null,
+        "commonType": "NONE",
+        "controlStateMerger": "AND_AND"
+      },
+      "rendering": {
+        "posX": 2354.7333333333336,
+        "posY": 302,
+        "name": null,
+        "notes": "Cypher Query, resulting in a table."
+      },
+      "rolledBack": false
+    }
+  ],
+  "edges": [
+    {
+      "fromId": "3edc8def-a4d3-4d94-9f90-d53f696f013e",
+      "toId": "d0dc2002-77b3-496d-adf0-0994975e2d35",
+      "fromPort": 0,
+      "toPort": 0,
+      "isControl": false
+    },
+    {
+      "fromId": "891b0419-4e00-47b5-8f14-53e2944704cb",
+      "toId": "241c3c45-f887-485e-864f-0ff12adf826b",
+      "fromPort": 0,
+      "toPort": 1,
+      "isControl": false
+    },
+    {
+      "fromId": "3edc8def-a4d3-4d94-9f90-d53f696f013e",
+      "toId": "e1344fd5-10ba-414f-8ec9-787925bf3136",
+      "fromPort": 0,
+      "toPort": 0,
+      "isControl": false
+    },
+    {
+      "fromId": "241c3c45-f887-485e-864f-0ff12adf826b",
+      "toId": "7ebea3f3-e794-4eb0-b6c6-d6940960e5fb",
+      "fromPort": 0,
+      "toPort": 0,
+      "isControl": false
+    },
+    {
+      "fromId": "7ebea3f3-e794-4eb0-b6c6-d6940960e5fb",
+      "toId": "3edc8def-a4d3-4d94-9f90-d53f696f013e",
+      "fromPort": 0,
+      "toPort": 0,
+      "isControl": false
+    },
+    {
+      "fromId": "67544620-1729-4795-99df-aba468eafefd",
+      "toId": "241c3c45-f887-485e-864f-0ff12adf826b",
+      "fromPort": 0,
+      "toPort": 0,
+      "isControl": false
+    }
+  ],
+  "config": {
+    "preferredStores": {
+      "RELATIONAL": "hsqldb_disk",
+      "GRAPH": "hsqldb_disk",
+      "DOCUMENT": "hsqldb_disk"
+    },
+    "fusionEnabled": false,
+    "pipelineEnabled": false,
+    "timeoutSeconds": 0,
+    "dropUnusedCheckpoints": false,
+    "maxWorkers": 1,
+    "pipelineQueueCapacity": 1000,
+    "logCapacity": 100
+  },
+  "variables": {},
+  "format_version": "0.0.1"
+}

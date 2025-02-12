@@ -22,7 +22,7 @@
         "posX": 607,
         "posY": 302,
         "name": null,
-        "notes": null
+        "notes": "Limit the number of rows based on the\nworkflow variable \"maxrows\"."
       },
       "rolledBack": false
     },
@@ -55,7 +55,7 @@
         "posX": 1189.8533333333335,
         "posY": 195,
         "name": null,
-        "notes": null
+        "notes": "Use the value in \"renamed_column\" to specify the new column name."
       },
       "rolledBack": false
     },
@@ -79,10 +79,10 @@
         "controlStateMerger": "AND_AND"
       },
       "rendering": {
-        "posX": 24.12527416537249,
-        "posY": 324.9978066770201,
+        "posX": 27,
+        "posY": 302,
         "name": null,
-        "notes": null
+        "notes": "Extract the table that is specified in the workflow variable \"table\"."
       },
       "rolledBack": false
     },
@@ -103,7 +103,7 @@
         "posX": 27,
         "posY": 12,
         "name": null,
-        "notes": null
+        "notes": "Add sample data to show how variables can be set dynamically from data."
       },
       "rolledBack": false
     },
@@ -134,7 +134,7 @@
         "posX": 607,
         "posY": 12,
         "name": null,
-        "notes": null
+        "notes": "Create \"renamed_column\" variable"
       },
       "rolledBack": false
     }
