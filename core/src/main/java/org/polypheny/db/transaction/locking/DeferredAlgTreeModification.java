@@ -167,12 +167,12 @@ public class DeferredAlgTreeModification {
         RexCall versionJoinCondition = new RexCall(
                 BOOLEAN_ALG_TYPE,
                 OperatorRegistry.get( OperatorName.EQUALS ),
-                new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE ),
                 new RexCall(
                         IdentifierUtils.VERSION_ALG_TYPE,
                         OperatorRegistry.get( OperatorName.ABS ),
-                        new RexIndexRef( 5, IdentifierUtils.VERSION_ALG_TYPE )
-                )
+                        new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE )
+                ),
+                new RexIndexRef( 5, IdentifierUtils.VERSION_ALG_TYPE )
         );
 
         RexCall joinCondition = new RexCall(
