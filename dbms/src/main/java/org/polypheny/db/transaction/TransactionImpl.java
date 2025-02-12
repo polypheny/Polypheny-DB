@@ -225,7 +225,11 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         boolean okToCommit = true;
 
         if ( !writtenEntities.isEmpty() ) {
-            okToCommit &= MvccUtils.validateWriteSet( getSequenceNumber(), writtenEntities, this );
+            if (!MvccUtils.validateWriteSet( getSequenceNumber(), writtenEntities, this )) {
+                String error = "Rolling back due to MVCC write conflict.";
+                rollback( error );
+                throw new TransactionException( error );
+            }
             sequenceNumber = MvccUtils.updateWrittenVersionIds(sequenceNumber, writtenEntities, this); // a rollback reverts this
         }
 
