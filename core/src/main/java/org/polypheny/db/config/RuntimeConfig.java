@@ -495,17 +495,27 @@ public enum RuntimeConfig {
             "WARNING! YOU SHOULD NOT BE SEEING THIS",
             ConfigType.STRING
     ),
+
     DOCKER_TIMEOUT(
             "runtime/dockerTimeout",
             "Connection and respones timeout for autodocker.",
             45,
             ConfigType.INTEGER
     ),
+
+    DOCKER_DIRECT_CONNECTION(
+            "runtime/dockerDirectConnection",
+            "Use direct connections to Docker containers in benchmark mode.",
+            true,
+            ConfigType.BOOLEAN
+    ),
+
     SERIALIZATION_BUFFER_SIZE(
             "runtime/serialization",
             "How big the buffersize for catalog objects should be.",
             200000,
             ConfigType.INTEGER ),
+
     LOCKING_MAX_TIMEOUT_SECONDS(
             "runtime/maxTimeout",
             "How long a transactions should wait for a lock until it is aborted",

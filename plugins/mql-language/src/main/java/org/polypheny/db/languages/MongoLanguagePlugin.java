@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -215,8 +215,6 @@ public class MongoLanguagePlugin extends PolyPlugin {
         register( OperatorName.MINUS, new LangFunctionOperator( OperatorName.MINUS.name(), Kind.MINUS, PolyType.DOCUMENT ) );
 
         // Geospatial Functions
-
-        // TODO: Are the return types correct?
 
         register( OperatorName.MQL_GEO_INTERSECTS, new LangFunctionOperator( "MQL_GEO_INTERSECTS", Kind.MQL_GEO_INTERSECTS, PolyType.BOOLEAN ) );
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,6 +89,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
         }
         return null;
     }
+
 
     @SuppressWarnings("unused")//used by codegen
     public Double getDistinctRowCount( Union alg, AlgMetadataQuery mq, ImmutableBitSet groupKey, RexNode predicate ) {

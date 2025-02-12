@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 
 public class WindowGroupArg implements PolyAlgArg {
+
     @Getter
     private final Group group;
 
@@ -48,7 +49,7 @@ public class WindowGroupArg implements PolyAlgArg {
 
     @Override
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
-        throw new NotImplementedException("WindowGroupArg can not yet be serialized to PolyAlgebra");
+        throw new NotImplementedException( "WindowGroupArg can not yet be serialized to PolyAlgebra" );
     }
 
 
@@ -57,13 +58,12 @@ public class WindowGroupArg implements PolyAlgArg {
         ObjectNode node = mapper.createObjectNode();
 
         node.put( "isRows", group.isRows );
-        node.put( "lowerBound", group.lowerBound.toString());
-        node.put( "upperBound", group.upperBound.toString());
-
+        node.put( "lowerBound", group.lowerBound.toString() );
+        node.put( "upperBound", group.upperBound.toString() );
 
         ArrayNode aggCalls = mapper.createArrayNode();
         for ( RexWinAggCall call : group.aggCalls ) {
-            aggCalls.add( PolyAlgUtils.digestWithNames( call, inputFieldNames) );
+            aggCalls.add( PolyAlgUtils.digestWithNames( call, inputFieldNames ) );
         }
         node.set( "aggCalls", aggCalls );
 

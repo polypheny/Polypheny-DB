@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.plan.AlgCluster;
@@ -65,7 +66,7 @@ public class LogicalRelViewScan extends RelScan<Entity> {
                                 } );
 
         LogicalView logicalView = entity.unwrap( LogicalView.class ).orElseThrow();
-        AlgCollation algCollation = logicalView.getAlgCollation();
+        AlgCollation algCollation = Catalog.snapshot().rel().getCollationInfo( entity.id );
 
         return new LogicalRelViewScan( cluster, traitSet, entity, logicalView.prepareView( cluster ), algCollation );
     }

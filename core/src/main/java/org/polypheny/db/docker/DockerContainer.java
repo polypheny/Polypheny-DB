@@ -16,6 +16,12 @@
 
 package org.polypheny.db.docker;
 
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.InspectContainerResponse;
+import com.github.dockerjava.core.DefaultDockerClientConfig;
+import com.github.dockerjava.core.DockerClientConfig;
+import com.github.dockerjava.core.DockerClientImpl;
+import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +32,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.StandardSocketOptions;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -138,7 +145,7 @@ public final class DockerContainer {
             }
             throw new IOException();
         } catch ( IOException e ) {
-            log.error( "Failed to retrieve list of ports for container " + containerId );
+            log.error( "Failed to retrieve list of ports for container {}", containerId );
             return Optional.empty();
         }
     }
@@ -163,7 +170,7 @@ public final class DockerContainer {
                         return;
                     }
                 }
-                log.error( "Pipe " + name, e );
+                log.error( "Pipe {}", name, e );
             }
         }, name );
         t.start();
@@ -178,7 +185,7 @@ public final class DockerContainer {
         } catch ( IOException e ) {
             if ( e instanceof SocketException || e instanceof EOFException ) {
                 // ignore
-            } else if ( e instanceof TlsFatalAlert && ((TlsFatalAlert) e).getAlertDescription() == AlertDescription.handshake_failure ) {
+            } else if ( e instanceof TlsFatalAlert alert && alert.getAlertDescription() == AlertDescription.handshake_failure ) {
                 // ignore
             } else {
                 log.info( "startProxyForConnection", e );
@@ -189,8 +196,8 @@ public final class DockerContainer {
         OutputStream remoteOut = client.getOutputStream().get();
         try {
             remoteOut.write( (containerId + ":" + port + "\n").getBytes( StandardCharsets.UTF_8 ) );
-            Thread copyToRemote = pipe( local.getInputStream(), remoteOut, String.format( "polypheny => %s", uniqueName ) );
-            Thread copyFromRemote = pipe( client.getInputStream().get(), local.getOutputStream(), String.format( "polypheny <= %s", uniqueName ) );
+            Thread copyToRemote = pipe( local.getInputStream(), remoteOut, String.format( "polypheny -> %s", uniqueName ) );
+            Thread copyFromRemote = pipe( client.getInputStream().get(), local.getOutputStream(), String.format( "polypheny <- %s", uniqueName ) );
             new Thread( () -> {
                 while ( true ) {
                     try {
@@ -224,7 +231,7 @@ public final class DockerContainer {
                         startProxyForConnection( dockerInstance, local, port );
                     } catch ( IOException e ) {
                         if ( !(e instanceof SocketException) || !e.getMessage().equals( "Socket closed" ) ) {
-                            log.info( "Server Socket for port " + port + " closed", e );
+                            log.info( "Server Socket for port {} closed", port, e );
                         }
                         synchronized ( this ) {
                             Util.closeNoThrow( proxies.remove( port ) );
@@ -243,10 +250,36 @@ public final class DockerContainer {
 
 
     public HostAndPort connectToContainer( int port ) {
+        if ( Catalog.mode == RunMode.BENCHMARK && RuntimeConfig.DOCKER_DIRECT_CONNECTION.getBoolean() ) {
+            log.warn( "Using direct Docker connection in benchmark mode" );
+            return connectToContainerDirectly( port );
+        }
+
         synchronized ( this ) {
             ServerSocket s = proxies.computeIfAbsent( port, this::startServer );
             return new HostAndPort( s.getInetAddress().getHostAddress(), s.getLocalPort() );
         }
+    }
+
+
+    public HostAndPort connectToContainerDirectly( int port ) {
+        DockerClientConfig config = DefaultDockerClientConfig
+                .createDefaultConfigBuilder()
+                .build();
+
+        ApacheDockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
+                .dockerHost( config.getDockerHost() )
+                .sslConfig( config.getSSLConfig() )
+                .responseTimeout( Duration.ofSeconds( RuntimeConfig.DOCKER_TIMEOUT.getInteger() ) )
+                .connectionTimeout( Duration.ofSeconds( RuntimeConfig.DOCKER_TIMEOUT.getInteger() ) )
+                .build();
+
+        DockerClient client = DockerClientImpl.getInstance( config, httpClient );
+
+        InspectContainerResponse resp = client.inspectContainerCmd( this.containerId ).exec();
+
+        String ip = resp.getNetworkSettings().getNetworks().get( "polypheny-internal" ).getIpAddress();
+        return new HostAndPort( ip, port );
     }
 
 
@@ -257,7 +290,7 @@ public final class DockerContainer {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         boolean isStarted = isReadySupplier.get();
-        while ( !isStarted && (stopWatch.getTime() < maxTimeoutMs) ) {
+        while ( !isStarted && (stopWatch.getDuration().toMillis() < maxTimeoutMs) ) {
             try {
                 TimeUnit.MILLISECONDS.sleep( 500 );
             } catch ( InterruptedException e ) {

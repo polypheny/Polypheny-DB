@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ public class UiRoutingPageUtil {
     private static final ExecutorService executorService = Executors.newFixedThreadPool( RUNNERS );
     private static final AtomicInteger counter = new AtomicInteger( 0 );
 
+
     public static int runningTasks() {
         return counter.get();
     }
@@ -97,11 +98,10 @@ public class UiRoutingPageUtil {
         ObjectNode objectNode = routedNode.serializePolyAlgebra( objectMapper, gs );
         String jsonString;
         try {
-             jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString( objectNode );
-        }catch ( JsonProcessingException e ){
+            jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString( objectNode );
+        } catch ( JsonProcessingException e ) {
             throw new GenericRuntimeException( e );
         }
-
 
         InformationPage page = new InformationPage( prefix + " Query Plan" ).setStmtLabel( stmtIdx );
         page.fullWidth();

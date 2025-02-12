@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,18 @@ public class LogicalLpgFilter extends LpgFilter {
         // TODO: modify traitset
         return new LogicalLpgFilter( input.getCluster(), input.getTraitSet(), input, condition );
     }
+
+    public static LogicalLpgFilter create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        RexArg condition = args.getArg( "condition", RexArg.class );
+        return create( children.get( 0 ), condition.getNode() );
+    }
+
+
+    public static LogicalLpgFilter create( AlgNode input, RexNode condition ) {
+        // TODO: modify traitset
+        return new LogicalLpgFilter( input.getCluster(), input.getTraitSet(), input, condition );
+    }
+
 
     public static LogicalLpgFilter create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
         RexArg condition = args.getArg( "condition", RexArg.class );

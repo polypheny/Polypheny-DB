@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,8 @@ public class CypherRegisterer {
         register( OperatorName.CYPHER_REMOVE_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_REMOVE_PROPERTY.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
 
         register( OperatorName.CYPHER_REMOVE_LABELS, new LangFunctionOperator( OperatorName.CYPHER_REMOVE_LABELS.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
+
+        register( OperatorName.CYPHER_REMOVE_LABELS, new LangFunctionOperator( OperatorName.CYPHER_REMOVE_LABELS.name(), Kind.CYPHER_FUNCTION ) );
 
         register( OperatorName.CYPHER_GEO_DISTANCE, new LangFunctionOperator( "GEO_DISTANCE", Kind.CYPHER_FUNCTION, PolyType.GEOMETRY ) );
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
@@ -57,7 +58,6 @@ import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexTableIndexRef.AlgTableRef;
 import org.polypheny.db.util.ImmutableBitSet;
-import javax.annotation.Nullable;
 
 
 /**
@@ -243,6 +243,7 @@ public class AlgMetadataQuery {
         }
     }
 
+
     /**
      * Returns the {@link BuiltInMetadata.MaxRowCount#getMaxRowCount()} statistic.
      *
@@ -290,7 +291,7 @@ public class AlgMetadataQuery {
             } catch ( JaninoRelMetadataProvider.NoHandler e ) {
                 cumulativeCostHandler = revise( e.algClass, BuiltInMetadata.CumulativeCost.DEF );
             } catch ( CyclicMetadataException e ) {
-                alg.getCluster().getPlanner().getCostFactory().makeInfiniteCost();
+                return alg.getCluster().getPlanner().getCostFactory().makeInfiniteCost();
             }
         }
     }

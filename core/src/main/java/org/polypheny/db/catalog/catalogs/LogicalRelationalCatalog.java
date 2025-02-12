@@ -326,7 +326,11 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
 
     Map<Long, LogicalConstraint> getConstraints();
 
+    void setNodeAndCollation( long id, AlgNode node, AlgCollation collation );
+
     Map<Long, AlgNode> getNodes();
+
+    Map<Long, AlgCollation> getCollations();
 
     void deleteKey( long id );
 

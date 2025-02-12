@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ public class QueryContext {
             long namespaceId = context.namespaceId;
 
             if ( queryNode != null && queryNode.getNamespaceName() != null ) {
-                namespaceId = Catalog.snapshot().getNamespace( queryNode.getNamespaceName() ).map( n -> n.id ).orElse( queryNode.getNamespaceId() );
+                namespaceId = Catalog.snapshot().getNamespace( queryNode.getNamespaceName() ).map( n -> n.id ).orElse( namespaceId );
             }
 
             if ( context.transactions.stream().anyMatch( t -> !t.isActive() ) ) {

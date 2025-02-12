@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1712,6 +1712,7 @@ public enum OperatorName {
     CYPHER_REMOVE_PROPERTIES( LangFunctionOperator.class ),
 
     CYPHER_LIKE( LangFunctionOperator.class ),
+
 
     CYPHER_GEO_DISTANCE( LangFunctionOperator.class ),
 

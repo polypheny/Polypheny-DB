@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,6 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.nodes.JsonAgg;
-import org.polypheny.db.nodes.LangFunctionOperator;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.rex.RexCall;
@@ -513,15 +512,9 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_PROJECT_INCLUDES ), BuiltInMethod.MQL_PROJECT_INCLUDES.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_REPLACE_ROOT ), BuiltInMethod.MQL_REPLACE_ROOT.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_NOT_UNSET ), BuiltInMethod.MQL_NOT_UNSET.method, NullPolicy.STRICT );
-
-        // Geofunctions
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_INTERSECTS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_INTERSECTS.method ), false );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_WITHIN ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_WITHIN.method ), false );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_DISTANCE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_DISTANCE.method ), false );
-//        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_NEAR ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_NEAR.method ), false );
-//        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_NEAR_SPHERE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_NEAR_SPHERE.method ), false );
-//        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_NEAR ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_NEAR.method ), false );
-
         defineMqlMethod( OperatorName.PLUS, "plus", NullPolicy.STRICT );
         defineMqlMethod( OperatorName.MINUS, "minus", NullPolicy.STRICT );
         defineMqlMethod( OperatorName.MULTIPLY, "multiply", NullPolicy.STRICT );
@@ -2013,9 +2006,6 @@ public class RexImpTable {
             }
 
             final Type returnType = typeFactory.getJavaClass( call.getType() );
-            if ( returnType == null && call.op instanceof LangFunctionOperator op ){
-                return expression;
-            }
             return Types.castIfNecessary( returnType, expression );
         }
 

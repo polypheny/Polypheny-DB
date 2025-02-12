@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 
-public class LaxAggArg implements PolyAlgArg{
+public class LaxAggArg implements PolyAlgArg {
 
     @Getter
     private final LaxAggregateCall agg;
@@ -53,19 +53,20 @@ public class LaxAggArg implements PolyAlgArg{
     private String aggToString( List<String> inputFieldNames ) {
         StringBuilder sb = new StringBuilder( agg.function.toString() );
         sb.append( "(" );
-        if (agg.getInput().isPresent()) {
+        if ( agg.getInput().isPresent() ) {
             sb.append( PolyAlgUtils.digestWithNames( agg.getInput().get(), inputFieldNames ) );
         }
         sb.append( ")" );
         return sb.toString();
     }
 
+
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
         ObjectNode node = mapper.createObjectNode();
-        node.put("function", agg.function.toString());
-        if (agg.getInput().isPresent()) {
-            node.put("input", PolyAlgUtils.digestWithNames( agg.getInput().get(), inputFieldNames ));
+        node.put( "function", agg.function.toString() );
+        if ( agg.getInput().isPresent() ) {
+            node.put( "input", PolyAlgUtils.digestWithNames( agg.getInput().get(), inputFieldNames ) );
         }
         node.put( "alias", agg.name );
         return node;

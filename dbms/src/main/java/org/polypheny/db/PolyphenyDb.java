@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -546,7 +546,7 @@ public class PolyphenyDb {
 
         Catalog.defaultStore = AdapterTemplate.fromString( defaultStoreName, AdapterType.STORE );
         Catalog.defaultSource = AdapterTemplate.fromString( defaultSourceName, AdapterType.SOURCE );
-        restoreDefaults( catalog, mode );
+        restoreDefaults( trx, catalog, mode );
 
         QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
 
@@ -572,9 +572,9 @@ public class PolyphenyDb {
      * @param catalog the current catalog
      * @param mode the current mode
      */
-    private static void restoreDefaults( Catalog catalog, RunMode mode ) {
+    private static void restoreDefaults( Transaction transaction, Catalog catalog, RunMode mode ) {
         catalog.updateSnapshot();
-        DefaultInserter.resetData( DdlManager.getInstance(), mode );
+        DefaultInserter.resetData( transaction, DdlManager.getInstance(), mode );
         DefaultInserter.restoreInterfacesIfNecessary( catalog );
     }
 

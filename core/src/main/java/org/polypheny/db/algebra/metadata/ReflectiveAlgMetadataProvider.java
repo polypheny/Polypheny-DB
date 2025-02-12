@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -176,7 +176,7 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider {
                                 }
                                 Object value = mq.map.put( key1, NullSentinel.INSTANCE );
                                 if ( value != null ) {
-                                    throw new CyclicMetadataException( String.format("Already found key %s with value %s", key1, value ) );
+                                    throw new CyclicMetadataException( String.format( "Already found key %s with value %s", key1, value ) );
                                 }
                                 try {
                                     return handlerMethod.invoke( target, args1 );

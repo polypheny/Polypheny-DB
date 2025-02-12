@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,7 +134,7 @@ public abstract class Filter extends SingleAlg {
         Optional<Double> dRows = mq.getTupleCount( this );
         Optional<Double> dCpu = mq.getTupleCount( getInput() );
         double dIo = 0;
-        if(dRows.isEmpty() || dCpu.isEmpty()) {
+        if ( dRows.isEmpty() || dCpu.isEmpty() ) {
             return planner.getCostFactory().makeInfiniteCost();
         }
         return planner.getCostFactory().makeCost( dRows.get(), dCpu.get(), dIo );
@@ -159,6 +159,7 @@ public abstract class Filter extends SingleAlg {
                 input.algCompareString() + "$" +
                 (condition != null ? condition.hashCode() : "") + "&";
     }
+
 
     @Override
     public PolyAlgArgs bindArguments() {

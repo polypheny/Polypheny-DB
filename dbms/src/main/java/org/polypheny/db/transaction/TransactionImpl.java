@@ -18,6 +18,7 @@ package org.polypheny.db.transaction;
 
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -25,14 +26,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.Adapter;
@@ -49,6 +53,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.catalog.util.ConstraintCondition;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
@@ -119,6 +124,10 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private final Catalog catalog = Catalog.getInstance();
 
+    private final Collection<Runnable> commitActions = new ConcurrentLinkedDeque<>();
+
+    private final Collection<ConstraintCondition> commitConstraints = new ConcurrentLinkedDeque<>();
+
 
     TransactionImpl(
             PolyXid xid,
@@ -157,6 +166,33 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     }
 
 
+    private Pair<@NotNull Boolean, @Nullable String> checkIntegrity() {
+        // check constraints e.g. primary key constraints
+        List<Pair<Boolean, String>> fails = commitConstraints
+                .stream()
+                .map( c -> Pair.of( c.condition().get(), c.errorMessage() ) )
+                .filter( c -> !c.left )
+                .toList();
+
+        if ( !fails.isEmpty() ) {
+            return Pair.of( false, "DDL constraints not met: \n" + fails.stream().map( f -> f.right ).collect( Collectors.joining( ",\n " ) ) + "." );
+        }
+        return Pair.of( true, null );
+    }
+
+
+    @Override
+    public void attachCommitAction( Runnable action ) {
+        commitActions.add( action );
+    }
+
+
+    @Override
+    public void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description ) {
+        commitConstraints.add( new ConstraintCondition( constraintChecker, description ) );
+    }
+
+
     @Override
     public void commit() throws TransactionException {
         if ( !isActive() ) {
@@ -164,13 +200,14 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             return;
         }
 
-        Pair<Boolean, String> isValid = catalog.checkIntegrity();
+        Pair<Boolean, String> isValid = checkIntegrity();
         if ( !isValid.left ) {
+            rollback( "Constraint violation" );
             throw new TransactionException( isValid.right + "\nThere are violated constraints, the transaction was rolled back!" );
         }
 
         // physical changes
-        catalog.executeCommitActions();
+        commitActions.forEach( Runnable::run );
 
         // Prepare to commit changes on all involved adapters and the catalog
         boolean okToCommit = true;
@@ -232,7 +269,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         // Handover information about commit to Materialized Manager
         MaterializedViewManager.getInstance().updateCommittedXid( xid );
-
     }
 
 
@@ -421,7 +457,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         // If nothing else has matched so far. It's safe to simply use the input
         this.accessMode = accessModeCandidate;
-
     }
 
 
@@ -446,6 +481,5 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     public DataMigrator getDataMigrator() {
         return new DataMigratorImpl();
     }
-
 
 }

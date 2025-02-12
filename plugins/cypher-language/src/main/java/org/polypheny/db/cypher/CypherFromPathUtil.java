@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ public class CypherFromPathUtil {
     public static AlgDataType inferReturnType( OperatorBinding opBinding ) {
         return inferReturnType( opBinding.collectOperandTypes(), opBinding );
     }
+
 
     public static AlgDataType inferReturnType( List<AlgDataType> operandTypes ) {
         if ( operandTypes.size() < 2 || !(operandTypes.get( 0 ) instanceof PathType pathType) ) {

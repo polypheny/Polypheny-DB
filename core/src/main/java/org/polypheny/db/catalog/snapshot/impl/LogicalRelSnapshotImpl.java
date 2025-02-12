@@ -33,6 +33,7 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
@@ -101,6 +102,8 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     ImmutableMap<Long, AlgNode> nodes;
 
+    ImmutableMap<Long, AlgCollation> collations;
+
     ImmutableMap<Long, List<LogicalView>> connectedViews;
 
 
@@ -151,6 +154,8 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         /// ALGNODES e.g. views and materializedViews
         this.nodes = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getNodes().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
+
+        this.collations = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getCollations().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
 
         this.views = buildViews();
 
@@ -523,6 +528,12 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     @Override
     public AlgNode getNodeInfo( long id ) {
         return nodes.get( id );
+    }
+
+
+    @Override
+    public AlgCollation getCollationInfo( long id ) {
+        return collations.get( id );
     }
 
 

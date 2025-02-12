@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ public class CorrelationArg implements PolyAlgArg {
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
         return String.valueOf( corrId.getId() );
     }
+
 
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {

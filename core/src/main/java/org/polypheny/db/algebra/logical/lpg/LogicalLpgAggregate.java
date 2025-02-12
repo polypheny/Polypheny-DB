@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,8 @@ public class LogicalLpgAggregate extends LpgAggregate {
     public static LogicalLpgAggregate create( final AlgNode input, @NotNull List<RexNameRef> groups, List<LaxAggregateCall> aggCalls ) {
         AlgCluster cluster = input.getCluster();
         AlgTraitSet traitSet = input.getTraitSet();
-        AlgDataType type = deriveTupleType(cluster, input.getTupleType(), groups, aggCalls);
-        return new LogicalLpgAggregate( cluster, traitSet, input, groups, aggCalls, type);
+        AlgDataType type = deriveTupleType( cluster, input.getTupleType(), groups, aggCalls );
+        return new LogicalLpgAggregate( cluster, traitSet, input, groups, aggCalls, type );
     }
 
 

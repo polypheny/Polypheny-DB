@@ -21,6 +21,7 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
@@ -288,6 +289,7 @@ public interface LogicalRelSnapshot {
 
 
     AlgNode getNodeInfo( long id );
+    AlgCollation getCollationInfo( long id );
 
     List<LogicalView> getConnectedViews( long id );
 

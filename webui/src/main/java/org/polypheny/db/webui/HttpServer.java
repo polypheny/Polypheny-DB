@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,7 +110,6 @@ public class HttpServer implements Runnable {
 
     private @NotNull File handleUiFiles() {
         File uiPath = PolyphenyHomeDirManager.getInstance().registerNewFolder( "ui" );
-        log.warn("uiPath={}", uiPath.getAbsolutePath() );
         if ( uiPath.delete() ) {
             uiPath = PolyphenyHomeDirManager.getInstance().registerNewFolder( "ui" );
         }
@@ -122,14 +121,13 @@ public class HttpServer implements Runnable {
         }
 
         File uiZip = copyResourceToTempFile( uiResourceUrl, "polypheny-ui", ".zip" );
-        
-        log.warn( "Unzip {} into {}", uiZip.getAbsolutePath(), uiPath.getAbsolutePath() );
+
         PolyphenyHomeDirManager.getInstance().unzipInto( uiZip, uiPath );
 
         Optional<File> globalUiPath = PolyphenyHomeDirManager.getInstance().getGlobalFile( "ui" );
 
         if ( globalUiPath.isPresent() && globalUiPath.get().isDirectory() && Objects.requireNonNull( globalUiPath.get().list() ).length != 0 ) {
-            log.warn( "Using global UI path: {}", globalUiPath.get().getAbsolutePath() );
+            log.info( "Using global UI path: {}", globalUiPath.get().getAbsolutePath() );
             uiPath = globalUiPath.get();
         }
         if ( !PolyphenyHomeDirManager.getInstance().isAccessible( uiPath ) ) {
@@ -355,9 +353,9 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );
 
-        webuiServer.get( "/getPolyAlgRegistry", crud::getPolyAlgRegistry);
+        webuiServer.get( "/getPolyAlgRegistry", crud::getPolyAlgRegistry );
 
-        webuiServer.post( "/buildPolyPlan", crud::buildPlanFromPolyAlg);
+        webuiServer.post( "/buildPolyPlan", crud::buildPlanFromPolyAlg );
 
         webuiServer.get( "/isReady", ctx -> ctx.result( String.valueOf( isReady ) ) );
 

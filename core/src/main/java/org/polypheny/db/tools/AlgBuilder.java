@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -432,7 +432,8 @@ public class AlgBuilder {
         return literal( value, rexBuilder );
     }
 
-    public static RexNode literal( Object value, RexBuilder rexBuilder) {
+
+    public static RexNode literal( Object value, RexBuilder rexBuilder ) {
         if ( value == null ) {
             return rexBuilder.constantNull();
         } else if ( value instanceof Boolean ) {

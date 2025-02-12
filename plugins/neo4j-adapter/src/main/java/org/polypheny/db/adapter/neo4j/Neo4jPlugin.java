@@ -43,8 +43,11 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.GraphModifyDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.neo4j.types.NestedSingleType;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.catalog.catalogs.GraphAdapterCatalog;
@@ -130,12 +133,16 @@ public class Neo4jPlugin extends PolyPlugin {
 
 
     @Slf4j
+    @Extension
     @AdapterProperties(
             name = "Neo4j",
             description = "Neo4j is a graph-model based database system. It stores data in a graph structure which consists of nodes and edges.",
             usedModes = { DeployMode.DOCKER, DeployMode.REMOTE },
             defaultMode = DeployMode.DOCKER)
-    @Extension
+    @AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeploySetting.REMOTE)
+    @AdapterSettingInteger(name = "port", defaultValue = 7687, appliesTo = DeploySetting.REMOTE)
+    @AdapterSettingString(name = "user", defaultValue = "neo4j", appliesTo = DeploySetting.REMOTE)
+    @AdapterSettingString(name = "password", defaultValue = "neo4j", appliesTo = DeploySetting.REMOTE)
     public static class Neo4jStore extends DataStore<GraphAdapterCatalog> {
 
         private final String DEFAULT_DATABASE = "public";
@@ -151,9 +158,6 @@ public class Neo4jPlugin extends PolyPlugin {
         private final AuthToken auth;
         @Getter
         private NeoNamespace currentNamespace;
-
-        @Getter
-        private NeoGraph currentGraph;
 
         private final TransactionProvider transactionProvider;
         private String host;
@@ -173,7 +177,6 @@ public class Neo4jPlugin extends PolyPlugin {
             this.auth = AuthTokens.basic( this.user, this.pass );
 
             if ( deployMode == DeployMode.DOCKER ) {
-
                 if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {
                     int instanceId = Integer.parseInt( settings.get( "instanceId" ) );
                     DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
@@ -206,7 +209,9 @@ public class Neo4jPlugin extends PolyPlugin {
                 this.host = settings.get( "host" );
                 this.port = Integer.parseInt( settings.get( "port" ) );
                 this.container = null;
-
+                if ( !testConnection() ) {
+                    throw new GenericRuntimeException( "Could not connect to neo4j database" );
+                }
             } else {
                 throw new GenericRuntimeException( "Not supported deploy mode: " + deployMode.name() );
             }
@@ -233,13 +238,11 @@ public class Neo4jPlugin extends PolyPlugin {
          * Test if a connection to the provided Neo4j database is possible.
          */
         private boolean testConnection() {
-            if ( container == null ) {
-                return false;
+            if ( container != null ) {
+                HostAndPort hp = container.connectToContainer( 7687 );
+                this.host = hp.host();
+                this.port = hp.port();
             }
-
-            HostAndPort hp = container.connectToContainer( 7687 );
-            this.host = hp.host();
-            this.port = hp.port();
 
             try {
                 this.db = GraphDatabase.driver( new URI( String.format( "bolt://%s:%s", host, port ) ), auth );

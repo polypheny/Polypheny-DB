@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -212,6 +212,35 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
         sourceExpressions = sourceExpressions.isEmpty() ? null : sourceExpressions;
         return Quadruple.of( op.getArg(), updateColumns, sourceExpressions, flattened.toBool() );
     }
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+
+        if ( getUpdateColumns() != null ) {
+            args.put( "targets", new ListArg<>( getUpdateColumns(), StringArg::new ) );
+        }
+        if ( getSourceExpressions() != null ) {
+            args.put( "sources", new ListArg<>( getSourceExpressions(), RexArg::new ) );
+        }
+
+        return args.put( "table", new EntityArg( entity, Catalog.snapshot(), DataModel.RELATIONAL ) )
+                .put( "operation", new EnumArg<>( getOperation(), ParamType.MODIFY_OP_ENUM ) )
+                .put( "flattened", new BooleanArg( isFlattened() ) );
+    }
+
+
+    protected static Quadruple<Operation, List<String>, List<? extends RexNode>, Boolean> extractArgs( PolyAlgArgs args ) {
+        EnumArg<Operation> op = args.getEnumArg( "operation", Operation.class );
+        List<String> updateColumns = args.getListArg( "targets", StringArg.class ).map( StringArg::getArg );
+        List<? extends RexNode> sourceExpressions = args.getListArg( "sources", RexArg.class ).map( RexArg::getNode );
+        BooleanArg flattened = args.getArg( "flattened", BooleanArg.class );
+
+        updateColumns = updateColumns.isEmpty() ? null : updateColumns;
+        sourceExpressions = sourceExpressions.isEmpty() ? null : sourceExpressions;
+        return Quadruple.of( op.getArg(), updateColumns, sourceExpressions, flattened.toBool() );
+    }
+
 
     @Override
     public PolyAlgArgs bindArguments() {

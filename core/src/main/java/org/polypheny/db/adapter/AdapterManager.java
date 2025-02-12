@@ -29,6 +29,7 @@ import java.util.Optional;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
@@ -175,6 +176,13 @@ public class AdapterManager {
         }
 
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
+
+
+        for ( AbstractAdapterSetting setting : adapterTemplate.settings ) {
+            if ( setting.appliesTo.stream().noneMatch( s -> s.appliesTo( mode ) ) ) {
+                settings.remove( setting.name );
+            }
+        }
 
         long adapterId = Catalog.getInstance().createAdapter( uniqueName, adapterName, adapterType, settings, mode );
         try {

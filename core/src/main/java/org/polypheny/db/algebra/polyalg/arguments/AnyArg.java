@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,9 +32,11 @@ public class AnyArg implements PolyAlgArg {
 
     private final Object arg;
 
-    public AnyArg(Object arg) {
+
+    public AnyArg( Object arg ) {
         this.arg = arg;
     }
+
 
     @Override
     public ParamType getType() {
@@ -46,6 +48,7 @@ public class AnyArg implements PolyAlgArg {
     public String toPolyAlg( AlgNode context, @NonNull List<String> inputFieldNames ) {
         return arg.toString();
     }
+
 
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {

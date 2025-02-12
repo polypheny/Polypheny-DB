@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,18 +61,20 @@ public class CollationArg implements PolyAlgArg {
         return str;
     }
 
+
     @Override
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
         return serialize( coll, inputFieldNames, mapper );
     }
 
+
     public static ObjectNode serialize( AlgFieldCollation coll, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
         ObjectNode node = mapper.createObjectNode();
-        if (coll != null) {
+        if ( coll != null ) {
             int idx = coll.getFieldIndex();
-            node.put("field", inputFieldNames.size() > idx ? inputFieldNames.get( idx ) : Integer.toString( idx ));
-            node.put("direction", coll.direction.shortString);
-            node.put("nullDirection", coll.nullDirection.toString());
+            node.put( "field", inputFieldNames.size() > idx ? inputFieldNames.get( idx ) : Integer.toString( idx ) );
+            node.put( "direction", coll.direction.shortString );
+            node.put( "nullDirection", coll.nullDirection.toString() );
         }
         return node;
     }

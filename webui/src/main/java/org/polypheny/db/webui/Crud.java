@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1235,7 +1235,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
 
             // change default value
-            if ( oldColumn.defaultValue == null || newColumn.defaultValue == null || !oldColumn.defaultValue.equals( newColumn.defaultValue ) ) {
+            if ( !Objects.equals( oldColumn.defaultValue, newColumn.defaultValue ) ) {
                 String query;
                 if ( newColumn.defaultValue == null ) {
                     query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" DROP DEFAULT", tableId, newColumn.name );
@@ -1283,9 +1283,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .transactionManager( transactionManager )
                             .build(), UIRequest.builder().build() ).get( 0 );
             ctx.json( result );
+            if ( result.error != null ) {
+                break;
+            }
         }
-
-
     }
 
 
