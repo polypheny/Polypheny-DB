@@ -600,6 +600,10 @@ public abstract class DdlManager {
             this( name, type, columnNames, null, null );
         }
 
+        public ConstraintInformation getCopyWithNewColumnNames(List<String> columnNames) {
+            return new ConstraintInformation( name, type, columnNames, foreignKeyTable, foreignKeyColumnName );
+        }
+
     }
 
 
