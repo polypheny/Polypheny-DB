@@ -77,8 +77,6 @@ public class CypherRegisterer {
 
         register( OperatorName.CYPHER_REMOVE_LABELS, new LangFunctionOperator( OperatorName.CYPHER_REMOVE_LABELS.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
 
-        register( OperatorName.CYPHER_REMOVE_LABELS, new LangFunctionOperator( OperatorName.CYPHER_REMOVE_LABELS.name(), Kind.CYPHER_FUNCTION ) );
-
         register( OperatorName.CYPHER_GEO_DISTANCE, new LangFunctionOperator( "GEO_DISTANCE", Kind.CYPHER_FUNCTION, PolyType.GEOMETRY ) );
 
         register( OperatorName.CYPHER_GEO_CONTAINS, new LangFunctionOperator( "GEO_CONTAINS", Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );

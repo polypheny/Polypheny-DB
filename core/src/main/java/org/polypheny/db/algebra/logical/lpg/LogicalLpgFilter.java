@@ -48,18 +48,6 @@ public class LogicalLpgFilter extends LpgFilter {
     }
 
 
-    public static LogicalLpgFilter create( AlgNode input, RexNode condition ) {
-        // TODO: modify traitset
-        return new LogicalLpgFilter( input.getCluster(), input.getTraitSet(), input, condition );
-    }
-
-
-    public static LogicalLpgFilter create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-        RexArg condition = args.getArg( "condition", RexArg.class );
-        return create( children.get( 0 ), condition.getNode() );
-    }
-
-
     @Override
     protected AlgNode copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         return new LogicalLpgFilter( getCluster(), traitSet, input, condition );

@@ -42,8 +42,6 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 public abstract class AllocationEntity extends Entity {
     public static String PREFIX = "$alloc$";
 
-    public static String PREFIX = "$alloc$";
-
     @Serialize
     @JsonProperty
     public long adapterId;

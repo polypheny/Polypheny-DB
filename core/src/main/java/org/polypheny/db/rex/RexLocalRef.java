@@ -51,8 +51,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 public class RexLocalRef extends RexSlot {
     public static final String PREFIX = "$t";
 
-    public static final String PREFIX = "$t";
-
     // array of common names, to reduce memory allocations
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     private static final List<String> NAMES = new SelfPopulatingList( PREFIX, 30 );
