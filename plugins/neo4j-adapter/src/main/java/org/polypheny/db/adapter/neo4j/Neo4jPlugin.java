@@ -346,7 +346,7 @@ public class Neo4jPlugin extends PolyPlugin {
             fields.add( column );
             adapterCatalog.replacePhysical(
                     physical.toBuilder().fields( fields.stream()
-                            .map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() )
+                            .map( f -> f.unwrapOrThrow( PhysicalColumn.class ) )
                             .sorted( Comparator.comparingInt( a -> a.position ) ).toList() ).build() );
         }
 
@@ -363,7 +363,7 @@ public class Neo4jPlugin extends PolyPlugin {
         @Override
         public void dropColumn( Context context, long allocId, long columnId ) {
             NeoEntity physical = adapterCatalog.fromAllocation( allocId, NeoEntity.class );
-            PhysicalColumn column = adapterCatalog.getField( columnId, allocId ).unwrap( PhysicalColumn.class ).orElseThrow();
+            PhysicalColumn column = adapterCatalog.getField( columnId, allocId ).unwrapOrThrow( PhysicalColumn.class );
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
             adapterCatalog.fields.values().stream().filter( f -> f.id == columnId && f.allocId == allocId ).forEach( f -> {
@@ -421,7 +421,7 @@ public class Neo4jPlugin extends PolyPlugin {
         public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
             for ( PhysicalEntity entity : entities ) {
                 updateNamespace( entity.namespaceName, entity.namespaceId );
-                adapterCatalog.addPhysical( alloc, currentNamespace.createEntity( entity, entity.unwrap( PhysicalTable.class ).orElseThrow().columns, currentNamespace ) );
+                adapterCatalog.addPhysical( alloc, currentNamespace.createEntity( entity, entity.unwrapOrThrow( PhysicalTable.class ).columns, currentNamespace ) );
             }
         }
 

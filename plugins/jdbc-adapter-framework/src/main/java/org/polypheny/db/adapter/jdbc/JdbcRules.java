@@ -1253,7 +1253,7 @@ public class JdbcRules {
             return new JdbcTableModify(
                     modify.getCluster(),
                     traitSet,
-                    modify.getEntity().unwrap( JdbcTable.class ).orElseThrow(),
+                    modify.getEntity().unwrapOrThrow( JdbcTable.class ),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
                     modify.getUpdateColumns(),

@@ -498,7 +498,7 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
     public void rewriteAlg( LogicalDocumentScan scan ) {
         AlgNode alg = scan;
         if ( scan.entity.isPhysical() ) {
-            alg = scan.entity.unwrap( TranslatableEntity.class ).orElseThrow().toAlg( cluster, scan.traitSet );
+            alg = scan.entity.unwrapOrThrow( TranslatableEntity.class ).toAlg( cluster, scan.traitSet );
         }
         setNewForOldAlg( scan, alg );
     }
@@ -527,7 +527,7 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
     public void rewriteAlg( LogicalLpgScan scan ) {
         AlgNode alg = scan;
         if ( scan.entity.isPhysical() ) {
-            alg = scan.entity.unwrap( TranslatableEntity.class ).orElseThrow().toAlg( cluster, scan.traitSet );
+            alg = scan.entity.unwrapOrThrow( TranslatableEntity.class ).toAlg( cluster, scan.traitSet );
         }
         setNewForOldAlg( scan, alg );
     }

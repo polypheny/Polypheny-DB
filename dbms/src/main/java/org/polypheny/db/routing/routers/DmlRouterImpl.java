@@ -677,7 +677,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             return alg;
         }
 
-        LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class ).orElseThrow();
+        LogicalGraph graph = alg.entity.unwrapOrThrow( LogicalGraph.class );
 
         if ( target != null ) {
             return new LogicalLpgModify( alg.getCluster(),

@@ -418,13 +418,13 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     @Override
     public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
         for ( PhysicalEntity entity : entities ) {
-            PhysicalTable table = entity.unwrap( PhysicalTable.class ).orElseThrow();
+            PhysicalTable table = entity.unwrapOrThrow( PhysicalTable.class );
             if ( !isPersistent() ) {
                 executeCreateTable( context, table, table.uniqueFieldIds );
             }
 
             updateNamespace( table.namespaceName, table.namespaceId );
-            adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
+            adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrapOrThrow( PhysicalTable.class ) ) );
         }
     }
 

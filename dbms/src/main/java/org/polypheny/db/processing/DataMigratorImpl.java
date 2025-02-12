@@ -271,7 +271,7 @@ public class DataMigratorImpl implements DataMigrator {
                 sourceStatement,
                 new ColumnDistribution( source.id, copyColumns.stream().map( c -> c.id ).toList(), List.of( target.partitionId ), List.of( target.partitionId ), List.of( target.id ), snapshot ) );
         AlgRoot targetAlg;
-        AllocationTable allocation = target.unwrap( AllocationTable.class ).orElseThrow();
+        AllocationTable allocation = target.unwrapOrThrow( AllocationTable.class );
         Catalog.getInstance().updateSnapshot();
         if ( allocation.getColumns().size() == columns.size() ) {
             // There have been no placements for this table on this storeId before. Build insert statement

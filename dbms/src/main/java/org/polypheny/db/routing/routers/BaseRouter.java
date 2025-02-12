@@ -121,11 +121,11 @@ public abstract class BaseRouter implements Router {
 
         if ( entity.unwrap( LogicalTable.class ).isPresent() ) {
             List<AllocationEntity> allocations = statement.getTransaction().getSnapshot().alloc().getFromLogical( entity.id );
-            table = entity.unwrap( LogicalTable.class ).orElseThrow();
+            table = entity.unwrapOrThrow( LogicalTable.class );
             builder.relScan( allocations.get( 0 ) );
         } else if ( entity.unwrap( AllocationTable.class ).isPresent() ) {
             builder.relScan( entity.unwrap( AllocationTable.class ).get() );
-            table = statement.getTransaction().getSnapshot().rel().getTable( entity.unwrap( AllocationTable.class ).orElseThrow().logicalId ).orElseThrow();
+            table = statement.getTransaction().getSnapshot().rel().getTable( entity.unwrapOrThrow( AllocationTable.class ).logicalId ).orElseThrow();
         } else {
             throw new NotImplementedException();
         }
@@ -320,7 +320,7 @@ public abstract class BaseRouter implements Router {
 
         LogicalNamespace namespace = snapshot.getNamespace( alg.entity.namespaceId ).orElseThrow();
 
-        LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class ).orElseThrow();
+        LogicalGraph graph = alg.entity.unwrapOrThrow( LogicalGraph.class );
 
         List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( graph.id ).stream().filter( p -> excludedPlacements == null || !excludedPlacements.contains( p.id ) ).toList();
         if ( targetAlloc != null ) {

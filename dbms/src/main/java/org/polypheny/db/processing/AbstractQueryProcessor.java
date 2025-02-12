@@ -627,7 +627,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
                     if ( node instanceof LogicalRelModify ltm ) {
                         final Catalog catalog = Catalog.getInstance();
-                        final LogicalTable table = ltm.getEntity().unwrap( LogicalTable.class ).orElseThrow();
+                        final LogicalTable table = ltm.getEntity().unwrapOrThrow( LogicalTable.class );
                         final LogicalNamespace namespace = catalog.getSnapshot().getNamespace( table.namespaceId ).orElseThrow();
                         final List<Index> indices = IndexManager.getInstance().getIndices( namespace, table );
 
@@ -884,7 +884,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     }
                     // Retrieve the catalog schema and database representations required for index lookup
                     final LogicalNamespace schema = statement.getTransaction().getDefaultNamespace();
-                    final LogicalTable ctable = scan.getEntity().unwrap( LogicalTable.class ).orElseThrow();
+                    final LogicalTable ctable = scan.getEntity().unwrapOrThrow( LogicalTable.class );
                     // Retrieve any index and use for simplification
                     final Index idx = IndexManager.getInstance().getIndex( schema, ctable, columns );
                     if ( idx == null ) {

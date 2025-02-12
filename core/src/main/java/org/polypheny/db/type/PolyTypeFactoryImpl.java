@@ -511,7 +511,7 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
 
 
     private AlgDataType copyMapType( AlgDataType type, boolean nullable ) {
-        MapPolyType mt = type.unwrap( MapPolyType.class ).orElseThrow();
+        MapPolyType mt = type.unwrapOrThrow( MapPolyType.class );
         AlgDataType keyType = copyType( mt.getKeyType() );
         AlgDataType valueType = copyType( mt.getValueType() );
         return new MapPolyType( keyType, valueType, nullable );
