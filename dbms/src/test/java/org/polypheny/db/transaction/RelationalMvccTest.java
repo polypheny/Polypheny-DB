@@ -316,6 +316,8 @@ public class RelationalMvccTest {
         } );
 
         session1.commitTransaction();
+
+        teardown();
     }
 
 
@@ -365,6 +367,8 @@ public class RelationalMvccTest {
         } );
 
         session1.commitTransaction();
+
+        teardown();
     }
 
 }
