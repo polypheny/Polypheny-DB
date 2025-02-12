@@ -46,8 +46,7 @@ public class StatementImpl implements Statement {
     @Getter
     private final long id;
     @Getter
-    private final TransactionImpl transaction;
-
+    private final Transaction transaction;
     private final List<FileInputHandle> fileInputHandles = new ArrayList<>();
 
     private QueryProcessor queryProcessor;
@@ -61,7 +60,7 @@ public class StatementImpl implements Statement {
     private StatementEvent statementEvent;
 
 
-    StatementImpl( TransactionImpl transaction ) {
+    StatementImpl( Transaction transaction ) {
         this.id = STATEMENT_COUNTER.getAndIncrement();
         this.transaction = transaction;
     }
