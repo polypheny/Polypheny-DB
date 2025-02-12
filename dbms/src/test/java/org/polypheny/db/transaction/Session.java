@@ -38,6 +38,16 @@ public class Session {
     }
 
 
+    List<ExecutedContext> executeStatement( String query, String languageName, String namespaceName ) {
+        return executeStatement( query, languageName, namespaceName, false );
+    }
+
+
+    List<ExecutedContext> executeStatement( String query, String languageName, String namespaceName, boolean ignoreMvcc ) {
+        return ConcurrencyTestUtils.executeStatement( query, languageName, namespaceName, transaction, testHelper, ignoreMvcc );
+    }
+
+
     void executeStatementAndProcessAsync( String query, String languageName, Consumer<List<ExecutedContext>> consumer ) {
         if ( executorService.isShutdown() || executorService.isTerminated() ) {
             executorService = Executors.newSingleThreadExecutor();

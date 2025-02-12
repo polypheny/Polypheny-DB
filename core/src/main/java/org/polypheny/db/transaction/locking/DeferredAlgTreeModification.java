@@ -36,6 +36,7 @@ import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -119,7 +120,11 @@ public class DeferredAlgTreeModification {
                 input,
                 List.of(
                         new RexIndexRef( 0, IdentifierUtils.IDENTIFIER_ALG_TYPE ),
-                        new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE )
+                        new RexCall(
+                                IdentifierUtils.VERSION_ALG_TYPE,
+                                OperatorRegistry.get( OperatorName.ABS ),
+                                new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE )
+                        )
                 ),
                 List.of(
                         IdentifierUtils.IDENTIFIER_KEY,
@@ -132,7 +137,7 @@ public class DeferredAlgTreeModification {
     private LogicalRelAggregate createRelVersionAggregate( LogicalRelProject input ) {
         ImmutableBitSet rightAggregateGroupSet = ImmutableBitSet.of( 0 );
         AggregateCall rightAggregateCall = AggregateCall.create(
-                OperatorRegistry.getAgg( OperatorName.MAX ),
+                OperatorRegistry.getAgg( OperatorName.MAX ), // TODO: TH actually take max(abs(x)). how is this done?
                 false,
                 false,
                 List.of( 1 ),
@@ -163,7 +168,11 @@ public class DeferredAlgTreeModification {
                 BOOLEAN_ALG_TYPE,
                 OperatorRegistry.get( OperatorName.EQUALS ),
                 new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE ),
-                new RexIndexRef( 5, IdentifierUtils.VERSION_ALG_TYPE )
+                new RexCall(
+                        IdentifierUtils.VERSION_ALG_TYPE,
+                        OperatorRegistry.get( OperatorName.ABS ),
+                        new RexIndexRef( 5, IdentifierUtils.VERSION_ALG_TYPE )
+                )
         );
 
         RexCall joinCondition = new RexCall(
@@ -189,7 +198,7 @@ public class DeferredAlgTreeModification {
                 OperatorRegistry.get( OperatorName.EQUALS ),
                 new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE ),
                 new RexLiteral(
-                        IdentifierUtils.getVersionAsPolyLong( statement.getTransaction().getSequenceNumber(), false ),
+                        IdentifierUtils.getVersionAsPolyBigDecimal( statement.getTransaction().getSequenceNumber(), false ),
                         IdentifierUtils.VERSION_ALG_TYPE,
                         PolyType.BIGINT
                 )
@@ -200,7 +209,7 @@ public class DeferredAlgTreeModification {
                 OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ),
                 new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE ),
                 new RexLiteral(
-                        IdentifierUtils.getVersionAsPolyLong( statement.getTransaction().getSequenceNumber(), true ),
+                        IdentifierUtils.getVersionAsPolyBigDecimal( statement.getTransaction().getSequenceNumber(), true ),
                         IdentifierUtils.VERSION_ALG_TYPE,
                         PolyType.BIGINT
                 )
@@ -211,7 +220,7 @@ public class DeferredAlgTreeModification {
                 OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ),
                 new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE ),
                 new RexLiteral(
-                        PolyLong.of( 0 ),
+                        PolyBigDecimal.of( 0 ),
                         IdentifierUtils.VERSION_ALG_TYPE,
                         PolyType.BIGINT
                 )
@@ -274,20 +283,20 @@ public class DeferredAlgTreeModification {
         // ToDo: replace this with something more efficient once $abs works properly in mql
         try ( ResultIterator iterator = executeStatement( QueryLanguage.from( "mql" ), query, node.getEntity().getNamespaceId() ).getIterator() ) {
             res = iterator.getNextBatch();
-            res.forEach(r -> {
-                PolyDocument document = r.get(0).asDocument();
+            res.forEach( r -> {
+                PolyDocument document = r.get( 0 ).asDocument();
 
-                long eid = document.get(IDENTIFIER_KEY).asLong().longValue();
-                if (eid < 0) {
+                long eid = document.get( IDENTIFIER_KEY ).asLong().longValue();
+                if ( eid < 0 ) {
                     eid = -eid;
                 }
 
-                long newVid = document.get(IdentifierUtils.getVersionKeyAsPolyString()).asBigDecimal().longValue();
+                long newVid = document.get( IdentifierUtils.getVersionKeyAsPolyString() ).asBigDecimal().longValue();
 
-                documents.compute(eid, (key, existingVersion) ->
-                        (existingVersion == null) ? newVid : Math.max(existingVersion, newVid)
+                documents.compute( eid, ( key, existingVersion ) ->
+                        (existingVersion == null) ? newVid : Math.max( existingVersion, newVid )
                 );
-            });
+            } );
         }
         return documents;
     }
