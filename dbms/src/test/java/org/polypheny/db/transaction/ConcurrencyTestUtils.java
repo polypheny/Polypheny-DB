@@ -33,9 +33,11 @@ public class ConcurrencyTestUtils {
         return executeStatement( query, languageName, DEFAULT_NAMESPACE, transaction, testHelper );
     }
 
+    public static List<ExecutedContext> executeStatement( String query, String languageName, String namespaceName, Transaction transaction, TestHelper testHelper) {
+        return executeStatement( query, languageName, namespaceName, transaction, testHelper, false );
+    }
 
-    public static List<ExecutedContext> executeStatement( String query, String languageName, String namespaceName, Transaction transaction, TestHelper testHelper ) {
-        System.out.println( query + ":::" + transaction );
+    public static List<ExecutedContext> executeStatement( String query, String languageName, String namespaceName, Transaction transaction, TestHelper testHelper, boolean ignoreMvcc ) {
         QueryLanguage language = QueryLanguage.from( languageName );
         long namespaceId = Catalog.getInstance().getSnapshot().getNamespace( namespaceName ).orElseThrow().getId();
         QueryContext context = QueryContext.builder()
@@ -44,6 +46,7 @@ public class ConcurrencyTestUtils {
                 .namespaceId( namespaceId )
                 .transactionManager( testHelper.getTransactionManager() )
                 .origin( "IsolationTests" )
+                .isMvccInternal( ignoreMvcc )
                 .build();
         return LanguageManager.getINSTANCE().anyQuery( context.addTransaction( transaction ) );
     }

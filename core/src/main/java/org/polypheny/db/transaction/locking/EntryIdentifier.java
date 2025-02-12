@@ -18,18 +18,13 @@ package org.polypheny.db.transaction.locking;
 
 import java.util.Objects;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
-@Getter
-public class EntryIdentifier {
+public record EntryIdentifier( Entity entity, long entryIdentifier ) {
 
-    private final Entity entity;
-    private final long entryIdentifier;
-
-
-
-    public EntryIdentifier( Entity entity, long entryIdentifier ) {
+    public EntryIdentifier( @NotNull Entity entity, long entryIdentifier ) {
         this.entity = entity;
         this.entryIdentifier = entryIdentifier;
     }
@@ -57,6 +52,7 @@ public class EntryIdentifier {
     public PolyLong getEntryIdentifierAsPolyLong() {
         return PolyLong.of( entryIdentifier );
     }
+
 
     @Override
     public String toString() {
