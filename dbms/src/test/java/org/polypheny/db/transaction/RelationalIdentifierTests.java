@@ -62,7 +62,7 @@ public class RelationalIdentifierTests {
                 RuntimeException.class,
                 () -> IdentifierUtils.throwIfIsDisallowedKey( IdentifierUtils.IDENTIFIER_KEY )
         );
-        assertTrue( exception.getMessage().contains( "The field _eid is reserved" ) );
+        assertTrue( exception.getMessage().contains( "are reserved for internal use and cannot be used" ) );
     }
 
 

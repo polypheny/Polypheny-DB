@@ -398,9 +398,9 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
             if ( i == 1 ) {
                 // replace _vid
                 projects.add( new RexLiteral(
-                        IdentifierUtils.getVersionAsPolyLong( statement.getTransaction().getSequenceNumber(), false ),
+                        IdentifierUtils.getVersionAsPolyBigDecimal( statement.getTransaction().getSequenceNumber(), false ),
                         IdentifierUtils.VERSION_ALG_TYPE,
-                        IdentifierUtils.VERSION_ALG_TYPE.getPolyType()
+                        PolyType.BIGINT
                 ) );
                 continue;
             }

@@ -133,6 +133,7 @@ public class WebSocket implements Consumer<WsConfig> {
                                 .origin( POLYPHENY_UI )
                                 .batch( queryRequest.noLimit ? -1 : crud.getPageSize() )
                                 .transactionManager( crud.getTransactionManager() )
+                                //.isMvccInternal( false ) // ToDo TH: remove this! For debug only!
                                 .informationTarget( i -> i.setSession( ctx.session ) ).build(), queryRequest );
 
                 for ( Result<?, ?> result : results ) {
