@@ -16,12 +16,13 @@
 
 package org.polypheny.db.transaction.locking;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class CommitInstantsLog {
 
     public static final long NO_COMMIT_INSTANT = 0;
-    private static final HashMap<EntryIdentifier, Long> lastCommit = new HashMap<>();
+    private final ConcurrentHashMap<EntryIdentifier, Long> lastCommit = new ConcurrentHashMap<>();
+
 
     public void setOrUpdateLastCommit( EntryIdentifier identifier, long instant ) {
         lastCommit.put( identifier, instant );
@@ -29,7 +30,7 @@ public class CommitInstantsLog {
 
 
     public long getLastCommit( EntryIdentifier identifier ) {
-        return lastCommit.getOrDefault(identifier, NO_COMMIT_INSTANT);
+        return lastCommit.getOrDefault( identifier, NO_COMMIT_INSTANT );
     }
 
 
