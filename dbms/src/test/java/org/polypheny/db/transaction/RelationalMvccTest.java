@@ -24,6 +24,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -314,6 +315,26 @@ public class RelationalMvccTest {
                 assertEquals( 100, row.get( 3 ).asInteger().intValue() );
             }
         } );
+
+        session1.commitTransaction();
+
+        teardown();
+    }
+
+    @Test
+    public void uniqueConstraintsConfiguration() {
+        assertTrue( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() );
+    }
+
+    @Test
+    public void mvccUniqueConstraintTest() {
+        setup();
+
+        Session session1 = new Session( testHelper );
+
+        session1.startTransaction();
+        session1.executeStatement( INSERT_1, "sql", NAMESPACE );
+        session1.executeStatement( UPDATE_1, "sql", NAMESPACE );
 
         session1.commitTransaction();
 
