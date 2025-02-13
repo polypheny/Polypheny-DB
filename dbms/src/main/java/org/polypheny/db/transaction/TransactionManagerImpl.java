@@ -35,7 +35,7 @@ import org.polypheny.db.transaction.PUID.NodeId;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PUID.UserId;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
-import org.polypheny.db.transaction.locking.GarbageCollector;
+import org.polypheny.db.transaction.locking.GarbageHandler;
 
 
 @Slf4j
@@ -46,7 +46,7 @@ public class TransactionManagerImpl implements TransactionManager {
 
     private final AtomicLong totalTransactions = new AtomicLong( 0 );
 
-    private final GarbageCollector garbageCollector;
+    private final GarbageHandler garbageHandler;
 
 
     private TransactionManagerImpl() {
@@ -70,7 +70,7 @@ public class TransactionManagerImpl implements TransactionManager {
                     v.getInvolvedAdapters().stream().map( Adapter::getUniqueName ).collect( Collectors.joining( ", " ) ),
                     v.getOrigin() ) );
         } );
-        this.garbageCollector = new GarbageCollector( this );
+        this.garbageHandler = new GarbageHandler(this);
     }
 
 
@@ -135,7 +135,7 @@ public class TransactionManagerImpl implements TransactionManager {
             log.warn( "Unknown transaction id: {}", xid );
         } else {
             transactions.remove( xid );
-            garbageCollector.runIfRequired( totalTransactions.get() );
+            garbageHandler.runIfRequired( totalTransactions.get() );
         }
     }
 

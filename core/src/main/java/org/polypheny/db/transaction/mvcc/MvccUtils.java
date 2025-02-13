@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.transaction.locking;
+package org.polypheny.db.transaction.mvcc;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -31,7 +30,9 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.locking.SequenceNumberGenerator;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -62,19 +63,28 @@ public class MvccUtils {
     }
 
 
-    private static ExecutedContext executeStatement( Entity entity, Transaction transaction, QueryLanguage language, String query ) {
+    public static ExecutedContext executeStatement( QueryLanguage language, String query, long namespaceId, Transaction transaction ) {
+        return executeStatement( language, query, namespaceId, null, transaction );
+    }
+
+    public static ExecutedContext executeStatement( QueryLanguage language, String query, long namespaceId, Statement statement ) {
+        return executeStatement( language, query, namespaceId, statement, statement.getTransaction() );
+    }
+
+
+    public static ExecutedContext executeStatement( QueryLanguage language, String query, long namespaceId, Statement statement, Transaction transaction ) {
         ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
                 QueryContext.builder()
                         .query( query )
+                        .statement( statement )
                         .language( language )
                         .origin( transaction.getOrigin() )
-                        .namespaceId( entity.getNamespaceId() )
+                        .namespaceId( namespaceId )
                         .transactionManager( transaction.getTransactionManager() )
                         .isMvccInternal( true )
                         .build(), transaction ).get( 0 );
 
         if ( context.getException().isPresent() ) {
-            //ToDo TH: properly handle this
             throw new RuntimeException( context.getException().get() );
         }
 
@@ -94,7 +104,7 @@ public class MvccUtils {
 
         String query = String.format( queryTemplate, writtenEntity.getName(), writtenEntity.getName(), -sequenceNumber );
         List<List<PolyValue>> res;
-        try ( ResultIterator iterator = executeStatement( writtenEntity, transaction, QueryLanguage.from( "sql" ), query ).getIterator() ) {
+        try ( ResultIterator iterator = executeStatement( QueryLanguage.from( "sql" ), query, writtenEntity.getNamespaceId(), transaction ).getIterator() ) {
             res = iterator.getNextBatch();
             return Objects.requireNonNull( res.get( 0 ).get( 0 ).asBigDecimal().getValue() ).longValue();
         }
@@ -110,7 +120,7 @@ public class MvccUtils {
         String writeSetQuery = String.format( writeSetTemplate, writtenEntity.getName(), -sequenceNumber );
         List<List<PolyValue>> res;
         HashSet<Long> entryIds = new HashSet<>();
-        try ( ResultIterator iterator = executeStatement( writtenEntity, transaction, QueryLanguage.from( "mql" ), writeSetQuery ).getIterator() ) {
+        try ( ResultIterator iterator = executeStatement( QueryLanguage.from( "mql" ), writeSetQuery, writtenEntity.getNamespaceId(), transaction ).getIterator() ) {
             iterator.getIterator().forEachRemaining( r -> entryIds.add( r[0].asDocument().get( IdentifierUtils.getIdentifierKeyAsPolyString() ).asLong().longValue() ) );
         }
 
@@ -122,7 +132,7 @@ public class MvccUtils {
 
         String entryIdString = entryIds.stream().map( String::valueOf ).collect( Collectors.joining( ", " ) );
         String getMaxQuery = String.format( getMaxTemplate, writtenEntity.getName(), entryIdString );
-        try ( ResultIterator iterator = executeStatement( writtenEntity, transaction, QueryLanguage.from( "mql" ), getMaxQuery ).getIterator() ) {
+        try ( ResultIterator iterator = executeStatement( QueryLanguage.from( "mql" ), getMaxQuery, writtenEntity.getNamespaceId(), transaction ).getIterator() ) {
             return Objects.requireNonNull( iterator.getNextBatch().get( 0 ).get( 0 ).asDocument().get( PolyString.of( "max_vid" ) ).asBigDecimal().getValue() ).longValue();
         }
     }
@@ -132,6 +142,7 @@ public class MvccUtils {
         throw new NotImplementedException();
         //ToDo TH: implement this
     }
+
 
     public static long updateWrittenVersionIds( long sequenceNumber, Set<Entity> writtenEntities, Transaction transaction ) {
         long commitSequenceNumber = SequenceNumberGenerator.getInstance().getNextNumber();
@@ -155,7 +166,7 @@ public class MvccUtils {
                 """;
 
         String query = String.format( queryTemplate, writtenEntity.getName(), commitSequenceNumber, -sequenceNumber );
-        executeStatement( writtenEntity, transaction, QueryLanguage.from( "sql" ), query );
+        executeStatement( QueryLanguage.from( "sql" ), query, writtenEntity.getNamespaceId(), transaction );
     }
 
 
@@ -177,7 +188,7 @@ public class MvccUtils {
                 writtenEntity.getName(),
                 -sequenceNumber,
                 commitSequenceNumber );
-        executeStatement( writtenEntity, transaction, QueryLanguage.from( "mql" ), updateQuery );
+        executeStatement( QueryLanguage.from( "mql" ), updateQuery, writtenEntity.getNamespaceId(), transaction );
     }
 
 }

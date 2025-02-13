@@ -41,7 +41,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -59,7 +58,6 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.util.ConstraintCondition;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -67,14 +65,11 @@ import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.processing.ConstraintEnforceAttacher;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
-import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.locking.Lockable;
-import org.polypheny.db.transaction.locking.MvccUtils;
 import org.polypheny.db.transaction.locking.SequenceNumberGenerator;
-import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.transaction.mvcc.MvccUtils;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
@@ -128,10 +123,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final Set<Adapter<?>> involvedAdapters = new ConcurrentSkipListSet<>( Comparator.comparingLong( a -> a.adapterId ) );
 
     private boolean useCache = true;
-
-    private boolean acceptsOutdated = false;
-
-    private AccessMode accessMode = AccessMode.NO_ACCESS;
 
     @Getter
     private final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
