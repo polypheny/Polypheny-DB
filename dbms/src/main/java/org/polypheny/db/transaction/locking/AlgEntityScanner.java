@@ -60,7 +60,7 @@ public class AlgEntityScanner extends AlgVisitor {
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             extractWriteConstraints( currentNode.getEntity().unwrap( LogicalTable.class ).orElseThrow() );
         }
-        result.put( LockablesRegistry.INSTANCE.getOrCreateLockable(unwrapToLockableObject(currentNode.getEntity())), lockType );
+        result.put( LockablesRegistry.INSTANCE.getOrCreateLockable( unwrapToLockableObject( currentNode.getEntity() ) ), lockType );
     }
 
 
@@ -73,16 +73,17 @@ public class AlgEntityScanner extends AlgVisitor {
                             .filter( Optional::isPresent )
                             .map( Optional::get );
                 } )
-                .forEach( entry -> result.putIfAbsent( LockablesRegistry.INSTANCE.getOrCreateLockable(entry), LockType.SHARED ) );
+                .forEach( entry -> result.putIfAbsent( LockablesRegistry.INSTANCE.getOrCreateLockable( entry ), LockType.SHARED ) );
     }
 
 
     private void visitNonRelationalNode( AlgNode currentNode ) {
         LockType lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
-        result.put( LockablesRegistry.INSTANCE.getOrCreateLockable(unwrapToLockableObject(currentNode.getEntity())) , lockType );
+        result.put( LockablesRegistry.INSTANCE.getOrCreateLockable( unwrapToLockableObject( currentNode.getEntity() ) ), lockType );
     }
 
-    private LockableObject unwrapToLockableObject( Entity entity) {
+
+    private LockableObject unwrapToLockableObject( Entity entity ) {
         Optional<LockableObject> lockableObject = entity.unwrap( LockableObject.class );
         if ( lockableObject.isPresent() ) {
             return lockableObject.get();

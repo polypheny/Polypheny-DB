@@ -19,7 +19,6 @@ package org.polypheny.db.transaction.locking;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -32,19 +31,24 @@ import org.polypheny.db.transaction.locking.Lockable.LockType;
 public class LockableUtils {
 
     public static class DebugTimer {
+
         private final long startTime;
         String name;
 
-        public DebugTimer(String name) {
+
+        public DebugTimer( String name ) {
             this.name = name;
             this.startTime = System.nanoTime();
         }
 
+
         public void stop() {
             long elapsedTime = System.nanoTime() - startTime;
-            System.out.println("<TIMER: " + name + " - Elapsed time: " + elapsedTime + " ns");
+            System.out.println( "<TIMER: " + name + " - Elapsed time: " + elapsedTime + " ns" );
         }
+
     }
+
 
     public static LockableObject getNamespaceAsLockableObject( Entity entity ) {
         return Catalog.getInstance().getSnapshot().getNamespace( entity.getNamespaceId() ).orElseThrow();
@@ -253,4 +257,5 @@ public class LockableUtils {
         Optional<LogicalCollection> collection = context.getSnapshot().doc().getCollection( namespaceId, collectionName );
         return collection.map( logicalCollection -> getMapOfLockableFromObject( logicalCollection, lockType ) ).orElseGet( HashMap::new );
     }
+
 }
