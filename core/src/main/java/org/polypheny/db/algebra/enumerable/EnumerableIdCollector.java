@@ -34,7 +34,7 @@ import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManagerProvider;
-import org.polypheny.db.transaction.locking.IdentifierUtils;
+import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;

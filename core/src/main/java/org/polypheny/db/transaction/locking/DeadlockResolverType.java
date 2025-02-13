@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.transaction;
+package org.polypheny.db.transaction.locking;
 
-public enum DeadlockDetectorType {
-    GRAPH_DEADLOCK_DETECTOR
+public enum DeadlockResolverType {
+    FIRST_TRANSACTION_DEADLOCK_RESOLVER,
+    LEAST_PROGRESS_DEADLOCK_RESOLVER
 }

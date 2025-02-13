@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.transaction;
+package org.polypheny.db.transaction.mvcc;
 
-public enum DeadlockResolverType {
-    FIRST_TRANSACTION_DEADLOCK_RESOLVER,
-    LEAST_PROGRESS_DEADLOCK_RESOLVER
+import org.polypheny.db.algebra.AlgNode;
+
+public interface AlgTreeModification<T, U extends AlgNode> {
+
+    U apply( T node );
+
 }
