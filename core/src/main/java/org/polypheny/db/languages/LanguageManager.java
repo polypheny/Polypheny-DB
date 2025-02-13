@@ -208,7 +208,11 @@ public class LanguageManager {
                 if ( transaction.isAnalyze() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
-                cancelTransaction( transaction, e.getMessage() );
+                if ( e instanceof DeadlockException ) {
+                    cancelTransaction( transaction, null );
+                } else {
+                    cancelTransaction( transaction, e.getMessage() );
+                }
                 implementationContexts.add( ImplementationContext.ofError( e, parsed, statement ) );
                 return implementationContexts;
             }
