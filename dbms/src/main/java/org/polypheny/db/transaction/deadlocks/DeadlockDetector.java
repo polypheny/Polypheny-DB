@@ -22,7 +22,11 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.Lockable;
 
 public interface DeadlockDetector {
-    void add( Lockable lockable, Transaction newTransaction, Set<Transaction> owners);
+
+    void add( Lockable lockable, Transaction newTransaction, Set<Transaction> owners );
+
     List<Transaction> getConflictingTransactions();
-    void remove(Lockable lockable, Transaction transaction);
+
+    void remove( Lockable lockable, Transaction transaction );
+
 }
