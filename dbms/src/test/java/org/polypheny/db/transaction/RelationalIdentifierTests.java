@@ -27,7 +27,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.transaction.locking.IdentifierUtils;
+import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 
 public class RelationalIdentifierTests {

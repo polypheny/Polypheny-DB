@@ -26,6 +26,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
+import org.polypheny.db.transaction.mvcc.MvccUtils;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 
 public class LockableUtils {

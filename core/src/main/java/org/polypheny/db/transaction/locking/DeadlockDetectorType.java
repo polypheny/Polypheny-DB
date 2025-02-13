@@ -16,11 +16,7 @@
 
 package org.polypheny.db.transaction.locking;
 
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
-import org.polypheny.db.transaction.Transaction;
-
-public interface GarbageCollector {
-
-    void collect( LogicalEntity entity, long lowestActiveVersion, Transaction transaction );
-
+public enum DeadlockDetectorType {
+    GRAPH_DEADLOCK_DETECTOR,
+    SEQUENCE_DEADLOCK_DETECTOR
 }

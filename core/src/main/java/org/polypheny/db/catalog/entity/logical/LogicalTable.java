@@ -23,9 +23,7 @@ import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serial;
 import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +40,6 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.transaction.locking.IdentifierUtils;
 
 @EqualsAndHashCode(callSuper = false)
 @SuperBuilder(toBuilder = true)

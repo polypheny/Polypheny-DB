@@ -22,8 +22,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import lombok.NonNull;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.transaction.DeadlockDetectorType;
-import org.polypheny.db.transaction.DeadlockResolverType;
+import org.polypheny.db.transaction.locking.DeadlockDetectorType;
+import org.polypheny.db.transaction.locking.DeadlockResolverType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.Lockable;
 
