@@ -90,7 +90,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             throw new GenericRuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
         }
 
-        final LogicalTable table = modify.entity.unwrap( LogicalTable.class ).orElseThrow();
+        final LogicalTable table = modify.entity.unwrapOrThrow( LogicalTable.class );
 
         AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = modify.getCluster().getRexBuilder();

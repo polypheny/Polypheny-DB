@@ -102,7 +102,7 @@ public class SqlValidatorUtil {
      */
     public static List<AlgDataTypeField> getExtendedColumns( AlgDataTypeFactory typeFactory, Entity table, SqlNodeList extendedColumns ) {
         final ImmutableList.Builder<AlgDataTypeField> extendedFields = ImmutableList.builder();
-        final ExtensibleEntity extTable = table.unwrap( ExtensibleEntity.class ).orElseThrow();
+        final ExtensibleEntity extTable = table.unwrapOrThrow( ExtensibleEntity.class );
         int extendedFieldOffset = extTable.getExtendedColumnOffset();
         for ( final Pair<SqlIdentifier, SqlDataTypeSpec> pair : pairs( extendedColumns ) ) {
             final SqlIdentifier identifier = pair.left;
@@ -247,7 +247,7 @@ public class SqlValidatorUtil {
      * @return the target field or null if the name cannot be resolved
      */
     public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, Snapshot snapshot, Entity table, boolean isDocument ) {
-        final Entity t = table == null ? null : table.unwrap( Entity.class ).orElseThrow();
+        final Entity t = table == null ? null : table.unwrapOrThrow( Entity.class );
 
         if ( !(t instanceof CustomFieldResolvingEntity) ) {
             final NameMatcher nameMatcher = NameMatchers.withCaseSensitive( false );

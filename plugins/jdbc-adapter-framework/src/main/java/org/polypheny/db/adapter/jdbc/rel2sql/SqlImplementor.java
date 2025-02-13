@@ -241,8 +241,8 @@ public abstract class SqlImplementor {
             case LESS_THAN:
             case LESS_THAN_OR_EQUAL:
                 node = stripCastFromString( node );
-                operands = node.unwrap( RexCall.class ).orElseThrow().getOperands();
-                op = (SqlOperator) node.unwrap( RexCall.class ).orElseThrow().getOperator();
+                operands = node.unwrapOrThrow( RexCall.class ).getOperands();
+                op = (SqlOperator) node.unwrap( RexCall.class ).get().getOperator();
                 if ( operands.size() == 2
                         && operands.get( 0 ) instanceof RexIndexRef op0
                         && operands.get( 1 ) instanceof RexIndexRef op1 ) {

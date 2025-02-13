@@ -192,7 +192,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
                 }
                 for ( Ord<AggregateCall> aggCall : Ord.zip( aggregate.getAggCallList() ) ) {
                     final AggFunction aggregation = aggCall.e.getAggregation();
-                    final SplittableAggFunction splitter = aggregation.unwrap( SplittableAggFunction.class ).orElseThrow();
+                    final SplittableAggFunction splitter = aggregation.unwrapOrThrow( SplittableAggFunction.class );
                     if ( !aggCall.e.getArgList().isEmpty() && fieldSet.contains( ImmutableBitSet.of( aggCall.e.getArgList() ) ) ) {
                         final RexNode singleton = splitter.singleton( rexBuilder, joinInput.getTupleType(), aggCall.e.transform( mapping ) );
 
@@ -218,7 +218,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
                 final int newGroupKeyCount = belowAggregateKey.cardinality();
                 for ( Ord<AggregateCall> aggCall : Ord.zip( aggregate.getAggCallList() ) ) {
                     final AggFunction aggregation = aggCall.e.getAggregation();
-                    final SplittableAggFunction splitter = aggregation.unwrap( SplittableAggFunction.class ).orElseThrow();
+                    final SplittableAggFunction splitter = aggregation.unwrapOrThrow( SplittableAggFunction.class );
                     final AggregateCall call1;
                     if ( fieldSet.contains( ImmutableBitSet.of( aggCall.e.getArgList() ) ) ) {
                         final AggregateCall splitCall = splitter.split( aggCall.e, mapping );
@@ -260,7 +260,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
         final List<RexNode> projects = new ArrayList<>( rexBuilder.identityProjects( algBuilder.peek().getTupleType() ) );
         for ( Ord<AggregateCall> aggCall : Ord.zip( aggregate.getAggCallList() ) ) {
             final AggFunction aggregation = aggCall.e.getAggregation();
-            final SplittableAggFunction splitter = aggregation.unwrap( SplittableAggFunction.class ).orElseThrow();
+            final SplittableAggFunction splitter = aggregation.unwrapOrThrow( SplittableAggFunction.class );
             final Integer leftSubTotal = sides.get( 0 ).split.get( aggCall.i );
             final Integer rightSubTotal = sides.get( 1 ).split.get( aggCall.i );
             newAggCalls.add(

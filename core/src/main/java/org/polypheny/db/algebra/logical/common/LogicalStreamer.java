@@ -179,7 +179,7 @@ public class LogicalStreamer extends Streamer {
 
         if ( modify.getEntity().unwrap( PhysicalTable.class ).isPresent() ) {
             indexes = new ArrayList<>();
-            for ( long fieldId : modify.getEntity().unwrap( PhysicalTable.class ).orElseThrow().getUniqueFieldIds() ) {
+            for ( long fieldId : modify.getEntity().unwrap( PhysicalTable.class ).get().getUniqueFieldIds() ) {
                 indexes.add( modify.getEntity().getTupleType().getFieldIds().indexOf( fieldId ) );
             }
         }

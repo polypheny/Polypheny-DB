@@ -158,7 +158,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
     public AlgProtoDataType buildProto() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() ).sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
+        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrapOrThrow( PhysicalColumn.class ) ).sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             fieldInfo.add( column.id, column.logicalName, column.name, sqlType ).nullable( column.nullable );
         }

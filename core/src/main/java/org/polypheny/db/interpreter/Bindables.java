@@ -291,7 +291,7 @@ public class Bindables {
         @Override
         public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             // TODO: filterable and projectable
-            return entity.unwrap( ScannableEntity.class ).orElseThrow().scan( dataContext );
+            return entity.unwrapOrThrow( ScannableEntity.class ).scan( dataContext );
         }
 
 
