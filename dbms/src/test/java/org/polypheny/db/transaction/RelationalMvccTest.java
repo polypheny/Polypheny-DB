@@ -18,12 +18,14 @@ package org.polypheny.db.transaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.type.entity.PolyValue;
@@ -37,6 +39,7 @@ public class RelationalMvccTest {
     private static final String INSERT_1 = "INSERT INTO " + NAMESPACE + ".Users (UserID, UUID) VALUES (1, 10), (2, 20); ";
     private static final String INSERT_2 = "INSERT INTO " + NAMESPACE + ".Users (UserID, UUID) VALUES (3, 30), (4, 40); ";
     private static final String UPDATE_1 = "UPDATE " + NAMESPACE + ".Users SET UUID = 100 WHERE UserID = 2;";
+    private static final String DELETE_1 = "DELETE FROM " + NAMESPACE + ".Users WHERE UserID = 2;";
 
 
     @BeforeAll
@@ -321,10 +324,12 @@ public class RelationalMvccTest {
         teardown();
     }
 
+
     @Test
     public void uniqueConstraintsConfiguration() {
         assertTrue( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() );
     }
+
 
     @Test
     public void mvccUniqueConstraintTest() {
@@ -334,7 +339,7 @@ public class RelationalMvccTest {
 
         session1.startTransaction();
         session1.executeStatement( INSERT_1, "sql", NAMESPACE );
-        session1.executeStatement( UPDATE_1, "sql", NAMESPACE );
+        assertThrows( ConstraintViolationException.class, () -> session1.executeStatement( UPDATE_1, "sql", NAMESPACE ) );
 
         session1.commitTransaction();
 
@@ -388,7 +393,130 @@ public class RelationalMvccTest {
         } );
 
         session1.commitTransaction();
+        teardown();
+    }
 
+
+    @Test
+    public void deleteCommittedSelfRead() {
+        List<ExecutedContext> results;
+        List<List<PolyValue>> data;
+
+        setup();
+
+        Session session1 = new Session( testHelper );
+
+        session1.startTransaction();
+        // s1 inserts data
+        session1.executeStatement( INSERT_1, "sql", NAMESPACE );
+
+        // s1 sees own insert as uncommitted
+        results = session1.executeStatement( SELECT_STAR, "sql", NAMESPACE );
+        assertEquals( 1, results.size() );
+        data = results.get( 0 ).getIterator().getAllRowsAndClose();
+        assertEquals( 2, data.size() );
+        data.forEach( row -> {
+            assertTrue( row.get( 1 ).asLong().longValue() < 0 );
+            int user_id = row.get( 2 ).asInteger().intValue();
+            assertTrue( user_id == 1 || user_id == 2 );
+        } );
+
+        session1.commitTransaction();
+        session1.startTransaction();
+
+        // s1 sees own insert as committed
+        results = session1.executeStatement( SELECT_STAR, "sql", NAMESPACE );
+        assertEquals( 1, results.size() );
+        data = results.get( 0 ).getIterator().getAllRowsAndClose();
+        assertEquals( 2, data.size() );
+        data.forEach( row -> {
+            assertTrue( row.get( 1 ).asLong().longValue() > 0 );
+            int user_id = row.get( 2 ).asInteger().intValue();
+            assertTrue( user_id == 1 || user_id == 2 );
+        } );
+
+        // s1 deletes parts of the inserted data
+        session1.executeStatement( DELETE_1, "sql", NAMESPACE );
+
+        // s1 sees non deleted part of the insert as committed
+        results = session1.executeStatement( SELECT_STAR, "sql", NAMESPACE );
+        assertEquals( 1, results.size() );
+        data = results.get( 0 ).getIterator().getAllRowsAndClose();
+        assertEquals( 1, data.size() );
+        data.forEach( row -> {
+            assertTrue( row.get( 1 ).asLong().longValue() > 0 );
+            assertEquals( 1, row.get( 2 ).asInteger().intValue() );
+        } );
+
+        session1.commitTransaction();
+        session1.startTransaction();
+
+        // s1 sees non deleted part of the insert as committed
+        results = session1.executeStatement( SELECT_STAR, "sql", NAMESPACE );
+        assertEquals( 1, results.size() );
+        data = results.get( 0 ).getIterator().getAllRowsAndClose();
+        assertEquals( 1, data.size() );
+        data.forEach( row -> {
+            assertTrue( row.get( 1 ).asLong().longValue() > 0 );
+            assertEquals( 1, row.get( 2 ).asInteger().intValue() );
+        } );
+
+        session1.commitTransaction();
+        teardown();
+    }
+
+
+    @Test
+    public void deleteUncommittedSelfRead() {
+        List<ExecutedContext> results;
+        List<List<PolyValue>> data;
+
+        setup();
+
+        Session session1 = new Session( testHelper );
+
+        session1.startTransaction();
+        // s1 inserts data
+        session1.executeStatement( INSERT_1, "sql", NAMESPACE );
+
+        // s1 sees own insert as uncommitted
+        results = session1.executeStatement( SELECT_STAR, "sql", NAMESPACE );
+        assertEquals( 1, results.size() );
+        data = results.get( 0 ).getIterator().getAllRowsAndClose();
+        assertEquals( 2, data.size() );
+        data.forEach( row -> {
+            assertTrue( row.get( 1 ).asLong().longValue() < 0 );
+            int user_id = row.get( 2 ).asInteger().intValue();
+            assertTrue( user_id == 1 || user_id == 2 );
+        } );
+
+        // s1 deletes parts of the inserted data
+        session1.executeStatement( DELETE_1, "sql", NAMESPACE );
+
+        // s1 sees non deleted part of the insert as uncommitted
+        results = session1.executeStatement( SELECT_STAR, "sql", NAMESPACE );
+        assertEquals( 1, results.size() );
+        data = results.get( 0 ).getIterator().getAllRowsAndClose();
+        assertEquals( 1, data.size() );
+        data.forEach( row -> {
+            assertTrue( row.get( 1 ).asLong().longValue() < 0 );
+            assertEquals( 1, row.get( 2 ).asInteger().intValue() );
+        } );
+
+        session1.commitTransaction();
+        session1.startTransaction();
+
+        // s1 sees non deleted part of the insert as committed
+        results = session1.executeStatement( SELECT_STAR, "sql", NAMESPACE );
+        assertEquals( 1, results.size() );
+        data = results.get( 0 ).getIterator().getAllRowsAndClose();
+        assertEquals( 1, data.size() );
+        data.forEach( row -> {
+            assertTrue( row.get( 1 ).asLong().longValue() > 0 );
+            assertEquals( 1, row.get( 2 ).asInteger().intValue() );
+        } );
+
+        session1.commitTransaction();
         teardown();
     }
 
