@@ -23,7 +23,7 @@ import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.transaction.locking.EntryIdentifierRegistry;
+import org.polypheny.db.transaction.mvcc.EntryIdentifierRegistry;
 
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(toBuilder = true)

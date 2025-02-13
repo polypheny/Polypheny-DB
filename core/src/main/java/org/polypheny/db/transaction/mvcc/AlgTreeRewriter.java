@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.transaction.locking;
+package org.polypheny.db.transaction.mvcc;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -56,7 +54,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
-import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifier;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelMatch;
@@ -71,9 +68,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexCall;
@@ -83,7 +78,6 @@ import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.locking.DeferredAlgTreeModification.Modification;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -137,7 +131,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
             if ( modification.notTargets( rootAlg ) ) {
                 continue;
             }
-            rootAlg = modification.applyOrSkip( rootAlg );
+            rootAlg = modification.apply( rootAlg );
             iterator.remove();
         }
 
@@ -167,7 +161,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
             if ( modification.notTargetsChildOf( node ) ) {
                 continue;
             }
-            node = modification.applyToChildOrSkip( node );
+            node = (T) modification.applyToChild( node );
             iterator.remove();
         }
         return node;
@@ -176,56 +170,6 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     private Transaction getTransaction() {
         return statement.getTransaction();
-    }
-
-
-    private List<AlgNode> getLastNNodes( int count ) {
-        List<AlgNode> result = new ArrayList<>();
-        for ( Iterator<AlgNode> it = stack.descendingIterator(); it.hasNext(); ) {
-            AlgNode node = it.next();
-            if ( count-- <= 0 ) {
-                break;
-            }
-            result.add( 0, node );
-        }
-        return result;
-    }
-
-    /*
-    private void updateCollectorInsertPosition( AlgNode current ) {
-        List<AlgNode> trace = getLastNNodes( 2 );
-
-        if ( trace.isEmpty() ) {
-            collectorInsertPosition = current;
-            return;
-        }
-
-        AlgNode first = trace.get( 0 );
-        if ( first instanceof Filter ) {
-            collectorInsertPosition = first;
-            return;
-        }
-        if ( trace.size() == 1 ) {
-            collectorInsertPosition = (first instanceof LpgMatch) ? first : current;
-            return;
-        }
-
-        AlgNode second = trace.get( 1 );
-        collectorInsertPosition = (second instanceof Filter) ? second : current;
-    }
-    */
-
-
-    private Entity findEntity( AlgNode node ) {
-        Entity entity = null;
-        while ( entity == null && node != null ) {
-            entity = node.getEntity();
-            if ( node.getInputs().isEmpty() ) {
-                continue;
-            }
-            node = node.getInput( 0 );
-        }
-        return entity;
     }
 
 
@@ -246,7 +190,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalRelScan scan ) {
         if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
-            pendingModifications.add( new DeferredAlgTreeModification( scan, Modification.LIMIT_REL_SCAN_TO_SNAPSHOT, statement ) );
+            pendingModifications.add( new LimitRelScanToSnapshot( scan, statement ) );
         }
         return scan;
     }
@@ -350,145 +294,14 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         }
 
         getTransaction().addWrittenEntitiy( modify1.getEntity() );
+        long sequenceNumber = statement.getTransaction().getSequenceNumber();
 
-        switch ( modify1.getOperation() ) {
-            case INSERT:
-                AlgNode input = modify1.getInput();
-                LogicalRelIdentifier identifier = LogicalRelIdentifier.create(
-                        modify1.getEntity(),
-                        input,
-                        input.getTupleType()
-                );
-                return modify1.copy( modify1.getTraitSet(), List.of( identifier ) );
-
-            case UPDATE:
-                return getRewriteOfUpdateRelModify( modify1 );
-
-            case DELETE:
-                return getRewriteOfDeleteRelModify( modify1 );
-
-            default:
-                return modify1;
-        }
-    }
-
-
-    /**
-     * Rewrites an updating relational modification to an insert while adjusting the version id.
-     * It's the callers responsibility to ensure that the passed modify is indeed an update.
-     *
-     * @param modify updating modification to rewrite
-     * @return insert version of the updating modification
-     */
-    public LogicalRelModify getRewriteOfUpdateRelModify( LogicalRelModify modify ) {
-        if ( !(modify.getInput() instanceof LogicalRelProject originalProject) ) {
-            throw new IllegalStateException( "Project expected as input to updating rel modify" );
-        }
-
-        List<AlgDataTypeField> inputFields = originalProject.getRowType().getFields().stream()
-                .filter( f -> !(originalProject.getProjects().get( f.getIndex() ) instanceof RexLiteral) ).collect( Collectors.toCollection( ArrayList::new ) );
-
-        assert IdentifierUtils.IDENTIFIER_KEY.equals( inputFields.get( 0 ).getName() );
-        assert IdentifierUtils.VERSION_KEY.equals( inputFields.get( 1 ).getName() );
-
-        List<RexNode> projects = new ArrayList<>( inputFields.size() );
-
-        for ( int i = 0; i < inputFields.size(); i++ ) {
-            AlgDataTypeField field = inputFields.get( i );
-            if ( i == 1 ) {
-                // replace _vid
-                projects.add( new RexLiteral(
-                        IdentifierUtils.getVersionAsPolyBigDecimal( statement.getTransaction().getSequenceNumber(), false ),
-                        IdentifierUtils.VERSION_ALG_TYPE,
-                        PolyType.BIGINT
-                ) );
-                continue;
-            }
-
-            if ( modify.getUpdateColumns().contains( field.getName() ) ) {
-                // replace updated values
-                int updateIndex = modify.getUpdateColumns().indexOf( field.getName() );
-                projects.add( modify.getSourceExpressions().get( updateIndex ) );
-                continue;
-            }
-
-            projects.add( new RexIndexRef( field.getIndex(), field.getType() ) );
-        }
-
-        LogicalRelProject project = LogicalRelProject.create(
-                originalProject.getInput(),
-                projects,
-                inputFields.stream().map( AlgDataTypeField::getName ).toList()
-        );
-
-        return LogicalRelModify.create(
-                modify.getEntity(),
-                project,
-                Operation.INSERT,
-                null,
-                null,
-                false
-        );
-    }
-
-
-    /**
-     * Rewrites a deleting relational modification to an insert while adjusting the entity id and version id.
-     * It's the callers responsibility to ensure that the passed modify is indeed an update.
-     *
-     * @param modify deleting modify to rewrite
-     * @return inserting modify representing the rewritten version of the deleting modify
-     */
-    public LogicalRelModify getRewriteOfDeleteRelModify( LogicalRelModify modify ) {
-        if ( !(modify.getInput() instanceof LogicalRelProject originalProject) ) {
-            throw new IllegalStateException( "Project expected as input to updating rel modify" );
-        }
-
-        List<AlgDataTypeField> inputFields = originalProject.getRowType().getFields();
-
-        assert IdentifierUtils.IDENTIFIER_KEY.equals( inputFields.get( 0 ).getName() );
-        assert IdentifierUtils.VERSION_KEY.equals( inputFields.get( 1 ).getName() );
-
-        List<RexNode> projects = new ArrayList<>( inputFields.size() );
-
-        for ( int i = 0; i < inputFields.size(); i++ ) {
-            AlgDataTypeField field = inputFields.get( i );
-            if ( i == 0 ) {
-                // swap the sign of the entity id
-                projects.add( new RexCall(
-                        IdentifierUtils.IDENTIFIER_ALG_TYPE,
-                        OperatorRegistry.get( OperatorName.UNARY_MINUS ),
-                        new RexIndexRef( field.getIndex(), field.getType() ) ) );
-                continue;
-            }
-
-            if ( i == 1 ) {
-                // replace _vid
-                projects.add( new RexLiteral(
-                        IdentifierUtils.getVersionAsPolyBigDecimal( statement.getTransaction().getSequenceNumber(), false ),
-                        IdentifierUtils.VERSION_ALG_TYPE,
-                        PolyType.BIGINT
-                ) );
-                continue;
-            }
-
-            projects.add( new RexIndexRef( field.getIndex(), field.getType() ) );
-        }
-
-        LogicalRelProject project = LogicalRelProject.create(
-                originalProject.getInput(),
-                projects,
-                inputFields.stream().map( AlgDataTypeField::getName ).toList()
-        );
-
-        return LogicalRelModify.create(
-                modify.getEntity(),
-                project,
-                Operation.INSERT,
-                null,
-                null,
-                false
-        );
+        return switch ( modify1.getOperation() ) {
+            case INSERT -> new RewriteInsertingRelModify().apply( modify1 );
+            case UPDATE -> new RewriteUpdatingRelModify( sequenceNumber ).apply( modify1 );
+            case DELETE -> new RewriteDeletingRelModify( sequenceNumber ).apply( modify1 );
+            default -> modify1;
+        };
     }
 
 
@@ -763,7 +576,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalDocumentScan scan ) {
         if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
-            pendingModifications.add( new DeferredAlgTreeModification( scan, Modification.LIMIT_DOC_SCAN_TO_SNAPSHOT, statement ) );
+            pendingModifications.add( new LimitDocScanToSnapshot( scan, statement ) );
         }
         return scan;
     }

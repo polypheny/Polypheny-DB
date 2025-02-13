@@ -27,15 +27,16 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.transaction.mvcc.MvccUtils;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 
 @Getter
-public class AlgEntityLockablesExtractor extends AlgVisitor {
+public class AlgEntityLockableExtractor extends AlgVisitor {
 
     Map<Lockable, Lockable.LockType> result;
 
 
-    public AlgEntityLockablesExtractor() {
+    public AlgEntityLockableExtractor() {
         this.result = new HashMap<>();
     }
 

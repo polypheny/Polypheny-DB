@@ -71,7 +71,7 @@ import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.locking.IdentifierUtils;
+import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
