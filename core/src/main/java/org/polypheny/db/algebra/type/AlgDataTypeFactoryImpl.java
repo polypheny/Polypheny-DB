@@ -591,6 +591,11 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
             return nullable;
         }
 
+        @Override
+        public boolean isAutoIncrement() {
+            return false;
+        }
+
 
         @Override
         public AlgDataTypeFamily getFamily() {
