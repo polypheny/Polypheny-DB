@@ -79,4 +79,5 @@ public class LockablesRegistry {
         Lockable namespace = LockablesRegistry.INSTANCE.getOrCreateLockable( LockableUtils.getNamespaceAsLockableObject( entity ) );
         return new LockableObjectWrapper( namespace, entity );
     }
+
 }

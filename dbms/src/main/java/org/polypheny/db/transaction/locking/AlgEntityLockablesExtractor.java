@@ -82,4 +82,5 @@ public class AlgEntityLockablesExtractor extends AlgVisitor {
         LockType lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
         LockableUtils.updateMapEntry( currentNode.getEntity(), lockType, result );
     }
+
 }
