@@ -18,6 +18,7 @@ package org.polypheny.db.transaction.locking;
 
 import java.text.MessageFormat;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import lombok.extern.slf4j.Slf4j;
@@ -119,8 +120,8 @@ public class LockableImpl implements Lockable {
     }
 
 
-    public HashMap<Transaction, Long> getCopyOfOwners() {
-        return new HashMap<>( owners );
+    public Map<Transaction, Long> getCopyOfOwners() {
+        return Map.copyOf( owners );
     }
 
 
