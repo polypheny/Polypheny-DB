@@ -108,91 +108,15 @@ public class DeferredAlgTreeModification {
 
 
     private AlgNode applyLimitRelScanToSnapshot() {
-        LogicalRelFilter scopeFilter = buildRelScopeFilter( target );
-        LogicalRelProject identifierVersionProject = createRelIdentifierVersionProject( scopeFilter );
-        LogicalRelAggregate rightAggregate = createRelVersionAggregate( identifierVersionProject );
-        return createVersionScanJoin( target, rightAggregate );
+        LogicalRelFilter relevantVersionsFilter = buildRelRelevantVersionsFilter( target );
+        LogicalRelProject identifierVersionProject = buildRelIdentifierVersionProject( relevantVersionsFilter );
+        LogicalRelAggregate newestVersionAggregate = buildNewestVersionAggregate( identifierVersionProject );
+        LogicalRelFilter deletedEntriesFilter = buildDeletedEntriesFilter( target );
+        return buildScopeScanJoin( deletedEntriesFilter, newestVersionAggregate );
     }
 
 
-    private LogicalRelProject createRelIdentifierVersionProject( LogicalRelFilter input ) {
-        return LogicalRelProject.create(
-                input,
-                List.of(
-                        new RexIndexRef( 0, IdentifierUtils.IDENTIFIER_ALG_TYPE ),
-                        new RexCall(
-                                IdentifierUtils.VERSION_ALG_TYPE,
-                                OperatorRegistry.get( OperatorName.ABS ),
-                                new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE )
-                        )
-                ),
-                List.of(
-                        IdentifierUtils.IDENTIFIER_KEY,
-                        IdentifierUtils.VERSION_KEY
-                )
-        );
-    }
-
-
-    private LogicalRelAggregate createRelVersionAggregate( LogicalRelProject input ) {
-        ImmutableBitSet rightAggregateGroupSet = ImmutableBitSet.of( 0 );
-        AggregateCall rightAggregateCall = AggregateCall.create(
-                OperatorRegistry.getAgg( OperatorName.MAX ),
-                false,
-                false,
-                List.of( 1 ),
-                -1,
-                AlgCollations.EMPTY,
-                IdentifierUtils.VERSION_ALG_TYPE,
-                "max_vid"
-        );
-
-        return LogicalRelAggregate.create(
-                input,
-                rightAggregateGroupSet,
-                List.of( rightAggregateGroupSet ),
-                List.of( rightAggregateCall )
-        );
-    }
-
-
-    private LogicalRelJoin createVersionScanJoin( AlgNode left, LogicalRelAggregate right ) {
-        RexCall identifierJoinCondition = new RexCall(
-                BOOLEAN_ALG_TYPE,
-                OperatorRegistry.get( OperatorName.EQUALS ),
-                new RexIndexRef( 0, IdentifierUtils.IDENTIFIER_ALG_TYPE ),
-                new RexIndexRef( 4, IdentifierUtils.IDENTIFIER_ALG_TYPE )
-        );
-
-        RexCall versionJoinCondition = new RexCall(
-                BOOLEAN_ALG_TYPE,
-                OperatorRegistry.get( OperatorName.EQUALS ),
-                new RexCall(
-                        IdentifierUtils.VERSION_ALG_TYPE,
-                        OperatorRegistry.get( OperatorName.ABS ),
-                        new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE )
-                ),
-                new RexIndexRef( 5, IdentifierUtils.VERSION_ALG_TYPE )
-        );
-
-        RexCall joinCondition = new RexCall(
-                BOOLEAN_ALG_TYPE,
-                OperatorRegistry.get( OperatorName.AND ),
-                identifierJoinCondition,
-                versionJoinCondition
-        );
-
-        return LogicalRelJoin.create(
-                left,
-                right,
-                joinCondition,
-                Set.of(),
-                JoinAlgType.INNER
-        );
-    }
-
-
-    private LogicalRelFilter buildRelScopeFilter( AlgNode input ) {
+    private LogicalRelFilter buildRelRelevantVersionsFilter( AlgNode input ) {
         RexCall selfReadCondition = new RexCall(
                 BOOLEAN_ALG_TYPE,
                 OperatorRegistry.get( OperatorName.EQUALS ),
@@ -242,6 +166,108 @@ public class DeferredAlgTreeModification {
                 input,
                 scopeCondition,
                 ImmutableSet.of()
+        );
+    }
+
+
+    private LogicalRelProject buildRelIdentifierVersionProject( LogicalRelFilter input ) {
+        return LogicalRelProject.create(
+                input,
+                List.of(
+                        new RexCall(
+                                IdentifierUtils.IDENTIFIER_ALG_TYPE,
+                                OperatorRegistry.get( OperatorName.ABS ),
+                                new RexIndexRef( 0, IdentifierUtils.IDENTIFIER_ALG_TYPE )
+                        ),
+                        new RexCall(
+                                IdentifierUtils.VERSION_ALG_TYPE,
+                                OperatorRegistry.get( OperatorName.ABS ),
+                                new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE )
+                        )
+                ),
+                List.of(
+                        IdentifierUtils.IDENTIFIER_KEY,
+                        IdentifierUtils.VERSION_KEY
+                )
+        );
+    }
+
+
+    private LogicalRelAggregate buildNewestVersionAggregate( LogicalRelProject input ) {
+        ImmutableBitSet rightAggregateGroupSet = ImmutableBitSet.of( 0 );
+        AggregateCall rightAggregateCall = AggregateCall.create(
+                OperatorRegistry.getAgg( OperatorName.MAX ),
+                false,
+                false,
+                List.of( 1 ),
+                -1,
+                AlgCollations.EMPTY,
+                IdentifierUtils.VERSION_ALG_TYPE,
+                "max_vid"
+        );
+
+        return LogicalRelAggregate.create(
+                input,
+                rightAggregateGroupSet,
+                List.of( rightAggregateGroupSet ),
+                List.of( rightAggregateCall )
+        );
+    }
+
+
+    private LogicalRelJoin buildScopeScanJoin( AlgNode left, LogicalRelAggregate right ) {
+        RexCall identifierJoinCondition = new RexCall(
+                BOOLEAN_ALG_TYPE,
+                OperatorRegistry.get( OperatorName.EQUALS ),
+                new RexCall(
+                        IdentifierUtils.IDENTIFIER_ALG_TYPE,
+                        OperatorRegistry.get( OperatorName.ABS ),
+                        new RexIndexRef( 0, IdentifierUtils.IDENTIFIER_ALG_TYPE )
+                ),
+                new RexIndexRef( 4, IdentifierUtils.IDENTIFIER_ALG_TYPE )
+        );
+
+        RexCall versionJoinCondition = new RexCall(
+                BOOLEAN_ALG_TYPE,
+                OperatorRegistry.get( OperatorName.EQUALS ),
+                new RexCall(
+                        IdentifierUtils.VERSION_ALG_TYPE,
+                        OperatorRegistry.get( OperatorName.ABS ),
+                        new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE )
+                ),
+                new RexIndexRef( 5, IdentifierUtils.VERSION_ALG_TYPE )
+        );
+
+        RexCall joinCondition = new RexCall(
+                BOOLEAN_ALG_TYPE,
+                OperatorRegistry.get( OperatorName.AND ),
+                identifierJoinCondition,
+                versionJoinCondition
+        );
+
+        return LogicalRelJoin.create(
+                left,
+                right,
+                joinCondition,
+                Set.of(),
+                JoinAlgType.INNER
+        );
+    }
+
+
+    private LogicalRelFilter buildDeletedEntriesFilter( AlgNode targetedScan ) {
+        return LogicalRelFilter.create(
+                targetedScan,
+                new RexCall(
+                        BOOLEAN_ALG_TYPE,
+                        OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ),
+                        new RexIndexRef( 0, IdentifierUtils.IDENTIFIER_ALG_TYPE ),
+                        new RexLiteral(
+                                PolyBigDecimal.of( 0 ),
+                                IdentifierUtils.IDENTIFIER_ALG_TYPE,
+                                PolyType.BIGINT
+                        )
+                )
         );
     }
 
