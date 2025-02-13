@@ -96,6 +96,7 @@ public class StringSettingDef extends SettingDef {
     public enum AutoCompleteType {
         NONE,
         FIELD_NAMES,
+        VARIABLES,
         VALUES,
         ADAPTERS;
     }

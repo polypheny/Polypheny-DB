@@ -72,8 +72,8 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         shortDescription = "Specify the text columns to interpret as (escaped) JSON.")
 @BoolSetting(key = "fail", displayName = "Fail on Invalid JSON", defaultValue = true, pos = 2,
         shortDescription = "If the execution should fail when a specified JSON-column does not contain valid JSON.")
-@BoolSetting(key = "unwrap", displayName = "Unwrap JSON objects", defaultValue = false, pos = 3,
-        shortDescription = "If the entry in a JSON column is an object, it gets unwrapped.")
+@BoolSetting(key = "unwrap", displayName = "Flatten JSON objects", defaultValue = false, pos = 3,
+        shortDescription = "If the entry in a JSON column is an object, it gets flattened.")
 
 @SuppressWarnings("unused")
 public class RelToDocActivity implements Activity, Fusable, Pipeable {

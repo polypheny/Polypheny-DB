@@ -104,6 +104,22 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
 
 
     @Override
+    public void removeVariable( String key ) {
+        failIfReservedKey( key );
+        variables.remove( key );
+    }
+
+
+    @Override
+    public void removeDynamicVariables( boolean removeEnv ) {
+        variables.keySet().retainAll( RESERVED_KEYS );
+        if ( removeEnv ) {
+            variables.remove( ENV_KEY );
+        }
+    }
+
+
+    @Override
     public void setError( ObjectNode value ) {
         variables.put( ERROR_MSG_KEY, value );
     }
@@ -250,7 +266,7 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
     @Override
     public Map<String, JsonNode> resolveVariables( Map<String, JsonNode> nodes ) {
         nodes = nodes.entrySet().stream().collect(  // create copy
-                Collectors.toMap( Entry::getKey, e -> e.getValue().deepCopy() ));
+                Collectors.toMap( Entry::getKey, e -> e.getValue().deepCopy() ) );
         Map<String, JsonNode> resolved = new HashMap<>();
         for ( Entry<String, JsonNode> entry : nodes.entrySet() ) {
             resolved.put( entry.getKey(), resolveVariables( entry.getValue(), true ) );
@@ -262,7 +278,7 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
     @Override
     public Map<String, Optional<JsonNode>> resolveAvailableVariables( Map<String, JsonNode> nodes ) {
         nodes = nodes.entrySet().stream().collect( // create copy
-                Collectors.toMap( Entry::getKey, e -> e.getValue().deepCopy() ));
+                Collectors.toMap( Entry::getKey, e -> e.getValue().deepCopy() ) );
         Map<String, Optional<JsonNode>> resolved = new HashMap<>();
         for ( Map.Entry<String, JsonNode> entry : nodes.entrySet() ) {
             try {

@@ -121,7 +121,7 @@ public class LpgValuesActivity implements Activity, Pipeable {
         List<String> nodeLabels = settings.get( "nodeLabels", StringValue.class ).splitAndTrim( "," );
         List<String> edgeLabels = settings.get( "edgeLabels", StringValue.class ).splitAndTrim( "," );
         int nodeLabelCount = settings.getInt( "nodeLabelCount" );
-        int edgeLabelCount = settings.getInt( "nodeLabelCount" );
+        int edgeLabelCount = settings.getInt( "edgeLabelCount" );
 
         List<PolyNode> nodes = getNodes( settings.getInt( "count" ), fixSeed, nodeLabels, nodeLabelCount );
         List<PolyEdge> edges = getEdges( nodes.stream().map( PolyNode::getId ).toList(),

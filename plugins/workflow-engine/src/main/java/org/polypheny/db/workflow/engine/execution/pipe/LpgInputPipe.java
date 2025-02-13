@@ -89,6 +89,19 @@ public class LpgInputPipe {
 
 
     /**
+     * If only interested in the edges, this method can be called.
+     * It imitates the process of iterating over all nodes.
+     * Afterward, getEdgeIterable() can be used to iterate over the edges.
+     */
+    public void skipNodes() {
+        Iterator<PolyNode> it = getNodeIterable().iterator();
+        while ( it.hasNext() ) {
+            it.next();
+        }
+    }
+
+
+    /**
      * For performance reasons, the returned iterable must be used carefully.
      * It is recommended to use a single enhanced for loop for iterating over the edges.
      * Please note the following restrictions:

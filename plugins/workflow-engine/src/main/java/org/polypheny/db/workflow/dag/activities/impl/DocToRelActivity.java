@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -90,7 +91,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 @SuppressWarnings("unused")
 public class DocToRelActivity implements Activity, Pipeable {
 
-    private static final String UNSPECIFIED = "_other";
+    public static final String UNSPECIFIED = "_other";
 
 
     @Override
@@ -194,30 +195,13 @@ public class DocToRelActivity implements Activity, Pipeable {
 
         Set<String> fields = cols.getCasts().stream().map( c -> c.getSource().split( "\\." )[0] ).collect( Collectors.toSet() );
 
-        outer:
         for ( List<PolyValue> tuple : input ) {
             PolyDocument doc = tuple.get( 0 ).asDocument();
             List<PolyValue> row = new ArrayList<>();
             row.add( pkVal );
 
-            for ( SingleCast col : cols.getCasts() ) {
-                PolyValue value;
-                try {
-                    value = ActivityUtils.getSubValue( doc, col.getSource() );
-                } catch ( Exception e ) {
-                    switch ( missingStrategy ) {
-                        case "null" -> {
-                            value = col.getNullValue();
-                        }
-                        case "skip" -> {
-                            continue outer;
-                        }
-                        case "fail" -> throw new GenericRuntimeException( "Missing field '" + col.getSource() +
-                                "' for document '" + doc.toJson() + "'" );
-                        default -> throw new IllegalStateException( "ignored" );
-                    }
-                }
-                row.add( col.castValue( value ) );
+            if ( addFromCast( row, doc, cols, missingStrategy ) ) {
+                continue;
             }
 
             if ( includeUnspecified ) {
@@ -233,7 +217,6 @@ public class DocToRelActivity implements Activity, Pipeable {
                 } else {
                     row.add( PolyDocument.ofDocument( unspecified ).toPolyJson() );
                 }
-
             }
 
             if ( !output.put( row ) ) {
@@ -250,29 +233,12 @@ public class DocToRelActivity implements Activity, Pipeable {
         long countDelta = Math.max( inCount / 100, 1 );
         long count = 0;
 
-        outer:
         for ( PolyDocument doc : reader.getDocIterable() ) {
             List<PolyValue> row = new ArrayList<>();
             row.add( pkVal );
 
-            for ( SingleCast col : cols.getCasts() ) {
-                PolyValue value;
-                try {
-                    value = ActivityUtils.getSubValue( doc, col.getSource() );
-                } catch ( Exception e ) {
-                    switch ( missingStrategy ) {
-                        case "null" -> {
-                            value = col.getNullValue();
-                        }
-                        case "skip" -> {
-                            continue outer;
-                        }
-                        case "fail" -> throw new GenericRuntimeException( "Missing field '" + col.getSource() +
-                                "' for document '" + doc.toJson() + "'" );
-                        default -> throw new IllegalStateException( "ignored" );
-                    }
-                }
-                row.add( col.castValue( value ) );
+            if ( addFromCast( row, doc, cols, missingStrategy ) ) {
+                continue;
             }
 
             writer.write( row );
@@ -285,12 +251,39 @@ public class DocToRelActivity implements Activity, Pipeable {
     }
 
 
+    /**
+     * @return true if the document should be skipped
+     */
+    protected static boolean addFromCast( List<PolyValue> row, PolyDocument doc, CastValue cols, String missingStrategy ) {
+        for ( SingleCast col : cols.getCasts() ) {
+            PolyValue value;
+            try {
+                value = Objects.requireNonNull( ActivityUtils.getSubValue( doc, col.getSource() ) );
+            } catch ( Exception e ) {
+                switch ( missingStrategy ) {
+                    case "null" -> {
+                        value = col.getNullValue();
+                    }
+                    case "skip" -> {
+                        return true;
+                    }
+                    case "fail" -> throw new GenericRuntimeException( "Missing field '" + col.getSource() +
+                            "' for '" + doc.toJson() + "'" );
+                    default -> throw new IllegalStateException( "ignored" );
+                }
+            }
+            row.add( col.castValue( value ) );
+        }
+        return false;
+    }
+
+
     private AlgDataType getType( String mode, CastValue cols, boolean includeUnspecified ) throws InvalidSettingException {
         assert !mode.equals( "auto" ); // in auto, the type cannot be statically determined
         if ( mode.equals( "fixed" ) ) {
             return ActivityUtils.getBuilder()
                     .add( StorageManager.PK_COL, null, factory.createPolyType( PolyType.BIGINT ) )
-                    .add( DocumentType.DOCUMENT_ID, null, factory.createPolyType( PolyType.VARCHAR, 24 ) )
+                    .add( DocumentType.DOCUMENT_ID, null, PolyType.VARCHAR, 24 )
                     .add( DocumentType.DOCUMENT_DATA, null, PolyType.TEXT )
                     .build();
         }

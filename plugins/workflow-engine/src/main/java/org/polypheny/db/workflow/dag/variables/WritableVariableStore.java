@@ -51,6 +51,17 @@ public interface WritableVariableStore {
      */
     void setVariable( String key, SettingValue value );
 
+    /**
+     * Removes the variable in the store with the given key.
+     *
+     * @param key the key for the variable to remove.
+     * @throws IllegalArgumentException if the specified variable cannot be removed
+     */
+    void removeVariable( String key );
+
+
+    void removeDynamicVariables( boolean removeEnv );
+
     void setError( ObjectNode value );
 
     void setEnvVariable( String key, JsonNode envVariable );

@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.dag.activities;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -46,6 +47,7 @@ import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidInputException;
@@ -386,7 +388,7 @@ public class ActivityUtils {
      * @param pointer a pointer to the field to remove. The entire path except for the last key or index must exist.
      * @throws Exception If the path is invalid
      */
-    public static void removeSubValue( PolyDocument doc, String pointer ) throws Exception {
+    public static PolyValue removeSubValue( PolyDocument doc, String pointer ) throws Exception {
         if ( pointer.isEmpty() ) {
             throw new IllegalArgumentException( "Pointer must not be empty" );
         }
@@ -406,13 +408,25 @@ public class ActivityUtils {
 
         PolyValue target = getSubValue( doc, path ); // target is either a PolyDocument or PolyList
         if ( target.isDocument() ) {
-            target.asDocument().remove( PolyString.of( key ) );
+            return target.asDocument().remove( PolyString.of( key ) );
         } else if ( target.isList() ) {
             int i = Integer.parseInt( key );
-            target.asList().remove( i );
+            return target.asList().remove( i );
         } else {
             throw new IllegalArgumentException( "Target value does not support removal: " + path );
         }
+    }
+
+
+    public static String getParentPointer( String pointer ) {
+        if ( pointer.isEmpty() ) {
+            throw new IllegalArgumentException( "Pointer must not be empty" );
+        }
+        int lastDotIndex = pointer.lastIndexOf( '.' );
+        if ( lastDotIndex == -1 ) {
+            return ""; // root
+        }
+        return pointer.substring( 0, lastDotIndex );
     }
 
 
@@ -424,6 +438,14 @@ public class ActivityUtils {
             return;
         }
         map.put( Activity.docId, PolyString.of( BsonUtil.getObjectId() ) );
+    }
+
+
+    /**
+     * @return true if holder has a label that is in the labels collection or labels is empty.
+     */
+    public static boolean matchesLabelList( GraphPropertyHolder holder, Collection<String> labels ) {
+        return labels.isEmpty() || holder.getLabels().stream().anyMatch( l -> labels.contains( l.value ) );
     }
 
 

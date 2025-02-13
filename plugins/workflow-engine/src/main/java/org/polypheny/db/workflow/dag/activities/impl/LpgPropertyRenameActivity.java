@@ -104,7 +104,7 @@ public class LpgPropertyRenameActivity implements Activity, Pipeable {
         renamer = settings.get( "rename", FieldRenameValue.class );
 
         for ( PolyNode node : input.getNodeIterable() ) {
-            if ( isNodes && (labels.isEmpty() || node.getLabels().stream().anyMatch( l -> labels.contains( l.value ) )) ) {
+            if ( isNodes && ActivityUtils.matchesLabelList( node, labels ) ) {
                 PolyDictionary renamed = getRenamedProperties( node.properties );
                 node = new PolyNode( node.id, renamed, node.getLabels(), null );
             }
@@ -116,7 +116,7 @@ public class LpgPropertyRenameActivity implements Activity, Pipeable {
         }
 
         for ( PolyEdge edge : input.getEdgeIterable() ) {
-            if ( isEdges && (labels.isEmpty() || edge.getLabels().stream().anyMatch( l -> labels.contains( l.value ) )) ) {
+            if ( isEdges && ActivityUtils.matchesLabelList( edge, labels ) ) {
                 PolyDictionary renamed = getRenamedProperties( edge.properties );
                 edge = new PolyEdge( edge.id, renamed, edge.labels, edge.left, edge.right, edge.direction, null );
             }

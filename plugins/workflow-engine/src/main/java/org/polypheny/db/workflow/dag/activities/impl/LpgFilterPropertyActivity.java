@@ -29,6 +29,7 @@ import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
+import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.activities.TypePreview.LpgType;
@@ -103,7 +104,7 @@ public class LpgFilterPropertyActivity implements Activity, Pipeable {
         }
 
         for ( PolyNode node : input.getNodeIterable() ) {
-            if ( isNodes && (labels.isEmpty() || node.getLabels().stream().anyMatch( l -> labels.contains( l.value ) )) ) {
+            if ( isNodes && ActivityUtils.matchesLabelList( node, labels ) ) {
                 if ( !predicate.test( node.properties ) ) {
                     continue;
                 } else if ( fail ) {
@@ -118,7 +119,7 @@ public class LpgFilterPropertyActivity implements Activity, Pipeable {
         }
 
         for ( PolyEdge edge : input.getEdgeIterable() ) {
-            if ( isEdges && (labels.isEmpty() || edge.getLabels().stream().anyMatch( l -> labels.contains( l.value ) )) ) {
+            if ( isEdges && ActivityUtils.matchesLabelList( edge, labels ) ) {
                 if ( !predicate.test( edge.properties ) ) {
                     continue;
                 } else if ( fail ) {
