@@ -74,7 +74,9 @@ public class LockableImpl implements Lockable {
             }
             long count = owners.remove( transaction );
             while ( !owners.isEmpty() ) {
-                DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners.keySet() );
+                if ( DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners.keySet() ) ) {
+                    throw new InterruptedException( "Deadlock detected" );
+                }
                 concurrencyCondition.await();
             }
             isExclusive = true;
@@ -138,7 +140,9 @@ public class LockableImpl implements Lockable {
         concurrencyLock.lockInterruptibly();
         try {
             while ( isExclusive || hasWaitingTransactions() ) {
-                DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners.keySet() );
+                if ( DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners.keySet() ) ) {
+                    throw new InterruptedException( "Deadlock detected" );
+                }
                 concurrencyCondition.await();
             }
             owners.put( transaction, owners.getOrDefault( transaction, 0L ) + 1 );
@@ -146,6 +150,7 @@ public class LockableImpl implements Lockable {
         } finally {
             concurrencyLock.unlock();
         }
+
     }
 
 
@@ -156,7 +161,9 @@ public class LockableImpl implements Lockable {
         concurrencyLock.lockInterruptibly();
         try {
             while ( !owners.isEmpty() ) {
-                DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners.keySet() );
+                if ( DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners.keySet() ) ) {
+                    throw new InterruptedException( "Deadlock detected" );
+                }
                 concurrencyCondition.await();
             }
             isExclusive = true;
