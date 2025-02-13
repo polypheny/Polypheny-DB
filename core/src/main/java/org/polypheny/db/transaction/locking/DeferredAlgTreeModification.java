@@ -137,7 +137,7 @@ public class DeferredAlgTreeModification {
     private LogicalRelAggregate createRelVersionAggregate( LogicalRelProject input ) {
         ImmutableBitSet rightAggregateGroupSet = ImmutableBitSet.of( 0 );
         AggregateCall rightAggregateCall = AggregateCall.create(
-                OperatorRegistry.getAgg( OperatorName.MAX ), // TODO: TH actually take max(abs(x)). how is this done?
+                OperatorRegistry.getAgg( OperatorName.MAX ),
                 false,
                 false,
                 List.of( 1 ),
