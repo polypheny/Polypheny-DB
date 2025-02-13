@@ -62,6 +62,13 @@ public class LockableImpl implements Lockable {
         } catch ( InterruptedException e ) {
             transaction.releaseAllLocks();
             throw new DeadlockException( MessageFormat.format( "Transaction {0} encountered a deadlock while acquiring a lock of type {1} on entry {2}.", transaction.getId(), lockType, this ) );
+        } catch ( DeadlockException e ) {
+            transaction.releaseAllLocks();
+            throw e;
+        } finally {
+            if ( concurrencyLock.isHeldByCurrentThread() ) {
+                concurrencyLock.unlock();
+            }
         }
     }
 
