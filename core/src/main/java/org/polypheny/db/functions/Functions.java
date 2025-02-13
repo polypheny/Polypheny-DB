@@ -23,7 +23,6 @@ import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
 import com.fasterxml.jackson.core.JsonParser.Feature;
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
