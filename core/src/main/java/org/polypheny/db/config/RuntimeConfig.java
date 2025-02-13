@@ -61,7 +61,7 @@ public enum RuntimeConfig {
     GARBAGE_COLLECTION_INTERVAL(
             "runtime/garbageCollectionInterval",
             "Defines the interval in which the periodic garbage collector runs.",
-            5L,
+            5000L,
             ConfigType.LONG
     ),
 
@@ -397,7 +397,7 @@ public enum RuntimeConfig {
     UNIQUE_CONSTRAINT_ENFORCEMENT(
             "runtime/uniqueConstraintEnforcement",
             "Enable enforcement of uniqueness constraints.",
-            true, // ToDo: unique constraint are internally used for MVCC to work properly!
+            false, // ToDo: unique constraint are internally used for MVCC to work properly!
             ConfigType.BOOLEAN,
             "constraintEnforcementGroup" ),
 
