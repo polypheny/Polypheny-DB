@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,9 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.snapshot;
+package org.polypheny.db.transaction.locking;
 
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.transaction.locking.ConcurrencyControlType;
-
-public class MockLogicalNamespace extends LogicalNamespace {
-
-    public MockLogicalNamespace( String name, DataModel dataModel, boolean caseSensitive, ConcurrencyControlType concurrencyControlType ) {
-        super( 0, name, dataModel, caseSensitive, concurrencyControlType );
-    }
-
+public enum ConcurrencyControlType {
+    S2PL,
+    MVCC
 }

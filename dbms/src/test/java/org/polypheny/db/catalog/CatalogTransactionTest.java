@@ -26,17 +26,20 @@ import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
 import org.polypheny.db.type.PolyType;
 
 public class CatalogTransactionTest {
 
 
     private static TestHelper helper;
+    private static ConcurrencyControlType concurrencyControlType;
 
 
     @BeforeAll
     public static void initClass() {
         helper = TestHelper.getInstance();
+        concurrencyControlType = ConcurrencyControlType.S2PL;
     }
 
 
@@ -50,7 +53,7 @@ public class CatalogTransactionTest {
     public void simpleRollbackTest() {
         PolyCatalog catalog = new PolyCatalog();
 
-        long namespaceId = catalog.createNamespace( "test", DataModel.RELATIONAL, false, false );
+        long namespaceId = catalog.createNamespace( "test", DataModel.RELATIONAL, false, concurrencyControlType );
 
         catalog.commit();
 
@@ -71,7 +74,7 @@ public class CatalogTransactionTest {
     public void rollbackTest() {
         PolyCatalog catalog = new PolyCatalog();
 
-        long namespaceId = catalog.createNamespace( "test", DataModel.RELATIONAL, false, false );
+        long namespaceId = catalog.createNamespace( "test", DataModel.RELATIONAL, false, concurrencyControlType );
 
         catalog.commit();
 

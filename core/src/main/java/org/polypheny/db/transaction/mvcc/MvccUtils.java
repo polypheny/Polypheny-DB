@@ -25,6 +25,9 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.ImplementationContext;
@@ -32,6 +35,7 @@ import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
 import org.polypheny.db.transaction.locking.SequenceNumberGenerator;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -39,12 +43,26 @@ import org.polypheny.db.type.entity.PolyValue;
 public class MvccUtils {
 
     public static boolean isInNamespaceUsingMvcc( Entity entity ) {
-        return Catalog.getInstance().getSnapshot().getNamespace( entity.getNamespaceId() ).orElseThrow().isUseMvcc();
+        return isNamespaceUsingMvcc( entity.getNamespaceId() );
     }
 
 
     public static boolean isNamespaceUsingMvcc( long namespaceId ) {
-        return Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElseThrow().isUseMvcc();
+        return isNamespaceUsingMvcc( Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElseThrow() );
+    }
+
+
+    public static boolean isNamespaceUsingMvcc( LogicalNamespace namespace ) {
+        return namespace.getConcurrencyControlType() == ConcurrencyControlType.MVCC;
+    }
+
+
+    public static ConcurrencyControlType getDefaultConcurrencyControlType( DataModel dataModel ) {
+        return switch ( dataModel ) {
+            case RELATIONAL -> (ConcurrencyControlType) RuntimeConfig.REL_DEFAULT_CONCURRENCY_CONTROL.getEnum();
+            case DOCUMENT -> (ConcurrencyControlType) RuntimeConfig.DOC_DEFAULT_CONCURRENCY_CONTROL.getEnum();
+            case GRAPH -> (ConcurrencyControlType) RuntimeConfig.GRAPH_DEFAULT_CONCURRENCY_CONTROL.getEnum();
+        };
     }
 
 
@@ -66,6 +84,7 @@ public class MvccUtils {
     public static ExecutedContext executeStatement( QueryLanguage language, String query, long namespaceId, Transaction transaction ) {
         return executeStatement( language, query, namespaceId, null, transaction );
     }
+
 
     public static ExecutedContext executeStatement( QueryLanguage language, String query, long namespaceId, Statement statement ) {
         return executeStatement( language, query, namespaceId, statement, statement.getTransaction() );
