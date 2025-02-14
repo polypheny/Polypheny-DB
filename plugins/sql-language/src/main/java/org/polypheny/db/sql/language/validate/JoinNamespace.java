@@ -19,6 +19,7 @@ package org.polypheny.db.sql.language.validate;
 
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.sql.language.SqlJoin;
 import org.polypheny.db.sql.language.SqlNode;
 
@@ -38,7 +39,7 @@ class JoinNamespace extends AbstractNamespace {
 
 
     @Override
-    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
+    protected AlgDataType validateImpl( AlgDataType targetRowType, Entity target ) {
         AlgDataType leftType = validator.getSqlNamespace( join.getLeft() ).getTupleType();
         AlgDataType rightType = validator.getSqlNamespace( join.getRight() ).getTupleType();
         final AlgDataTypeFactory typeFactory = validator.getTypeFactory();

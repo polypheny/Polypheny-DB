@@ -240,7 +240,7 @@ public class SqlSelect extends SqlCall implements Select {
 
     @Override
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
-        validator.validateQuery( this, scope, validator.getUnknownType() );
+        validator.validateQuery( this, scope, validator.getUnknownType(), null );
     }
 
 

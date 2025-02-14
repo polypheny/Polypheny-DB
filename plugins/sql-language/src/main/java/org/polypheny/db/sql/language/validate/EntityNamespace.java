@@ -69,7 +69,7 @@ class EntityNamespace extends AbstractNamespace {
 
 
     @Override
-    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
+    protected AlgDataType validateImpl( AlgDataType targetRowType, Entity target ) {
         if ( extendedFields.isEmpty() ) {
             return entity.getTupleType();
         }

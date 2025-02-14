@@ -167,7 +167,7 @@ public class IdentifierNamespace extends AbstractNamespace {
 
 
     @Override
-    public AlgDataType validateImpl( AlgDataType targetRowType ) {
+    public AlgDataType validateImpl( AlgDataType targetRowType, Entity target ) {
         resolvedNamespace = Objects.requireNonNull( resolveImpl( id ) );
         if ( resolvedNamespace instanceof EntityNamespace ) {
             Entity table = resolvedNamespace.getEntity();
