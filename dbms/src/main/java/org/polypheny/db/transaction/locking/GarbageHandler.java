@@ -32,6 +32,8 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.transaction.mvcc.IdentifierUtils;
+import org.polypheny.db.transaction.mvcc.MvccUtils;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
@@ -77,7 +79,7 @@ public class GarbageHandler {
         // get all namespaces
         Snapshot snapshot = Catalog.snapshot();
         List<LogicalEntity> entities = snapshot.getNamespaces( null ).stream()
-                .filter( LogicalNamespace::isUseMvcc )
+                .filter( MvccUtils::isNamespaceUsingMvcc )
                 .flatMap( n -> snapshot.getLogicalEntities( n.getId() ).stream() )
                 .toList();
 

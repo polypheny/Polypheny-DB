@@ -27,6 +27,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.ddl.DdlManager.DefaultIndexPlacementStrategy;
 import org.polypheny.db.processing.ConstraintStrategy;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
 import org.polypheny.db.transaction.locking.DeadlockDetectorType;
 import org.polypheny.db.transaction.locking.DeadlockResolverType;
 import org.polypheny.db.transaction.locking.S2plLockingLevel;
@@ -55,6 +56,27 @@ public enum RuntimeConfig {
             "runtime/s2plDeadlockResolverType",
             "Define the method used to resolve deadlocks.",
             DeadlockResolverType.FIRST_TRANSACTION_DEADLOCK_RESOLVER,
+            ConfigType.ENUM
+    ),
+
+    REL_DEFAULT_CONCURRENCY_CONTROL(
+            "runtime/relDefaultConcurrencyControl",
+            "Define which concurrency control mechanism should be used for relational namespaces by default.",
+            ConcurrencyControlType.S2PL,
+            ConfigType.ENUM
+    ),
+
+    DOC_DEFAULT_CONCURRENCY_CONTROL(
+            "runtime/docDefaultConcurrencyControl",
+            "Define which concurrency control mechanism should be used for document namespaces by default.",
+            ConcurrencyControlType.S2PL,
+            ConfigType.ENUM
+    ),
+
+    GRAPH_DEFAULT_CONCURRENCY_CONTROL(
+            "runtime/graphDefaultConcurrencyControl",
+            "Define which concurrency control mechanism should be used for graph namespaces by default.",
+            ConcurrencyControlType.S2PL,
             ConfigType.ENUM
     ),
 
