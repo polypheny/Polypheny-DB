@@ -81,10 +81,10 @@ public class LogicalTable extends LogicalEntity {
 
 
     @Override
-    public AlgDataType getTupleType( boolean hideIdentifier ) {
+    public AlgDataType getTupleType( boolean hideInternalColumns ) {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-        for ( LogicalColumn column : getColumns(hideIdentifier).stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
+        for ( LogicalColumn column : getColumns( hideInternalColumns ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             fieldInfo.add( column.id, column.name, null, sqlType ).nullable( column.nullable );
         }
@@ -115,7 +115,7 @@ public class LogicalTable extends LogicalEntity {
 
     public List<LogicalColumn> getColumns( boolean hideIdentifier ) {
         if ( hideIdentifier ) {
-            return Catalog.snapshot().rel().getColumns( id ).stream().filter( c -> !c.isIdentifier() ).toList();
+            return Catalog.snapshot().rel().getColumns( id ).stream().filter( c -> !c.isInternal() ).toList();
         }
         return Catalog.snapshot().rel().getColumns( id );
     }

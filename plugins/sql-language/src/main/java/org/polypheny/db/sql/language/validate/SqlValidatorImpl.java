@@ -3905,7 +3905,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @return Rowtype
      */
     protected AlgDataType createTargetRowType( Entity table, SqlNodeList targetColumnList, boolean append, boolean allowDynamic ) {
-        AlgDataType baseRowType = table.getTupleType(true); //
+        AlgDataType baseRowType = table.getTupleType(false); //
         if ( targetColumnList == null ) {
             return baseRowType;
         }
