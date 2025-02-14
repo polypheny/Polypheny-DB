@@ -87,7 +87,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccCreateTable() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
@@ -105,7 +105,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccCreateTable2() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE _eid (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
@@ -123,7 +123,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertUnparameterizedColumnNameConflictSameType() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (_eid BIGINT, a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
@@ -141,7 +141,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertUnparameterizedColumnNameConflictDifferentType() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (_eid VARCHAR(15), a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
@@ -160,7 +160,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccUpdateUnparameterizedColumnWithIdentifierName() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, _eid INTEGER, PRIMARY KEY (a))" );
@@ -180,7 +180,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccDropColumnWithIdentifierName() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, _eid INTEGER, PRIMARY KEY (a))" );
@@ -199,7 +199,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccAddColumnWithIdentifierName() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
@@ -218,7 +218,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccRenameColumnWithIdentifierName() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, _eid INTEGER, PRIMARY KEY (a))" );
@@ -237,7 +237,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccRenameNonIdentifierColumnUnparameterized() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
@@ -256,7 +256,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccChangeDataTypeOfColumnWithIdentifierName() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, _eid INTEGER, PRIMARY KEY (a))" );
@@ -275,7 +275,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccCreateTableWithColumnWithIdentifierName() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, _eid INTEGER, PRIMARY KEY (a))" );
@@ -295,7 +295,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertUnparameterizedWithColumnNames() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
@@ -315,7 +315,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertMultipleUnparameterizedWithColumnNames() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
@@ -338,7 +338,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertUnparameterizedNoColumnNames() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
@@ -357,7 +357,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertMultipleUnparameterizedNoColumnNames() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
@@ -380,7 +380,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertValuesMismatch() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
@@ -402,7 +402,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertFromTableWithColumnNamesSameStore() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
@@ -426,7 +426,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertFromTableWithoutColumnNamesSameStore() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
@@ -450,7 +450,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertUnparameterizedDefaultOmitted() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
@@ -469,7 +469,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertUnparameterizedDefaultExplicitNoColumnNames() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
@@ -488,7 +488,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertMultipleUnparameterizedDefaultOmitted() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
@@ -507,7 +507,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertPreparedWithColumnNames() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
@@ -529,7 +529,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertMultiplePreparedWithColumnNames() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
@@ -554,7 +554,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertParameterizedDefaultOmitted() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers1 (a VARCHAR(8) NOT NULL, b VARCHAR(8) DEFAULT 'foo', PRIMARY KEY (a))" );
@@ -578,7 +578,7 @@ public class RelationalIdentifierTests {
     public void testNonMvccInsertPreparedNoColumnNames() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setCatalog( "public" );
+            connection.setSchema( "public" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
