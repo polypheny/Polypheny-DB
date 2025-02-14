@@ -310,9 +310,7 @@ public class SqlProcessor extends Processor {
 
                 int position = getPositionInSqlNodeList( oldColumnList, column.name );
                 if ( position >= 0 ) {
-                    if ( column.name.equals( IdentifierUtils.IDENTIFIER_KEY ) ) {
-                        IdentifierUtils.throwIllegalFieldName();
-                    }
+                    IdentifierUtils.throwIfIsDisallowedFieldName( column.name );
                     newValues[i][pos] = call.getOperands()[position];
                 } else {
                     newValues[i][pos] = resolveDefaultValue( column );

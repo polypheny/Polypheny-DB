@@ -96,7 +96,6 @@ public class SqlValidatorUtil {
         return entityNamespace.getEntity();
     }
 
-
     /**
      * Gets a list of extended columns with field indices to the underlying table.
      */

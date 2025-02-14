@@ -58,7 +58,7 @@ class UnnestNamespace extends AbstractNamespace {
 
 
     @Override
-    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
+    protected AlgDataType validateImpl( AlgDataType targetRowType, Entity target ) {
         // Validate the call and its arguments, and infer the return type.
         validator.validateCall( unnest, scope );
         AlgDataType type = ((SqlOperator) unnest.getOperator()).validateOperands( validator, scope, unnest );

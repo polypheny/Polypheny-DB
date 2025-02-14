@@ -22,6 +22,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlNode;
 
@@ -89,7 +90,7 @@ public class SetopNamespace extends AbstractNamespace {
 
 
     @Override
-    public AlgDataType validateImpl( AlgDataType targetRowType ) {
+    public AlgDataType validateImpl( AlgDataType targetRowType, Entity target ) {
         switch ( call.getKind() ) {
             case UNION:
             case INTERSECT:
@@ -99,7 +100,7 @@ public class SetopNamespace extends AbstractNamespace {
                     if ( !(operand.isA( Kind.QUERY )) ) {
                         throw validator.newValidationError( operand, RESOURCE.needQueryOp( operand.toString() ) );
                     }
-                    validator.validateQuery( operand, scope, targetRowType );
+                    validator.validateQuery( operand, scope, targetRowType, target );
                 }
                 return call.getOperator().deriveType( validator, scope, call );
             default:

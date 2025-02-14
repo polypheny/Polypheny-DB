@@ -66,7 +66,7 @@ public interface SqlValidatorNamespace extends ValidatorNamespace {
     /**
      * Sets the type of this namespace.
      *
-     * Allows the type for the namespace to be explicitly set, but usually is called during {@link #validate(AlgDataType)}.
+     * Allows the type for the namespace to be explicitly set, but usually is called during {@link #validate(AlgDataType, Entity)}.
      *
      * Implicitly also sets the row type. If the type is not a struct, then the row type is the type wrapped as a struct with a single column, otherwise the type and row type are the same.
      */
@@ -88,7 +88,7 @@ public interface SqlValidatorNamespace extends ValidatorNamespace {
      *
      * @param targetRowType Desired row type, must not be null, may be the data type 'unknown'.
      */
-    void validate( AlgDataType targetRowType );
+    void validate( AlgDataType targetRowType, Entity target );
 
     /**
      * Returns the parse tree node at the root of this namespace.
@@ -152,7 +152,7 @@ public interface SqlValidatorNamespace extends ValidatorNamespace {
      *
      * A {@code WITH}) clause defines table names that resolve to queries (the body of the with-item). An {@link IdentifierNamespace} typically resolves to a {@link EntityNamespace}.
      *
-     * You must not call this method before {@link #validate(AlgDataType)} has completed.
+     * You must not call this method before {@link #validate(AlgDataType, Entity)} has completed.
      */
     SqlValidatorNamespace resolve();
 

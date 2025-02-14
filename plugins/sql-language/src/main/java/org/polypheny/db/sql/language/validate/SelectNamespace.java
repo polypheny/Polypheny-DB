@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language.validate;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlSelect;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -57,7 +58,7 @@ public class SelectNamespace extends AbstractNamespace {
 
 
     @Override
-    public AlgDataType validateImpl( AlgDataType targetRowType ) {
+    public AlgDataType validateImpl( AlgDataType targetRowType, Entity target ) {
         validator.validateSelect( select, targetRowType );
         return rowType;
     }

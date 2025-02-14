@@ -462,9 +462,7 @@ public class DdlManagerImpl extends DdlManager {
     public void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement ) {
         columnName = adjustNameIfNeeded( columnName, table.namespaceId );
 
-        if ( MvccUtils.isInNamespaceUsingMvcc( table ) ) {
-            IdentifierUtils.throwIfIsDisallowedKey( columnName );
-        }
+        IdentifierUtils.throwIfIsDisallowedFieldName( columnName );
 
         // Check if the column either allows null values or has a default value defined.
         if ( defaultValue == null && !nullable ) {
@@ -858,9 +856,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropColumn( LogicalTable table, String columnName, Statement statement ) {
-        if ( MvccUtils.isInNamespaceUsingMvcc( table ) ) {
-            IdentifierUtils.throwIfIsDisallowedKey( columnName );
-        }
+        IdentifierUtils.throwIfIsDisallowedFieldName( columnName );
 
         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
         if ( columns.size() < 2 ) {
@@ -1109,9 +1105,8 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void setColumnType( LogicalTable table, String columnName, ColumnTypeInformation type, Statement statement ) {
-        if ( MvccUtils.isInNamespaceUsingMvcc( table ) ) {
-            IdentifierUtils.throwIfIsDisallowedKey( columnName );
-        }
+
+        IdentifierUtils.throwIfIsDisallowedFieldName( columnName );
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
@@ -1632,10 +1627,9 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void renameColumn( LogicalTable table, String columnName, String newColumnName, Statement statement ) {
-        if ( MvccUtils.isInNamespaceUsingMvcc( table ) ) {
-            IdentifierUtils.throwIfIsDisallowedKey( columnName );
-            IdentifierUtils.throwIfIsDisallowedKey( newColumnName );
-        }
+
+        IdentifierUtils.throwIfIsDisallowedFieldName( columnName );
+        IdentifierUtils.throwIfIsDisallowedFieldName( newColumnName );
 
         LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
 
@@ -2068,9 +2062,10 @@ public class DdlManagerImpl extends DdlManager {
             return;
         }
 
+        IdentifierUtils.throwIfContainsDisallowedField( fields );
+
         boolean isMvccNamespace = MvccUtils.isNamespaceUsingMvcc( namespaceId );
         if ( isMvccNamespace ) {
-            IdentifierUtils.throwIfContainsDisallowedField( fields );
             fields = IdentifierUtils.addMvccFieldsIfAbsent( fields );
             constraints = IdentifierUtils.rewriteConstraints( constraints );
         }

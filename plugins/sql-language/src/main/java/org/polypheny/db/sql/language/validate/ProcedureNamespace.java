@@ -18,6 +18,7 @@ package org.polypheny.db.sql.language.validate;
 
 
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlCallBinding;
@@ -43,7 +44,7 @@ public class ProcedureNamespace extends AbstractNamespace {
 
 
     @Override
-    public AlgDataType validateImpl( AlgDataType targetRowType ) {
+    public AlgDataType validateImpl( AlgDataType targetRowType, Entity target ) {
         validator.inferUnknownTypes( validator.unknownType, scope, call );
         final AlgDataType type = validator.deriveTypeImpl( scope, call );
         final Operator operator = call.getOperator();
