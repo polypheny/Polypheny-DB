@@ -29,6 +29,7 @@ import org.polypheny.db.sql.language.SqlDrop;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
 
 
 /**
@@ -43,8 +44,8 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE NAMESPACE.
      */
-    public static SqlCreateNamespace createNamespace( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, DataModel dataModel, boolean useMvcc ) {
-        return new SqlCreateNamespace( pos, replace, ifNotExists, name, dataModel, useMvcc );
+    public static SqlCreateNamespace createNamespace( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, DataModel dataModel, ConcurrencyControlType concurrencyControlType ) {
+        return new SqlCreateNamespace( pos, replace, ifNotExists, name, dataModel, concurrencyControlType );
     }
 
 

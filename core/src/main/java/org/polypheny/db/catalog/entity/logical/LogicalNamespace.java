@@ -28,6 +28,7 @@ import lombok.With;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
 import org.polypheny.db.transaction.locking.LockableObject;
 
 
@@ -54,7 +55,7 @@ public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace
     public boolean caseSensitive;
     @Serialize
     @JsonProperty
-    public boolean useMvcc;
+    public ConcurrencyControlType concurrencyControlType;
 
 
     public LogicalNamespace(
@@ -62,12 +63,12 @@ public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace
             @Deserialize("name") @NonNull final String name,
             @Deserialize("dataModel") @NonNull final DataModel dataModel,
             @Deserialize("caseSensitive") boolean caseSensitive,
-            @Deserialize( "useMvcc" ) boolean useMvcc ) {
+            @Deserialize( "concurrencyControlType" ) ConcurrencyControlType concurrencyControlType ) {
         this.id = id;
         this.name = name;
         this.dataModel = dataModel;
         this.caseSensitive = caseSensitive;
-        this.useMvcc = useMvcc;
+        this.concurrencyControlType = concurrencyControlType;
     }
 
 

@@ -49,6 +49,8 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.RunMode;
 
 public abstract class Catalog implements ExtensionPoint {
@@ -183,9 +185,10 @@ public abstract class Catalog implements ExtensionPoint {
      * @param name The name of the schema
      * @param dataModel The type of this schema
      * @param caseSensitive
+     * @param concurrencyControlType the concurrency control mechanism to be used by that namespace
      * @return The id of the inserted schema
      */
-    public abstract long createNamespace( String name, DataModel dataModel, boolean caseSensitive, boolean useMvcc );
+    public abstract long createNamespace( String name, DataModel dataModel, boolean caseSensitive, ConcurrencyControlType concurrencyControlType );
 
     /**
      * Add an adapter
