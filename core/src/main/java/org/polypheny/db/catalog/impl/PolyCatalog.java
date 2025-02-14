@@ -79,6 +79,7 @@ import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
 import org.polypheny.db.catalog.util.ConstraintCondition;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
@@ -392,10 +393,10 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     }
 
 
-    public long createNamespace( String name, DataModel dataModel, boolean caseSensitive, boolean useMvcc ) {
+    public long createNamespace( String name, DataModel dataModel, boolean caseSensitive, ConcurrencyControlType concurrencyControlType ) {
         // cannot separate namespace and entity ids, as there are models which have their entity on the namespace level
         long id = idBuilder.getNewLogicalId();
-        LogicalNamespace namespace = new LogicalNamespace( id, name, dataModel, caseSensitive, useMvcc );
+        LogicalNamespace namespace = new LogicalNamespace( id, name, dataModel, caseSensitive, concurrencyControlType );
 
         Pair<LogicalCatalog, AllocationCatalog> catalogs = switch ( dataModel ) {
             case RELATIONAL -> Pair.of( new RelationalCatalog( namespace ), new PolyAllocRelCatalog( namespace ) );

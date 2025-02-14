@@ -57,7 +57,7 @@ PARSER_BEGIN(SqlParserImpl)
 
 package org.polypheny.db.languages.sql.parser.impl;
 
-import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.config.RuntimeConfig;import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.sql.language.SqlAlter;
 import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlBinaryOperator;
@@ -157,6 +157,8 @@ import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.parser.SqlParserUtil;
 import java.util.Map;
 import java.util.HashMap;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
+import org.polypheny.db.transaction.mvcc.MvccUtils;
 import org.polypheny.db.util.CoreUtil;
 
 
@@ -1866,7 +1868,7 @@ SqlCreate SqlCreateNamespace(Span s, boolean replace) :
     final boolean ifNotExists;
     final SqlIdentifier id;
     final DataModel dataModel;
-    boolean useMvcc = false;
+    ConcurrencyControlType concurrencyControl = null;
 }
 {
     (
@@ -1879,11 +1881,22 @@ SqlCreate SqlCreateNamespace(Span s, boolean replace) :
         { dataModel = DataModel.RELATIONAL; }
     )
     (<NAMESPACE> | <SCHEMA>) ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
-    [ <CONCURRENCY> <MVCC> { useMvcc = true; } ]
+    [
+        <CONCURRENCY>
+        (
+            <MVCC> { concurrencyControl = ConcurrencyControlType.MVCC; }
+            |
+            <S2PL> { concurrencyControl = ConcurrencyControlType.S2PL; }
+        )
+    ]
     {
-        return SqlDdlNodes.createNamespace(s.end(this), replace, ifNotExists, id, dataModel, useMvcc);
+    if (concurrencyControl == null) {
+        concurrencyControl = MvccUtils.getDefaultConcurrencyControlType( dataModel );
     }
+    return SqlDdlNodes.createNamespace(s.end(this), replace, ifNotExists, id, dataModel, concurrencyControl);
 }
+}
+
 
 
 SqlNodeList Options() :
@@ -7822,6 +7835,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < MULTISET: "MULTISET" >
 |   < MUMPS: "MUMPS" >
 |   < MVCC: "MVCC" >
+|   < S2PL: "S2PL" >
 |   < NAME: "NAME" >
 |   < NAMES: "NAMES" >
 |   < NAMESPACE: "NAMESPACE" >

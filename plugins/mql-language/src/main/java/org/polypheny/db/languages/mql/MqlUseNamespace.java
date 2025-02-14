@@ -28,9 +28,11 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockableUtils;
+import org.polypheny.db.transaction.mvcc.MvccUtils;
 
 
 @Getter
@@ -51,7 +53,8 @@ public class MqlUseNamespace extends MqlNode implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        DdlManager.getInstance().createNamespace( this.namespace, DataModel.DOCUMENT, true, false, statement, false );
+        ConcurrencyControlType concurrencyControlType = MvccUtils.getDefaultConcurrencyControlType( DataModel.DOCUMENT );
+        DdlManager.getInstance().createNamespace( this.namespace, DataModel.DOCUMENT, true, false, statement, concurrencyControlType );
     }
 
 

@@ -20,6 +20,7 @@ import java.util.List;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.snapshot.MockLogicalNamespace;
 import org.polypheny.db.snapshot.MockSnapshot;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
 import org.polypheny.db.type.PolyType;
 
 public class HrSnapshot extends MockSnapshot {
@@ -55,7 +56,7 @@ public class HrSnapshot extends MockSnapshot {
     public HrSnapshot() {
         super();
 
-        mock( new MockLogicalNamespace( "public", DataModel.RELATIONAL, true, false ) );
+        mock( new MockLogicalNamespace( "public", DataModel.RELATIONAL, true, ConcurrencyControlType.S2PL ) );
 
         mock( new MockTable( "emps", List.of( "empid" ), List.of(
                 new MockColumnInfo( "empid", false, PolyType.INTEGER ),

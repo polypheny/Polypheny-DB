@@ -37,6 +37,7 @@ import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
 import org.polypheny.db.util.Pair;
 
 
@@ -154,7 +155,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long createNamespace( String name, DataModel dataModel, boolean caseSensitive, boolean useMvcc ) {
+    public long createNamespace( String name, DataModel dataModel, boolean caseSensitive, ConcurrencyControlType concurrencyControlType ) {
         throw new NotImplementedException();
     }
 

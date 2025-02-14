@@ -35,6 +35,7 @@ import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockableUtils;
@@ -49,7 +50,7 @@ public class SqlCreateNamespace extends SqlCreate implements ExecutableStatement
 
     private final DataModel type;
 
-    private final boolean useMvcc;
+    private final ConcurrencyControlType concurrencyControlType;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE NAMESPACE", Kind.CREATE_NAMESPACE );
 
@@ -57,11 +58,11 @@ public class SqlCreateNamespace extends SqlCreate implements ExecutableStatement
     /**
      * Creates a SqlCreateNamespace.
      */
-    SqlCreateNamespace( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, DataModel dataModel, boolean useMvcc ) {
+    SqlCreateNamespace( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, DataModel dataModel, ConcurrencyControlType concurrencyControlType ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.type = dataModel;
-        this.useMvcc = useMvcc;
+        this.concurrencyControlType = concurrencyControlType;
     }
 
 
@@ -96,7 +97,7 @@ public class SqlCreateNamespace extends SqlCreate implements ExecutableStatement
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        DdlManager.getInstance().createNamespace( name.getSimple(), type, ifNotExists, replace, statement, useMvcc );
+        DdlManager.getInstance().createNamespace( name.getSimple(), type, ifNotExists, replace, statement, concurrencyControlType );
     }
 
 

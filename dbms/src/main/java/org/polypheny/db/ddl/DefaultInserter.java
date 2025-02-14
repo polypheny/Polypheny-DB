@@ -22,6 +22,9 @@ import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
+import org.polypheny.db.transaction.mvcc.MvccUtils;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
 
@@ -43,7 +46,8 @@ public class DefaultInserter {
         // init schema
 
         if ( catalog.getSnapshot().getNamespace( DEFAULT_NAMESPACE ).isEmpty() ) {
-            catalog.createNamespace( "public", DataModel.getDefault(), false, false );
+            ConcurrencyControlType concurrencyControlType = MvccUtils.getDefaultConcurrencyControlType( DataModel.getDefault() );
+            catalog.createNamespace( "public", DataModel.getDefault(), false, concurrencyControlType );
         }
 
         //////////////

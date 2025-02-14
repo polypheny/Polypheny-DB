@@ -25,6 +25,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.clause.CypherWaitClause;
@@ -34,9 +35,11 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockableUtils;
+import org.polypheny.db.transaction.mvcc.MvccUtils;
 
 
 @Getter
@@ -94,6 +97,7 @@ public class CypherCreateNamespace extends CypherAdminCommand implements Executa
             return;
         }
 
+        ConcurrencyControlType concurrencyControlType = MvccUtils.getDefaultConcurrencyControlType( DataModel.GRAPH );
         DdlManager.getInstance().createGraph(
                 namespaceName,
                 true,
@@ -102,7 +106,7 @@ public class CypherCreateNamespace extends CypherAdminCommand implements Executa
                 replace,
                 true,
                 statement,
-                false);
+                concurrencyControlType); // ToDo TH: does this make sense?
     }
 
 
