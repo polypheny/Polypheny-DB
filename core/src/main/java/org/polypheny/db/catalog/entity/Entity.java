@@ -101,7 +101,7 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
     }
 
 
-    public AlgDataType getTupleType( boolean hideIdentifier ) {
+    public AlgDataType getTupleType( boolean hideInternalColumns ) {
         return switch ( dataModel ) {
             case RELATIONAL -> throw new UnsupportedOperationException( "Should be overwritten by child" );
             //TODO TH: adjust where necessary
