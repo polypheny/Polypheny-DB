@@ -49,7 +49,7 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
 
     @Serialize
     @JsonProperty
-    public boolean isIdentifier;
+    public boolean isInternal;
 
     @Serialize
     @JsonProperty
@@ -109,7 +109,7 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
 
     public LogicalColumn(
             @Deserialize("id") final long id,
-            @Deserialize("isIdentifier") final boolean isIdentifier,
+            @Deserialize("isInternal") final boolean isInternal,
             @Deserialize("name") @NonNull final String name,
             @Deserialize("tableId") final long tableId,
             @Deserialize("namespaceId") final long namespaceId,
@@ -124,7 +124,7 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
             @Deserialize("collation") final Collation collation,
             @Deserialize("defaultValue") final LogicalDefaultValue defaultValue ) {
         this.id = id;
-        this.isIdentifier = isIdentifier;
+        this.isInternal = isInternal;
         this.name = name;
         this.tableId = tableId;
         this.namespaceId = namespaceId;

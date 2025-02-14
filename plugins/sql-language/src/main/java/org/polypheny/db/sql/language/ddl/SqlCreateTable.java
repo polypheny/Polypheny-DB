@@ -285,7 +285,8 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                                 ColumnTypeInformation.fromDataTypeSpec( columnDeclaration.getDataType() ),
                                 columnDeclaration.getCollation(),
                                 defaultValue,
-                                position ) );
+                                position,
+                                false) );
 
             } else if ( c.e instanceof SqlKeyConstraint constraint ) {
                 String constraintName = constraint.getName() != null ? constraint.getName().getSimple() : null;
