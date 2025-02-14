@@ -17,7 +17,6 @@
 package org.polypheny.db.transaction.mvcc;
 
 import java.text.MessageFormat;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +38,7 @@ import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
@@ -46,8 +46,6 @@ public class IdentifierUtils {
 
     public static final String IDENTIFIER_KEY = "_eid";
     public static final String VERSION_KEY = "_vid";
-
-    private static final Set<String> DISALLOWED_KEYS = Set.of( IDENTIFIER_KEY, VERSION_KEY );
 
     public static final long MISSING_IDENTIFIER = 0;
     public static final long MISSING_VERSION = 0;
@@ -69,7 +67,7 @@ public class IdentifierUtils {
             IDENTIFIER_KEY,
             IDENTIFIER_COLUMN_TYPE,
             Collation.CASE_INSENSITIVE,
-            new PolyLong( MISSING_IDENTIFIER ),
+            null,
             1,
             true
     );
@@ -88,7 +86,7 @@ public class IdentifierUtils {
             VERSION_KEY,
             VERSION_COLUMN_TYPE,
             Collation.CASE_INSENSITIVE,
-            new PolyLong( MISSING_VERSION ),
+            null,
             2,
             true
     );
@@ -104,11 +102,18 @@ public class IdentifierUtils {
     }
 
 
-    public static void throwIllegalFieldName() {
+    public static void throwStartsWithUnderscore( String fieldName ) {
         throw new IllegalArgumentException( MessageFormat.format(
-                "The fields {0} and {1} are reserved for internal use and cannot be used.",
-                IDENTIFIER_KEY,
-                VERSION_KEY )
+                "The name of the field {0} starts with an '_' which is illegal. Names with leading '_' are reserved for internal use.",
+                fieldName )
+        );
+    }
+
+
+    public static void throwStartsWithNumber( String fieldName ) {
+        throw new IllegalArgumentException( MessageFormat.format(
+                "The name of the field {0} starts with an digit which is illegal.",
+                fieldName )
         );
     }
 
@@ -152,17 +157,18 @@ public class IdentifierUtils {
     }
 
 
-    public static void throwIfIsDisallowedKey( String string ) {
-        if ( DISALLOWED_KEYS.contains( string ) ) {
-            throwIllegalFieldName();
+    public static void throwIfIsDisallowedFieldName( String fieldName ) {
+        if ( fieldName.startsWith( "_" ) ) {
+            throwStartsWithUnderscore( fieldName );
+        }
+        if ( fieldName.matches( "^[^A-Za-z].*" ) ) {
+            throwStartsWithNumber( fieldName );
         }
     }
 
 
-    public static void throwIfContainsDisallowedKey( Set<String> fieldNames ) {
-        if ( !Collections.disjoint( fieldNames, DISALLOWED_KEYS ) ) {
-            throwIllegalFieldName();
-        }
+    public static void throwIfContainsDisallowedFieldName( Set<String> fieldNames ) {
+        fieldNames.forEach( IdentifierUtils::throwIfIsDisallowedFieldName );
     }
 
 
@@ -170,20 +176,26 @@ public class IdentifierUtils {
         Set<String> fieldNames = fields.stream()
                 .map( FieldInformation::name )
                 .collect( Collectors.toSet() );
-        throwIfContainsDisallowedKey( fieldNames );
+        throwIfContainsDisallowedFieldName( fieldNames );
     }
 
 
-    public static boolean containsDisallowedKeys( List<PolyDocument> documents ) {
-        return documents.stream()
+    public static void throwIfContainsDisallowedFieldName( List<PolyDocument> documents ) {
+        documents.stream()
                 .flatMap( v -> v.map.keySet().stream() )
                 .map( PolyString::getValue )
-                .anyMatch( DISALLOWED_KEYS::contains );
+                .forEach( IdentifierUtils::throwIfIsDisallowedFieldName );
+    }
+
+    public static void throwIfContainsDisallowedFieldName( PolyDictionary dictionary ) {
+        dictionary.keySet().stream()
+                .map( PolyString::getValue )
+                .forEach( IdentifierUtils::throwIfIsDisallowedFieldName );
     }
 
 
-    public static void throwIfContainsDisallowedKey( LogicalLpgModify lpgModify ) {
-        boolean modifiesDisallowed = lpgModify.getOperations().stream()
+    public static void throwIfContainsDisallowedFieldName( LogicalLpgModify lpgModify ) {
+        lpgModify.getOperations().stream()
                 .map( o -> o.unwrap( RexCall.class ) )
                 .filter( Optional::isPresent )
                 .flatMap( o -> o.get().getOperands().stream() )
@@ -192,10 +204,7 @@ public class IdentifierUtils {
                 .map( v -> v.get().getValue() )
                 .filter( PolyValue::isString )
                 .map( s -> s.asString().getValue() )
-                .anyMatch( DISALLOWED_KEYS::contains );
-        if ( modifiesDisallowed ) {
-            throwIllegalFieldName();
-        }
+                .forEach( IdentifierUtils::throwIfIsDisallowedFieldName );
     }
 
 

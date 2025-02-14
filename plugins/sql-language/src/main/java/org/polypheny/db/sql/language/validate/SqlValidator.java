@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
@@ -147,7 +148,7 @@ public interface SqlValidator extends Validator {
      * @param targetRowType Desired row type, must not be null, may be the data type 'unknown'.
      * @throws RuntimeException if the query is not valid
      */
-    void validateQuery( SqlNode node, SqlValidatorScope scope, AlgDataType targetRowType );
+    void validateQuery( SqlNode node, SqlValidatorScope scope, AlgDataType targetRowType, Entity target );
 
     /**
      * Returns the type assigned to a node by validation, or null if unknown.

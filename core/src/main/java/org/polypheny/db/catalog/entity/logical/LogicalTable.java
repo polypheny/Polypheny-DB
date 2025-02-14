@@ -111,8 +111,8 @@ public class LogicalTable extends LogicalEntity {
     }
 
 
-    public List<LogicalColumn> getColumns( boolean hideIdentifier ) {
-        if ( hideIdentifier ) {
+    public List<LogicalColumn> getColumns( boolean hideInternal ) {
+        if ( hideInternal ) {
             return Catalog.snapshot().rel().getColumns( id ).stream().filter( c -> !c.isInternal() ).toList();
         }
         return Catalog.snapshot().rel().getColumns( id );

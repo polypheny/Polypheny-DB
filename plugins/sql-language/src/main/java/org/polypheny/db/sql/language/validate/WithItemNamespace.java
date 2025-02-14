@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language.validate;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWithItem;
@@ -41,7 +42,7 @@ class WithItemNamespace extends AbstractNamespace {
 
 
     @Override
-    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
+    protected AlgDataType validateImpl( AlgDataType targetRowType, Entity target ) {
         final SqlValidatorNamespace childNs = validator.getSqlNamespace( withItem.query );
         final AlgDataType rowType = childNs.getRowTypeSansSystemColumns();
         if ( withItem.columnList == null ) {

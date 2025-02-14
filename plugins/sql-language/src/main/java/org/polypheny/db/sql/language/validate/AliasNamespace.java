@@ -24,6 +24,7 @@ import java.util.List;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -57,7 +58,7 @@ public class AliasNamespace extends AbstractNamespace {
 
 
     @Override
-    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
+    protected AlgDataType validateImpl( AlgDataType targetRowType, Entity target ) {
         final List<String> nameList = new ArrayList<>();
         final List<SqlNode> operands = call.getSqlOperandList();
         final SqlValidatorNamespace childNs = validator.getSqlNamespace( operands.get( 0 ) );

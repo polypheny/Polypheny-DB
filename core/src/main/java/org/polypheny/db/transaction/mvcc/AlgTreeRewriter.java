@@ -97,7 +97,6 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     private final Statement statement;
     private final Set<DeferredAlgTreeModification> pendingModifications;
-    private boolean containsIdentifierKey;
 
     AlgNode debugAlg = null;
 
@@ -105,7 +104,6 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     public AlgTreeRewriter( Statement statement ) {
         this.statement = statement;
         this.pendingModifications = new HashSet<>();
-        this.containsIdentifierKey = false;
     }
 
 
@@ -285,12 +283,12 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
         LogicalRelModify modify1 = visitChildren( modify );
 
-        if ( !MvccUtils.isInNamespaceUsingMvcc( modify1.getEntity() ) ) {
-            return modify1;
+        if ( modify1.getOperation() == Operation.UPDATE ) {
+            IdentifierUtils.throwIfContainsDisallowedFieldName( new HashSet<>( modify.getUpdateColumns() ) );
         }
 
-        if ( containsIdentifierKey ) {
-            IdentifierUtils.throwIllegalFieldName();
+        if ( !MvccUtils.isInNamespaceUsingMvcc( modify1.getEntity() ) ) {
+            return modify1;
         }
 
         getTransaction().addWrittenEntitiy( modify1.getEntity() );
@@ -321,10 +319,6 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
             return modify1;
         }
 
-        if ( containsIdentifierKey ) {
-            IdentifierUtils.throwIllegalFieldName();
-        }
-
         statement.getTransaction().addWrittenEntitiy( modify.getEntity() );
 
         switch ( modify1.getOperation() ) {
@@ -336,7 +330,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
                 );
                 return modify1.copy( modify1.getTraitSet(), List.of( identifier ) );
             case UPDATE:
-                IdentifierUtils.throwIfContainsDisallowedKey( modify1 );
+                IdentifierUtils.throwIfContainsDisallowedFieldName( modify1 );
             default:
                 return modify1;
         }
@@ -356,12 +350,10 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalLpgValues values ) {
         for ( PolyNode node : values.getNodes() ) {
-            containsIdentifierKey |= node.properties.containsKey( new PolyString( IdentifierUtils.IDENTIFIER_KEY ) );
-            containsIdentifierKey |= node.properties.containsKey( new PolyString( IdentifierUtils.VERSION_KEY ) );
+            IdentifierUtils.throwIfContainsDisallowedFieldName( node.getProperties() );
         }
         for ( PolyEdge edge : values.getEdges() ) {
-            containsIdentifierKey |= edge.properties.containsKey( new PolyString( IdentifierUtils.IDENTIFIER_KEY ) );
-            containsIdentifierKey |= edge.properties.containsKey( new PolyString( IdentifierUtils.VERSION_KEY ) );
+            IdentifierUtils.throwIfContainsDisallowedFieldName( edge.getProperties() );
         }
         return values;
     }
@@ -425,10 +417,6 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
             return modify1;
         }
 
-        if ( containsIdentifierKey ) {
-            IdentifierUtils.throwIllegalFieldName();
-        }
-
         statement.getTransaction().addWrittenEntitiy( modify.getEntity() );
 
         switch ( modify1.getOperation() ) {
@@ -440,7 +428,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
                 );
                 return modify1.copy( modify1.getTraitSet(), List.of( identifier ) );
             case UPDATE:
-                IdentifierUtils.throwIfContainsDisallowedKey( modify1.getUpdates().keySet() );
+                IdentifierUtils.throwIfContainsDisallowedFieldName( modify1.getUpdates().keySet() );
                 return getRewriteOfUpdateDocModify( modify1 );
 
             case DELETE:
@@ -598,7 +586,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentValues values ) {
-        containsIdentifierKey |= IdentifierUtils.containsDisallowedKeys( values.getDocuments() );
+        IdentifierUtils.throwIfContainsDisallowedFieldName( values.getDocuments() );
         return values;
     }
 
