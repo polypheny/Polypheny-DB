@@ -21,13 +21,21 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class RelationalMvccTest {
@@ -72,6 +80,92 @@ public class RelationalMvccTest {
 
     private void closeAndIgnore( List<ExecutedContext> result ) {
         result.forEach( e -> e.getIterator().getAllRowsAndClose() );
+    }
+
+    @Test
+    public void testNonMvccCreateNamespace() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( java.sql.Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE RELATIONAL NAMESPACE nonMvccTest CONCURRENCY S2PL" );
+                    connection.commit();
+
+                    Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( "nonMvccTest" );
+                    assertTrue(optionalNamespace.isPresent());
+                    assertEquals( ConcurrencyControlType.S2PL, optionalNamespace.get().getConcurrencyControlType() );
+
+                } finally {
+                    statement.executeUpdate( "DROP NAMESPACE IF EXISTS nonMvccTest" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testMvccCreateNamespace() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( java.sql.Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE RELATIONAL NAMESPACE mvccTest CONCURRENCY MVCC" );
+                    connection.commit();
+
+                    Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( "mvccTest" );
+                    assertTrue(optionalNamespace.isPresent());
+                    assertEquals( ConcurrencyControlType.MVCC, optionalNamespace.get().getConcurrencyControlType() );
+
+                } finally {
+                    statement.executeUpdate( "DROP NAMESPACE IF EXISTS nonMvccTest" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDefaultS2PLCreateNamespace() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( java.sql.Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "ALTER CONFIG 'runtime/relDefaultConcurrencyControl' SET 'S2PL'" );
+                    statement.executeUpdate( "CREATE RELATIONAL NAMESPACE nonMvccTest" );
+                    connection.commit();
+
+                    Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( "nonMvccTest" );
+                    assertTrue(optionalNamespace.isPresent());
+                    assertEquals( ConcurrencyControlType.S2PL, optionalNamespace.get().getConcurrencyControlType() );
+
+                } finally {
+                    statement.executeUpdate( "DROP NAMESPACE IF EXISTS nonMvccTest" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDefaultMVCCCreateNamespace() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( java.sql.Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "ALTER CONFIG 'runtime/relDefaultConcurrencyControl' SET 'MVCC'" );
+                    statement.executeUpdate( "CREATE RELATIONAL NAMESPACE mvccTest" );
+                    connection.commit();
+
+                    Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( "mvccTest" );
+                    assertTrue(optionalNamespace.isPresent());
+                    assertEquals( ConcurrencyControlType.MVCC, optionalNamespace.get().getConcurrencyControlType() );
+
+                } finally {
+                    statement.executeUpdate( "DROP NAMESPACE IF EXISTS nonMvccTest" );
+                    connection.commit();
+                }
+            }
+        }
     }
 
 
