@@ -70,7 +70,8 @@ public class IdentifierUtils {
             IDENTIFIER_COLUMN_TYPE,
             Collation.CASE_INSENSITIVE,
             new PolyLong( MISSING_IDENTIFIER ),
-            1
+            1,
+            true
     );
 
     public static final ColumnTypeInformation VERSION_COLUMN_TYPE = new ColumnTypeInformation(
@@ -88,7 +89,8 @@ public class IdentifierUtils {
             VERSION_COLUMN_TYPE,
             Collation.CASE_INSENSITIVE,
             new PolyLong( MISSING_VERSION ),
-            2
+            2,
+            true
     );
 
 
@@ -141,7 +143,8 @@ public class IdentifierUtils {
                         f.typeInformation(),
                         f.collation(),
                         f.defaultValue(),
-                        f.position() + (hasIdentifier ? 0 : 1) + (hasVersion ? 0 : 1) )
+                        f.position() + (hasIdentifier ? 0 : 1) + (hasVersion ? 0 : 1),
+                        false )
                 )
                 .forEach( newFields::add );
 

@@ -568,8 +568,7 @@ public abstract class DdlManager {
      * Helper class which holds all information required for creating a column,
      * decoupled from a specific query language
      */
-    public record FieldInformation( String name, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, int position ) {
-
+    public record FieldInformation( String name, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, int position, boolean isInternal ) {
     }
 
 
