@@ -2003,7 +2003,9 @@ public class DdlManagerImpl extends DdlManager {
                             alg.getType().isNullable() ),
                     Collation.getDefaultCollation(),
                     null,
-                    position ) );
+                    position,
+                    false )
+            );
             position++;
 
         }
@@ -2022,7 +2024,8 @@ public class DdlManagerImpl extends DdlManager {
                             false ),
                     Collation.getDefaultCollation(),
                     null,
-                    position ) );
+                    position,
+                    false ) );
         }
 
         return columns;
@@ -2074,7 +2077,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( isMvccNamespace ) {
             IdentifierUtils.throwIfContainsDisallowedField( fields );
             fields = IdentifierUtils.addMvccFieldsIfAbsent( fields );
-            constraints = IdentifierUtils.rewriteConstraints(constraints);
+            constraints = IdentifierUtils.rewriteConstraints( constraints );
         }
 
         if ( stores == null ) {
@@ -2093,7 +2096,7 @@ public class DdlManagerImpl extends DdlManager {
 
         for ( FieldInformation information : fields ) {
             ids.put( information.name(), addColumn( namespaceId, information.name(), information.typeInformation(), information.collation(),
-                    information.defaultValue(), logical.id, information.position() + 1, information.name().equals( IdentifierUtils.IDENTIFIER_KEY ) ) ); // pos + 1 to make space for entry identifier column
+                    information.defaultValue(), logical.id, information.position() + 1, information.isInternal() ) ); // pos + 1 to make space for entry identifier column TODO TH: is this actually correct?
         }
 
         List<Long> pkIds = new ArrayList<>();
