@@ -80,13 +80,13 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public final void validate( AlgDataType targetTupleType ) {
+    public final void validate( AlgDataType targetTupleType, Entity target ) {
         switch ( status ) {
             case UNVALIDATED:
                 try {
                     status = SqlValidatorImpl.Status.IN_PROGRESS;
                     Preconditions.checkArgument( rowType == null, "Namespace.rowType must be null before validate has been called" );
-                    AlgDataType type = validateImpl( targetTupleType );
+                    AlgDataType type = validateImpl( targetTupleType, target );
                     Preconditions.checkArgument( type != null, "validateImpl() returned null" );
                     setType( type );
                 } finally {
@@ -110,7 +110,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
      * @param targetRowType Desired row type, must not be null, may be the data type 'unknown'.
      * @return record data type, never null
      */
-    protected abstract AlgDataType validateImpl( AlgDataType targetRowType );
+    protected abstract AlgDataType validateImpl( AlgDataType targetRowType, Entity target );
 
 
     @Override
@@ -122,7 +122,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
             return DocumentType.ofCrossRelational();
         }
         if ( rowType == null ) {
-            validator.validateNamespace( this, validator.unknownType );
+            validator.validateNamespace( this, validator.unknownType, null );
             Preconditions.checkArgument( rowType != null, "validate must set rowType" );
         }
         return rowType;

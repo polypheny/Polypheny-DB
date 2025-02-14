@@ -80,8 +80,8 @@ public abstract class DelegatingNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public void validate( AlgDataType targetRowType ) {
-        namespace.validate( targetRowType );
+    public void validate( AlgDataType targetRowType, Entity target ) {
+        namespace.validate( targetRowType, target);
     }
 
 

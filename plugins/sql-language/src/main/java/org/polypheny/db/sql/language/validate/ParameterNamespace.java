@@ -18,6 +18,7 @@ package org.polypheny.db.sql.language.validate;
 
 
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.sql.language.SqlNode;
 
 
@@ -44,7 +45,7 @@ class ParameterNamespace extends AbstractNamespace {
 
 
     @Override
-    public AlgDataType validateImpl( AlgDataType targetRowType ) {
+    public AlgDataType validateImpl( AlgDataType targetRowType, Entity target ) {
         return type;
     }
 

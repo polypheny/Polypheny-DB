@@ -21,6 +21,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlNode;
 
@@ -50,9 +51,9 @@ public class TableConstructorNamespace extends AbstractNamespace {
 
 
     @Override
-    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
+    protected AlgDataType validateImpl( AlgDataType targetRowType, Entity target ) {
         // First, validate the VALUES. If VALUES is inside INSERT, infers the type of NULL values based on the types of target columns.
-        validator.validateValues( values, targetRowType, scope );
+        validator.validateValues( values, targetRowType, scope, target );
         final AlgDataType tableConstructorRowType = validator.getTableConstructorRowType( values, scope );
         if ( tableConstructorRowType == null ) {
             throw validator.newValidationError( values, RESOURCE.incompatibleTypes() );

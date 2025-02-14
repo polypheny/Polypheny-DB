@@ -139,6 +139,7 @@ import org.polypheny.db.sql.language.fun.SqlCrossMapItemOperator;
 import org.polypheny.db.sql.language.util.SqlShuttle;
 import org.polypheny.db.sql.language.util.SqlTypeUtil;
 import org.polypheny.db.transaction.mvcc.IdentifierUtils;
+import org.polypheny.db.transaction.mvcc.MvccUtils;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -841,7 +842,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    public void validateQuery( SqlNode node, SqlValidatorScope scope, AlgDataType targetRowType ) {
+    public void validateQuery( SqlNode node, SqlValidatorScope scope, AlgDataType targetRowType, Entity target ) {
         final SqlValidatorNamespace ns = getNamespace( node, scope );
         if ( node.getKind() == Kind.TABLESAMPLE ) {
             List<Node> operands = ((SqlCall) node).getOperandList();
@@ -853,7 +854,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             }
         }
 
-        validateNamespace( ns, targetRowType );
+        validateNamespace( ns, targetRowType, target );
         if ( Objects.requireNonNull( node.getKind() ) == Kind.EXTEND ) {// Until we have a dedicated namespace for EXTEND
             deriveType( scope, node );
         }
@@ -870,8 +871,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param namespace Namespace
      * @param targetRowType Desired row type, must not be null, may be the data type 'unknown'.
      */
-    protected void validateNamespace( final SqlValidatorNamespace namespace, AlgDataType targetRowType ) {
-        namespace.validate( targetRowType );
+    protected void validateNamespace( final SqlValidatorNamespace namespace, AlgDataType targetRowType, Entity target ) {
+        namespace.validate( targetRowType, target);
         if ( namespace.getNode() != null ) {
             setValidatedNodeType( namespace.getNode(), namespace.getType() );
         }
@@ -2875,17 +2876,18 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param targetRowType Desired row type of this expression, or {@link #unknownType} if not fussy. Must not be null.
      * @param scope Scope
      */
-    protected void validateFrom( SqlNode node, AlgDataType targetRowType, SqlValidatorScope scope ) {
+    protected void validateFrom( SqlNode node, AlgDataType targetRowType, SqlValidatorScope scope, Entity target ) {
         Objects.requireNonNull( targetRowType );
         switch ( node.getKind() ) {
             case AS:
                 validateFrom(
                         ((SqlCall) node).operand( 0 ),
                         targetRowType,
-                        scope );
+                        scope,
+                        target );
                 break;
             case VALUES:
-                validateValues( (SqlCall) node, targetRowType, scope );
+                validateValues( (SqlCall) node, targetRowType, scope, target );
                 break;
             case JOIN:
                 validateJoin( (SqlJoin) node, scope );
@@ -2897,12 +2899,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 validateUnnest( (SqlCall) node, scope, targetRowType );
                 break;
             default:
-                validateQuery( node, scope, targetRowType );
+                validateQuery( node, scope, targetRowType, target );
                 break;
         }
 
         // Validate the namespace representation of the node, just in case the validation did not occur implicitly.
-        getNamespace( node, scope ).validate( targetRowType );
+        getNamespace( node, scope ).validate( targetRowType, target );
     }
 
 
@@ -2916,7 +2918,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             SqlNode expandedItem = expand( call.operand( i ), scope );
             call.setOperand( i, expandedItem );
         }
-        validateQuery( call, scope, targetRowType );
+        validateQuery( call, scope, targetRowType, null );
     }
 
 
@@ -2944,8 +2946,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         final JoinType joinType = join.getJoinType();
         final JoinConditionType conditionType = join.getConditionType();
         final SqlValidatorScope joinScope = scopes.get( join );
-        validateFrom( left, unknownType, joinScope );
-        validateFrom( right, unknownType, joinScope );
+        validateFrom( left, unknownType, joinScope, null ); // target is null if the target type had not been derived yet
+        validateFrom( right, unknownType, joinScope, null ); // target is null if the target type had not been derived yet
 
         // Validate condition.
         switch ( conditionType ) {
@@ -3127,7 +3129,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 throw newValidationError( select, RESOURCE.selectMissingFrom() );
             }
         } else {
-            validateFrom( select.getSqlFrom(), fromType, fromScope );
+            Entity target = ns.getEntity(); // might return null but validateFrom handles this
+            validateFrom( select.getSqlFrom(), fromType, fromScope, target );
         }
 
         validateWhereClause( select );
@@ -3527,7 +3530,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     @Override
     public void validateWith( SqlWith with, SqlValidatorScope scope ) {
         final SqlValidatorNamespace namespace = getSqlNamespace( with );
-        validateNamespace( namespace, unknownType );
+        validateNamespace( namespace, unknownType, null );
     }
 
 
@@ -3905,7 +3908,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @return Rowtype
      */
     protected AlgDataType createTargetRowType( Entity table, SqlNodeList targetColumnList, boolean append, boolean allowDynamic ) {
-        AlgDataType baseRowType = table.getTupleType(false); //
+        AlgDataType baseRowType = table.getTupleType( false );
         if ( targetColumnList == null ) {
             return baseRowType;
         }
@@ -3946,7 +3949,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     @Override
     public void validateInsert( SqlInsert insert ) {
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( insert );
-        validateNamespace( targetNamespace, unknownType );
+        validateNamespace( targetNamespace, unknownType, targetNamespace.getEntity() );
         final Entity table =
                 SqlValidatorUtil.getLogicalEntity(
                         targetNamespace,
@@ -3964,13 +3967,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             validateSelect( sqlSelect, targetRowType );
         } else {
             final SqlValidatorScope scope = scopes.get( source );
-            validateQuery( source, scope, targetRowType );
+            validateQuery( source, scope, targetRowType, table );
         }
 
         // REVIEW jvs: In FRG-365, this namespace row type is discarding the type inferred by inferUnknownTypes (which was invoked from validateSelect above).
         // It would be better if that information were used here so that we never saw any untyped nulls during checkTypeAssignment.
         final AlgDataType sourceRowType = getSqlNamespace( source ).getTupleType();
-        final AlgDataType logicalTargetRowType = getLogicalTargetRowType( targetRowType, insert );
+        final AlgDataType logicalTargetRowType = getLogicalTargetRowType( targetRowType, insert, table );
         setValidatedNodeType( insert, logicalTargetRowType );
         final AlgDataType logicalSourceRowType = getLogicalSourceRowType( sourceRowType, insert );
 
@@ -4000,8 +4003,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             throw newValidationError( node, RESOURCE.unmatchInsertColumn( targetFieldCount, sourceFieldCount ) );
         }
         // Ensure that non-nullable fields are targeted.
-        final List<ColumnStrategy> strategies = table.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies(true);
-        for ( final AlgDataTypeField field : table.getTupleType(true).getFields() ) {
+        final List<ColumnStrategy> strategies = table.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies( true );
+        for ( final AlgDataTypeField field : table.getTupleType( true ).getFields() ) {
             final AlgDataTypeField targetField = logicalTargetRowType.getField( field.getName(), true, false );
             switch ( strategies.get( field.getIndex() ) ) {
                 case NOT_NULLABLE:
@@ -4048,15 +4051,19 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    protected AlgDataType getLogicalTargetRowType( AlgDataType targetRowType, SqlInsert insert ) {
+    protected AlgDataType getLogicalTargetRowType( AlgDataType targetRowType, SqlInsert insert, Entity entity ) {
         if ( insert.getTargetColumnList() == null && conformance.isInsertSubsetColumnsAllowed() ) {
             // Target an implicit subset of columns.
             final SqlNode source = insert.getSource();
             final AlgDataType sourceRowType = getSqlNamespace( source ).getTupleType();
             final AlgDataType logicalSourceRowType = getLogicalSourceRowType( sourceRowType, insert );
-            final AlgDataType implicitTargetRowType = typeFactory.createStructType( targetRowType.getFields().subList( 0, logicalSourceRowType.getFieldCount() ) );
+
+            // the first two columns of a mvcc table are _eid and _vid. ignore those
+            int offset = MvccUtils.isInNamespaceUsingMvcc( entity ) ? 2 : 0;
+            final AlgDataType implicitTargetRowType = typeFactory.createStructType( targetRowType.getFields().subList( offset, logicalSourceRowType.getFieldCount() + offset ) );
+
             final SqlValidatorNamespace targetNamespace = getSqlNamespace( insert );
-            validateNamespace( targetNamespace, implicitTargetRowType );
+            validateNamespace( targetNamespace, implicitTargetRowType, entity );
             return implicitTargetRowType;
         } else {
             // Either the set of columns are explicitly targeted, or target the full set of columns.
@@ -4193,7 +4200,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         validateSelect( sqlSelect, unknownType );
 
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( call );
-        validateNamespace( targetNamespace, unknownType );
+        validateNamespace( targetNamespace, unknownType, null );
         final Entity table = targetNamespace.getEntity();
 
         validateAccess( call.getTargetTable(), table, AccessEnum.DELETE );
@@ -4203,7 +4210,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     @Override
     public void validateUpdate( SqlUpdate call ) {
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( call );
-        validateNamespace( targetNamespace, unknownType );
+        validateNamespace( targetNamespace, unknownType, null );
         final Entity table =
                 SqlValidatorUtil.getLogicalEntity(
                         targetNamespace,
@@ -4237,7 +4244,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         // REVIEW ksecretan: They didn't get a chance to since validateSelect() would bail. Let's use the update/insert targetRowType when available.
         IdentifierNamespace targetNamespace = (IdentifierNamespace) getSqlNamespace( call.getTargetTable() );
-        validateNamespace( targetNamespace, unknownType );
+        validateNamespace( targetNamespace, unknownType, null );
 
         Entity table = targetNamespace.getEntity();
         validateAccess( call.getTargetTable(), table, AccessEnum.UPDATE );
@@ -4293,7 +4300,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param targetRowType Row type which expression must conform to
      * @param scope Scope within which clause occurs
      */
-    protected void validateValues( SqlCall node, AlgDataType targetRowType, final SqlValidatorScope scope ) {
+    protected void validateValues( SqlCall node, AlgDataType targetRowType, final SqlValidatorScope scope, Entity target ) {
         assert node.getKind() == Kind.VALUES;
 
         final List<Node> operands = node.getOperandList();
@@ -4304,7 +4311,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
             SqlCall rowConstructor = (SqlCall) operand;
             if ( conformance.isInsertSubsetColumnsAllowed() && targetRowType.isStruct() && rowConstructor.operandCount() < targetRowType.getFieldCount() ) {
-                targetRowType = typeFactory.createStructType( targetRowType.getFields().subList( 0, rowConstructor.operandCount() ) );
+                // the first two columns of a mvcc table are _eid and _vid. ignore those
+                int offset = target != null && MvccUtils.isInNamespaceUsingMvcc( target ) ? 2 : 0;
+                targetRowType = typeFactory.createStructType( targetRowType.getFields().subList( offset, rowConstructor.operandCount() + offset ) );
             } else if ( targetRowType.isStruct() && rowConstructor.operandCount() != targetRowType.getFieldCount() ) {
                 return;
             }

@@ -19,6 +19,7 @@ package org.polypheny.db.sql.language.validate;
 import com.google.common.collect.ImmutableList;
 import java.util.Objects;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.sql.language.SqlNode;
 
 
@@ -45,7 +46,7 @@ class SchemaNamespace extends AbstractNamespace {
 
 
     @Override
-    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
+    protected AlgDataType validateImpl( AlgDataType targetRowType, Entity target ) {
         return targetRowType;
     }
 
