@@ -69,7 +69,7 @@ public class RelAdapterCatalog extends AdapterCatalog {
         List<PhysicalColumn> updates = new ArrayList<>();
         for ( PhysicalField field : fields.values() ) {
             if ( field.id == id ) {
-                updates.add( field.unwrap( PhysicalColumn.class ).orElseThrow().toBuilder().logicalName( newFieldName ).build() );
+                updates.add( field.unwrapOrThrow( PhysicalColumn.class ).toBuilder().logicalName( newFieldName ).build() );
             }
         }
         for ( PhysicalColumn u : updates ) {

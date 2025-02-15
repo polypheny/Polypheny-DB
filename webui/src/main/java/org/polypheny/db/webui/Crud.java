@@ -1665,7 +1665,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
 
         if ( table.entityType == EntityType.VIEW ) {
-            ImmutableMap<Long, List<Long>> underlyingTableOriginal = table.unwrap( LogicalView.class ).orElseThrow().underlyingTables;
+            ImmutableMap<Long, List<Long>> underlyingTableOriginal = table.unwrapOrThrow( LogicalView.class ).underlyingTables;
             Map<String, List<String>> underlyingTable = new HashMap<>();
             for ( Entry<Long, List<Long>> entry : underlyingTableOriginal.entrySet() ) {
                 List<String> columns = new ArrayList<>();

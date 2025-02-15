@@ -145,7 +145,7 @@ public interface MongoAlg extends AlgNode {
 
 
         public String getPhysicalName( String name ) {
-            MongoEntity mongoEntity = entity.physical.unwrap( PhysicalEntity.class ).orElseThrow().unwrap( MongoEntity.class ).orElseThrow();
+            MongoEntity mongoEntity = entity.physical.unwrap( MongoEntity.class ).orElseThrow();
             int index = mongoEntity.fields.stream().map( c -> c.logicalName ).toList().indexOf( name );
             if ( index != -1 ) {
                 return MongoStore.getPhysicalColumnName( mongoEntity.fields.stream().map( c -> c.id ).toList().get( index ) );

@@ -177,7 +177,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                 doc.append(
                         physicalName,//rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
                         new BsonString(
-                                "$" + rowType.getFields().get( el.unwrap( RexFieldAccess.class ).orElseThrow().getField().getIndex() ).getPhysicalName() ) );//rowType.getPhysicalName( ((RexFieldAccess) el).getField().getName(), implementor ) ) );
+                                "$" + rowType.getFields().get( el.unwrapOrThrow( RexFieldAccess.class ).getField().getIndex() ).getPhysicalName() ) );//rowType.getPhysicalName( ((RexFieldAccess) el).getField().getName(), implementor ) ) );
             }
             pos++;
         }
@@ -428,7 +428,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
 
     private static void addPreparedInsert( Implementor implementor, RexDynamicParam rexNode, BsonDocument doc, String physicalName, int pos ) {
         doc.append( physicalName == null
-                ? implementor.getEntity().fields.stream().sorted( Comparator.comparingInt( ( PhysicalField a ) -> a.unwrap( PhysicalColumn.class ).orElseThrow().position ) ).toList().get( pos ).name
+                ? implementor.getEntity().fields.stream().sorted( Comparator.comparingInt( ( PhysicalField a ) -> a.unwrapOrThrow( PhysicalColumn.class ).position ) ).toList().get( pos ).name
                 : physicalName, new BsonDynamic( rexNode ) );
     }
 

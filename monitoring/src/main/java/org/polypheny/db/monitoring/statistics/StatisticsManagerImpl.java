@@ -803,7 +803,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     private void handleTruncate( long tableId, Snapshot snapshot ) {
-        LogicalTable table = snapshot.getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ).orElseThrow() ).orElseThrow();
+        LogicalTable table = snapshot.getLogicalEntity( tableId ).flatMap( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
         for ( LogicalColumn column : table.getColumns() ) {
             PolyType polyType = column.type;
             QueryResult queryResult = new QueryResult( table, column );
@@ -837,7 +837,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     private void handleInsert( long tableId, Map<Long, List<?>> changedValues, Snapshot snapshot ) {
-        LogicalTable table = snapshot.getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ).orElseThrow() ).orElseThrow();
+        LogicalTable table = snapshot.getLogicalEntity( tableId ).flatMap( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
         List<LogicalColumn> columns = table.getColumns();
         if ( changedValues.size() != columns.size() ) {
             log.debug( "non-matching statistics length" );

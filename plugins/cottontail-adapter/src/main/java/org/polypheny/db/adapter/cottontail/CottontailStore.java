@@ -593,7 +593,7 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
     @Override
     public void renameLogicalColumn( long id, String newColumnName ) {
         long allocId = adapterCatalog.fields.values().stream().filter( c -> c.id == id ).map( c -> c.allocId ).findFirst().orElseThrow();
-        CottontailEntity table = adapterCatalog.fromAllocation( allocId ).unwrap( CottontailEntity.class ).orElseThrow();
+        CottontailEntity table = adapterCatalog.fromAllocation( allocId ).unwrapOrThrow( CottontailEntity.class );
 
         adapterCatalog.renameLogicalColumn( id, newColumnName );
 
@@ -633,13 +633,13 @@ public class CottontailStore extends DataStore<RelAdapterCatalog> {
     @Override
     public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
         for ( PhysicalEntity entity : entities ) {
-            PhysicalTable table = entity.unwrap( PhysicalTable.class ).orElseThrow();
+            PhysicalTable table = entity.unwrapOrThrow( PhysicalTable.class );
             if ( !isPersistent() ) {
                 executeCreateTable( table, table.name, context );
             }
 
             updateNamespace( table.namespaceName, table.namespaceId );
-            adapterCatalog.addPhysical( alloc, table.unwrap( PhysicalTable.class ).orElseThrow() );
+            adapterCatalog.addPhysical( alloc, table.unwrapOrThrow( PhysicalTable.class ) );
         }
         updateNativePhysical( alloc.id );
     }

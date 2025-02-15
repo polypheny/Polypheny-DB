@@ -599,7 +599,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                         .orElseThrow() )
                         .setPolyFunction( "joinPoint" )
                         .adjustType( PolyType.VARCHAR );
-                BsonKeyValue keyValue = new BsonKeyValue( identifier, new BsonDocument().append( "$exists", new BsonDynamic( node.operands.get( 1 ).unwrap( RexDynamicParam.class ).orElseThrow() ) ) );
+                BsonKeyValue keyValue = new BsonKeyValue( identifier, new BsonDocument().append( "$exists", new BsonDynamic( node.operands.get( 1 ).unwrapOrThrow( RexDynamicParam.class ) ) ) );
                 attachCondition( null, keyValue.placeholderKey, keyValue );
             } else if ( node.operands.get( 2 ).unwrap( RexCall.class ).isPresent() ) {
                 key += "." + ((RexCall) node.operands.get( 2 ))
@@ -607,7 +607,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                         .stream()
                         .map( o -> ((RexLiteral) o).value.asString().value )
                         .collect( Collectors.joining( "." ) );
-                attachCondition( "$exists", key, BsonBoolean.valueOf( node.operands.get( 1 ).unwrap( RexLiteral.class ).orElseThrow().value.asBoolean().value ) );
+                attachCondition( "$exists", key, BsonBoolean.valueOf( node.operands.get( 1 ).unwrapOrThrow( RexLiteral.class ).value.asBoolean().value ) );
             }
 
         }
@@ -648,7 +648,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                 return;
             }
 
-            String key = MongoRules.translateDocValueAsKey( rowType, node.operands.get( 0 ).unwrap( RexNameRef.class ).orElseThrow() );
+            String key = MongoRules.translateDocValueAsKey( rowType, node.operands.get( 0 ).unwrapOrThrow( RexNameRef.class ) );
 
             if ( node.operands.get( 1 ).unwrap( RexCall.class ).isPresent() ) {
                 List<BsonInt32> types = ((RexCall) node.operands.get( 1 )).operands
@@ -835,7 +835,7 @@ public class MongoFilter extends Filter implements MongoAlg {
 
 
         private <E> E getLiteralAs( RexCall node, int pos, Function<PolyValue, E> transformer ) {
-            return transformer.apply( node.operands.get( pos ).unwrap( RexLiteral.class ).orElseThrow().value );
+            return transformer.apply( node.operands.get( pos ).unwrapOrThrow( RexLiteral.class ).value );
         }
 
 
@@ -987,7 +987,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             }
 
             if ( left.isA( Kind.NAME_INDEX_REF ) ) {
-                b = translateDocValue( op, left.unwrap( RexNameRef.class ).orElseThrow(), right );
+                b = translateDocValue( op, left.unwrapOrThrow( RexNameRef.class ), right );
                 if ( b ) {
                     return;
                 }
@@ -1289,7 +1289,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                     if ( this.tempElem == null ) {
                         yield false;
                     }
-                    attachCondition( op, this.tempElem.unwrap( RexNameRef.class ).orElseThrow().getName(), new BsonDynamic( right ) );
+                    attachCondition( op, this.tempElem.unwrapOrThrow( RexNameRef.class ).getName(), new BsonDynamic( right ) );
                     yield true;
                 }
                 case DISTANCE -> translateFunction( op, (RexCall) left, right );

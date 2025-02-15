@@ -235,7 +235,7 @@ public class Translator extends RexVisitorImpl<String> {
 
     private String handleSetProperty( RexCall call ) {
         String identifier = call.operands.get( 0 ).accept( this );
-        String key = call.operands.get( 1 ).unwrap( RexLiteral.class ).orElseThrow().value.asString().value;
+        String key = call.operands.get( 1 ).unwrapOrThrow( RexLiteral.class ).value.asString().value;
         RexLiteral rex = (RexLiteral) call.operands.get( 2 );
         String literal = NeoUtil.rexAsString( rex, null, true );
         if ( PolyType.STRING_TYPES.contains( rex.getType().getPolyType() ) ) {

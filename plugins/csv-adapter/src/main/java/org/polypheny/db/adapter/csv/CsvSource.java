@@ -136,7 +136,7 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
     public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
         PhysicalEntity table = entities.get( 0 );
         updateNamespace( table.namespaceName, table.namespaceId );
-        adapterCatalog.addPhysical( alloc, currentNamespace.createCsvTable( table.id, table.unwrap( PhysicalTable.class ).orElseThrow(), this ) );
+        adapterCatalog.addPhysical( alloc, currentNamespace.createCsvTable( table.id, table.unwrapOrThrow( PhysicalTable.class ), this ) );
     }
 
 

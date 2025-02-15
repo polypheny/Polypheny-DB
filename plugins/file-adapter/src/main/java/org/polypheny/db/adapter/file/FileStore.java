@@ -218,7 +218,7 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
     @Override
     public void renameLogicalColumn( long id, String newColumnName ) {
         long allocId = adapterCatalog.fields.values().stream().filter( c -> c.id == id ).map( c -> c.allocId ).findFirst().orElseThrow();
-        FileTranslatableEntity table = adapterCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
+        FileTranslatableEntity table = adapterCatalog.fromAllocation( allocId ).unwrapOrThrow( FileTranslatableEntity.class );
 
         adapterCatalog.renameLogicalColumn( id, newColumnName );
 
@@ -232,7 +232,7 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
     public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
-        FileTranslatableEntity table = adapterCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
+        FileTranslatableEntity table = adapterCatalog.fromAllocation( allocId ).unwrapOrThrow( FileTranslatableEntity.class );
         int max = adapterCatalog.getColumns( allocId ).stream().max( Comparator.comparingInt( a -> a.position ) ).orElseThrow().position;
         PhysicalColumn column = adapterCatalog.addColumn( getPhysicalColumnName( logicalColumn.id, allocId ), allocId, max + 1, logicalColumn );
 
@@ -269,7 +269,7 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
     @Override
     public void dropColumn( Context context, long allocId, long columnId ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        FileTranslatableEntity fileTranslatableEntity = adapterCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
+        FileTranslatableEntity fileTranslatableEntity = adapterCatalog.fromAllocation( allocId ).unwrapOrThrow( FileTranslatableEntity.class );
 
         adapterCatalog.dropColumn( allocId, columnId );
         File columnFile = getColumnFolder( columnId, allocId );
@@ -442,7 +442,7 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
     @Override
     public void truncate( Context context, long allocId ) {
         //context.getStatement().getTransaction().registerInvolvedStore( this );
-        PhysicalTable table = adapterCatalog.fromAllocation( allocId ).unwrap( FileTranslatableEntity.class ).orElseThrow();
+        PhysicalTable table = adapterCatalog.fromAllocation( allocId ).unwrapOrThrow( FileTranslatableEntity.class );
         try {
             for ( PhysicalColumn column : table.columns ) {
                 File columnFolder = getColumnFolder( column.id, allocId );
@@ -524,9 +524,9 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
     @Override
     public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
         for ( PhysicalEntity entity : entities ) {
-            PhysicalTable table = entity.unwrap( PhysicalTable.class ).orElseThrow();
+            PhysicalTable table = entity.unwrapOrThrow( PhysicalTable.class );
             updateNamespace( table.namespaceName, table.namespaceId );
-            adapterCatalog.addPhysical( alloc, currentNamespace.createFileTable( table.unwrap( PhysicalTable.class ).orElseThrow(), table.unwrap( PhysicalTable.class ).orElseThrow().uniqueFieldIds ) );
+            adapterCatalog.addPhysical( alloc, currentNamespace.createFileTable( table.unwrapOrThrow( PhysicalTable.class ), table.unwrapOrThrow( PhysicalTable.class ).uniqueFieldIds ) );
         }
     }
 
