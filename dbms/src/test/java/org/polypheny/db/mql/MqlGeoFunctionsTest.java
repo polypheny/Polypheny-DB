@@ -43,12 +43,12 @@ import org.polypheny.db.webui.models.results.DocResult;
 @Slf4j
 public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
-    final static String mongoAdapterName = "mongo";
+    final static String mongoAdapterName = "mongo_gis";
     final static String mongoCollection = "mongo";
     final static String defaultCollection = "default";
     final static List<String> collections = List.of(
-            defaultCollection
-//            mongoCollection
+            defaultCollection,
+            mongoCollection
     );
     final static Map<String, String> collectionToStore = Map.of( mongoCollection, mongoAdapterName, defaultCollection, "hsqldb" );
     final static String clearCollection = """
@@ -75,47 +75,6 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     public void beforeEach() {
         // Make sure collections are emptied before each test.
         clearCollections();
-    }
-
-    @Test
-    public void orderByTest() {
-        ArrayList<String> queries = new ArrayList<>();
-        queries.add("""
-            db.%s.insertMany([
-                {
-                  name: "Middle",
-                  num: 2
-                },
-                {
-                  name: "Low",
-                  num: 1
-                },
-                {
-                  name: "Top",
-                  num: 3
-                }
-            ])
-            """);
-        // no sort: 2,1,3
-//        queries.add("""
-//            db.%s.find({})
-//            """);
-
-        // ascending: 1,2,3
-        queries.add("""
-            db.%s.aggregate([
-                { $sort: { num: 1 } }
-            ])
-            """);
-
-//        // descending: 3,2,1
-//        queries.add("""
-//            db.%s.aggregate([
-//                { $sort: { num: -1 } }
-//            ])
-//            """);
-        List<DocResult> results = runQueries(queries);
-        compareResults(results);
     }
 
     @Test
@@ -448,23 +407,9 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
     @Test
     public void docGeoNearTest() {
-//        DocResult result = execute( """
-//                db.%s.aggregate([
-//                  {
-//                    "$geoNear": {
-//                        near: [0,0],
-//                        spherical: true
-//                        distanceMultiplier: 1,
-//                        minDistance: 0,
-//                        maxDistance: 15,
-//                        includeLocs: "legacy",
-//                        distanceField: "dist.calculated",
-//                        query: { num: { "$gte": 2 } },
-//                    }
-//                  }
-//                ])
-//                """.formatted( defaultCollection ), namespace );
-        execute( """
+        ArrayList<String> queries = new ArrayList<>();
+
+        queries.add("""
                 db.%s.insertMany([
                     {
                       name: "Legacy [2,2]",
@@ -487,8 +432,8 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                       legacy: [1,1]
                     },
                 ])
-                """.formatted( defaultCollection ), namespace );
-        DocResult result = execute( """
+                """);
+        queries.add("""
                 db.%s.aggregate([
                   {
                     "$geoNear": {
@@ -501,8 +446,10 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                     }
                   }
                 ])
-                """.formatted( defaultCollection ), namespace );
-        System.out.println( "Test" );
+                """);
+
+        List<DocResult> results = runQueries( queries );
+        compareResults( results );
     }
 
 

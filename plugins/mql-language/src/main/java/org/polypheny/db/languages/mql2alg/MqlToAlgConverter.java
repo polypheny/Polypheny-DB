@@ -789,7 +789,7 @@ public class MqlToAlgConverter {
                     node = combineReplaceRoot( value.asDocument().get( "$replaceWith" ), node, true );
                     break;
                 case "$geoNear":
-                    node = combineGeoNear( value.asDocument().getDocument( "$geoNear" ), node, rowType );
+                    node = convertGeoNear( value.asDocument().getDocument( "$geoNear" ), node, rowType );
                     break;
                 // todo dl add more pipeline statements
                 default:
@@ -1264,7 +1264,6 @@ public class MqlToAlgConverter {
                 maxDistance = options.getNumber( "$maxDistance" );
             }
             // Technically not allowed for a $near query, but we need this to support minDistance from the $geoNear stage.
-            // TODO: Should I detect if this is called from the $geoNear part, and only then use this value?
             if ( options.containsKey( "$minDistance" ) ) {
                 minDistance = options.getNumber( "$minDistance" );
             }
@@ -1315,14 +1314,13 @@ public class MqlToAlgConverter {
 
         //
         // Step 3:
-        // Sort by _distance ascending
-        // TODO: Why does this not work?
+        // Sort by distanceField ascending
         BsonDocument sortDocument = new BsonDocument( distanceField, new BsonInt32( 1 ) );
         node = combineSort( sortDocument, node, rowType );
 
         //
         // Step 4:
-        // Projection to remove field _distance
+        // Projection to remove field distanceField
         if ( !keepDistanceField ) {
             BsonDocument removeDistanceProjection = new BsonDocument( distanceField, new BsonInt32( 0 ) );
             List<String> unsetExcludes = new ArrayList<>();
@@ -1956,12 +1954,69 @@ public class MqlToAlgConverter {
     }
 
 
+    private AlgNode convertGeoNear( BsonValue bson, AlgNode node, AlgDataType rowType ) {
+
+
+        System.out.println("TODO");
+
+//        String key = isSpherical ? "$nearSphere" : "$near";
+//        BsonDocument bsonDocument = bson.asDocument();
+//        BsonValue innerNear = bsonDocument.get( key );
+//
+//        BsonNumber minDistance = new BsonInt32(-1);
+//        BsonNumber maxDistance = new BsonInt32(-1);
+//        PolyGeometry polyGeometry;
+//
+//        if ( innerNear.isArray() ) {
+//            // When using legacy coordinates, only $minDistance is valid.
+//            if ( bsonDocument.containsKey( "$maxDistance" ) ) {
+//                maxDistance = bsonDocument.getNumber( "$maxDistance" );
+//            }
+//            GeometryFactory geoFactory = isSpherical
+//                    ? new GeometryFactory( new PrecisionModel(), WGS_84 )
+//                    : new GeometryFactory();
+//            Coordinate point = convertArrayToCoordinate( innerNear.asArray() );
+//            polyGeometry = new PolyGeometry( geoFactory.createPoint( point ) );
+//        } else if ( innerNear.isDocument() ) {
+//            BsonDocument near = innerNear.asDocument();
+//            BsonDocument geometry = near.getDocument( "$geometry" );
+//            try {
+//                polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
+//            } catch ( InvalidGeometryException e ) {
+//                throw new RuntimeException( e );
+//            }
+//            if ( near.containsKey( "$minDistance" ) ) {
+//                minDistance = near.get( "$minDistance" ).asNumber();
+//            }
+//            if ( near.containsKey( "$maxDistance" ) ) {
+//                maxDistance = near.get( "$maxDistance" ).asNumber();
+//            }
+//        } else {
+//            throw new GenericRuntimeException( " Value of %s must be either an array or a Document ", key );
+//        }
+
+
+        // Create LogicalDocumentFilter for now ->
+        return LogicalDocumentFilter.create(
+                node,
+                new RexCall(
+                        cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                        OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GEO_NEAR ),
+                        Arrays.asList(
+//                        getIdentifier( parentKey, rowType ),
+//                        convertGeometry( polyGeometry ),
+//                        convertLiteral( minDistance ),
+//                        convertLiteral( maxDistance )
+                        ) )
+        );
+    }
+
+
     private RexNode convertNear( BsonValue bson, String parentKey, boolean isSpherical, AlgDataType rowType ) {
         String key = isSpherical ? "$nearSphere" : "$near";
         BsonDocument bsonDocument = bson.asDocument();
         BsonValue innerNear = bsonDocument.get( key );
 
-        // TODO: nullable?
         BsonNumber minDistance = new BsonInt32(-1);
         BsonNumber maxDistance = new BsonInt32(-1);
         PolyGeometry polyGeometry;
