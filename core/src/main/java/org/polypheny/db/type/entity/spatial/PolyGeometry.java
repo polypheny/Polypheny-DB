@@ -939,10 +939,10 @@ public class PolyGeometry extends PolyValue {
 
 
     public @NotNull String toWKT() {
-        if ( isPoint() && jtsGeometry instanceof Point point && !Double.isNaN( point.getCoordinate().z ) ) {
+        if ( isPoint() && jtsGeometry instanceof Point point && point.getCoordinate() != null && !Double.isNaN( point.getCoordinate().getZ() ) ) {
             Coordinate coordinate = point.getCoordinate();
             return String.format(
-                    "SRID=%d; POINT(%s %s %s)",
+                    "SRID=%d; POINT Z (%s %s %s)",
                     SRID,
                     formatDouble( coordinate.x ),
                     formatDouble( coordinate.y ),
