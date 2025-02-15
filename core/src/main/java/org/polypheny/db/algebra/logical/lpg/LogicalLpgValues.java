@@ -180,7 +180,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
                 ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
                 row.add( id );
                 row.add( getStringLiteral( entry.getKey().value, LABEL_TYPE ) );
-                row.add( getStringLiteral( entry.getValue().toString(), VALUE_TYPE ) );
+                row.add( getStringLiteral( entry.getValue().toJson(), VALUE_TYPE ) );
                 rows.add( row.build() );
             }
         }

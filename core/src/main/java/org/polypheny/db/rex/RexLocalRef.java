@@ -49,7 +49,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
  * Variables are immutable.
  */
 public class RexLocalRef extends RexSlot {
-
     public static final String PREFIX = "$t";
 
     // array of common names, to reduce memory allocations

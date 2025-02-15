@@ -82,6 +82,8 @@ public abstract class Sort extends SingleAlg {
      */
     @Getter
     public final AlgCollation collation;
+
+    @Getter
     protected final ImmutableList<RexNode> fieldExps;
     public final RexNode offset;
     public final RexNode fetch;

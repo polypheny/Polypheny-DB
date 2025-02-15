@@ -46,6 +46,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -85,6 +86,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -1232,11 +1234,17 @@ public class RexBuilder {
     /**
      * Converts the type of value to comply with {@link RexLiteral#valueMatchesType}.
      */
-    private static PolyValue clean( Object o, AlgDataType type ) {
+    private PolyValue clean( Object o, AlgDataType type ) {
         if ( o == null ) {
             return null;
         }
-        switch ( type.getPolyType() ) {
+
+        PolyType polyType = type.getPolyType();
+        if ( polyType == PolyType.ANY ) {
+            polyType = guessType( o ).getPolyType();
+        }
+
+        switch ( polyType ) {
             case TINYINT:
             case SMALLINT:
             case INTEGER:
@@ -1355,6 +1363,13 @@ public class RexBuilder {
                     return PolyBinary.of( new ByteString( bytes ) );
                 }
                 break;
+            case MAP:
+                if ( o instanceof PolyMap map ) {
+                    return map;
+                } else if ( o instanceof Map map ) {
+                    return PolyMap.of( map );
+                }
+                break;
             default:
                 if ( o instanceof PolyValue ) {
                     return (PolyValue) o;
@@ -1411,7 +1426,12 @@ public class RexBuilder {
 
 
     public RexLiteral makeMap( AlgDataType type, Map<RexNode, RexNode> operands ) {
-        return new RexLiteral( null, type, type.getPolyType() ); // todo fix this
+        Map<PolyValue, PolyValue> map = new HashMap<>();
+        operands.forEach((key, value) -> {
+            map.put(((RexLiteral) key).value, ((RexLiteral) value).value);
+        });
+
+        return new RexLiteral( PolyMap.of(map), type, type.getPolyType() ); // todo fix this
     }
 
 

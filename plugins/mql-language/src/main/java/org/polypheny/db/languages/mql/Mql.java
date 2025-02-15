@@ -32,7 +32,9 @@ public class Mql {
             Type.DROP_DATABASE,
             Type.RENAME_COLLECTION,
             Type.ADD_PLACEMENT,
-            Type.DELETE_PLACEMENT );
+            Type.DELETE_PLACEMENT,
+            Type.CREATE_INDEX
+    );
     static List<Type> DQL = Arrays.asList(
             Type.SELECT,
             Type.FIND,
@@ -82,6 +84,7 @@ public class Mql {
         COUNT,
         CREATE_VIEW,
         CREATE_COLLECTION,
+        CREATE_INDEX,
         ADD_PLACEMENT,
         DELETE_PLACEMENT,
         DROP_DATABASE,

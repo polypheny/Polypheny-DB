@@ -8502,6 +8502,7 @@ void NonReservedKeyWord2of3() :
     |    <SUBSTITUTE>
     |    <TABLE_NAME>
     |    <TEMPORARY>
+    |    <TEMPERATURE>
     |    <TIES>
     |    <TIMESTAMPADD>
     |    <TIMESTAMPDIFF>
