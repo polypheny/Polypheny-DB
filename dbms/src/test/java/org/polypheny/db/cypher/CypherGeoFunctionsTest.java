@@ -192,7 +192,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                 WITH
                     point({latitude: a.lat, longitude: a.lon}) AS pointBerlin,
                     point({latitude: b.lat, longitude: b.lon}) AS pointParis
-                RETURN distanceNeo4j(pointBerlin, pointParis) AS distance_meters;
+                RETURN point.distance(pointBerlin, pointParis, 'neo4j') AS distance_meters;
                 """ );
         List<GraphResult> results = runQueries( queries );
         var hsqldbResult = convertResultToMap( results.get( 0 ) ).get( 0 );

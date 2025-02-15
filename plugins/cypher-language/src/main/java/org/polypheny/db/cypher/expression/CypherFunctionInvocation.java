@@ -57,14 +57,11 @@ public class CypherFunctionInvocation extends CypherExpression {
             this.op = OperatorName.valueOf( image.toUpperCase( Locale.ROOT ) );
         } else if ( operatorNames.contains( "CYPHER_" + image.toUpperCase( Locale.ROOT ) ) ) {
             this.op = OperatorName.valueOf( "CYPHER_" + image.toUpperCase( Locale.ROOT ) );
-        } else if ( image.equals( "distanceNeo4j" ) ) {
-            this.op = OperatorName.DISTANCE_NEO4J;
         } else if ( image.equals( "withinBBox" ) ) {
             this.op = OperatorName.CYPHER_WITHIN_BBOX;
         } else if ( image.equals( "withinGeometry" ) ) {
             this.op = OperatorName.CYPHER_WITHIN_GEOMETRY;
-        }
-        else {
+        } else {
             throw new GenericRuntimeException( "Used function is not supported!" );
         }
         this.distinct = distinct;
@@ -115,7 +112,16 @@ public class CypherFunctionInvocation extends CypherExpression {
             case DISTANCE: {
                 return new RexCall(
                         context.numberType,
-                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.DISTANCE ),
+                        // If the third argument for the point.distance function is the string 'neo4j', then
+                        // use the spherical distance approximation of Neo4j. This uses a different earth radius.
+                        // Otherwise, the default behavior is to use the same distance measurement as the other
+                        // models.
+                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), arguments.size() == 3
+                                && arguments.get( 2 ) instanceof CypherLiteral neo4jFlag
+                                && neo4jFlag.getValue().toString().equals( "neo4j" )
+                                ? OperatorName.DISTANCE_NEO4J
+                                : OperatorName.DISTANCE
+                        ),
                         List.of(
                                 arguments.get( 0 ).getRex( context, RexType.PROJECT ).getRight(),
                                 arguments.get( 1 ).getRex( context, RexType.PROJECT ).getRight()
