@@ -842,11 +842,17 @@ public class DdlManagerImpl extends DdlManager {
 
         checkModelLogic( table, null );
 
+        if (MvccUtils.isInNamespaceUsingMvcc( table )) {
+            columnNames.add( IdentifierUtils.IDENTIFIER_KEY );
+            columnNames.add( IdentifierUtils.VERSION_KEY );
+        }
+
         List<Long> columnIds = new ArrayList<>();
         for ( String columnName : columnNames ) {
             LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
             columnIds.add( logicalColumn.id );
         }
+
         catalog.getLogicalRel( table.namespaceId ).addUniqueConstraint( table.id, constraintName, columnIds, statement );
         statement.getTransaction().addUsedTable( table );
 
