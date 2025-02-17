@@ -85,21 +85,20 @@ public class RelationalMvccTest {
 
 
     @Test
-    @Disabled
     public void testNonMvccCreateNamespace() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( java.sql.Statement statement = connection.createStatement() ) {
                 try {
-                    statement.executeUpdate( "CREATE RELATIONAL NAMESPACE nonMvccTest CONCURRENCY S2PL" );
+                    statement.executeUpdate( "CREATE RELATIONAL NAMESPACE nonMvccTest2 CONCURRENCY S2PL" );
                     connection.commit();
 
-                    Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( "nonMvccTest" );
+                    Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( "nonMvccTest2" );
                     assertTrue( optionalNamespace.isPresent() );
                     assertEquals( ConcurrencyControlType.S2PL, optionalNamespace.get().getConcurrencyControlType() );
 
                 } finally {
-                    statement.executeUpdate( "DROP NAMESPACE IF EXISTS nonMvccTest" );
+                    statement.executeUpdate( "DROP NAMESPACE IF EXISTS nonMvccTest2" );
                     statement.close();
                     connection.commit();
                 }
@@ -109,21 +108,19 @@ public class RelationalMvccTest {
 
 
     @Test
-    @Disabled
     public void testMvccCreateNamespace() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( java.sql.Statement statement = connection.createStatement() ) {
                 try {
-                    statement.executeUpdate( "CREATE RELATIONAL NAMESPACE mvccTest CONCURRENCY MVCC" );
+                    statement.executeUpdate( "CREATE RELATIONAL NAMESPACE mvccTest2 CONCURRENCY MVCC" );
                     connection.commit();
 
-                    Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( "mvccTest" );
+                    Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( "mvccTest2" );
                     assertTrue( optionalNamespace.isPresent() );
                     assertEquals( ConcurrencyControlType.MVCC, optionalNamespace.get().getConcurrencyControlType() );
-
                 } finally {
-                    statement.executeUpdate( "DROP NAMESPACE IF EXISTS mvccTest" );
+                    statement.executeUpdate( "DROP NAMESPACE IF EXISTS mvccTest2" );
                     statement.close();
                     connection.commit();
                 }
@@ -133,7 +130,6 @@ public class RelationalMvccTest {
 
 
     @Test
-    @Disabled
     public void testDefaultS2PLCreateNamespace() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -141,7 +137,6 @@ public class RelationalMvccTest {
                 try {
                     statement.executeUpdate( "ALTER CONFIG 'runtime/relDefaultConcurrencyControl' SET 'S2PL'" );
                     statement.executeUpdate( "CREATE RELATIONAL NAMESPACE nonMvccTest" );
-                    statement.close();
                     connection.commit();
 
                     Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( "nonMvccTest" );
@@ -150,7 +145,6 @@ public class RelationalMvccTest {
 
                 } finally {
                     statement.executeUpdate( "DROP NAMESPACE IF EXISTS nonMvccTest" );
-                    statement.close();
                     connection.commit();
                 }
             }
@@ -159,7 +153,6 @@ public class RelationalMvccTest {
 
 
     @Test
-    @Disabled
     public void testDefaultMVCCCreateNamespace() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
