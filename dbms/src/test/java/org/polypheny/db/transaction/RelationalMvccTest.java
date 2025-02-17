@@ -425,7 +425,6 @@ public class RelationalMvccTest {
 
 
     @Test
-    @Disabled
     public void uniqueConstraintsConfiguration() {
         assertTrue( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() );
     }
