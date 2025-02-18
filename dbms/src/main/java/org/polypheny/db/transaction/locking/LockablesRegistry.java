@@ -49,17 +49,10 @@ public class LockablesRegistry {
      * @return lockable instance representing a lock on the passed lockable object.
      */
     private static Lockable convertToLockable( @NonNull LockableObject lockableObject ) {
-        switch ( lockableObject.getLockableObjectType() ) {
-            case NAMESPACE -> {
-                return convertToLockable( (LogicalNamespace) lockableObject );
-            }
-
-            case ENTITY -> {
-                return convertToLockable( (Entity) lockableObject );
-            }
-
-            default -> throw new IllegalArgumentException( "Can not convert object of unknown type to lockable: " + lockableObject.getLockableObjectType() );
-        }
+        return switch ( lockableObject.getLockableObjectType() ) {
+            case NAMESPACE -> convertToLockable( (LogicalNamespace) lockableObject );
+            case ENTITY -> convertToLockable( (Entity) lockableObject );
+        };
     }
 
 
