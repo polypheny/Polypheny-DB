@@ -180,7 +180,7 @@ public class LanguageManager {
                         }
                     }
 
-                    if ( transaction.isAnalyze() ) {
+                    if ( transaction.isAnalyze() && !statement.getOverviewDuration().isRunning( "Translation" ) ) {
                         statement.getOverviewDuration().start( "Translation" );
                     }
 
@@ -189,7 +189,7 @@ public class LanguageManager {
                         root = new AlgTreeRewriter( statement ).process( root );
                     }
 
-                    if ( transaction.isAnalyze() ) {
+                    if ( transaction.isAnalyze() && !statement.getOverviewDuration().isStopped( "Translation") ) {
                         statement.getOverviewDuration().stop( "Translation" );
                     }
 
