@@ -8,7 +8,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.DeadlockDetectorType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.Lockable;
-import org.polypheny.db.util.DeadlockException;
 
 public class DeadlockHandler {
 
@@ -39,17 +38,22 @@ public class DeadlockHandler {
         try {
             deadlockDetector.add( lockable, transaction, owners );
             List<Transaction> conflictingTransactions = deadlockDetector.getConflictingTransactions();
-
             if ( !conflictingTransactions.isEmpty() ) {
-                if ( !conflictingTransactions.contains( transaction ) ) {
-                    throw new AssertionError( "Expected to be part of conflicting transactions" );
-                }
+                deadlockDetector.remove( lockable, transaction );
                 return true;
             }
+            return false;
+//            return conflictingTransactions.contains( transaction );
+//            if ( !conflictingTransactions.isEmpty() ) {
+//                if ( !conflictingTransactions.contains( transaction ) ) {
+//                    throw new AssertionError( "Expected to be part of conflicting transactions" );
+//                }
+//                return true;
+//            }
+//            return false;
         } finally {
             lock.unlock();
         }
-        return false;
     }
 
 
