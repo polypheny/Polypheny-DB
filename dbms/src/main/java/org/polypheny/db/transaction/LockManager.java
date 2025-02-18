@@ -78,8 +78,8 @@ public class LockManager {
 
                     if ( !successful ) {
                         cleanupWaiters( thread );
-                        log.warn( "open transactions isExclusive: {} in {}", isExclusive, owners );
-                        log.warn( "waiters {}", waiters );
+                        //log.warn( "open transactions isExclusive: {} in {}", isExclusive, owners );
+                        //log.warn( "waiters {}", waiters );
                         throw new DeadlockException( "Could not acquire lock, after max timeout was reached" );
                     }
                 }
