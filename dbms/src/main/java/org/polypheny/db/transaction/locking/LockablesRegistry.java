@@ -37,7 +37,16 @@ public class LockablesRegistry {
      * @return lockable instance representing a lock on the passed lockable object.
      */
     public Lockable getOrCreateLockable( @NonNull LockableObject lockableObject ) {
-        return lockables.computeIfAbsent( lockableObject, LockablesRegistry::convertToLockable );
+        Lockable l = lockables.get( lockableObject );
+        if ( l == null ) {
+            synchronized ( lockableObject ) {
+                l = convertToLockable( lockableObject );
+                if ( lockables.put( lockableObject, l ) != null ) {
+                    throw new IllegalStateException( "Lockable already exists: " + lockableObject );
+                }
+            }
+        }
+        return l;
     }
 
 
