@@ -31,6 +31,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.transaction.locking.ConcurrencyControlType;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 
 public class DocumentMvccTest {
 
@@ -157,6 +159,26 @@ public class DocumentMvccTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void selectTest() {
+        setup();
+        Session session1 = new Session( testHelper );
+        session1.startTransaction();
+
+        session1.executeStatement( INSERT_1, "mongo", NAMESPACE );
+
+        // s2 sees own insert as uncommitted
+        List<ExecutedContext> results = session1.executeStatement( FIND_ALL, "mongo", NAMESPACE );
+        assertEquals( 1, results.size() );
+        List<List<PolyValue>> data = results.get( 0 ).getIterator().getAllRowsAndClose();
+        assertEquals( 2, data.size() );
+        data.forEach( row -> assertTrue( row.get( 0 ).asDocument().get( PolyString.of("_vid") ).asLong().longValue() < 0 ) );
+
+        session1.commitTransaction();
+
+        teardown();
     }
 
 }

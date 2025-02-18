@@ -156,8 +156,14 @@ public class IdentifierUtils {
         return newFields;
     }
 
+    public static void throwIfIsDisallowedFieldName( String fieldName) {
+        throwIfIsDisallowedFieldName( fieldName, false );
+    }
 
-    public static void throwIfIsDisallowedFieldName( String fieldName ) {
+    public static void throwIfIsDisallowedFieldName( String fieldName, boolean ignoreDocId ) {
+        if (ignoreDocId && fieldName.matches( "_id" )) {
+            return;
+        }
         if ( fieldName.startsWith( "_" ) ) {
             throwStartsWithUnderscore( fieldName );
         }
@@ -184,7 +190,7 @@ public class IdentifierUtils {
         documents.stream()
                 .flatMap( v -> v.map.keySet().stream() )
                 .map( PolyString::getValue )
-                .forEach( IdentifierUtils::throwIfIsDisallowedFieldName );
+                .forEach( f -> IdentifierUtils.throwIfIsDisallowedFieldName( f, true ));
     }
 
     public static void throwIfContainsDisallowedFieldName( PolyDictionary dictionary ) {

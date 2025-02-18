@@ -69,6 +69,22 @@ public class InformationDuration extends Information {
         return d;
     }
 
+    public boolean isRunning(final String name) {
+        Duration d = this.children.get( name );
+        if ( d == null ) {
+            return false;
+        }
+        return d.sw.isStarted();
+    }
+
+    public boolean isStopped(final String name) {
+        Duration d = this.children.get(name);
+        if ( d == null ) {
+            return true;
+        }
+        return d.sw.isStopped();
+    }
+
 
     public void stop( final String name ) {
         this.duration += this.children.get( name ).stop();
