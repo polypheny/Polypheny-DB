@@ -128,7 +128,8 @@ public class ConstraintEnforceAttacher {
         RelModify<?> modify = extractor.getModify();
 
         if ( modify == null ) {
-            throw new GenericRuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
+            log.warn( "The tree did no conform, while generating the constraint enforcement query!" );
+            return;
         }
 
         statement.getTransaction().addUsedTable( modify.entity.unwrapOrThrow( LogicalTable.class ) );
