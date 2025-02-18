@@ -16,13 +16,17 @@
 
 package org.polypheny.db.transaction.mvcc;
 
+import com.github.dockerjava.api.command.AuthCmd.Exec;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -33,6 +37,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.ConcurrencyControlType;
@@ -108,6 +113,44 @@ public class MvccUtils {
         }
 
         return context.execute( context.getStatement() );
+    }
+
+
+    public static List<ExecutedContext> executeDmlAlgTree( AlgRoot root, Statement statement, long namespaceId ) {
+        PolyImplementation implementation = statement.getQueryProcessor().prepareQuery( root, true );
+
+        ParsedQueryContext dummyContext = getDummyContext( statement, namespaceId );
+        ImplementationContext implementationContext = new ImplementationContext( implementation, dummyContext, statement, null );
+        List<ExecutedContext> executedContexts = new ArrayList<>();
+            try {
+                if ( implementationContext.getException().isPresent() ) {
+                    throw implementationContext.getException().get();
+                }
+                executedContexts.add( implementationContext.execute( implementationContext.getStatement() ) );
+            } catch ( Throwable e ) {
+                Transaction transaction = implementationContext.getStatement().getTransaction();
+                if ( transaction.isAnalyze() && implementationContext.getException().isEmpty() ) {
+                    transaction.getQueryAnalyzer().attachStacktrace( e );
+                }
+                if ( transaction.isActive() ) {
+                    transaction.rollback( e.getMessage() );
+                }
+                executedContexts.add( ExecutedContext.ofError( e, implementationContext, null ) );
+                return executedContexts;
+            }
+        return executedContexts;
+    }
+
+    private static ParsedQueryContext getDummyContext(Statement statement, long namespaceId) {
+        QueryContext dummyContext = QueryContext.builder()
+                .query("")
+                .statement( statement )
+                .language( QueryLanguage.from("sql") )
+                .origin( statement.getTransaction().getOrigin() )
+                .namespaceId( namespaceId )
+                .transactionManager( statement.getTransaction().getTransactionManager() )
+                .build();
+        return ParsedQueryContext.fromQuery( "", null, dummyContext );
     }
 
 
