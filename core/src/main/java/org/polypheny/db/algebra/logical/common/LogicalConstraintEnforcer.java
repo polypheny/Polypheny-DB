@@ -87,7 +87,8 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         RelModify<?> modify = extractor.getModify();
 
         if ( modify == null ) {
-            throw new GenericRuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
+            log.warn( "The tree did no conform, while generating the constraint enforcement query!" );
+            return new EnforcementInformation( null, List.of(), List.of() );
         }
 
         final LogicalTable table = modify.entity.unwrap( LogicalTable.class ).orElseThrow();
