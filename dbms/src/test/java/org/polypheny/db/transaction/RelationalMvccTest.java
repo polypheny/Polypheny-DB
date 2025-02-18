@@ -183,7 +183,7 @@ public class RelationalMvccTest {
 
         session1.executeStatement( INSERT_1, "sql", NAMESPACE );
 
-        // s2 sees own insert as uncommitted
+        // s1 sees own insert as uncommitted
         List<ExecutedContext> results = session1.executeStatement( SELECT_STAR, "sql", NAMESPACE );
         assertEquals( 1, results.size() );
         List<List<PolyValue>> data = results.get( 0 ).getIterator().getAllRowsAndClose();
