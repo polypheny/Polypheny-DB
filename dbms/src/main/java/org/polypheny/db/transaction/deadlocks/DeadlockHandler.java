@@ -39,6 +39,9 @@ public class DeadlockHandler {
             deadlockDetector.add( lockable, transaction, owners );
             List<Transaction> conflictingTransactions = deadlockDetector.getConflictingTransactions();
             if ( !conflictingTransactions.isEmpty() ) {
+                if ( !conflictingTransactions.contains( transaction ) ) {
+                    throw new AssertionError( "Expected to be part of conflicting transactions" );
+                }
                 deadlockDetector.remove( lockable, transaction );
                 return true;
             }
