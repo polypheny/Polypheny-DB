@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.dag.activities.impl;
 
 import static org.polypheny.db.workflow.dag.activities.impl.LpgNodesToDocActivity.ID_FIELD;
 import static org.polypheny.db.workflow.dag.activities.impl.LpgNodesToDocActivity.LABEL_FIELD;
+import static org.polypheny.db.workflow.dag.settings.GroupDef.ADVANCED_GROUP;
 
 import java.util.HashSet;
 import java.util.List;
@@ -56,6 +57,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         shortDescription = "Maps nodes of a graph to documents in a collection."
 )
 @FieldSelectSetting(key = "labels", displayName = "Target Nodes", simplified = true, targetInput = 0, pos = 0,
+        group = ADVANCED_GROUP,
         shortDescription = "Specify the nodes to map by their label(s). If no label is specified, all nodes are mapped to documents.")
 @BoolSetting(key = "includeLabels", displayName = "Include Labels", defaultValue = true, pos = 1,
         shortDescription = "Whether to insert an array field '" + LABEL_FIELD + "' that contains the node labels.")
@@ -64,8 +66,8 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 @SuppressWarnings("unused")
 public class LpgNodesToDocActivity implements Activity, Pipeable {
 
-    static final String LABEL_FIELD = "_labels";
-    static final String ID_FIELD = "_node_id";
+    static final String LABEL_FIELD = "labels";
+    static final String ID_FIELD = "node_id";
 
 
     @Override

@@ -172,7 +172,7 @@ public class LpgValuesActivity implements Activity, Pipeable {
                     } while ( target == i );
 
                     Collections.shuffle( shuffled, random );
-                    if ( !output.put( getEdge( nodeIds, i, target, shuffled.subList( 0, edgeLabelCount ) ) ) ) {
+                    if ( !output.put( getEdge( nodeIds, i, target, shuffled.subList( 0, edgeLabelCount ), random.nextInt( 1980, 2025 ) ) ) ) {
                         return;
                     }
                 }
@@ -213,7 +213,7 @@ public class LpgValuesActivity implements Activity, Pipeable {
                     target = random.nextInt( n );
                 } while ( target == i );
                 Collections.shuffle( shuffled, random );
-                edges.add( getEdge( nodeIds, i, target, shuffled.subList( 0, labelCount ) ) );
+                edges.add( getEdge( nodeIds, i, target, shuffled.subList( 0, labelCount ), random.nextInt( 1980, 2025 ) ) );
             }
         }
         return edges;
@@ -241,8 +241,9 @@ public class LpgValuesActivity implements Activity, Pipeable {
     }
 
 
-    private static PolyEdge getEdge( List<PolyString> nodes, int fromIdx, int toIdx, List<String> labels ) {
-        return new PolyEdge( new PolyDictionary(), labels.stream().map( PolyString::of ).toList(),
+    private static PolyEdge getEdge( List<PolyString> nodes, int fromIdx, int toIdx, List<String> labels, int since ) {
+        PolyDictionary dict = new PolyDictionary( Map.of( PolyString.of( "since" ), PolyInteger.of( since ) ) );
+        return new PolyEdge( dict, labels.stream().map( PolyString::of ).toList(),
                 nodes.get( fromIdx ), nodes.get( toIdx ), EdgeDirection.LEFT_TO_RIGHT, null );
     }
 

@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.activities.impl;
 import static org.polypheny.db.workflow.dag.activities.impl.LpgEdgesToDocActivity.DIR_FIELD;
 import static org.polypheny.db.workflow.dag.activities.impl.LpgEdgesToDocActivity.ID_FIELD;
 import static org.polypheny.db.workflow.dag.activities.impl.LpgNodesToDocActivity.LABEL_FIELD;
+import static org.polypheny.db.workflow.dag.settings.GroupDef.ADVANCED_GROUP;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,8 +42,8 @@ import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
+import org.polypheny.db.workflow.dag.annotations.AdvancedGroup;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
-import org.polypheny.db.workflow.dag.annotations.DefaultGroup;
 import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
 import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
 import org.polypheny.db.workflow.dag.settings.BoolValue;
@@ -61,34 +62,35 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         outPorts = { @OutPort(type = PortType.DOC, description = "The output collection where each document corresponds to an edge in the graph.") },
         shortDescription = "Maps edges of a graph to documents in a collection."
 )
-@DefaultGroup(subgroups = {
+@AdvancedGroup(subgroups = {
         @Subgroup(key = "nodes", displayName = "Incident Nodes")
 })
 
-@FieldSelectSetting(key = "labels", displayName = "Target Edges", simplified = true, targetInput = 0, pos = 0,
+@FieldSelectSetting(key = "labels", displayName = "Target Edges", simplified = true, targetInput = 0, pos = 0, group = ADVANCED_GROUP,
         shortDescription = "Specify the edges to map by their label(s). If no label is specified, all edges are mapped to documents.")
 @BoolSetting(key = "includeLabels", displayName = "Include Labels", defaultValue = true, pos = 1,
         shortDescription = "Whether to insert an array field '" + LABEL_FIELD + "' that contains the edge labels.")
-@BoolSetting(key = "includeId", displayName = "Include Edge ID", pos = 2,
+@BoolSetting(key = "includeId", displayName = "Include Edge ID", pos = 2, group = ADVANCED_GROUP,
         shortDescription = "Whether to insert a '" + ID_FIELD + "' field.")
 @BoolSetting(key = "includeDirection", displayName = "Include Direction", pos = 3,
         shortDescription = "Whether to insert a '" + DIR_FIELD + "' field indicating the edge direction.")
 
-@BoolSetting(key = "includeNodes", displayName = "Include Node Data", pos = 4, subGroup = "nodes",
-        shortDescription = "Whether to include the actual data of the incident nodes instead of just their IDs.")
+@BoolSetting(key = "includeNodes", displayName = "Include Node Data", pos = 4,
+        group = ADVANCED_GROUP, subGroup = "nodes",
+        shortDescription = "Whether to include the actual data of the incident nodes instead of their IDs.")
 @BoolSetting(key = "includeNodeLabels", displayName = "Include Node Labels", defaultValue = true, pos = 5,
-        subGroup = "nodes", subPointer = "includeNodes", subValues = { "true" },
+        group = ADVANCED_GROUP, subGroup = "nodes", subPointer = "includeNodes", subValues = { "true" },
         shortDescription = "Whether to insert an array field '" + LABEL_FIELD + "' in the node data that contains the node labels.")
 @BoolSetting(key = "includeNodeId", displayName = "Include Node ID", pos = 6,
-        subGroup = "nodes", subPointer = "includeNodes", subValues = { "true" },
+        group = ADVANCED_GROUP, subGroup = "nodes", subPointer = "includeNodes", subValues = { "true" },
         shortDescription = "Whether to insert a '" + LpgNodesToDocActivity.ID_FIELD + "' field in the node data.")
 @SuppressWarnings("unused")
 public class LpgEdgesToDocActivity implements Activity, Pipeable {
 
-    static final String ID_FIELD = "_edge_id";
-    static final String FROM_FIELD = "_left";
-    static final String TO_FIELD = "_right";
-    static final String DIR_FIELD = "_direction";
+    static final String ID_FIELD = "edge_id";
+    static final String FROM_FIELD = "left";
+    static final String TO_FIELD = "right";
+    static final String DIR_FIELD = "direction";
 
 
     @Override
