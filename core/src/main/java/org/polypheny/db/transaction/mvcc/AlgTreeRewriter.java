@@ -21,11 +21,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
@@ -88,7 +86,7 @@ import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.BsonUtil;
 
-public class AlgTreeRewriter extends AlgShuttleImpl {
+public class AlgTreeRewriter extends AlgModifyingShuttle {
 
     private static final AlgDataType ANY_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.ANY, false );
     private static final AlgDataType DOCUMENT_ALG_TYPE = new DocumentType( List.of(), List.of() );
@@ -96,14 +94,12 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
     private static final AlgDataType ARRAY_TYPE = new ArrayType( CHAR_255_ALG_TYPE, false );
 
     private final Statement statement;
-    private final Set<DeferredAlgTreeModification> pendingModifications;
 
     AlgNode debugAlg = null;
 
 
     public AlgTreeRewriter( Statement statement ) {
         this.statement = statement;
-        this.pendingModifications = new HashSet<>();
     }
 
 
@@ -138,31 +134,6 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
         }
 
         throw new IllegalStateException( "No pending tree modifications must be left on root level." );
-    }
-
-
-    @Override
-    protected <T extends AlgNode> T visitChild( T parent, int i, AlgNode child ) {
-        T visited = super.visitChild( parent, i, child );
-        return applyModificationsOrSkip( visited );
-    }
-
-
-    private <T extends AlgNode> T applyModificationsOrSkip( T node ) {
-        if ( pendingModifications.isEmpty() ) {
-            return node;
-        }
-
-        Iterator<DeferredAlgTreeModification> iterator = pendingModifications.iterator();
-        while ( iterator.hasNext() ) {
-            DeferredAlgTreeModification modification = iterator.next();
-            if ( modification.notTargetsChildOf( node ) ) {
-                continue;
-            }
-            node = (T) modification.applyToChild( node );
-            iterator.remove();
-        }
-        return node;
     }
 
 
@@ -296,7 +267,7 @@ public class AlgTreeRewriter extends AlgShuttleImpl {
 
         return switch ( modify1.getOperation() ) {
             case INSERT -> new RewriteInsertingRelModify().apply( modify1 );
-            case UPDATE -> new RewriteUpdatingRelModify( sequenceNumber ).apply( modify1 );
+            case UPDATE -> new RewriteUpdatingRelModify( statement ).apply( modify1 );
             case DELETE -> new RewriteDeletingRelModify( sequenceNumber ).apply( modify1 );
             default -> modify1;
         };

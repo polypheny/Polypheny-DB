@@ -76,7 +76,8 @@ public class DeepCopyShuttle extends AlgShuttleImpl {
                 copy( node.getTraitSet() ),
                 node.getInput().accept( this ),
                 node.getCondition(),
-                node.getVariablesSet() );
+                node.getVariablesSet(),
+                node.isMvccLhsScopeFilter());
     }
 
 
