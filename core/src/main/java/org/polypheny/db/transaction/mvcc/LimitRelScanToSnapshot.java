@@ -194,7 +194,8 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
                 right,
                 joinCondition,
                 Set.of(),
-                JoinAlgType.INNER
+                JoinAlgType.INNER,
+                true
         );
     }
 
@@ -211,7 +212,8 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
                                 IdentifierUtils.IDENTIFIER_ALG_TYPE,
                                 PolyType.BIGINT
                         )
-                )
+                ),
+                true
         );
     }
 }
