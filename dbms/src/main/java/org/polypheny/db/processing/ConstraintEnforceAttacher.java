@@ -433,7 +433,7 @@ public class ConstraintEnforceAttacher {
                         );
                 condition = RexUtil.flatten( rexBuilder, condition );
                 AlgNode check = builder.build();
-                check = new LogicalRelFilter( check.getCluster(), check.getTraitSet(), check, condition, ImmutableSet.of() );
+                check = new LogicalRelFilter( check.getCluster(), check.getTraitSet(), check, condition, ImmutableSet.of(), false );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Update violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lce.setCheckDescription( String.format( "Enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
