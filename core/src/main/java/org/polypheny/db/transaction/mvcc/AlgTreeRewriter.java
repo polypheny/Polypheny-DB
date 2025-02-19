@@ -263,12 +263,11 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
         }
 
         getTransaction().addWrittenEntitiy( modify1.getEntity() );
-        long sequenceNumber = statement.getTransaction().getSequenceNumber();
 
         return switch ( modify1.getOperation() ) {
             case INSERT -> new RewriteInsertingRelModify().apply( modify1 );
             case UPDATE -> new RewriteUpdatingRelModify( statement ).apply( modify1 );
-            case DELETE -> new RewriteDeletingRelModify( sequenceNumber ).apply( modify1 );
+            case DELETE -> new RewriteDeletingRelModify( statement ).apply( modify1 );
             default -> modify1;
         };
     }
