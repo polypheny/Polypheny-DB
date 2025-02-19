@@ -109,7 +109,8 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 filter.getTraitSet(),
                 filter.getInput(),
                 condition.accept( this ),
-                filter.getVariablesSet() );
+                filter.getVariablesSet(),
+                filter.isMvccLhsScopeFilter());
     }
 
 

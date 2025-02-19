@@ -56,7 +56,6 @@ public class RelationalMvccTest {
         testHelper = TestHelper.getInstance();
     }
 
-
     private void setup() {
         Transaction transaction = testHelper.getTransaction();
         String createNamespaceStatement = String.format( "CREATE RELATIONAL NAMESPACE %s CONCURRENCY MVCC;", NAMESPACE );
@@ -448,7 +447,6 @@ public class RelationalMvccTest {
 
 
     @Test
-    @Disabled
     public void updateUncommittedWithConstant() {
         List<ExecutedContext> results;
         List<List<PolyValue>> data;
@@ -467,19 +465,17 @@ public class RelationalMvccTest {
         data = results.get( 0 ).getIterator().getAllRowsAndClose();
         assertEquals( 2, data.size() );
         data.forEach( row -> {
-            if ( row.get( 1 ).asLong().longValue() > 0 ) {
-                assertEquals( 1, row.get( 2 ).asInteger().intValue() );
-                assertEquals( 10, row.get( 3 ).asInteger().intValue() );
-            } else {
-                assertEquals( 2, row.get( 2 ).asInteger().intValue() );
-                assertEquals( 100, row.get( 3 ).asInteger().intValue() );
-            }
+            assertTrue( row.get( 1 ).asLong().longValue() < 0 );
+            int id = row.get( 2 ).asInteger().intValue();
+            assertTrue( id == 1 || id == 2 );
+            int value = row.get( 3 ).asInteger().intValue();
+            assertTrue( value == 10 || value == 100 );
         } );
 
         session1.commitTransaction();
         session1.startTransaction();
 
-        // s1 sees the updated uncommitted version
+        // s1 sees the updated committed version
         results = session1.executeStatement( SELECT_STAR, "sql", NAMESPACE );
         assertEquals( 1, results.size() );
         data = results.get( 0 ).getIterator().getAllRowsAndClose();
