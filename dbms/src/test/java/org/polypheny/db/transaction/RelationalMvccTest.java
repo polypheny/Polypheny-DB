@@ -564,7 +564,6 @@ public class RelationalMvccTest {
 
 
     @Test
-    @Disabled
     public void deleteUncommittedSelfRead() {
         List<ExecutedContext> results;
         List<List<PolyValue>> data;

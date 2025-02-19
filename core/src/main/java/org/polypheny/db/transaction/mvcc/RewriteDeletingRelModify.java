@@ -18,6 +18,8 @@ package org.polypheny.db.transaction.mvcc;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
@@ -28,28 +30,75 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.mvcc.RelCommitStateFilterRewrite.CommitState;
 import org.polypheny.db.type.PolyType;
 
 public class RewriteDeletingRelModify implements AlgTreeModification<LogicalRelModify, LogicalRelModify> {
 
-    private final long sequenceNumber;
+    private final Statement statement;
 
 
-    public RewriteDeletingRelModify( long sequenceNumber ) {
-        this.sequenceNumber = sequenceNumber;
+    public RewriteDeletingRelModify( Statement statement ) {
+        this.statement = statement;
+    }
+
+
+    private void throwOnIllegalInputNode( LogicalRelModify modify ) {
+        if ( !(modify.getInput() instanceof LogicalRelProject) ) {
+            throw new IllegalStateException( "Project expected as input to updating rel modify" );
+        }
     }
 
 
     @Override
     public LogicalRelModify apply( LogicalRelModify node ) {
-        if ( !(node.getInput() instanceof LogicalRelProject originalProject) ) {
-            throw new IllegalStateException( "Project expected as input to updating rel modify" );
-        }
+        throwOnIllegalInputNode( node );
+        LogicalRelProject originalProject = (LogicalRelProject) node.getInput();
 
         List<AlgDataTypeField> inputFields = originalProject.getRowType().getFields();
 
         assert IdentifierUtils.IDENTIFIER_KEY.equals( inputFields.get( 0 ).getName() );
         assert IdentifierUtils.VERSION_KEY.equals( inputFields.get( 1 ).getName() );
+
+        AlgRoot deletingSubtree = createDeletingSubtree( node );
+        MvccUtils.executeDmlAlgTree( deletingSubtree, statement, node.getEntity().getNamespaceId() );
+        return createInsertingSubtree( node );
+    }
+
+
+    private AlgRoot createDeletingSubtree( LogicalRelModify originalModify ) {
+        throwOnIllegalInputNode( originalModify );
+        /*
+        Idea: We know that if we move down the tree there will be a join at some point due to the mvcc snapshot filtering.
+        There we will place the filter into the left subtree to remove versions accordingly.
+         */
+        MvccJoinLhsFilterRewriter lhsFilterRewriter = new MvccJoinLhsFilterRewriter( CommitState.UNCOMMITTED );
+        LogicalRelProject originalProject = (LogicalRelProject) lhsFilterRewriter.visit( (LogicalRelProject) originalModify.getInput() );
+
+        LogicalRelModify deletingModify = LogicalRelModify.create(
+                originalModify.getEntity(),
+                originalProject,
+                Operation.DELETE,
+                null,
+                null,
+                false
+        );
+
+        return AlgRoot.of( deletingModify, Kind.DELETE );
+    }
+
+
+    private LogicalRelModify createInsertingSubtree( LogicalRelModify originalModify ) {
+        throwOnIllegalInputNode( originalModify );
+        /*
+        Idea: We know that if we move down the tree there will be a join at some point due to the mvcc snapshot filtering.
+        There we will place the filter into the left subtree to remove versions accordingly.
+         */
+        MvccJoinLhsFilterRewriter lhsFilterRewriter = new MvccJoinLhsFilterRewriter( CommitState.COMMITTED );
+        LogicalRelProject originalProject = (LogicalRelProject) lhsFilterRewriter.visit( (LogicalRelProject) originalModify.getInput() );
+
+        List<AlgDataTypeField> inputFields = originalProject.getRowType().getFields();
 
         List<RexNode> projects = new ArrayList<>( inputFields.size() );
 
@@ -67,7 +116,7 @@ public class RewriteDeletingRelModify implements AlgTreeModification<LogicalRelM
             if ( i == 1 ) {
                 // replace _vid
                 projects.add( new RexLiteral(
-                        IdentifierUtils.getVersionAsPolyBigDecimal( sequenceNumber, false ),
+                        IdentifierUtils.getVersionAsPolyBigDecimal( statement.getTransaction().getSequenceNumber(), false ),
                         IdentifierUtils.VERSION_ALG_TYPE,
                         PolyType.BIGINT
                 ) );
@@ -84,7 +133,7 @@ public class RewriteDeletingRelModify implements AlgTreeModification<LogicalRelM
         );
 
         return LogicalRelModify.create(
-                node.getEntity(),
+                originalModify.getEntity(),
                 project,
                 Operation.INSERT,
                 null,
