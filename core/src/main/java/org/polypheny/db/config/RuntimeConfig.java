@@ -545,7 +545,7 @@ public enum RuntimeConfig {
     SERIALIZATION_BUFFER_SIZE(
             "runtime/serialization",
             "How big the buffersize for catalog objects should be.",
-            2000000,
+            2_000_000,
             ConfigType.INTEGER ),
 
     LOCKING_MAX_TIMEOUT_SECONDS(

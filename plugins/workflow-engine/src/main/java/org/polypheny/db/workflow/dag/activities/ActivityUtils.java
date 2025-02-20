@@ -35,6 +35,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexIndexRef;
@@ -304,6 +305,14 @@ public class ActivityUtils {
 
     public static boolean isInvalidFieldName( String name ) {
         return name.length() > MAX_NAME_LENGTH || !nameValidator.matcher( name ).matches();
+    }
+
+
+    public static void validateFieldNames( List<String> names ) throws GenericRuntimeException {
+        Optional<String> invalid = ActivityUtils.findInvalidFieldName( names );
+        if ( invalid.isPresent() ) {
+            throw new GenericRuntimeException( "Invalid column name: " + invalid.get() );
+        }
     }
 
 

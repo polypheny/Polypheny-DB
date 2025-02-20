@@ -1,642 +1,626 @@
 {
-  "activities": [
-    {
-      "type": "relExtract",
-      "id": "7cf997a2-1d29-446d-b6d9-c9aab9e29c6f",
-      "settings": {
-        "table": {
-          "namespace": "public",
-          "name": "work"
-        }
-      },
-      "config": {
-        "enforceCheckpoint": false,
-        "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": 589.811241831708,
-        "posY": 967.2878866743736,
-        "name": "Read Work Table",
-        "notes": null
-      },
-      "rolledBack": false
-    },
-    {
-      "type": "relJoin",
-      "id": "dda72cfb-b65b-45fb-9bae-b1514dda1838",
-      "settings": {
-        "rightCols": {
-          "include": [
-            "employeeno"
-          ],
-          "exclude": [],
-          "unspecifiedIndex": -1
-        },
-        "joinType": "INNER",
-        "leftCols": {
-          "include": [
-            "employeeno"
-          ],
-          "exclude": [],
-          "unspecifiedIndex": -1
-        },
-        "keepCols": false
-      },
-      "config": {
-        "enforceCheckpoint": false,
-        "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": 1341.169609929929,
-        "posY": 722.0053010890441,
-        "name": null,
-        "notes": null
-      },
-      "rolledBack": false
-    },
-    {
-      "type": "query",
-      "id": "36595a9f-0ca1-42f4-8938-3d8eb351c7d5",
-      "settings": {
-        "query": {
-          "query": "SELECT involvement, AVG(monthlyincome) as salary\nFROM {?0?}\nGROUP BY involvement\nORDER BY AVG(monthlyincome) DESC\n",
-          "queryLanguage": "SQL"
-        }
-      },
-      "config": {
-        "enforceCheckpoint": false,
-        "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": 3543.809507323553,
-        "posY": 872.2786373724555,
-        "name": null,
-        "notes": null
-      },
-      "rolledBack": false
-    },
-    {
-      "type": "varToDoc",
-      "id": "a6adeff0-db2e-4081-bf4c-8859732de369",
-      "settings": {
-        "includeWf": false
-      },
-      "config": {
-        "enforceCheckpoint": false,
-        "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": 3559.722200217527,
-        "posY": 2359.3951733545487,
-        "name": null,
-        "notes": null
-      },
-      "rolledBack": false
-    },
-    {
-      "type": "docFilter",
-      "id": "eb39cdf2-2bec-4dac-b2da-e5783022044f",
-      "settings": {
-        "all": false,
-        "filter": {
-          "conditions": [
-            {
-              "field": "title",
-              "operator": "EQUALS",
-              "value": "Financial Report",
-              "ignoreCase": false
-            }
-          ],
-          "targetMode": "EXACT",
-          "combineWithOr": false
-        },
-        "rejectedHandler": "store",
-        "pointer": "",
-        "negate": false
-      },
-      "config": {
-        "enforceCheckpoint": false,
-        "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": 811.1093699245097,
-        "posY": 1849.071794361381,
-        "name": null,
-        "notes": null
-      },
-      "rolledBack": false
-    },
-    {
-      "type": "relLoad",
-      "id": "d307d86b-b9ad-451f-80b0-0793896006fa",
-      "settings": {
-        "drop": true,
-        "adapter": "hsqldb_disk",
-        "keepPk": false,
-        "create": true,
-        "pkCols": {
-          "include": [
-            "employeeno"
-          ],
-          "exclude": [],
-          "unspecifiedIndex": -1
-        },
-        "table": {
-          "namespace": "demo",
-          "name": "researcher"
-        }
-      },
-      "config": {
-        "enforceCheckpoint": false,
-        "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": 3541.789270602147,
-        "posY": 560.0560334369767,
-        "name": null,
-        "notes": null
-      },
-      "rolledBack": false
-    },
-    {
-      "type": "relLoad",
-      "id": "333ea1ff-f1d6-4da7-8b1c-54992d9488e6",
-      "settings": {
-        "drop": true,
-        "adapter": "hsqldb_disk",
-        "keepPk": true,
-        "create": true,
-        "pkCols": {
-          "include": [],
-          "exclude": [],
-          "unspecifiedIndex": -1
-        },
-        "table": {
-          "namespace": "demo",
-          "name": "revenue"
-        }
-      },
-      "config": {
-        "enforceCheckpoint": false,
-        "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": 3548.0648713692367,
-        "posY": 1967.8628847281293,
-        "name": null,
-        "notes": null
-      },
-      "rolledBack": false
-    },
-    {
-      "type": "docToRel",
-      "id": "9f8d7aaa-45a7-4bb9-8960-f6e6b9bc6aa9",
-      "settings": {
-        "mode": "manual",
-        "handleMissing": "fail",
-        "unspecified": false,
-        "columns": {
-          "casts": [
-            {
-              "source": "revenue.month",
-              "target": "month",
-              "type": "VARCHAR",
-              "nullable": true,
-              "collectionsType": "",
-              "precision": 25,
-              "scale": null,
-              "dimension": -1,
-              "cardinality": -1
+    "activities": [
+        {
+            "type": "relExtract",
+            "id": "7cf997a2-1d29-446d-b6d9-c9aab9e29c6f",
+            "settings": {
+                "table": {
+                    "namespace": "public",
+                    "name": "work"
+                }
             },
-            {
-              "source": "revenue.amount",
-              "target": "amount",
-              "type": "BIGINT",
-              "nullable": true,
-              "collectionsType": "",
-              "precision": null,
-              "scale": null,
-              "dimension": -1,
-              "cardinality": -1
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 589.811241831708,
+                "posY": 967.2878866743736,
+                "name": "Read Work Table",
+                "notes": null
             }
-          ]
-        }
-      },
-      "config": {
-        "enforceCheckpoint": false,
-        "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": 2667.557695188522,
-        "posY": 1775.3369626707938,
-        "name": null,
-        "notes": null
-      },
-      "rolledBack": false
-    },
-    {
-      "type": "relExtract",
-      "id": "034edd21-61c0-4fae-9120-a80f58fc9a9d",
-      "settings": {
-        "table": {
-          "namespace": "public",
-          "name": "emp"
-        }
-      },
-      "config": {
-        "enforceCheckpoint": false,
-        "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": -201.54240528771737,
-        "posY": 584.6141543928453,
-        "name": "Read Employee Table",
-        "notes": null
-      },
-      "rolledBack": false
-    },
-    {
-      "type": "renameCols",
-      "id": "2f7b4a2f-e58a-4544-a8b1-b9a435671218",
-      "settings": {
-        "rename": {
-          "rules": [
-            {
-              "source": "job",
-              "replacement": ""
+        },
+        {
+            "type": "relJoin",
+            "id": "dda72cfb-b65b-45fb-9bae-b1514dda1838",
+            "settings": {
+                "rightCols": {
+                    "include": [
+                        "employeeno"
+                    ],
+                    "exclude": [],
+                    "unspecifiedIndex": -1
+                },
+                "joinType": "INNER",
+                "leftCols": {
+                    "include": [
+                        "employeeno"
+                    ],
+                    "exclude": [],
+                    "unspecifiedIndex": -1
+                },
+                "keepCols": false
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 1341.169609929929,
+                "posY": 722.0053010890441,
+                "name": null,
+                "notes": null
             }
-          ],
-          "mode": "REGEX",
-          "ignoreCase": false
-        }
-      },
-      "config": {
-        "enforceCheckpoint": false,
-        "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": 2381.3815406732433,
-        "posY": 725.743483978753,
-        "name": null,
-        "notes": null
-      },
-      "rolledBack": false
-    },
-    {
-      "type": "docLookup",
-      "id": "876ba69d-348b-4a3f-baa2-740b161d2663",
-      "settings": {
-        "leftFields": {
-          "include": [
-            "employeeno"
-          ],
-          "exclude": [],
-          "unspecifiedIndex": -1
         },
-        "fail": false,
-        "rightFields": {
-          "include": [
-            "employeeno"
-          ],
-          "exclude": [],
-          "unspecifiedIndex": -1
-        },
-        "keepKeys": false,
-        "matchType": "EXACT",
-        "valueFields": {
-          "include": [
-            "jobrole"
-          ],
-          "exclude": [],
-          "unspecifiedIndex": -1
-        },
-        "target": ""
-      },
-      "config": {
-        "enforceCheckpoint": false,
-        "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": 1940.330970772876,
-        "posY": 1849.1075058071578,
-        "name": null,
-        "notes": null
-      },
-      "rolledBack": false
-    },
-    {
-      "type": "docFilter",
-      "id": "5b06a4d7-f67e-4b1f-8c9f-86132130ee5a",
-      "settings": {
-        "all": false,
-        "filter": {
-          "conditions": [
-            {
-              "field": "jobrole",
-              "operator": "EQUALS",
-              "value": "Manager",
-              "ignoreCase": false
+        {
+            "type": "query",
+            "id": "36595a9f-0ca1-42f4-8938-3d8eb351c7d5",
+            "settings": {
+                "query": {
+                    "query": "SELECT involvement, AVG(monthlyincome) as salary\nFROM {?0?}\nGROUP BY involvement\nORDER BY AVG(monthlyincome) DESC\n",
+                    "queryLanguage": "SQL"
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 3543.809507323553,
+                "posY": 872.2786373724555,
+                "name": null,
+                "notes": null
             }
-          ],
-          "targetMode": "EXACT",
-          "combineWithOr": false
         },
-        "rejectedHandler": "fail",
-        "pointer": "",
-        "negate": false
-      },
-      "config": {
-        "enforceCheckpoint": false,
-        "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": 2679.010161765027,
-        "posY": 2079.8240808548558,
-        "name": "Verify Documents",
-        "notes": "Ensures only managers can submit financial reports."
-      },
-      "rolledBack": false
-    },
-    {
-      "type": "docCreate",
-      "id": "6baa5e0c-69f8-4b2e-b3a4-a0fed1651b77",
-      "settings": {
-        "json": "[\n  {\n    \"employeeno\": 1,\n    \"title\": \"Project Update\",\n    \"summary\": \"Completed phase 1 of development.\",\n    \"tasks\": [\"Research\", \"Prototype\", \"Testing\"]\n  },\n  {\n    \"employeeno\": 23,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"January\", \"amount\": 12000}\n  },\n  {\n    \"employeeno\": 3,\n    \"title\": \"Client Meeting\",\n    \"summary\": \"Discussed project scope with client X.\",\n    \"next_steps\": [\"Proposal update\", \"Budget review\"]\n  },\n  {\n    \"employeeno\": 23,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"February\", \"amount\": 15500}\n  },\n  {\n    \"employeeno\": 5,\n    \"title\": \"Code Review\",\n    \"summary\": \"Reviewed module A, minor refactoring needed.\",\n    \"issues_found\": 3\n  },\n  {\n    \"employeeno\": 32,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"March\", \"amount\": 14250}\n  },\n  {\n    \"employeeno\": 7,\n    \"title\": \"Market Analysis\",\n    \"summary\": \"Competitor pricing reviewed.\",\n    \"findings\": [\"Slightly higher costs\", \"Better customer support\"]\n  },\n  {\n    \"employeeno\": 32,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"April\", \"amount\": 18000}\n  },\n  {\n    \"employeeno\": 9,\n    \"title\": \"Performance Review\",\n    \"summary\": \"Productivity increased by 10%.\",\n    \"areas_for_improvement\": [\"Time management\"]\n  },\n  {\n    \"employeeno\": 23,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"May\", \"amount\": 17000}\n  },\n  {\n    \"employeeno\": 11,\n    \"title\": \"Incident Report\",\n    \"summary\": \"System outage for 2 hours.\",\n    \"cause\": \"Database overload\"\n  },\n  {\n    \"employeeno\": 23,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"June\", \"amount\": 19000}\n  },\n  {\n    \"employeeno\": 13,\n    \"title\": \"Training Session\",\n    \"summary\": \"Conducted cybersecurity awareness training.\",\n    \"participants\": 15\n  },\n  {\n    \"employeeno\": 15,\n    \"title\": \"Bug Report\",\n    \"summary\": \"Issue with login system.\",\n    \"priority\": \"High\"\n  },\n  {\n    \"employeeno\": 32,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"August\", \"amount\": 17500}\n  },\n  {\n    \"employeeno\": 17,\n    \"title\": \"Customer Feedback\",\n    \"summary\": \"Users appreciate new UI, request more features.\",\n    \"suggestions\": [\"Dark mode\", \"Mobile app improvements\"]\n  },\n  {\n    \"employeeno\": 42,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"September\", \"amount\": 18500}\n  },\n  {\n    \"employeeno\": 19,\n    \"title\": \"Supply Chain Update\",\n    \"summary\": \"Delays in component delivery.\",\n    \"expected_resolution\": \"Next quarter\"\n  }\n]"
-      },
-      "config": {
-        "enforceCheckpoint": false,
-        "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": -38.147902983254994,
-        "posY": 1832.6757485142637,
-        "name": "Read Reports",
-        "notes": null
-      },
-      "rolledBack": false
-    },
-    {
-      "type": "relSort",
-      "id": "398a954e-18cb-4af4-8db2-39a7f2af773a",
-      "settings": {
-        "limit": 100,
-        "skip": 0,
-        "sort": []
-      },
-      "config": {
-        "enforceCheckpoint": false,
-        "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": 592.6760348597567,
-        "posY": 611.3976470292548,
-        "name": "Sort / Limit Rows",
-        "notes": null
-      },
-      "rolledBack": false
-    },
-    {
-      "type": "reorderCols",
-      "id": "13c58d61-3003-4ed5-a771-cf4edd89fa3b",
-      "settings": {
-        "mode": "fieldSelect",
-        "index": "",
-        "regex": "",
-        "cols": {
-          "include": [
-            "_key",
-            "employeeno",
-            "gender",
-            "education",
-            "age",
-            "monthlyincome",
-            "jobrole",
-            "jobinvolvement"
-          ],
-          "exclude": [],
-          "unspecifiedIndex": -1
-        }
-      },
-      "config": {
-        "enforceCheckpoint": false,
-        "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": 1871.7058242787557,
-        "posY": 719.9099670037285,
-        "name": null,
-        "notes": null
-      },
-      "rolledBack": false
-    },
-    {
-      "type": "relFilter",
-      "id": "c927fdc7-4535-44ca-b98a-5142adc3e6cb",
-      "settings": {
-        "filter": {
-          "conditions": [
-            {
-              "field": "role",
-              "operator": "REGEX",
-              "value": "Research.*",
-              "ignoreCase": false
+        {
+            "type": "varToDoc",
+            "id": "a6adeff0-db2e-4081-bf4c-8859732de369",
+            "settings": {
+                "includeWf": false
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 3559.722200217527,
+                "posY": 2359.3951733545487,
+                "name": null,
+                "notes": null
             }
-          ],
-          "targetMode": "EXACT",
-          "combineWithOr": false
         },
-        "rejectedHandler": "store",
-        "negate": false
-      },
-      "config": {
-        "enforceCheckpoint": false,
+        {
+            "type": "docFilter",
+            "id": "eb39cdf2-2bec-4dac-b2da-e5783022044f",
+            "settings": {
+                "all": false,
+                "filter": {
+                    "conditions": [
+                        {
+                            "field": "title",
+                            "operator": "EQUALS",
+                            "value": "Financial Report",
+                            "ignoreCase": false
+                        }
+                    ],
+                    "targetMode": "EXACT",
+                    "combineWithOr": false
+                },
+                "rejectedHandler": "store",
+                "pointer": "",
+                "negate": false
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 811.1093699245097,
+                "posY": 1849.071794361381,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relLoad",
+            "id": "d307d86b-b9ad-451f-80b0-0793896006fa",
+            "settings": {
+                "drop": true,
+                "adapter": "hsqldb_disk",
+                "keepPk": false,
+                "create": true,
+                "pkCols": {
+                    "include": [
+                        "employeeno"
+                    ],
+                    "exclude": [],
+                    "unspecifiedIndex": -1
+                },
+                "table": {
+                    "namespace": "demo",
+                    "name": "researcher"
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 3541.789270602147,
+                "posY": 560.0560334369767,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relLoad",
+            "id": "333ea1ff-f1d6-4da7-8b1c-54992d9488e6",
+            "settings": {
+                "drop": true,
+                "adapter": "hsqldb_disk",
+                "keepPk": true,
+                "create": true,
+                "pkCols": {
+                    "include": [],
+                    "exclude": [],
+                    "unspecifiedIndex": -1
+                },
+                "table": {
+                    "namespace": "demo",
+                    "name": "revenue"
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 3548.0648713692367,
+                "posY": 1967.8628847281293,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "docToRel",
+            "id": "9f8d7aaa-45a7-4bb9-8960-f6e6b9bc6aa9",
+            "settings": {
+                "mode": "manual",
+                "handleMissing": "fail",
+                "unspecified": false,
+                "columns": {
+                    "casts": [
+                        {
+                            "source": "revenue.month",
+                            "target": "month",
+                            "type": "VARCHAR",
+                            "nullable": true,
+                            "collectionsType": "",
+                            "precision": 25,
+                            "scale": null,
+                            "dimension": -1,
+                            "cardinality": -1
+                        },
+                        {
+                            "source": "revenue.amount",
+                            "target": "amount",
+                            "type": "BIGINT",
+                            "nullable": true,
+                            "collectionsType": "",
+                            "precision": null,
+                            "scale": null,
+                            "dimension": -1,
+                            "cardinality": -1
+                        }
+                    ]
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 2667.557695188522,
+                "posY": 1775.3369626707938,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relExtract",
+            "id": "034edd21-61c0-4fae-9120-a80f58fc9a9d",
+            "settings": {
+                "table": {
+                    "namespace": "public",
+                    "name": "emp"
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": -201.54240528771737,
+                "posY": 584.6141543928453,
+                "name": "Read Employee Table",
+                "notes": null
+            }
+        },
+        {
+            "type": "renameCols",
+            "id": "2f7b4a2f-e58a-4544-a8b1-b9a435671218",
+            "settings": {
+                "rename": {
+                    "rules": [
+                        {
+                            "source": "job",
+                            "replacement": ""
+                        }
+                    ],
+                    "mode": "REGEX",
+                    "ignoreCase": false
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 2381.3815406732433,
+                "posY": 725.743483978753,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "docLookup",
+            "id": "876ba69d-348b-4a3f-baa2-740b161d2663",
+            "settings": {
+                "leftFields": {
+                    "include": [
+                        "employeeno"
+                    ],
+                    "exclude": [],
+                    "unspecifiedIndex": -1
+                },
+                "fail": false,
+                "rightFields": {
+                    "include": [
+                        "employeeno"
+                    ],
+                    "exclude": [],
+                    "unspecifiedIndex": -1
+                },
+                "keepKeys": false,
+                "matchType": "EXACT",
+                "valueFields": {
+                    "include": [
+                        "jobrole"
+                    ],
+                    "exclude": [],
+                    "unspecifiedIndex": -1
+                },
+                "target": ""
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 1940.330970772876,
+                "posY": 1849.1075058071578,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "docFilter",
+            "id": "5b06a4d7-f67e-4b1f-8c9f-86132130ee5a",
+            "settings": {
+                "all": false,
+                "filter": {
+                    "conditions": [
+                        {
+                            "field": "jobrole",
+                            "operator": "EQUALS",
+                            "value": "Manager",
+                            "ignoreCase": false
+                        }
+                    ],
+                    "targetMode": "EXACT",
+                    "combineWithOr": false
+                },
+                "rejectedHandler": "fail",
+                "pointer": "",
+                "negate": false
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 2679.010161765027,
+                "posY": 2079.8240808548558,
+                "name": "Verify Documents",
+                "notes": "Ensures only managers can submit financial reports."
+            }
+        },
+        {
+            "type": "docCreate",
+            "id": "6baa5e0c-69f8-4b2e-b3a4-a0fed1651b77",
+            "settings": {
+                "json": "[\n  {\n    \"employeeno\": 1,\n    \"title\": \"Project Update\",\n    \"summary\": \"Completed phase 1 of development.\",\n    \"tasks\": [\"Research\", \"Prototype\", \"Testing\"]\n  },\n  {\n    \"employeeno\": 23,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"January\", \"amount\": 12000}\n  },\n  {\n    \"employeeno\": 3,\n    \"title\": \"Client Meeting\",\n    \"summary\": \"Discussed project scope with client X.\",\n    \"next_steps\": [\"Proposal update\", \"Budget review\"]\n  },\n  {\n    \"employeeno\": 23,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"February\", \"amount\": 15500}\n  },\n  {\n    \"employeeno\": 5,\n    \"title\": \"Code Review\",\n    \"summary\": \"Reviewed module A, minor refactoring needed.\",\n    \"issues_found\": 3\n  },\n  {\n    \"employeeno\": 32,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"March\", \"amount\": 14250}\n  },\n  {\n    \"employeeno\": 7,\n    \"title\": \"Market Analysis\",\n    \"summary\": \"Competitor pricing reviewed.\",\n    \"findings\": [\"Slightly higher costs\", \"Better customer support\"]\n  },\n  {\n    \"employeeno\": 32,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"April\", \"amount\": 18000}\n  },\n  {\n    \"employeeno\": 9,\n    \"title\": \"Performance Review\",\n    \"summary\": \"Productivity increased by 10%.\",\n    \"areas_for_improvement\": [\"Time management\"]\n  },\n  {\n    \"employeeno\": 23,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"May\", \"amount\": 17000}\n  },\n  {\n    \"employeeno\": 11,\n    \"title\": \"Incident Report\",\n    \"summary\": \"System outage for 2 hours.\",\n    \"cause\": \"Database overload\"\n  },\n  {\n    \"employeeno\": 23,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"June\", \"amount\": 19000}\n  },\n  {\n    \"employeeno\": 13,\n    \"title\": \"Training Session\",\n    \"summary\": \"Conducted cybersecurity awareness training.\",\n    \"participants\": 15\n  },\n  {\n    \"employeeno\": 15,\n    \"title\": \"Bug Report\",\n    \"summary\": \"Issue with login system.\",\n    \"priority\": \"High\"\n  },\n  {\n    \"employeeno\": 32,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"August\", \"amount\": 17500}\n  },\n  {\n    \"employeeno\": 17,\n    \"title\": \"Customer Feedback\",\n    \"summary\": \"Users appreciate new UI, request more features.\",\n    \"suggestions\": [\"Dark mode\", \"Mobile app improvements\"]\n  },\n  {\n    \"employeeno\": 42,\n    \"title\": \"Financial Report\",\n    \"revenue\": {\"month\": \"September\", \"amount\": 18500}\n  },\n  {\n    \"employeeno\": 19,\n    \"title\": \"Supply Chain Update\",\n    \"summary\": \"Delays in component delivery.\",\n    \"expected_resolution\": \"Next quarter\"\n  }\n]"
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": -38.147902983254994,
+                "posY": 1832.6757485142637,
+                "name": "Read Reports",
+                "notes": null
+            }
+        },
+        {
+            "type": "relSort",
+            "id": "398a954e-18cb-4af4-8db2-39a7f2af773a",
+            "settings": {
+                "limit": 100,
+                "skip": 0,
+                "sort": []
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 592.6760348597567,
+                "posY": 611.3976470292548,
+                "name": "Sort / Limit Rows",
+                "notes": null
+            }
+        },
+        {
+            "type": "reorderCols",
+            "id": "13c58d61-3003-4ed5-a771-cf4edd89fa3b",
+            "settings": {
+                "mode": "fieldSelect",
+                "index": "",
+                "regex": "",
+                "cols": {
+                    "include": [
+                        "_key",
+                        "employeeno",
+                        "gender",
+                        "education",
+                        "age",
+                        "monthlyincome",
+                        "jobrole",
+                        "jobinvolvement"
+                    ],
+                    "exclude": [],
+                    "unspecifiedIndex": -1
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 1871.7058242787557,
+                "posY": 719.9099670037285,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relFilter",
+            "id": "c927fdc7-4535-44ca-b98a-5142adc3e6cb",
+            "settings": {
+                "filter": {
+                    "conditions": [
+                        {
+                            "field": "role",
+                            "operator": "REGEX",
+                            "value": "Research.*",
+                            "ignoreCase": false
+                        }
+                    ],
+                    "targetMode": "EXACT",
+                    "combineWithOr": false
+                },
+                "rejectedHandler": "store",
+                "negate": false
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 2930.331439331817,
+                "posY": 729.6247466464313,
+                "name": null,
+                "notes": "Filters out researchers"
+            }
+        }
+    ],
+    "edges": [
+        {
+            "fromId": "7cf997a2-1d29-446d-b6d9-c9aab9e29c6f",
+            "toId": "dda72cfb-b65b-45fb-9bae-b1514dda1838",
+            "fromPort": 0,
+            "toPort": 1,
+            "isControl": false
+        },
+        {
+            "fromId": "876ba69d-348b-4a3f-baa2-740b161d2663",
+            "toId": "5b06a4d7-f67e-4b1f-8c9f-86132130ee5a",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "9f8d7aaa-45a7-4bb9-8960-f6e6b9bc6aa9",
+            "toId": "333ea1ff-f1d6-4da7-8b1c-54992d9488e6",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "13c58d61-3003-4ed5-a771-cf4edd89fa3b",
+            "toId": "2f7b4a2f-e58a-4544-a8b1-b9a435671218",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "2f7b4a2f-e58a-4544-a8b1-b9a435671218",
+            "toId": "c927fdc7-4535-44ca-b98a-5142adc3e6cb",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "eb39cdf2-2bec-4dac-b2da-e5783022044f",
+            "toId": "876ba69d-348b-4a3f-baa2-740b161d2663",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "5b06a4d7-f67e-4b1f-8c9f-86132130ee5a",
+            "toId": "333ea1ff-f1d6-4da7-8b1c-54992d9488e6",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": true
+        },
+        {
+            "fromId": "034edd21-61c0-4fae-9120-a80f58fc9a9d",
+            "toId": "398a954e-18cb-4af4-8db2-39a7f2af773a",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "7cf997a2-1d29-446d-b6d9-c9aab9e29c6f",
+            "toId": "876ba69d-348b-4a3f-baa2-740b161d2663",
+            "fromPort": 0,
+            "toPort": 1,
+            "isControl": false
+        },
+        {
+            "fromId": "5b06a4d7-f67e-4b1f-8c9f-86132130ee5a",
+            "toId": "a6adeff0-db2e-4081-bf4c-8859732de369",
+            "fromPort": 1,
+            "toPort": 0,
+            "isControl": true
+        },
+        {
+            "fromId": "c927fdc7-4535-44ca-b98a-5142adc3e6cb",
+            "toId": "d307d86b-b9ad-451f-80b0-0793896006fa",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "398a954e-18cb-4af4-8db2-39a7f2af773a",
+            "toId": "dda72cfb-b65b-45fb-9bae-b1514dda1838",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "6baa5e0c-69f8-4b2e-b3a4-a0fed1651b77",
+            "toId": "eb39cdf2-2bec-4dac-b2da-e5783022044f",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "dda72cfb-b65b-45fb-9bae-b1514dda1838",
+            "toId": "13c58d61-3003-4ed5-a771-cf4edd89fa3b",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "c927fdc7-4535-44ca-b98a-5142adc3e6cb",
+            "toId": "36595a9f-0ca1-42f4-8938-3d8eb351c7d5",
+            "fromPort": 1,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "876ba69d-348b-4a3f-baa2-740b161d2663",
+            "toId": "9f8d7aaa-45a7-4bb9-8960-f6e6b9bc6aa9",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        }
+    ],
+    "config": {
+        "preferredStores": {
+            "RELATIONAL": "hsqldb_disk",
+            "DOCUMENT": "hsqldb_disk",
+            "GRAPH": "hsqldb_disk"
+        },
+        "fusionEnabled": false,
+        "pipelineEnabled": false,
         "timeoutSeconds": 0,
-        "preferredStores": null,
-        "commonType": "NONE",
-        "controlStateMerger": "AND_AND"
-      },
-      "rendering": {
-        "posX": 2930.331439331817,
-        "posY": 729.6247466464313,
-        "name": null,
-        "notes": "Filters out researchers"
-      },
-      "rolledBack": false
-    }
-  ],
-  "edges": [
-    {
-      "fromId": "7cf997a2-1d29-446d-b6d9-c9aab9e29c6f",
-      "toId": "dda72cfb-b65b-45fb-9bae-b1514dda1838",
-      "fromPort": 0,
-      "toPort": 1,
-      "isControl": false
+        "dropUnusedCheckpoints": false,
+        "maxWorkers": 1,
+        "pipelineQueueCapacity": 1000,
+        "logCapacity": 100
     },
-    {
-      "fromId": "876ba69d-348b-4a3f-baa2-740b161d2663",
-      "toId": "5b06a4d7-f67e-4b1f-8c9f-86132130ee5a",
-      "fromPort": 0,
-      "toPort": 0,
-      "isControl": false
-    },
-    {
-      "fromId": "9f8d7aaa-45a7-4bb9-8960-f6e6b9bc6aa9",
-      "toId": "333ea1ff-f1d6-4da7-8b1c-54992d9488e6",
-      "fromPort": 0,
-      "toPort": 0,
-      "isControl": false
-    },
-    {
-      "fromId": "13c58d61-3003-4ed5-a771-cf4edd89fa3b",
-      "toId": "2f7b4a2f-e58a-4544-a8b1-b9a435671218",
-      "fromPort": 0,
-      "toPort": 0,
-      "isControl": false
-    },
-    {
-      "fromId": "2f7b4a2f-e58a-4544-a8b1-b9a435671218",
-      "toId": "c927fdc7-4535-44ca-b98a-5142adc3e6cb",
-      "fromPort": 0,
-      "toPort": 0,
-      "isControl": false
-    },
-    {
-      "fromId": "eb39cdf2-2bec-4dac-b2da-e5783022044f",
-      "toId": "876ba69d-348b-4a3f-baa2-740b161d2663",
-      "fromPort": 0,
-      "toPort": 0,
-      "isControl": false
-    },
-    {
-      "fromId": "5b06a4d7-f67e-4b1f-8c9f-86132130ee5a",
-      "toId": "333ea1ff-f1d6-4da7-8b1c-54992d9488e6",
-      "fromPort": 0,
-      "toPort": 0,
-      "isControl": true
-    },
-    {
-      "fromId": "034edd21-61c0-4fae-9120-a80f58fc9a9d",
-      "toId": "398a954e-18cb-4af4-8db2-39a7f2af773a",
-      "fromPort": 0,
-      "toPort": 0,
-      "isControl": false
-    },
-    {
-      "fromId": "7cf997a2-1d29-446d-b6d9-c9aab9e29c6f",
-      "toId": "876ba69d-348b-4a3f-baa2-740b161d2663",
-      "fromPort": 0,
-      "toPort": 1,
-      "isControl": false
-    },
-    {
-      "fromId": "5b06a4d7-f67e-4b1f-8c9f-86132130ee5a",
-      "toId": "a6adeff0-db2e-4081-bf4c-8859732de369",
-      "fromPort": 1,
-      "toPort": 0,
-      "isControl": true
-    },
-    {
-      "fromId": "c927fdc7-4535-44ca-b98a-5142adc3e6cb",
-      "toId": "d307d86b-b9ad-451f-80b0-0793896006fa",
-      "fromPort": 0,
-      "toPort": 0,
-      "isControl": false
-    },
-    {
-      "fromId": "398a954e-18cb-4af4-8db2-39a7f2af773a",
-      "toId": "dda72cfb-b65b-45fb-9bae-b1514dda1838",
-      "fromPort": 0,
-      "toPort": 0,
-      "isControl": false
-    },
-    {
-      "fromId": "6baa5e0c-69f8-4b2e-b3a4-a0fed1651b77",
-      "toId": "eb39cdf2-2bec-4dac-b2da-e5783022044f",
-      "fromPort": 0,
-      "toPort": 0,
-      "isControl": false
-    },
-    {
-      "fromId": "dda72cfb-b65b-45fb-9bae-b1514dda1838",
-      "toId": "13c58d61-3003-4ed5-a771-cf4edd89fa3b",
-      "fromPort": 0,
-      "toPort": 0,
-      "isControl": false
-    },
-    {
-      "fromId": "c927fdc7-4535-44ca-b98a-5142adc3e6cb",
-      "toId": "36595a9f-0ca1-42f4-8938-3d8eb351c7d5",
-      "fromPort": 1,
-      "toPort": 0,
-      "isControl": false
-    },
-    {
-      "fromId": "876ba69d-348b-4a3f-baa2-740b161d2663",
-      "toId": "9f8d7aaa-45a7-4bb9-8960-f6e6b9bc6aa9",
-      "fromPort": 0,
-      "toPort": 0,
-      "isControl": false
-    }
-  ],
-  "config": {
-    "preferredStores": {
-      "RELATIONAL": "hsqldb_disk",
-      "DOCUMENT": "hsqldb_disk",
-      "GRAPH": "hsqldb_disk"
-    },
-    "fusionEnabled": false,
-    "pipelineEnabled": false,
-    "timeoutSeconds": 0,
-    "dropUnusedCheckpoints": false,
-    "maxWorkers": 1,
-    "pipelineQueueCapacity": 1000,
-    "logCapacity": 100
-  },
-  "variables": {},
-  "format_version": "0.0.1"
+    "variables": {},
+    "format_version": "0.0.1"
 }

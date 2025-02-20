@@ -1,0 +1,311 @@
+{
+    "activities": [
+        {
+            "type": "surrogateKey",
+            "id": "db186e05-b89b-4f1b-a69f-e14aa3dd2b15",
+            "settings": {
+                "name": "sk",
+                "startKey": 0,
+                "generator": "auto"
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 580.1660746564104,
+                "posY": -336.8410294666652,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relLoad",
+            "id": "94917981-8701-4d05-a337-296578910944",
+            "settings": {
+                "drop": false,
+                "adapter": "hsqldb_disk",
+                "keepPk": false,
+                "create": false,
+                "pkCols": {
+                    "include": [
+                        "sk"
+                    ],
+                    "exclude": [],
+                    "unspecifiedIndex": -1
+                },
+                "table": {
+                    "namespace": "public",
+                    "name": "random_table"
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 4121.953569033254,
+                "posY": 261.0412054251326,
+                "name": null,
+                "notes": "Append rows to the existing table"
+            }
+        },
+        {
+            "type": "relValues",
+            "id": "6baf7477-d7b6-478e-afac-707f70cef3d9",
+            "settings": {
+                "fixSeed": false,
+                "rowCount": 5
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 2927,
+                "posY": 378,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relValues",
+            "id": "6038b5c5-ac9f-47e6-ab86-c65c4f58dd4e",
+            "settings": {
+                "fixSeed": false,
+                "rowCount": 3
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 100.79329469487145,
+                "posY": -333.4867887987165,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "query",
+            "id": "efefe092-53eb-4cbe-b022-9526ab98854d",
+            "settings": {
+                "query": {
+                    "query": "SELECT max(sk) + 1 as nextkey FROM {?0?}",
+                    "queryLanguage": "SQL"
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 2347,
+                "posY": 88,
+                "name": null,
+                "notes": "Get the value of the next key"
+            }
+        },
+        {
+            "type": "relLoad",
+            "id": "894dea65-b1e1-41c1-88cf-148411405e18",
+            "settings": {
+                "drop": true,
+                "adapter": "hsqldb_disk",
+                "keepPk": false,
+                "create": true,
+                "pkCols": {
+                    "include": [
+                        "sk"
+                    ],
+                    "exclude": [],
+                    "unspecifiedIndex": -1
+                },
+                "table": {
+                    "namespace": "public",
+                    "name": "random_table"
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 1066.2473359538467,
+                "posY": -336.841029466665,
+                "name": null,
+                "notes": "Create and populate the initial table."
+            }
+        },
+        {
+            "type": "surrogateKey",
+            "id": "0dd22e46-2443-4ceb-b8c6-26d0e02eab38",
+            "settings": {
+                "name": "sk",
+                "startKey": {
+                    "$ref": "nextkey",
+                    "$default": 1
+                },
+                "generator": "auto"
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 3509.8533333333335,
+                "posY": 271,
+                "name": null,
+                "notes": "Start auto-incrementation at the value of the \"nextkey\" variable"
+            }
+        },
+        {
+            "type": "relExtract",
+            "id": "14b90d97-657b-423d-bd30-d5db44fe0200",
+            "settings": {
+                "table": {
+                    "namespace": "public",
+                    "name": "random_table"
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 1767,
+                "posY": 88,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relToVar",
+            "id": "d285a6af-5049-4c3a-9992-4dc315ea669c",
+            "settings": {
+                "varName": "row",
+                "allRows": false,
+                "varPrefix": "",
+                "singleVariable": false,
+                "columns": {
+                    "include": [
+                        "nextkey"
+                    ],
+                    "exclude": [],
+                    "unspecifiedIndex": 0
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND"
+            },
+            "rendering": {
+                "posX": 2927,
+                "posY": 88,
+                "name": null,
+                "notes": null
+            }
+        }
+    ],
+    "edges": [
+        {
+            "fromId": "d285a6af-5049-4c3a-9992-4dc315ea669c",
+            "toId": "0dd22e46-2443-4ceb-b8c6-26d0e02eab38",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": true
+        },
+        {
+            "fromId": "14b90d97-657b-423d-bd30-d5db44fe0200",
+            "toId": "efefe092-53eb-4cbe-b022-9526ab98854d",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "894dea65-b1e1-41c1-88cf-148411405e18",
+            "toId": "14b90d97-657b-423d-bd30-d5db44fe0200",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": true
+        },
+        {
+            "fromId": "efefe092-53eb-4cbe-b022-9526ab98854d",
+            "toId": "d285a6af-5049-4c3a-9992-4dc315ea669c",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "6038b5c5-ac9f-47e6-ab86-c65c4f58dd4e",
+            "toId": "db186e05-b89b-4f1b-a69f-e14aa3dd2b15",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "6baf7477-d7b6-478e-afac-707f70cef3d9",
+            "toId": "0dd22e46-2443-4ceb-b8c6-26d0e02eab38",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "db186e05-b89b-4f1b-a69f-e14aa3dd2b15",
+            "toId": "894dea65-b1e1-41c1-88cf-148411405e18",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "0dd22e46-2443-4ceb-b8c6-26d0e02eab38",
+            "toId": "94917981-8701-4d05-a337-296578910944",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        }
+    ],
+    "config": {
+        "preferredStores": {
+            "GRAPH": "hsqldb_disk",
+            "RELATIONAL": "hsqldb_disk",
+            "DOCUMENT": "hsqldb_disk"
+        },
+        "fusionEnabled": false,
+        "pipelineEnabled": false,
+        "timeoutSeconds": 0,
+        "dropUnusedCheckpoints": false,
+        "maxWorkers": 1,
+        "pipelineQueueCapacity": 1000,
+        "logCapacity": 100
+    },
+    "variables": {},
+    "format_version": "0.0.1"
+}

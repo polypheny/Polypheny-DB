@@ -42,7 +42,7 @@ public class ActivityModel {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     ActivityState state;
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    boolean rolledBack;
+    Boolean rolledBack;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     List<TypePreviewModel> inTypePreview;
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -85,7 +85,7 @@ public class ActivityModel {
         this.invalidSettings = null;
         this.variables = null;
         this.executionInfo = null;
-        this.rolledBack = false;
+        this.rolledBack = null;
     }
 
 

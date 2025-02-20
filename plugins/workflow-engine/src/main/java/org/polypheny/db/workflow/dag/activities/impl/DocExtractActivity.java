@@ -64,7 +64,7 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
         outPorts = { @OutPort(type = PortType.DOC, description = "The extracted collection of documents.") },
         shortDescription = "Extracts an existing collection from Polypheny and outputs its documents.")
 
-@EntitySetting(key = COLL_KEY, displayName = "Collection", dataModel = DataModel.DOCUMENT, mustExist = true,
+@EntitySetting(key = COLL_KEY, displayName = "Collection", dataModel = DataModel.DOCUMENT, mustExist = false,
         shortDescription = "The collection to extract, identified by namespace and name.")
 
 @SuppressWarnings("unused")

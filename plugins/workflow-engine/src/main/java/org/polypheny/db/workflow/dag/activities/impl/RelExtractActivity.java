@@ -63,7 +63,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
         outPorts = { @OutPort(type = PortType.REL, description = "The extracted table.") },
         shortDescription = "Extracts an existing table from Polypheny and outputs its rows.")
 
-@EntitySetting(key = TABLE_KEY, displayName = "Table", dataModel = DataModel.RELATIONAL, mustExist = true,
+@EntitySetting(key = TABLE_KEY, displayName = "Table", dataModel = DataModel.RELATIONAL, mustExist = false,
         shortDescription = "The table to extract, identified by namespace and name.")
 
 @SuppressWarnings("unused")

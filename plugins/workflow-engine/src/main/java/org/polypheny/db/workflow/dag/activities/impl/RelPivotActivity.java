@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -181,9 +180,13 @@ public class RelPivotActivity implements Activity {
 
             valueCounts.computeIfAbsent( group, k -> new HashMap<>() ).merge( pivot, 1, Integer::sum );
             Map<String, PolyValue> valueMap = reducedValues.computeIfAbsent( group, k -> new HashMap<>() );
-            switch ( agg ) {
-                case FIRST -> valueMap.putIfAbsent( pivot, value );
-                case SUM, AVG -> valueMap.merge( pivot, value, ( v1, v2 ) -> v1.asNumber().plus( v2.asNumber() ) );
+            try {
+                switch ( agg ) {
+                    case FIRST -> valueMap.putIfAbsent( pivot, value );
+                    case SUM, AVG -> valueMap.merge( pivot, value, ( v1, v2 ) -> v1.asNumber().plus( v2.asNumber() ) );
+                }
+            } catch ( NullPointerException e ) {
+                throw new GenericRuntimeException( "NullPointerException in row: " + row, e );
             }
         }
     }
@@ -198,7 +201,7 @@ public class RelPivotActivity implements Activity {
             List<PolyValue> row = new ArrayList<>( rowSize );
             List<PolyValue> group = entry.getKey();
             Map<String, PolyValue> reducedMap = entry.getValue();
-            row.addAll( entry.getKey() );
+            row.addAll( group );
 
             Map<String, Integer> countMap = valueCounts.get( group );
             for ( String pivot : columns ) {
@@ -244,10 +247,7 @@ public class RelPivotActivity implements Activity {
             builder.add( pivot, null, valueType ).nullable( true );
         }
         AlgDataType outType = builder.uniquify().build();
-        Optional<String> invalid = ActivityUtils.findInvalidFieldName( outType.getFieldNames() );
-        if ( invalid.isPresent() ) {
-            throw new GenericRuntimeException( "Invalid column name: " + invalid.get() );
-        }
+        ActivityUtils.validateFieldNames( outType.getFieldNames() );
         return outType;
     }
 
