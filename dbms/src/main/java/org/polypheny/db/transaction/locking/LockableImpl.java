@@ -95,11 +95,6 @@ public class LockableImpl implements Lockable {
     }
 
 
-    public String test() {
-        return "";
-    }
-
-
     public void release( @NotNull Transaction transaction ) {
         concurrencyLock.lock();
         try {
