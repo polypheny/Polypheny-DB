@@ -99,6 +99,12 @@ public class LockableImpl implements Lockable {
         concurrencyLock.lock();
         try {
             if ( isExclusive ) {
+                if ( !owners.containsKey( transaction ) ) {
+                    throw new AssertionError( "Expected to be the owner of the exclusive lock" );
+                }
+                if ( owners.get( transaction ) != 1 ) {
+                    throw new AssertionError( "Expected exclusive lock count to be one" );
+                }
                 owners.clear();
                 isExclusive = false;
             }
