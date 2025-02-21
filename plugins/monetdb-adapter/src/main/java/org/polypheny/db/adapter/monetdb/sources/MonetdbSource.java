@@ -76,7 +76,6 @@ public class MonetdbSource extends AbstractJdbcSource {
         if ( log.isDebugEnabled() ) {
             log.debug( "JDBC Connection URL: {}", connectionUrl );
         }
-        dataSource.setDefaultAutoCommit( false );
         return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
     }
 
