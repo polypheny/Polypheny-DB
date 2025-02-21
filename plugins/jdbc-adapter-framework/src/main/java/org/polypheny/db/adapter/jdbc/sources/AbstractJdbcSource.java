@@ -100,7 +100,6 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
         }
         dataSource.setUsername( settings.get( "username" ) );
         dataSource.setPassword( settings.get( "password" ) );
-        dataSource.setDefaultAutoCommit( false );
         dataSource.setDriverClassLoader( PolyPluginManager.getMainClassLoader() );
         switch ( settings.get( "transactionIsolation" ) ) {
             case "SERIALIZABLE":
