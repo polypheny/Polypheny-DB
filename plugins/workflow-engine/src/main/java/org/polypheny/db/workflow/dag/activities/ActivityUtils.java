@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -44,11 +45,13 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidInputException;
@@ -235,6 +238,27 @@ public class ActivityUtils {
             return PolyBoolean.of( str.equals( "true" ) || str.equals( "1" ) );
         }
         return PolyValue.getConverter( type ).apply( polyString );
+    }
+
+
+    public static PolyDictionary docToDict( PolyDocument doc ) {
+        PolyDictionary dict = new PolyDictionary();
+        for ( Entry<PolyString, PolyValue> entry : doc.entrySet() ) {
+            PolyValue value = entry.getValue();
+            if ( value.isList() ) {
+                PolyList<PolyValue> list = value.asList();
+                for ( int i = 0; i < list.size(); i++ ) {
+                    PolyValue item = list.get( i );
+                    if ( item instanceof PolyDocument ) {
+                        list.set( i, item.toPolyJson() );
+                    }
+                }
+            } else if ( value.isDocument() ) {
+                value = value.toPolyJson();
+            }
+            dict.put( entry.getKey(), value );
+        }
+        return dict;
     }
 
 

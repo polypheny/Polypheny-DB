@@ -46,6 +46,7 @@ import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.FieldRenameSetting;
 import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
 import org.polypheny.db.workflow.dag.annotations.FilterSetting;
+import org.polypheny.db.workflow.dag.annotations.GraphMapSetting;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.annotations.QuerySetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
@@ -212,6 +213,10 @@ public abstract class SettingDef {
                 settings.add( new FilterSettingDef( a ) );
             } else if ( annotation instanceof FilterSetting.List a ) {
                 Arrays.stream( a.value() ).forEach( el -> settings.add( new FilterSettingDef( el ) ) );
+            } else if ( annotation instanceof GraphMapSetting a ) {
+                settings.add( new GraphMapSettingDef( a ) );
+            } else if ( annotation instanceof GraphMapSetting.List a ) {
+                Arrays.stream( a.value() ).forEach( el -> settings.add( new GraphMapSettingDef( el ) ) );
             }
         }
         return settings;
@@ -246,6 +251,7 @@ public abstract class SettingDef {
         FIELD_RENAME,
         CAST,
         FIELD_SELECT,
+        GRAPH_MAP,
         FILTER
     }
 

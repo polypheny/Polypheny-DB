@@ -133,11 +133,11 @@ public class ActivityWrapper {
                 TypePreview preview = inTypePreviews.get( i );
                 InPortDef port = def.getInPort( i );
                 if ( preview.isMissing() && !port.isOptional() ) {
-                    throw new InvalidInputException( "Required input is missing", inTypePreviews.indexOf( preview ) );
+                    throw new InvalidInputException( "Required input is missing", i );
                 }
                 if ( !port.getType().couldBeCompatibleWith( preview ) ) {
                     throw new InvalidInputException( "Input type " + preview.getDataModel() + " is incompatible with defined port type " + port.getType(),
-                            inTypePreviews.indexOf( preview ) );
+                            i );
                 }
             }
         } catch ( InvalidSettingException e ) {
