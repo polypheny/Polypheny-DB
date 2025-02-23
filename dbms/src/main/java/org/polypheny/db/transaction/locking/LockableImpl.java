@@ -124,6 +124,11 @@ public class LockableImpl implements Lockable {
         return parent == null;
     }
 
+    @Override
+    public boolean isLocked() {
+        return !owners.isEmpty();
+    }
+
 
     private void acquireShared( Transaction transaction ) throws InterruptedException {
         if ( !isRoot() ) {
