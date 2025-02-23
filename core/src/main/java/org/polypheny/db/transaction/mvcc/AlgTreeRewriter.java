@@ -103,26 +103,28 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
     public AlgRoot process( AlgRoot root ) {
         AlgNode rootAlg = root.alg.accept( this );
 
+        if (!pendingModifications.isEmpty()) {
+            Iterator<DeferredAlgTreeModification> iterator = pendingModifications.iterator();
+            while ( iterator.hasNext() ) {
+                DeferredAlgTreeModification modification = iterator.next();
+                if ( modification.notTargets( rootAlg ) ) {
+                    continue;
+                }
+                rootAlg = modification.apply( rootAlg );
+                iterator.remove();
+            }
+        }
+
+        if (rootAlg instanceof LogicalRelProject rootProject) {
+            rootAlg = new RewriteResultProject().apply( rootProject );
+        }
+
         if ( pendingModifications.isEmpty() ) {
             Kind kind = switch ( root.kind ) {
                 case UPDATE, DELETE -> Kind.INSERT;
                 default -> root.kind;
             };
             return root.withAlg( rootAlg ).withKind( kind );
-        }
-
-        Iterator<DeferredAlgTreeModification> iterator = pendingModifications.iterator();
-        while ( iterator.hasNext() ) {
-            DeferredAlgTreeModification modification = iterator.next();
-            if ( modification.notTargets( rootAlg ) ) {
-                continue;
-            }
-            rootAlg = modification.apply( rootAlg );
-            iterator.remove();
-        }
-
-        if ( pendingModifications.isEmpty() ) {
-            return root.withAlg( rootAlg );
         }
 
         throw new IllegalStateException( "No pending tree modifications must be left on root level." );
