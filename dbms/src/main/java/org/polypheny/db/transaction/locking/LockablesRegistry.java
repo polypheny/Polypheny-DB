@@ -16,6 +16,7 @@
 
 package org.polypheny.db.transaction.locking;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.NonNull;
 import org.polypheny.db.catalog.entity.Entity;
