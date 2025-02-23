@@ -42,4 +42,6 @@ public interface Lockable {
 
     boolean isRoot();
 
+    boolean isLocked();
+
 }
