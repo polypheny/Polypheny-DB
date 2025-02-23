@@ -16,6 +16,7 @@
 
 package org.polypheny.db.transaction.locking;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.NonNull;
 import org.polypheny.db.catalog.entity.Entity;
@@ -23,6 +24,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 
 public class LockablesRegistry {
 
+    public static final long MAX_REGISTRY_SIZE = 100000;
     public static final GlobalLockable GLOBAL_SCHEMA_LOCKABLE = new GlobalLockable();
     public static final LockablesRegistry INSTANCE = new LockablesRegistry();
 
@@ -37,16 +39,27 @@ public class LockablesRegistry {
      * @return lockable instance representing a lock on the passed lockable object.
      */
     public Lockable getOrCreateLockable( @NonNull LockableObject lockableObject ) {
-        Lockable l = lockables.get( lockableObject );
-        if ( l == null ) {
+        Lockable lockable = lockables.get( lockableObject );
+        if ( lockable == null ) {
             synchronized ( lockableObject ) {
-                l = convertToLockable( lockableObject );
-                if ( lockables.put( lockableObject, l ) != null ) {
+                lockable = convertToLockable( lockableObject );
+                if (lockables.size() > MAX_REGISTRY_SIZE ) {
+                    dropUnlockedLockables();
+                }
+                if ( lockables.put( lockableObject, lockable ) != null ) {
                     throw new IllegalStateException( "Lockable already exists: " + lockableObject );
                 }
             }
         }
-        return l;
+        return lockable;
+    }
+
+
+    /**
+     * Drops all pairs of {@link LockableObject} and {@link Lockable} where the lockable is not locked from the cache.
+     */
+    private void dropUnlockedLockables() {
+        lockables.entrySet().removeIf( entry -> !entry.getValue().isLocked() );
     }
 
 
