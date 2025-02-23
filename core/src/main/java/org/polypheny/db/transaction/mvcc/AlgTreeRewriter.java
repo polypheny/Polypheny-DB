@@ -95,9 +95,6 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
 
     private final Statement statement;
 
-    AlgNode debugAlg = null;
-
-
     public AlgTreeRewriter( Statement statement ) {
         this.statement = statement;
     }
@@ -107,11 +104,6 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
         AlgNode rootAlg = root.alg.accept( this );
 
         if ( pendingModifications.isEmpty() ) {
-            // TODO: remove this
-            if ( debugAlg != null ) {
-                return root.withAlg( debugAlg );
-            }
-
             Kind kind = switch ( root.kind ) {
                 case UPDATE, DELETE -> Kind.INSERT;
                 default -> root.kind;
