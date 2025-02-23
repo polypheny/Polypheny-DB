@@ -76,7 +76,8 @@ public class DocumentProjectToCalcRule extends ConverterRule {
         @Override
         public RexNode visitCall( RexCall call ) {
             if ( call.getOperator().getOperatorName() == OperatorName.MQL_NEAR ||
-                    call.getOperator().getOperatorName() == OperatorName.MQL_NEAR_SPHERE ) {
+                    call.getOperator().getOperatorName() == OperatorName.MQL_NEAR_SPHERE ||
+                    call.getOperator().getOperatorName() == OperatorName.MQL_GEO_NEAR ) {
                 containsNear = true;
             }
             return super.visitCall( call );
