@@ -25,6 +25,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
@@ -115,19 +116,21 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
             }
         }
 
-        if (rootAlg instanceof LogicalRelProject rootProject) {
-            rootAlg = new RewriteResultProject().apply( rootProject );
+        if (!(rootAlg instanceof Modify<?>)) {
+            rootAlg = new CreateMvccResultProject().apply( rootAlg );
         }
 
-        if ( pendingModifications.isEmpty() ) {
-            Kind kind = switch ( root.kind ) {
-                case UPDATE, DELETE -> Kind.INSERT;
-                default -> root.kind;
-            };
-            return root.withAlg( rootAlg ).withKind( kind );
+        if ( !pendingModifications.isEmpty() ) {
+            throw new IllegalStateException( "No pending tree modifications must be left on root level." );
         }
 
-        throw new IllegalStateException( "No pending tree modifications must be left on root level." );
+        Kind kind = switch ( root.kind ) {
+            case UPDATE, DELETE -> Kind.INSERT;
+            default -> root.kind;
+        };
+        return root.withAlg( rootAlg ).withKind( kind );
+
+
     }
 
 

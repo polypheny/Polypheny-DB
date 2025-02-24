@@ -118,7 +118,6 @@ public class MvccUtils {
 
     public static List<ExecutedContext> executeDmlAlgTree( AlgRoot root, Statement statement, long namespaceId ) {
         PolyImplementation implementation = statement.getQueryProcessor().prepareQuery( root, true );
-
         ParsedQueryContext dummyContext = getDummyContext( statement, namespaceId );
         ImplementationContext implementationContext = new ImplementationContext( implementation, dummyContext, statement, null );
         List<ExecutedContext> executedContexts = new ArrayList<>();
@@ -157,7 +156,7 @@ public class MvccUtils {
     private static long validateRelWrites( long sequenceNumber, Entity writtenEntity, Transaction transaction ) {
         // ToDo TH: think about what happens to deletions
         String queryTemplate = """
-                SELECT MAX(_vid) AS max_vid
+                SELECT CAST (MAX(_vid) AS DECIMAL) AS max_vid
                 FROM %s
                 WHERE _eid IN (
                     SELECT _eid FROM %s WHERE _vid = %d

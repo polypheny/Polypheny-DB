@@ -28,6 +28,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.processing.QueryProcessorHelpers;
+import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.prism.ArrayMeta;
 import org.polypheny.prism.ColumnMeta;
@@ -65,11 +66,14 @@ public class RelationalMetaRetriever {
 
     public static List<ColumnMeta> retrieveColumnMetas( PolyImplementation polyImplementation ) {
         AlgDataType algDataType = retrieveAlgDataType( polyImplementation );
-        AlgDataType whatever = QueryProcessorHelpers.makeStruct( polyImplementation.getStatement().getTransaction().getTypeFactory(), algDataType );
+        // TODO TH: this should be handled inside of the polyImplementation and not in the interface
+        List<AlgDataTypeField> resultFieldTypes = QueryProcessorHelpers.makeStruct( polyImplementation.getStatement().getTransaction().getTypeFactory(), algDataType ).getFields().stream()
+                .filter( f -> !f.getName().equals( IdentifierUtils.IDENTIFIER_KEY ) && !f.getName().equals( IdentifierUtils.VERSION_KEY ) )
+                .toList();
         List<List<String>> origins = polyImplementation.getPreparedResult().getFieldOrigins();
         List<ColumnMeta> columns = new ArrayList<>();
         int index = 0;
-        for ( Ord<AlgDataTypeField> pair : Ord.zip( whatever.getFields() ) ) {
+        for ( Ord<AlgDataTypeField> pair : Ord.zip( resultFieldTypes ) ) {
             final AlgDataTypeField field = pair.e;
             final AlgDataType type = field.getType();
             columns.add( retrieveColumnMeta( index++, field.getName(), type, origins.get( pair.i ) ) );
