@@ -21,6 +21,7 @@ import static org.polypheny.db.workflow.dag.activities.impl.LpgExtractActivity.G
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -127,6 +128,13 @@ public class LpgExtractActivity implements Activity, Pipeable {
                 }
             }
         }
+    }
+
+
+    @Override
+    public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
+        Optional<EntityValue> graph = settings.get( GRAPH_KEY, EntityValue.class );
+        return graph.map( v -> String.format( "Extract '%s'", v.getName() ) ).orElse( null );
     }
 
 

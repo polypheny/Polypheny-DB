@@ -414,6 +414,15 @@ public class ActivityUtils {
     }
 
 
+    public static boolean hasSubValue( PolyDocument doc, String pointer ) {
+        try {
+            return getSubValue( doc, pointer ) != null; // PolyNull would evaluate to true
+        } catch ( Exception e ) {
+            return false;
+        }
+    }
+
+
     /**
      * Removes the value at the specified pointer location from the document.
      *
@@ -471,6 +480,11 @@ public class ActivityUtils {
             return;
         }
         map.put( Activity.docId, PolyString.of( BsonUtil.getObjectId() ) );
+    }
+
+
+    public static boolean isAtomicValue( PolyValue subValue ) {
+        return subValue == null || subValue.isNull() || !(subValue.isList() || subValue.isDocument() || subValue.isMap());
     }
 
 

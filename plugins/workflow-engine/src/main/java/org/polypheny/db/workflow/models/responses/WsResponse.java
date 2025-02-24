@@ -107,6 +107,7 @@ public class WsResponse {
         public final Map<UUID, List<TypePreviewModel>> outTypePreviews = new HashMap<>();
         public final Map<UUID, String> activityInvalidReasons = new HashMap<>();
         public final Map<UUID, Map<String, String>> activityInvalidSettings = new HashMap<>();
+        public final Map<UUID, String> dynamicActivityNames = new HashMap<>();
         public final List<EdgeModel> edgeStates;
 
 
@@ -117,7 +118,7 @@ public class WsResponse {
             for ( ActivityWrapper wrapper : workflow.getActivities() ) {
                 UUID id = wrapper.getId();
                 activityStates.put( id, wrapper.getState() );
-                if (wrapper.isRolledBack()) {
+                if ( wrapper.isRolledBack() ) {
                     rolledBack.add( id );
                 }
                 inTypePreviews.put( id, wrapper.getInTypeModels() );
@@ -130,6 +131,9 @@ public class WsResponse {
                 if ( !invalidSettings.isEmpty() ) {
                     activityInvalidSettings.put( id, invalidSettings.stream().collect(
                             Collectors.toMap( InvalidSettingException::getSettingKey, InvalidSettingException::getMessage ) ) );
+                }
+                if ( wrapper.getDynamicName() != null ) {
+                    dynamicActivityNames.put( id, wrapper.getDynamicName() );
                 }
             }
             edgeStates = workflow.getEdges().stream().map( e -> e.toModel( true ) ).toList();

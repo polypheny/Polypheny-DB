@@ -21,6 +21,7 @@ import static org.polypheny.db.workflow.dag.activities.impl.DocExtractActivity.C
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
@@ -136,6 +137,13 @@ public class DocExtractActivity implements Activity, Fusable, Pipeable {
                 }
             }
         }
+    }
+
+
+    @Override
+    public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
+        Optional<EntityValue> collection = settings.get( COLL_KEY, EntityValue.class );
+        return collection.map( v -> String.format( "Extract '%s'", v.getName() ) ).orElse( null );
     }
 
 

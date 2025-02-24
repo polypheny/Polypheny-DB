@@ -79,6 +79,7 @@ public class ActivityWrapper {
     private SettingsPreview settingsPreview; // contains the (possibly not yet known) settings
     private List<InvalidSettingException> invalidSettings = List.of();
     private ActivityException invalidStateReason; // any non-setting related Exception
+    private String dynamicName; // null if the activity has no dynamic name
     @Setter
     private ExecutionInfo executionInfo; // execution info from last execution
 
@@ -123,6 +124,12 @@ public class ActivityWrapper {
         settingsPreview = built.left;
         invalidSettings = built.right;
         ActivityDef def = getDef();
+
+        try {
+            dynamicName = activity.getDynamicName( inTypePreviews, settingsPreview );
+        } catch ( Exception e ) {
+            dynamicName = null;
+        }
 
         try {
             invalidStateReason = null;
@@ -188,7 +195,8 @@ public class ActivityWrapper {
             ExecutionInfoModel infoModel = executionInfo == null ? null : executionInfo.toModel( true );
             return new ActivityModel( type, id, serializableSettings, config, rendering,
                     this.state, this.isRolledBack, getInTypeModels(), getOutTypeModels(), invalidReason,
-                    invalidSettingsMap, variables.getPublicVariables( true, true ), infoModel );
+                    invalidSettingsMap, variables.getPublicVariables( true, true ),
+                    dynamicName, infoModel );
 
         } else {
             return new ActivityModel( type, id, serializableSettings, config, rendering );

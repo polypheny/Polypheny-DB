@@ -21,6 +21,7 @@ import static org.polypheny.db.workflow.dag.activities.impl.RelLoadActivity.TABL
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -132,6 +133,13 @@ public class RelLoadActivity implements Activity, Pipeable {
 
         LogicalTable table = getEntity( settings, inputs.get( 0 ).getType(), ctx::getTransaction, ctx::logInfo );
         write( table, ctx.getTransaction(), inputs.get( 0 ), null, ctx, estimatedTupleCount, settings.getBool( "keepPk" ) ); // we do not know the number of rows
+    }
+
+
+    @Override
+    public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
+        Optional<EntityValue> table = settings.get( TABLE_KEY, EntityValue.class );
+        return table.map( v -> String.format( "Load to '%s.%s'", v.getNamespace(), v.getName() ) ).orElse( null );
     }
 
 

@@ -69,7 +69,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
                 """
 )
 @CollationSetting(key = "sort", displayName = "Sort Fields", shortDescription = "Specify the field(s) to sort the documents by. If no field is selected, the original order is used.", allowRegex = false)
-@IntSetting(key = "limit", displayName = "Row Limit", defaultValue = -1, min = -1, shortDescription = "The total number of documents to include, or -1 to include all documents.")
+@IntSetting(key = "limit", displayName = "Document Limit", defaultValue = -1, min = -1, shortDescription = "The total number of documents to include, or -1 to include all documents.")
 @IntSetting(key = "skip", displayName = "Skip Documents", defaultValue = 0, min = 0, shortDescription = "The number of documents to skip, or 0 to start at the first document.")
 @SuppressWarnings("unused")
 public class DocSortActivity implements Activity, Fusable, Pipeable {
@@ -119,7 +119,7 @@ public class DocSortActivity implements Activity, Fusable, Pipeable {
         int skip = settings.get( "skip", IntValue.class ).getValue();
 
         long count = 0;
-        for ( List<PolyValue> row : inputs.get( 0 ) ) {
+        for ( List<PolyValue> tuple : inputs.get( 0 ) ) {
             count++;
             if ( count <= skip ) {
                 continue;
@@ -128,7 +128,7 @@ public class DocSortActivity implements Activity, Fusable, Pipeable {
                 return;
             }
 
-            if ( !output.put( row ) ) {
+            if ( !output.put( tuple ) ) {
                 finish( inputs );
                 return;
             }

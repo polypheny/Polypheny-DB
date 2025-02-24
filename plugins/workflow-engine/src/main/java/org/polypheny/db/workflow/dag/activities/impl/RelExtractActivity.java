@@ -152,6 +152,13 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
     }
 
 
+    @Override
+    public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
+        Optional<EntityValue> table = settings.get( TABLE_KEY, EntityValue.class );
+        return table.map( v -> String.format( "Extract '%s'", v.getName() ) ).orElse( null );
+    }
+
+
     private AlgDataType getOutputType( LogicalTable table ) {
         if ( table == null ) {
             return null; // this should never happen, since we specify in our setting that the table must exist

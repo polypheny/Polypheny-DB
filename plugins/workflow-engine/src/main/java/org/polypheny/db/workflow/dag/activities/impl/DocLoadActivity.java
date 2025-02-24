@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.activities.impl;
 import static org.polypheny.db.workflow.dag.activities.impl.DocLoadActivity.COLL_KEY;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.polypheny.db.adapter.AdapterManager;
@@ -120,6 +121,13 @@ public class DocLoadActivity implements Activity, Pipeable {
                 ctx::getTransaction,
                 ctx::logInfo );
         write( collection, ctx.getTransaction(), inputs.get( 0 ), null, ctx, estimatedTupleCount );
+    }
+
+
+    @Override
+    public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
+        Optional<EntityValue> collection = settings.get( COLL_KEY, EntityValue.class );
+        return collection.map( v -> String.format( "Load to '%s.%s'", v.getNamespace(), v.getName() ) ).orElse( null );
     }
 
 

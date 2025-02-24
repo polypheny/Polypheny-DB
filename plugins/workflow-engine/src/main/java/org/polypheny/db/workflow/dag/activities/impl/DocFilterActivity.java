@@ -24,6 +24,7 @@ import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
+import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
@@ -31,8 +32,10 @@ import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.EnumSetting;
+import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
 import org.polypheny.db.workflow.dag.annotations.FilterSetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
+import org.polypheny.db.workflow.dag.settings.FieldSelectValue;
 import org.polypheny.db.workflow.dag.settings.FilterValue;
 import org.polypheny.db.workflow.dag.settings.GroupDef;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue.SelectMode;
@@ -67,10 +70,12 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 @BoolSetting(key = "all", displayName = "Match Subfields", pos = 2,
         subPointer = "filter/targetMode", subValues = { "\"REGEX\"" }, defaultValue = false,
         shortDescription = "If enabled, the search extends to all subfields.")
-@FilterSetting(key = "filter", displayName = "Conditions", pos = 3,
+@FieldSelectSetting(key = "requiredFields", displayName = "Required Fields", simplified = true, targetInput = 0, pos = 3,
+        shortDescription = "Specify all (sub)fields that must exist in the document. Useful in combination with a condition, as conditions evaluate to true if the target field does not exist.")
+@FilterSetting(key = "filter", displayName = "Conditions", pos = 4,
         modes = { SelectMode.EXACT, SelectMode.REGEX },
         shortDescription = "Define a list of conditions on fields. In 'Exact' mode, subfields can be specified. If a (sub)field does not exist, the condition evaluates to true.")
-@BoolSetting(key = "negate", displayName = "Negate Filter", pos = 4, defaultValue = false, group = GroupDef.ADVANCED_GROUP,
+@BoolSetting(key = "negate", displayName = "Negate Filter", pos = 5, defaultValue = false, group = GroupDef.ADVANCED_GROUP,
         shortDescription = "If enabled, the filter is negated, swapping the roles of the two outputs.")
 
 @SuppressWarnings("unused")
@@ -96,6 +101,17 @@ public class DocFilterActivity implements Activity {
         FilterValue filter = settings.get( "filter", FilterValue.class );
         String pointer = settings.getString( "pointer" );
         Predicate<PolyDocument> predicate = filter.getDocPredicate( settings.getBool( "all" ), settings.getString( "pointer" ).trim() );
+
+        List<String> required = settings.get( "requiredFields", FieldSelectValue.class ).getInclude();
+        if ( !required.isEmpty() ) {
+            Predicate<PolyDocument> basePredicate = predicate;
+            predicate = d -> {
+                if ( required.stream().allMatch( f -> ActivityUtils.hasSubValue( d, f ) ) ) {
+                    return basePredicate.test( d );
+                }
+                return false;
+            };
+        }
         if ( settings.getBool( "negate" ) ) {
             predicate = predicate.negate();
         }

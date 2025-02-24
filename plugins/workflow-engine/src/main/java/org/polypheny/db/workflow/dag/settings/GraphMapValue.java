@@ -191,9 +191,9 @@ public class GraphMapValue implements SettingValue {
         }
 
 
-        public PolyNode constructNode( List<String> names, List<PolyValue> row ) {
+        public PolyNode constructNode( List<String> names, List<PolyValue> row, boolean allProps ) {
             assert !edgeOnly;
-            Set<String> excluded = getExcludedNodeProps();
+            Set<String> excluded = allProps ? Set.of() : getExcludedNodeProps();
             PolyDictionary dict = new PolyDictionary();
             for ( Pair<String, PolyValue> pair : Pair.zip( names, row ) ) {
                 if ( pair.left.equals( StorageManager.PK_COL ) || excluded.contains( pair.left ) ) {
@@ -215,19 +215,20 @@ public class GraphMapValue implements SettingValue {
         }
 
 
-        public PolyNode constructNode( PolyDocument doc, boolean includeId ) throws Exception {
+        public PolyNode constructNode( PolyDocument doc, boolean includeId, boolean allProps ) throws Exception {
             assert !edgeOnly;
             List<PolyString> labels;
             if ( dynamicNodeLabels ) {
-                System.out.println( "Dynamic node label" + doc + ", " + nodeLabels.get( 0 ) );
                 labels = getLabelsFromValue( ActivityUtils.getSubValue( doc, nodeLabels.get( 0 ) ) );
             } else {
                 labels = getLabelsFromList( nodeLabels );
             }
 
             doc = Objects.requireNonNull( PolyValue.fromJson( doc.toJson() ) ).asDocument(); // create copy of document
-            for ( String excluded : getExcludedNodeProps() ) {
-                ActivityUtils.removeSubValue( doc, excluded );
+            if ( !allProps ) {
+                for ( String excluded : getExcludedNodeProps() ) {
+                    ActivityUtils.removeSubValue( doc, excluded );
+                }
             }
             if ( !includeId ) {
                 ActivityUtils.removeSubValue( doc, DocumentType.DOCUMENT_ID );
@@ -379,10 +380,10 @@ public class GraphMapValue implements SettingValue {
         }
 
 
-        public PolyEdge constructEdge( List<String> names, List<PolyValue> row, PolyString left, PolyString right, boolean edgeOnly ) {
+        public PolyEdge constructEdge( List<String> names, List<PolyValue> row, PolyString left, PolyString right, boolean edgeOnly, boolean allProps ) {
             PolyDictionary dict = new PolyDictionary();
             if ( edgeOnly ) {
-                Set<String> excluded = getExcludedEdgeProps();
+                Set<String> excluded = allProps ? Set.of() : getExcludedEdgeProps();
                 for ( Pair<String, PolyValue> pair : Pair.zip( names, row ) ) {
                     if ( pair.left.equals( StorageManager.PK_COL ) || excluded.contains( pair.left ) ) {
                         continue;
@@ -412,7 +413,7 @@ public class GraphMapValue implements SettingValue {
         }
 
 
-        public PolyEdge constructEdge( PolyDocument doc, PolyString left, PolyString right, boolean edgeOnly, boolean includeId ) throws Exception {
+        public PolyEdge constructEdge( PolyDocument doc, PolyString left, PolyString right, boolean edgeOnly, boolean includeId, boolean allProps ) throws Exception {
             List<PolyString> labels;
             if ( dynamicEdgeLabels ) {
                 labels = getLabelsFromValue( ActivityUtils.getSubValue( doc, edgeLabels.get( 0 ) ) );
@@ -423,10 +424,12 @@ public class GraphMapValue implements SettingValue {
             doc = Objects.requireNonNull( PolyValue.fromJson( doc.toJson() ) ).asDocument(); // create copy of document
             PolyDictionary dict;
             if ( edgeOnly ) {
-                for ( String excluded : getExcludedEdgeProps() ) {
-                    try {
-                        ActivityUtils.removeSubValue( doc, excluded );
-                    } catch ( Exception ignored ) {
+                if ( !allProps ) {
+                    for ( String excluded : getExcludedEdgeProps() ) {
+                        try {
+                            ActivityUtils.removeSubValue( doc, excluded );
+                        } catch ( Exception ignored ) {
+                        }
                     }
                 }
                 if ( !includeId ) {

@@ -66,13 +66,18 @@ import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
         shortDescription = "Allows for the specification of a mapping from input tables or collections to nodes and edges in a graph, possibly extending an existing graph."
 )
 @GraphMapSetting(key = "mapping", displayName = "Map Inputs to Graph Elements", canExtendGraph = true, targetInput = 1, graphInput = 0, pos = 0,
-        shortDescription = "Specify for each input table or collection how it is mapped to nodes and edges.")
-@BoolSetting(key = "docId", displayName = "Include Document ID", defaultValue = false, pos = 1,
+        shortDescription = "Specify for each input table or collection how it is mapped to nodes and edges. Edges are created by performing equi-joins between a specified field in the input to be mapped and a target input."
+                + " For array fields, their elements are individually joined.")
+@BoolSetting(key = "allProps", displayName = "Include All Fields", defaultValue = false, pos = 1,
+        shortDescription = "Whether the fields specified for creating edges or labels should be included in the node or edge properties.")
+@BoolSetting(key = "docId", displayName = "Include Document ID", defaultValue = false, pos = 2,
         shortDescription = "Whether the ID of documents that are mapped to nodes or edges should be included in their properties.")
 @SuppressWarnings("unused")
 public class AnyToLpgActivity implements Activity {
 
     private final Map<Triple<Integer, String, PolyValue>, Set<PolyString>> invertedIndex = new HashMap<>(); // Maps (inputIdx, field, value) to all NodeIds with that value
+    private boolean allProps;
+    private boolean includeDocId;
 
 
     @Override
@@ -119,20 +124,21 @@ public class AnyToLpgActivity implements Activity {
         List<CheckpointReader> readers = inputs.subList( 1, inputs.size() );
         LpgWriter writer = ctx.createLpgWriter( 0 );
         GraphMapValue mapping = settings.get( "mapping", GraphMapValue.class );
-        boolean includeDocId = settings.getBool( "docId" );
+        includeDocId = settings.getBool( "docId" );
+        allProps = settings.getBool( "allProps" );
 
         if ( hasGraph ) {
             indexAndWriteGraphNodes( lpgReader, mapping, writer, ctx );
         }
         List<List<PolyString>> nodeIds = new ArrayList<>(); // assuming nodes are read in same order every time
         for ( int i = 0; i < readers.size(); i++ ) {
-            nodeIds.add( indexAndWriteNodes( readers.get( i ), i, mapping, includeDocId, writer, ctx ) );
+            nodeIds.add( indexAndWriteNodes( readers.get( i ), i, mapping, writer, ctx ) );
         }
         if ( hasGraph ) {
             writer.writeEdge( lpgReader.getEdgeIterator(), ctx );
         }
         for ( int i = 0; i < readers.size(); i++ ) {
-            writeEdges( readers.get( i ), i, mapping, nodeIds.get( i ), includeDocId, writer, ctx );
+            writeEdges( readers.get( i ), i, mapping, nodeIds.get( i ), writer, ctx );
         }
     }
 
@@ -161,7 +167,7 @@ public class AnyToLpgActivity implements Activity {
     }
 
 
-    private List<PolyString> indexAndWriteNodes( CheckpointReader reader, int index, GraphMapValue mapping, boolean includeDocId, LpgWriter writer, ExecutionContext ctx ) throws Exception {
+    private List<PolyString> indexAndWriteNodes( CheckpointReader reader, int index, GraphMapValue mapping, LpgWriter writer, ExecutionContext ctx ) throws Exception {
         List<PolyString> nodeIds = new ArrayList<>();
         InputMapping inMapping = mapping.getMapping( index );
         if ( inMapping == null || inMapping.isEdgeOnly() ) {
@@ -174,7 +180,7 @@ public class AnyToLpgActivity implements Activity {
             Map<String, Integer> nameToColIndex = IntStream.range( 0, colNames.size() )
                     .boxed().collect( Collectors.toMap( colNames::get, i -> i ) );
             for ( List<PolyValue> row : relReader.getIterable() ) {
-                PolyNode node = inMapping.constructNode( colNames, row );
+                PolyNode node = inMapping.constructNode( colNames, row, allProps );
                 for ( String joinField : joinFields ) {
                     PolyValue value = row.get( nameToColIndex.get( joinField ) );
                     invertedIndex.computeIfAbsent( Triple.of( index, joinField, value ), k -> new HashSet<>() ).add( node.id );
@@ -185,7 +191,7 @@ public class AnyToLpgActivity implements Activity {
             }
         } else if ( reader instanceof DocReader docReader ) {
             for ( PolyDocument doc : docReader.getDocIterable() ) {
-                PolyNode node = inMapping.constructNode( doc, includeDocId );
+                PolyNode node = inMapping.constructNode( doc, includeDocId, allProps );
                 for ( String joinField : joinFields ) {
                     PolyValue value = ActivityUtils.getSubValue( doc, joinField );
                     invertedIndex.computeIfAbsent( Triple.of( index, joinField, value ), k -> new HashSet<>() ).add( node.id );
@@ -199,7 +205,7 @@ public class AnyToLpgActivity implements Activity {
     }
 
 
-    private void writeEdges( CheckpointReader reader, int index, GraphMapValue mapping, List<PolyString> nodeIds, boolean includeDocId, LpgWriter writer, ExecutionContext ctx ) throws Exception {
+    private void writeEdges( CheckpointReader reader, int index, GraphMapValue mapping, List<PolyString> nodeIds, LpgWriter writer, ExecutionContext ctx ) throws Exception {
         InputMapping inMapping = mapping.getMapping( index );
         if ( inMapping == null || inMapping.isNodeOnly() ) {
             return;
@@ -226,7 +232,6 @@ public class AnyToLpgActivity implements Activity {
                 }
             }
 
-
         } else if ( reader instanceof DocReader docReader ) {
             for ( PolyDocument doc : docReader.getDocIterable() ) {
                 if ( inMapping.isEdgeOnly() ) {
@@ -239,7 +244,7 @@ public class AnyToLpgActivity implements Activity {
                         continue; // field does not exist -> no edge is created instead of failing
                     }
                     writeEdges( lookupIds( edge, true, leftValue ), lookupIds( edge, false, rightValue ),
-                            doc, edge, true, includeDocId, writer, ctx );
+                            doc, edge, true, writer, ctx );
                 } else {
                     Set<PolyString> leftIds = Set.of( nodeIds.get( i++ ) );
                     for ( EdgeMapping edge : inMapping.getEdges() ) {
@@ -250,7 +255,7 @@ public class AnyToLpgActivity implements Activity {
                             continue; // field does not exist -> no edge is created instead of failing
                         }
                         writeEdges( leftIds, lookupIds( edge, false, rightValue ),
-                                doc, edge, false, includeDocId, writer, ctx );
+                                doc, edge, false, writer, ctx );
                     }
                 }
             }
@@ -267,7 +272,7 @@ public class AnyToLpgActivity implements Activity {
         }
         for ( PolyString leftId : leftIds ) {
             for ( PolyString rightId : rightIds ) {
-                PolyEdge polyEdge = edge.constructEdge( colNames, row, leftId, rightId, isEdgeOnly );
+                PolyEdge polyEdge = edge.constructEdge( colNames, row, leftId, rightId, isEdgeOnly, allProps );
                 writer.writeEdge( polyEdge );
                 ctx.checkInterrupted();
             }
@@ -275,16 +280,16 @@ public class AnyToLpgActivity implements Activity {
     }
 
 
-    private void writeEdges( Set<PolyString> leftIds, Set<PolyString> rightIds, PolyDocument doc, EdgeMapping edge, boolean isEdgeOnly, boolean includeDocId, LpgWriter writer, ExecutionContext ctx ) throws Exception {
-        if ( leftIds.isEmpty() ) {
+    private void writeEdges( Set<PolyString> leftIds, Set<PolyString> rightIds, PolyDocument doc, EdgeMapping edge, boolean isEdgeOnly, LpgWriter writer, ExecutionContext ctx ) throws Exception {
+        if ( leftIds == null || leftIds.isEmpty() ) {
             return;
         }
-        if ( rightIds.isEmpty() ) {
+        if ( rightIds == null || rightIds.isEmpty() ) {
             return;
         }
         for ( PolyString leftId : leftIds ) {
             for ( PolyString rightId : rightIds ) {
-                PolyEdge polyEdge = edge.constructEdge( doc, leftId, rightId, isEdgeOnly, includeDocId ); // fails if invalid dynamicLabels pointer, which should fail the activity
+                PolyEdge polyEdge = edge.constructEdge( doc, leftId, rightId, isEdgeOnly, includeDocId, allProps ); // fails if invalid dynamicLabels pointer, which should fail the activity
                 writer.writeEdge( polyEdge );
                 ctx.checkInterrupted();
             }
@@ -293,11 +298,18 @@ public class AnyToLpgActivity implements Activity {
 
 
     private Set<PolyString> lookupIds( EdgeMapping edge, boolean isLeft, PolyValue value ) {
-        if ( isLeft ) {
-            return invertedIndex.get( Triple.of( edge.getLeftTargetIdx(), edge.getLeftTargetField(), value ) );
-        } else {
-            return invertedIndex.get( Triple.of( edge.getRightTargetIdx(), edge.getRightTargetField(), value ) );
+        int targetIdx = isLeft ? edge.getLeftTargetIdx() : edge.getRightTargetIdx();
+        String targetField = isLeft ? edge.getLeftTargetField() : edge.getRightTargetField();
+
+        if ( value.isList() ) { // for lists: each value in the list is considered
+            Set<PolyString> ids = new HashSet<>();
+            for ( PolyValue entry : value.asList() ) {
+
+                ids.addAll( invertedIndex.getOrDefault( Triple.of( targetIdx, targetField, entry ), Set.of() ) );
+            }
+            return ids;
         }
+        return invertedIndex.get( Triple.of( targetIdx, targetField, value ) );
     }
 
 

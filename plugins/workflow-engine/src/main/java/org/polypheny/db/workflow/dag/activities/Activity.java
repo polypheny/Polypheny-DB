@@ -97,6 +97,18 @@ public interface Activity {
 
     }
 
+    /**
+     * Get an alternative dynamic display name.
+     * If null is returned, the display name specified in the activity definition is used.
+     *
+     * @param inTypes a list of {@link TypePreview}s representing the input tuple types.
+     * @param settings the SettingsPreview representing the available settings, i.e. all settings that do not contain variables.
+     * @return the dynamic display name for this activity instance or null if the displayName from the definition should be used instead.
+     */
+    default String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
+        return null;
+    }
+
     default DataStateMerger getDataStateMerger() {
         // typically depends on the activity type
         return DataStateMerger.AND;

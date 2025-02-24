@@ -54,6 +54,8 @@ public class ActivityModel {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     Map<String, JsonNode> variables;
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    String dynamicName;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     ExecutionInfoModel executionInfo;
 
 
@@ -86,6 +88,7 @@ public class ActivityModel {
         this.variables = null;
         this.executionInfo = null;
         this.rolledBack = null;
+        this.dynamicName = null;
     }
 
 

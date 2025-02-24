@@ -153,7 +153,7 @@ public class FilterValue implements SettingValue {
 
 
     /**
-     * Returns true if the (entire) tuple matches for sure, fals if it is rejected for sure
+     * Returns true if the (entire) tuple matches for certain, false if it is rejected for certain
      * and null if both is still possible after evaluating this value.
      */
     private Boolean test( List<Predicate<PolyValue>> ps, PolyValue value ) {
@@ -354,8 +354,10 @@ public class FilterValue implements SettingValue {
                 case REGEX_NOT -> !valuePattern.matcher( ActivityUtils.valueToString( v ).value ).matches();
                 case NULL -> v == null || v.isNull();
                 case NON_NULL -> v != null && !v.isNull();
-                case INCLUDED -> contains( v );
-                case NOT_INCLUDED -> !contains( v );
+                case INCLUDED -> includes( v );
+                case NOT_INCLUDED -> !includes( v );
+                case CONTAINS -> contains( v );
+                case NOT_CONTAINS -> !contains( v );
                 case HAS_KEY -> hasKey( v );
                 case IS_ARRAY -> v != null && v.isList();
                 case IS_OBJECT -> v != null && (v.isMap() || v.isDocument());
@@ -373,7 +375,7 @@ public class FilterValue implements SettingValue {
         }
 
 
-        private boolean contains( PolyValue v ) {
+        private boolean includes( PolyValue v ) {
             return values.stream().anyMatch( entry -> {
                 if ( v.isNumber() ) {
                     return v.equals( toNumber( entry ) );
@@ -381,6 +383,17 @@ public class FilterValue implements SettingValue {
                 String s = ActivityUtils.valueToString( v ).value;
                 return ignoreCase ? s.equalsIgnoreCase( entry ) : s.equals( entry );
             } );
+        }
+
+
+        private boolean contains( PolyValue v ) {
+            if ( v.isList() ) {
+                return v.asList().stream().anyMatch( this::isEqual );
+            } else if ( v.isDocument() ) {
+                return v.asDocument().values().stream().anyMatch( this::isEqual );
+            } else {
+                return isEqual( v );
+            }
         }
 
 
@@ -438,6 +451,14 @@ public class FilterValue implements SettingValue {
     }
 
 
+    /**
+     * The possible operators to be used in conditions.
+     * Important limitation: a FIELD_EXISTS operator is not possible!
+     * Why? We iterate over fields and test whether they meet conditions.
+     * Non-existent fields cannot be tested.
+     * A workaround is the HAS_KEY operator which tests for subfield existence.
+     * Otherwise, existence has to be tested separately.
+     */
     public enum Operator {
         EQUALS( true, true ),
         NOT_EQUALS( true, true ),
@@ -454,6 +475,11 @@ public class FilterValue implements SettingValue {
          */
         INCLUDED,
         NOT_INCLUDED,
+        /**
+         * Whether the value appears as an entry in an array or value in an object or is equal to an atomic value
+         */
+        CONTAINS,
+        NOT_CONTAINS,
         HAS_KEY, // for array: corresponds to index, for Map: the actual key
         IS_ARRAY( false ),
         IS_OBJECT( false );

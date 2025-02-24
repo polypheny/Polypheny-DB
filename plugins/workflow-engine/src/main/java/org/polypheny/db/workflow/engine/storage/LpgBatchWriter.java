@@ -63,7 +63,6 @@ public class LpgBatchWriter implements AutoCloseable {
     public void write( PolyNode node ) {
         if ( batchSize == -1 ) {
             batchSize = QueryUtils.computeBatchSize( new PolyValue[]{ node }, MAX_BYTES_PER_BATCH, MAX_TUPLES_PER_BATCH );
-            System.out.println( "Batch size is " + batchSize );
         }
         nodeValues.add( node );
 
@@ -77,7 +76,6 @@ public class LpgBatchWriter implements AutoCloseable {
     public void write( PolyEdge edge ) {
         if ( batchSize == -1 ) {
             batchSize = QueryUtils.computeBatchSize( new PolyValue[]{ edge }, MAX_BYTES_PER_BATCH, MAX_TUPLES_PER_BATCH );
-            System.out.println( "Batch size is " + batchSize );
         }
         edgeValues.add( edge );
 
@@ -143,7 +141,9 @@ public class LpgBatchWriter implements AutoCloseable {
     @Override
     public void close() throws Exception {
         if ( isBatchingDisabled ) {
-            executeBatch( true ); // isEdges doesn't matter
+            if ( !nodeValues.isEmpty() || !edgeValues.isEmpty() ) {
+                executeBatch( true ); // isEdges doesn't matter
+            }
             return;
         }
 

@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.activities.impl;
 import static org.polypheny.db.workflow.dag.activities.impl.LpgLoadActivity.GRAPH_KEY;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.polypheny.db.adapter.AdapterManager;
@@ -106,6 +107,13 @@ public class LpgLoadActivity implements Activity, Pipeable {
         long estimatedTupleCount = estimateTupleCount( inputs.stream().map( InputPipe::getType ).toList(), settings, ctx.getEstimatedInCounts(), ctx::getTransaction );
         LogicalGraph graph = getEntity( settings, ctx::getTransaction, ctx::logInfo );
         write( graph, ctx.getTransaction(), inputs.get( 0 ), null, ctx, estimatedTupleCount );
+    }
+
+
+    @Override
+    public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
+        Optional<EntityValue> graph = settings.get( GRAPH_KEY, EntityValue.class );
+        return graph.map( v -> String.format( "Load to '%s'", v.getName() ) ).orElse( null );
     }
 
 
