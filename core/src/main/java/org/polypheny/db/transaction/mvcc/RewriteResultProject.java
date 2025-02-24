@@ -16,54 +16,37 @@
 
 package org.polypheny.db.transaction.mvcc;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
-import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexVisitor;
-import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.util.Util;
 
 public class RewriteResultProject implements AlgTreeModification<LogicalRelProject, LogicalRelProject> {
 
     @Override
     public LogicalRelProject apply( LogicalRelProject node ) {
+
         List<String> oldFieldNames = node.getRowType().getFieldNames();
-        List<RexNode> rexNodes = node.getProjects().stream()
-                .filter( n -> !isRefToMvccField( n, oldFieldNames ) )
-                .toList();
-        List<String> newFieldNames = node.getRowType().getFieldNames().stream()
-                .filter( n -> !n.equals( IdentifierUtils.IDENTIFIER_KEY ) && !n.equals( IdentifierUtils.VERSION_KEY ) )
-                .toList();
+        List<String> newFieldNames = new ArrayList<>();
+        List<RexNode> projects = new ArrayList<>();
+
+        for ( int i = 0; i < oldFieldNames.size(); i++ ) {
+            String fieldName = oldFieldNames.get( i );
+            if ( fieldName.equals( IdentifierUtils.IDENTIFIER_KEY ) ) {
+                continue;
+            }
+            if ( fieldName.equals( IdentifierUtils.VERSION_KEY ) ) {
+                continue;
+            }
+            newFieldNames.add( fieldName );
+            projects.add( node.getProjects().get( i ) );
+        }
+
         return LogicalRelProject.create(
                 node.getInput(),
-                rexNodes,
+                projects,
                 newFieldNames
         );
-    }
-
-
-    public boolean isRefToMvccField( RexNode node, List<String> fieldNames ) {
-        try {
-            RexVisitor<Void> visitor =
-                    new RexVisitorImpl<>( true ) {
-                        @Override
-                        public Void visitIndexRef( RexIndexRef inputRef ) {
-                            if ( fieldNames.get( inputRef.getIndex() ).equals( IdentifierUtils.IDENTIFIER_KEY ) ) {
-                                throw new Util.FoundOne( inputRef );
-                            }
-                            if ( fieldNames.get( inputRef.getIndex() ).equals( IdentifierUtils.VERSION_KEY ) ) {
-                                throw new Util.FoundOne( inputRef );
-                            }
-                            return null;
-                        }
-                    };
-            node.accept( visitor );
-            return false;
-        } catch ( Util.FoundOne e ) {
-            Util.swallow( e, null );
-            return true;
-        }
     }
 
 }
