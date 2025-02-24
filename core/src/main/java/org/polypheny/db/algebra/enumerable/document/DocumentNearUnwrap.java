@@ -126,10 +126,9 @@ public class DocumentNearUnwrap extends ConverterRule {
         RexLiteral maxDistance = (RexLiteral) nearCall.operands.get( 3 );
 
         //
-        // Step 2:
-        // Filter by minDistance, maxDistance
+        // Step 1:
+        // Add temporary distanceField using a project
         final String distanceField = "__temp_%s".formatted( UUID.randomUUID().toString() );
-
         Map<String, RexNode> adds = new HashMap<>();
         adds.put( distanceField, getFixedCall( List.of(
                 input,

@@ -42,8 +42,11 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.Pair;
 import java.util.*;
 
@@ -74,6 +77,7 @@ public class DocumentGeoNearUnwrap extends ConverterRule {
 
     private AlgCluster cluster;
 
+
     public static boolean supports( DocumentFilter filter ) {
         Kind nearKind = filter.getCondition().getKind();
         return nearKind == Kind.MQL_GEO_NEAR;
@@ -85,84 +89,99 @@ public class DocumentGeoNearUnwrap extends ConverterRule {
         if ( !(alg instanceof DocumentFilter filter) ) {
             throw new GenericRuntimeException( "todo" );
         }
+        cluster = alg.getCluster();
+        RexCall geoNearCall = (RexCall) filter.getCondition();
+        assert geoNearCall.operands.size() == 8;
+        RexLiteral nearGeometry = (RexLiteral) geoNearCall.operands.get( 0 );
+        RexNameRef distanceField = (RexNameRef) geoNearCall.operands.get( 1 );
+        RexLiteral distanceMultiplier = (RexLiteral) geoNearCall.operands.get( 2 );
+        RexNameRef includeLocs = (RexNameRef) geoNearCall.operands.get( 3 );
+        RexLiteral key = (RexLiteral) geoNearCall.operands.get( 4 );
+        RexLiteral maxDistance = (RexLiteral) geoNearCall.operands.get( 5 );
+        RexLiteral minDistance = (RexLiteral) geoNearCall.operands.get( 6 );
+        RexCall query = (RexCall) geoNearCall.operands.get( 7 );
 
-        // TODO: Implement conversion here
-        return alg;
+        AlgNode replacementNode = filter.getInput();
 
-//        cluster = alg.getCluster();
-//        RexCall nearCall = (RexCall) filter.getCondition();
-//        AlgDataType rowType = alg.getTupleType();
-//        assert nearCall.operands.size() == 4;
-//        RexNameRef input = (RexNameRef) nearCall.operands.get( 0 );
-//        RexLiteral geometry = (RexLiteral) nearCall.operands.get( 1 );
-//        RexLiteral minDistance = (RexLiteral) nearCall.operands.get( 2 );
-//        RexLiteral maxDistance = (RexLiteral) nearCall.operands.get( 3 );
-//
-//        //
-//        // Step 2:
-//        // Filter by minDistance, maxDistance
-//        final String distanceField = "__temp_%s".formatted( UUID.randomUUID().toString() );
-//
-//        Map<String, RexNode> adds = new HashMap<>();
-//        adds.put( distanceField, getFixedCall( List.of(
-//                input,
-//                geometry,
-//                convertLiteral( new PolyInteger( 1 ) )
-//        ), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GEO_DISTANCE ), PolyType.ANY ) );
-//        AlgNode replacementNode = LogicalDocumentProject.create( filter.getInput(), Map.of(), List.of(), adds );
-//        replacementNode.getTupleType();
-//
-//        //
-//        // Step 2:
-//        // Filter by minDistance, maxDistance
-//        List<RexNode> filterNodes = new ArrayList<>();
-//        if ( minDistance.getValue().asNumber().intValue() != -1 ) {
-//            filterNodes.add(
-//                    getFixedCall(
-//                            List.of(
-//                                    new RexNameRef( List.of( distanceField ), null, DocumentType.ofDoc() ),
-//                                    convertLiteral( minDistance.getValue() ) ),
-//                            OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GTE ),
-//                            PolyType.BOOLEAN ) );
-//        }
-//        if ( maxDistance.getValue().asNumber().intValue() != -1 ) {
-//            filterNodes.add(
-//                    getFixedCall(
-//                            List.of(
-//                                    new RexNameRef( List.of( distanceField ), null, DocumentType.ofDoc() ),
-//                                    convertLiteral( maxDistance.getValue() ) ),
-//                            OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_LTE ),
-//                            PolyType.BOOLEAN ) );
-//        }
-//        if ( !filterNodes.isEmpty() ) {
-//            RexNode filterCondition = getFixedCall(
-//                    filterNodes,
-//                    OperatorRegistry.get( OperatorName.AND ),
-//                    PolyType.BOOLEAN
-//            );
-//            replacementNode = LogicalDocumentFilter.create( replacementNode, filterCondition );
-//            replacementNode.getTupleType();
-//        }
-//
-//        //
-//        // Step 3:
-//        // Sort by distance ascending
-//        List<String> names = List.of( distanceField );
-//        replacementNode = LogicalDocumentSort.create(
-//                replacementNode,
-//                AlgCollations.of( generateCollation( List.of( Direction.ASCENDING ), names, names ) ),
-//                List.of( new RexNameRef( List.of( distanceField ), null, DocumentType.ofDoc() ) ),
-//                null,
-//                null );
-//        replacementNode.getTupleType();
-//
-//        //
-//        // Step 4:
-//        // Projection to remove field distance
-//        replacementNode = LogicalDocumentProject.create( replacementNode, Map.of(), List.of( distanceField ), Map.of() );
-//        replacementNode.getTupleType();
-//
-//        return replacementNode;
+        //
+        // Step 1:
+        // Apply filter for $geoNear query
+        // TODO RB: How to check if query is emtpy?
+        if ( query.operands.size() > 0 ) {
+            RexNode filterCondition = getFixedCall(
+                    List.of( query ),
+                    OperatorRegistry.get( OperatorName.AND ),
+                    PolyType.BOOLEAN
+            );
+            replacementNode = LogicalDocumentFilter.create( filter.getInput(), filterCondition );
+            replacementNode.getTupleType();
+        }
+
+        //
+        // Step 2:
+        // Add distanceField using a project
+        Map<String, RexNode> adds = new HashMap<>();
+        adds.put( distanceField.name, getFixedCall( List.of(
+                // NOTE: Currently, the key field is required in Polypheny, because index creation is currently not supported.
+                new RexNameRef( List.of( key.value.toString() ), null, DocumentType.ofDoc() ),
+                nearGeometry,
+                distanceMultiplier
+        ), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GEO_DISTANCE ), PolyType.ANY ) );
+
+        // Include nearGeometry in the results, if includeLocs contains the name of a field.
+        if ( !includeLocs.name.isEmpty() ) {
+            adds.put(
+                    includeLocs.name, nearGeometry
+            );
+        }
+        replacementNode = LogicalDocumentProject.create( replacementNode, Map.of(), List.of(), adds );
+        replacementNode.getTupleType();
+
+        //
+        // Step 3:
+        // Filter by minDistance, maxDistance
+        List<RexNode> filterNodes = new ArrayList<>();
+        if ( minDistance.getValue().asNumber().doubleValue() != -1.0 ) {
+            filterNodes.add(
+                    getFixedCall(
+                            List.of(
+                                    distanceField,
+                                    convertLiteral( minDistance.getValue() ) ),
+                            OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GTE ),
+                            PolyType.BOOLEAN ) );
+        }
+        if ( maxDistance.getValue().asNumber().doubleValue() != -1.0 ) {
+            filterNodes.add(
+                    getFixedCall(
+                            List.of(
+                                    distanceField,
+                                    convertLiteral( maxDistance.getValue() ) ),
+                            OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_LTE ),
+                            PolyType.BOOLEAN ) );
+        }
+        if ( !filterNodes.isEmpty() ) {
+            RexNode filterCondition = getFixedCall(
+                    filterNodes,
+                    OperatorRegistry.get( OperatorName.AND ),
+                    PolyType.BOOLEAN
+            );
+            replacementNode = LogicalDocumentFilter.create( replacementNode, filterCondition );
+            replacementNode.getTupleType();
+        }
+
+        //
+        // Step 4:
+        // Sort by distance ascending
+        List<String> names = List.of( distanceField.name );
+        replacementNode = LogicalDocumentSort.create(
+                replacementNode,
+                AlgCollations.of( generateCollation( List.of( Direction.ASCENDING ), names, names ) ),
+                List.of( distanceField ),
+                null,
+                null );
+        replacementNode.getTupleType();
+
+        return replacementNode;
     }
 
 

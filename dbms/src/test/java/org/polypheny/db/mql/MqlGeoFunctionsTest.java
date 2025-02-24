@@ -47,7 +47,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     final static String mongoCollection = "mongo";
     final static String defaultCollection = "default";
     final static List<String> collections = List.of(
-//            defaultCollection,
+            defaultCollection,
             mongoCollection
     );
     final static Map<String, String> collectionToStore = Map.of( mongoCollection, mongoAdapterName, defaultCollection, "hsqldb" );
@@ -412,13 +412,19 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     public void docGeoNearTest() {
         ArrayList<String> queries = new ArrayList<>();
 
+        // TODO: Support indexes
+        // An index is necessary, because that tells MongoDB which field to use for calculating
+        // the distance. Currently, the field name specified in 'key' is created.
+//        queries.add( """
+//                db.%s.createIndex({ legacy: "2d" })
+//                """);
         queries.add( """
                 db.%s.insertMany([
                     {
                       name: "Legacy [2,2]",
                       num: 3,
                       legacy: [2,2]
-                    }
+                    },
                     {
                       name: "Legacy [0,0]",
                       num: 1,
@@ -428,12 +434,12 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                       name: "Legacy [3,3]",
                       num: 4,
                       legacy: [3,3]
-                    }
+                    },
                     {
                       name: "Legacy [1,1]",
                       num: 2,
                       legacy: [1,1]
-                    },
+                    }
                 ])
                 """ );
         queries.add("""
@@ -442,11 +448,11 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                     "$geoNear": {
                         near: [0,0],
                         key: "legacy",
-                        spherical: false
+                        spherical: false,
                         includeLocs: "nearLocation",
                         distanceField: "distanced.nested",
                         distanceMultiplier: 2,
-                        query: { num: { "$gte": 2 } },
+                        query: { num: { "$gte": 2 } }
                     }
                   }
                 ])

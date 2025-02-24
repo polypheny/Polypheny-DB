@@ -67,8 +67,10 @@ import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyLinearRing;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
@@ -332,9 +334,6 @@ public class MongoFilter extends Filter implements MongoAlg {
                     return;
                 case MQL_NEAR:
                     translateNear( (RexCall) node );
-                    return;
-                case MQL_GEO_NEAR:
-                    translateGeoNearInsideMatch( (RexCall) node );
                     return;
                 case IS_NOT_TRUE:
                     translateIsTrue( (RexCall) node, true );
@@ -781,85 +780,70 @@ public class MongoFilter extends Filter implements MongoAlg {
             }
 
         }
+        
 
+        private void translateGeoNear( RexNode condition, Implementor implementor ) {
+            if ( !(condition instanceof RexCall node) ) {
+                throw new GenericRuntimeException( "Was expecting MQL_GEO_NEAR to be of type RexCall" );
+            }
 
-        private void translateGeoNearInsideMatch( RexCall node ) {
             assert node.operands.size() == 8;
+            PolyGeometry nearGeometry = getLiteralAs( node, 0, PolyValue::asGeometry );
+            RexNameRef distanceField = (RexNameRef) node.operands.get( 1 );
+            PolyDouble distanceMultiplier = getLiteralAs( node, 2, PolyValue::asDouble );
+            RexNameRef includeLocs = (RexNameRef) node.operands.get( 3 );
+            PolyString key = getLiteralAs( node, 4, PolyValue::asString );
+            PolyDouble maxDistance = getLiteralAs( node, 5, PolyValue::asDouble );
+            PolyDouble minDistance = getLiteralAs( node, 6, PolyValue::asDouble );
+            RexCall query = (RexCall) node.operands.get( 7 );
 
-            // TODO: translate $geoNear to $geoNear
-
-            String left = getParamAsKey( node.operands.get( 0 ) );
-            PolyGeometry filterGeometry = getLiteralAs( node, 1, PolyValue::asGeometry );
-            PolyNumber minDistance = getLiteralAs( node, 2, p -> (PolyNumber) p );
-            PolyNumber maxDistance = getLiteralAs( node, 3, p -> (PolyNumber) p );
-
-            if ( filterGeometry.getSRID() == 0 ) {
+            BsonDocument geoNearOptions = new BsonDocument();
+            // Required
+            geoNearOptions.put( "distanceField", new BsonString( distanceField.name ) );
+            if ( nearGeometry.getSRID() == 0 ) {
                 // We have no SRID -> Use legacy coordinates like this:
                 // $near: [ 0, 0 ]
                 BsonDocument leftBody = new BsonDocument();
                 BsonArray legacyCoordinates = new BsonArray();
-                legacyCoordinates.add( new BsonDouble( filterGeometry.asPoint().getX() ) );
-                legacyCoordinates.add( new BsonDouble( filterGeometry.asPoint().getY() ) );
-                leftBody.put( "$near", legacyCoordinates );
-
-                // Only $minDistance is allowed when $near is used with legacy coordinates.
-                if ( !maxDistance.isInteger() || maxDistance.intValue() != -1 ) {
-                    leftBody.put( "$maxDistance", BsonUtil.getAsBson( maxDistance, maxDistance.type, bucket ) );
-                }
-
-                // Executing this query requires the 2d index to be created on the 'left' field.
-                attachCondition( null, left, leftBody );
-                return;
+                legacyCoordinates.add( new BsonDouble( nearGeometry.asPoint().getX() ) );
+                legacyCoordinates.add( new BsonDouble( nearGeometry.asPoint().getY() ) );
+                geoNearOptions.put( "near", legacyCoordinates );
             } else {
                 // We have an SRID. This could be because of two cases:
                 // We use $nearSphere with legacy coordinates OR We use $near or $nearSphere with a GeoJSON object
                 // In both cases can we convert the object to a GeoJSON object
-                BsonDocument leftBody = new BsonDocument();
-                BsonDocument near = new BsonDocument();
-                leftBody.put( "$near", near );
-                near.put( "$geometry", BsonDocument.parse( filterGeometry.toJson() ) );
-
-                if ( !minDistance.isInteger() || minDistance.intValue() != -1 ) {
-                    near.put( "$minDistance", BsonUtil.getAsBson( minDistance, minDistance.type, bucket ) );
-                }
-                if ( !maxDistance.isInteger() || maxDistance.intValue() != -1 ) {
-                    near.put( "$maxDistance", BsonUtil.getAsBson( maxDistance, maxDistance.type, bucket ) );
-                }
-
-                // Executing this query requires the 2dsphere index to be created on the 'left' field.
-                attachCondition( null, left, leftBody );
-                return;
-            }
-        }
-
-
-        private void translateGeoNear( RexNode condition, Implementor implementor ) {
-            BsonDocument value = translateFinalOr( condition );
-            if ( !value.isEmpty() ) {
-                if ( !preProjections.isEmpty() ) {
-                    implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$addFields", preProjections ) ) );
-                }
-
-                BsonValue near = value.getDocument( value.getFirstKey() ).get( "$near" );
-                String fieldName = value.getFirstKey();
-                if ( near.isDocument() ) {
-                    // Point is specified as GeoJSON -> Create a 2dsphere index
-                    implementor.indexAndIndexType.add( "%s\n2dsphere".formatted( fieldName ) );
-                } else if ( near.isArray() ) {
-                    // Point is specified as legacy coordiantes -> Create a 2d index
-                    implementor.indexAndIndexType.add( "%s\n2d".formatted( fieldName ) );
-                } else {
-                    throw new NotImplementedException( "Unexpected value for $near." );
-                }
-
-                final String distanceField = "__temp_%s".formatted( UUID.randomUUID().toString() );
-                BsonDocument geoNearOptions = new BsonDocument();
-                geoNearOptions.put( "distanceField", new BsonString( distanceField ) );
-                geoNearOptions.put( "near", near );
-                implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$geoNear", geoNearOptions ) ) );
-                implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$unset", new BsonString( distanceField ) ) ) );
+                geoNearOptions.put( "near", BsonDocument.parse( nearGeometry.toJson() ) );
             }
 
+            // Optional
+            if (distanceMultiplier.getValue() > 1.0){
+                geoNearOptions.put( "distanceMultiplier", new BsonDouble( distanceMultiplier.getValue() ) );
+            }
+            if (!includeLocs.name.isEmpty()){
+                geoNearOptions.put( "includeLocs", new BsonString( includeLocs.name ) );
+            }
+            if (!key.getValue().isEmpty()){
+                geoNearOptions.put( "key", new BsonString( key.getValue() ) );
+                // If the user specified which field should be used for the query, then we can create the index
+                // if it does not exist. If there is no index, and key is not set, the operation will fail.
+                // Normally this field is used if there are multiple indexes, so that we can decide which to use.
+                implementor.indexAndIndexType.add(
+                        "%s\n%s".formatted(key.getValue(), nearGeometry.getSRID() == 0 ? "2d" : "2dsphere")
+                );
+            }
+            if (maxDistance.getValue() != -1.0){
+                geoNearOptions.put( "maxDistance", new BsonDouble( maxDistance.getValue() ) );
+            }
+            if (minDistance.getValue() != -1.0){
+                geoNearOptions.put( "minDistance", new BsonDouble( minDistance.getValue() ) );
+            }
+            // TODO: How to check if RexCalls is empty?
+            if (query.operands.size() > 0){
+                BsonDocument queryDocument = translateFinalOr( query );
+                geoNearOptions.put( "query", queryDocument );
+            }
+
+            implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$geoNear", geoNearOptions ) ) );
         }
 
 
