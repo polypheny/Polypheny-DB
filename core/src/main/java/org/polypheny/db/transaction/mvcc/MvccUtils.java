@@ -118,6 +118,7 @@ public class MvccUtils {
 
     public static List<ExecutedContext> executeDmlAlgTree( AlgRoot root, Statement statement, long namespaceId ) {
         PolyImplementation implementation = statement.getQueryProcessor().prepareQuery( root, true );
+
         ParsedQueryContext dummyContext = getDummyContext( statement, namespaceId );
         ImplementationContext implementationContext = new ImplementationContext( implementation, dummyContext, statement, null );
         List<ExecutedContext> executedContexts = new ArrayList<>();
