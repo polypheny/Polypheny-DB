@@ -35,6 +35,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -160,6 +161,7 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
 
 
     private LogicalRelJoin buildScopeScanJoin( AlgNode left, LogicalRelAggregate right ) {
+        int leftColumnCount = left.getTupleType().getFieldCount();
         RexCall identifierJoinCondition = new RexCall(
                 BOOLEAN_ALG_TYPE,
                 OperatorRegistry.get( OperatorName.EQUALS ),
@@ -168,7 +170,7 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
                         OperatorRegistry.get( OperatorName.ABS ),
                         new RexIndexRef( 0, IdentifierUtils.IDENTIFIER_ALG_TYPE )
                 ),
-                new RexIndexRef( 4, IdentifierUtils.IDENTIFIER_ALG_TYPE )
+                new RexIndexRef( leftColumnCount, IdentifierUtils.IDENTIFIER_ALG_TYPE ) // TODO TH: this is broken for different column counts then 2 xD. Adjust index accordingly
         );
 
         RexCall versionJoinCondition = new RexCall(
@@ -179,7 +181,8 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
                         OperatorRegistry.get( OperatorName.ABS ),
                         new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE )
                 ),
-                new RexIndexRef( 5, IdentifierUtils.VERSION_ALG_TYPE )
+
+                new RexIndexRef( leftColumnCount + 1, IdentifierUtils.VERSION_ALG_TYPE ) // TODO TH: this is broken for different column counts then 2 xD. Adjust index accordingly
         );
 
         RexCall joinCondition = new RexCall(
