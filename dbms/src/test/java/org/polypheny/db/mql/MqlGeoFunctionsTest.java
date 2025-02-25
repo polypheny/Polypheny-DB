@@ -449,21 +449,14 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                         near: [0,0],
                         key: "legacy",
                         spherical: false,
-                        includeLocs: "nearLocation",
+                        includeLocs: "nearLocation.nested",
                         distanceField: "distanced.nested",
                         distanceMultiplier: 2,
-                        query: { num: { "$gte": 2 } }
                     }
                   }
                 ])
                 """);
-//        queries.add( """
-//                db.%s.aggregate([
-//                  { $match: { num: { $gte: 2 } } },
-//                  { $sort: { num: 1 } }
-//                ])
-//                """ );
-
+        
         List<DocResult> results = runQueries( queries );
         compareResults( results );
     }

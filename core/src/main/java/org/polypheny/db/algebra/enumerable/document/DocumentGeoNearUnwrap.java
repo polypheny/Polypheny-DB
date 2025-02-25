@@ -102,15 +102,19 @@ public class DocumentGeoNearUnwrap extends ConverterRule {
         RexLiteral key = (RexLiteral) geoNearCall.operands.get( 4 );
         RexLiteral maxDistance = (RexLiteral) geoNearCall.operands.get( 5 );
         RexLiteral minDistance = (RexLiteral) geoNearCall.operands.get( 6 );
-        RexCall query = (RexCall) geoNearCall.operands.get( 7 );
+        RexNode query = geoNearCall.operands.get( 7 );
 
         AlgNode replacementNode = filter.getInput();
+
+        if ( key.value.toString().isEmpty() ){
+            // Necessary, because otherwise we do not know which field contains the spatial information.
+            throw new GenericRuntimeException( "The key option is required when executing $geoNear internally. This is because Polypheny currently does not support any indexes." );
+        }
 
         //
         // Step 1:
         // Apply filter for $geoNear query
-        // TODO RB: How to check if query is emtpy?
-        if ( query.operands.size() > 0 ) {
+        if ( query instanceof RexCall ) {
             RexNode filterCondition = getFixedCall(
                     List.of( query ),
                     OperatorRegistry.get( OperatorName.AND ),
@@ -125,28 +129,15 @@ public class DocumentGeoNearUnwrap extends ConverterRule {
         // Add distanceField using a project
         Map<String, RexNode> adds = new HashMap<>();
         adds.put( distanceField.name, getFixedCall( List.of(
-                // NOTE: Currently, the key field is required in Polypheny, because index creation is currently not supported.
                 new RexNameRef( List.of( key.value.toString() ), null, DocumentType.ofDoc() ),
                 nearGeometry,
                 distanceMultiplier
         ), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GEO_DISTANCE ), PolyType.ANY ) );
 
-        // Include nearGeometry in the results, if includeLocs contains the name of a field.
         if ( !includeLocs.name.isEmpty() ) {
-            PolyGeometry polyGeometry = nearGeometry.getValue().asGeometry();
-            Point point = (Point)polyGeometry.getJtsGeometry();
-            RexLiteral addLocation;
-            if (polyGeometry.getSRID() == 0){
-            addLocation = new RexLiteral(
-                    new PolyList<PolyDouble>( new PolyDouble( point.getX() ), new PolyDouble( point.getY() ) ),
-                    cluster.getTypeFactory().createArrayType(cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), 2),
-                    PolyType.ARRAY
-                    );
-            } else {
-                addLocation = nearGeometry;
-            }
+            // Include the location field that is used for calculating the distance under the includeLocs field.
             adds.put(
-                    includeLocs.name, addLocation
+                    includeLocs.name, new RexNameRef( key.value.toString(), null, DocumentType.ofDoc() ) // addLocation
             );
         }
         replacementNode = LogicalDocumentProject.create( replacementNode, Map.of(), List.of(), adds );

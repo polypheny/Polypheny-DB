@@ -795,7 +795,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             PolyString key = getLiteralAs( node, 4, PolyValue::asString );
             PolyDouble maxDistance = getLiteralAs( node, 5, PolyValue::asDouble );
             PolyDouble minDistance = getLiteralAs( node, 6, PolyValue::asDouble );
-            RexCall query = (RexCall) node.operands.get( 7 );
+            RexNode query = node.operands.get( 7 );
 
             BsonDocument geoNearOptions = new BsonDocument();
             // Required
@@ -837,8 +837,10 @@ public class MongoFilter extends Filter implements MongoAlg {
             if (minDistance.getValue() != -1.0){
                 geoNearOptions.put( "minDistance", new BsonDouble( minDistance.getValue() ) );
             }
-            // TODO: How to check if RexCalls is empty?
-            if (query.operands.size() > 0){
+
+            if (query instanceof RexCall){
+                // TODO RB: Query is wrongly converted to JSON. Double gets converted to String.
+                //   MQL_GTE(RexNameRef(names=[num], index=Optional.empty), 2) => {"num": {"$gte": "2"}}
                 BsonDocument queryDocument = translateFinalOr( query );
                 geoNearOptions.put( "query", queryDocument );
             }

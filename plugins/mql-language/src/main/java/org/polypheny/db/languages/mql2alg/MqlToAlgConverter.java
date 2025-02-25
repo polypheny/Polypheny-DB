@@ -2043,13 +2043,14 @@ public class MqlToAlgConverter {
             }
         }
 
-        // TODO: How to handle empty query? Empty filter like {}, but how to create?
-        RexNode query = null;
+        RexNode query;
         if ( options.containsKey( "query" ) ) {
             query = translateDocument( options.getDocument( "query" ), rowType, null );
+        } else {
+            // TODO RB: Is there a better way to represent an empty a non-existant RexCall? null is not allowed.
+            query = convertLiteral( new BsonBoolean( false ) );
         }
 
-        // Create LogicalDocumentFilter for now ->
         return LogicalDocumentFilter.create(
                 node,
                 new RexCall(
@@ -2061,13 +2062,11 @@ public class MqlToAlgConverter {
                                 getIdentifier( distanceField.getValue(), rowType ),
                                 // Optional
                                 convertLiteral( distanceMultiplier ),
-                                //!includeLocs.getValue().isEmpty() ? getIdentifier( includeLocs.getValue(), rowType ) : null,
                                 getIdentifier( includeLocs.getValue(), rowType ),
                                 convertLiteral( key ),
                                 convertLiteral( maxDistance ),
                                 convertLiteral( minDistance ),
                                 query
-                                // Query is handled separately
                                 // Spherical is encoded in PolyGeometry as CRS.
                         ) )
         );
