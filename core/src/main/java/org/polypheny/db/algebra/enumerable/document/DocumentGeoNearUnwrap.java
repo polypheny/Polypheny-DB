@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.enumerable.document;
 
+import org.locationtech.jts.geom.Point;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
@@ -42,11 +43,13 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyPoint;
 import org.polypheny.db.util.Pair;
 import java.util.*;
 
@@ -130,8 +133,20 @@ public class DocumentGeoNearUnwrap extends ConverterRule {
 
         // Include nearGeometry in the results, if includeLocs contains the name of a field.
         if ( !includeLocs.name.isEmpty() ) {
+            PolyGeometry polyGeometry = nearGeometry.getValue().asGeometry();
+            Point point = (Point)polyGeometry.getJtsGeometry();
+            RexLiteral addLocation;
+            if (polyGeometry.getSRID() == 0){
+            addLocation = new RexLiteral(
+                    new PolyList<PolyDouble>( new PolyDouble( point.getX() ), new PolyDouble( point.getY() ) ),
+                    cluster.getTypeFactory().createArrayType(cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), 2),
+                    PolyType.ARRAY
+                    );
+            } else {
+                addLocation = nearGeometry;
+            }
             adds.put(
-                    includeLocs.name, nearGeometry
+                    includeLocs.name, addLocation
             );
         }
         replacementNode = LogicalDocumentProject.create( replacementNode, Map.of(), List.of(), adds );
