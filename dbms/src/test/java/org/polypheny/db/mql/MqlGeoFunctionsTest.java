@@ -410,6 +410,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
     @Test
     public void docGeoNearTest() {
+        // TODO: This test currently fails, because the sort is not working correctly for some reason.
         ArrayList<String> queries = new ArrayList<>();
 
         // TODO: Support indexes
