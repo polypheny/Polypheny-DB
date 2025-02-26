@@ -1235,6 +1235,33 @@ public class RelationalIdentifierTests {
     }
 
     @Test
+    public void testMvccDeletePrepared() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.setSchema( "mvccTest" );
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers VALUES ('first', 'second'), ('third', 'fourth')" );
+                } finally {
+                    connection.commit();
+                }
+            }
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    PreparedStatement preparedStatement = connection.prepareStatement( "DELETE FROM identifiers WHERE a = ?" );
+                    preparedStatement.setString( 1, "first" );
+                    preparedStatement.executeUpdate();
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+    @Test
     public void testMvccUpdatePreparedB() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -1312,7 +1339,7 @@ public class RelationalIdentifierTests {
 
 
     @Test
-    public void testMvccInsertPreparedNoColumnNames() throws SQLException {
+    public void testMvccInsertPreparedABNoColumnNames() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setSchema( "mvccTest" );
@@ -1334,5 +1361,47 @@ public class RelationalIdentifierTests {
         }
     }
 
+    @Test
+    public void testMvccInsertPreparedANoColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.setSchema( "mvccTest" );
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    String insertSql = "INSERT INTO identifiers VALUES (?, 'second')";
+                    try ( PreparedStatement preparedStatement = connection.prepareStatement( insertSql ) ) {
+                        preparedStatement.setString( 1, "first" );
+                        preparedStatement.executeUpdate();
+                    }
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
 
+    @Test
+    public void testMvccInsertPreparedBNoColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.setSchema( "mvccTest" );
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    String insertSql = "INSERT INTO identifiers VALUES ('first', ?)";
+                    try ( PreparedStatement preparedStatement = connection.prepareStatement( insertSql ) ) {
+                        preparedStatement.setString( 1, "second" );
+                        preparedStatement.executeUpdate();
+                    }
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
 }
