@@ -62,20 +62,24 @@ public class RelationalIdentifierTests {
         assertThrows( IllegalArgumentException.class, () -> IdentifierUtils.throwIfIsDisallowedFieldName( "_scary" ) );
     }
 
+
     @Test
     public void illegalFieldNameDigit() {
         assertThrows( IllegalArgumentException.class, () -> IdentifierUtils.throwIfIsDisallowedFieldName( "9scary" ) );
     }
+
 
     @Test
     public void illegalFieldNameIdentifierKey() {
         assertThrows( IllegalArgumentException.class, () -> IdentifierUtils.throwIfIsDisallowedFieldName( IdentifierUtils.IDENTIFIER_KEY ) );
     }
 
+
     @Test
     public void illegalFieldNameVersionKey() {
         assertThrows( IllegalArgumentException.class, () -> IdentifierUtils.throwIfIsDisallowedFieldName( IdentifierUtils.VERSION_KEY ) );
     }
+
 
     @Test
     public void legalFieldNames() {
@@ -86,7 +90,6 @@ public class RelationalIdentifierTests {
         IdentifierUtils.throwIfIsDisallowedFieldName( "field_1" );
         IdentifierUtils.throwIfIsDisallowedFieldName( "field_" );
     }
-
 
 
     @Test
@@ -132,9 +135,9 @@ public class RelationalIdentifierTests {
             connection.setSchema( "nonMvccTest" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
-                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "CREATE TABLE identifiers (_eid BIGINT, a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" ));
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "CREATE TABLE identifiers (_eid BIGINT, a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -152,9 +155,9 @@ public class RelationalIdentifierTests {
             connection.setSchema( "nonMvccTest" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
-                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "CREATE TABLE identifiers (_eid VARCHAR(15), a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" ));
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "CREATE TABLE identifiers (_eid VARCHAR(15), a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -173,9 +176,9 @@ public class RelationalIdentifierTests {
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
-                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "ALTER TABLE identifiers DROP COLUMN _eid" ));
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "ALTER TABLE identifiers DROP COLUMN _eid" ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -194,9 +197,9 @@ public class RelationalIdentifierTests {
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
-                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "ALTER TABLE identifiers ADD COLUMN _eid BIGINT" ));
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "ALTER TABLE identifiers ADD COLUMN _eid BIGINT" ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -215,9 +218,9 @@ public class RelationalIdentifierTests {
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
-                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "ALTER TABLE identifiers RENAME COLUMN _eid TO thisShouldNotWork" ));
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "ALTER TABLE identifiers RENAME COLUMN _eid TO thisShouldNotWork" ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -236,9 +239,9 @@ public class RelationalIdentifierTests {
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
-                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "ALTER TABLE identifiers RENAME COLUMN b TO _eid" ));
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "ALTER TABLE identifiers RENAME COLUMN b TO _eid" ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -257,9 +260,9 @@ public class RelationalIdentifierTests {
             try ( Statement statement = connection.createStatement() ) {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
-                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "ALTER TABLE identifiers MODIFY COLUMN _eid SET TYPE VARCHAR(15)" ));
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "ALTER TABLE identifiers MODIFY COLUMN _eid SET TYPE VARCHAR(15)" ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -277,9 +280,9 @@ public class RelationalIdentifierTests {
             connection.setSchema( "nonMvccTest" );
             try ( Statement statement = connection.createStatement() ) {
                 try {
-                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, _eid INTEGER, PRIMARY KEY (a))" ));
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, _eid INTEGER, PRIMARY KEY (a))" ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
                     connection.commit();
@@ -642,9 +645,9 @@ public class RelationalIdentifierTests {
             connection.setSchema( "mvccTest" );
             try ( java.sql.Statement statement = connection.createStatement() ) {
                 try {
-                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "CREATE TABLE identifiers (_eid BIGINT, a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" ));
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "CREATE TABLE identifiers (_eid BIGINT, a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -662,9 +665,9 @@ public class RelationalIdentifierTests {
             connection.setSchema( "mvccTest" );
             try ( java.sql.Statement statement = connection.createStatement() ) {
                 try {
-                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "CREATE TABLE identifiers (_eid VARCHAR(15), a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" ));
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "CREATE TABLE identifiers (_eid VARCHAR(15), a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -684,9 +687,9 @@ public class RelationalIdentifierTests {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
                     statement.executeUpdate( "INSERT INTO identifiers (a, b) VALUES (1, 2)" );
-                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "UPDATE identifiers SET _eid = 32 WHERE a = 1 AND b = 2" ));
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "UPDATE identifiers SET _eid = 32 WHERE a = 1 AND b = 2" ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -706,8 +709,8 @@ public class RelationalIdentifierTests {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
                     PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "ALTER TABLE identifiers DROP COLUMN _eid" ) );
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -727,8 +730,8 @@ public class RelationalIdentifierTests {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
                     PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "ALTER TABLE identifiers ADD COLUMN _eid BIGINT" ) );
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -748,8 +751,8 @@ public class RelationalIdentifierTests {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
                     PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "ALTER TABLE identifiers RENAME COLUMN _eid TO nowItsBroken" ) );
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -769,8 +772,8 @@ public class RelationalIdentifierTests {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
                     PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "ALTER TABLE identifiers RENAME COLUMN b TO _eid" ) );
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -790,8 +793,8 @@ public class RelationalIdentifierTests {
                 try {
                     statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a))" );
                     PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "ALTER TABLE identifiers MODIFY COLUMN _eid SET TYPE VARCHAR(15)" ) );
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -809,9 +812,9 @@ public class RelationalIdentifierTests {
             connection.setSchema( "mvccTest" );
             try ( java.sql.Statement statement = connection.createStatement() ) {
                 try {
-                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, _eid INTEGER, PRIMARY KEY (a))" ));
-                    assertTrue(exception.getMessage().contains( "_eid" ) );
-                    assertTrue(exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
+                    PrismInterfaceServiceException exception = assertThrows( PrismInterfaceServiceException.class, () -> statement.executeUpdate( "CREATE TABLE identifiers (a INTEGER NOT NULL, _eid INTEGER, PRIMARY KEY (a))" ) );
+                    assertTrue( exception.getMessage().contains( "_eid" ) );
+                    assertTrue( exception.getMessage().contains( "Names with leading _ are reserved for internal use." ) );
                     connection.commit();
                 } finally {
                     statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
@@ -1047,6 +1050,207 @@ public class RelationalIdentifierTests {
                     PreparedStatement preparedStatement = connection.prepareStatement( "INSERT INTO identifiers (a, b) VALUES (?, ?)" );
                     preparedStatement.setString( 1, "first" );
                     preparedStatement.setString( 2, "second" );
+                    preparedStatement.executeUpdate();
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testMvccSelectWithColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.setSchema( "mvccTest" );
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                statement.executeUpdate( "INSERT INTO identifiers VALUES ('first', 'second'), ('third', 'fourth')" );
+                connection.commit();
+            }
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( "SELECT a, b from identifiers WHERE a = 'first'" );
+                connection.commit();
+            }
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                connection.commit();
+            }
+        }
+    }
+
+    @Test
+    public void testMvccSelectWithoutColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.setSchema( "mvccTest" );
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                statement.executeUpdate( "INSERT INTO identifiers VALUES ('first', 'second'), ('third', 'fourth')" );
+                connection.commit();
+            }
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( "SELECT * from identifiers WHERE a = 'first'" );
+                connection.commit();
+            }
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                connection.commit();
+            }
+        }
+    }
+
+
+    @Test
+    public void testMvccUpdateWithColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.setSchema( "mvccTest" );
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                statement.executeUpdate( "INSERT INTO identifiers VALUES ('first', 'second'), ('third', 'fourth')" );
+                connection.commit();
+            }
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "UPDATE identifiers SET b = 'updated' WHERE a = 'first'" );
+                connection.commit();
+            }
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                connection.commit();
+            }
+        }
+    }
+
+    @Test
+    public void testMvccSelectPreparedWithoutColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.setSchema( "mvccTest" );
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers VALUES ('first', 'second'), ('third', 'fourth')" );
+                } finally {
+                    connection.commit();
+                }
+            }
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    PreparedStatement preparedStatement = connection.prepareStatement( "SELECT * FROM identifiers WHERE a = ?" );
+                    preparedStatement.setString( 1, "first" );
+                    preparedStatement.execute();
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testMvccSelectPreparedWithColumnNames() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.setSchema( "mvccTest" );
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers VALUES ('first', 'second'), ('third', 'fourth')" );
+                } finally {
+                    connection.commit();
+                }
+            }
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    PreparedStatement preparedStatement = connection.prepareStatement( "SELECT a, b FROM identifiers WHERE a = ?" );
+                    preparedStatement.setString( 1, "first" );
+                    preparedStatement.execute();
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testMvccUpdatePreparedAB() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.setSchema( "mvccTest" );
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers VALUES ('first', 'second'), ('third', 'fourth')" );
+                } finally {
+                    connection.commit();
+                }
+            }
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    PreparedStatement preparedStatement = connection.prepareStatement( "UPDATE identifiers SET b = ? WHERE a = ?" );
+                    preparedStatement.setString( 1, "updated" );
+                    preparedStatement.setString( 2, "first" );
+                    preparedStatement.executeUpdate();
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testMvccUpdatePreparedA() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.setSchema( "mvccTest" );
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers VALUES ('first', 'second'), ('third', 'fourth')" );
+                } finally {
+                    connection.commit();
+                }
+            }
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    PreparedStatement preparedStatement = connection.prepareStatement( "UPDATE identifiers SET b = 'updated' WHERE a = ?" );
+                    preparedStatement.setString( 1, "first" );
+                    preparedStatement.executeUpdate();
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testMvccUpdatePreparedB() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.setSchema( "mvccTest" );
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b VARCHAR(8), PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers VALUES ('first', 'second'), ('third', 'fourth')" );
+                } finally {
+                    connection.commit();
+                }
+            }
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    PreparedStatement preparedStatement = connection.prepareStatement( "UPDATE identifiers SET b = ? WHERE a = 'first'" );
+                    preparedStatement.setString( 1, "updated" );
                     preparedStatement.executeUpdate();
                     connection.commit();
                 } finally {
