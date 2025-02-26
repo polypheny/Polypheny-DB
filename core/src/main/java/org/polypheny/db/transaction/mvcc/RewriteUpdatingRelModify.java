@@ -24,17 +24,14 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.processing.DeepCopyShuttle;
-import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.mvcc.RelCommitStateFilterRewrite.CommitState;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 public class RewriteUpdatingRelModify implements AlgTreeModification<LogicalRelModify, LogicalRelModify> {
 
@@ -64,8 +61,8 @@ public class RewriteUpdatingRelModify implements AlgTreeModification<LogicalRelM
         assert IdentifierUtils.IDENTIFIER_KEY.equals( inputFields.get( 0 ).getName() );
         assert IdentifierUtils.VERSION_KEY.equals( inputFields.get( 1 ).getName() );
 
-        AlgRoot updatingSubtree = createUpdatingSubtree( node );
-        MvccUtils.executeDmlAlgTree( updatingSubtree, statement, node.getEntity().getNamespaceId() );
+        LogicalRelModify updatingSubtree = createUpdatingSubtree( node );
+        MvccUtils.executeDmlAlgTree( AlgRoot.of( updatingSubtree, Kind.UPDATE ), statement, node.getEntity().getNamespaceId() );
         return createInsertingSubtree( node );
     }
 
@@ -79,17 +76,19 @@ public class RewriteUpdatingRelModify implements AlgTreeModification<LogicalRelM
         MvccJoinLhsFilterRewriter lhsFilterRewriter = new MvccJoinLhsFilterRewriter( CommitState.COMMITTED );
         LogicalRelProject originalProject = (LogicalRelProject) lhsFilterRewriter.visit( (LogicalRelProject) originalModify.getInput() );
 
-        List<AlgDataTypeField> inputFields = originalProject.getRowType().getFields().stream()
-                .filter( f -> !(originalProject.getProjects().get( f.getIndex() ) instanceof RexLiteral) ).collect( Collectors.toCollection( ArrayList::new ) );
+        List<RexNode> originalProjects = originalProject.getProjects().stream()
+                .filter( p -> !(p instanceof RexLiteral) )
+                .filter( p -> !(p instanceof RexDynamicParam) )
+                .toList();
 
-
-        List<RexNode> projects = new ArrayList<>( inputFields.size() );
-
-        for ( int i = 0; i < inputFields.size(); i++ ) {
-            AlgDataTypeField field = inputFields.get( i );
+        List<RexNode> newProjects = new ArrayList<>( originalProjects.size() );
+        List<String> newFieldNames = new ArrayList<>( originalProjects.size() );
+        for ( int i = 0; i < originalProjects.size(); i++ ) {
+            AlgDataTypeField originalField = originalProject.getRowType().getFields().get( i );
+            newFieldNames.add( originalField.getName() );
             if ( i == 1 ) {
                 // replace _vid
-                projects.add( new RexLiteral(
+                newProjects.add( new RexLiteral(
                         IdentifierUtils.getVersionAsPolyBigDecimal( statement.getTransaction().getSequenceNumber(), false ),
                         IdentifierUtils.VERSION_ALG_TYPE,
                         PolyType.BIGINT
@@ -97,20 +96,20 @@ public class RewriteUpdatingRelModify implements AlgTreeModification<LogicalRelM
                 continue;
             }
 
-            if ( originalModify.getUpdateColumns().contains( field.getName() ) ) {
+            if ( originalModify.getUpdateColumns().contains( originalField.getName() ) ) {
                 // replace updated values
-                int updateIndex = originalModify.getUpdateColumns().indexOf( field.getName() );
-                projects.add( originalModify.getSourceExpressions().get( updateIndex ) );
+                int updateIndex = originalModify.getUpdateColumns().indexOf( originalField.getName() );
+                newProjects.add( originalModify.getSourceExpressions().get( updateIndex ) );
                 continue;
             }
 
-            projects.add( new RexIndexRef( field.getIndex(), field.getType() ) );
+            newProjects.add( originalProjects.get( i ) );
         }
 
         LogicalRelProject project = LogicalRelProject.create(
                 originalProject.getInput(),
-                projects,
-                inputFields.stream().map( AlgDataTypeField::getName ).toList()
+                newProjects,
+                newFieldNames
         );
 
         return LogicalRelModify.create(
@@ -124,7 +123,7 @@ public class RewriteUpdatingRelModify implements AlgTreeModification<LogicalRelM
     }
 
 
-    private AlgRoot createUpdatingSubtree( LogicalRelModify originalModify ) {
+    private LogicalRelModify createUpdatingSubtree( LogicalRelModify originalModify ) {
         originalModify = (LogicalRelModify) new DeepCopyShuttle().visit( originalModify );
         throwOnIllegalInputNode( originalModify );
 
@@ -135,42 +134,14 @@ public class RewriteUpdatingRelModify implements AlgTreeModification<LogicalRelM
         MvccJoinLhsFilterRewriter lhsFilterRewriter = new MvccJoinLhsFilterRewriter( CommitState.UNCOMMITTED );
         LogicalRelProject originalProject = (LogicalRelProject) lhsFilterRewriter.visit( originalModify.getInput() );
 
-        List<AlgDataTypeField> inputFields = originalProject.getRowType().getFields().stream()
-                .filter( f -> !(originalProject.getProjects().get( f.getIndex() ) instanceof RexLiteral) ).collect( Collectors.toCollection( ArrayList::new ) );
-
-        List<RexNode> projects = new ArrayList<>( inputFields.size() );
-
-        for ( int i = 0; i < inputFields.size(); i++ ) {
-            AlgDataTypeField field = inputFields.get( i );
-            if ( i == 1 ) {
-                // replace _vid
-                projects.add( new RexLiteral(
-                        IdentifierUtils.getVersionAsPolyBigDecimal( statement.getTransaction().getSequenceNumber(), false ),
-                        IdentifierUtils.VERSION_ALG_TYPE,
-                        PolyType.BIGINT
-                ) );
-                continue;
-            }
-
-            projects.add( new RexIndexRef( field.getIndex(), field.getType() ) );
-        }
-
-        LogicalRelProject project = LogicalRelProject.create(
-                originalProject.getInput(),
-                projects,
-                inputFields.stream().map( AlgDataTypeField::getName ).toList()
-        );
-
-        LogicalRelModify updatingModify = LogicalRelModify.create(
+        return LogicalRelModify.create(
                 originalModify.getEntity(),
-                project,
+                originalProject,
                 Operation.UPDATE,
                 originalModify.getUpdateColumns(),
                 originalModify.getSourceExpressions(),
                 false
         );
-
-        return AlgRoot.of( updatingModify, Kind.UPDATE );
 
 
     }
