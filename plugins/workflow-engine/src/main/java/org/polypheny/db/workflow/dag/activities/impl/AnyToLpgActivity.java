@@ -58,7 +58,7 @@ import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
 import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 
-@ActivityDefinition(type = "anyToLpg", displayName = "Construct Graph", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH, ActivityCategory.RELATIONAL, ActivityCategory.DOCUMENT },
+@ActivityDefinition(type = "anyToLpg", displayName = "Construct Graph", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH, ActivityCategory.RELATIONAL, ActivityCategory.DOCUMENT, ActivityCategory.CROSS_MODEL },
         inPorts = {
                 @InPort(type = PortType.LPG, isOptional = true, description = "An optional existing graph to extend."),
                 @InPort(type = PortType.ANY, isMulti = true, description = "One or more tables or collections to map to graph elements.") },

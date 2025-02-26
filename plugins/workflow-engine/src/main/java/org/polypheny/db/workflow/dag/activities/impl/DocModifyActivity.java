@@ -31,6 +31,7 @@ import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
+import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
@@ -50,7 +51,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
-@ActivityDefinition(type = "docModify", displayName = "Modify Document Structure", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT },
+@ActivityDefinition(type = "docModify", displayName = "Modify Document Structure", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT, ActivityCategory.CLEANING },
         inPorts = { @InPort(type = PortType.DOC, description = "The input collection of documents.") },
         outPorts = { @OutPort(type = PortType.DOC, description = "The output collection with modified documents.") },
         shortDescription = "Modifies the structure of each input document."
@@ -84,6 +85,9 @@ public class DocModifyActivity implements Activity, Pipeable {
             switch ( mode ) {
                 case "move" -> {
                     fields.remove( target );
+                    if ( ActivityUtils.isInvalidFieldName( ActivityUtils.getChildPointer( target ) ) ) {
+                        throw new InvalidSettingException( "Invalid target field: " + target, "target" );
+                    }
                     if ( topLvlTarget ) {
                         fields.add( target );
                     }

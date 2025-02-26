@@ -160,7 +160,7 @@ public class RelAddColActivity implements Activity, Pipeable, Fusable {
 
         List<RexNode> projects = IntStream.range( 0, inType.getFieldCount() )
                 .mapToObj( i -> new RexIndexRef( i, inType.getFields().get( i ).getType() ) )
-                .collect( Collectors.toList() );
+                .collect( Collectors.toCollection( ArrayList::new ) );
 
         if ( settings.getBool( "replace" ) ) {
             int i = inType.getFieldNames().indexOf( settings.getString( "colName" ) );

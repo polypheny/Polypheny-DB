@@ -21,6 +21,7 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.polypheny.db.workflow.dag.settings.EnumSettingDef.EnumStyle;
 import org.polypheny.db.workflow.dag.settings.SettingDef;
 
 @Target(ElementType.TYPE)
@@ -74,6 +75,8 @@ public @interface EnumSetting {
     String defaultValue();
 
     String label() default "";
+
+    EnumStyle style() default EnumStyle.DROPDOWN;
 
 
     @Target(ElementType.TYPE)

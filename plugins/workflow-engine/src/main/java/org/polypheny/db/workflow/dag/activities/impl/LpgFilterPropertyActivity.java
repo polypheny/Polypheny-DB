@@ -52,7 +52,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.LpgInputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 
-@ActivityDefinition(type = "lpgPropertyFilter", displayName = "Filter Graph by Properties", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH },
+@ActivityDefinition(type = "lpgPropertyFilter", displayName = "Filter Graph by Properties", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH, ActivityCategory.CLEANING },
         inPorts = { @InPort(type = PortType.LPG, description = "The input graph.") },
         outPorts = { @OutPort(type = PortType.LPG, description = "A graph containing all matching nodes and edges from the input graph.") },
         shortDescription = "Computes a subgraph of the input that only includes nodes and edges that meet the specified filter criteria."

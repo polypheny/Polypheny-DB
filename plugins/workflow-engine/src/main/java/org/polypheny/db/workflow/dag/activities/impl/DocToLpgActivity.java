@@ -52,7 +52,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
-@ActivityDefinition(type = "docToLpg", displayName = "Collection to Graph", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT, ActivityCategory.GRAPH },
+@ActivityDefinition(type = "docToLpg", displayName = "Collection to Graph", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT, ActivityCategory.GRAPH, ActivityCategory.CROSS_MODEL },
         inPorts = { @InPort(type = PortType.DOC, description = "The input collection of documents.") },
         outPorts = { @OutPort(type = PortType.LPG, description = "The output graph whose nodes reflect the structure of the input collection.") },
         shortDescription = "Maps documents to a graph. Nested documents and array entries become their own nodes."

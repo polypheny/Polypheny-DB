@@ -51,7 +51,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.LpgInputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 
-@ActivityDefinition(type = "lpgPropertyRename", displayName = "Rename Graph Properties", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH },
+@ActivityDefinition(type = "lpgPropertyRename", displayName = "Rename Graph Properties", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH, ActivityCategory.CLEANING },
         inPorts = { @InPort(type = PortType.LPG, description = "The input graph.") },
         outPorts = { @OutPort(type = PortType.LPG, description = "The graph with renamed property fields.") },
         shortDescription = "Rename the fields of node or edge properties by defining rules."

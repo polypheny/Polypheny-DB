@@ -56,7 +56,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         outPorts = { @OutPort(type = PortType.DOC) },
         shortDescription = "This activity can be used to create a collection from a given JSON string. It should only be used for small collections, as the data is stored in the workflow itself."
 )
-@StringSetting(key = "json", displayName = "JSON", textEditor = true, language = "json", nonBlank = true, maxLength = 1024 * 1024,
+@StringSetting(key = "json", displayName = "JSON", textEditor = true, language = "json", nonBlank = true, maxLength = 60 * 1024, // TODO: limit size according to websocket message size limit (~64 KB)
         shortDescription = "A single document as a JSON object or a collection of documents as a JSON array of objects.")
 
 @SuppressWarnings("unused")

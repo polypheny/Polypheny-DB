@@ -60,7 +60,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
-@ActivityDefinition(type = "relToDoc", displayName = "Table to Collection", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL, ActivityCategory.DOCUMENT },
+@ActivityDefinition(type = "relToDoc", displayName = "Table to Collection", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL, ActivityCategory.DOCUMENT, ActivityCategory.CROSS_MODEL },
         inPorts = { @InPort(type = PortType.REL, description = "The input table") },
         outPorts = { @OutPort(type = PortType.DOC, description = "A collection containing the input table rows as documents.") },
         shortDescription = "Transform the rows of a table into documents."

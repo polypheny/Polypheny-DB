@@ -31,6 +31,7 @@ import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.FilterSetting;
+import org.polypheny.db.workflow.dag.settings.EnumSettingDef.EnumStyle;
 import org.polypheny.db.workflow.dag.settings.FilterValue;
 import org.polypheny.db.workflow.dag.settings.FilterValue.Operator;
 import org.polypheny.db.workflow.dag.settings.GroupDef;
@@ -42,7 +43,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
-@ActivityDefinition(type = "relFilter", displayName = "Filter Rows", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
+@ActivityDefinition(type = "relFilter", displayName = "Filter Rows", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL, ActivityCategory.CLEANING },
         inPorts = { @InPort(type = PortType.REL, description = "The input table.") },
         outPorts = {
                 @OutPort(type = PortType.REL, description = "A table containing all matching rows from the input table."),
@@ -56,7 +57,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
         modes = { SelectMode.EXACT, SelectMode.REGEX, SelectMode.INDEX })
 
 @EnumSetting(
-        key = "rejectedHandler", pos = 1, group = GroupDef.ADVANCED_GROUP,
+        key = "rejectedHandler", pos = 1, style = EnumStyle.RADIO_BUTTON, group = GroupDef.ADVANCED_GROUP,
         displayName = "Handling of Rejected Rows",
         options = { "store", "ignore", "fail" },
         defaultValue = "store",

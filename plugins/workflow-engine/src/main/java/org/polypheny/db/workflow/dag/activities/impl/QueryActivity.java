@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.dag.activities.impl;
 
+import static org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory.CROSS_MODEL;
 import static org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory.DOCUMENT;
 import static org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory.GRAPH;
 import static org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory.RELATIONAL;
@@ -51,7 +52,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
-@ActivityDefinition(type = "query", displayName = "Query Transform", categories = { TRANSFORM, RELATIONAL, DOCUMENT, GRAPH },
+@ActivityDefinition(type = "query", displayName = "Query Transform", categories = { TRANSFORM, RELATIONAL, DOCUMENT, GRAPH, CROSS_MODEL },
         inPorts = {
                 @InPort(type = PortType.ANY, description = "The input data to be queried. Can have any data model."),
                 @InPort(type = PortType.ANY, isOptional = true, description = "An optional second input. Note: Not all query languages support inputs with differing data models.")

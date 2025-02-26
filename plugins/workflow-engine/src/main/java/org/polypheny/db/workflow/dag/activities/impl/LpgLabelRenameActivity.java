@@ -49,7 +49,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.LpgInputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 
-@ActivityDefinition(type = "lpgLabelRename", displayName = "Rename Graph Labels", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH },
+@ActivityDefinition(type = "lpgLabelRename", displayName = "Rename Graph Labels", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH, ActivityCategory.CLEANING },
         inPorts = { @InPort(type = PortType.LPG, description = "The input graph") },
         outPorts = { @OutPort(type = PortType.LPG, description = "The graph with renamed labels") },
         shortDescription = "Rename the labels of a graph by defining rules."

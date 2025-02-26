@@ -49,6 +49,7 @@ import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
+import org.polypheny.db.workflow.dag.settings.EnumSettingDef.EnumStyle;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
@@ -67,7 +68,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 @StringSetting(key = "name", displayName = "Field Name", pos = 0,
         nonBlank = true, defaultValue = "sk",
         shortDescription = "Specify the name for the key field.")
-@EnumSetting(key = "generator", displayName = "Key Generation", pos = 1,
+@EnumSetting(key = "generator", displayName = "Key Generation", style = EnumStyle.RADIO_BUTTON, pos = 1,
         options = { "auto", "uuid" }, defaultValue = "auto",
         displayOptions = { "Auto-Increment", "UUID" },
         shortDescription = "Define the key generation method.")

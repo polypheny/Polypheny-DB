@@ -15,6 +15,7 @@ dependencies {
     compileOnly project(":plugins:cypher-language")
     compileOnly group: "io.javalin", name: "javalin", version: javalin_version
     compileOnly group: "org.apache.commons", name: "commons-collections4", version: commons_collections_version
+    compileOnly group: "com.opencsv", name: "opencsv", version: opencsv_version
 
 
     // --- Test Compile ---

@@ -48,7 +48,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.LpgInputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
-@ActivityDefinition(type = "lpgFilterLabels", displayName = "Filter Graph by Labels", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH },
+@ActivityDefinition(type = "lpgFilterLabels", displayName = "Filter Graph by Labels", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH, ActivityCategory.CLEANING },
         inPorts = { @InPort(type = PortType.LPG) },
         outPorts = { @OutPort(type = PortType.LPG) },
         shortDescription = "Computes a subgraph of the input that only includes nodes and edges with the specified labels."

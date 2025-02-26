@@ -51,7 +51,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.LpgInputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
-@ActivityDefinition(type = "lpgNodesToDoc", displayName = "Nodes to Collection", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH, ActivityCategory.DOCUMENT },
+@ActivityDefinition(type = "lpgNodesToDoc", displayName = "Nodes to Collection", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH, ActivityCategory.DOCUMENT, ActivityCategory.CROSS_MODEL },
         inPorts = { @InPort(type = PortType.LPG, description = "The input graph.") },
         outPorts = { @OutPort(type = PortType.DOC, description = "The output collection where each document corresponds to a node in the graph.") },
         shortDescription = "Maps nodes of a graph to documents in a collection."

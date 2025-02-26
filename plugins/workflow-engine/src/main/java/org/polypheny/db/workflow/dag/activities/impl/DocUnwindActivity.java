@@ -47,7 +47,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
-@ActivityDefinition(type = "docUnwind", displayName = "Unwind Documents", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT },
+@ActivityDefinition(type = "docUnwind", displayName = "Unwind Documents", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT, ActivityCategory.CLEANING },
         inPorts = { @InPort(type = PortType.DOC, description = "The input collection of documents that have an array to unwind.") },
         outPorts = { @OutPort(type = PortType.DOC, description = "The output collection containing the unwound documents.") },
         shortDescription = "Deconstructs the specified array field for each document into one document for each array element."

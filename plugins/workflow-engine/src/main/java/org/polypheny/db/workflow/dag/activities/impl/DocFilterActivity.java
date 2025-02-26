@@ -35,6 +35,7 @@ import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
 import org.polypheny.db.workflow.dag.annotations.FilterSetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
+import org.polypheny.db.workflow.dag.settings.EnumSettingDef.EnumStyle;
 import org.polypheny.db.workflow.dag.settings.FieldSelectValue;
 import org.polypheny.db.workflow.dag.settings.FilterValue;
 import org.polypheny.db.workflow.dag.settings.GroupDef;
@@ -47,7 +48,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.DocReader;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 
-@ActivityDefinition(type = "docFilter", displayName = "Filter Documents", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT },
+@ActivityDefinition(type = "docFilter", displayName = "Filter Documents", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT, ActivityCategory.CLEANING },
         inPorts = { @InPort(type = PortType.DOC, description = "The input collection.") },
         outPorts = {
                 @OutPort(type = PortType.DOC, description = "A collection containing all matching documents from the input containing."),
@@ -57,7 +58,7 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 )
 
 @EnumSetting(
-        key = "rejectedHandler", pos = 0, group = GroupDef.ADVANCED_GROUP,
+        key = "rejectedHandler", pos = 0, style = EnumStyle.RADIO_BUTTON, group = GroupDef.ADVANCED_GROUP,
         displayName = "Handling of Rejected Documents",
         options = { "store", "ignore", "fail" },
         defaultValue = "store",

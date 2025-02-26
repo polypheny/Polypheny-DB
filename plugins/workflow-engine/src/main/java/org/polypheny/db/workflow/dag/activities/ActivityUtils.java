@@ -16,6 +16,14 @@
 
 package org.polypheny.db.workflow.dag.activities;
 
+import static com.opencsv.enums.CSVReaderNullFieldIndicator.EMPTY_SEPARATORS;
+import static com.opencsv.enums.CSVReaderNullFieldIndicator.NEITHER;
+
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -230,14 +238,46 @@ public class ActivityUtils {
         if ( value == null ) {
             return PolyNull.NULL;
         }
-        PolyString polyString = PolyString.of( value );
         if ( type.getFamily() == PolyTypeFamily.CHARACTER ) { // -> string casts succeed more often
-            return polyString;
+            return PolyString.of( value );
+        } else if ( value.isEmpty() ) {
+            return PolyNull.NULL;
         } else if ( type == PolyType.BOOLEAN ) { // PolyString -> PolyBoolean conversion is not directly supported by the converter
             String str = value.trim().toLowerCase( Locale.ROOT );
             return PolyBoolean.of( str.equals( "true" ) || str.equals( "1" ) );
         }
-        return PolyValue.getConverter( type ).apply( polyString );
+        return PolyValue.getConverter( type ).apply( PolyString.of( value.trim() ) );
+    }
+
+
+    /**
+     * A more forgiving version of PolyValue.getConverter(value).apply(value)
+     */
+    public static PolyValue castPolyValue( PolyValue value, PolyType type ) {
+        if ( value == null ) {
+            return PolyNull.NULL;
+        }
+
+        if ( value.type == type ) {
+            return value;
+        }
+
+        if ( !value.isNull() && value.isList() ) {
+            if ( type != PolyType.ARRAY ) {
+                // type is inner type
+                return PolyList.of( value.asList().stream().map( e -> castPolyValue( e, type ) ).toList() );
+            }
+            return value;
+        }
+        if ( type.getFamily() == PolyTypeFamily.CHARACTER ) { // -> string casts succeed more often
+            return ActivityUtils.valueToString( value );
+        } else if ( value.isString() && value.asString().value.isEmpty() ) {
+            return PolyNull.NULL;
+        } else if ( type == PolyType.BOOLEAN && value.isString() ) {
+            String str = value.asString().value.trim().toLowerCase( Locale.ROOT );
+            return PolyBoolean.of( str.equals( "true" ) || str.equals( "1" ) );
+        }
+        return PolyValue.getConverter( type ).apply( value );
     }
 
 
@@ -472,6 +512,21 @@ public class ActivityUtils {
     }
 
 
+    public static String getChildPointer( String pointer ) {
+        if ( pointer.isEmpty() ) {
+            throw new IllegalArgumentException( "Pointer must not be empty" );
+        }
+        if ( pointer.endsWith( "." ) ) {
+            throw new IllegalArgumentException( "Pointer must not end with '.'" );
+        }
+        int lastDotIndex = pointer.lastIndexOf( '.' );
+        if ( lastDotIndex == -1 ) {
+            return pointer;
+        }
+        return pointer.substring( lastDotIndex + 1 );
+    }
+
+
     /**
      * Adds a generated document id to the given map if it does not yet contain a valid id.
      */
@@ -493,6 +548,46 @@ public class ActivityUtils {
      */
     public static boolean matchesLabelList( GraphPropertyHolder holder, Collection<String> labels ) {
         return labels.isEmpty() || holder.getLabels().stream().anyMatch( l -> labels.contains( l.value ) );
+    }
+
+
+    public static CSVReader openCSVReader( Reader reader, char sep, char quote, char escape, int skipLines, boolean emptyFieldIsNull ) {
+        CSVParser csvParser = new CSVParserBuilder()
+                .withSeparator( sep )
+                .withQuoteChar( quote )
+                .withEscapeChar( escape )
+                .withFieldAsNull( emptyFieldIsNull ? EMPTY_SEPARATORS : NEITHER )
+                .withErrorLocale( Locale.getDefault() )
+                .build();
+        return new CSVReaderBuilder( reader )
+                .withCSVParser( csvParser )
+                .withSkipLines( skipLines )
+                .build();
+    }
+
+
+    public static PolyType inferPolyType( String value, PolyType nullType ) {
+        if ( value == null ) {
+            return nullType;
+        }
+        value = value.trim();
+        if ( value.isEmpty() ) {
+            return PolyType.TEXT;
+        }
+        if ( "true".equalsIgnoreCase( value ) || "false".equalsIgnoreCase( value ) ) {
+            return PolyType.BOOLEAN;
+        }
+        try {
+            Long.parseLong( value );
+            return PolyType.BIGINT;
+        } catch ( NumberFormatException ignored ) {
+        }
+        try {
+            Double.parseDouble( value );
+            return PolyType.DOUBLE;
+        } catch ( NumberFormatException ignored ) {
+        }
+        return PolyType.TEXT;
     }
 
 

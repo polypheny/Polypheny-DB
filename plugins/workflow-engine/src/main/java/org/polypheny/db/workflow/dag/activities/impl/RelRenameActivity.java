@@ -51,7 +51,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
-@ActivityDefinition(type = "renameCols", displayName = "Rename Columns", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
+@ActivityDefinition(type = "renameCols", displayName = "Rename Columns", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL, ActivityCategory.CLEANING },
         inPorts = { @InPort(type = PortType.REL, description = "The input table.") },
         outPorts = { @OutPort(type = PortType.REL, description = "A table with the same columns as the input table, but with possibly different names.") },
         shortDescription = "Rename the columns of a table by defining rules."

@@ -55,6 +55,7 @@ import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
 import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
+import org.polypheny.db.workflow.dag.settings.EnumSettingDef.EnumStyle;
 import org.polypheny.db.workflow.dag.settings.FieldSelectValue;
 import org.polypheny.db.workflow.dag.settings.GroupDef;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
@@ -96,7 +97,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 @BoolSetting(key = "keepKeys", displayName = "Keep Key Column(s)", defaultValue = true,
         group = GroupDef.ADVANCED_GROUP, pos = 0)
-@EnumSetting(key = "matchType", displayName = "Match Type", pos = 1,
+@EnumSetting(key = "matchType", displayName = "Match Type", style = EnumStyle.RADIO_BUTTON, pos = 1,
         options = { "EXACT", "SMALLER", "LARGER" },
         displayOptions = { "Equal", "Next Smaller", "Next Larger" },
         displayDescriptions = { "Keys must match exactly.", "If no matching key is found, use the value of the next smaller key.", "If no matching key is found, use the value of the next larger key." },

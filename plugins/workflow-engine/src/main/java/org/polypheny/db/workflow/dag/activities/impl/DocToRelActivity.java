@@ -54,6 +54,7 @@ import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
 import org.polypheny.db.workflow.dag.settings.CastValue;
 import org.polypheny.db.workflow.dag.settings.CastValue.SingleCast;
+import org.polypheny.db.workflow.dag.settings.EnumSettingDef.EnumStyle;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.dag.settings.StringValue;
@@ -66,14 +67,14 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.DocReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
-@ActivityDefinition(type = "docToRel", displayName = "Collection to Table", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT, ActivityCategory.RELATIONAL },
+@ActivityDefinition(type = "docToRel", displayName = "Collection to Table", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT, ActivityCategory.RELATIONAL, ActivityCategory.CROSS_MODEL },
         inPorts = { @InPort(type = PortType.DOC, description = "The input collection.") },
         outPorts = { @OutPort(type = PortType.REL, description = "A table containing the input documents as rows.") },
         shortDescription = "Defines a mapping from documents in a collection to rows in a table."
 )
 @DefaultGroup(subgroups = { @Subgroup(key = "manual", displayName = "Custom Mapping") })
 
-@EnumSetting(key = "mode", displayName = "Schema Mapping", pos = 0,
+@EnumSetting(key = "mode", displayName = "Schema Mapping", style = EnumStyle.RADIO_BUTTON, pos = 0,
         options = { "auto", "fixed", "manual" }, defaultValue = "auto",
         displayOptions = { "Automatic", "Fixed Mapping", "Custom Mapping" },
         displayDescriptions = { "Infer column types from the first document.", "Create an id column and a data column that stores the document as JSON.", "Define how fields are mapped to columns." },
@@ -82,7 +83,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
         allowTarget = true, duplicateSource = true, allowJson = true, subPointer = "mode", subValues = { "\"manual\"" },
         shortDescription = "Specify how (sub)fields are mapped to columns.")
 @EnumSetting(key = "handleMissing", displayName = "Missing Field Handling", options = { "null", "skip", "fail" }, defaultValue = "fail",
-        pos = 2, subGroup = "manual",
+        pos = 2, style = EnumStyle.RADIO_BUTTON, subGroup = "manual",
         displayOptions = { "Use Null", "Skip Document", "Fail Execution" }, subPointer = "mode", subValues = { "auto", "\"manual\"" },
         shortDescription = "Determines the strategy for handling documents where a field is missing.")
 @BoolSetting(key = "unspecified", displayName = "Column for Unspecified Fields", defaultValue = false, pos = 3, subGroup = "manual",

@@ -57,7 +57,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.LpgInputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
-@ActivityDefinition(type = "lpgEdgesToDoc", displayName = "Edges to Collection", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH, ActivityCategory.DOCUMENT },
+@ActivityDefinition(type = "lpgEdgesToDoc", displayName = "Edges to Collection", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH, ActivityCategory.DOCUMENT, ActivityCategory.CROSS_MODEL },
         inPorts = { @InPort(type = PortType.LPG, description = "The input graph.") },
         outPorts = { @OutPort(type = PortType.DOC, description = "The output collection where each document corresponds to an edge in the graph.") },
         shortDescription = "Maps edges of a graph to documents in a collection."

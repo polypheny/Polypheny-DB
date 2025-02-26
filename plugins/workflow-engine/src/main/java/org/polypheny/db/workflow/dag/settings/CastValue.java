@@ -221,6 +221,8 @@ public class CastValue implements SettingValue {
             if ( !isCollection() ) {
                 if ( type.getFamily() == PolyTypeFamily.CHARACTER ) { // -> string casts succeed more often
                     return ActivityUtils.valueToString( value );
+                } else if ( value.isString() && value.asString().value.isEmpty() ) {
+                    return PolyNull.NULL;
                 } else if ( type == PolyType.BOOLEAN && value.isString() ) {
                     String str = value.asString().value.trim().toLowerCase( Locale.ROOT );
                     return PolyBoolean.of( str.equals( "true" ) || str.equals( "1" ) );

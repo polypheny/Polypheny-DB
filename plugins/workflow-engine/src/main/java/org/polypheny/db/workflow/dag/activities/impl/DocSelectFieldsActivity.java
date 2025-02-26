@@ -49,6 +49,7 @@ import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
+import org.polypheny.db.workflow.dag.settings.EnumSettingDef.EnumStyle;
 import org.polypheny.db.workflow.dag.settings.FieldSelectValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
@@ -60,12 +61,13 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
-@ActivityDefinition(type = "docSelectFields", displayName = "Select Document Fields", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT, },
+@ActivityDefinition(type = "docSelectFields", displayName = "Select Document Fields", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT, ActivityCategory.CLEANING },
         inPorts = { @InPort(type = PortType.DOC, description = "The input collection.") },
         outPorts = { @OutPort(type = PortType.DOC, description = "Collection containing only the specified fields of the input table. The '_id' field is always included.") },
         shortDescription = "Select a subset of (nested) fields of the input collection."
 )
-@EnumSetting(key = "mode", displayName = "Selection Mode", options = { "fieldSelect", "regex" }, displayOptions = { "Include / Exclude", "Regex" }, defaultValue = "fieldSelect", pos = 0)
+@EnumSetting(key = "mode", displayName = "Selection Mode", style = EnumStyle.RADIO_BUTTON,
+        options = { "fieldSelect", "regex" }, displayOptions = { "Include / Exclude", "Regex" }, defaultValue = "fieldSelect", pos = 0)
 
 @FieldSelectSetting(key = "fields", displayName = "Select Fields", reorder = false,
         subPointer = "mode", subValues = { "\"fieldSelect\"" },

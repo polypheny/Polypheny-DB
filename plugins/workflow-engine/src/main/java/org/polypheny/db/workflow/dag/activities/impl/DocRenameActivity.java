@@ -55,7 +55,7 @@ import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 
-@ActivityDefinition(type = "docRename", displayName = "Rename Document Fields", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT },
+@ActivityDefinition(type = "docRename", displayName = "Rename Document Fields", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT, ActivityCategory.CLEANING },
         inPorts = { @InPort(type = PortType.DOC, description = "The input collection.") },
         outPorts = { @OutPort(type = PortType.DOC, description = "The input collection with renamed (sub)fields.") },
         shortDescription = "Rename the (sub)fields of a collection by defining rules."

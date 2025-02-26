@@ -55,6 +55,7 @@ import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
 import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
+import org.polypheny.db.workflow.dag.settings.EnumSettingDef.EnumStyle;
 import org.polypheny.db.workflow.dag.settings.FieldSelectValue;
 import org.polypheny.db.workflow.dag.settings.GroupDef;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
@@ -97,7 +98,7 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 
 @BoolSetting(key = "keepKeys", displayName = "Keep Key Field(s)", defaultValue = true,
         group = GroupDef.ADVANCED_GROUP, pos = 0)
-@EnumSetting(key = "matchType", displayName = "Match Type", pos = 1,
+@EnumSetting(key = "matchType", displayName = "Match Type", style = EnumStyle.RADIO_BUTTON, pos = 1,
         options = { "EXACT", "SMALLER", "LARGER" },
         displayOptions = { "Equal", "Next Smaller", "Next Larger" },
         displayDescriptions = { "Keys must match exactly.", "If no matching key is found, use the value of the next smaller key.", "If no matching key is found, use the value of the next larger key." },
@@ -311,6 +312,7 @@ public class DocLookupActivity implements Activity {
         return queryBuilder.parameters( params ).build();
     }
 
+
     private void populateCache( DocReader docReader ) throws Exception {
         if ( docReader.getDocCount() > MAX_CACHE_SIZE ) {
             throw new GenericRuntimeException( "The current implementation only supports lookup collections of size <= " + MAX_CACHE_SIZE );
@@ -361,7 +363,7 @@ public class DocLookupActivity implements Activity {
     }
 
 
-    public static CheckpointQueryBuilder getTableLookupQueryBuilder(String matchType, List<PolyValue> keys, List<String> rightFields, List<String> valueFields ) {
+    public static CheckpointQueryBuilder getTableLookupQueryBuilder( String matchType, List<PolyValue> keys, List<String> rightFields, List<String> valueFields ) {
         return switch ( matchType ) {
             case "EXACT" -> {
                 List<String> conditions = rightFields.stream().map( f -> QueryUtils.quote( f ) + " = ?" ).toList();

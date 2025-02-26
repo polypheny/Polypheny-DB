@@ -61,6 +61,7 @@ import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
 import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
 import org.polypheny.db.workflow.dag.settings.CastValue;
 import org.polypheny.db.workflow.dag.settings.CastValue.SingleCast;
+import org.polypheny.db.workflow.dag.settings.EnumSettingDef.EnumStyle;
 import org.polypheny.db.workflow.dag.settings.FieldSelectValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
@@ -75,7 +76,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.LpgReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
-@ActivityDefinition(type = "lpgNodesToRel", displayName = "Nodes to Table", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH, ActivityCategory.RELATIONAL },
+@ActivityDefinition(type = "lpgNodesToRel", displayName = "Nodes to Table", categories = { ActivityCategory.TRANSFORM, ActivityCategory.GRAPH, ActivityCategory.RELATIONAL, ActivityCategory.CROSS_MODEL },
         inPorts = { @InPort(type = PortType.LPG, description = "The input graph.") },
         outPorts = { @OutPort(type = PortType.REL, description = "The output table where each row corresponds to a node in the graph.") },
         shortDescription = "Maps nodes of a graph to rows in a table."
@@ -85,7 +86,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 @FieldSelectSetting(key = "labels", displayName = "Target Nodes", simplified = true, targetInput = 0, pos = 0, group = ADVANCED_GROUP,
         shortDescription = "Specify the nodes to map by their label(s). If no label is specified, all nodes are mapped to rows.")
-@EnumSetting(key = "mode", displayName = "Property Mapping", pos = 1,
+@EnumSetting(key = "mode", displayName = "Property Mapping", style = EnumStyle.RADIO_BUTTON, pos = 1,
         options = { "auto", "fixed", "manual" }, defaultValue = "auto",
         displayOptions = { "Automatic", "Fixed Mapping", "Custom Mapping" },
         displayDescriptions = { "Infer column types from the first node.", "Add a column that stores all properties as JSON.", "Define how properties are mapped to columns." },
@@ -101,7 +102,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
         subPointer = "mode", subValues = { "\"manual\"" },
         shortDescription = "Specify how properties are mapped to columns.")
 @EnumSetting(key = "handleMissing", displayName = "Missing Property Handling", options = { "null", "skip", "fail" }, defaultValue = "fail",
-        pos = 2, subGroup = "manual",
+        pos = 2, style = EnumStyle.RADIO_BUTTON, subGroup = "manual",
         displayOptions = { "Use Null", "Skip Node", "Fail Execution" }, subPointer = "mode", subValues = { "auto", "\"manual\"" },
         shortDescription = "Determines the strategy for handling nodes where a specified property is missing.")
 @BoolSetting(key = "unspecified", displayName = "Column for Unspecified Properties", defaultValue = false, pos = 3, subGroup = "manual",

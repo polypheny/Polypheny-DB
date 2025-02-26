@@ -55,7 +55,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
-@ActivityDefinition(type = "reorderCols", displayName = "Select / Reorder Columns", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
+@ActivityDefinition(type = "reorderCols", displayName = "Select / Reorder Columns", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL, ActivityCategory.CLEANING },
         inPorts = { @InPort(type = PortType.REL, description = "The input table") },
         outPorts = { @OutPort(type = PortType.REL, description = "A table containing the selected subset of columns from the input table in the specified order.") },
         shortDescription = "Select and reorder the columns of the input table."

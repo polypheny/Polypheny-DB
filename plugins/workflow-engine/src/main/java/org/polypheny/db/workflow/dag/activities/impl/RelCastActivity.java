@@ -19,7 +19,6 @@ package org.polypheny.db.workflow.dag.activities.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
@@ -30,6 +29,7 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
@@ -56,7 +56,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 @Slf4j
-@ActivityDefinition(type = "relCast", displayName = "Change Column Types", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
+@ActivityDefinition(type = "relCast", displayName = "Change Column Types", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL, ActivityCategory.CLEANING },
         inPorts = { @InPort(type = PortType.REL) },
         outPorts = { @OutPort(type = PortType.REL, description = "A table with the same columns as the input table, but with possibly changed column types.") },
         shortDescription = "Cast the values of specific columns of the input table to a different type. In case the cast is not possible, the activity fails."
@@ -86,14 +86,29 @@ public class RelCastActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
-    public Optional<Boolean> canPipe( List<TypePreview> inTypes, SettingsPreview settings ) {
-        return Optional.of( false );
-    }
-
-
-    @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
-        // TODO: implement or remove pipe
+        Map<String, SingleCast> casts = settings.get( "cast", CastValue.class ).asMap();
+        List<String> names = output.getType().getFieldNames();
+
+        for ( List<PolyValue> row : inputs.get( 0 ) ) {
+            List<PolyValue> casted = new ArrayList<>();
+            for ( int i = 0; i < row.size(); i++ ) {
+                String name = names.get( i );
+                PolyValue value = row.get( i );
+                if ( casts.containsKey( name ) ) {
+                    casted.add( casts.get( name ).castValue( value ) );
+                } else {
+                    casted.add( value );
+                }
+            }
+
+            if ( !output.put( casted ) ) {
+                finish( inputs );
+                return;
+            }
+        }
+
+
     }
 
 
