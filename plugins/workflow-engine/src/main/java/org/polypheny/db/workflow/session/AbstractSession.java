@@ -60,6 +60,7 @@ import org.polypheny.db.workflow.models.requests.WsRequest.ResetRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateConfigRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateVariablesRequest;
+import org.polypheny.db.workflow.models.responses.ActivityStatsResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.ResponseType;
 
@@ -85,7 +86,20 @@ public abstract class AbstractSession {
     }
 
 
-    public abstract void terminate();
+    public void terminate() {
+        if ( workflow.getState() == WorkflowState.EXECUTING ) {
+            scheduler.interruptExecution( sessionId );
+        }
+        try {
+            if ( scheduler.awaitExecutionFinish( sessionId, 60 ) ) {
+                sm.close();
+            } else {
+                throw new GenericRuntimeException( "Timed out waiting for execution to finish. Try terminating the session when the workflow is idle." );
+            }
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( e );
+        }
+    }
 
 
     /**
@@ -111,8 +125,13 @@ public abstract class AbstractSession {
     public abstract SessionModel toModel();
 
 
-    public ActivityModel getActivityModel( UUID activityId ) {
-        return workflow.getActivity( activityId ).toModel( true );
+    public ActivityModel getActivityModel( UUID activityId, boolean includeState ) {
+        return workflow.getActivity( activityId ).toModel( includeState );
+    }
+
+
+    public ActivityStatsResponse getActivityStats( UUID activityId ) {
+        return new ActivityStatsResponse( workflow.getActivity( activityId ) );
     }
 
 
@@ -174,8 +193,7 @@ public abstract class AbstractSession {
     }
 
 
-    Triple<Result<?, ?>, Integer, Long> getCheckpointData( UUID activityId, int outputIndex ) {
-
+    Triple<Result<?, ?>, Integer, Long> getCheckpointData( UUID activityId, int outputIndex, @Nullable Integer maxTuples ) {
         ActivityWrapper wrapper = workflow.getActivityOrThrow( activityId );
         if ( wrapper.getState() != ActivityState.SAVED ) {
             throw new IllegalStateException( "Only checkpoints of saved activities can be requested" );
@@ -186,7 +204,7 @@ public abstract class AbstractSession {
         }
 
         try ( CheckpointReader reader = sm.readCheckpoint( activityId, outputIndex ) ) {
-            return reader.getPreview();
+            return reader.getPreview( maxTuples );
         }
     }
 
@@ -273,6 +291,11 @@ public abstract class AbstractSession {
 
     void throwUnsupported( WsRequest request ) {
         throw new UnsupportedOperationException( "This session type does not support " + request.type + " requests." );
+    }
+
+
+    public WorkflowState getWorkflowState() {
+        return workflow.getState();
     }
 
 }

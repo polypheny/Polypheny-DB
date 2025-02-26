@@ -66,23 +66,6 @@ public class UserSession extends AbstractSession {
 
 
     @Override
-    public void terminate() {
-        if ( workflow.getState() == WorkflowState.EXECUTING ) {
-            scheduler.interruptExecution( sessionId );
-        }
-        try {
-            if ( scheduler.awaitExecutionFinish( sessionId, 60 ) ) {
-                sm.close();
-            } else {
-                throw new GenericRuntimeException( "Timed out waiting for execution to finish. Try terminating the session when the workflow is idle." );
-            }
-        } catch ( Exception e ) {
-            throw new GenericRuntimeException( e );
-        }
-    }
-
-
-    @Override
     public synchronized void handleRequest( CreateActivityRequest request ) {
         throwIfNotEditable();
         ActivityWrapper activity = workflow.addActivity( request.activityType, request.rendering );
@@ -179,15 +162,15 @@ public class UserSession extends AbstractSession {
 
     @Override
     public void handleRequest( GetCheckpointRequest request, WsMessageContext ctx ) {
-        Triple<Result<?, ?>, Integer, Long> preview = getCheckpointData( request.activityId, request.outputIndex );
+        Triple<Result<?, ?>, Integer, Long> preview = getCheckpointData( request.activityId, request.outputIndex, null );
         ctx.send( new CheckpointDataResponse( request.msgId, preview.left, preview.middle, preview.right ) ); // we do NOT broadcast the result
     }
 
 
     @Override
     public SessionModel toModel() {
-        return new SessionModel( SessionModelType.USER_SESSION, sessionId, getSubscriberCount(), lastInteraction.toString(), workflow.getActivityCount(),
-                wId, openedVersion, workflowDef, workflow.getState() );
+        return new SessionModel( SessionModelType.USER_SESSION, sessionId, getSubscriberCount(), lastInteraction.toString(), workflow.getActivityCount(), workflow.getState(),
+                wId, openedVersion, workflowDef );
     }
 
 

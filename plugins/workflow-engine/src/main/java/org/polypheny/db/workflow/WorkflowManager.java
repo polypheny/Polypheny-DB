@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
@@ -58,13 +57,16 @@ public class WorkflowManager {
     private final WorkflowRepo repo;
     public static final String PATH = "/workflows";
     public static final String DEFAULT_CHECKPOINT_ADAPTER = "hsqldb_disk";
-    private final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper();
+    private final WorkflowApi apiManager;
 
 
     public WorkflowManager() {
         repo = WorkflowRepoImpl.getInstance();
         sessionManager = SessionManager.getInstance();
         registerEndpoints();
+        apiManager = new WorkflowApi( sessionManager, repo );
+        apiManager.registerEndpoints( HttpServer.getInstance() );
 
         if ( PolyphenyDb.mode == RunMode.TEST ) {
             return;
@@ -142,7 +144,6 @@ public class WorkflowManager {
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/variables", this::getWorkflowVariables, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/monitor", this::getExecutionMonitor, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/{activityId}", this::getActivity, HandlerType.GET );
-        server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/{activityId}/{outIndex}", this::getIntermediaryResult, HandlerType.GET );
         server.addSerializedRoute( PATH + "/workflows", this::getWorkflowDefs, HandlerType.GET );
         server.addSerializedRoute( PATH + "/workflows/{workflowId}/{version}", this::getWorkflow, HandlerType.GET );
         server.addSerializedRoute( PATH + "/registry", this::getActivityRegistry, HandlerType.GET );
@@ -199,16 +200,7 @@ public class WorkflowManager {
     private void getActivity( final Context ctx ) {
         UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
         UUID activityId = UUID.fromString( ctx.pathParam( "activityId" ) );
-        process( ctx, () -> sessionManager.getSessionOrThrow( sessionId ).getActivityModel( activityId ) );
-    }
-
-
-    private void getIntermediaryResult( final Context ctx ) {
-        UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
-        UUID activityId = UUID.fromString( ctx.pathParam( "activityId" ) );
-        int outIndex = Integer.parseInt( ctx.pathParam( "outIndex" ) );
-        throw new NotImplementedException(); // TODO: implement non-websocket based way to get intermediary result
-        //process( ctx, () -> sessionManager.getSessionOrThrow( sessionId ) );
+        process( ctx, () -> sessionManager.getSessionOrThrow( sessionId ).getActivityModel( activityId, true ) );
     }
 
 
@@ -320,7 +312,6 @@ public class WorkflowManager {
             ctx.status( e.getErrorCode() );
             ctx.json( e.getMessage() );
         } catch ( Exception e ) {
-            // TODO: better error handling
             ctx.status( HttpCode.INTERNAL_SERVER_ERROR );
             ctx.json( e.getMessage() );
             e.printStackTrace();
@@ -328,7 +319,7 @@ public class WorkflowManager {
     }
 
 
-    private void sendResult( Context ctx, Object model ) {
+    public static void sendResult( Context ctx, Object model ) {
         ctx.contentType( ContentType.JSON );
         try {
             ctx.result( mapper.writeValueAsString( model ) );

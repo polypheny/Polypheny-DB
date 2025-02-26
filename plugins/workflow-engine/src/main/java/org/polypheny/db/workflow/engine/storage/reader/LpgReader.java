@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.engine.storage.reader;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
@@ -165,9 +166,10 @@ public class LpgReader extends CheckpointReader {
 
 
     @Override
-    public Triple<Result<?, ?>, Integer, Long> getPreview() {
+    public Triple<Result<?, ?>, Integer, Long> getPreview( @Nullable Integer maxTuples ) {
+        int nodesLimit = maxTuples == null ? PREVIEW_NODES_LIMIT : Math.max( 0, maxTuples );
         LogicalGraph graph = getGraph();
-        String query = "MATCH (n) RETURN n LIMIT " + PREVIEW_NODES_LIMIT;
+        String query = "MATCH (n) RETURN n LIMIT " + nodesLimit;
         UIRequest request = UIRequest.builder()
                 .namespace( Catalog.snapshot().getNamespace( graph.getNamespaceId() ).orElseThrow().getName() )
                 .build();
@@ -175,7 +177,7 @@ public class LpgReader extends CheckpointReader {
                 query, "cypher", graph.getNamespaceId(), transaction );
 
         return Triple.of( LanguageCrud.getGraphResult( executedContext, request, executedContext.getStatement() ).build(),
-                PREVIEW_NODES_LIMIT,
+                nodesLimit,
                 getNodeCount() );
     }
 

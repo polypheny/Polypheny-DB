@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.engine.storage.reader;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
@@ -100,11 +101,12 @@ public class RelReader extends CheckpointReader {
 
 
     @Override
-    public Triple<Result<?, ?>, Integer, Long> getPreview() {
+    public Triple<Result<?, ?>, Integer, Long> getPreview( @Nullable Integer maxTuples ) {
+        int rowLimit = maxTuples == null ? PREVIEW_ROW_LIMIT : Math.max( 0, maxTuples );
         LogicalTable table = getTable();
         String quotedNoKey = QueryUtils.quoteAndJoin( table.getColumnNames().stream().filter( n -> !n.equals( StorageManager.PK_COL ) ).toList() );
         String query = "SELECT " + quotedNoKey + " FROM " + quotedIdentifier
-                + " LIMIT " + PREVIEW_ROW_LIMIT;
+                + " LIMIT " + rowLimit;
         UIRequest request = UIRequest.builder()
                 .entityId( table.id )
                 .namespace( table.getNamespaceName() )
@@ -114,7 +116,7 @@ public class RelReader extends CheckpointReader {
 
         return Triple.of(
                 QueryUtils.getRelResult( executedContext, request, executedContext.getStatement() ),
-                PREVIEW_ROW_LIMIT,
+                rowLimit,
                 getRowCount() );
     }
 

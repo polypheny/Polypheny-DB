@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.engine.storage.reader;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
@@ -123,9 +124,10 @@ public class DocReader extends CheckpointReader {
 
 
     @Override
-    public Triple<Result<?, ?>, Integer, Long> getPreview() {
+    public Triple<Result<?, ?>, Integer, Long> getPreview( @Nullable Integer maxTuples ) {
+        int docsLimit = maxTuples == null ? PREVIEW_DOCS_LIMIT : Math.max( 0, maxTuples );
         LogicalCollection collection = getCollection();
-        String query = "db.\"" + collection.getName() + "\".find({}).limit(" + PREVIEW_DOCS_LIMIT + ")";
+        String query = "db.\"" + collection.getName() + "\".find({}).limit(" + docsLimit + ")";
         UIRequest request = UIRequest.builder()
                 .entityId( collection.id )
                 .namespace( collection.getNamespaceName() )
@@ -134,7 +136,7 @@ public class DocReader extends CheckpointReader {
                 query, "MQL", collection.getNamespaceId(), transaction );
 
         return Triple.of( LanguageCrud.getDocResult( executedContext, request, executedContext.getStatement() ).build(),
-                PREVIEW_DOCS_LIMIT,
+                docsLimit,
                 getDocCount() );
     }
 

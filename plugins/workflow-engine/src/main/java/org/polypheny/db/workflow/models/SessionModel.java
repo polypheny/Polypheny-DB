@@ -30,24 +30,26 @@ public class SessionModel {
     int connectionCount;
     String lastInteraction; // ISO 8601:  "2025-01-17T14:30:00Z"
     int activityCount;
+    WorkflowState state;
 
     // USER_SESSION fields:
     UUID workflowId;
     Integer version;
     WorkflowDefModel workflowDef;
-    WorkflowState state;
 
 
-    public SessionModel( SessionModelType type, UUID sId, int connectionCount, String lastInteraction, int activityCount ) {
+    public SessionModel( SessionModelType type, UUID sId, int connectionCount, String lastInteraction, int activityCount, WorkflowState state ) {
+        // API_SESSION constructor
         this.type = type;
         this.sessionId = sId;
         this.connectionCount = connectionCount;
         this.lastInteraction = lastInteraction;
         this.activityCount = activityCount;
+        this.state = state;
+
         this.workflowId = null;
         this.version = null;
         this.workflowDef = null;
-        this.state = null;
     }
 
 

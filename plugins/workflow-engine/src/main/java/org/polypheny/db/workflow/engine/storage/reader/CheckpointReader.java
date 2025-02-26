@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -123,11 +124,12 @@ public abstract class CheckpointReader implements AutoCloseable {
 
 
     /**
-     * Reads a subset of this checkpoint and returns it as a Result that can be sent to the frontend.
+     * Reads a subset of this checkpoint and returns it as a Result.
      *
+     * @param maxTuples the maximum number of rows, documents or nodes to read, or null to use the default value.
      * @return a preview of this checkpoint, followed by the limit on the number of tuples and the total count for this checkpoint (for graphs: node-count)
      */
-    public abstract Triple<Result<?, ?>, Integer, Long> getPreview();
+    public abstract Triple<Result<?, ?>, Integer, Long> getPreview( @Nullable Integer maxTuples );
 
 
     /**

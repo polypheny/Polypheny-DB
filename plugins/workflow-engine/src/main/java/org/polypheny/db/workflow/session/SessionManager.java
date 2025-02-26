@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.session;
 
+import io.javalin.http.HttpCode;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -23,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.workflow.WorkflowApi.WorkflowApiException;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.WorkflowImpl;
 import org.polypheny.db.workflow.models.SessionModel;
@@ -71,6 +73,15 @@ public class SessionManager {
     }
 
 
+    public UUID createApiSession( WorkflowModel model ) throws WorkflowApiException {
+        try {
+            return registerApiSession( WorkflowImpl.fromModel( model ) );
+        } catch ( Exception e ) {
+            throw new WorkflowApiException( "Unable to instantiate workflow: " + e.getMessage(), HttpCode.BAD_REQUEST );
+        }
+    }
+
+
     public Map<UUID, SessionModel> getUserSessionModels() {
         return toSessionModelMap( userSessions );
     }
@@ -94,6 +105,11 @@ public class SessionManager {
     }
 
 
+    public SessionModel getApiSessionModel( UUID sessionId ) throws WorkflowApiException {
+        return getApiSessionOrThrow( sessionId ).toModel();
+    }
+
+
     public void terminateSession( UUID sId ) {
         getSessionOrThrow( sId ).terminate();
         removeSession( sId );
@@ -110,6 +126,22 @@ public class SessionManager {
                 log.warn( "Unable to terminate session: {}", sId, e );
             }
         }
+    }
+
+
+    public Map<String, Integer> terminateApiSessions() {
+        int successCount = 0;
+        int failedCount = 0;
+        for ( UUID sId : apiSessions.keySet() ) {
+            try {
+                terminateSession( sId );
+                successCount++;
+            } catch ( Exception e ) {
+                log.warn( "Unable to terminate session: {}", sId, e );
+                failedCount++;
+            }
+        }
+        return Map.of( "successCount", successCount, "failedCount", failedCount );
     }
 
 
@@ -140,6 +172,15 @@ public class SessionManager {
     }
 
 
+    public ApiSession getApiSessionOrThrow( UUID sId ) throws WorkflowApiException {
+        ApiSession session = apiSessions.get( sId );
+        if ( session == null ) {
+            throw new WorkflowApiException( "Unknown api session with id: " + sId, HttpCode.NOT_FOUND );
+        }
+        return session;
+    }
+
+
     public UserSession getUserSessionOrThrow( UUID sId ) {
         UserSession session = userSessions.get( sId );
         if ( session == null ) {
@@ -164,6 +205,14 @@ public class SessionManager {
         UUID sId = UUID.randomUUID();
         UserSession session = new UserSession( sId, wf, wId, version, repo.getWorkflowDef( wId ) );
         userSessions.put( sId, session );
+        return sId;
+    }
+
+
+    private UUID registerApiSession( Workflow wf ) {
+        UUID sId = UUID.randomUUID();
+        ApiSession session = new ApiSession( sId, wf );
+        apiSessions.put( sId, session );
         return sId;
     }
 
