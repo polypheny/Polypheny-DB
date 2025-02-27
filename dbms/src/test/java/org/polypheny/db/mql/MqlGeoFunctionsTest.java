@@ -453,6 +453,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                         includeLocs: "nearLocation.nested",
                         distanceField: "distanced.nested",
                         distanceMultiplier: 2,
+                        query: { "num": { "$gte": 2 } }
                     }
                   }
                 ])
