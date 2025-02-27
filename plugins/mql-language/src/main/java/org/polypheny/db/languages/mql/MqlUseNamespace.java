@@ -50,13 +50,13 @@ public class MqlUseNamespace extends MqlNode implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        DdlManager.getInstance().createNamespace( this.namespace, DataModel.DOCUMENT, true, false, statement );
+        DdlManager.getInstance().createNamespace( this.namespace, DataModel.DOCUMENT, true, false, false, statement );
     }
 
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
-        if (context.getSnapshot().getNamespace( namespace ).isEmpty()) {
+        if ( context.getSnapshot().getNamespace( namespace ).isEmpty() ) {
             return LockableUtils.getMapOfGlobalLockable( LockType.EXCLUSIVE );
         }
         return LockableUtils.getMapOfNamespaceLockableFromName( namespace, context, LockType.SHARED );

@@ -16,7 +16,6 @@
 
 package org.polypheny.db.cypher.admin;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +37,6 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockableUtils;
-import org.polypheny.db.transaction.locking.LockablesRegistry;
 
 
 @Getter
@@ -103,6 +101,7 @@ public class CypherCreateNamespace extends CypherAdminCommand implements Executa
                 ifNotExists,
                 replace,
                 true,
+                false,
                 statement );
     }
 

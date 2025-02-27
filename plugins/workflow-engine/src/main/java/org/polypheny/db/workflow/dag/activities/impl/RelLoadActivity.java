@@ -162,7 +162,7 @@ public class RelLoadActivity implements Activity, Pipeable {
             if ( namespace == null ) {
                 logInfo.accept( "Creating namespace '" + setting.getNamespace() + "'" );
                 try {
-                    long namespaceId = ddlManager.createNamespace( setting.getNamespace(), DataModel.RELATIONAL, false, false, null );
+                    long namespaceId = ddlManager.createNamespace( setting.getNamespace(), DataModel.RELATIONAL, false, false, false, null );
                     namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElse( null );
                 } catch ( Exception e ) {
                     throw new InvalidSettingException( "Specified namespace cannot be created: " + e.getMessage(), TABLE_KEY );

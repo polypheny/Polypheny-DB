@@ -20,16 +20,20 @@ import io.javalin.http.HttpCode;
 import io.javalin.websocket.WsMessageContext;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Triple;
 import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.workflow.WorkflowApi.WorkflowApiException;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
+import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.models.SessionModel;
 import org.polypheny.db.workflow.models.SessionModel.SessionModelType;
 import org.polypheny.db.workflow.models.requests.WsRequest.GetCheckpointRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
 import org.polypheny.db.workflow.models.responses.CheckpointResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.CheckpointDataResponse;
+import org.polypheny.db.workflow.models.responses.WsResponse.RenderingUpdateResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.StateUpdateResponse;
 
 public class ApiSession extends AbstractSession {
@@ -44,6 +48,19 @@ public class ApiSession extends AbstractSession {
     public void handleRequest( GetCheckpointRequest request, WsMessageContext ctx ) {
         Triple<Result<?, ?>, Integer, Long> preview = getCheckpointData( request.activityId, request.outputIndex, null );
         ctx.send( new CheckpointDataResponse( request.msgId, preview.left, preview.middle, preview.right ) ); // we do NOT broadcast the result
+    }
+
+
+    @Override
+    public void handleRequest( UpdateActivityRequest request ) {
+        throwIfNotIdle();
+
+        if ( request.rendering != null && request.settings == null && request.config == null ) {
+            ActivityWrapper activity = workflow.updateActivity( request.targetId, null, null, request.rendering, sm );
+            broadcastMessage( new RenderingUpdateResponse( request.msgId, activity ) );
+        } else {
+            throw new GenericRuntimeException( "Only rendering updates are permitted in API Sessions" );
+        }
     }
 
 

@@ -112,11 +112,11 @@ public class StorageManagerImpl implements StorageManager {
 
         String relNsName = getNamespaceName( REL_PREFIX );
         relNamespace = ddlManager.createNamespace(
-                relNsName, DataModel.RELATIONAL, true, false, null );
+                relNsName, DataModel.RELATIONAL, true, false, true, null );
         registeredNamespaces.put( relNamespace, relNsName );
 
         String docNsName = getNamespaceName( DOC_PREFIX );
-        docNamespace = ddlManager.createNamespace( docNsName, DataModel.DOCUMENT, true, false, null );
+        docNamespace = ddlManager.createNamespace( docNsName, DataModel.DOCUMENT, true, false, true, null );
         registeredNamespaces.put( docNamespace, docNsName );
     }
 
@@ -285,6 +285,7 @@ public class StorageManagerImpl implements StorageManager {
                     List.of( getStore( storeName ) ),
                     false,
                     false,
+                    true,
                     RuntimeConfig.GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean(),
                     transaction.createStatement()
             );

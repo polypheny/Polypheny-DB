@@ -141,6 +141,7 @@ public class LpgLoadActivity implements Activity, Pipeable {
                                 new InvalidSettingException( "Adapter does not exist: " + adapter, "adapter" ) ) ),
                         false,
                         false,
+                        false,
                         RuntimeConfig.GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean(),
                         transaction.createStatement()
                 );

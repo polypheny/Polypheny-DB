@@ -94,7 +94,7 @@ public record SnapshotModel(
 
 
     public static SnapshotModel from( Snapshot snapshot ) {
-        List<NamespaceModel> namespaces = snapshot.getNamespaces( null ).stream().map( NamespaceModel::from ).toList();
+        List<NamespaceModel> namespaces = snapshot.getNamespaces( null ).stream().filter( ns -> !ns.hidden ).map( NamespaceModel::from ).toList();
         List<EntityModel> entities = new ArrayList<>();
         entities.addAll( snapshot.rel().getTables( (Pattern) null, null ).stream().map( TableModel::from ).toList() );
         entities.addAll( snapshot.doc().getCollections( null, null ).stream().map( CollectionModel::from ).toList() );
