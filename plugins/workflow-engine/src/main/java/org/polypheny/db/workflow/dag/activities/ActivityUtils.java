@@ -281,10 +281,17 @@ public class ActivityUtils {
     }
 
 
+    /**
+     * Converts a PolyDocument into a PolyDict to be used as graph properties.
+     * Nested documents get stringified as JSON and keys with null values are omitted (not supported by graph model).
+     */
     public static PolyDictionary docToDict( PolyDocument doc ) {
         PolyDictionary dict = new PolyDictionary();
         for ( Entry<PolyString, PolyValue> entry : doc.entrySet() ) {
             PolyValue value = entry.getValue();
+            if ( value == null || value.isNull() ) {
+                continue;
+            }
             if ( value.isList() ) {
                 PolyList<PolyValue> list = value.asList();
                 for ( int i = 0; i < list.size(); i++ ) {

@@ -143,7 +143,7 @@ public class DocExtractActivity implements Activity, Fusable, Pipeable {
     @Override
     public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
         Optional<EntityValue> collection = settings.get( COLL_KEY, EntityValue.class );
-        return collection.map( v -> String.format( "Extract '%s'", v.getName() ) ).orElse( null );
+        return collection.map( v -> String.format( "Extract Collection '%s.%s'", v.getNamespace(), v.getName() ) ).orElse( null );
     }
 
 

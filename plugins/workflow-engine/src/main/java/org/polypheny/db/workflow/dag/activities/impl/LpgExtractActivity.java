@@ -134,7 +134,7 @@ public class LpgExtractActivity implements Activity, Pipeable {
     @Override
     public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
         Optional<EntityValue> graph = settings.get( GRAPH_KEY, EntityValue.class );
-        return graph.map( v -> String.format( "Extract '%s'", v.getName() ) ).orElse( null );
+        return graph.map( v -> String.format( "Extract Graph '%s'", v.getName() ) ).orElse( null );
     }
 
 

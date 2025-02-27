@@ -158,7 +158,7 @@ public class DocToLpgActivity implements Activity, Pipeable {
             dict.put( PolyString.of( "value" ), value );
             node = new PolyNode( dict, nodeLabels, null );
         }
-        node.properties.entrySet().removeIf( e -> e == null || e.getValue().isNull() ); // TODO: ensure this is the best way to handle null (not supported by graph model)
+        node.properties.entrySet().removeIf( e -> e == null || e.getValue().isNull() ); // null is not supported by graph model
         nodes.add( node );
         return node;
     }

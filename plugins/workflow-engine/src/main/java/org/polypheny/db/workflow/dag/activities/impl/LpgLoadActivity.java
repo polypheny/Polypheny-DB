@@ -113,7 +113,7 @@ public class LpgLoadActivity implements Activity, Pipeable {
     @Override
     public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
         Optional<EntityValue> graph = settings.get( GRAPH_KEY, EntityValue.class );
-        return graph.map( v -> String.format( "Load to '%s'", v.getName() ) ).orElse( null );
+        return graph.map( v -> String.format( "Load Graph to '%s'", v.getName() ) ).orElse( null );
     }
 
 

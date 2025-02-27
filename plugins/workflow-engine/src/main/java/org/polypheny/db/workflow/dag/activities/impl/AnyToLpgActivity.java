@@ -24,11 +24,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Triple;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
@@ -75,7 +79,7 @@ import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 @SuppressWarnings("unused")
 public class AnyToLpgActivity implements Activity {
 
-    private final Map<Triple<Integer, String, PolyValue>, Set<PolyString>> invertedIndex = new HashMap<>(); // Maps (inputIdx, field, value) to all NodeIds with that value
+    private final Map<Triple<Integer, String, PolyValue>, Set<PolyString>> invertedIndex = new HashMap<>(); // Maps (inputIdx, field, normalizedValue) to all NodeIds with that value
     private boolean allProps;
     private boolean includeDocId;
 
@@ -158,7 +162,7 @@ public class AnyToLpgActivity implements Activity {
                     field = joinField;
                 }
                 PolyValue value = node.properties.get( PolyString.of( field ) );
-                invertedIndex.computeIfAbsent( Triple.of( -1, joinField, value ), k -> new HashSet<>() ).add( node.id );
+                invertedIndex.computeIfAbsent( Triple.of( -1, joinField, normalize( value ) ), k -> new HashSet<>() ).add( node.id );
             }
 
             writer.writeNode( node );
@@ -183,7 +187,7 @@ public class AnyToLpgActivity implements Activity {
                 PolyNode node = inMapping.constructNode( colNames, row, allProps );
                 for ( String joinField : joinFields ) {
                     PolyValue value = row.get( nameToColIndex.get( joinField ) );
-                    invertedIndex.computeIfAbsent( Triple.of( index, joinField, value ), k -> new HashSet<>() ).add( node.id );
+                    invertedIndex.computeIfAbsent( Triple.of( index, joinField, normalize( value ) ), k -> new HashSet<>() ).add( node.id );
                 }
                 nodeIds.add( node.id );
                 writer.writeNode( node );
@@ -194,7 +198,7 @@ public class AnyToLpgActivity implements Activity {
                 PolyNode node = inMapping.constructNode( doc, includeDocId, allProps );
                 for ( String joinField : joinFields ) {
                     PolyValue value = ActivityUtils.getSubValue( doc, joinField );
-                    invertedIndex.computeIfAbsent( Triple.of( index, joinField, value ), k -> new HashSet<>() ).add( node.id );
+                    invertedIndex.computeIfAbsent( Triple.of( index, joinField, normalize( value ) ), k -> new HashSet<>() ).add( node.id );
                 }
                 nodeIds.add( node.id );
                 writer.writeNode( node );
@@ -298,6 +302,9 @@ public class AnyToLpgActivity implements Activity {
 
 
     private Set<PolyString> lookupIds( EdgeMapping edge, boolean isLeft, PolyValue value ) {
+        if ( value == null || value.isNull() ) {
+            return Set.of();
+        }
         int targetIdx = isLeft ? edge.getLeftTargetIdx() : edge.getRightTargetIdx();
         String targetField = isLeft ? edge.getLeftTargetField() : edge.getRightTargetField();
 
@@ -305,11 +312,29 @@ public class AnyToLpgActivity implements Activity {
             Set<PolyString> ids = new HashSet<>();
             for ( PolyValue entry : value.asList() ) {
 
-                ids.addAll( invertedIndex.getOrDefault( Triple.of( targetIdx, targetField, entry ), Set.of() ) );
+                ids.addAll( invertedIndex.getOrDefault( Triple.of( targetIdx, targetField, normalize( entry ) ), Set.of() ) );
             }
             return ids;
         }
-        return invertedIndex.get( Triple.of( targetIdx, targetField, value ) );
+        return invertedIndex.get( Triple.of( targetIdx, targetField, normalize( value ) ) );
+    }
+
+
+    /**
+     * Problem: PolyLong.of(42L).equals(PolyInteger.of(42)) == true
+     * but: PolyLong.of(42L).hashCode() != PolyInteger.of(42).hashCode()
+     * -> we need to normalize them to be able to use the invertedIndex correctly
+     */
+    private PolyValue normalize( PolyValue key ) {
+        if ( key == null ) {
+            return null;
+        } else if ( key.isNumber() ) {
+            PolyNumber number = key.asNumber();
+            return number.isDecimal() ? PolyDouble.convert( number ) : PolyLong.convert( number );
+        } else if ( key.isList() ) {
+            return PolyList.of( key.asList().stream().map( this::normalize ).toList() );
+        }
+        return key;
     }
 
 

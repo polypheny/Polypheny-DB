@@ -139,7 +139,7 @@ public class RelLoadActivity implements Activity, Pipeable {
     @Override
     public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
         Optional<EntityValue> table = settings.get( TABLE_KEY, EntityValue.class );
-        return table.map( v -> String.format( "Load to '%s.%s'", v.getNamespace(), v.getName() ) ).orElse( null );
+        return table.map( v -> String.format( "Load Table to '%s.%s'", v.getNamespace(), v.getName() ) ).orElse( null );
     }
 
 

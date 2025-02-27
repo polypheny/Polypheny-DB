@@ -155,7 +155,7 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
     @Override
     public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
         Optional<EntityValue> table = settings.get( TABLE_KEY, EntityValue.class );
-        return table.map( v -> String.format( "Extract '%s'", v.getName() ) ).orElse( null );
+        return table.map( v -> String.format( "Extract Table '%s.%s'", v.getNamespace(), v.getName() ) ).orElse( null );
     }
 
 

@@ -93,8 +93,8 @@ public class DocSortActivity implements Activity, Fusable, Pipeable {
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster, FuseExecutionContext ctx ) throws Exception {
         AlgDataType type = inputs.get( 0 ).getTupleType();
         Pair<AlgCollation, List<RexNode>> pair = settings.get( "sort", CollationValue.class ).toAlgCollation( 0 );
-        int limit = settings.get( "limit", IntValue.class ).getValue();
-        int skip = settings.get( "skip", IntValue.class ).getValue();
+        int limit = settings.getInt( "limit" );
+        int skip = settings.getInt( "skip" );
 
         if ( pair.left.getFieldCollations().isEmpty() && limit == -1 && skip == 0 ) {
             ctx.logInfo( "Detected trivial sort" );
@@ -115,8 +115,8 @@ public class DocSortActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
-        int limit = settings.get( "limit", IntValue.class ).getValue();
-        int skip = settings.get( "skip", IntValue.class ).getValue();
+        int limit = settings.getInt( "limit" );
+        int skip = settings.getInt( "skip" );
 
         long count = 0;
         for ( List<PolyValue> tuple : inputs.get( 0 ) ) {
@@ -144,10 +144,23 @@ public class DocSortActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
-        return RelSortActivity.getTupleCount( inCounts.get( 0 ),
-                settings.get( "limit", IntValue.class ).getValue(),
-                settings.get( "skip", IntValue.class ).getValue()
-        );
+        return RelSortActivity.getTupleCount( inCounts.get( 0 ), settings.getInt( "limit" ), settings.getInt( "skip" ) );
+    }
+
+
+    @Override
+    public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
+        boolean mightSort = settings.get( "sort", CollationValue.class ).map( c -> !c.getFields().isEmpty() ).orElse( true );
+        boolean mightLimit = settings.get( "limit", IntValue.class ).map( i -> i.getValue() >= 0 ).orElse( true );
+        boolean mightSkip = settings.get( "skip", IntValue.class ).map( i -> i.getValue() > 0 ).orElse( true );
+
+        if ( !mightSort && (mightLimit || mightSkip) ) {
+            return "Limit Documents";
+        }
+        if ( mightSort && !mightLimit && !mightSkip ) {
+            return "Sort Documents";
+        }
+        return null;
     }
 
 }

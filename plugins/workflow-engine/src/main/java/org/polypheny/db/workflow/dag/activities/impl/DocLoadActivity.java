@@ -127,7 +127,7 @@ public class DocLoadActivity implements Activity, Pipeable {
     @Override
     public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
         Optional<EntityValue> collection = settings.get( COLL_KEY, EntityValue.class );
-        return collection.map( v -> String.format( "Load to '%s.%s'", v.getNamespace(), v.getName() ) ).orElse( null );
+        return collection.map( v -> String.format( "Load Collection to '%s.%s'", v.getNamespace(), v.getName() ) ).orElse( null );
     }
 
 

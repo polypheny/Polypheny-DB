@@ -65,7 +65,7 @@ public class WorkflowManager {
         repo = WorkflowRepoImpl.getInstance();
         sessionManager = SessionManager.getInstance();
         registerEndpoints();
-        apiManager = new WorkflowApi( sessionManager, repo );
+        apiManager = new WorkflowApi( sessionManager );
         apiManager.registerEndpoints( HttpServer.getInstance() );
 
         if ( PolyphenyDb.mode == RunMode.TEST ) {

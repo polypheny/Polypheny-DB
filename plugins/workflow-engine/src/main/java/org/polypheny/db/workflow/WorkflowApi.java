@@ -24,19 +24,16 @@ import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.workflow.dag.activities.ActivityRegistry;
 import org.polypheny.db.workflow.models.WorkflowModel;
-import org.polypheny.db.workflow.repo.WorkflowRepo;
 import org.polypheny.db.workflow.session.SessionManager;
 
 public class WorkflowApi {
 
     private final SessionManager sessionManager;
-    private final WorkflowRepo repo;
     public static final String PATH = WorkflowManager.PATH + "/api";
 
 
-    public WorkflowApi( SessionManager sessionManager, WorkflowRepo repo ) {
+    public WorkflowApi( SessionManager sessionManager ) {
         this.sessionManager = sessionManager;
-        this.repo = repo;
     }
 
 
@@ -56,7 +53,7 @@ public class WorkflowApi {
         server.addSerializedRoute( PATH + "/registry", this::getActivityRegistry, HandlerType.GET );
         server.addSerializedRoute( PATH + "/registry/{activityType}", this::getActivityDef, HandlerType.GET );
 
-        server.addSerializedRoute( PATH + "/sessions", this::createSession, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/sessions", this::createSession, HandlerType.POST ); // queryParam: execute = false       <- if true: immediately execute workflow
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/execute", this::execute, HandlerType.POST ); // queryParam: target = null
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/reset", this::reset, HandlerType.POST ); // queryParam: target = null
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/interrupt", this::interrupt, HandlerType.POST );
@@ -153,7 +150,14 @@ public class WorkflowApi {
 
     private void createSession( final Context ctx ) {
         WorkflowModel workflowModel = ctx.bodyAsClass( WorkflowModel.class );
-        process( ctx, () -> sessionManager.createApiSession( workflowModel ) );
+        boolean execute = getQueryParam( ctx, "execute", false );
+        process( ctx, () -> {
+            UUID sessionId = sessionManager.createApiSession( workflowModel );
+            if ( execute ) {
+                sessionManager.getApiSessionOrThrow( sessionId ).execute( null );
+            }
+            return sessionId;
+        } );
     }
 
 

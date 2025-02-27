@@ -293,7 +293,7 @@ public class RelImputationActivity implements Activity, Fusable, Pipeable {
         for ( int target : targets ) {
             colFilters.add( builder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), projects.get( target ) ) );
         }
-        RexNode filter = builder.makeCall( OperatorRegistry.get( OperatorName.AND ), colFilters );
+        RexNode filter = targets.size() == 1 ? colFilters.get( 0 ) : builder.makeCall( OperatorRegistry.get( OperatorName.AND ), colFilters );
         return LogicalRelFilter.create( input, filter );
     }
 

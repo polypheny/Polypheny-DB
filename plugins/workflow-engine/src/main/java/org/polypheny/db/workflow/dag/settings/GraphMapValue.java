@@ -196,7 +196,7 @@ public class GraphMapValue implements SettingValue {
             Set<String> excluded = allProps ? Set.of() : getExcludedNodeProps();
             PolyDictionary dict = new PolyDictionary();
             for ( Pair<String, PolyValue> pair : Pair.zip( names, row ) ) {
-                if ( pair.left.equals( StorageManager.PK_COL ) || excluded.contains( pair.left ) ) {
+                if ( pair.left.equals( StorageManager.PK_COL ) || excluded.contains( pair.left ) || pair.right == null || pair.right.isNull() ) {
                     continue;
                 }
                 dict.put( PolyString.of( pair.left ), pair.right );
@@ -335,9 +335,6 @@ public class GraphMapValue implements SettingValue {
                 if ( leftTargetIdx < minIdx || leftTargetIdx >= nInputs ) {
                     throw new IllegalArgumentException( "Left input of edge does not exist: " + leftTargetIdx );
                 }
-                if ( leftTargetIdx == rightTargetIdx && leftTargetField.equals( rightTargetField ) ) {
-                    throw new IllegalArgumentException( "Cannot have an edge with identical leftField and rightField in the same input: " + leftTargetField + " in input " + leftTargetIdx );
-                }
             }
             if ( rightField.isBlank() ) {
                 throw new IllegalArgumentException( "Cannot have an edge with an empty rightField" );
@@ -385,7 +382,7 @@ public class GraphMapValue implements SettingValue {
             if ( edgeOnly ) {
                 Set<String> excluded = allProps ? Set.of() : getExcludedEdgeProps();
                 for ( Pair<String, PolyValue> pair : Pair.zip( names, row ) ) {
-                    if ( pair.left.equals( StorageManager.PK_COL ) || excluded.contains( pair.left ) ) {
+                    if ( pair.left.equals( StorageManager.PK_COL ) || excluded.contains( pair.left ) || pair.right == null || pair.right.isNull() ) {
                         continue;
                     }
                     dict.put( PolyString.of( pair.left ), pair.right );
@@ -393,6 +390,9 @@ public class GraphMapValue implements SettingValue {
             } else {
                 for ( Pair<String, PolyValue> pair : Pair.zip( names, row ) ) {
                     if ( propertyFields.contains( pair.left ) ) {
+                        if ( pair.right == null || pair.right.isNull() ) {
+                            continue;
+                        }
                         dict.put( PolyString.of( pair.left ), pair.right );
                     }
                 }
@@ -467,7 +467,7 @@ public class GraphMapValue implements SettingValue {
 
     private static List<PolyString> getLabelsFromValue( PolyValue value ) {
         List<PolyString> labels = new ArrayList<>();
-        if ( value == null ) {
+        if ( value == null || value.isNull() ) {
             return labels;
         }
         if ( value.isList() ) {
