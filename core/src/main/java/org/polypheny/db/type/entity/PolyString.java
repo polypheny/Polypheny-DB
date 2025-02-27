@@ -17,6 +17,7 @@
 package org.polypheny.db.type.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.google.common.base.Charsets;
 import io.activej.serializer.BinaryInput;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.ObjectUtils;
@@ -42,6 +44,7 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
 
+@Slf4j
 @Value
 public class PolyString extends PolyValue {
 
@@ -93,7 +96,12 @@ public class PolyString extends PolyValue {
 
 
     public @Nullable String toQuotedJson() {
-        return value == null ? JsonToken.VALUE_NULL.asString() : "\"" + value.replace( "\\", "\\\\" ).replace( "\"", "\\\"" ) + "\"";
+        try {
+            return JSON_WRAPPER.writeValueAsString( value );
+        } catch ( JsonProcessingException e ) {
+            log.warn( "Error on serialize JSON." );
+            return null;
+        }
     }
 
 
