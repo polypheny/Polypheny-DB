@@ -45,13 +45,14 @@ import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 @Slf4j
 public class CypherTestTemplate {
 
-    private static final String GRAPH_NAME = "test";
+    protected static final String GRAPH_NAME = "test";
     protected static final String SINGLE_NODE_PERSON_1 = "CREATE (p:Person {name: 'Max'})";
     protected static final String SINGLE_NODE_PERSON_2 = "CREATE (p:Person {name: 'Hans'})";
 
@@ -84,7 +85,12 @@ public class CypherTestTemplate {
 
 
     public static void createGraph( String name ) {
-        execute( format( "CREATE DATABASE %s", name ) );
+        createGraph( name, "hsqldb" );
+    }
+
+
+    public static void createGraph( String name, String store ) {
+        execute( format( "CREATE DATABASE %s ON STORE %s", name, store ) );
         execute( format( "USE GRAPH %s", name ) );
     }
 
@@ -290,7 +296,8 @@ public class CypherTestTemplate {
         EDGE( "edge", TestEdge.class, PolyEdge.class ),
         PATH( "path", TestPath.class, PolyPath.class ),
         ANY( "any", TestNode.class, PolyValue.class ),
-        STRING( "varchar", TestLiteral.class, PolyString.class );
+        STRING( "varchar", TestLiteral.class, PolyString.class ),
+        GEOMETRY( "geometry", TestLiteral.class, PolyGeometry.class );
 
 
         private final String typeName;

@@ -46,7 +46,7 @@ include 'plugins:prism-interface'
 // adapters plugins
 include 'plugins:hsqldb-adapter'
 include 'plugins:neo4j-adapter'
-include 'plugins:cottontail-adapter'
+//include 'plugins:cottontail-adapter'
 include 'plugins:ethereum-adapter'
 include 'plugins:csv-adapter'
 include 'plugins:mysql-adapter'

@@ -53,7 +53,10 @@ public class ScanRule extends AlgOptRule {
         if ( oldAlg.getEntity().unwrap( TranslatableEntity.class ).isEmpty() ) {
             return;
         }
-        AlgNode newAlg = oldAlg.getEntity().unwrap( TranslatableEntity.class ).get().toAlg( oldAlg.getCluster(), oldAlg.getTraitSet() );
+        TranslatableEntity one = oldAlg.getEntity().unwrap( TranslatableEntity.class ).orElseThrow();
+        var oldCluster = oldAlg.getCluster();
+        var newTraitSet = oldAlg.getTraitSet();
+        AlgNode newAlg = one.toAlg( oldCluster, newTraitSet );
         call.transformTo( newAlg );
     }
 

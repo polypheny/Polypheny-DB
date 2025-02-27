@@ -79,7 +79,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     @Getter
     private final Map<Integer, Map<Integer, List<ParameterValue>>> docs;
 
-    private final List<OperatorName> excluded = List.of( OperatorName.MQL_REGEX_MATCH, OperatorName.MQL_QUERY_VALUE );
+    private final List<OperatorName> excluded = List.of( OperatorName.MQL_REGEX_MATCH, OperatorName.MQL_QUERY_VALUE, OperatorName.MQL_GEO_WITHIN, OperatorName.MQL_GEO_INTERSECTS, OperatorName.MQL_GEO_DISTANCE, OperatorName.MQL_NEAR, OperatorName.MQL_NEAR_SPHERE, OperatorName.MQL_GEO_NEAR );
 
     @Getter
     private final List<AlgDataType> types;
@@ -184,7 +184,8 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 project.getTraitSet(),
                 project.getInput(),
                 Pair.zip( new ArrayList<>( oProject.includes.keySet() ), newProjects ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) ),
-                project.excludes
+                project.excludes,
+                project.adds
         );
     }
 
