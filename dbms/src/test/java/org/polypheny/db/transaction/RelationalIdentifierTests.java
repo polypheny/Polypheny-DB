@@ -1102,6 +1102,25 @@ public class RelationalIdentifierTests {
         }
     }
 
+    @Test
+    public void testMvccUpdateReferenced() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            connection.setSchema( "mvccTest" );
+            try ( java.sql.Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "CREATE TABLE identifiers (a VARCHAR(8) NOT NULL, b INT, PRIMARY KEY (a))" );
+                    statement.executeUpdate( "INSERT INTO identifiers VALUES ('first', 50)" );
+                    statement.executeUpdate( "UPDATE identifiers SET b = b + 10 WHERE a = 'first'");
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS identifiers" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
 
     @Test
     public void testMvccUpdateWithColumnNames() throws SQLException {
