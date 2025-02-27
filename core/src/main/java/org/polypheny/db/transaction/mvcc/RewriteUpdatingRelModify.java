@@ -26,7 +26,10 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.processing.DeepCopyShuttle;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
@@ -77,8 +80,7 @@ public class RewriteUpdatingRelModify implements AlgTreeModification<LogicalRelM
         LogicalRelProject originalProject = (LogicalRelProject) lhsFilterRewriter.visit( (LogicalRelProject) originalModify.getInput() );
 
         List<RexNode> originalProjects = originalProject.getProjects().stream()
-                .filter( p -> !(p instanceof RexLiteral) )
-                .filter( p -> !(p instanceof RexDynamicParam) )
+                .filter( p -> p instanceof RexIndexRef)
                 .toList();
 
         List<RexNode> newProjects = new ArrayList<>( originalProjects.size() );
@@ -99,7 +101,12 @@ public class RewriteUpdatingRelModify implements AlgTreeModification<LogicalRelM
             if ( originalModify.getUpdateColumns().contains( originalField.getName() ) ) {
                 // replace updated values
                 int updateIndex = originalModify.getUpdateColumns().indexOf( originalField.getName() );
-                newProjects.add( originalModify.getSourceExpressions().get( updateIndex ) );
+                RexNode sourceExp = originalModify.getSourceExpressions().get( updateIndex );
+                if (sourceExp instanceof RexCall ) {
+                    newProjects.add(originalProject.getProjects().get( originalProjects.size() + updateIndex ));
+                    continue;
+                }
+                newProjects.add( sourceExp );
                 continue;
             }
 
