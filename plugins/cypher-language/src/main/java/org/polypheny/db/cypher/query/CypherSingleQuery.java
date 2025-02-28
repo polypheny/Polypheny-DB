@@ -16,11 +16,9 @@
 
 package org.polypheny.db.cypher.query;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.clause.CypherClause;
@@ -105,7 +103,7 @@ public class CypherSingleQuery extends CypherQuery implements ExecutableStatemen
     }
 
 
-    // TODO TH: for now we lock the entire namespace (=graph)
+    // TODO TH: optimize: for now we lock the entire namespace (=graph)
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
         return LockableUtils.getMapOfNamespaceLockableFromContext( context, parsedQueryContext, LockType.EXCLUSIVE );
