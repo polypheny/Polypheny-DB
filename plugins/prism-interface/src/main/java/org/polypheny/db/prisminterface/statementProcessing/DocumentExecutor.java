@@ -98,7 +98,6 @@ public class DocumentExecutor extends Executor {
         Frame frame = fetch( piStatement, fetchSize );
         resultBuilder.setFrame( frame );
         if ( frame.getIsLast() ) {
-            //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
             client.commitCurrentTransactionIfAuto();
         }
         return resultBuilder.build();

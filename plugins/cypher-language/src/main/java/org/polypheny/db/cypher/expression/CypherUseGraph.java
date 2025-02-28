@@ -57,7 +57,6 @@ public class CypherUseGraph extends CypherWithGraph implements ExecutableStateme
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
-        //TODO TH: Does this make sense?
         return Map.of();
     }
 
