@@ -52,6 +52,7 @@ import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizer.Su
 import org.polypheny.db.workflow.engine.scheduler.optimizer.WorkflowOptimizerImpl;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
+import org.polypheny.db.workflow.session.NestedSessionManager;
 
 /**
  * The scheduler takes a workflow and a (optional) target activitiy.
@@ -67,15 +68,17 @@ public class WorkflowScheduler {
 
     private final Workflow workflow;
     private final StorageManager sm;
+    private final NestedSessionManager nestedManager;
     private final int maxWorkers;
     private final AttributedDirectedGraph<UUID, ExecutionEdge> execDag;
     private final WorkflowOptimizer optimizer;
     private final ExecutionMonitor executionMonitor;
     private CountDownLatch finishLatch;
 
-    // TODO: define overall success or failure of workflow execution, e.g. with "mustSucceed" flag in activity
     private boolean isAborted; // by interruption
     private boolean isFinished;
+    private Set<UUID> mustSucceed = new HashSet<>();
+    private Set<UUID> mustFail = new HashSet<>();
 
     private int pendingCount = 0; // current number of unfinished submissions
     private final Set<UUID> remainingActivities = new HashSet<>(); // activities that have not finished execution
@@ -83,10 +86,11 @@ public class WorkflowScheduler {
     private Partition activePartition;
 
 
-    public WorkflowScheduler( Workflow workflow, StorageManager sm, ExecutionMonitor monitor, int globalWorkers, @Nullable UUID targetActivity ) throws Exception {
+    public WorkflowScheduler( Workflow workflow, StorageManager sm, @Nullable NestedSessionManager nestedManager, ExecutionMonitor monitor, int globalWorkers, @Nullable UUID targetActivity ) throws Exception {
         log.info( "Instantiating WorkflowScheduler with target: {}", targetActivity );
         this.workflow = workflow;
         this.sm = sm;
+        this.nestedManager = nestedManager;
         this.executionMonitor = monitor;
         this.maxWorkers = Math.min( workflow.getConfig().getMaxWorkers(), globalWorkers );
 
@@ -162,7 +166,6 @@ public class WorkflowScheduler {
 
 
     private AttributedDirectedGraph<UUID, ExecutionEdge> prepareExecutionDag( List<UUID> targets ) throws Exception {
-        System.out.println( "targets: " + targets );
         if ( targets.isEmpty() ) {
             throw new GenericRuntimeException( "Cannot prepare executionDag for empty targets" );
         }
@@ -218,6 +221,12 @@ public class WorkflowScheduler {
 
         for ( UUID n : TopologicalOrderIterator.of( execDag ) ) {
             workflow.updateValidPreview( n );
+            ActivityWrapper wrapper = workflow.getActivity( n );
+            wrapper.applyContext( nestedManager );
+            switch ( wrapper.getConfig().getExpectedOutcome() ) {
+                case MUST_SUCCEED -> mustSucceed.add( n );
+                case MUST_FAIL -> mustFail.add( n );
+            }
         }
 
         for ( CommonType type : List.of( CommonType.EXTRACT, CommonType.NONE, CommonType.LOAD ) ) {
@@ -340,7 +349,7 @@ public class WorkflowScheduler {
             ActivityWrapper wrapper = workflow.getActivity( n );
             if ( !isInitialUpdate ) {
                 if ( isSuccess ) {
-                    wrapper.setState( n == rootId ? ActivityState.SAVED : ActivityState.FINISHED );
+                    wrapper.setState( n.equals( rootId ) ? ActivityState.SAVED : ActivityState.FINISHED );
                 } else {
                     wrapper.setState( ActivityState.FAILED );
                 }
@@ -453,7 +462,7 @@ public class WorkflowScheduler {
             setStates( remainingActivities, ActivityState.SKIPPED );
         }
         workflow.setState( WorkflowState.IDLE );
-        executionMonitor.stop();
+        executionMonitor.stop( isOverallSuccess() );
         isFinished = true;
         finishLatch.countDown();
     }
@@ -493,6 +502,21 @@ public class WorkflowScheduler {
     private boolean waitsForExecution( UUID activityId ) {
         ActivityState state = workflow.getActivity( activityId ).getState();
         return !state.isExecuted() && state != ActivityState.SKIPPED;
+    }
+
+
+    private boolean isOverallSuccess() {
+        for ( UUID n : mustSucceed ) {
+            if ( !workflow.getActivity( n ).getState().isSuccess() ) {
+                return false;
+            }
+        }
+        for ( UUID n : mustFail ) {
+            if ( workflow.getActivity( n ).getState().isSuccess() ) {
+                return false;
+            }
+        }
+        return true;
     }
 
 

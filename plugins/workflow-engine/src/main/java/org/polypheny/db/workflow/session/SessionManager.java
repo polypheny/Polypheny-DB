@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.workflow.WorkflowApi.WorkflowApiException;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.WorkflowImpl;
@@ -40,6 +41,7 @@ public class SessionManager {
 
     private final Map<UUID, UserSession> userSessions = new ConcurrentHashMap<>();
     private final Map<UUID, ApiSession> apiSessions = new ConcurrentHashMap<>();
+    private final Map<UUID, NestedSession> nestedSessions = new ConcurrentHashMap<>(); // unlike the map in the nestedSessionManager, the key is a sessionId
     private final WorkflowRepo repo = WorkflowRepoImpl.getInstance();
 
 
@@ -92,11 +94,16 @@ public class SessionManager {
     }
 
 
+    public Map<UUID, SessionModel> getNestedSessionModels() {
+        return toSessionModelMap( nestedSessions );
+    }
+
+
     public Map<UUID, SessionModel> getSessionModels() {
-        Map<UUID, SessionModel> userSessionModels = getUserSessionModels();
-        Map<UUID, SessionModel> apiSessionModels = getApiSessionModels();
-        userSessionModels.putAll( apiSessionModels );
-        return userSessionModels;
+        Map<UUID, SessionModel> models = getUserSessionModels();
+        models.putAll( getApiSessionModels() );
+        models.putAll( getNestedSessionModels() );
+        return models;
     }
 
 
@@ -111,7 +118,11 @@ public class SessionManager {
 
 
     public void terminateSession( UUID sId ) {
-        getSessionOrThrow( sId ).terminate();
+        AbstractSession session = getSessionOrThrow( sId );
+        if ( session instanceof NestedSession ) {
+            throw new GenericRuntimeException( "Nested sessions can only get terminated via their parent session." );
+        }
+        session.terminate();
         removeSession( sId );
     }
 
@@ -119,6 +130,7 @@ public class SessionManager {
     public void terminateAll() {
         Set<UUID> sessionIds = userSessions.keySet();
         sessionIds.addAll( apiSessions.keySet() );
+        // nested sessions are terminated recursively
         for ( UUID sId : sessionIds ) {
             try {
                 terminateSession( sId );
@@ -158,6 +170,8 @@ public class SessionManager {
             return userSessions.get( sId );
         } else if ( apiSessions.containsKey( sId ) ) {
             return apiSessions.get( sId );
+        } else if ( nestedSessions.containsKey( sId ) ) {
+            return nestedSessions.get( sId );
         }
         return null;
     }
@@ -201,6 +215,11 @@ public class SessionManager {
     }
 
 
+    public void removeNestedSession( UUID sId ) {
+        nestedSessions.remove( sId );
+    }
+
+
     private UUID registerUserSession( Workflow wf, UUID wId, int version ) throws WorkflowRepoException {
         UUID sId = UUID.randomUUID();
         UserSession session = new UserSession( sId, wf, wId, version, repo.getWorkflowDef( wId ) );
@@ -214,6 +233,15 @@ public class SessionManager {
         ApiSession session = new ApiSession( sId, wf );
         apiSessions.put( sId, session );
         return sId;
+    }
+
+
+    /**
+     * Unlike other session types, nested sessions are not managed by the sessionManager itself.
+     * It only keeps a reference to it.
+     */
+    public void putNestedSession( NestedSession session ) {
+        this.nestedSessions.put( session.sessionId, session );
     }
 
 

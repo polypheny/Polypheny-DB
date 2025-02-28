@@ -31,6 +31,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Triple;
 import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.workflow.dag.Workflow;
@@ -74,19 +75,33 @@ public abstract class AbstractSession {
     final ObjectMapper mapper = new ObjectMapper();
     private final Set<Session> subscribers = new HashSet<>();
     final GlobalScheduler scheduler;
+    final NestedSessionManager nestedManager;
+
     ExecutionMonitor executionMonitor; // corresponds to the last started execution
     Instant lastInteraction = Instant.now();
 
 
     protected AbstractSession( Workflow workflow, UUID sessionId ) {
+        this( workflow, sessionId, null, 0, null );
+    }
+
+
+    protected AbstractSession( Workflow workflow, UUID sessionId, @Nullable UUID workflowId, int version, @Nullable Set<Pair<UUID, Integer>> parentWorkflowIds ) {
         this.workflow = workflow;
         this.sessionId = sessionId;
         this.sm = new StorageManagerImpl( sessionId, workflow.getConfig().getPreferredStores() );
         this.scheduler = GlobalScheduler.getInstance();
+
+        Set<Pair<UUID, Integer>> workflowIds = parentWorkflowIds == null ? new HashSet<>() : new HashSet<>( parentWorkflowIds );
+        if ( workflowId != null ) {
+            workflowIds.add( Pair.of( workflowId, version ) );
+        }
+        this.nestedManager = new NestedSessionManager( workflowIds );
     }
 
 
     public void terminate() {
+        nestedManager.terminateAll();
         if ( workflow.getState() == WorkflowState.EXECUTING ) {
             scheduler.interruptExecution( sessionId );
         }
@@ -96,6 +111,8 @@ public abstract class AbstractSession {
             } else {
                 throw new GenericRuntimeException( "Timed out waiting for execution to finish. Try terminating the session when the workflow is idle." );
             }
+        } catch ( GenericRuntimeException e ) {
+            throw e;
         } catch ( Exception e ) {
             throw new GenericRuntimeException( e );
         }
@@ -185,7 +202,7 @@ public abstract class AbstractSession {
             workflow.reset( targetActivity, sm );
         }
         try {
-            executionMonitor = GlobalScheduler.getInstance().startExecution( workflow, sm, targetActivity, this::broadcastMessage );
+            executionMonitor = GlobalScheduler.getInstance().startExecution( workflow, sm, nestedManager, targetActivity, this::broadcastMessage );
         } catch ( Exception e ) {
             // TODO: implement correct error handling when execution cannot be started
             throw new IllegalStateException( "Unable to start workflow execution", e );
@@ -212,6 +229,15 @@ public abstract class AbstractSession {
     void interruptExecution() {
         throwIfNotExecuting();
         scheduler.interruptExecution( sessionId );
+    }
+
+
+    public SessionModel getNestedModelOrNull( UUID activityId ) {
+        NestedSession nested = nestedManager.getSessionForActivity( activityId );
+        if ( nested == null ) {
+            return null;
+        }
+        return nested.toModel();
     }
 
 

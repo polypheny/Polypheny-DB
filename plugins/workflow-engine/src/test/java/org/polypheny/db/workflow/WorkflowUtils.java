@@ -43,6 +43,7 @@ import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.engine.storage.StorageUtils;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
+import org.polypheny.db.workflow.models.ActivityConfigModel.ExpectedOutcome;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.EdgeModel;
 import org.polypheny.db.workflow.models.RenderModel;
@@ -514,7 +515,7 @@ public class WorkflowUtils {
 
 
     private static ActivityModel getCommonActivity( String type, Map<String, JsonNode> settings, CommonType commonType ) {
-        ActivityConfigModel config = new ActivityConfigModel( false, 0, null, commonType, ControlStateMerger.AND_AND );
+        ActivityConfigModel config = new ActivityConfigModel( false, 0, null, commonType, ControlStateMerger.AND_AND, ExpectedOutcome.ANY );
         return new ActivityModel( type, UUID.randomUUID(), settings, config, RenderModel.of() );
     }
 

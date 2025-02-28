@@ -185,7 +185,7 @@ public interface Workflow {
 
     /**
      * Returns the number of seconds until the execution of the subtree containing the given activities times out.
-     * If there is more than one activitiy in the set, the sum of all timeout durations is returned.
+     * If there is more than one activity in the set, the sum of all timeout durations is returned.
      *
      * @param activities the activities of the subtree to be executed
      * @return the timout duration in seconds, or 0 if no timeout is desired.

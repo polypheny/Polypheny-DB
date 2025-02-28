@@ -18,6 +18,8 @@ package org.polypheny.db.workflow.dag.activities;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -34,6 +36,7 @@ import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
+import org.polypheny.db.workflow.session.NestedSessionManager;
 
 public interface Activity {
 
@@ -339,6 +342,19 @@ public interface Activity {
             }
             return EdgeState.ACTIVE;
         }
+
+    }
+
+
+    /**
+     * Some activities require additional context before they can begin their execution.
+     * In that case, they should implement this interface.
+     * The ContextConsumer is guaranteed be called at least once before every execution.
+     *
+     * <p>The {@code UUID} parameter represents the activityId. Once consumed, it is guaranteed to never change for this instance.</p>
+     * <p>The {@code NestedSessionManager} parameter is the nullable nestedSessionManager of the session currently executing the activity. Once consumed, it is guaranteed to never change for this instance.</p>
+     */
+    interface ContextConsumer extends BiConsumer<UUID, NestedSessionManager> {
 
     }
 

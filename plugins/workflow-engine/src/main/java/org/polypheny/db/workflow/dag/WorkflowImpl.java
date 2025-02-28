@@ -42,6 +42,7 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.activities.TypePreview.InactiveType;
 import org.polypheny.db.workflow.dag.activities.TypePreview.MissingType;
+import org.polypheny.db.workflow.dag.activities.impl.NestedWorkflowActivity;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
@@ -569,6 +570,9 @@ public class WorkflowImpl implements Workflow {
                         throw new IllegalStateException( "Found a checkpoint for an activity that has not yet been executed successfully: " + wrapper );
                     }
                 }
+            }
+            if ( type != CommonType.NONE && wrapper.getActivity() instanceof NestedWorkflowActivity ) {
+                throw new IllegalStateException( "Nested workflow activities cannot be part of a common transaction: " + wrapper );
             }
 
             Set<Integer> requiredInPorts = wrapper.getDef().getRequiredInPorts();

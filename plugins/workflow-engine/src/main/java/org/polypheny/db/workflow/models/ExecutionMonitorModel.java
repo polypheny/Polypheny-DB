@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.models;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -34,5 +35,7 @@ public class ExecutionMonitorModel {
     int failCount;
     int skipCount;
     Map<ExecutorType, Integer> countByExecutorType;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    Boolean isSuccess;
 
 }

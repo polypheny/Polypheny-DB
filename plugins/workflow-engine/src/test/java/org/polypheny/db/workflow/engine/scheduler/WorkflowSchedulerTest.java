@@ -68,16 +68,13 @@ class WorkflowSchedulerTest {
     @Test
     void singleActivityTest() throws Exception {
         final int globalWorkers = 1;
-                /*new EdgeModel( activities.get( 0 ).getId(), activities.get( 1 ).getId(), 0, 0, false, null ),
-                new EdgeModel( activities.get( 1 ).getId(), activities.get( 2 ).getId(), 0, 0, false, null )
-        );*/
 
         Workflow workflow = WorkflowUtils.getWorkflow1();
         List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
         assertEquals( WorkflowState.IDLE, workflow.getState() );
         assertEquals( ActivityState.IDLE, workflow.getActivity( ids.get( 0 ) ).getState() );
 
-        WorkflowScheduler scheduler = new WorkflowScheduler( workflow, sm, new ExecutionMonitor( workflow, ids.get( 0 ), null ), globalWorkers, ids.get( 0 ) );
+        WorkflowScheduler scheduler = new WorkflowScheduler( workflow, sm, null, new ExecutionMonitor( workflow, ids.get( 0 ), null ), globalWorkers, ids.get( 0 ) );
         assertEquals( WorkflowState.EXECUTING, workflow.getState() );
         assertEquals( ActivityState.QUEUED, workflow.getActivity( ids.get( 0 ) ).getState() );
         assertEquals( ActivityState.IDLE, workflow.getActivity( ids.get( 1 ) ).getState() );

@@ -43,6 +43,7 @@ import org.polypheny.db.workflow.engine.monitoring.ExecutionMonitor;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
 import org.polypheny.db.workflow.models.responses.WsResponse;
+import org.polypheny.db.workflow.session.NestedSessionManager;
 
 @Slf4j
 public class GlobalScheduler {
@@ -78,11 +79,11 @@ public class GlobalScheduler {
 
 
     public synchronized void startExecution( Workflow workflow, StorageManager sm, @Nullable UUID targetActivity ) throws Exception {
-        startExecution( workflow, sm, targetActivity, null );
+        startExecution( workflow, sm, null, targetActivity, null );
     }
 
 
-    public synchronized ExecutionMonitor startExecution( Workflow workflow, StorageManager sm, @Nullable UUID targetActivity, Consumer<WsResponse> monitoringCallback ) throws Exception {
+    public synchronized ExecutionMonitor startExecution( Workflow workflow, StorageManager sm, @Nullable NestedSessionManager nestedManager, @Nullable UUID targetActivity, Consumer<WsResponse> monitoringCallback ) throws Exception {
         UUID sessionId = sm.getSessionId();
         if ( schedulers.containsKey( sessionId ) ) {
             throw new GenericRuntimeException( "Cannot execute a workflow that is already being executed." );
@@ -96,11 +97,11 @@ public class GlobalScheduler {
         WorkflowScheduler scheduler;
         List<ExecutionSubmission> submissions;
         try {
-            scheduler = new WorkflowScheduler( workflow, sm, monitor, globalWorkerCount, targetActivity );
+            scheduler = new WorkflowScheduler( workflow, sm, nestedManager, monitor, globalWorkerCount, targetActivity );
             submissions = scheduler.startExecution();
         } catch ( Exception e ) {
             workflow.resetFailedExecutionInit( sm );
-            monitor.stop();
+            monitor.stop( false );
             throw e;
         }
         if ( submissions.isEmpty() ) {

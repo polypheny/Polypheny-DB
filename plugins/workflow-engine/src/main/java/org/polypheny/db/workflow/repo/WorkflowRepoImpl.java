@@ -38,8 +38,6 @@ public class WorkflowRepoImpl implements WorkflowRepo {
 
     private static final String DEF_FILE = "meta.json";
     public static final String WORKFLOWS_PATH = "data/workflows";
-    public static final int MAX_NAME_LENGTH = 128;
-    public static final int MAX_DESCRIPTION_LENGTH = 1024;
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final PolyphenyHomeDirManager phm = PolyphenyHomeDirManager.getInstance();

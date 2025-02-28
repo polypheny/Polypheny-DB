@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.repo;
 import io.javalin.http.HttpCode;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.Getter;
@@ -27,6 +28,9 @@ import org.polypheny.db.workflow.models.WorkflowDefModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 
 public interface WorkflowRepo {
+
+    int MAX_NAME_LENGTH = 128;
+    int MAX_DESCRIPTION_LENGTH = 1024;
 
     /**
      * Retrieves all workflow definitions stored in the repository.
@@ -138,6 +142,21 @@ public interface WorkflowRepo {
                     .anyMatch( workflowDef -> workflowDef.getName().equals( name ) );
         } catch ( WorkflowRepoException e ) {
             return false;
+        }
+    }
+
+    /**
+     * Retrieves the workflowId for the given workflow name.
+     *
+     * @return the workflowId corresponding to the specified unique name or null if no workflow with that name exists.
+     */
+    default UUID getWorkflowId( String name ) {
+        try {
+            return getWorkflowDefs().entrySet().stream()
+                    .filter( e -> e.getValue().getName().equals( name ) )
+                    .map( Entry::getKey ).findAny().orElse( null );
+        } catch ( WorkflowRepoException e ) {
+            return null;
         }
     }
 

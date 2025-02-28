@@ -186,7 +186,17 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
         for ( Entry<String, JsonNode> entry : env.properties() ) {
             map.put( entry.getKey(), entry.getValue() );
         }
+        return Collections.unmodifiableMap( map );
+    }
 
+
+    @Override
+    public Map<String, JsonNode> getWorkflowVariables() {
+        ObjectNode vars = (ObjectNode) variables.get( WORKFLOW_KEY );
+        Map<String, JsonNode> map = new HashMap<>();
+        for ( Entry<String, JsonNode> entry : vars.properties() ) {
+            map.put( entry.getKey(), entry.getValue() );
+        }
         return Collections.unmodifiableMap( map );
     }
 

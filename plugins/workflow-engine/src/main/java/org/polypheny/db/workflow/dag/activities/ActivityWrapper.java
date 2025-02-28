@@ -25,12 +25,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.workflow.dag.activities.Activity.ContextConsumer;
 import org.polypheny.db.workflow.dag.activities.Activity.ControlStateMerger;
 import org.polypheny.db.workflow.dag.activities.ActivityDef.InPortDef;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidInputException;
@@ -48,6 +50,7 @@ import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.ExecutionInfoModel;
 import org.polypheny.db.workflow.models.RenderModel;
 import org.polypheny.db.workflow.models.TypePreviewModel;
+import org.polypheny.db.workflow.session.NestedSessionManager;
 
 @Slf4j
 @Getter
@@ -179,6 +182,13 @@ public class ActivityWrapper {
             }
         }
         this.outTypePreview = Collections.unmodifiableList( merged );
+    }
+
+
+    public void applyContext( @Nullable NestedSessionManager nestedManager ) {
+        if ( activity instanceof ContextConsumer consumer ) {
+            consumer.accept( id, nestedManager );
+        }
     }
 
 

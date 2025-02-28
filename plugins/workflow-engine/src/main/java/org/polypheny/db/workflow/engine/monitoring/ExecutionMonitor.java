@@ -54,6 +54,8 @@ public class ExecutionMonitor {
     // needs to be updated manually
     private int successCount;
     private int failCount;
+    @Getter
+    private boolean isOverallSuccess;
 
     private final Workflow workflow;
     @Getter
@@ -137,7 +139,8 @@ public class ExecutionMonitor {
     }
 
 
-    public void stop() {
+    public void stop( boolean isOverallSuccess ) {
+        this.isOverallSuccess = isOverallSuccess;
         workflowDuration.stop();
         forwardStates();
         scheduler.shutdown();
@@ -160,7 +163,8 @@ public class ExecutionMonitor {
                 successCount,
                 failCount,
                 skippedActivities.size(),
-                getActivityCounts()
+                getActivityCounts(),
+                workflowDuration.isStopped() ? isOverallSuccess : null
         );
     }
 

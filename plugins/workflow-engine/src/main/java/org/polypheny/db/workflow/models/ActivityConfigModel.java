@@ -16,13 +16,13 @@
 
 package org.polypheny.db.workflow.models;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 import org.polypheny.db.workflow.dag.activities.Activity.ControlStateMerger;
 
 
-// Available config keys are determined by activity category (e.g. extract activity and transform can enforce checkpoint, load can't)
 @Value
 public class ActivityConfigModel {
 
@@ -34,6 +34,11 @@ public class ActivityConfigModel {
     CommonType commonType;
 
     ControlStateMerger controlStateMerger;
+    /**
+     * Used to determine the successful execution of the entire workflow.
+     * The default is ANY, resulting in a workflow to be unable to fail, given that execution terminates eventually.
+     */
+    ExpectedOutcome expectedOutcome;
 
 
     /**
@@ -52,8 +57,26 @@ public class ActivityConfigModel {
     }
 
 
+    @JsonCreator
+    public ActivityConfigModel(
+            @JsonProperty("enforceCheckpoint") boolean enforceCheckpoint,
+            @JsonProperty("timeoutSeconds") int timeoutSeconds,
+            @JsonProperty("preferredStores") String[] preferredStores,
+            @JsonProperty(value = "commonType", required = true) CommonType commonType,
+            @JsonProperty("controlStateMerger") ControlStateMerger controlStateMerger,
+            @JsonProperty("expectedOutcome") ExpectedOutcome expectedOutcome ) {
+
+        this.enforceCheckpoint = enforceCheckpoint;
+        this.timeoutSeconds = timeoutSeconds;
+        this.preferredStores = preferredStores;
+        this.commonType = commonType;
+        this.controlStateMerger = controlStateMerger;
+        this.expectedOutcome = expectedOutcome != null ? expectedOutcome : ExpectedOutcome.ANY; // Default handling
+    }
+
+
     public static ActivityConfigModel of() {
-        return new ActivityConfigModel( false, 0, null, CommonType.NONE, ControlStateMerger.AND_AND );
+        return new ActivityConfigModel( false, 0, null, CommonType.NONE, ControlStateMerger.AND_AND, ExpectedOutcome.ANY );
     }
 
 
@@ -61,6 +84,13 @@ public class ActivityConfigModel {
         NONE,
         EXTRACT,
         LOAD
+    }
+
+
+    public enum ExpectedOutcome {
+        MUST_SUCCEED,
+        MUST_FAIL,
+        ANY
     }
 
 }

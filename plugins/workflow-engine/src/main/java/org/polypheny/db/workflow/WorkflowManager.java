@@ -144,6 +144,7 @@ public class WorkflowManager {
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/variables", this::getWorkflowVariables, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/monitor", this::getExecutionMonitor, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/{activityId}", this::getActivity, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/{activityId}/nested", this::getNestedSession, HandlerType.GET );
         server.addSerializedRoute( PATH + "/workflows", this::getWorkflowDefs, HandlerType.GET );
         server.addSerializedRoute( PATH + "/workflows/{workflowId}/{version}", this::getWorkflow, HandlerType.GET );
         server.addSerializedRoute( PATH + "/registry", this::getActivityRegistry, HandlerType.GET );
@@ -201,6 +202,13 @@ public class WorkflowManager {
         UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
         UUID activityId = UUID.fromString( ctx.pathParam( "activityId" ) );
         process( ctx, () -> sessionManager.getSessionOrThrow( sessionId ).getActivityModel( activityId, true ) );
+    }
+
+
+    private void getNestedSession( final Context ctx ) {
+        UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
+        UUID activityId = UUID.fromString( ctx.pathParam( "activityId" ) );
+        process( ctx, () -> sessionManager.getSessionOrThrow( sessionId ).getNestedModelOrNull( activityId ) );
     }
 
 

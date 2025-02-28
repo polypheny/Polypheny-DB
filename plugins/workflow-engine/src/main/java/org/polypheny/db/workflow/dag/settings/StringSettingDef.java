@@ -98,7 +98,8 @@ public class StringSettingDef extends SettingDef {
         FIELD_NAMES,
         VARIABLES,
         VALUES,
-        ADAPTERS;
+        ADAPTERS,
+        WORKFLOW_NAMES;
     }
 
 }

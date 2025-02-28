@@ -61,6 +61,11 @@ public interface ReadableVariableStore {
     Map<String, JsonNode> getEnvVariables();
 
     /**
+     * Get an unmodifiable snapshot of the workflow variables.
+     */
+    Map<String, JsonNode> getWorkflowVariables();
+
+    /**
      * Get an unmodifiable snapshot of the non-sensitive variables.
      * In particular, the values of all environment variables is set to null.
      *

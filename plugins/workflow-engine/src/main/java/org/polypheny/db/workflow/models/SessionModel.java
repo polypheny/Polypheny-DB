@@ -56,6 +56,7 @@ public class SessionModel {
     public enum SessionModelType {
         USER_SESSION,
         API_SESSION,
+        NESTED_SESSION,
         JOB_SESSION
     }
 
