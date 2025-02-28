@@ -106,7 +106,7 @@ public class CypherCreateNamespace extends CypherAdminCommand implements Executa
                 replace,
                 true,
                 statement,
-                concurrencyControlType); // ToDo TH: does this make sense?
+                concurrencyControlType);
     }
 
 

@@ -155,12 +155,13 @@ public class MvccUtils {
 
     private static long validateRelWrites( long sequenceNumber, Entity writtenEntity, Transaction transaction ) {
         // ToDo TH: think about what happens to deletions
+        // FIXME: inner should be: SELECT ABS(_eid) FROM %s WHERE _vid = %d
         String queryTemplate = """
-                SELECT CAST (MAX(_vid) AS DECIMAL) AS max_vid
-                FROM %s
-                WHERE _eid IN (
-                    SELECT _eid FROM %s WHERE _vid = %d
-                )
+                SELECT CAST(MAX(a._vid) AS DECIMAL) AS max_vid
+                FROM %s AS a
+                JOIN %s AS b
+                  ON ABS(a._eid) = ABS(b._eid)
+                WHERE b._vid = %d;
                 """;
 
         String query = String.format( queryTemplate, writtenEntity.getName(), writtenEntity.getName(), -sequenceNumber );
