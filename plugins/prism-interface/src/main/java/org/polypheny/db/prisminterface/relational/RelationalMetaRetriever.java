@@ -156,8 +156,7 @@ public class RelationalMetaRetriever {
                         .toList();
                 return TypeMeta.newBuilder()
                         .setStructMeta( StructMeta.newBuilder().addAllFieldMetas( fieldMetas ).build() )
-                        //.setProtoValueType( ProtoValueType.PROTO_VALUE_TYPE_STRUCTURED )
-                        //TODO TH: handle structured type meta in a useful way
+                        // TODO: handle structured type meta in a useful way
                         .build();
             }
             ProtoPolyType type = getFromPolyType( polyType );

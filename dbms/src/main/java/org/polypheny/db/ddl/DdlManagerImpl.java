@@ -2091,7 +2091,7 @@ public class DdlManagerImpl extends DdlManager {
 
         for ( FieldInformation information : fields ) {
             ids.put( information.name(), addColumn( namespaceId, information.name(), information.typeInformation(), information.collation(),
-                    information.defaultValue(), logical.id, information.position() + 1, information.isInternal() ) ); // pos + 1 to make space for entry identifier column TODO TH: is this actually correct?
+                    information.defaultValue(), logical.id, information.position(), information.isInternal() ) );
         }
 
         List<Long> pkIds = new ArrayList<>();

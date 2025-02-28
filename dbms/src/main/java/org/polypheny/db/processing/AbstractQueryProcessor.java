@@ -141,6 +141,7 @@ import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.AlgEntityLockableExtractor;
+import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.type.PolyType;
@@ -559,14 +560,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         AlgEntityLockableExtractor entityScanner = new AlgEntityLockableExtractor();
         AlgOptUtil.go( entityScanner, logicalRoot.alg );
         Transaction transaction = statement.getTransaction();
-        entityScanner.getResult().forEach( ( k, v ) -> {
-            try {
-                transaction.acquireLockable( k, v );
-            } catch ( DeadlockException e ) {
-                // TODO TH: throw more expressive exception
-                throw new RuntimeException( e );
-            }
-        } );
+        for (Map.Entry<Lockable, LockType> entry : entityScanner.getResult().entrySet()) {
+            transaction.acquireLockable( entry.getKey(), entry.getValue() );
+        }
     }
 
 
