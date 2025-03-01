@@ -35,14 +35,14 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNameRef;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.util.ImmutableBitSet;
 
-public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalRelScan, LogicalRelJoin> {
+public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalRelScan, LogicalRelProject> {
 
     private static final AlgDataType BOOLEAN_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BOOLEAN, true );
 
@@ -52,12 +52,13 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
     }
 
 
-    public LogicalRelJoin apply( LogicalRelScan node ) {
+    public LogicalRelProject apply( LogicalRelScan node ) {
         LogicalRelFilter relevantVersionsFilter = buildRelRelevantVersionsFilter( target );
-        LogicalRelProject identifierVersionProject = buildRelIdentifierVersionProject( relevantVersionsFilter );
-        LogicalRelAggregate newestVersionAggregate = buildNewestVersionAggregate( identifierVersionProject );
+        //LogicalRelProject identifierVersionProject = buildRelIdentifierVersionProject( relevantVersionsFilter );
+        LogicalRelAggregate newestVersionAggregate = buildNewestVersionAggregate( relevantVersionsFilter );
         LogicalRelFilter deletedEntriesFilter = buildDeletedEntriesFilter( target );
-        return buildScopeScanJoin( deletedEntriesFilter, newestVersionAggregate );
+        LogicalRelJoin scopeJoin = buildScopeScanJoin( deletedEntriesFilter, newestVersionAggregate );
+        return buildRemoveArtifactsProject( scopeJoin, deletedEntriesFilter );
     }
 
 
@@ -138,7 +139,7 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
     }
 
 
-    private LogicalRelAggregate buildNewestVersionAggregate( LogicalRelProject input ) {
+    private LogicalRelAggregate buildNewestVersionAggregate( LogicalRelFilter input ) {
         ImmutableBitSet rightAggregateGroupSet = ImmutableBitSet.of( 0 );
         AggregateCall rightAggregateCall = AggregateCall.create(
                 OperatorRegistry.getAgg( OperatorName.MAX ),
@@ -219,4 +220,19 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
                 true
         );
     }
+
+
+    private LogicalRelProject buildRemoveArtifactsProject( LogicalRelJoin scopeJoin, LogicalRelFilter deletedEntriesFilter ) {
+        List<? extends RexNode> projects = deletedEntriesFilter.getTupleType().getFields().stream()
+                .map( f -> new RexIndexRef( f.getIndex(), f.getType() ) )
+                .toList();
+
+        return LogicalRelProject.create(
+                scopeJoin,
+                projects,
+                deletedEntriesFilter.getTupleType().getFieldNames()
+        );
+
+    }
+
 }
