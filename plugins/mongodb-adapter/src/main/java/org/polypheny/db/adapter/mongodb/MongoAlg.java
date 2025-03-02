@@ -145,7 +145,7 @@ public interface MongoAlg extends AlgNode {
 
         public void setEntity( MongoEntity entity ) {
             this.entity = entity;
-            this.tupleType = entity.getTupleType();
+            this.tupleType = entity.getTupleType(true);
         }
 
 
@@ -200,14 +200,14 @@ public interface MongoAlg extends AlgNode {
 
 
         public List<String> getNecessaryPhysicalFields() {
-            return new ArrayList<>( entity.getTupleType().getFieldNames() );
+            return new ArrayList<>( entity.getTupleType(true).getFieldNames() );
         }
 
 
         public List<String> reorderPhysical() {
             // this is only needed if there is a basic relScan without project or group,
             // where we cannot be sure if the fields are all ordered as intended
-            return entity.getTupleType().getFieldNames();
+            return entity.getTupleType(true).getFieldNames();
         }
 
     }

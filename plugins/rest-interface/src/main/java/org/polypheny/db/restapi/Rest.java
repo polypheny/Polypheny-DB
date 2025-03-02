@@ -170,7 +170,7 @@ public class Rest {
         AlgCluster cluster = AlgCluster.create( planner, rexBuilder, null, Catalog.snapshot() );
 
         // Values
-        AlgDataType tableRowType = table.getTupleType();
+        AlgDataType tableRowType = table.getTupleType(true);
         List<AlgDataTypeField> tableRows = tableRowType.getFields();
         List<String> valueColumnNames = this.valuesColumnNames( resourcePatchRequest.values );
         List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, resourcePatchRequest, tableRows, inputStreams ).get( 0 );
@@ -267,7 +267,7 @@ public class Rest {
         LogicalTable table = getLogicalTable( transaction.getSnapshot(), insertValueRequest.tables.get( 0 ).getNamespaceName(), insertValueRequest.tables.get( 0 ).getName() );
 
         // Values
-        AlgDataType tableRowType = table.getTupleType();
+        AlgDataType tableRowType = table.getTupleType(true);
         List<AlgDataTypeField> tableRows = tableRowType.getFields();
 
         AlgPlanner planner = statement.getQueryProcessor().getPlanner();
