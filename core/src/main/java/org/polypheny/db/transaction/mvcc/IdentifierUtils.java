@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
@@ -118,6 +119,14 @@ public class IdentifierUtils {
     }
 
 
+    public static boolean isIdentifier( AlgDataTypeField field ) {
+        if ( field.getName().equals( IDENTIFIER_KEY ) ) {
+            return true;
+        }
+        return field.getName().equals( VERSION_KEY );
+    }
+
+
     public static PolyLong getVersionAsPolyLong( long version, boolean isCommitted ) {
         return PolyLong.of( isCommitted ? version : version * -1 );
     }
@@ -156,12 +165,14 @@ public class IdentifierUtils {
         return newFields;
     }
 
-    public static void throwIfIsDisallowedFieldName( String fieldName) {
+
+    public static void throwIfIsDisallowedFieldName( String fieldName ) {
         throwIfIsDisallowedFieldName( fieldName, false );
     }
 
+
     public static void throwIfIsDisallowedFieldName( String fieldName, boolean ignoreDocId ) {
-        if (ignoreDocId && fieldName.matches( "_id" )) {
+        if ( ignoreDocId && fieldName.matches( "_id" ) ) {
             return;
         }
         if ( fieldName.startsWith( "_" ) ) {
@@ -190,8 +201,9 @@ public class IdentifierUtils {
         documents.stream()
                 .flatMap( v -> v.map.keySet().stream() )
                 .map( PolyString::getValue )
-                .forEach( f -> IdentifierUtils.throwIfIsDisallowedFieldName( f, true ));
+                .forEach( f -> IdentifierUtils.throwIfIsDisallowedFieldName( f, true ) );
     }
+
 
     public static void throwIfContainsDisallowedFieldName( PolyDictionary dictionary ) {
         dictionary.keySet().stream()
@@ -226,4 +238,5 @@ public class IdentifierUtils {
                         ) )
                 .toList();
     }
+
 }
