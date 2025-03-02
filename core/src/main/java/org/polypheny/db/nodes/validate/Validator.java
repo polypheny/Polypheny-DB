@@ -84,6 +84,14 @@ public interface Validator {
     void setIdentifierExpansion( boolean expandIdentifiers );
 
     /**
+     * Enables or disables the hiding of internal columns used for mvcc.
+     * If disabled, internal columns are not considered during validation.
+     *
+     * @param isMvccInternal new setting
+     */
+    void setIsMvccInternal( boolean isMvccInternal );
+
+    /**
      * Sets how NULL values should be collated if an ORDER BY item does not contain NULLS FIRST or NULLS LAST.
      */
     void setDefaultNullCollation( NullCollation nullCollation );

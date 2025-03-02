@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -86,6 +87,7 @@ import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.BsonUtil;
+import org.polypheny.db.util.Pair;
 
 public class AlgTreeRewriter extends AlgModifyingShuttle {
 
@@ -129,8 +131,6 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
             default -> root.kind;
         };
         return root.withAlg( rootAlg ).withKind( kind );
-
-
     }
 
 

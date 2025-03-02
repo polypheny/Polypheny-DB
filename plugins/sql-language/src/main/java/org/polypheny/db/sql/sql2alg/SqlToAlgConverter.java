@@ -2849,7 +2849,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         // Assign expressions for non-generated columns.
         final List<ColumnStrategy> strategies = targetTable.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies();
-        final List<String> targetFields = targetTable.getTupleType(true).getFieldNames();
+        final List<String> targetFields = targetTable.getTupleType(false).getFieldNames();
         for ( String targetColumnName : targetColumnNames ) {
             final int i = targetFields.indexOf( targetColumnName );
             switch ( strategies.get( i ) ) {
@@ -2895,7 +2895,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      */
     protected void collectInsertTargets( SqlInsert call, final RexNode sourceRef, final List<String> targetColumnNames, List<RexNode> columnExprs ) {
         final Entity targetTable = getTargetTable( call );
-        final AlgDataType tableRowType = targetTable.getTupleType(true);
+        final AlgDataType tableRowType = targetTable.getTupleType(false);
         SqlNodeList targetColumnList = call.getTargetColumnList();
         if ( targetColumnList == null ) {
             if ( validator.getConformance().isInsertSubsetColumnsAllowed() ) {

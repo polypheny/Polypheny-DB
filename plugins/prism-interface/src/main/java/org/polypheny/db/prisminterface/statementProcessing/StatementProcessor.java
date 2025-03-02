@@ -135,7 +135,7 @@ public class StatementProcessor {
         Node parsed = queryProcessor.parse( query ).get( 0 );
         // It is important not to add default values for missing fields in insert statements. If we did this, the
         // JDBC driver would expect more parameter fields than there actually are in the query.
-        Pair<Node, AlgDataType> validated = queryProcessor.validate( transaction, parsed, false );
+        Pair<Node, AlgDataType> validated = queryProcessor.validate(false, transaction, parsed, false );
         AlgDataType parameterRowType = queryProcessor.getParameterRowType( validated.left );
         piStatement.setParameterMetas( RelationalMetaRetriever.retrieveParameterMetas( parameterRowType ) );
         piStatement.setParameterPolyTypes( parameterRowType.getFields().stream().map( AlgDataTypeField::getType ).toList() );
