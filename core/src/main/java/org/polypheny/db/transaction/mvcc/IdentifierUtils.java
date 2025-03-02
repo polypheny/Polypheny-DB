@@ -125,6 +125,14 @@ public class IdentifierUtils {
         return field.getName().equals( VERSION_KEY );
     }
 
+    public static boolean isIdentifier( AlgDataTypeField field ) {
+        if ( field.getName().equals( IDENTIFIER_KEY ) ) {
+            return true;
+        }
+        return field.getName().equals( VERSION_KEY );
+    }
+
+
     public static PolyLong getVersionAsPolyLong( long version, boolean isCommitted ) {
         return PolyLong.of( isCommitted ? version : version * -1 );
     }
