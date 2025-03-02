@@ -171,6 +171,7 @@ public class LanguageManager {
                             statement.getOverviewDuration().start( "Validation" );
                         }
                         Pair<Node, AlgDataType> validated = processor.validate(
+                                context.isMvccInternal(),
                                 transaction,
                                 parsed.getQueryNode().get(),
                                 RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );

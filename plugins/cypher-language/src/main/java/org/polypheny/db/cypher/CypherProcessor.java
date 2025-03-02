@@ -90,7 +90,7 @@ public class CypherProcessor extends Processor {
 
 
     @Override
-    public Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
+    public Pair<Node, AlgDataType> validate(boolean isMvccInternal, Transaction transaction, Node parsed, boolean addDefaultValues ) {
         throw new GenericRuntimeException( "The Cypher implementation does not support validation." );
     }
 

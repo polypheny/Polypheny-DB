@@ -284,6 +284,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     private boolean rewriteCalls;
 
+    private boolean isMvccInternal;
+
     private NullCollation nullCollation = NullCollation.HIGH;
 
     // TODO jvs: make this local to performUnconditionalRewrites if it's OK to expand the signature of that method.
@@ -1741,6 +1743,11 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     @Override
     public void setIdentifierExpansion( boolean expandIdentifiers ) {
         this.expandIdentifiers = expandIdentifiers;
+    }
+
+    @Override
+    public void setIsMvccInternal( boolean isMvccInternal ) {
+        this.isMvccInternal = isMvccInternal;
     }
 
 
@@ -3908,7 +3915,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @return Rowtype
      */
     protected AlgDataType createTargetRowType( Entity table, SqlNodeList targetColumnList, boolean append, boolean allowDynamic ) {
-        AlgDataType baseRowType = table.getTupleType( false );
+        AlgDataType baseRowType = table.getTupleType( true ); // Todo TH: reminder - was false
         if ( targetColumnList == null ) {
             return baseRowType;
         }
@@ -3974,7 +3981,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         // It would be better if that information were used here so that we never saw any untyped nulls during checkTypeAssignment.
         final AlgDataType sourceRowType = getSqlNamespace( source ).getTupleType();
         final AlgDataType logicalTargetRowType = getLogicalTargetRowType( targetRowType, insert, table );
-        setValidatedNodeType( insert, logicalTargetRowType );
+        setValidatedNodeType( insert, targetRowType );
         final AlgDataType logicalSourceRowType = getLogicalSourceRowType( sourceRowType, insert );
 
         checkFieldCount(
@@ -4003,13 +4010,15 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             throw newValidationError( node, RESOURCE.unmatchInsertColumn( targetFieldCount, sourceFieldCount ) );
         }
         // Ensure that non-nullable fields are targeted.
+        // Get strategies of internal columns as well to make them line up with the fields indexes
         final List<ColumnStrategy> strategies = table.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies( true );
         for ( final AlgDataTypeField field : table.getTupleType( true ).getFields() ) {
             final AlgDataTypeField targetField = logicalTargetRowType.getField( field.getName(), true, false );
-            switch ( strategies.get( field.getIndex() ) ) {
+            // TODO TH. don't rely on field index to correspond to the column strategies as internal fields might be hidden
+            switch ( strategies.get( field.getIndex()) ) {
                 case NOT_NULLABLE:
                     assert !field.getType().isNullable();
-                    if ( targetField == null && !field.getName().equals( IdentifierUtils.IDENTIFIER_KEY ) ) {
+                    if ( targetField == null && !IdentifierUtils.isIdentifier( field )) {
                         throw newValidationError( node, RESOURCE.columnNotNullable( field.getName() ) );
                     }
                     break;
@@ -4053,19 +4062,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     protected AlgDataType getLogicalTargetRowType( AlgDataType targetRowType, SqlInsert insert, Entity entity ) {
         if ( insert.getTargetColumnList() == null && conformance.isInsertSubsetColumnsAllowed() ) {
-            // Target an implicit subset of columns.
-            final SqlNode source = insert.getSource();
-            final AlgDataType sourceRowType = getSqlNamespace( source ).getTupleType();
-            final AlgDataType logicalSourceRowType = getLogicalSourceRowType( sourceRowType, insert );
-
             // the first two columns of a mvcc table are _eid and _vid. ignore those
-            final AlgDataType implicitTargetRowType;
-            if (MvccUtils.isInNamespaceUsingMvcc( entity )) {
-                implicitTargetRowType = typeFactory.createStructType( targetRowType.getFields().stream().filter( f -> !IdentifierUtils.isIdentifier(f) ).toList() );
-            } else {
-                implicitTargetRowType = typeFactory.createStructType( targetRowType.getFields());
-            }
-
+            final AlgDataType implicitTargetRowType = typeFactory.createStructType( targetRowType.getFields());
             final SqlValidatorNamespace targetNamespace = getSqlNamespace( insert );
             validateNamespace( targetNamespace, implicitTargetRowType, entity );
             return implicitTargetRowType;

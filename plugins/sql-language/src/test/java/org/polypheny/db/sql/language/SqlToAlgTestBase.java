@@ -274,7 +274,7 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
 
             AlgRoot root = null;
             for ( Node node : nodes ) {
-                Pair<Node, AlgDataType> validated = processor.validate( transaction, node, true );
+                Pair<Node, AlgDataType> validated = processor.validate(false, transaction, node, true );
                 Statement statement = transaction.createStatement();
                 root = processor.translate( statement, ParsedQueryContext.builder()
                         .origin( "Sql Test" )

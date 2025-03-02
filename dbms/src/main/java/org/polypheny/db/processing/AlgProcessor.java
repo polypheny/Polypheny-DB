@@ -43,7 +43,7 @@ public class AlgProcessor extends Processor {
 
 
     @Override
-    public Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
+    public Pair<Node, AlgDataType> validate(boolean isMvccInternal, Transaction transaction, Node parsed, boolean addDefaultValues ) {
         throw new GenericRuntimeException( AlgProcessor.class.getSimpleName() + " does not support validation!" );
     }
 
