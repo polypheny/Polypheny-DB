@@ -129,9 +129,9 @@ public abstract class BaseRouter implements Router {
             throw new NotImplementedException();
         }
 
-        if ( table.getTupleType().getFieldCount() == builder.peek().getTupleType().getFieldCount() && !table.getTupleType().equals( builder.peek().getTupleType() ) ) {
+        if ( table.getTupleType(true).getFieldCount() == builder.peek().getTupleType().getFieldCount() && !table.getTupleType(true).equals( builder.peek().getTupleType() ) ) {
             // we adjust the
-            Map<String, Integer> namesIndexMapping = table.getTupleType().getFields().stream().collect( Collectors.toMap( AlgDataTypeField::getName, AlgDataTypeField::getIndex ) );
+            Map<String, Integer> namesIndexMapping = table.getTupleType(true).getFields().stream().collect( Collectors.toMap( AlgDataTypeField::getName, AlgDataTypeField::getIndex ) );
             List<Integer> target = builder.peek().getTupleType().getFields().stream().map( f -> namesIndexMapping.get( f.getName() ) ).toList();
             builder.permute( Mappings.bijection( target ) );
         }

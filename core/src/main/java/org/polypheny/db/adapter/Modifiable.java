@@ -185,7 +185,7 @@ public interface Modifiable extends Scannable {
                 List.of(
                         rexBuilder.makeDynamicParam( nonNullGraphId.apply( typeFactory ), 0 ), // id
                         rexBuilder.makeDynamicParam( nonNullText.apply( typeFactory ), 1 ) ), // label
-                nodesTable.getTupleType() );
+                nodesTable.getTupleType(true) );
 
         inputs.add( getModify( nodesTable, preparedNodes, Modify.Operation.INSERT, null, null ) );
 
@@ -195,7 +195,7 @@ public interface Modifiable extends Scannable {
                         rexBuilder.makeDynamicParam( nonNullGraphId.apply( typeFactory ), 0 ), // id
                         rexBuilder.makeDynamicParam( nonNullText.apply( typeFactory ), 1 ), // key
                         rexBuilder.makeDynamicParam( nullableText.apply( typeFactory ), 2 ) ), // value
-                nodePropertiesTable.getTupleType() );
+                nodePropertiesTable.getTupleType(true) );
 
         inputs.add( getModify( nodePropertiesTable, preparedNProperties, Modify.Operation.INSERT, null, null ) );
 
@@ -242,7 +242,7 @@ public interface Modifiable extends Scannable {
                         rexBuilder.makeDynamicParam( nullableText.apply( typeFactory ), 1 ), // label
                         rexBuilder.makeDynamicParam( nullableGraphId.apply( typeFactory ), 2 ), // source
                         rexBuilder.makeDynamicParam( nullableGraphId.apply( typeFactory ), 3 ) ), // target
-                edgesTable.getTupleType() );
+                edgesTable.getTupleType(true) );
 
         inputs.add( getModify( edgesTable, preparedEdges, Modify.Operation.INSERT, null, null ) );
 
@@ -252,7 +252,7 @@ public interface Modifiable extends Scannable {
                         rexBuilder.makeDynamicParam( nonNullGraphId.apply( typeFactory ), 0 ), // id
                         rexBuilder.makeDynamicParam( nonNullText.apply( typeFactory ), 1 ), // key
                         rexBuilder.makeDynamicParam( nullableText.apply( typeFactory ), 2 ) ), // value
-                edgePropertiesTable.getTupleType() );
+                edgePropertiesTable.getTupleType(true) );
 
         inputs.add( getModify( edgePropertiesTable, preparedEProperties, Modify.Operation.INSERT, null, null ) );
 

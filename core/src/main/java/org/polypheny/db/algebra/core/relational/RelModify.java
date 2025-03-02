@@ -129,7 +129,7 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
         }
 
         final AlgDataTypeFactory typeFactory = getCluster().getTypeFactory();
-        final AlgDataType rowType = entity.getTupleType();
+        final AlgDataType rowType = entity.getTupleType(true);
         switch ( operation ) {
             default:
                 inputRowType = rowType;

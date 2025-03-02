@@ -173,6 +173,7 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
                     .build();
             return new CottontailQueryEnumerable(
                     cottontailTable.cottontailNamespace.getWrapper().query( queryMessage ),
+                    // TODO TH: check whether this is a problem with mvcc
                     new CottontailQueryEnumerable.RowTypeParser( cottontailTable.getTupleType(), cottontailTable.physicalColumnNames )
             ).enumerator();
         }

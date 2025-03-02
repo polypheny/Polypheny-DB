@@ -83,7 +83,7 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
         if ( entity.dataModel == DataModel.DOCUMENT ) {
             return DocumentType.ofCrossRelational();
         }
-        return entity.getTupleType().asRelational();
+        return entity.getTupleType(true).asRelational();
     }
 
 
@@ -91,7 +91,7 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
      * Returns an identity projection for the given table.
      */
     public static ImmutableList<Integer> identity( Entity entity ) {
-        return ImmutableList.copyOf( IntStream.range( 0, entity.getTupleType().getFieldCount() ).boxed().toList() );
+        return ImmutableList.copyOf( IntStream.range( 0, entity.getTupleType(true).getFieldCount() ).boxed().toList() );
     }
 
 

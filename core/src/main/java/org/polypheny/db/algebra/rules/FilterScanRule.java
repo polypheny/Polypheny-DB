@@ -125,7 +125,7 @@ public abstract class FilterScanRule extends AlgOptRule {
             projects = scan.identity();
         }
 
-        final Mapping mapping = Mappings.target( projects, scan.getEntity().getTupleType().getFieldCount() );
+        final Mapping mapping = Mappings.target( projects, scan.getEntity().getTupleType(true).getFieldCount() );
         filters.add( RexUtil.apply( mapping, filter.getCondition() ) );
 
         call.transformTo( BindableScan.create( scan.getCluster(), scan.getEntity(), filters.build(), projects ) );

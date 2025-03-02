@@ -149,7 +149,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         if ( dataModel == DataModel.RELATIONAL ) {
             return buildProto().apply( AlgDataTypeFactory.DEFAULT );
         }
-        return super.getTupleType();
+        return super.getTupleType(includeInternalFields);
     }
 
 

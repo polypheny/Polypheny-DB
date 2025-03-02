@@ -196,7 +196,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     public static Pair<Integer, NeoStatements.OperatorStatement> createCreate( ImmutableList<ImmutableList<RexLiteral>> values, NeoEntity entity ) {
         int nodeI = 0;
         List<NeoStatements.NeoStatement> nodes = new ArrayList<>();
-        AlgDataType rowType = entity.getTupleType();
+        AlgDataType rowType = entity.getTupleType(true);
 
         for ( ImmutableList<RexLiteral> row : values ) {
             int pos = 0;
@@ -242,7 +242,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     public static OperatorStatement createProjectValues( NeoProject last, NeoEntity entity, NeoRelationalImplementor implementor ) {
         List<PropertyStatement> properties = new ArrayList<>();
-        List<AlgDataTypeField> fields = entity.getTupleType().getFields();
+        List<AlgDataTypeField> fields = entity.getTupleType(true).getFields();
 
         int i = 0;
         for ( RexNode project : last.getProjects() ) {
@@ -302,7 +302,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     private Map<String, String> getToPhysicalMapping( @Nullable AlgNode node ) {
         Map<String, String> mapping = new HashMap<>();
-        for ( AlgDataTypeField field : entity.getTupleType().getFields() ) {
+        for ( AlgDataTypeField field : entity.getTupleType(true).getFields() ) {
             mapping.put( field.getName(), entity.name + "." + field.getPhysicalName() );
         }
 

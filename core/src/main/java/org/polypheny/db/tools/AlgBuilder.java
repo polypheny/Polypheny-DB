@@ -1326,7 +1326,7 @@ public class AlgBuilder {
 
         final AlgNode scan = scanFactory.createRelScan( cluster, entity );
         push( scan );
-        rename( entity.getTupleType().getFieldNames() );
+        rename( entity.getTupleType(true).getFieldNames() );
         return this;
     }
 
@@ -1334,7 +1334,7 @@ public class AlgBuilder {
     public AlgBuilder relScan( @Nonnull Entity entity ) {
         final AlgNode scan = scanFactory.createRelScan( cluster, entity );
         push( scan );
-        rename( entity.getTupleType().getFieldNames() );
+        rename( entity.getTupleType(true).getFieldNames() );
         return this;
     }
 
@@ -1393,13 +1393,13 @@ public class AlgBuilder {
 
     public AlgBuilder lpgScan( long logicalId ) {
         LogicalGraph graph = snapshot.graph().getGraph( logicalId ).orElseThrow();
-        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getTupleType() ) ) );
+        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getTupleType(true) ) ) );
         return this;
     }
 
 
     public AlgBuilder lpgScan( Entity entity ) {
-        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), entity, entity.getTupleType() ) ) );
+        stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), entity, entity.getTupleType(true) ) ) );
         return this;
     }
 

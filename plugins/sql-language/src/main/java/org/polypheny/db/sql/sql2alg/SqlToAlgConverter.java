@@ -2738,12 +2738,12 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         // Lazily create a blackboard that contains all non-generated columns.
         final Supplier<Blackboard> bb = () -> {
             RexNode sourceRef = rexBuilder.makeRangeReference( scan );
-            return createInsertBlackboard( table, sourceRef, table.getTupleType().getFieldNames() );
+            return createInsertBlackboard( table, sourceRef, table.getTupleType(true).getFieldNames() );
         };
 
         int virtualCount = 0;
         final List<RexNode> list = new ArrayList<>();
-        for ( AlgDataTypeField f : table.getTupleType().getFields() ) {
+        for ( AlgDataTypeField f : table.getTupleType(true).getFields() ) {
             final ColumnStrategy strategy = ief.generationStrategy( table, f.getIndex() );
             if ( Objects.requireNonNull( strategy ) == ColumnStrategy.VIRTUAL ) {
                 list.add( ief.newColumnDefaultValue( table, f.getIndex(), bb.get() ) );
@@ -2793,7 +2793,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         collectInsertTargets( call, sourceRef, targetColumnNames, columnExprs );
 
         final Entity targetTable = getTargetTable( call );
-        final AlgDataType targetRowType = targetTable.getTupleType();//AlgOptEntityImpl.realRowType( targetTable );
+        final AlgDataType targetRowType = targetTable.getTupleType(true);//AlgOptEntityImpl.realRowType( targetTable );
         final List<AlgDataTypeField> targetFields = targetRowType.getFields();
         boolean isDocument = call.getSchemaType() == DataModel.DOCUMENT;
 
@@ -2849,7 +2849,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         // Assign expressions for non-generated columns.
         final List<ColumnStrategy> strategies = targetTable.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies();
-        final List<String> targetFields = targetTable.getTupleType().getFieldNames();
+        final List<String> targetFields = targetTable.getTupleType(true).getFieldNames();
         for ( String targetColumnName : targetColumnNames ) {
             final int i = targetFields.indexOf( targetColumnName );
             switch ( strategies.get( i ) ) {
@@ -2987,7 +2987,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         // convert update column list from SqlIdentifier to String
         final List<String> targetColumnNameList = new ArrayList<>();
-        final AlgDataType targetRowType = targetTable.getTupleType();
+        final AlgDataType targetRowType = targetTable.getTupleType(true);
         for ( SqlNode node : call.getTargetColumnList().getSqlList() ) {
             SqlIdentifier id = (SqlIdentifier) node;
             AlgDataTypeField field = SqlValidatorUtil.getTargetField( targetRowType, typeFactory, id, snapshot, targetTable );
@@ -3012,7 +3012,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         // convert update column list from SqlIdentifier to String
         final List<String> targetColumnNameList = new ArrayList<>();
-        final AlgDataType targetRowType = targetTable.getTupleType();
+        final AlgDataType targetRowType = targetTable.getTupleType(true);
         SqlUpdate updateCall = call.getUpdateCall();
         if ( updateCall != null ) {
             for ( SqlNode targetColumn : updateCall.getTargetColumnList().getSqlList() ) {
