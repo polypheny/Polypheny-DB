@@ -113,7 +113,8 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
 
     private List<Pair<SqlTypeRepresentation, Integer>> fieldClasses( final JavaTypeFactory typeFactory ) {
-        final AlgDataType rowType = getTupleType();
+        // TODO TH: investigate the details of this
+        final AlgDataType rowType = getTupleType(true);
         return rowType.getFields().stream().map( f -> {
             final AlgDataType type = f.getType();
             final Class<?> clazz = (Class<?>) typeFactory.getJavaClass( type );

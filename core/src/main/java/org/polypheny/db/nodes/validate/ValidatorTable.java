@@ -46,7 +46,8 @@ public interface ValidatorTable extends Wrapper {
         for ( AlgCollation collation : table.getStatistic().getCollations() ) {
             final AlgFieldCollation fieldCollation = collation.getFieldCollations().get( 0 );
             final int fieldIndex = fieldCollation.getFieldIndex();
-            if ( fieldIndex < table.getTupleType().getFieldCount() && table.getTupleType().getFieldNames().get( fieldIndex ).equals( columnName ) ) {
+            // TODO TH: this might need to be adjusted for mvcc
+            if ( fieldIndex < table.getTupleType(true).getFieldCount() && table.getTupleType(true).getFieldNames().get( fieldIndex ).equals( columnName ) ) {
                 return fieldCollation.direction.monotonicity();
             }
         }

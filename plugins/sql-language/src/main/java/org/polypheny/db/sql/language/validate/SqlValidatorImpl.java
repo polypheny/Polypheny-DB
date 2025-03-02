@@ -4059,8 +4059,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             final AlgDataType logicalSourceRowType = getLogicalSourceRowType( sourceRowType, insert );
 
             // the first two columns of a mvcc table are _eid and _vid. ignore those
-            int offset = MvccUtils.isInNamespaceUsingMvcc( entity ) ? 2 : 0;
-            final AlgDataType implicitTargetRowType = typeFactory.createStructType( targetRowType.getFields().subList( offset, logicalSourceRowType.getFieldCount() + offset ) );
+            final AlgDataType implicitTargetRowType;
+            if (MvccUtils.isInNamespaceUsingMvcc( entity )) {
+                implicitTargetRowType = typeFactory.createStructType( targetRowType.getFields().stream().filter( f -> !IdentifierUtils.isIdentifier(f) ).toList() );
+            } else {
+                implicitTargetRowType = typeFactory.createStructType( targetRowType.getFields());
+            }
 
             final SqlValidatorNamespace targetNamespace = getSqlNamespace( insert );
             validateNamespace( targetNamespace, implicitTargetRowType, entity );

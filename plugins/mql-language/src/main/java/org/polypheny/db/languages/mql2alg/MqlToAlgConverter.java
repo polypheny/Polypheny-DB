@@ -259,7 +259,7 @@ public class MqlToAlgConverter {
         AlgNode node = LogicalDocumentScan.create( cluster, entity );
         this.usesDocumentModel = true;
 
-        AlgDataType rowType = entity.getTupleType();
+        AlgDataType rowType = entity.getTupleType(true);
 
         this.builder = new RexBuilder( cluster.getTypeFactory() );
 
@@ -313,15 +313,15 @@ public class MqlToAlgConverter {
      */
     private AlgNode convertUpdate( MqlUpdate query, Entity entity, AlgNode node ) {
         if ( !query.getQuery().isEmpty() ) {
-            node = convertQuery( query, entity.getTupleType(), node );
+            node = convertQuery( query, entity.getTupleType(true), node );
             if ( query.isOnlyOne() ) {
                 node = wrapLimit( node, 1 );
             }
         }
         if ( query.isUsesPipeline() ) {
-            node = convertReducedPipeline( query, entity.getTupleType(), node, entity );
+            node = convertReducedPipeline( query, entity.getTupleType(true), node, entity );
         } else {
-            node = translateUpdate( query, entity.getTupleType(), node, entity );
+            node = translateUpdate( query, entity.getTupleType(true), node, entity );
         }
 
         return node;
@@ -659,7 +659,7 @@ public class MqlToAlgConverter {
      */
     private AlgNode convertDelete( MqlDelete query, Entity table, AlgNode node ) {
         if ( !query.getQuery().isEmpty() ) {
-            node = convertQuery( query, table.getTupleType(), node );
+            node = convertQuery( query, table.getTupleType(true), node );
         }
         if ( query.isOnlyOne() ) {
             node = wrapLimit( node, 1 );

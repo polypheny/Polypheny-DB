@@ -183,7 +183,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
             return expression;
         }
         final ParameterExpression row_ = Expressions.parameter( elementType, "row" );
-        final int fieldCount = entity.getTupleType().getFieldCount();
+        final int fieldCount = entity.getTupleType(true).getFieldCount();
         List<Expression> expressionList = new ArrayList<>( fieldCount );
         for ( int i = 0; i < fieldCount; i++ ) {
             expressionList.add( fieldExpression( row_, i, physType, oldFormat ) );

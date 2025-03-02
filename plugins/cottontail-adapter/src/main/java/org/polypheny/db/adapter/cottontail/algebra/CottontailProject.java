@@ -88,7 +88,7 @@ public class CottontailProject extends Project implements CottontailAlg {
             searchUnderlyingEntity( context );
         }
 
-        final List<AlgDataTypeField> fieldList = context.table.getTupleType().getFields();
+        final List<AlgDataTypeField> fieldList = context.table.getTupleType(true).getFields();
         final List<String> physicalColumnNames = new ArrayList<>( fieldList.size() );
         final List<PolyType> columnTypes = new ArrayList<>( fieldList.size() );
 
