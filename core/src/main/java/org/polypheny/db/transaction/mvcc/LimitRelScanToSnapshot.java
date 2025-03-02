@@ -58,8 +58,8 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
 
     public LogicalRelProject apply( LogicalRelScan node ) {
         LogicalRelFilter relevantVersionsFilter = buildRelRelevantVersionsFilter( target );
-        //LogicalRelProject identifierVersionProject = buildRelIdentifierVersionProject( relevantVersionsFilter );
-        LogicalRelAggregate newestVersionAggregate = buildNewestVersionAggregate( relevantVersionsFilter );
+        LogicalRelProject identifierVersionProject = buildRelIdentifierVersionProject( relevantVersionsFilter );
+        LogicalRelAggregate newestVersionAggregate = buildNewestVersionAggregate( identifierVersionProject );
         LogicalRelFilter deletedEntriesFilter = buildDeletedEntriesFilter( target );
         LogicalRelJoin scopeJoin = buildScopeScanJoin( deletedEntriesFilter, newestVersionAggregate );
         return buildRemoveArtifactsProject( scopeJoin, deletedEntriesFilter );
@@ -143,7 +143,7 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
     }
 
 
-    private LogicalRelAggregate buildNewestVersionAggregate( LogicalRelFilter input ) {
+    private LogicalRelAggregate buildNewestVersionAggregate( LogicalRelProject input ) {
         ImmutableBitSet rightAggregateGroupSet = ImmutableBitSet.of( 0 );
         AggregateCall rightAggregateCall = AggregateCall.create(
                 OperatorRegistry.getAgg( OperatorName.MAX ),
