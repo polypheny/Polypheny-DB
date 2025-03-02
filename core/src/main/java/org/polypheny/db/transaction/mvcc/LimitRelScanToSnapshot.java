@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
@@ -32,6 +34,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -39,6 +42,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -54,8 +58,8 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
 
     public LogicalRelProject apply( LogicalRelScan node ) {
         LogicalRelFilter relevantVersionsFilter = buildRelRelevantVersionsFilter( target );
-        //LogicalRelProject identifierVersionProject = buildRelIdentifierVersionProject( relevantVersionsFilter );
-        LogicalRelAggregate newestVersionAggregate = buildNewestVersionAggregate( relevantVersionsFilter );
+        LogicalRelProject identifierVersionProject = buildRelIdentifierVersionProject( relevantVersionsFilter );
+        LogicalRelAggregate newestVersionAggregate = buildNewestVersionAggregate( identifierVersionProject );
         LogicalRelFilter deletedEntriesFilter = buildDeletedEntriesFilter( target );
         LogicalRelJoin scopeJoin = buildScopeScanJoin( deletedEntriesFilter, newestVersionAggregate );
         return buildRemoveArtifactsProject( scopeJoin, deletedEntriesFilter );
@@ -139,7 +143,7 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
     }
 
 
-    private LogicalRelAggregate buildNewestVersionAggregate( LogicalRelFilter input ) {
+    private LogicalRelAggregate buildNewestVersionAggregate( LogicalRelProject input ) {
         ImmutableBitSet rightAggregateGroupSet = ImmutableBitSet.of( 0 );
         AggregateCall rightAggregateCall = AggregateCall.create(
                 OperatorRegistry.getAgg( OperatorName.MAX ),
@@ -161,7 +165,7 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
     }
 
 
-    private LogicalRelJoin buildScopeScanJoin( AlgNode left, LogicalRelAggregate right ) {
+    private LogicalRelJoin buildScopeScanJoin( LogicalRelFilter left, LogicalRelAggregate right ) {
         int leftColumnCount = left.getTupleType().getFieldCount();
         RexCall identifierJoinCondition = new RexCall(
                 BOOLEAN_ALG_TYPE,
@@ -171,7 +175,7 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
                         OperatorRegistry.get( OperatorName.ABS ),
                         new RexIndexRef( 0, IdentifierUtils.IDENTIFIER_ALG_TYPE )
                 ),
-                new RexIndexRef( leftColumnCount, IdentifierUtils.IDENTIFIER_ALG_TYPE ) // TODO TH: this is broken for different column counts then 2 xD. Adjust index accordingly
+                new RexIndexRef( leftColumnCount, IdentifierUtils.IDENTIFIER_ALG_TYPE )
         );
 
         RexCall versionJoinCondition = new RexCall(
@@ -183,7 +187,7 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
                         new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE )
                 ),
 
-                new RexIndexRef( leftColumnCount + 1, IdentifierUtils.VERSION_ALG_TYPE ) // TODO TH: this is broken for different column counts then 2 xD. Adjust index accordingly
+                new RexIndexRef( leftColumnCount + 1, IdentifierUtils.VERSION_ALG_TYPE )
         );
 
         RexCall joinCondition = new RexCall(
@@ -199,7 +203,7 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
                 joinCondition,
                 Set.of(),
                 JoinAlgType.INNER,
-                true
+                false
         );
     }
 
