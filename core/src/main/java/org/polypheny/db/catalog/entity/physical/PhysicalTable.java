@@ -62,7 +62,7 @@ public class PhysicalTable extends PhysicalEntity {
 
 
     @Override
-    public AlgDataType getTupleType() {
+    public AlgDataType getTupleType(boolean includeHiddenColumns) {
         return buildProto().apply( AlgDataTypeFactory.DEFAULT );
     }
 

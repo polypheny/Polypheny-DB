@@ -106,7 +106,6 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
         this.jdbcSchema = jdbcSchema;
     }
 
-
     public String toString() {
         return "JdbcTable {" + namespaceName + "." + name + "}";
     }

@@ -127,7 +127,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
                         .language( query.getLanguage() )
                         .queryNode(
                                 sqlProcessor.validate(
-                                        statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left )
+                                        false, statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left ) // Todo TH: this might need to be internal sometimes
                         .origin( statement.getTransaction().getOrigin() )
                         .build() );
 
