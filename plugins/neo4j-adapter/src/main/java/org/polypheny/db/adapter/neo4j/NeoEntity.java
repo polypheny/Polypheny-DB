@@ -147,7 +147,8 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
     }
 
 
-    public AlgDataType getTupleType() {
+    @Override
+    public AlgDataType getTupleType(boolean includeInternalFields) {
         if ( dataModel == DataModel.RELATIONAL ) {
             return buildProto().apply( AlgDataTypeFactory.DEFAULT );
         }
