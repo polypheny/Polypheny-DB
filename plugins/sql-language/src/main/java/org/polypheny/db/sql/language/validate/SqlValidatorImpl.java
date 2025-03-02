@@ -4062,7 +4062,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     protected AlgDataType getLogicalTargetRowType( AlgDataType targetRowType, SqlInsert insert, Entity entity ) {
         if ( insert.getTargetColumnList() == null && conformance.isInsertSubsetColumnsAllowed() ) {
-            // the first two columns of a mvcc table are _eid and _vid. ignore those
             final AlgDataType implicitTargetRowType = typeFactory.createStructType( targetRowType.getFields());
             final SqlValidatorNamespace targetNamespace = getSqlNamespace( insert );
             validateNamespace( targetNamespace, implicitTargetRowType, entity );
