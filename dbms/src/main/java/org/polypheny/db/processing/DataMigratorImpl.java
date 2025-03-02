@@ -370,7 +370,7 @@ public class DataMigratorImpl implements DataMigrator {
                 }
                 List<AlgDataTypeField> fields;
                 if ( isMaterializedView ) {
-                    fields = targetAlg.alg.getEntity().getTupleType().getFields();
+                    fields = targetAlg.alg.getEntity().getTupleType(true).getFields();
                 } else {
                     fields = sourceAlg.validatedRowType.getFields();
                 }

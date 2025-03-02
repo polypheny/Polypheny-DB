@@ -152,7 +152,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
         if ( dataModel == DataModel.RELATIONAL ) {
             return buildProto().apply( AlgDataTypeFactory.DEFAULT );
         }
-        return super.getTupleType();
+        return super.getTupleType(includeInternalFields);
     }
 
 
@@ -175,7 +175,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
         public NeoQueryable( DataContext dataContext, Snapshot snapshot, NeoEntity entity ) {
             super( dataContext, snapshot, entity );
-            this.rowType = entity.getTupleType();
+            this.rowType = entity.getTupleType(true);
         }
 
 

@@ -385,7 +385,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         MongoEntity entity = implementor.getEntity();
         GridFSBucket bucket = implementor.getBucket();
         //noinspection AssertWithSideEffects
-        assert input.getTupleType().getFieldCount() == this.getEntity().getTupleType().getFieldCount();
+        assert input.getTupleType().getFieldCount() == this.getEntity().getTupleType(true).getFieldCount();
         implementor.setEntity( entity );
 
         int pos = 0;
@@ -461,8 +461,8 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
             valRowType = values.getTupleType();
         }
 
-        List<String> columnNames = entity.getTupleType().getFieldNames();
-        List<Long> columnIds = entity.getTupleType().getFieldIds();
+        List<String> columnNames = entity.getTupleType(true).getFieldNames();
+        List<Long> columnIds = entity.getTupleType(true).getFieldIds();
         for ( ImmutableList<RexLiteral> literals : values.tuples ) {
             BsonDocument doc = new BsonDocument();
             int pos = 0;

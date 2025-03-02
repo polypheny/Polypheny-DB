@@ -103,7 +103,7 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
 
     @Override
     public AlgDataType getTupleType( AlgDataTypeFactory typeFactory ) {
-        return getTupleType();
+        return getTupleType(false);
     }
 
     @Deprecated

@@ -134,17 +134,18 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
 
         AlgCluster cluster = AlgCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), out, snapshot );
-
-        LogicalRelValues nodeValues = new LogicalRelValues( cluster, out, entities.get( 0 ).getTupleType(), getNodeValues( nodes ) );
-        LogicalRelValues nodePropertyValues = new LogicalRelValues( cluster, out, entities.get( 1 ).getTupleType(), getNodePropertyValues( nodes ) );
+        // TODO TH: check whether internal fields should be included here
+        LogicalRelValues nodeValues = new LogicalRelValues( cluster, out, entities.get( 0 ).getTupleType(true), getNodeValues( nodes ) );
+        LogicalRelValues nodePropertyValues = new LogicalRelValues( cluster, out, entities.get( 1 ).getTupleType(true), getNodePropertyValues( nodes ) );
 
         if ( edges.isEmpty() ) {
             return Arrays.asList( nodeValues, nodePropertyValues.tuples.isEmpty() ? null : nodePropertyValues );
         }
 
         assert entities.size() == 4 && entities.get( 2 ) != null && entities.get( 3 ) != null;
-        LogicalRelValues edgeValues = new LogicalRelValues( cluster, out, entities.get( 2 ).getTupleType(), getEdgeValues( edges ) );
-        LogicalRelValues edgePropertyValues = new LogicalRelValues( cluster, out, entities.get( 3 ).getTupleType(), getEdgePropertyValues( edges ) );
+        // TODO TH: check whether internal fields should be included here
+        LogicalRelValues edgeValues = new LogicalRelValues( cluster, out, entities.get( 2 ).getTupleType(true), getEdgeValues( edges ) );
+        LogicalRelValues edgePropertyValues = new LogicalRelValues( cluster, out, entities.get( 3 ).getTupleType(true), getEdgePropertyValues( edges ) );
 
         return Arrays.asList(
                 nodeValues,
