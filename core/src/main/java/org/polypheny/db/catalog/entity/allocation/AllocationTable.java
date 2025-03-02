@@ -52,7 +52,7 @@ public class AllocationTable extends AllocationEntity {
 
 
     @Override
-    public AlgDataType getTupleType() {
+    public AlgDataType getTupleType(boolean includeInternalFields) {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
         for ( AllocationColumn column : getColumns().stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {

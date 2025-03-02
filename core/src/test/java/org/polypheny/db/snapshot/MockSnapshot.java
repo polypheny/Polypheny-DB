@@ -278,7 +278,7 @@ public class MockSnapshot implements Snapshot {
 
 
         @Override
-        public AlgDataType getTupleType() {
+        public AlgDataType getTupleType(boolean includeInternalFields) {
             final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
             long i = 0;
