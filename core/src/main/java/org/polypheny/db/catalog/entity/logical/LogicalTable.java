@@ -103,8 +103,8 @@ public class LogicalTable extends LogicalEntity {
         return getColumnStrategies(false);
     }
 
-    public List<ColumnStrategy> getColumnStrategies(boolean hideIdentifiers) {
-        return getColumns(hideIdentifiers).stream().map( c -> c.nullable ? ColumnStrategy.NULLABLE : ColumnStrategy.NOT_NULLABLE ).toList();
+    public List<ColumnStrategy> getColumnStrategies(boolean includeInternalColumns) {
+        return getColumns(includeInternalColumns).stream().map( c -> c.nullable ? ColumnStrategy.NULLABLE : ColumnStrategy.NOT_NULLABLE ).toList();
     }
 
 
@@ -126,13 +126,8 @@ public class LogicalTable extends LogicalEntity {
     }
 
 
-    public List<String> getColumnNames() {
-        return getColumns().stream().map( c -> c.name ).toList();
-    }
-
-
-    public List<String> getColumnNames(boolean hideIdentifier) {
-        return getColumns(hideIdentifier).stream().map( c -> c.name ).toList();
+    public List<String> getColumnNames(boolean includeInternalColumns) {
+        return getColumns(includeInternalColumns).stream().map( c -> c.name ).toList();
     }
 
 
