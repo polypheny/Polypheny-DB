@@ -27,6 +27,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.transaction.mvcc.MvccUtils;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 
@@ -57,6 +58,9 @@ public class AlgEntityLockableExtractor extends AlgVisitor {
 
     private void visitRelationalNode( AlgNode currentNode ) {
         LockType lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
+        if ( MvccUtils.isInNamespaceUsingMvcc( currentNode.getEntity() ) ) {
+            lockType = LockType.SHARED;
+        }
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             extractWriteConstraints( currentNode.getEntity().unwrap( LogicalTable.class ).orElseThrow() );
         }
@@ -81,6 +85,9 @@ public class AlgEntityLockableExtractor extends AlgVisitor {
 
     private void visitNonRelationalNode( AlgNode currentNode ) {
         LockType lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
+        if ( MvccUtils.isInNamespaceUsingMvcc( currentNode.getEntity() ) ) {
+            lockType = LockType.SHARED;
+        }
         LockableUtils.updateMapEntry( currentNode.getEntity(), lockType, result );
     }
 

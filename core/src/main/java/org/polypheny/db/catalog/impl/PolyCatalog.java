@@ -515,6 +515,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
                                 .query( view.query )
                                 .language( view.language )
                                 .queryNode( sqlProcessor.validate(
+                                        false, // Todo TH: is this ok to do?
                                         statement.getTransaction(), node, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left )
                                 .origin( statement.getTransaction().getOrigin() )
                                 .build() );
