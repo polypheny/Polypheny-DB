@@ -1750,6 +1750,11 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         this.isMvccInternal = isMvccInternal;
     }
 
+    @Override
+    public boolean getIsMvccInternal() {
+        return isMvccInternal;
+    }
+
 
     // implement SqlValidator
     @Override
@@ -3915,7 +3920,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @return Rowtype
      */
     protected AlgDataType createTargetRowType( Entity table, SqlNodeList targetColumnList, boolean append, boolean allowDynamic ) {
-        AlgDataType baseRowType = table.getTupleType( true ); // Todo TH: reminder - was false
+        AlgDataType baseRowType = table.getTupleType( isMvccInternal );
         if ( targetColumnList == null ) {
             return baseRowType;
         }
@@ -4014,7 +4019,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         final List<ColumnStrategy> strategies = table.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies( true );
         for ( final AlgDataTypeField field : table.getTupleType( true ).getFields() ) {
             final AlgDataTypeField targetField = logicalTargetRowType.getField( field.getName(), true, false );
-            // TODO TH. don't rely on field index to correspond to the column strategies as internal fields might be hidden
             switch ( strategies.get( field.getIndex()) ) {
                 case NOT_NULLABLE:
                     assert !field.getType().isNullable();
@@ -4079,6 +4083,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     protected void checkTypeAssignment( AlgDataType sourceRowType, AlgDataType targetRowType, final SqlNode query ) {
+
+
         // NOTE jvs 23-Feb-2006: subclasses may allow for extra targets representing system-maintained columns, so stop after all sources matched
         List<AlgDataTypeField> sourceFields = sourceRowType.getFields();
         List<AlgDataTypeField> targetFields = targetRowType.getFields();
@@ -4218,13 +4224,15 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         snapshot,
                         null,
                         null );
-
+        // An update needs to have a value for each column. We thus consider all columns for the target row type
+        boolean currentMode = getIsMvccInternal();
+        setIsMvccInternal( true );
         final AlgDataType targetRowType =
                 createTargetRowType(
                         table,
                         call.getTargetColumnList(),
                         true );
-
+        setIsMvccInternal( currentMode );
         final SqlSelect select = call.getSourceSelect();
         validateSelect( select, targetRowType );
 

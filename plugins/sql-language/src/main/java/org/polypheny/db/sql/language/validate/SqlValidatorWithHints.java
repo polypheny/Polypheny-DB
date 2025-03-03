@@ -50,5 +50,7 @@ public interface SqlValidatorWithHints extends SqlValidator {
      */
     Moniker lookupQualifiedName( SqlNode topNode, ParserPos pos );
 
+
+
 }
 
