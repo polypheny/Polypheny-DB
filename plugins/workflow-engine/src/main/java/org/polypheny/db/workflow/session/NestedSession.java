@@ -16,10 +16,18 @@
 
 package org.polypheny.db.workflow.session;
 
+import static org.polypheny.db.workflow.models.SessionModel.SessionModelType.NESTED_SESSION;
+
+import com.fasterxml.jackson.databind.JsonNode;
 import io.javalin.websocket.WsMessageContext;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import javax.annotation.Nullable;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Pair;
@@ -29,9 +37,12 @@ import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
+import org.polypheny.db.workflow.dag.activities.impl.NestedInputActivity;
+import org.polypheny.db.workflow.dag.activities.impl.NestedOutputActivity;
+import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.models.SessionModel;
-import org.polypheny.db.workflow.models.SessionModel.SessionModelType;
 import org.polypheny.db.workflow.models.WorkflowDefModel;
 import org.polypheny.db.workflow.models.requests.WsRequest.GetCheckpointRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
@@ -46,14 +57,16 @@ public class NestedSession extends AbstractSession {
     @Getter
     private final int openedVersion;
     private final WorkflowDefModel workflowDef;
+    private final Map<String, JsonNode> initialWorkflowVars;
 
 
     public NestedSession( UUID sessionId, Workflow wf, UUID workflowId, int openedVersion, WorkflowDefModel workflowDef, Set<Pair<UUID, Integer>> parentWorkflowIds ) {
-        super( wf, sessionId, workflowId, openedVersion, parentWorkflowIds );
+        super( NESTED_SESSION, wf, sessionId, workflowId, openedVersion, parentWorkflowIds );
         assert !parentWorkflowIds.contains( Pair.of( workflowId, openedVersion ) ) : "Detected cycle in nested workflows.";
         this.wId = workflowId;
         this.openedVersion = openedVersion;
         this.workflowDef = workflowDef;
+        this.initialWorkflowVars = wf.getVariables();
     }
 
 
@@ -77,11 +90,30 @@ public class NestedSession extends AbstractSession {
     }
 
 
-    public void execute( @Nullable ReadableVariableStore variables ) {
-        if ( variables != null ) {
-            // TODO: handle non-workflow variables
-            workflow.updateVariables( variables.getWorkflowVariables() );
+    public void linkInputs( List<CheckpointReader> readers ) {
+        Set<ActivityWrapper> activities = workflow.getActivities().stream().filter( w -> w.getActivity() instanceof NestedInputActivity ).collect( Collectors.toSet() );
+        if ( activities.size() != readers.stream().filter( Objects::nonNull ).count() ) {
+            throw new GenericRuntimeException( "Number of input activities in nested workflow and connected inputs do not match." );
         }
+        for ( ActivityWrapper wrapper : activities ) {
+            if ( !wrapper.getSettingsPreview().keysPresent( NestedInputActivity.INDEX_KEY ) ) {
+                throw new GenericRuntimeException( "Index for nested input must be statically defined." );
+            }
+            int i = wrapper.getSettingsPreview().getInt( NestedInputActivity.INDEX_KEY );
+            if ( i >= readers.size() ) {
+                throw new GenericRuntimeException( "Detected non-consecutive index: " + i );
+            }
+            nestedManager.setInput( wrapper.getId(), readers.get( i ) );
+        }
+    }
+
+
+    public void execute( ReadableVariableStore variables ) {
+        Map<String, JsonNode> workflowVars = new HashMap<>( workflow.getVariables() );
+        workflowVars.putAll( variables.getWorkflowVariables() );
+        workflow.updateVariables( workflowVars );
+        nestedManager.setInDynamicVars( variables.getDynamicVariables() );
+        nestedManager.setInEnvVars( variables.getEnvVariables() );
         startExecution( null );
     }
 
@@ -113,6 +145,32 @@ public class NestedSession extends AbstractSession {
     }
 
 
+    public List<CheckpointReader> getOutputs() {
+        ActivityWrapper wrapper = workflow.getActivities().stream().filter( w -> w.getActivity() instanceof NestedOutputActivity )
+                .findFirst().orElse( null );
+        if ( wrapper == null ) {
+            return List.of();
+        }
+        if ( !wrapper.getState().isSuccess() ) {
+            assert getExitCode() != 0;
+            throw new GenericRuntimeException( "Output was not successfully executed" );
+        }
+
+        Set<DataEdge> dataEdges = workflow.getInEdges( wrapper.getId() ).stream().filter( e -> e instanceof DataEdge )
+                .map( e -> (DataEdge) e ).collect( Collectors.toSet() );
+        CheckpointReader[] arr = new CheckpointReader[NestedOutputActivity.MAX_OUTPUTS];
+        for ( DataEdge edge : dataEdges ) {
+            arr[edge.getToPort()] = sm.readCheckpoint( edge.getFrom().getId(), edge.getFromPort() ); // reader needs to be closed by caller
+        }
+        return Arrays.asList( arr );
+    }
+
+
+    public Map<String, JsonNode> getDynamicOutputVariables() {
+        return Objects.requireNonNullElse( nestedManager.getOutDynamicVars(), Map.of() );
+    }
+
+
     public void interrupt() {
         // unlike other sessions, we don't fail if already finished
         if ( getWorkflowState() == WorkflowState.EXECUTING ) {
@@ -123,6 +181,8 @@ public class NestedSession extends AbstractSession {
 
     public void reset() {
         workflow.reset( null, sm );
+        workflow.updateVariables( initialWorkflowVars );
+        nestedManager.clearInputs();
         broadcastMessage( new StateUpdateResponse( null, workflow ) );
     }
 
@@ -134,7 +194,7 @@ public class NestedSession extends AbstractSession {
 
     @Override
     public SessionModel toModel() {
-        return new SessionModel( SessionModelType.NESTED_SESSION, sessionId, getSubscriberCount(), lastInteraction.toString(),
+        return new SessionModel( getType(), sessionId, getSubscriberCount(), lastInteraction.toString(),
                 workflow.getActivityCount(), workflow.getState(), wId, openedVersion, workflowDef );
     }
 

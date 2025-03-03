@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.activities;
 import static com.opencsv.enums.CSVReaderNullFieldIndicator.EMPTY_SEPARATORS;
 import static com.opencsv.enums.CSVReaderNullFieldIndicator.NEITHER;
 
+import com.fasterxml.jackson.core.JsonPointer;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -531,6 +532,21 @@ public class ActivityUtils {
             return pointer;
         }
         return pointer.substring( lastDotIndex + 1 );
+    }
+
+
+    /**
+     * Converts "field.subfield.0.value" to "/field/subfield/0/value"
+     */
+    public static JsonPointer dotToJsonPointer( String dotPointer ) {
+        String jsonPointer = "";
+        if ( !dotPointer.isBlank() ) {
+            jsonPointer = "/" + dotPointer
+                    .replace( "~", "~0" )
+                    .replace( "/", "~1" )
+                    .replace( ".", "/" );
+        }
+        return JsonPointer.compile( jsonPointer );
     }
 
 

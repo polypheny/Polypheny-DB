@@ -75,6 +75,13 @@ public interface ReadableVariableStore {
     Map<String, JsonNode> getPublicVariables( boolean includeWorkflow, boolean includeEnv );
 
     /**
+     * Get an unmodifiable snapshot of the dynamic variables (excluding env variables).
+     */
+    default Map<String, JsonNode> getDynamicVariables() {
+        return getPublicVariables( false, false );
+    }
+
+    /**
      * Recursively replaces any variable references in the specified JsonNode with the value stored in this store.
      * Variable references are indicated by objects that contain a single field with name equal to the value of {@code VARIABLE_REF_FIELD}.
      *

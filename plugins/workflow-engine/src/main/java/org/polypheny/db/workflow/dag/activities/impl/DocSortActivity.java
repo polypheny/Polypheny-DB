@@ -68,9 +68,10 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
                 > If a downstream activity expects sorted input data, consider enabling activity fusion or pipelining. This removes checkpoints between compatible activities.
                 """
 )
-@CollationSetting(key = "sort", displayName = "Sort Fields", shortDescription = "Specify the field(s) to sort the documents by. If no field is selected, the original order is used.", allowRegex = false)
-@IntSetting(key = "limit", displayName = "Document Limit", defaultValue = -1, min = -1, shortDescription = "The total number of documents to include, or -1 to include all documents.")
-@IntSetting(key = "skip", displayName = "Skip Documents", defaultValue = 0, min = 0, shortDescription = "The number of documents to skip, or 0 to start at the first document.")
+@CollationSetting(key = "sort", displayName = "Sort Fields", shortDescription = "Specify the field(s) to sort the documents by. If no field is selected, the original order is used.", allowRegex = false, pos = 0)
+@IntSetting(key = "limit", displayName = "Document Limit", defaultValue = -1, min = -1, shortDescription = "The total number of documents to include, or -1 to include all documents.", pos = 1)
+@IntSetting(key = "skip", displayName = "Skip Documents", defaultValue = 0, min = 0, shortDescription = "The number of documents to skip, or 0 to start at the first document.", pos = 2)
+
 @SuppressWarnings("unused")
 public class DocSortActivity implements Activity, Fusable, Pipeable {
 

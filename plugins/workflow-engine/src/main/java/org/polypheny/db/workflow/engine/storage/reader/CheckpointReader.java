@@ -45,6 +45,7 @@ import org.polypheny.db.workflow.engine.storage.QueryUtils;
 
 public abstract class CheckpointReader implements AutoCloseable {
 
+    @Getter
     final LogicalEntity entity;
     final Transaction transaction;
     @Getter

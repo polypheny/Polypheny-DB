@@ -16,6 +16,8 @@
 
 package org.polypheny.db.workflow.session;
 
+import static org.polypheny.db.workflow.models.SessionModel.SessionModelType.API_SESSION;
+
 import io.javalin.http.HttpCode;
 import io.javalin.websocket.WsMessageContext;
 import java.util.UUID;
@@ -28,7 +30,6 @@ import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.models.SessionModel;
-import org.polypheny.db.workflow.models.SessionModel.SessionModelType;
 import org.polypheny.db.workflow.models.requests.WsRequest.GetCheckpointRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
 import org.polypheny.db.workflow.models.responses.CheckpointResponse;
@@ -40,7 +41,7 @@ public class ApiSession extends AbstractSession {
 
 
     public ApiSession( UUID sessionId, Workflow wf ) {
-        super( wf, sessionId );
+        super( API_SESSION, wf, sessionId );
     }
 
 
@@ -98,12 +99,10 @@ public class ApiSession extends AbstractSession {
         broadcastMessage( new StateUpdateResponse( null, workflow ) );
     }
 
-    // TODO: allow moving around workflow nodes?
-
 
     @Override
     public SessionModel toModel() {
-        return new SessionModel( SessionModelType.API_SESSION, sessionId, getSubscriberCount(),
+        return new SessionModel( getType(), sessionId, getSubscriberCount(),
                 lastInteraction.toString(), workflow.getActivityCount(), workflow.getState() );
     }
 

@@ -45,6 +45,7 @@ import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
+import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.models.ActivityConfigModel;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.ExecutionInfoModel;
@@ -76,7 +77,7 @@ public class ActivityWrapper {
 
     private final VariableStore variables = new VariableStore(); // depending on state, this either represents the variables before (possibly not yet stable) or after execution (always stable)
     @Setter
-    private List<TypePreview> outTypePreview; // TODO: ensure this is always up to date
+    private List<TypePreview> outTypePreview;
     @Setter
     private List<TypePreview> inTypePreview; // contains the (possibly not yet known) input type
     private SettingsPreview settingsPreview; // contains the (possibly not yet known) settings
@@ -185,9 +186,9 @@ public class ActivityWrapper {
     }
 
 
-    public void applyContext( @Nullable NestedSessionManager nestedManager ) {
+    public void applyContext( @Nullable NestedSessionManager nestedManager, StorageManager sm ) {
         if ( activity instanceof ContextConsumer consumer ) {
-            consumer.accept( id, nestedManager );
+            consumer.accept( id, nestedManager, sm );
         }
     }
 

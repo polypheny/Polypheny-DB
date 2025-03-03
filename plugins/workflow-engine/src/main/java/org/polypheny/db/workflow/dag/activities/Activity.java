@@ -19,10 +19,10 @@ package org.polypheny.db.workflow.dag.activities;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.util.TriConsumer;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.DocumentType;
@@ -353,8 +353,9 @@ public interface Activity {
      *
      * <p>The {@code UUID} parameter represents the activityId. Once consumed, it is guaranteed to never change for this instance.</p>
      * <p>The {@code NestedSessionManager} parameter is the nullable nestedSessionManager of the session currently executing the activity. Once consumed, it is guaranteed to never change for this instance.</p>
+     * <p>The {@code StorageManager} parameter is the storage manager responsible for this activity.</p>
      */
-    interface ContextConsumer extends BiConsumer<UUID, NestedSessionManager> {
+    interface ContextConsumer extends TriConsumer<UUID, NestedSessionManager, StorageManager> {
 
     }
 

@@ -58,16 +58,16 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 )
 
 @EnumSetting(key = "mode", displayName = "Modification", pos = 0,
-        options = { "move", "flatten", "remove", "arrWrap", "parse", "emptyObj", "emptyArr", "null" },
-        displayOptions = { "Move", "Flatten", "Remove", "Wrap in Array", "Parse JSON", "Insert Empty Object", "Insert Empty Array", "Insert Null" },
+        options = { "move", "flatten", "remove", "arrWrap", "parse", "emptyObj", "emptyArr", "null", "setValue" },
+        displayOptions = { "Move", "Flatten", "Remove", "Wrap in Array", "Parse JSON", "Insert Empty Object", "Insert Empty Array", "Insert Null", "Set to JSON Value" },
         defaultValue = "move",
         shortDescription = "The type of modification to apply to each document.")
 @StringSetting(key = "source", displayName = "Source Field", pos = 1,
         autoCompleteType = AutoCompleteType.FIELD_NAMES,
         shortDescription = "The (sub)field to modify.")
-@StringSetting(key = "target", displayName = "Target Field", pos = 2,
-        subPointer = "mode", subValues = { "move" },
-        shortDescription = "The target (sub)field of the operation.")
+@StringSetting(key = "target", displayName = "Target Field / Value", pos = 2,
+        subPointer = "mode", subValues = { "move", "setValue" },
+        shortDescription = "The target (sub)field or value of the operation.")
 @BoolSetting(key = "fail", displayName = "Fail on Invalid Field", pos = 3, defaultValue = true,
         shortDescription = "If false, a failed modification results in the document to be skipped instead of failing the execution.")
 @SuppressWarnings("unused")
@@ -80,12 +80,17 @@ public class DocModifyActivity implements Activity, Pipeable {
             String mode = settings.getString( "mode" );
             String source = settings.getString( "source" );
             String target = settings.getString( "target" );
+            boolean topLvlSource = !source.isBlank() && !source.contains( "." );
             boolean topLvlTarget = !target.isBlank() && !target.contains( "." );
             Set<String> fields = new HashSet<>( docType.getKnownFields() );
             switch ( mode ) {
                 case "move" -> {
                     fields.remove( target );
-                    if ( ActivityUtils.isInvalidFieldName( ActivityUtils.getChildPointer( target ) ) ) {
+                    if ( target.isBlank() ) {
+                        throw new InvalidSettingException( "Target must not be empty", "target" );
+                    }
+                    String child = ActivityUtils.getChildPointer( target );
+                    if ( !child.matches( "\\d+" ) && ActivityUtils.isInvalidFieldName( child ) ) {
                         throw new InvalidSettingException( "Invalid target field: " + target, "target" );
                     }
                     if ( topLvlTarget ) {
@@ -94,7 +99,19 @@ public class DocModifyActivity implements Activity, Pipeable {
                 }
                 case "flatten", "remove" -> fields.remove( source );
                 case "emptyObj", "emptyArr", "null" -> {
-                    if ( topLvlTarget ) {
+                    if ( topLvlSource ) {
+                        fields.add( source );
+                    }
+                }
+                case "setValue" -> {
+                    if ( source.isBlank() ) {
+                        throw new InvalidSettingException( "Source must not be empty", "source" );
+                    }
+                    String child = ActivityUtils.getChildPointer( source );
+                    if ( !child.matches( "\\d+" ) && ActivityUtils.isInvalidFieldName( child ) ) {
+                        throw new InvalidSettingException( "Invalid field name: " + source, "source" );
+                    }
+                    if ( topLvlSource ) {
                         fields.add( source );
                     }
                 }
@@ -154,7 +171,16 @@ public class DocModifyActivity implements Activity, Pipeable {
             case "move" -> {
                 notBlank( source );
                 PolyValue value = ActivityUtils.removeSubValue( doc, source );
+                if ( value == null ) {
+                    throw new IllegalArgumentException( "Source field does not exist: " + source );
+                }
                 ActivityUtils.insertSubValue( doc, target, value );
+                String parentPointer = ActivityUtils.getParentPointer( source );
+                PolyValue parent = ActivityUtils.getSubValue( doc, parentPointer );
+                if ( (parent.isDocument() && parent.asDocument().isEmpty()) ||
+                        (parent.isList() && parent.asList().isEmpty()) ) {
+                    ActivityUtils.removeSubValue( doc, parentPointer );
+                }
             }
             case "flatten" -> {
                 notBlank( source );
@@ -209,8 +235,44 @@ public class DocModifyActivity implements Activity, Pipeable {
                 notBlank( source );
                 ActivityUtils.insertSubValue( doc, source, PolyNull.NULL );
             }
+            case "setValue" -> {
+                notBlank( source );
+                PolyValue value;
+                try {
+                    value = PolyValue.fromJson( target );
+                } catch ( Exception e ) {
+                    value = PolyString.of( target );
+                }
+                ActivityUtils.insertSubValue( doc, source, value );
+            }
         }
         return doc;
+    }
+
+
+    @Override
+    public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
+        String mode = settings.getNullableString( "mode" );
+        if ( mode != null ) {
+            return "Modify Document: " + modeToString( mode );
+        }
+        return null;
+    }
+
+
+    public static String modeToString( String mode ) {
+        return switch ( mode ) {
+            case "move" -> "Move";
+            case "flatten" -> "Flatten";
+            case "remove" -> "Remove";
+            case "arrWrap" -> "Wrap in Array";
+            case "parse" -> "Parse JSON";
+            case "emptyObj" -> "Insert Empty Object";
+            case "emptyArr" -> "Insert Empty Array";
+            case "null" -> "Insert Null";
+            case "setValue" -> "Set Value";
+            default -> throw new IllegalStateException( "Unexpected value: " + mode );
+        };
     }
 
 

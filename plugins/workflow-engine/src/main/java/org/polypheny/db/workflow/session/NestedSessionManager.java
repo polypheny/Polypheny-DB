@@ -16,14 +16,19 @@
 
 package org.polypheny.db.workflow.session;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.WorkflowImpl;
+import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.repo.WorkflowRepo;
 import org.polypheny.db.workflow.repo.WorkflowRepoImpl;
@@ -37,9 +42,24 @@ public class NestedSessionManager {
     private final Map<UUID, NestedSession> sessions = new ConcurrentHashMap<>(); // map activityIds to NestedSession
     private final Set<Pair<UUID, Integer>> parentIds; // workflowId, workflowVersion
 
+    @Getter
+    private final boolean isNested;
+    // fields important if itself a nested session:
+    private final Map<UUID, CheckpointReader> inputs = new HashMap<>();
+    @Getter
+    @Setter
+    private Map<String, JsonNode> inDynamicVars;
+    @Getter
+    @Setter
+    private Map<String, JsonNode> inEnvVars;
+    @Getter
+    @Setter
+    private Map<String, JsonNode> outDynamicVars;
 
-    public NestedSessionManager( Set<Pair<UUID, Integer>> parentWorkflowIds ) {
-        parentIds = Set.copyOf( parentWorkflowIds );
+
+    public NestedSessionManager( Set<Pair<UUID, Integer>> parentWorkflowIds, boolean isNested ) {
+        this.parentIds = Set.copyOf( parentWorkflowIds );
+        this.isNested = isNested;
     }
 
 
@@ -98,6 +118,24 @@ public class NestedSessionManager {
 
     public boolean isCyclic( UUID workflowId, int version ) {
         return parentIds.contains( Pair.of( workflowId, version ) );
+    }
+
+
+    public void setInput( UUID activityId, CheckpointReader reader ) {
+        inputs.put( activityId, reader );
+    }
+
+
+    public CheckpointReader removeInput( UUID activityId ) {
+        return inputs.remove( activityId );
+    }
+
+
+    public void clearInputs() {
+        inputs.clear();
+        inDynamicVars = null;
+        inEnvVars = null;
+        outDynamicVars = null;
     }
 
 }

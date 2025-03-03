@@ -81,11 +81,31 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
 
     void dropCheckpoints( UUID activityId );
 
+    /**
+     * Drops all non-linked checkpoints for the specified activity
+     *
+     * @param activityId the target activity
+     */
+    void dropManagedCheckpoints( UUID activityId );
+
     void dropAllCheckpoints();
 
     boolean hasCheckpoint( UUID activityId, int outputIdx );
 
     boolean hasAllCheckpoints( UUID activityId, int outputCount );
+
+    /**
+     * Registers a checkpoint that is managed by a different StorageManager.
+     * Used for accessing checkpoints across nested workflow boundaries.
+     *
+     * @param activityId the unique identifier of an activity in this workflow to link with a checkpoint from a different workflow
+     * @param outputIdx the index of the output of the activity
+     * @param reader the CheckpointReader reading a checkpoint from a different sessionManager
+     */
+    void linkCheckpoint( UUID activityId, int outputIdx, CheckpointReader reader );
+
+
+    boolean isLinkedCheckpoint( UUID activityId, int outputIdx );
 
     /**
      * Returns a transaction to be used by the specified activity for extracting or loading data stored in this Polypheny instance (excluding checkpoints).

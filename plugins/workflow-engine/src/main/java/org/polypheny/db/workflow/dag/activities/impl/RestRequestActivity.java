@@ -18,6 +18,8 @@ package org.polypheny.db.workflow.dag.activities.impl;
 
 import static org.polypheny.db.workflow.dag.settings.GroupDef.ADVANCED_GROUP;
 
+import com.fasterxml.jackson.core.JsonPointer;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -82,16 +84,19 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
         maxLength = 10 * 1024, subPointer = "bodyFromInput", subValues = { "false" }, defaultValue = "{}",
         shortDescription = "The request body to send. If empty, the body also remains empty.")
 
-@StringSetting(key = "headers", displayName = "Request Headers", textEditor = true, language = "json", pos = 20,
+@StringSetting(key = "pointer", displayName = "Response Field", pos = 20,
+        maxLength = 1024, group = ADVANCED_GROUP,
+        shortDescription = "The target (sub)field of the response, given the response is valid json. If the target is an array of objects, its entries are mapped to individual documents.")
+@StringSetting(key = "headers", displayName = "Request Headers", textEditor = true, language = "json", pos = 21,
         maxLength = 10 * 1024, defaultValue = "{}", group = ADVANCED_GROUP,
         shortDescription = "Optional request headers specified as a JSON-object with string values.")
-@StringSetting(key = "queryParams", displayName = "Query Parameters", textEditor = true, language = "json", pos = 21,
+@StringSetting(key = "queryParams", displayName = "Query Parameters", textEditor = true, language = "json", pos = 22,
         maxLength = 10 * 1024, defaultValue = "{}", group = ADVANCED_GROUP,
         shortDescription = "Optional query parameters specified as a JSON-object with string values. Alternatively, the query parameters can also directly be specified in the target URL.")
-@IntSetting(key = "timeout", displayName = "Timeout Duration (Seconds)", pos = 22,
+@IntSetting(key = "timeout", displayName = "Timeout Duration (Seconds)", pos = 23,
         group = ADVANCED_GROUP,
         min = 1, max = 300, defaultValue = 30)
-@BoolSetting(key = "fail", displayName = "Fail on Unsuccessful Response Code", pos = 23,
+@BoolSetting(key = "fail", displayName = "Fail on Unsuccessful Response Code", pos = 24,
         defaultValue = true, group = ADVANCED_GROUP,
         shortDescription = "If true, the activity fails if the response code is not between 200 and 300.")
 
@@ -150,12 +155,14 @@ public class RestRequestActivity implements Activity {
         Map<String, String> queryParams = jsonToMap( settings.getString( "queryParams" ) );
         Map<String, String> headers = jsonToMap( settings.getString( "headers" ) );
         int timeout = settings.getInt( "timeout" );
+        String pointer = settings.getString( "pointer" );
 
         String body = settings.getString( "body" );
         if ( settings.getBool( "bodyFromInput" ) ) {
             DocReader reader = (DocReader) inputs.get( 0 );
             body = "";
             for ( PolyDocument doc : reader.getDocIterable() ) {
+                doc.remove( docId );
                 body = Objects.requireNonNullElse( doc.toJson(), "" );
                 break;
             }
@@ -206,9 +213,9 @@ public class RestRequestActivity implements Activity {
         ctx.logInfo( "Response with status code: " + response.statusCode() );
 
         try {
-            jsonToDocuments( responseBody ).forEach( output::write );
-        } catch ( Exception e ) {
-            output.write( new PolyDocument( Map.of( PolyString.of( "response" ), PolyString.of( responseBody ) ) ) );
+            jsonToDocuments( responseBody, pointer ).forEach( output::write );
+        } catch ( JsonProcessingException e ) { // response is not valid json
+            output.write( new PolyDocument( Map.of( PolyString.of( "response_text" ), PolyString.of( responseBody ) ) ) );
         }
     }
 
@@ -246,9 +253,10 @@ public class RestRequestActivity implements Activity {
     }
 
 
-    private static List<PolyDocument> jsonToDocuments( String json ) throws Exception {
-        //json = json.replace( "\\n", "\\\\n" ); // PolyValue.fromJson does not work when properly encoded linebreaks are present in json
-        JsonNode root = mapper.readTree( json );
+    private static List<PolyDocument> jsonToDocuments( String json, String pointer ) throws JsonProcessingException, IllegalArgumentException {
+        JsonPointer jsonPointer = ActivityUtils.dotToJsonPointer( pointer );
+        JsonNode root = mapper.readTree( json ).requiredAt( jsonPointer ); // throws illegal argument exception if invalid
+        System.out.println( "Root: " + root );
         List<PolyDocument> documents = new ArrayList<>();
         if ( root.isArray() ) {
             for ( JsonNode node : root ) {
@@ -257,14 +265,16 @@ public class RestRequestActivity implements Activity {
                     System.out.println( "Polyvalue from it: " + PolyValue.fromJson( node.toString() ) + ", " + PolyValue.fromJson( node.toString() ).type );
                     documents.add( PolyValue.fromJson( node.toString() ).asDocument() );
                 } else {
-                    documents = List.of( new PolyDocument( Map.of( PolyString.of( "response" ), PolyValue.fromJson( json ) ) ) );
+                    // array does not only contain objects -> map array to single document
+                    documents = List.of( new PolyDocument( Map.of( PolyString.of( "response" ), PolyValue.fromJson( root.toString() ) ) ) );
                     break;
                 }
             }
         } else if ( root.isObject() ) {
-            documents.add( PolyValue.fromJson( json ).asDocument() );
+            documents.add( PolyValue.fromJson( root.toString() ).asDocument() );
         } else {
-            documents.add( new PolyDocument( Map.of( PolyString.of( "response" ), PolyValue.fromJson( json ) ) ) );
+            System.out.println( "Root is not an object: " + root + ", " + root.getNodeType() );
+            documents.add( new PolyDocument( Map.of( PolyString.of( "response" ), PolyValue.fromJson( root.toString() ) ) ) );
         }
 
         documents.forEach( ActivityUtils::addDocId );

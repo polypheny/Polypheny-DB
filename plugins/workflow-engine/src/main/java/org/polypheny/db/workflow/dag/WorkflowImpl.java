@@ -42,6 +42,8 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.activities.TypePreview.InactiveType;
 import org.polypheny.db.workflow.dag.activities.TypePreview.MissingType;
+import org.polypheny.db.workflow.dag.activities.impl.NestedInputActivity;
+import org.polypheny.db.workflow.dag.activities.impl.NestedOutputActivity;
 import org.polypheny.db.workflow.dag.activities.impl.NestedWorkflowActivity;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
@@ -556,6 +558,8 @@ public class WorkflowImpl implements Workflow {
             throw new IllegalStateException( "A workflow must not contain cycles" );
         }
 
+        Set<Integer> nestedInputs = new HashSet<>();
+        boolean foundNestedOutput = false;
         for ( UUID n : TopologicalOrderIterator.of( subDag ) ) {
             ActivityWrapper wrapper = getActivity( n );
             CommonType type = wrapper.getConfig().getCommonType();
@@ -566,13 +570,28 @@ public class WorkflowImpl implements Workflow {
                 }
             } else if ( wrapper.getState() != ActivityState.FINISHED ) {
                 for ( int i = 0; i < wrapper.getDef().getOutPorts().length; i++ ) {
-                    if ( sm.hasCheckpoint( n, i ) ) {
+                    if ( sm.hasCheckpoint( n, i ) && !sm.isLinkedCheckpoint( n, i ) ) { // NestedInputs get their checkpoints set in advance but are still executed
                         throw new IllegalStateException( "Found a checkpoint for an activity that has not yet been executed successfully: " + wrapper );
                     }
                 }
             }
             if ( type != CommonType.NONE && wrapper.getActivity() instanceof NestedWorkflowActivity ) {
                 throw new IllegalStateException( "Nested workflow activities cannot be part of a common transaction: " + wrapper );
+            }
+            if ( wrapper.getActivity() instanceof NestedInputActivity ) {
+                if ( !wrapper.getSettingsPreview().keysPresent( NestedInputActivity.INDEX_KEY ) ) {
+                    throw new IllegalStateException( "Index for nested input must be statically defined: " + wrapper );
+                }
+                int i = wrapper.getSettingsPreview().getInt( NestedInputActivity.INDEX_KEY );
+                if ( nestedInputs.contains( i ) ) {
+                    throw new IllegalStateException( "Found duplicate nested input for index " + i + ": " + wrapper );
+                }
+                nestedInputs.add( i );
+            } else if ( wrapper.getActivity() instanceof NestedOutputActivity ) {
+                if ( foundNestedOutput ) {
+                    throw new IllegalStateException( "Found more than one nested output: " + wrapper );
+                }
+                foundNestedOutput = true;
             }
 
             Set<Integer> requiredInPorts = wrapper.getDef().getRequiredInPorts();
@@ -631,6 +650,9 @@ public class WorkflowImpl implements Workflow {
                 }
 
             }
+        }
+        if ( !nestedInputs.isEmpty() && Collections.max( nestedInputs ) != nestedInputs.size() - 1 ) {
+            throw new IllegalStateException( "A nested input has skipped an input index, which is not permitted." );
         }
     }
 

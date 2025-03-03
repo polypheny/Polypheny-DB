@@ -46,6 +46,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.models.ActivityModel;
 import org.polypheny.db.workflow.models.ExecutionMonitorModel;
 import org.polypheny.db.workflow.models.SessionModel;
+import org.polypheny.db.workflow.models.SessionModel.SessionModelType;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.models.requests.WsRequest;
@@ -68,6 +69,8 @@ import org.polypheny.db.workflow.models.responses.WsResponse.ResponseType;
 @Slf4j
 public abstract class AbstractSession {
 
+    @Getter
+    final SessionModelType type;
     final Workflow workflow;
     @Getter
     final UUID sessionId;
@@ -81,12 +84,13 @@ public abstract class AbstractSession {
     Instant lastInteraction = Instant.now();
 
 
-    protected AbstractSession( Workflow workflow, UUID sessionId ) {
-        this( workflow, sessionId, null, 0, null );
+    protected AbstractSession( SessionModelType type, Workflow workflow, UUID sessionId ) {
+        this( type, workflow, sessionId, null, 0, null );
     }
 
 
-    protected AbstractSession( Workflow workflow, UUID sessionId, @Nullable UUID workflowId, int version, @Nullable Set<Pair<UUID, Integer>> parentWorkflowIds ) {
+    protected AbstractSession( SessionModelType type, Workflow workflow, UUID sessionId, @Nullable UUID workflowId, int version, @Nullable Set<Pair<UUID, Integer>> parentWorkflowIds ) {
+        this.type = type;
         this.workflow = workflow;
         this.sessionId = sessionId;
         this.sm = new StorageManagerImpl( sessionId, workflow.getConfig().getPreferredStores() );
@@ -96,7 +100,7 @@ public abstract class AbstractSession {
         if ( workflowId != null ) {
             workflowIds.add( Pair.of( workflowId, version ) );
         }
-        this.nestedManager = new NestedSessionManager( workflowIds );
+        this.nestedManager = new NestedSessionManager( workflowIds, this.type == SessionModelType.NESTED_SESSION );
     }
 
 
@@ -204,8 +208,7 @@ public abstract class AbstractSession {
         try {
             executionMonitor = GlobalScheduler.getInstance().startExecution( workflow, sm, nestedManager, targetActivity, this::broadcastMessage );
         } catch ( Exception e ) {
-            // TODO: implement correct error handling when execution cannot be started
-            throw new IllegalStateException( "Unable to start workflow execution", e );
+            throw new IllegalStateException( "Unable to start workflow execution: " + e.getMessage(), e );
         }
     }
 

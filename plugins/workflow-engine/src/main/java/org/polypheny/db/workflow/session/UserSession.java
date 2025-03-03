@@ -16,6 +16,8 @@
 
 package org.polypheny.db.workflow.session;
 
+import static org.polypheny.db.workflow.models.SessionModel.SessionModelType.USER_SESSION;
+
 import io.javalin.websocket.WsMessageContext;
 import java.util.Map.Entry;
 import java.util.UUID;
@@ -29,7 +31,6 @@ import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.models.SessionModel;
-import org.polypheny.db.workflow.models.SessionModel.SessionModelType;
 import org.polypheny.db.workflow.models.WorkflowDefModel;
 import org.polypheny.db.workflow.models.requests.WsRequest.CloneActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.CreateActivityRequest;
@@ -58,7 +59,7 @@ public class UserSession extends AbstractSession {
 
 
     public UserSession( UUID sessionId, Workflow wf, UUID workflowId, int openedVersion, WorkflowDefModel workflowDef ) {
-        super( wf, sessionId, workflowId, openedVersion, null );
+        super( USER_SESSION, wf, sessionId, workflowId, openedVersion, null );
         this.wId = workflowId;
         this.openedVersion = openedVersion;
         this.workflowDef = workflowDef;
@@ -169,7 +170,7 @@ public class UserSession extends AbstractSession {
 
     @Override
     public SessionModel toModel() {
-        return new SessionModel( SessionModelType.USER_SESSION, sessionId, getSubscriberCount(), lastInteraction.toString(), workflow.getActivityCount(), workflow.getState(),
+        return new SessionModel( getType(), sessionId, getSubscriberCount(), lastInteraction.toString(), workflow.getActivityCount(), workflow.getState(),
                 wId, openedVersion, workflowDef );
     }
 

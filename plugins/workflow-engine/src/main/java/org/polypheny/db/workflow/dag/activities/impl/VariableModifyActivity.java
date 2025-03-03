@@ -36,23 +36,23 @@ import org.polypheny.db.workflow.dag.variables.WritableVariableStore;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContextImpl;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
-@ActivityDefinition(type = "varModify", displayName = "Modify Variable Structure", categories = { ActivityCategory.TRANSFORM, ActivityCategory.VARIABLES },
+@ActivityDefinition(type = "varModify", displayName = "Modify Variable", categories = { ActivityCategory.TRANSFORM, ActivityCategory.VARIABLES },
         inPorts = {},
         outPorts = {},
-        shortDescription = "Modifies the structure of dynamic variables."
+        shortDescription = "Modifies the structure of a dynamic variable."
 )
 
 @EnumSetting(key = "mode", displayName = "Modification", pos = 0,
-        options = { "move", "flatten", "remove", "arrWrap", "parse", "emptyObj", "emptyArr", "null" },
-        displayOptions = { "Move / Rename", "Flatten", "Remove", "Wrap in Array", "Parse JSON", "Insert Empty Object", "Insert Empty Array", "Insert Null" },
+        options = { "move", "flatten", "remove", "arrWrap", "parse", "emptyObj", "emptyArr", "null", "setValue" },
+        displayOptions = { "Move / Rename", "Flatten", "Remove", "Wrap in Array", "Parse JSON", "Insert Empty Object", "Insert Empty Array", "Insert Null", "Set to JSON value" },
         defaultValue = "move",
         shortDescription = "The type of modification to apply.")
 @StringSetting(key = "source", displayName = "Source Variable", pos = 2,
         autoCompleteType = AutoCompleteType.VARIABLES,
         shortDescription = "The (sub)variable to modify.")
-@StringSetting(key = "target", displayName = "Target Variable", pos = 3,
-        subPointer = "mode", subValues = { "move" },
-        shortDescription = "The target (sub)variable of the operation.")
+@StringSetting(key = "target", displayName = "Target Variable / Value", pos = 3,
+        subPointer = "mode", subValues = { "move", "setValue" },
+        shortDescription = "The target (sub)variable or value of the operation.")
 @SuppressWarnings("unused")
 public class VariableModifyActivity implements VariableWriter {
 
@@ -71,13 +71,24 @@ public class VariableModifyActivity implements VariableWriter {
         String source = settings.getString( "source" );
         String target = settings.getString( "target" );
 
-        String json = mapper.writeValueAsString( ctx.getVariableStore().getPublicVariables( false, false ) );
+        String json = mapper.writeValueAsString( ctx.getVariableStore().getDynamicVariables() );
         PolyDocument doc = PolyValue.fromJson( json ).asDocument();
         DocModifyActivity.modify( doc, mode, source, target );
         writer.removeDynamicVariables( false );
         for ( Entry<PolyString, PolyValue> entry : doc.entrySet() ) {
             writer.setVariable( entry.getKey().value, entry.getValue() );
         }
+    }
+
+
+    @Override
+    public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
+        String mode = settings.getNullableString( "mode" );
+        if ( mode != null ) {
+            return "Modify Variable: " + DocModifyActivity.modeToString( mode );
+        }
+        return null;
+
     }
 
 }

@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.engine.storage;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -87,6 +88,7 @@ public class StorageManagerImpl implements StorageManager {
     private final UUID sessionId;
     private final Map<DataModel, String> defaultStores;
     private final Map<UUID, Map<Integer, Pair<LogicalEntity, CheckpointMetadata>>> checkpoints = new ConcurrentHashMap<>();
+    private final Set<Pair<UUID, Integer>> linkedCheckpoints = ConcurrentHashMap.newKeySet();  // Checkpoints that are managed by a different StorageManager, but are linked to the output of an activity in this workflow
     private final Map<Long, String> registeredNamespaces = new ConcurrentHashMap<>();
     private final AdapterManager adapterManager;
     private final DdlManager ddlManager;
@@ -144,9 +146,9 @@ public class StorageManagerImpl implements StorageManager {
         Pair<LogicalEntity, CheckpointMetadata> checkpoint = Objects.requireNonNull( checkpoints.get( activityId ).get( outputIdx ), "Checkpoint does not exist for output " + outputIdx + " of activity " + activityId );
         LogicalEntity entity = checkpoint.left;
         return switch ( entity.dataModel ) {
-            case RELATIONAL -> new RelReader( (LogicalTable) entity, QueryUtils.startTransaction( relNamespace, "RelRead" ), checkpoint.right.asRel() );
-            case DOCUMENT -> new DocReader( (LogicalCollection) entity, QueryUtils.startTransaction( docNamespace, "DocRead" ), checkpoint.right.asDoc() );
-            case GRAPH -> new LpgReader( (LogicalGraph) entity, QueryUtils.startTransaction( entity.getNamespaceId(), "LpgRead" ), checkpoint.right.asLpg() );
+            case RELATIONAL -> new RelReader( (LogicalTable) entity, QueryUtils.startTransaction( entity.namespaceId, "RelRead" ), checkpoint.right.asRel() );
+            case DOCUMENT -> new DocReader( (LogicalCollection) entity, QueryUtils.startTransaction( entity.namespaceId, "DocRead" ), checkpoint.right.asDoc() );
+            case GRAPH -> new LpgReader( (LogicalGraph) entity, QueryUtils.startTransaction( entity.namespaceId, "LpgRead" ), checkpoint.right.asLpg() );
         };
     }
 
@@ -316,10 +318,29 @@ public class StorageManagerImpl implements StorageManager {
 
     @Override
     public void dropCheckpoints( UUID activityId ) {
-        for ( Pair<LogicalEntity, CheckpointMetadata> entry : checkpoints.getOrDefault( activityId, Map.of() ).values() ) {
-            dropEntity( entry.left );
+        for ( Entry<Integer, Pair<LogicalEntity, CheckpointMetadata>> entry : checkpoints.getOrDefault( activityId, Map.of() ).entrySet() ) {
+            if ( !isLinkedCheckpoint( activityId, entry.getKey() ) ) {
+                dropEntity( entry.getValue().getLeft() );
+            }
+            // We don't drop a linked checkpoint, as it is managed by a different StorageManager instance
         }
         checkpoints.remove( activityId );
+    }
+
+
+    @Override
+    public void dropManagedCheckpoints( UUID activityId ) {
+        Map<Integer, Pair<LogicalEntity, CheckpointMetadata>> editable = new HashMap<>( checkpoints.getOrDefault( activityId, Map.of() ) );
+        for ( Entry<Integer, Pair<LogicalEntity, CheckpointMetadata>> entry : checkpoints.getOrDefault( activityId, Map.of() ).entrySet() ) {
+            if ( !isLinkedCheckpoint( activityId, entry.getKey() ) ) {
+                dropEntity( entry.getValue().getLeft() );
+                editable.remove( entry.getKey() );
+            }
+            // We don't drop a linked checkpoint, as it is managed by a different StorageManager instance
+        }
+        if ( !editable.isEmpty() ) {
+            checkpoints.put( activityId, editable );
+        }
     }
 
 
@@ -334,6 +355,20 @@ public class StorageManagerImpl implements StorageManager {
     @Override
     public boolean hasCheckpoint( UUID activityId, int outputIdx ) {
         return checkpoints.getOrDefault( activityId, Map.of() ).containsKey( outputIdx );
+    }
+
+
+    @Override
+    public void linkCheckpoint( UUID activityId, int outputIdx, CheckpointReader reader ) {
+        linkedCheckpoints.add( Pair.of( activityId, outputIdx ) );
+        checkpoints.computeIfAbsent( activityId, k -> new ConcurrentHashMap<>() )
+                .put( outputIdx, Pair.of( reader.getEntity(), reader.getMetadata() ) );
+    }
+
+
+    @Override
+    public boolean isLinkedCheckpoint( UUID activityId, int outputIdx ) {
+        return linkedCheckpoints.contains( Pair.of( activityId, outputIdx ) );
     }
 
 
@@ -379,7 +414,6 @@ public class StorageManagerImpl implements StorageManager {
 
     @Override
     public void startCommonTransaction( @NonNull ActivityConfigModel.CommonType commonType ) {
-        // TODO: call this method at the correct time
         assert commonType != CommonType.NONE;
         if ( commonType == CommonType.EXTRACT ) {
             extractTransaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId );

@@ -129,6 +129,12 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
 
 
     @Override
+    public boolean writerWasCreated( int idx ) {
+        return sm.hasCheckpoint( activityWrapper.getId(), idx );
+    }
+
+
+    @Override
     public Transaction getTransaction() {
         if ( !activityWrapper.getDef().hasCategory( ActivityCategory.EXTRACT )
                 && !activityWrapper.getDef().hasCategory( ActivityCategory.LOAD )

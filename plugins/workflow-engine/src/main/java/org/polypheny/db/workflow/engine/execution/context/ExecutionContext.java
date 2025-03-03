@@ -72,6 +72,8 @@ public interface ExecutionContext {
      */
     CheckpointWriter createWriter( int idx, AlgDataType tupleType );
 
+    boolean writerWasCreated( int idx );
+
     /**
      * Returns a transaction to be used for extracting or loading data from data stores or data sources or executing fused activities.
      * The transaction MUST NOT be committed or rolled back, as this is done externally.

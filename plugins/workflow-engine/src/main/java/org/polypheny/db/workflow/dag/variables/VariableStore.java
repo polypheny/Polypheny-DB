@@ -141,6 +141,12 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
                 continue;
             }
             // we do NOT skip EnvVariables. They are propagated like normal variables
+            if ( key.equals( ENV_KEY ) ) {
+                if ( entry.getValue().isObject() ) {
+                    entry.getValue().properties().forEach( e -> setEnvVariable( e.getKey(), e.getValue() ) );
+                }
+                continue;
+            }
             variables.put( key, entry.getValue() );
         }
     }
@@ -227,7 +233,6 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
     }
 
 
-    // TODO: make sure to not change the existing JsonNode
     public JsonNode resolveVariables( JsonNode node, boolean useDefaultIfMissing ) {
         if ( node.isObject() ) {
             ObjectNode objectNode = (ObjectNode) node;

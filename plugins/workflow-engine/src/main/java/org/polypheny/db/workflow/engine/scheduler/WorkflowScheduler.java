@@ -40,6 +40,8 @@ import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
+import org.polypheny.db.workflow.dag.activities.impl.NestedInputActivity;
+import org.polypheny.db.workflow.dag.activities.impl.NestedOutputActivity;
 import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
 import org.polypheny.db.workflow.dag.edges.Edge.EdgeState;
@@ -222,10 +224,14 @@ public class WorkflowScheduler {
         for ( UUID n : TopologicalOrderIterator.of( execDag ) ) {
             workflow.updateValidPreview( n );
             ActivityWrapper wrapper = workflow.getActivity( n );
-            wrapper.applyContext( nestedManager );
-            switch ( wrapper.getConfig().getExpectedOutcome() ) {
-                case MUST_SUCCEED -> mustSucceed.add( n );
-                case MUST_FAIL -> mustFail.add( n );
+            wrapper.applyContext( nestedManager, sm );
+            if ( wrapper.getActivity() instanceof NestedOutputActivity ) {
+                mustSucceed.add( n ); // config value is ignored
+            } else {
+                switch ( wrapper.getConfig().getExpectedOutcome() ) {
+                    case MUST_SUCCEED -> mustSucceed.add( n );
+                    case MUST_FAIL -> mustFail.add( n );
+                }
             }
         }
 
@@ -374,11 +380,15 @@ public class WorkflowScheduler {
         if ( workflow.getConfig().isDropUnusedCheckpoints() ) {
             for ( UUID n : dag.vertexSet() ) {
                 ActivityWrapper wrapper = workflow.getActivity( n );
-                if ( wrapper.getConfig().isEnforceCheckpoint() || wrapper.getState() != ActivityState.SAVED ) {
+                if ( wrapper.getConfig().isEnforceCheckpoint() || wrapper.getState() != ActivityState.SAVED || wrapper.getActivity() instanceof NestedInputActivity ) {
                     continue;
                 }
                 if ( dag.getOutwardEdges( n ).stream().allMatch( execEdge -> {
-                    ActivityState state = workflow.getActivity( execEdge.getTarget() ).getState();
+                    ActivityWrapper target = workflow.getActivity( execEdge.getTarget() );
+                    if ( target.getActivity() instanceof NestedOutputActivity ) {
+                        return false; // checkpoints might be required by the parent workflow
+                    }
+                    ActivityState state = target.getState();
                     return state.isExecuted() || state == ActivityState.SKIPPED || workflow.getEdge( execEdge ).isIgnored();
                 } )
                 ) {
