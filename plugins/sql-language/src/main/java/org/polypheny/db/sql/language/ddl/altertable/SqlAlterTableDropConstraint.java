@@ -94,10 +94,4 @@ public class SqlAlterTableDropConstraint extends SqlAlterTable {
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
         return getMapOfTableLockable( table, context, LockType.EXCLUSIVE );
     }
-
-    @Override
-    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
-        return getMapOfTableLockable( table, context, LockType.EXCLUSIVE );
-    }
-
 }
