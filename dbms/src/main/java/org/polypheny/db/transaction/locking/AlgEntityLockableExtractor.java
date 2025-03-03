@@ -27,7 +27,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.transaction.mvcc.MvccUtils;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 
