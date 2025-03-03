@@ -91,6 +91,8 @@ public interface Validator {
      */
     void setIsMvccInternal( boolean isMvccInternal );
 
+    boolean getIsMvccInternal();
+
     /**
      * Sets how NULL values should be collated if an ORDER BY item does not contain NULLS FIRST or NULLS LAST.
      */
