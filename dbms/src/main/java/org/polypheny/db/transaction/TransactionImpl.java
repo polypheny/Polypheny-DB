@@ -273,6 +273,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         // Release locks
         releaseAllLocks();
+
         // Remove transaction
         transactionManager.removeTransaction( xid );
 
