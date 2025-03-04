@@ -59,6 +59,10 @@ public class FieldSelectSettingDef extends SettingDef {
                 if ( select.includeUnspecified() ) {
                     throwInvalid( "Unspecified fields cannot be included in simplified fieldSelect" );
                 }
+            } else {
+                if ( select.getInclude().isEmpty() && select.getExclude().isEmpty() && !select.includeUnspecified() ) {
+                    throwInvalid( "At least one field must be included or excluded" );
+                }
             }
             for ( String include : select.getInclude() ) {
                 if ( select.getExclude().contains( include ) ) {

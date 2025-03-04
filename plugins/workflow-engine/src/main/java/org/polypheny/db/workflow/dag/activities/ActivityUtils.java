@@ -26,6 +26,9 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import java.io.Reader;
 import java.math.BigDecimal;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,6 +40,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
@@ -63,6 +67,7 @@ import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.BsonUtil;
+import org.polypheny.db.util.Source;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidInputException;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 
@@ -589,6 +594,13 @@ public class ActivityUtils {
     }
 
 
+    public static String resourceNameFromSource( Source source ) throws URISyntaxException {
+        return source.protocol().equals( "file" ) ?
+                source.file().getName() :
+                Paths.get( source.url().toURI().getPath() ).getFileName().toString();
+    }
+
+
     public static PolyType inferPolyType( String value, PolyType nullType ) {
         if ( value == null ) {
             return nullType;
@@ -611,6 +623,23 @@ public class ActivityUtils {
         } catch ( NumberFormatException ignored ) {
         }
         return PolyType.TEXT;
+    }
+
+
+    public static String deriveValidFieldName( @Nullable String field, String prefixIfInvalid, int indexIfInvalid ) {
+        if ( field == null ) {
+            return prefixIfInvalid + indexIfInvalid;
+        }
+        field = field.trim().replace( " ", "_" );
+        field = Normalizer.normalize( field, Normalizer.Form.NFD ); // map ä to a
+        field = field.replaceAll( "[^a-zA-Z0-9_]", "" ).toLowerCase( Locale.ROOT );
+        if ( field.isBlank() ) {
+            return prefixIfInvalid + indexIfInvalid;
+        }
+        if ( isInvalidFieldName( field ) ) {
+            return prefixIfInvalid + field;
+        }
+        return field;
     }
 
 

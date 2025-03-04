@@ -45,6 +45,7 @@ import org.polypheny.db.workflow.dag.annotations.EntitySetting;
 import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.FieldRenameSetting;
 import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
+import org.polypheny.db.workflow.dag.annotations.FileSetting;
 import org.polypheny.db.workflow.dag.annotations.FilterSetting;
 import org.polypheny.db.workflow.dag.annotations.GraphMapSetting;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
@@ -217,6 +218,10 @@ public abstract class SettingDef {
                 settings.add( new GraphMapSettingDef( a ) );
             } else if ( annotation instanceof GraphMapSetting.List a ) {
                 Arrays.stream( a.value() ).forEach( el -> settings.add( new GraphMapSettingDef( el ) ) );
+            } else if ( annotation instanceof FileSetting a ) {
+                settings.add( new FileSettingDef( a ) );
+            } else if ( annotation instanceof FileSetting.List a ) {
+                Arrays.stream( a.value() ).forEach( el -> settings.add( new FileSettingDef( el ) ) );
             }
         }
         return settings;
@@ -252,6 +257,7 @@ public abstract class SettingDef {
         CAST,
         FIELD_SELECT,
         GRAPH_MAP,
+        FILE,
         FILTER
     }
 
@@ -375,6 +381,25 @@ public abstract class SettingDef {
                 }
             }
             return true;
+        }
+
+
+        /**
+         * If all keys are present, maps this SettingsPreview to a Settings instance.
+         * Otherwise, returns null.
+         *
+         * @return Settings derived from this SettingsPreview or null if at least one key is not present.
+         */
+        public Settings toSettings() {
+            if ( !allPresent() ) {
+                return null;
+            }
+            Map<String, SettingValue> settings = map.entrySet().stream()
+                    .collect( Collectors.toMap(
+                            Map.Entry::getKey,
+                            entry -> entry.getValue().orElseThrow() // should never throw
+                    ) );
+            return new Settings( settings );
         }
 
 

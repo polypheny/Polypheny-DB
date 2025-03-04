@@ -138,7 +138,7 @@ public class DocCreateActivity implements Activity, Pipeable {
     }
 
 
-    private PolyDocument getDocument( ObjectNode node ) {
+    public static PolyDocument getDocument( ObjectNode node ) {
         PolyValue value = PolyValue.fromJson( node.toString() );
         if ( value == null || !value.isDocument() ) {
             throw new GenericRuntimeException( "Cannot create document from object: " + node + ", " + value );

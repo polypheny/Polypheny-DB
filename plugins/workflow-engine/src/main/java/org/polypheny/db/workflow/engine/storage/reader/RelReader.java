@@ -104,7 +104,9 @@ public class RelReader extends CheckpointReader {
     public Triple<Result<?, ?>, Integer, Long> getPreview( @Nullable Integer maxTuples ) {
         int rowLimit = maxTuples == null ? PREVIEW_ROW_LIMIT : Math.max( 0, maxTuples );
         LogicalTable table = getTable();
-        String quotedNoKey = QueryUtils.quoteAndJoin( table.getColumnNames().stream().filter( n -> !n.equals( StorageManager.PK_COL ) ).toList() );
+        boolean isEmpty = table.getColumnNames().size() == 1;
+        String quotedNoKey = QueryUtils.quoteAndJoin( table.getColumnNames().stream()
+                .filter( n -> isEmpty || !n.equals( StorageManager.PK_COL ) ).toList() );
         String query = "SELECT " + quotedNoKey + " FROM " + quotedIdentifier
                 + " LIMIT " + rowLimit;
         UIRequest request = UIRequest.builder()

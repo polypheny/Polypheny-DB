@@ -22,7 +22,6 @@ import com.opencsv.CSVReader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Supplier;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
@@ -198,7 +197,7 @@ public class RelCreateActivity implements Activity, Pipeable {
     }
 
 
-    private List<String[]> getRawRows( CSVReader reader, int maxRows ) throws Exception {
+    public static List<String[]> getRawRows( CSVReader reader, int maxRows ) throws Exception {
         List<String[]> rows = new ArrayList<>();
         if ( maxRows > 0 ) {
             for ( int i = 0; i < maxRows; i++ ) {
@@ -221,19 +220,15 @@ public class RelCreateActivity implements Activity, Pipeable {
     }
 
 
-    private AlgDataType getType( List<String[]> rawRows, boolean hasHeader, boolean inferType ) throws InvalidSettingException {
+    public static AlgDataType getType( List<String[]> rawRows, boolean hasHeader, boolean inferType ) throws InvalidSettingException {
         String[] firstRow = rawRows.get( 0 );
         int count = firstRow.length;
 
         List<String> colNames = new ArrayList<>();
         for ( int i = 0; i < count; i++ ) {
             if ( hasHeader ) {
-                String name = Objects.requireNonNullElse( firstRow[i], "" ).trim();
-                // we allow duplicate columns (they get uniquified)
-                if ( ActivityUtils.isInvalidFieldName( name ) ) {
-                    name = "col" + i; // invalid names are replaced
-                }
-                colNames.add( name );
+                String name = ActivityUtils.deriveValidFieldName( firstRow[i], "col", i );
+                colNames.add( name ); // we allow duplicate columns (they get uniquified)
             } else {
                 colNames.add( "col" + i );
             }
@@ -261,7 +256,7 @@ public class RelCreateActivity implements Activity, Pipeable {
     }
 
 
-    private enum Separator {
+    public enum Separator {
         COMMA( ',' ),
         SEMICOLON( ';' ),
         TAB( '\t' ),
@@ -280,7 +275,7 @@ public class RelCreateActivity implements Activity, Pipeable {
     }
 
 
-    private enum EscapeChar {
+    public enum EscapeChar {
         QUOTE( '"' ),
         SINGLE_QUOTE( '\'' ),
         BACKSLASH( '\\' );

@@ -79,6 +79,10 @@ public class RelEmptyTableActivity implements Activity {
 
 
     private AlgDataType getType( CastValue cols ) throws InvalidSettingException {
+        if ( cols.getCasts().isEmpty() ) {
+            throw new InvalidSettingException( "At least one column must be specified", "columns" );
+
+        }
         for ( SingleCast col : cols.getCasts() ) {
             if ( col.getSource().equals( StorageManager.PK_COL ) ) {
                 throw new InvalidSettingException( "The primary key column '" + StorageManager.PK_COL + "' cannot be specified manually", "columns" );
