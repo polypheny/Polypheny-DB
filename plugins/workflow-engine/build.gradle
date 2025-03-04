@@ -16,6 +16,7 @@ dependencies {
     compileOnly group: "io.javalin", name: "javalin", version: javalin_version
     compileOnly group: "org.apache.commons", name: "commons-collections4", version: commons_collections_version
     compileOnly group: "com.opencsv", name: "opencsv", version: opencsv_version
+    compileOnly group: "org.codehaus.janino", name: "commons-compiler", version: commons_compiler_version  // BSD
 
 
     // --- Test Compile ---

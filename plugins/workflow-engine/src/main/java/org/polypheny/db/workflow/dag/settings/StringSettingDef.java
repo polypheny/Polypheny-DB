@@ -36,6 +36,7 @@ public class StringSettingDef extends SettingDef {
     boolean containsRegex;
     boolean textEditor;
     String textEditorLanguage;
+    boolean textEditorLineNumbers;
 
 
     public StringSettingDef( StringSetting a ) {
@@ -49,6 +50,7 @@ public class StringSettingDef extends SettingDef {
         this.containsRegex = a.containsRegex();
         this.textEditor = a.textEditor();
         this.textEditorLanguage = a.language();
+        this.textEditorLineNumbers = a.lineNumbers();
 
         assert minLength < maxLength;
     }

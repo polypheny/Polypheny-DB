@@ -106,6 +106,11 @@ public @interface StringSetting {
      */
     String language() default "";
 
+    /**
+     * Whether to show line numbers when using the text editor.
+     */
+    boolean lineNumbers() default false;
+
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)

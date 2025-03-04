@@ -198,7 +198,7 @@ public class GlobalScheduler {
                 } catch ( ExecutorException e ) {
                     result = new ExecutionResult( submission, e );
                 } catch ( Throwable e ) {
-                    result = new ExecutionResult( submission, new ExecutorException( "Unexpected exception", e ) );
+                    result = new ExecutionResult( submission, new ExecutorException( "Unexpected exception: " + e.getMessage(), e ) );
                 }
                 activeSubmissions.get( sessionId ).remove( submission );
                 submission.getInfo().setState( ExecutionState.AWAIT_PROCESSING );
