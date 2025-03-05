@@ -297,9 +297,7 @@ class GlobalSchedulerTest {
     }
 
 
-    // TODO: fix failing test
     @Test
-    @Disabled
     void largeConcurrentActivityExecutionTest() throws Exception {
         int nBranches = 10; // more branches => more consistent failure of test
         int delay = 200;
@@ -316,8 +314,9 @@ class GlobalSchedulerTest {
     }
 
 
-    // TODO: Check fix: larger value for RuntimeConfig.SERIALIZATION_BUFFER_SIZE
     @Test
+    @Disabled
+        // test takes a long time to run (~10 s)
     void largeWorkflowTest() throws Exception {
         int nBranches = 60;
         int delay = 5;

@@ -221,7 +221,11 @@ public interface Activity {
         GRAPH,
         VARIABLES,
         CLEANING,
-        CROSS_MODEL
+        CROSS_MODEL,
+        ESSENTIALS,
+        NESTED,
+        DEVELOPMENT, // debugging
+        EXTERNAL // external system
         // when adding a new category, the UI also needs to be updated (ActivityCategory in activity-registry.model)
     }
 
