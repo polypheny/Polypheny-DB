@@ -505,8 +505,16 @@ public enum RuntimeConfig {
     WORKFLOWS_WORKERS(
             "workflows/globalWorkers",
             "The maximum number of worker threads over all workflows. Changes apply as soon as all currently executing workflows have finished.",
-            20,
+            40,
             ConfigType.INTEGER,
+            "workflowsSettingsGroup"
+    ),
+
+    WORKFLOWS_ENABLE_UNSAFE(
+            "workflows/enableUnsafe",
+            "Enable Execution of possibly harmful activities. For example, this includes activities that execute user-define Java code.",
+            true, // TODO: set default to false
+            ConfigType.BOOLEAN,
             "workflowsSettingsGroup"
     ),
 

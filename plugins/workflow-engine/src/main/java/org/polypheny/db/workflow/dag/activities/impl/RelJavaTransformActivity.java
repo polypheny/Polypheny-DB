@@ -29,8 +29,9 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.type.PolySerializable;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
@@ -38,6 +39,7 @@ import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidInputException;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
+import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.activities.TypePreview.UnknownType;
@@ -61,14 +63,15 @@ import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 
-@ActivityDefinition(type = "relJavaTransform", displayName = "Relational Java Transform", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL, ActivityCategory.DOCUMENT, ActivityCategory.GRAPH },
-        inPorts = { @InPort(type = PortType.ANY, isOptional = true, isMulti = true) },
-        outPorts = { @OutPort(type = PortType.ANY) },
+@ActivityDefinition(type = "relJavaTransform", displayName = "Relational Java Transform", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL },
+        inPorts = { @InPort(type = PortType.REL, isOptional = true, isMulti = true) },
+        outPorts = { @OutPort(type = PortType.REL) },
         shortDescription = "This activity can execute arbitrary Java code that produces a tuple stream."
+                + " WARNING: This activity is considered to be dangerous, as arbitrary code can be executed! Use it at your own risk."
 )
 @EnumSetting(key = "mode", displayName = "Mode", pos = 0,
         options = { "simple", "advanced" },
-        displayOptions = { "Row-Wise Transform", "Arbitrary Transform" },
+        displayOptions = { "Map Rows", "Arbitrary Transform" },
         defaultValue = "simple", style = EnumStyle.RADIO_BUTTON)
 
 @StringSetting(key = "imports", displayName = "Imports", maxLength = 10 * 1024, pos = 1,
@@ -105,12 +108,10 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
                     return new Iterator() {
                         final Iterator<PolyValue[]> reader = inputs[0].getArrayIterator();
                 
-                        @Override
                         public boolean hasNext() {
                             return reader.hasNext();
                         }
                 
-                        @Override
                         public PolyValue[] next() {
                             return (PolyValue[]) reader.next();
                         }
@@ -165,13 +166,13 @@ public class RelJavaTransformActivity implements Activity, Pipeable {
             "org.polypheny.db.type.entity.relational.PolyMap",
             "org.polypheny.db.type.entity.temporal.*",
             "org.polypheny.db.workflow.dag.activities.ActivityUtils",
+            "org.polypheny.db.workflow.engine.storage.reader.*",
+            "org.polypheny.db.workflow.engine.storage.writer.*",
             "org.polypheny.db.workflow.engine.storage.QueryUtils",
-            "org.polypheny.db.workflow.engine.storage.reader.CheckpointQuery",
-            "org.polypheny.db.workflow.engine.storage.reader.RelReader",
             "org.polypheny.db.workflow.engine.storage.StorageManager"
     };
-    private IClassBodyEvaluator simpleCbe;
-    private IClassBodyEvaluator advancedCbe;
+    private final IClassBodyEvaluator simpleCbe;
+    private final IClassBodyEvaluator advancedCbe;
 
 
     public RelJavaTransformActivity() {
@@ -183,26 +184,20 @@ public class RelJavaTransformActivity implements Activity, Pipeable {
         }
         simpleCbe = compilerFactory.newClassBodyEvaluator();
         simpleCbe.setDefaultImports( DEFAULT_IMPORTS );
-        simpleCbe.setImplementedInterfaces( new Class[]{ Transformable.class } );
+        simpleCbe.setImplementedInterfaces( new Class[]{ RelTransformable.class } );
         simpleCbe.setParentClassLoader( PolySerializable.CLASS_LOADER );
 
         advancedCbe = compilerFactory.newClassBodyEvaluator();
         advancedCbe.setDefaultImports( DEFAULT_IMPORTS );
-        advancedCbe.setImplementedInterfaces( new Class[]{ Executable.class } );
+        advancedCbe.setImplementedInterfaces( new Class[]{ RelExecutable.class } );
         advancedCbe.setParentClassLoader( PolySerializable.CLASS_LOADER );
     }
 
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
-        if ( settings.keysPresent( "imports" ) ) {
-            String imports = settings.getString( "imports" );
-            if ( !imports.isBlank() && !Arrays.stream( imports.trim().split( "\n" ) )
-                    .map( String::trim )
-                    .allMatch( line -> line.isBlank() || line.startsWith( "//" ) || line.startsWith( "import" ) ) ) {
-                throw new InvalidSettingException( "Only valid Java imports are allowed", "imports" );
-            }
-        }
+        checkAllowed();
+        checkImports( settings );
         if ( settings.keysPresent( "mode" ) ) {
             boolean isSimple = settings.getString( "mode" ).equals( "simple" );
             if ( isSimple ) {
@@ -211,19 +206,15 @@ public class RelJavaTransformActivity implements Activity, Pipeable {
                 }
             }
 
-            if ( inTypes.stream().allMatch( TypePreview::isPresent ) && settings.allPresent() ) {
+            if ( settings.allPresent() ) {
                 try {
-                    AlgDataType type;
                     StringReader code = new StringReader( getCode( settings.toSettings() ) );
                     if ( isSimple ) {
-                        Transformable transformable = (Transformable) simpleCbe.createInstance( code );
-                        //type = transformable.getOutType( inTypes.get( 0 ).getNullableType() );
+                        simpleCbe.createInstance( code );
                     } else {
-                        Executable executable = (Executable) advancedCbe.createInstance( code );
-                        //type = executable.getOutType( inTypes.stream().map( TypePreview::getNullableType ).toList() );
+                        advancedCbe.createInstance( code );
                     }
-                    // automatic execution of getOutType is disabled on purpose for safety
-                    //return RelType.of( type ).asOutTypes();
+                    // automatic execution (before explicitly executing the activity) of getOutType is disabled for safety
                 } catch ( Throwable t ) {
                     throw new InvalidSettingException( "Problem with code: " + t.getMessage(), isSimple ? "simpleCode" : "advancedCode" );
                 }
@@ -240,13 +231,17 @@ public class RelJavaTransformActivity implements Activity, Pipeable {
             Pipeable.super.execute( inputs, settings, ctx );
             return;
         }
-        Executable executable = (Executable) advancedCbe.createInstance( new StringReader( getCode( settings ) ) );
-        AlgDataType[] inTypes = inputs.stream().map( i -> i == null ? null : i.getTupleType() ).toArray(AlgDataType[]::new);
+        checkAllowed();
+        RelExecutable executable = (RelExecutable) advancedCbe.createInstance( new StringReader( getCode( settings ) ) );
+        AlgDataType[] inTypes = inputs.stream().map( i -> i == null ? null : i.getTupleType() ).toArray( AlgDataType[]::new );
         AlgDataType outType = executable.getOutType( inTypes );
+        if ( ActivityUtils.getDataModel( outType ) != DataModel.RELATIONAL ) {
+            throw new GenericRuntimeException( "This activity can only produce relational outputs." );
+        }
         int fieldCount = outType.getFieldCount();
 
-        RelWriter writer = ctx.createRelWriter( 0, outType  );
-        RelReader[] readers = inputs.stream().map( i -> (RelReader) i ).toArray(RelReader[]::new);
+        RelWriter writer = ctx.createRelWriter( 0, outType );
+        RelReader[] readers = inputs.stream().map( i -> (RelReader) i ).toArray( RelReader[]::new );
         Iterator<PolyValue[]> iterator = executable.execute( readers );
         while ( iterator.hasNext() ) {
             PolyValue[] row = iterator.next();
@@ -267,14 +262,19 @@ public class RelJavaTransformActivity implements Activity, Pipeable {
 
     @Override
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
-        Transformable transformable = (Transformable) simpleCbe.createInstance( new StringReader( getCode( settings ) ) );
-        return transformable.getOutType( inTypes.get( 0 ) );
+        RelTransformable transformable = (RelTransformable) simpleCbe.createInstance( new StringReader( getCode( settings ) ) );
+        AlgDataType outType = transformable.getOutType( inTypes.get( 0 ) );
+        if ( ActivityUtils.getDataModel( outType ) != DataModel.RELATIONAL ) {
+            throw new GenericRuntimeException( "This activity can only produce relational outputs." );
+        }
+        return outType;
     }
 
 
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
-        Transformable transformable = (Transformable) simpleCbe.createInstance( new StringReader( getCode( settings ) ) );
+        checkAllowed();
+        RelTransformable transformable = (RelTransformable) simpleCbe.createInstance( new StringReader( getCode( settings ) ) );
         int fieldCount = output.getType().getFieldCount();
         for ( List<PolyValue> row : inputs.get( 0 ) ) {
             PolyValue[] outRow = transformable.transform( row.toArray( new PolyValue[0] ) );
@@ -291,7 +291,7 @@ public class RelJavaTransformActivity implements Activity, Pipeable {
     }
 
 
-    private String getCode( Settings settings ) {
+    public static String getCode( Settings settings ) {
         String imports = settings.getString( "imports" );
         if ( settings.getString( "mode" ).equals( "simple" ) ) {
             return imports + "\n" + settings.getString( "simpleCode" );
@@ -300,7 +300,26 @@ public class RelJavaTransformActivity implements Activity, Pipeable {
     }
 
 
-    public interface Executable {
+    public static void checkAllowed() {
+        if ( !RuntimeConfig.WORKFLOWS_ENABLE_UNSAFE.getBoolean() ) {
+            throw new GenericRuntimeException( "Execution of unsafe activities is disabled in the RuntimeConfig." );
+        }
+    }
+
+
+    public static void checkImports( SettingsPreview settings ) throws InvalidSettingException {
+        if ( settings.keysPresent( "imports" ) ) {
+            String imports = settings.getString( "imports" );
+            if ( !imports.isBlank() && !Arrays.stream( imports.trim().split( "\n" ) )
+                    .map( String::trim )
+                    .allMatch( line -> line.isBlank() || line.startsWith( "//" ) || line.startsWith( "import" ) ) ) {
+                throw new InvalidSettingException( "Only valid Java imports are allowed", "imports" );
+            }
+        }
+    }
+
+
+    public interface RelExecutable {
 
         AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
         AlgDataTypeField PK_FIELD = StorageManagerImpl.PK_FIELD;
@@ -317,7 +336,7 @@ public class RelJavaTransformActivity implements Activity, Pipeable {
     }
 
 
-    public interface Transformable {
+    public interface RelTransformable {
 
         AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
         AlgDataTypeField PK_FIELD = StorageManager.PK_FIELD;
@@ -333,39 +352,6 @@ public class RelJavaTransformActivity implements Activity, Pipeable {
          * @return the row to output with values compatible to getOutType() or null if this row should be skipped
          */
         PolyValue[] transform( PolyValue[] row ) throws Exception;
-
-    }
-
-
-    public static class ExecutableImpl implements Executable {
-
-
-        public Iterator<PolyValue[]> execute( RelReader[] inputs ) throws Exception {
-
-            return new Iterator() {
-                final Iterator<PolyValue[]> reader = inputs[0].getArrayIterator();
-
-
-                @Override
-                public boolean hasNext() {
-                    return reader.hasNext();
-                }
-
-
-                @Override
-                public PolyValue[] next() {
-                    return (PolyValue[]) reader.next();
-                }
-            };
-        }
-
-
-        /* Uncomment to set an outType that differs from the first inType */
-        public AlgDataType getOutType( AlgDataType[] inTypes ) {
-            return factory.builder().add( Executable.PK_FIELD ) // first field must always be PK_FIELD
-                    .add( "data", null, PolyType.INTEGER )
-                    .build();
-        }
 
     }
 

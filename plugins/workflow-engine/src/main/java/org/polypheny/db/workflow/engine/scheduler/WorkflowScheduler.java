@@ -126,6 +126,7 @@ public class WorkflowScheduler {
     public void interruptExecution() {
         isAborted = true;
         workflow.setState( WorkflowState.INTERRUPTED );
+        executionMonitor.forwardStates();
         activePartition.abort();
     }
 
