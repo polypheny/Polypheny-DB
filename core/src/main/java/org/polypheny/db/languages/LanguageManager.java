@@ -41,11 +41,8 @@ import org.polypheny.db.processing.QueryContext.PhysicalQueryContext;
 import org.polypheny.db.processing.QueryContext.TranslatedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.locking.IdentifierAdder;
-import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.transaction.locking.AlgTreeRewriter;
 import org.polypheny.db.transaction.mvcc.AlgTreeRewriter;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
@@ -206,7 +203,7 @@ public class LanguageManager {
                         root = new AlgTreeRewriter( statement ).process( root );
                     }
 
-                    if ( transaction.isAnalyze() && !statement.getOverviewDuration().isStopped( "Translation") ) {
+                    if ( transaction.isAnalyze() && !statement.getOverviewDuration().isStopped( "Translation" ) ) {
                         statement.getOverviewDuration().stop( "Translation" );
                     }
 

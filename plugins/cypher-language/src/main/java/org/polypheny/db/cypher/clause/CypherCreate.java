@@ -40,44 +40,6 @@ public class CypherCreate extends CypherClause {
         this.patterns = patterns;
     }
 
-
-    private void addEntryIdentifiers() {
-        patterns.stream()
-                .filter( CypherEveryPathPattern.class::isInstance )
-                .map( CypherEveryPathPattern.class::cast )
-                .forEach( everyPathPattern -> Stream.concat(
-                        everyPathPattern.getNodes().stream(),
-                        everyPathPattern.getEdges().stream()
-                ).forEach( pattern -> {
-                    CypherLiteral properties = extractProperties( pattern );
-                    properties.getMapValue().put(
-                            IdentifierUtils.IDENTIFIER_KEY,
-                            new CypherLiteral(
-                                    ParserPos.ZERO,
-                                    Literal.DECIMAL,
-                                    String.valueOf( IdentifierRegistry.INSTANCE.getEntryIdentifier() ),
-                                    false
-                            )
-                    );
-                } ) );
-    }
-
-    private CypherLiteral extractProperties( CypherPattern pattern ) {
-        if ( pattern instanceof CypherNodePattern cypherNodePattern ) {
-            if (cypherNodePattern.getProperties() == null) {
-                cypherNodePattern.initializeProperties();
-            }
-            return (CypherLiteral) cypherNodePattern.getProperties();
-        }
-        if ( pattern instanceof CypherRelPattern cypherRelPattern ) {
-            if (cypherRelPattern.getProperties() == null) {
-                cypherRelPattern.initializeProperties();
-            }
-            return (CypherLiteral) cypherRelPattern.getProperties();
-        }
-        throw new RuntimeException( "Unknown pattern type" );
-    }
-
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.CREATE;

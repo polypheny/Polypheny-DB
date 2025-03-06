@@ -26,7 +26,6 @@ import java.util.Comparator;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
@@ -40,8 +39,6 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.transaction.locking.IdentifierUtils;
-import org.polypheny.db.transaction.locking.Lockable;
 
 @EqualsAndHashCode(callSuper = false)
 @SuperBuilder(toBuilder = true)

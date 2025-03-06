@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.logical.relational;
 
 import java.util.List;
+import java.util.Optional;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.IdentifierCollector;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -44,8 +45,11 @@ public class LogicalRelIdCollector extends IdentifierCollector {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getTupleCount( getInput() );
-        return planner.getCostFactory().makeCost( dRows, 0, 0 );
+        Optional<Double> dRows = mq.getTupleCount( getInput() );
+        if ( dRows.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+        return planner.getCostFactory().makeCost( dRows.get(), 0, 0 );
     }
 
 

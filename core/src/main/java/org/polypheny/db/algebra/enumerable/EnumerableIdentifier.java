@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.enumerable;
 
 import java.util.List;
+import java.util.Optional;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -56,8 +57,11 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getTupleCount( getInput() );
-        return planner.getCostFactory().makeCost( dRows, 0, 0 );
+        Optional<Double> dRows = mq.getTupleCount( getInput() );
+        if ( dRows.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+        return planner.getCostFactory().makeCost( dRows.get(), 0, 0 );
     }
 
 

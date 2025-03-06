@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.enumerable;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function1;
@@ -53,8 +54,11 @@ public class EnumerableIdCollector extends IdentifierCollector implements Enumer
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getTupleCount( getInput() );
-        return planner.getCostFactory().makeCost( dRows, 0, 0 );
+        Optional<Double> dRows = mq.getTupleCount( getInput() );
+        if ( dRows.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+        return planner.getCostFactory().makeCost( dRows.get(), 0, 0 );
     }
 
 
