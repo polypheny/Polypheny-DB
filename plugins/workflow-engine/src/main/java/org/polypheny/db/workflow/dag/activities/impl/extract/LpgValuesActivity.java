@@ -77,7 +77,7 @@ import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 @BoolSetting(key = "fixSeed", displayName = "Fix Random Seed", defaultValue = false,
         shortDescription = "If enabled, ensures the same random values are generated each time.")
 
-@IntSetting(key = "count", displayName = "Node Count", defaultValue = 3, min = 1, max = 1_000, subGroup = "nodes", pos = 0)
+@IntSetting(key = "count", displayName = "Node Count", defaultValue = 3, min = 1, max = 10_000, subGroup = "nodes", pos = 0)
 @StringSetting(key = "nodeLabels", displayName = "Node Labels", shortDescription = "A list of node labels separated by comma (',') to sample from.",
         defaultValue = "Person", nonBlank = true, subGroup = "nodes", pos = 1)
 @IntSetting(key = "nodeLabelCount", displayName = "Node Label Count", shortDescription = "The number of labels per node.",

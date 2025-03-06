@@ -330,11 +330,11 @@ public class AnyToLpgActivity implements Activity {
             return null;
         } else if ( key.isNumber() ) {
             PolyNumber number = key.asNumber();
-            return number.isDecimal() ? PolyDouble.convert( number ) : PolyLong.convert( number );
+            key = number.isDecimal() ? PolyDouble.convert( number ) : PolyLong.convert( number );
         } else if ( key.isList() ) {
             return PolyList.of( key.asList().stream().map( this::normalize ).toList() );
         }
-        return key;
+        return PolyString.of( key.toString() ); // graph model stores numbers as strings, so its best to normalize everything to a string
     }
 
 

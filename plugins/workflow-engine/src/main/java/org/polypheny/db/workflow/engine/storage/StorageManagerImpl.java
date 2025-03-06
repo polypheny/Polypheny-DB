@@ -16,6 +16,8 @@
 
 package org.polypheny.db.workflow.engine.storage;
 
+import static org.polypheny.db.workflow.engine.storage.LpgBatchWriter.BATCHABLE_LPG_ADAPTERS;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -278,17 +280,18 @@ public class StorageManagerImpl implements StorageManager {
         }
         String graphName = getGraphName( activityId, outputIdx );
         Transaction transaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId, "LpgCreate" );
-        //acquireSchemaLock( transaction, Catalog.defaultNamespaceId ); // TODO: no lock required since we create a new namespace?
+        // no lock required since we create a new namespace
+        DataStore<?> store = getStore( storeName );
         long graphId;
         try {
             graphId = ddlManager.createGraph(
                     graphName,
                     true,
-                    List.of( getStore( storeName ) ),
+                    List.of( store ),
                     false,
                     false,
-                    true,
                     RuntimeConfig.GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean(),
+                    true,
                     transaction.createStatement()
             );
             transaction.commit();
@@ -302,7 +305,7 @@ public class StorageManagerImpl implements StorageManager {
         LpgMetadata meta = new LpgMetadata();
         register( activityId, outputIdx, graph, meta );
         registeredNamespaces.put( graphId, graphName );
-        return new LpgWriter( graph, QueryUtils.startTransaction( graphId, "LpgWrite" ), meta );
+        return new LpgWriter( graph, QueryUtils.startTransaction( graphId, "LpgWrite" ), meta, !BATCHABLE_LPG_ADAPTERS.contains( store.adapterName ) );
     }
 
 

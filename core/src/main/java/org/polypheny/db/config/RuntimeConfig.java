@@ -512,7 +512,7 @@ public enum RuntimeConfig {
 
     WORKFLOWS_ENABLE_UNSAFE(
             "workflows/enableUnsafe",
-            "Enable Execution of possibly harmful activities. For example, this includes activities that execute user-define Java code.",
+            "Enable execution of possibly harmful activities. For instance, this includes activities that execute user-define Java code.",
             true, // TODO: set default to false
             ConfigType.BOOLEAN,
             "workflowsSettingsGroup"

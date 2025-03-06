@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.dag.settings;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Objects;
 import lombok.Value;
@@ -59,11 +60,13 @@ public class EntityValue implements SettingValue {
     }
 
 
+    @JsonIgnore
     public LogicalTable getTable() {
         return Catalog.snapshot().rel().getTable( namespace, name ).orElse( null );
     }
 
 
+    @JsonIgnore
     public LogicalCollection getCollection() {
         LogicalNamespace ns = getLogicalNamespace();
         if ( ns == null ) {
@@ -73,6 +76,7 @@ public class EntityValue implements SettingValue {
     }
 
 
+    @JsonIgnore
     public LogicalGraph getGraph() {
         LogicalNamespace ns = getLogicalNamespace();
         if ( ns == null ) {
@@ -85,6 +89,16 @@ public class EntityValue implements SettingValue {
     }
 
 
+    @JsonIgnore
+    public String getGraphName() {
+        if ( namespace == null || namespace.isBlank() ) {
+            return Objects.requireNonNullElse( name, "" );
+        }
+        return namespace;
+    }
+
+
+    @JsonIgnore
     public LogicalNamespace getLogicalNamespace() {
         return Catalog.snapshot().getNamespace( namespace ).orElse( null );
     }

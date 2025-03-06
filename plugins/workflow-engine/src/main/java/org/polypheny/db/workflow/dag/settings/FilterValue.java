@@ -28,11 +28,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -41,6 +43,9 @@ import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingValue;
 
@@ -288,7 +293,7 @@ public class FilterValue implements SettingValue {
         List<String> values;
 
         @JsonIgnore
-        Map<Class<? extends PolyValue>, PolyValue> convertedValues = new HashMap<>(); // a cache for reusing casted values
+        Map<Class<? extends PolyValue>, PolyValue> convertedValues = new ConcurrentHashMap<>(); // a cache for reusing casted values
 
 
         public void initialize( SelectMode mode ) throws IllegalArgumentException {
@@ -418,6 +423,14 @@ public class FilterValue implements SettingValue {
          * @return 1 if v is greater than this.value
          */
         private int compareWith( PolyValue v ) {
+            if ( v.isTemporal() ) {
+                return switch ( v.type ) {
+                    case DATE -> v.compareTo( valueAsDate() );
+                    case TIME -> v.compareTo( valueAsTime() );
+                    case TIMESTAMP -> v.compareTo( valueAsTimestamp() );
+                    default -> throw new IllegalArgumentException( "Unsupported type: " + v.type );
+                };
+            }
             if ( v.isNumber() ) {
                 return v.compareTo( valueAsNumber() );
             }
@@ -432,6 +445,24 @@ public class FilterValue implements SettingValue {
 
         private PolyString valueAsString() {
             return (PolyString) convertedValues.computeIfAbsent( PolyString.class, k -> PolyString.of( value ) );
+        }
+
+
+        private PolyDate valueAsDate() {
+            return (PolyDate) convertedValues.computeIfAbsent( PolyDate.class,
+                    k -> ActivityUtils.castPolyTemporal( valueAsString(), PolyType.DATE ) );
+        }
+
+
+        private PolyTime valueAsTime() {
+            return (PolyTime) convertedValues.computeIfAbsent( PolyTime.class,
+                    k -> ActivityUtils.castPolyTemporal( valueAsString(), PolyType.TIME ) );
+        }
+
+
+        private PolyTimestamp valueAsTimestamp() {
+            return (PolyTimestamp) convertedValues.computeIfAbsent( PolyTimestamp.class,
+                    k -> ActivityUtils.castPolyTemporal( valueAsString(), PolyType.TIMESTAMP ) );
         }
 
 

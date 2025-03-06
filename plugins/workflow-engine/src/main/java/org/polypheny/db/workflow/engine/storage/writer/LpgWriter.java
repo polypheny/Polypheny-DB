@@ -44,9 +44,9 @@ public class LpgWriter extends CheckpointWriter {
     private long edgeWriteCount = 0;
 
 
-    public LpgWriter( LogicalGraph graph, Transaction transaction, LpgMetadata metadata ) {
+    public LpgWriter( LogicalGraph graph, Transaction transaction, LpgMetadata metadata, boolean disableBatching ) {
         super( graph, transaction, metadata );
-        writer = new LpgBatchWriter( graph, transaction );
+        writer = new LpgBatchWriter( graph, transaction, disableBatching );
     }
 
 

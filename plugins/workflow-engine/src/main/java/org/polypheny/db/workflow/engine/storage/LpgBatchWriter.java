@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -36,14 +37,17 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
 
 public class LpgBatchWriter implements AutoCloseable {
 
-    private static final long MAX_BYTES_PER_BATCH = 10 * 1024 * 1024L; // 10 MiB, upper limit to (estimated) size of batch in bytes
-    private static final int MAX_TUPLES_PER_BATCH = 10_000; // upper limit to tuples per batch
+    private static final long MAX_BYTES_PER_BATCH = 60 * 1024L; // maximum generated code length is 64 KB
+    private static final int MAX_TUPLES_PER_BATCH = 100; // upper limit to tuples per batch
+
+    public static final Set<String> BATCHABLE_LPG_ADAPTERS = Set.of( "HSQLDB", "MonetDB", "PostgreSQL", "MongoDB" );
 
 
     private final Transaction transaction;
@@ -51,16 +55,20 @@ public class LpgBatchWriter implements AutoCloseable {
     private final List<PolyNode> nodeValues = new ArrayList<>();
     private final List<PolyEdge> edgeValues = new ArrayList<>();
     private long batchSize = -1;
-    private final boolean isBatchingDisabled = true; // TODO: either completely disable batching or find a solution
+    private final boolean isBatchingDisabled;
+
+    private long nodeCount = 0;
 
 
-    public LpgBatchWriter( LogicalGraph graph, Transaction transaction ) {
+    public LpgBatchWriter( LogicalGraph graph, Transaction transaction, boolean disableBatching ) {
         this.transaction = transaction;
         this.graph = graph;
+        this.isBatchingDisabled = disableBatching;
     }
 
 
     public void write( PolyNode node ) {
+        node = node.copyNamed( PolyString.of( "v" + nodeCount++ ) ); // variable is required for Neo4j. variable must start with letter
         if ( batchSize == -1 ) {
             batchSize = QueryUtils.computeBatchSize( new PolyValue[]{ node }, MAX_BYTES_PER_BATCH, MAX_TUPLES_PER_BATCH );
         }
@@ -82,7 +90,7 @@ public class LpgBatchWriter implements AutoCloseable {
         if ( isBatchingDisabled || edgeValues.size() < batchSize ) {
             return;
         }
-        executeBatch( false );
+        executeBatch( true );
     }
 
 
@@ -103,7 +111,7 @@ public class LpgBatchWriter implements AutoCloseable {
         ExecutedContext executedContext = QueryUtils.executeAlgRoot( root, statement );
 
         if ( executedContext.getException().isPresent() ) {
-            throw new GenericRuntimeException( "An error occurred while writing a batch: ", executedContext.getException().get() );
+            throw new GenericRuntimeException( "An error occurred while writing a batch: " + executedContext.getException().get().getMessage(), executedContext.getException().get() );
         }
         List<List<PolyValue>> results = executedContext.getIterator().getAllRowsAndClose();
         long changedCount = results.size() == 1 ? results.get( 0 ).get( 0 ).asNumber().longValue() : 0;

@@ -17,15 +17,18 @@
 package org.polypheny.db.workflow.dag.activities.impl.load;
 
 import static org.polypheny.db.workflow.dag.activities.impl.load.LpgLoadActivity.GRAPH_KEY;
+import static org.polypheny.db.workflow.engine.storage.LpgBatchWriter.BATCHABLE_LPG_ADAPTERS;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.config.RuntimeConfig;
@@ -77,6 +80,8 @@ public class LpgLoadActivity implements Activity, Pipeable {
     private final AdapterManager adapterManager = AdapterManager.getInstance();
     private final DdlManager ddlManager = DdlManager.getInstance();
 
+    private DataStore<?> createdStore;
+
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
@@ -113,12 +118,17 @@ public class LpgLoadActivity implements Activity, Pipeable {
     @Override
     public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
         Optional<EntityValue> graph = settings.get( GRAPH_KEY, EntityValue.class );
-        return graph.map( v -> String.format( "Load Graph to '%s'", v.getName() ) ).orElse( null );
+        return graph.map( v -> String.format( "Load Graph to '%s'", v.getGraphName() ) ).orElse( null );
+    }
+
+
+    @Override
+    public void reset() {
+        createdStore = null;
     }
 
 
     private LogicalGraph getEntity( Settings settings, Supplier<Transaction> txSupplier, Consumer<String> logInfo ) throws ActivityException {
-        // TODO: check if the adapter is a data store (and thus writable)
         EntityValue entitySetting = settings.get( GRAPH_KEY, EntityValue.class );
         LogicalGraph graph = entitySetting.getGraph();
         boolean create = settings.getBool( "create" );
@@ -134,11 +144,12 @@ public class LpgLoadActivity implements Activity, Pipeable {
             // Unfortunately, we have to create the table outside our activity transaction context.
             Transaction transaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId, "LpgLoadCreate" );
             try {
+                createdStore = adapterManager.getStore( adapter ).orElseThrow( () ->
+                        new InvalidSettingException( "Adapter does not exist: " + adapter, "adapter" ) );
                 long graphId = ddlManager.createGraph(
                         entitySetting.getNamespace(),
                         true,
-                        List.of( adapterManager.getStore( adapter ).orElseThrow( () ->
-                                new InvalidSettingException( "Adapter does not exist: " + adapter, "adapter" ) ) ),
+                        List.of( createdStore ),
                         false,
                         false,
                         false,
@@ -158,7 +169,7 @@ public class LpgLoadActivity implements Activity, Pipeable {
             Transaction transaction = txSupplier.get();
             Statement statement = transaction.createStatement();
             List<AllocationEntity> allocations = transaction.getSnapshot().alloc().getFromLogical( graph.id );
-            allocations.forEach( a -> AdapterManager.getInstance().getAdapter( a.adapterId ).orElseThrow().truncate( statement.getPrepareContext(), a.id ) );
+            allocations.forEach( a -> adapterManager.getAdapter( a.adapterId ).orElseThrow().truncate( statement.getPrepareContext(), a.id ) );
         }
         return graph;
     }
@@ -169,7 +180,7 @@ public class LpgLoadActivity implements Activity, Pipeable {
 
         long count = 0;
         long countDelta = Math.max( totalTuples / 100, 1 );
-        try ( LpgBatchWriter writer = new LpgBatchWriter( graph, transaction ) ) {
+        try ( LpgBatchWriter writer = new LpgBatchWriter( graph, transaction, disableBatching( graph ) ) ) {
             for ( List<PolyValue> tuple : tuples ) {
                 PolyValue value = tuple.get( 0 );
                 if ( value.isNode() ) {
@@ -192,6 +203,21 @@ public class LpgLoadActivity implements Activity, Pipeable {
                 }
             }
         }
+    }
+
+
+    private boolean disableBatching( LogicalGraph graph ) {
+        if ( createdStore != null ) {
+            return !BATCHABLE_LPG_ADAPTERS.contains( createdStore.adapterName );
+        }
+        List<AllocationPlacement> placements = Catalog.getInstance().getSnapshot().alloc().getPlacementsFromLogical( graph.id );
+        for ( AllocationPlacement placement : placements ) {
+            String name = adapterManager.getStore( placement.adapterId ).orElseThrow().adapterName;
+            if ( !BATCHABLE_LPG_ADAPTERS.contains( name ) ) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

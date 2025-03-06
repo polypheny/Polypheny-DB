@@ -226,6 +226,8 @@ public class CastValue implements SettingValue {
                 } else if ( type == PolyType.BOOLEAN && value.isString() ) {
                     String str = value.asString().value.trim().toLowerCase( Locale.ROOT );
                     return PolyBoolean.of( str.equals( "true" ) || str.equals( "1" ) );
+                } else if ( value.isString() && PolyType.DATETIME_TYPES.contains( type ) ) {
+                    return ActivityUtils.castPolyTemporal( value.asString(), type );
                 }
             } else if ( collectionsType.equals( "ARRAY" ) ) {
                 if ( value.isList() ) {

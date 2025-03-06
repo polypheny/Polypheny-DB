@@ -51,6 +51,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -62,6 +63,7 @@ import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
@@ -282,8 +284,33 @@ public class ActivityUtils {
         } else if ( type == PolyType.BOOLEAN && value.isString() ) {
             String str = value.asString().value.trim().toLowerCase( Locale.ROOT );
             return PolyBoolean.of( str.equals( "true" ) || str.equals( "1" ) );
+        } else if ( value.isString() && PolyType.DATETIME_TYPES.contains( type ) ) {
+            return castPolyTemporal( value.asString(), type );
         }
         return PolyValue.getConverter( type ).apply( value );
+    }
+
+
+    public static PolyTemporal castPolyTemporal( PolyString value, PolyType type ) {
+        if ( value.value.isEmpty() ) {
+            return PolyNull.NULL.asTemporal();
+        }
+        return switch ( type ) {
+            case DATE -> {
+                try {
+                    yield TemporalFunctions.dateStringToUnixDate( value );
+                } catch ( Exception ignored ) {
+                }
+                try {
+                    yield TemporalFunctions.timeStringToUnixDate( value );
+                } catch ( Exception ignored ) {
+                }
+                yield TemporalFunctions.timestampStringToUnixDate( value );
+            }
+            case TIME -> TemporalFunctions.toTimeWithLocalTimeZone( value );
+            case TIMESTAMP -> TemporalFunctions.toTimestampWithLocalTimeZone( value );
+            default -> throw new IllegalArgumentException( "Unsupported type: " + type );
+        };
     }
 
 
