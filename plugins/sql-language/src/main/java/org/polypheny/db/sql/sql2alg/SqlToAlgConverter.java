@@ -2895,7 +2895,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      */
     protected void collectInsertTargets( SqlInsert call, final RexNode sourceRef, final List<String> targetColumnNames, List<RexNode> columnExprs ) {
         final Entity targetTable = getTargetTable( call );
-        final AlgDataType tableRowType = targetTable.getTupleType(true);
+        final AlgDataType tableRowType = targetTable.getTupleType(false);
         SqlNodeList targetColumnList = call.getTargetColumnList();
         if ( targetColumnList == null ) {
             if ( validator.getConformance().isInsertSubsetColumnsAllowed() ) {
