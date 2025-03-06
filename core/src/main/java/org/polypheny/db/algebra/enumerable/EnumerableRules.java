@@ -74,8 +74,6 @@ public class EnumerableRules {
     private EnumerableRules() {
     }
 
-    public static final EnumerableIdentifierInjectionRule ENUMERABLE_IDENTIFIER_INJECTION_RULE = new EnumerableIdentifierInjectionRule();
-
 
     public static final EnumerableIdentifierRule ENUMERABLE_REL_IDENTIFIER_RULE = EnumerableIdentifierRule.REL_INSTANCE;
 

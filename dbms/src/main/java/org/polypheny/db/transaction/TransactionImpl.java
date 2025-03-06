@@ -70,7 +70,6 @@ import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.SequenceNumberGenerator;
 import org.polypheny.db.transaction.mvcc.MvccUtils;
-import org.polypheny.db.transaction.locking.VersionedEntryIdentifier;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
@@ -138,8 +137,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final Set<Lockable> lockedEntities = new HashSet<>();
 
     private final Thread executor;
-
-    private Set<Entity> writtenEntities = new HashSet<>();
 
     private Set<Entity> writtenEntities = new HashSet<>();
 
@@ -301,6 +298,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     }
 
+
     private boolean validateWriteSet() {
         /*
         ToDo TH: get the write set based on the transaction id and the written entities and compare to other comitted entities
@@ -326,6 +324,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         return true;
     }
+
 
     private void updateCommitInstantLog() {
         /*
@@ -498,18 +497,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     public void addWrittenEntitiy( Entity entity ) {
         writtenEntities.add( entity );
     }
-    @Override
-    public void addReadEntity( VersionedEntryIdentifier identifier ) {
-        readSet.add( identifier );
-    }
-
-
-    @Override
-    public void addWrittenEntitiy( Entity entity ) {
-        writtenEntities.add( entity );
-    }
-
-
 
 
     @Override

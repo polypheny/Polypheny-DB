@@ -70,13 +70,9 @@ import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.locking.EntityIdentifierGenerator;
-import org.polypheny.db.transaction.locking.EntityIdentifierUtils;
-import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockablesRegistry;
-import org.polypheny.db.type.entity.PolyBinary;
-import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
@@ -148,7 +144,7 @@ public class SqlProcessor extends Processor {
 
 
     @Override
-    public Pair<Node, AlgDataType> validate(boolean isMvccInternal, Transaction transaction, Node parsed, boolean addDefaultValues ) {
+    public Pair<Node, AlgDataType> validate( boolean isMvccInternal, Transaction transaction, Node parsed, boolean addDefaultValues ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Validating SQL ..." );
@@ -260,7 +256,7 @@ public class SqlProcessor extends Processor {
 
     private void addDefaultValues( Transaction transaction, SqlInsert insert ) {
         //TODO: please fix me. Not all sources are SqlBasicCalls
-        if (!(insert.getSource() instanceof SqlBasicCall)) {
+        if ( !(insert.getSource() instanceof SqlBasicCall) ) {
             LOGGER.warn( "Non SqlBasicCall input encountered. Default values not added." );
             return;
         }
@@ -306,7 +302,7 @@ public class SqlProcessor extends Processor {
             SqlNode[][] newValues, SqlInsert insert ) {
         int pos = 0;
 
-        for ( LogicalColumn column : catalogTable.getColumns(false) ) {
+        for ( LogicalColumn column : catalogTable.getColumns( false ) ) {
             newColumnList.add( new SqlIdentifier( column.name, ParserPos.ZERO ) );
 
             for ( int i = 0; i < ((SqlBasicCall) insert.getSource()).getOperands().length; i++ ) {
@@ -327,9 +323,9 @@ public class SqlProcessor extends Processor {
 
 
     public static int computeTargetSize( LogicalTable catalogTable, SqlNodeList oldColumnList, DataModel dataModel ) {
-        int size = catalogTable.getColumns(false).size();
+        int size = catalogTable.getColumns( false ).size();
         if ( dataModel == DataModel.DOCUMENT ) {
-            List<String> columnNames = catalogTable.getColumnNames(false);
+            List<String> columnNames = catalogTable.getColumnNames( false );
             size += (int) oldColumnList.getSqlList()
                     .stream()
                     .filter( column -> !columnNames.contains( ((SqlIdentifier) column).names.get( 0 ) ) )
