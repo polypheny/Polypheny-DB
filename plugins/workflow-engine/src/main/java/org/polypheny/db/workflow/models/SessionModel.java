@@ -16,6 +16,8 @@
 
 package org.polypheny.db.workflow.models;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Value;
@@ -32,10 +34,19 @@ public class SessionModel {
     int activityCount;
     WorkflowState state;
 
-    // USER_SESSION fields:
+    // USER_SESSION & JOB_SESSION fields:
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     UUID workflowId;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     Integer version;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     WorkflowDefModel workflowDef;
+
+    // JOB_SESSION fields:
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    List<JobExecutionModel> executionHistory;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    UUID jobId;
 
 
     public SessionModel( SessionModelType type, UUID sId, int connectionCount, String lastInteraction, int activityCount, WorkflowState state ) {
@@ -50,6 +61,24 @@ public class SessionModel {
         this.workflowId = null;
         this.version = null;
         this.workflowDef = null;
+        this.executionHistory = null;
+        this.jobId = null;
+    }
+
+
+    public SessionModel( SessionModelType type, UUID sessionId, int connectionCount, String lastInteraction, int activityCount, WorkflowState state, UUID workflowId, Integer version, WorkflowDefModel workflowDef ) {
+        this.type = type;
+        this.sessionId = sessionId;
+        this.connectionCount = connectionCount;
+        this.lastInteraction = lastInteraction;
+        this.activityCount = activityCount;
+        this.state = state;
+        this.workflowId = workflowId;
+        this.version = version;
+        this.workflowDef = workflowDef;
+
+        this.executionHistory = null;
+        this.jobId = null;
     }
 
 

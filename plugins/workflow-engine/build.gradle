@@ -7,6 +7,7 @@ configurations {
 }
 
 dependencies {
+    implementation group: 'com.cronutils', name: 'cron-utils', version: cron_utils_version  // Apache 2.0
     compileOnly project(":core")
     compileOnly project(":dbms")
     compileOnly project(":webui")

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.repo;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.http.HttpCode;
 import java.io.File;
@@ -26,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.workflow.models.JobModel;
 import org.polypheny.db.workflow.models.WorkflowDefModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 
@@ -37,6 +39,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
     private static WorkflowRepoImpl INSTANCE = null;
 
     private static final String DEF_FILE = "meta.json";
+    private static final String JOBS_FILE = "jobs.json";
     public static final String WORKFLOWS_PATH = "data/workflows";
 
     private final ObjectMapper mapper = new ObjectMapper();
@@ -227,11 +230,49 @@ public class WorkflowRepoImpl implements WorkflowRepo {
     }
 
 
+    @Override
+    public Map<UUID, JobModel> getJobs() throws WorkflowRepoException {
+        File file = new File( rootPath, JOBS_FILE );
+        if ( !file.exists() ) {
+            serializeToFile( file, Map.of() );
+            return Map.of();
+        }
+        if ( file.isDirectory() ) {
+            throw new WorkflowRepoException( JOBS_FILE + " must not be a directory" );
+        }
+        try {
+            return mapper.readValue( file, new TypeReference<Map<UUID, JobModel>>() {
+            } );
+        } catch ( IOException e ) {
+            throw new WorkflowRepoException( "Failed to read or deserialize " + JOBS_FILE, e );
+        }
+    }
+
+
+    @Override
+    public void setJob( JobModel model ) throws WorkflowRepoException {
+        if ( model.getName().length() > MAX_NAME_LENGTH ) {
+            throw new WorkflowRepoException( "Name must not exceed " + MAX_NAME_LENGTH + " characters", HttpCode.BAD_REQUEST );
+        }
+        Map<UUID, JobModel> models = new HashMap<>( getJobs() );
+        models.put( model.getJobId(), model );
+        serializeToFile( new File( rootPath, JOBS_FILE ), models );
+    }
+
+
+    @Override
+    public void removeJob( UUID jobId ) throws WorkflowRepoException {
+        Map<UUID, JobModel> models = new HashMap<>( getJobs() );
+        models.remove( jobId );
+        serializeToFile( new File( rootPath, JOBS_FILE ), models );
+    }
+
+
     private void serializeToFile( File file, Object value ) throws WorkflowRepoException {
         try ( FileWriter fileWriter = new FileWriter( file ) ) {
             mapper.writeValue( fileWriter, value );
         } catch ( IOException e ) {
-            throw new WorkflowRepoException( "Failed to write workflow JSON file: " + file.getAbsolutePath() + ". " + e.getMessage(), e );
+            throw new WorkflowRepoException( "Failed to write JSON file: " + file.getAbsolutePath() + ". " + e.getMessage(), e );
         }
     }
 

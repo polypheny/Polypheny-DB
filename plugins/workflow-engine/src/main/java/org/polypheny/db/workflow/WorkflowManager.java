@@ -39,6 +39,9 @@ import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.workflow.dag.activities.ActivityRegistry;
 import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
+import org.polypheny.db.workflow.jobs.JobManager;
+import org.polypheny.db.workflow.jobs.JobManager.WorkflowJobException;
+import org.polypheny.db.workflow.models.JobModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.models.requests.CreateSessionRequest;
 import org.polypheny.db.workflow.models.requests.ImportWorkflowRequest;
@@ -55,10 +58,11 @@ public class WorkflowManager {
 
     private final SessionManager sessionManager;
     private final WorkflowRepo repo;
+    private final JobManager jobManager;
+    private final WorkflowApi apiManager;
     public static final String PATH = "/workflows";
     public static final String DEFAULT_CHECKPOINT_ADAPTER = "hsqldb_disk";
     private static final ObjectMapper mapper = new ObjectMapper();
-    private final WorkflowApi apiManager;
 
 
     public WorkflowManager() {
@@ -67,6 +71,7 @@ public class WorkflowManager {
         registerEndpoints();
         apiManager = new WorkflowApi( sessionManager );
         apiManager.registerEndpoints( HttpServer.getInstance() );
+        jobManager = JobManager.getInstance();
 
         if ( PolyphenyDb.mode == RunMode.TEST ) {
             return;
@@ -79,6 +84,11 @@ public class WorkflowManager {
                         StorageManagerImpl.clearAll(); // remove old namespaces and checkpoints
                         registerAdapter(); // TODO: only register adapter when the first workflow is opened
                         addSampleWorkflows();
+                        try {
+                            jobManager.onStartup();
+                        } catch ( Exception e ) {
+                            log.error( "Error on job startup", e );
+                        }
                     }
                 },
                 1000
@@ -148,18 +158,24 @@ public class WorkflowManager {
         server.addSerializedRoute( PATH + "/workflows", this::getWorkflowDefs, HandlerType.GET );
         server.addSerializedRoute( PATH + "/workflows/{workflowId}/{version}", this::getWorkflow, HandlerType.GET );
         server.addSerializedRoute( PATH + "/registry", this::getActivityRegistry, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/jobs", this::getJobs, HandlerType.GET );
 
         server.addSerializedRoute( PATH + "/sessions", this::createSession, HandlerType.POST );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/save", this::saveSession, HandlerType.POST );
         server.addSerializedRoute( PATH + "/workflows", this::importWorkflow, HandlerType.POST );
         server.addSerializedRoute( PATH + "/workflows/{workflowId}/{version}", this::openWorkflow, HandlerType.POST );
         server.addSerializedRoute( PATH + "/workflows/{workflowId}/{version}/copy", this::copyWorkflow, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/jobs", this::setJob, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/jobs/{jobId}/enable", this::enableJob, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/jobs/{jobId}/disable", this::disableJob, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/jobs/{jobId}/trigger", this::triggerJob, HandlerType.POST );
 
         server.addSerializedRoute( PATH + "/workflows/{workflowId}", this::renameWorkflow, HandlerType.PATCH );
 
         server.addSerializedRoute( PATH + "/sessions/{sessionId}", this::terminateSession, HandlerType.DELETE );
         server.addSerializedRoute( PATH + "/workflows/{workflowId}", this::deleteWorkflow, HandlerType.DELETE );
         server.addSerializedRoute( PATH + "/workflows/{workflowId}/{version}", this::deleteVersion, HandlerType.DELETE );
+        server.addSerializedRoute( PATH + "/jobs/{jobId}", this::deleteJob, HandlerType.DELETE );
     }
 
 
@@ -229,10 +245,22 @@ public class WorkflowManager {
     }
 
 
+    private void getJobs( final Context ctx ) {
+        process( ctx, jobManager::getJobs );
+    }
+
+
     private void createSession( final Context ctx ) {
         // -> creates a new workflow
         CreateSessionRequest request = ctx.bodyAsClass( CreateSessionRequest.class );
         process( ctx, () -> sessionManager.createUserSession( request.getName(), request.getGroup() ) );
+    }
+
+
+    private void saveSession( final Context ctx ) {
+        UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
+        SaveSessionRequest request = ctx.bodyAsClass( SaveSessionRequest.class );
+        process( ctx, () -> sessionManager.saveUserSession( sessionId, request.getMessage() ) );
     }
 
 
@@ -275,6 +303,36 @@ public class WorkflowManager {
     }
 
 
+    private void setJob( final Context ctx ) {
+        JobModel model = ctx.bodyAsClass( JobModel.class );
+        process( ctx, () -> jobManager.setJob( model ) );
+    }
+
+
+    private void enableJob( final Context ctx ) {
+        UUID jobId = UUID.fromString( ctx.pathParam( "jobId" ) );
+        process( ctx, () -> jobManager.enable( jobId ) );
+    }
+
+
+    private void disableJob( final Context ctx ) {
+        UUID jobId = UUID.fromString( ctx.pathParam( "jobId" ) );
+        process( ctx, () -> {
+            jobManager.disable( jobId );
+            return "success";
+        } );
+    }
+
+
+    private void triggerJob( final Context ctx ) {
+        UUID jobId = UUID.fromString( ctx.pathParam( "jobId" ) );
+        process( ctx, () -> {
+            jobManager.manuallyTrigger( jobId );
+            return "success";
+        } );
+    }
+
+
     private void deleteVersion( final Context ctx ) {
         UUID workflowId = UUID.fromString( ctx.pathParam( "workflowId" ) );
         int version = Integer.parseInt( ctx.pathParam( "version" ) );
@@ -297,17 +355,19 @@ public class WorkflowManager {
     }
 
 
-    private void saveSession( final Context ctx ) {
-        UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
-        SaveSessionRequest request = ctx.bodyAsClass( SaveSessionRequest.class );
-        process( ctx, () -> sessionManager.saveUserSession( sessionId, request.getMessage() ) );
-    }
-
-
     private void terminateSession( final Context ctx ) {
         UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
         process( ctx, () -> {
             sessionManager.terminateSession( sessionId );
+            return "success";
+        } );
+    }
+
+
+    private void deleteJob( final Context ctx ) {
+        UUID jobId = UUID.fromString( ctx.pathParam( "jobId" ) );
+        process( ctx, () -> {
+            jobManager.deleteJob( jobId );
             return "success";
         } );
     }
@@ -340,7 +400,7 @@ public class WorkflowManager {
     @FunctionalInterface
     private interface ResultSupplier {
 
-        Object get() throws WorkflowRepoException;
+        Object get() throws WorkflowRepoException, WorkflowJobException;
 
     }
 

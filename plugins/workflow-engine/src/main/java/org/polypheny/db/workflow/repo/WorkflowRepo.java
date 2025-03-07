@@ -24,6 +24,7 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.workflow.dag.WorkflowImpl;
+import org.polypheny.db.workflow.models.JobModel;
 import org.polypheny.db.workflow.models.WorkflowDefModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 
@@ -129,6 +130,22 @@ public interface WorkflowRepo {
      * @throws WorkflowRepoException if the workflow cannot be modified, such as if an error occurs during the process.
      */
     void updateWorkflowGroup( UUID id, String group ) throws WorkflowRepoException;
+
+    Map<UUID, JobModel> getJobs() throws WorkflowRepoException;
+
+    void setJob( JobModel model ) throws WorkflowRepoException;
+
+    void removeJob( UUID jobId ) throws WorkflowRepoException;
+
+    default JobModel getJob( UUID jobId ) throws WorkflowRepoException {
+        JobModel model = getJobs().get( jobId );
+        if ( model == null ) {
+            throw new WorkflowRepoException( "Job does not exist: " + jobId, HttpCode.NOT_FOUND );
+        }
+        return model;
+    }
+
+    ;
 
     /**
      * Checks if a workflow with the specified name already exists in the repository.

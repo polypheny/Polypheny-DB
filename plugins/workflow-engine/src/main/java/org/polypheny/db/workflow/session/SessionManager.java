@@ -28,6 +28,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.workflow.WorkflowApi.WorkflowApiException;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.WorkflowImpl;
+import org.polypheny.db.workflow.jobs.JobTrigger;
 import org.polypheny.db.workflow.models.SessionModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.repo.WorkflowRepo;
@@ -42,6 +43,7 @@ public class SessionManager {
     private final Map<UUID, UserSession> userSessions = new ConcurrentHashMap<>();
     private final Map<UUID, ApiSession> apiSessions = new ConcurrentHashMap<>();
     private final Map<UUID, NestedSession> nestedSessions = new ConcurrentHashMap<>(); // unlike the map in the nestedSessionManager, the key is a sessionId
+    private final Map<UUID, JobSession> jobSessions = new ConcurrentHashMap<>(); // note that sessionId != jobId
     private final WorkflowRepo repo = WorkflowRepoImpl.getInstance();
 
 
@@ -94,6 +96,11 @@ public class SessionManager {
     }
 
 
+    public Map<UUID, SessionModel> getJobSessionModels() {
+        return toSessionModelMap( jobSessions );
+    }
+
+
     public Map<UUID, SessionModel> getNestedSessionModels() {
         return toSessionModelMap( nestedSessions );
     }
@@ -103,6 +110,7 @@ public class SessionManager {
         Map<UUID, SessionModel> models = getUserSessionModels();
         models.putAll( getApiSessionModels() );
         models.putAll( getNestedSessionModels() );
+        models.putAll( getJobSessionModels() );
         return models;
     }
 
@@ -130,6 +138,7 @@ public class SessionManager {
     public void terminateAll() {
         Set<UUID> sessionIds = userSessions.keySet();
         sessionIds.addAll( apiSessions.keySet() );
+        sessionIds.addAll( jobSessions.keySet() );
         // nested sessions are terminated recursively
         for ( UUID sId : sessionIds ) {
             try {
@@ -172,6 +181,8 @@ public class SessionManager {
             return apiSessions.get( sId );
         } else if ( nestedSessions.containsKey( sId ) ) {
             return nestedSessions.get( sId );
+        } else if ( jobSessions.containsKey( sId ) ) {
+            return jobSessions.get( sId );
         }
         return null;
     }
@@ -204,14 +215,26 @@ public class SessionManager {
     }
 
 
+    public JobSession getJobSessionOrThrow( UUID sId ) {
+        JobSession session = jobSessions.get( sId );
+        if ( session == null ) {
+            throw new IllegalArgumentException( "Unknown job session with id: " + sId );
+        }
+        return session;
+    }
+
+
     public boolean isWorkflowOpened( UUID workflowId ) {
-        return userSessions.values().stream().anyMatch( s -> s.getWId().equals( workflowId ) );
+        return userSessions.values().stream().anyMatch( s -> s.getWId().equals( workflowId ) )
+                || nestedSessions.values().stream().anyMatch( s -> s.getWId().equals( workflowId ) )
+                || jobSessions.values().stream().anyMatch( s -> s.getTrigger().getWorkfowId().equals( workflowId ) );
     }
 
 
     private void removeSession( UUID sId ) {
         userSessions.remove( sId );
         apiSessions.remove( sId );
+        jobSessions.remove( sId );
     }
 
 
@@ -232,6 +255,14 @@ public class SessionManager {
         UUID sId = UUID.randomUUID();
         ApiSession session = new ApiSession( sId, wf );
         apiSessions.put( sId, session );
+        return sId;
+    }
+
+
+    public UUID registerJobSession( Workflow wf, JobTrigger trigger ) throws WorkflowRepoException {
+        UUID sId = UUID.randomUUID();
+        JobSession session = new JobSession( sId, wf, trigger, repo.getWorkflowDef( trigger.getWorkfowId() ) );
+        jobSessions.put( sId, session );
         return sId;
     }
 
