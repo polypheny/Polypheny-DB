@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -129,17 +130,21 @@ public class JobManager {
     }
 
 
-    public void trigger( UUID jobId, String message, @Nullable Map<String, JsonNode> variables ) throws Exception {
+    public void trigger(
+            UUID jobId, String message, @Nullable Map<String, JsonNode> variables,
+            @Nullable Consumer<Boolean> onExecutionFinished ) throws Exception {
         if ( !isEnabled( jobId ) ) {
             throw new WorkflowJobException( "Only active jobs can be triggered", HttpCode.CONFLICT );
         }
-        getSession( jobId ).triggerExecution( message, variables );
+        JobSession session = getSession( jobId );
+        session.triggerExecution( message, variables, onExecutionFinished );
+
     }
 
 
     public void manuallyTrigger( UUID jobId ) throws WorkflowJobException {
         try {
-            trigger( jobId, "Manually triggered", null );
+            trigger( jobId, "Manually triggered", null, null );
         } catch ( WorkflowJobException e ) {
             throw e;
         } catch ( Exception e ) {

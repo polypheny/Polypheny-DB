@@ -102,6 +102,7 @@ public class GlobalScheduler {
         } catch ( Exception e ) {
             workflow.resetFailedExecutionInit( sm );
             monitor.stop( false );
+            monitor.setReadyForNextExecution();
             throw e;
         }
         if ( submissions.isEmpty() ) {
@@ -223,6 +224,7 @@ public class GlobalScheduler {
 
                     if ( scheduler.isFinished() ) {
                         schedulers.remove( result.getSessionId() );
+                        scheduler.getExecutionMonitor().setReadyForNextExecution();
                     }
                 } catch ( InterruptedException e ) {
                     break; // interrupted by shutdownNow

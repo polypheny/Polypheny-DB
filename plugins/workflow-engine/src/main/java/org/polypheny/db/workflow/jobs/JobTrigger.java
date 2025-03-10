@@ -17,9 +17,13 @@
 package org.polypheny.db.workflow.jobs;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
@@ -37,15 +41,31 @@ public abstract class JobTrigger {
     final int version; // workflow version
     final boolean enableOnStartup;
     final String name;
+    final int maxRetries;
+    final boolean performance; // if true, all performance improvements are enforced
+    final Map<String, JsonNode> variables;
+
+    private int retries = 0;
+    private Map<String, JsonNode> lastVariables;
+    private static final int RETRY_DELAY_MILLIS = 5000;
+    private static final int RETRY_LIMIT = 10;
 
 
-    public JobTrigger( UUID jobId, TriggerType type, UUID workfowId, int version, boolean enableOnStartup, String name ) {
+    public JobTrigger(
+            UUID jobId, TriggerType type, UUID workfowId, int version, boolean enableOnStartup, String name,
+            int maxRetries, boolean performance, Map<String, JsonNode> variables ) {
         this.jobId = jobId;
         this.type = type;
         this.workfowId = workfowId;
         this.version = version;
         this.enableOnStartup = enableOnStartup;
         this.name = name;
+        this.maxRetries = Math.max( maxRetries, 0 );
+        this.performance = performance;
+        this.variables = variables;
+        if ( maxRetries > RETRY_LIMIT ) {
+            throw new IllegalArgumentException( "More than " + RETRY_LIMIT + " retries are not permitted" );
+        }
     }
 
 
@@ -53,13 +73,48 @@ public abstract class JobTrigger {
 
     public abstract void onDisable();
 
+
+    public void onExecutionFinished( boolean isSuccess ) {
+        if ( maxRetries > 0 ) {
+            if ( isSuccess ) {
+                retries = 0;
+                lastVariables = null;
+            } else if ( retries < maxRetries ) {
+                retries++;
+                try {
+                    Thread.sleep( RETRY_DELAY_MILLIS );
+                } catch ( InterruptedException e ) {
+                    throw new RuntimeException( e );
+                }
+                try {
+                    Map<String, JsonNode> vars = new HashMap<>( lastVariables );
+                    vars.put( "job_retry", IntNode.valueOf( retries ) );
+                    jobManager.trigger( jobId, "Retry " + retries, vars, this::onExecutionFinished );
+                } catch ( Exception e ) {
+                    log.warn( "Unable to trigger job " + jobId, e );
+                }
+            } else {
+                retries = 0;
+                lastVariables = null;
+                log.warn( "Maximum retries reached without success." );
+            }
+        }
+    }
+
+
     public abstract JobModel toModel();
 
 
-    boolean trigger( String message, @Nullable Map<String, JsonNode> variables ) {
-        // call jobmanager
+    boolean trigger( String message ) {
+        if ( retries > 0 ) {
+            log.warn( "Execution skipped as a retry is in progress for job " + jobId );
+            return false;
+        }
+        Map<String, JsonNode> vars = new HashMap<>( variables == null ? Map.of() : variables );
+        vars.put( "job_trigger_time", TextNode.valueOf( DateTimeFormatter.ISO_INSTANT.format( Instant.now() ) ) );
         try {
-            jobManager.trigger( jobId, message, variables );
+            jobManager.trigger( jobId, message, vars, this::onExecutionFinished );
+            this.lastVariables = vars;
         } catch ( Exception e ) {
             log.warn( "Unable to trigger job " + jobId, e );
             return false;

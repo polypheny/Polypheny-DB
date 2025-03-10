@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -63,6 +64,8 @@ public class ExecutionMonitor {
     private final Consumer<WsResponse> callback; // used to send updates to clients
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private volatile StateUpdateResponse scheduledUpdate; // Reduce number of state updates we send to the clients
+    private final Set<Consumer<Boolean>> onStop = ConcurrentHashMap.newKeySet();
+    private volatile boolean isReadyForNextExecution = false;
 
 
     public ExecutionMonitor( Workflow workflow, @Nullable UUID targetActivity, @Nullable Consumer<WsResponse> callback ) {
@@ -144,6 +147,30 @@ public class ExecutionMonitor {
         workflowDuration.stop();
         forwardStates();
         scheduler.shutdown();
+    }
+
+
+    public void setReadyForNextExecution() {
+        if ( !workflowDuration.isStopped() ) {
+            throw new IllegalStateException( "The execution monitor has not been stopped yet" );
+        }
+        for ( Consumer<Boolean> callback : onStop ) {
+            ForkJoinPool.commonPool().execute( () -> callback.accept( isOverallSuccess ) );
+        }
+        isReadyForNextExecution = true;
+    }
+
+
+    /**
+     * Register a consumer that gets called asynchronously as soon as the workflow scheduler is terminated and the workflow can be executed again.
+     * (This is always some time after the execution was stopped).
+     */
+    public void onReadyForNextExecution( Consumer<Boolean> callback ) {
+        if ( !isReadyForNextExecution ) {
+            this.onStop.add( callback );
+        } else {
+            ForkJoinPool.commonPool().execute( () -> callback.accept( isOverallSuccess ) );
+        }
     }
 
 

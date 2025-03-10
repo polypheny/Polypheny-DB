@@ -26,7 +26,8 @@ public class ScheduledJob extends JobTrigger {
 
 
     public ScheduledJob( JobModel model ) throws WorkflowJobException {
-        super( model.getJobId(), TriggerType.SCHEDULED, model.getWorkflowId(), model.getVersion(), model.isEnableOnStartup(), model.getName() );
+        super( model.getJobId(), TriggerType.SCHEDULED, model.getWorkflowId(), model.getVersion(),
+                model.isEnableOnStartup(), model.getName(), model.getMaxRetries(), model.isPerformance(), model.getVariables() );
         if ( model.getType() != TriggerType.SCHEDULED ) {
             throw new IllegalArgumentException( "JobModel must be of type SCHEDULED" );
         }
@@ -37,7 +38,7 @@ public class ScheduledJob extends JobTrigger {
 
     @Override
     public void onEnable() {
-        scheduler.addJob( jobId, schedule, () -> trigger( "Scheduled execution", null ) );
+        scheduler.addJob( jobId, schedule, () -> trigger( "Scheduled execution" ) );
     }
 
 
@@ -49,7 +50,7 @@ public class ScheduledJob extends JobTrigger {
 
     @Override
     public JobModel toModel() {
-        return new JobModel( jobId, type, workfowId, version, enableOnStartup, name, schedule );
+        return new JobModel( jobId, type, workfowId, version, enableOnStartup, name, maxRetries, performance, variables, schedule );
     }
 
 }

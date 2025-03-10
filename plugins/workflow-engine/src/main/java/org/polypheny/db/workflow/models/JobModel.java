@@ -17,6 +17,8 @@
 package org.polypheny.db.workflow.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Value;
@@ -32,7 +34,9 @@ public class JobModel {
     int version;
     boolean enableOnStartup;
     String name;
-
+    int maxRetries;
+    boolean performance;
+    Map<String, JsonNode> variables;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     UUID sessionId; // null if job is not enabled
@@ -42,13 +46,16 @@ public class JobModel {
     String schedule;
 
 
-    public JobModel( UUID jobId, TriggerType type, UUID workflowId, int version, boolean enableOnStartup, String name, String schedule ) {
-        this( jobId, type, workflowId, version, enableOnStartup, name, null, schedule );
+    public JobModel(
+            UUID jobId, TriggerType type, UUID workflowId, int version, boolean enableOnStartup,
+            String name, int maxRetries, boolean performance, Map<String, JsonNode> variables, String schedule ) {
+        this( jobId, type, workflowId, version, enableOnStartup, name, maxRetries, performance, variables,
+                null, schedule );
     }
 
 
     public JobModel withSessionId( UUID sessionId ) {
-        return new JobModel( jobId, type, workflowId, version, enableOnStartup, name, sessionId, schedule );
+        return new JobModel( jobId, type, workflowId, version, enableOnStartup, name, maxRetries, performance, variables, sessionId, schedule );
     }
 
 }

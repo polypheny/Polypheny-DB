@@ -30,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -74,6 +75,7 @@ public class WorkflowScheduler {
     private final int maxWorkers;
     private final AttributedDirectedGraph<UUID, ExecutionEdge> execDag;
     private final WorkflowOptimizer optimizer;
+    @Getter
     private final ExecutionMonitor executionMonitor;
     private CountDownLatch finishLatch;
 

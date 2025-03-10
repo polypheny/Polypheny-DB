@@ -65,4 +65,17 @@ public class WorkflowConfigModel {
         }
     }
 
+
+    public WorkflowConfigModel withOptimizationsEnabled() {
+        return new WorkflowConfigModel(
+                preferredStores,
+                true, true,
+                timeoutSeconds,
+                true,
+                maxWorkers,
+                pipelineQueueCapacity,
+                logCapacity
+        );
+    }
+
 }

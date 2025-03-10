@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -38,7 +39,9 @@ import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.jobs.JobManager.WorkflowJobException;
 import org.polypheny.db.workflow.jobs.JobTrigger;
 import org.polypheny.db.workflow.models.JobExecutionModel;
+import org.polypheny.db.workflow.models.JobExecutionModel.JobResult;
 import org.polypheny.db.workflow.models.SessionModel;
+import org.polypheny.db.workflow.models.WorkflowConfigModel;
 import org.polypheny.db.workflow.models.WorkflowDefModel;
 import org.polypheny.db.workflow.models.requests.WsRequest.GetCheckpointRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
@@ -53,14 +56,18 @@ public class JobSession extends AbstractSession {
     private final JobTrigger trigger;
     private final WorkflowDefModel workflowDef;
     private final List<JobExecutionModel> executionHistory = new ArrayList<>();
-    private String currentMessage;
-    private Map<String, JsonNode> currentVariables;
+    private final Map<String, JsonNode> initialVariables;
 
 
     public JobSession( UUID sessionId, Workflow wf, JobTrigger trigger, WorkflowDefModel workflowDef ) {
         super( JOB_SESSION, wf, sessionId, trigger.getWorkfowId(), trigger.getVersion(), null );
         this.trigger = trigger;
         this.workflowDef = workflowDef;
+        if ( trigger.isPerformance() ) {
+            WorkflowConfigModel config = wf.getConfig().withOptimizationsEnabled();
+            wf.setConfig( config );
+        }
+        this.initialVariables = workflow.getVariables();
         this.trigger.onEnable();
     }
 
@@ -85,24 +92,36 @@ public class JobSession extends AbstractSession {
     }
 
 
-    public synchronized void triggerExecution( String message, @Nullable Map<String, JsonNode> variables ) throws Exception {
+    public synchronized void triggerExecution( String message, @Nullable Map<String, JsonNode> variables, @Nullable Consumer<Boolean> onExecutionFinished ) throws Exception {
         Objects.requireNonNull( message );
+        updateLastInteraction();
         if ( workflow.getState() != WorkflowState.IDLE ) {
+            executionHistory.add( new JobExecutionModel( message, "previous execution did not yet finish" ) );
             throw new WorkflowJobException( "Workflow is currently not idle: " + workflow.getState(), HttpCode.CONFLICT );
         }
         reset( null );
         if ( variables != null ) {
-            Map<String, JsonNode> workflowVars = new HashMap<>( workflow.getVariables() );
+            Map<String, JsonNode> workflowVars = new HashMap<>( initialVariables );
             workflowVars.putAll( variables );
             workflow.updateVariables( workflowVars );
         }
-        startExecution( null );
-        currentMessage = message;
-        currentVariables = variables;
+        try {
+            startExecution( null );
+            executionMonitor.onReadyForNextExecution( isSuccess -> {
+                updateHistory( message, variables );
+                if ( onExecutionFinished != null ) {
+                    onExecutionFinished.accept( isSuccess );
+                }
+            } );
+        } catch ( Exception e ) {
+            executionHistory.add( new JobExecutionModel( message, e.getMessage() ) );
+            throw e;
+        }
     }
 
 
     public void interrupt() throws WorkflowJobException {
+        updateLastInteraction();
         if ( workflow.getState() != WorkflowState.EXECUTING ) {
             throw new WorkflowJobException( "Workflow is currently not being executed: " + workflow.getState(), HttpCode.CONFLICT );
         }
@@ -127,21 +146,17 @@ public class JobSession extends AbstractSession {
     }
 
 
-    private void updateHistory() {
-        if ( currentMessage != null && workflow.getState() == WorkflowState.IDLE ) {
-            executionHistory.add( new JobExecutionModel( currentMessage, currentVariables, executionMonitor.toModel() ) );
-            if ( executionHistory.size() > MAX_HISTORY_SIZE ) {
-                executionHistory.remove( 0 );
-            }
-            currentMessage = null;
-            currentVariables = null;
+    private void updateHistory( String message, @Nullable Map<String, JsonNode> variables ) {
+        JobResult result = executionMonitor.isOverallSuccess() ? JobResult.SUCCESS : JobResult.FAILED;
+        executionHistory.add( new JobExecutionModel( result, message, variables, executionMonitor.toModel() ) );
+        while ( executionHistory.size() > MAX_HISTORY_SIZE ) {
+            executionHistory.remove( 0 );
         }
     }
 
 
     @Override
     public SessionModel toModel() {
-        updateHistory();
         return new SessionModel( getType(), sessionId, getSubscriberCount(),
                 lastInteraction.toString(), workflow.getActivityCount(), workflow.getState(),
                 trigger.getWorkfowId(), trigger.getVersion(), workflowDef,

@@ -17,6 +17,8 @@
 package org.polypheny.db.workflow.models;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import lombok.Value;
 
@@ -26,18 +28,33 @@ public class JobExecutionModel {
     String message;
     Map<String, JsonNode> variables;
 
-    // for convencience, some fields of the monitor are included as top level fields
-    boolean success;
+    JobResult result;
     String startTime; // ISO 8601:  "2025-01-17T14:30:00Z"
     ExecutionMonitorModel statistics;
 
 
-    public JobExecutionModel( String message, Map<String, JsonNode> variables, ExecutionMonitorModel statistics ) {
+    public JobExecutionModel( JobResult result, String message, Map<String, JsonNode> variables, ExecutionMonitorModel statistics ) {
         this.message = message;
         this.variables = variables;
-        this.success = statistics.getIsSuccess();
+        this.result = result;
         this.startTime = statistics.getStartTime();
         this.statistics = statistics;
+    }
+
+
+    public JobExecutionModel( String originalMessage, String skipReason ) {
+        this.message = originalMessage + " (" + skipReason + ")";
+        this.variables = null;
+        this.result = JobResult.SKIPPED;
+        this.startTime = DateTimeFormatter.ISO_INSTANT.format( Instant.now() );
+        this.statistics = null;
+    }
+
+
+    public enum JobResult {
+        SUCCESS,
+        FAILED, // executed, but not successfully
+        SKIPPED // execution could not be started
     }
 
 }
