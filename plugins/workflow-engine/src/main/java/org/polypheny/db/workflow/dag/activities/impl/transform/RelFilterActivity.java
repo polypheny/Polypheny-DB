@@ -43,7 +43,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.RelReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
-@ActivityDefinition(type = "relFilter", displayName = "Filter Rows", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL, ActivityCategory.CLEANING, ActivityCategory.ESSENTIALS },
+@ActivityDefinition(type = "relFilter", displayName = "Route / Validate Rows", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL, ActivityCategory.CLEANING, ActivityCategory.ESSENTIALS },
         inPorts = { @InPort(type = PortType.REL, description = "The input table.") },
         outPorts = {
                 @OutPort(type = PortType.REL, description = "A table containing all matching rows from the input table."),

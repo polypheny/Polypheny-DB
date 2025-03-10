@@ -18,24 +18,24 @@ package org.polypheny.db.workflow.dag.activities.impl.transform;
 
 import java.util.List;
 import java.util.function.Predicate;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.ActivityUtils;
+import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.InPort;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
-import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.FieldSelectSetting;
 import org.polypheny.db.workflow.dag.annotations.FilterSetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
-import org.polypheny.db.workflow.dag.settings.EnumSettingDef.EnumStyle;
 import org.polypheny.db.workflow.dag.settings.FieldSelectValue;
 import org.polypheny.db.workflow.dag.settings.FilterValue;
 import org.polypheny.db.workflow.dag.settings.GroupDef;
@@ -44,28 +44,17 @@ import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.dag.settings.StringSettingDef.AutoCompleteType;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
+import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
+import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.reader.DocReader;
-import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 
-@ActivityDefinition(type = "docFilter", displayName = "Route / Validate Documents", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT, ActivityCategory.CLEANING, ActivityCategory.ESSENTIALS },
+@ActivityDefinition(type = "docEfficientFilter", displayName = "Filter Documents", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT, ActivityCategory.CLEANING, ActivityCategory.ESSENTIALS },
         inPorts = { @InPort(type = PortType.DOC, description = "The input collection.") },
-        outPorts = {
-                @OutPort(type = PortType.DOC, description = "A collection containing all matching documents from the input collection."),
-                @OutPort(type = PortType.DOC, description = "A collection containing all documents that did not meet the filter criteria.")
-        },
-        shortDescription = "Horizontally partitions the documents of a collection based on a list of filter conditions."
+        outPorts = { @OutPort(type = PortType.DOC, description = "A collection containing all matching documents from the input collection.") },
+        shortDescription = "Filters the documents of a collection based on a list of filter conditions."
 )
 
-@EnumSetting(
-        key = "rejectedHandler", pos = 0, style = EnumStyle.RADIO_BUTTON, group = GroupDef.ADVANCED_GROUP,
-        displayName = "Handling of Rejected Documents",
-        options = { "store", "ignore", "fail" },
-        defaultValue = "store",
-        displayOptions = { "Keep", "Ignore", "Fail Execution" },
-        displayDescriptions = { "Send the rejected documents to the second output.", "Skip rejected documents for better performance.", "A documents that does not match the filter results in the activity to fail." },
-        shortDescription = "Defines the behavior for documents that do not match the filter criteria."
-)
 @StringSetting(key = "pointer", displayName = "Relative Path", pos = 1, group = GroupDef.ADVANCED_GROUP, autoCompleteType = AutoCompleteType.FIELD_NAMES,
         shortDescription = "Optionally specify a (sub)field such as 'owner.address'. All conditions will act relative to this field. If a document does not contain that field, the filter matches by default.")
 @BoolSetting(key = "all", displayName = "Match Subfields", pos = 2,
@@ -77,28 +66,36 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
         modes = { SelectMode.EXACT, SelectMode.REGEX },
         shortDescription = "Define a list of conditions on fields. In 'Exact' mode, subfields can be specified. If a (sub)field does not exist, the condition evaluates to true.")
 @BoolSetting(key = "negate", displayName = "Negate Filter", pos = 5, defaultValue = false, group = GroupDef.ADVANCED_GROUP,
-        shortDescription = "If enabled, the filter is negated, swapping the roles of the two outputs.")
+        shortDescription = "If enabled, the filter is negated.")
 
 @SuppressWarnings("unused")
-public class DocFilterActivity implements Activity {
+public class DocEfficientFilterActivity implements Activity, Pipeable {
+    // Fusable is much harder to implement, but is theoretically possible
 
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
         if ( inTypes.get( 0 ) instanceof DocType docType ) {
-            return List.of( docType, docType ); // we assume that no top level fields get lost during filtering
+            return docType.asOutTypes(); // we assume that no top level fields get lost during filtering
         }
-        return List.of( DocType.of(), DocType.of() );
+        return DocType.of().asOutTypes();
     }
 
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        DocReader reader = (DocReader) inputs.get( 0 );
-        DocWriter matchWriter = ctx.createDocWriter( 0 );
-        DocWriter rejectWriter = ctx.createDocWriter( 1 );
+        Pipeable.super.execute( inputs, settings, ctx );
+    }
 
-        String rejectedHandler = settings.getString( "rejectedHandler" );
+
+    @Override
+    public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
+        return getDocType();
+    }
+
+
+    @Override
+    public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         FilterValue filter = settings.get( "filter", FilterValue.class );
         String pointer = settings.getString( "pointer" );
         Predicate<PolyDocument> predicate = filter.getDocPredicate( settings.getBool( "all" ), settings.getString( "pointer" ).trim() );
@@ -117,24 +114,14 @@ public class DocFilterActivity implements Activity {
             predicate = predicate.negate();
         }
 
-        long inCount = reader.getDocCount();
-        long countDelta = Math.max( inCount / 100, 1 );
-        long count = 0;
-        for ( PolyDocument doc : reader.getDocIterable() ) {
+        for ( List<PolyValue> row : inputs.get( 0 ) ) {
+            PolyDocument doc = row.get( 0 ).asDocument();
             if ( predicate.test( doc ) ) {
-                matchWriter.write( doc );
-            } else {
-                switch ( rejectedHandler ) {
-                    case "store" -> rejectWriter.write( doc );
-                    case "fail" -> throw new GenericRuntimeException( "Detected document that does not match the filter criteria: " + doc );
+                if ( !output.put( doc ) ) {
+                    finish( inputs );
+                    return;
                 }
             }
-
-            count++;
-            if ( count % countDelta == 0 ) {
-                ctx.updateProgress( (double) count / inCount );
-            }
-            ctx.checkInterrupted();
         }
     }
 

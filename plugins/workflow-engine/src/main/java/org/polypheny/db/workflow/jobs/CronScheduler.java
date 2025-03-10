@@ -58,7 +58,6 @@ public class CronScheduler {
         Cron cron = parser.parse( schedule );
         jobMap.put( jobId, Pair.of( cron, task ) );
         if ( scheduler == null ) {
-            log.warn( "Starting CronScheduler." );
             scheduler = Executors.newSingleThreadScheduledExecutor();
             scheduler.scheduleAtFixedRate( this::checkAndRunJobs, 1, 1, TimeUnit.MINUTES );
         }
@@ -70,21 +69,18 @@ public class CronScheduler {
         if ( jobMap.isEmpty() && scheduler != null ) {
             scheduler.shutdown();
             scheduler = null;
-            log.warn( "CronScheduler has been shut down." );
         }
     }
 
 
     private void checkAndRunJobs() {
         ZonedDateTime now = ZonedDateTime.now(); // Get current timestamp
-        log.warn( "Checking for jobs at {} with jobs {}", now, jobMap.keySet() );
         for ( Map.Entry<UUID, Pair<Cron, Runnable>> entry : jobMap.entrySet() ) {
             ExecutionTime executionTime = ExecutionTime.forCron( entry.getValue().left );
             executionTime.lastExecution( now ).ifPresent( lastRun -> {
                 if ( lastRun.plusMinutes( 1 ).isAfter( now ) ) {
                     try {
                         entry.getValue().right.run(); // Run the job
-                        log.warn( "Job {} has completed", entry.getKey() );
                     } catch ( Exception e ) {
                         log.error( "Error while running scheduled job for jobId {}", entry.getKey(), e );
                     }

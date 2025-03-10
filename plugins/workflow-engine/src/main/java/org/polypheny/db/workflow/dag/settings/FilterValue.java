@@ -34,6 +34,13 @@ import java.util.regex.Pattern;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
@@ -264,6 +271,50 @@ public class FilterValue implements SettingValue {
     }
 
 
+    @JsonIgnore
+    public RexNode getRexNode( AlgDataType type, RexBuilder builder ) {
+        List<RexNode> conditionNodes = new ArrayList<>();
+
+        for ( int i = 0; i < type.getFieldCount(); i++ ) {
+            AlgDataTypeField field = type.getFields().get( i );
+            String name = field.getName();
+            int idx = i; // make effectively final for stream
+            conditionNodes.addAll( switch ( targetMode ) {
+                case EXACT -> conditions.stream().filter( c -> c.appliesTo( name, false ) )
+                        .map( c -> c.getRexNode( builder, field.getType(), idx ) ).toList();
+                case REGEX -> conditions.stream().filter( c -> c.appliesTo( name, true ) )
+                        .map( c -> c.getRexNode( builder, field.getType(), idx ) ).toList();
+                case INDEX -> conditions.stream().filter( c -> c.appliesTo( idx ) )
+                        .map( c -> c.getRexNode( builder, field.getType(), idx ) ).toList();
+            } );
+        }
+        if ( conditionNodes.isEmpty() ) {
+            return null;
+        }
+        if ( conditionNodes.size() == 1 ) {
+            return conditionNodes.get( 0 );
+        }
+        return builder.makeCall( OperatorRegistry.get( combineWithOr ? OperatorName.OR : OperatorName.AND ), conditionNodes );
+    }
+
+
+    public boolean canBeFused() {
+        return conditions.stream().allMatch( c -> c.getOperator().canFuse );
+    }
+
+
+    public List<String> getMissingRequiredFields( List<String> names ) {
+        return switch ( targetMode ) {
+            case EXACT -> conditions.stream().map( Condition::getField )
+                    .filter( f -> !names.contains( f ) ).toList();
+            case REGEX -> List.of(); // regex cannot have missing fields
+            case INDEX -> conditions.stream()
+                    .filter( c -> c.getFieldIndex() >= names.size() )
+                    .map( Condition::getField ).toList();
+        };
+    }
+
+
     @Value
     public static class Condition {
 
@@ -371,6 +422,25 @@ public class FilterValue implements SettingValue {
         }
 
 
+        @JsonIgnore
+        public RexNode getRexNode( RexBuilder builder, AlgDataType type, int idx ) {
+            RexIndexRef indexRef = builder.makeInputRef( type, idx );
+            return switch ( operator ) {
+                case EQUALS -> isEqualAsRex( builder, indexRef, type );
+                case NOT_EQUALS -> not( builder, isEqualAsRex( builder, indexRef, type ) );
+                case GREATER_THAN -> builder.makeCall( OperatorRegistry.get( OperatorName.GREATER_THAN ), indexRef, valueAsLiteral( type ) );
+                case LESS_THAN -> builder.makeCall( OperatorRegistry.get( OperatorName.LESS_THAN ), indexRef, valueAsLiteral( type ) );
+                case GREATER_THAN_EQUALS -> builder.makeCall( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), indexRef, valueAsLiteral( type ) );
+                case LESS_THAN_EQUALS -> builder.makeCall( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), indexRef, valueAsLiteral( type ) );
+                case NULL -> builder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), indexRef );
+                case NON_NULL -> builder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), indexRef );
+                case INCLUDED -> includesAsRex( builder, indexRef, type );
+                case NOT_INCLUDED -> not( builder, includesAsRex( builder, indexRef, type ) );
+                default -> throw new IllegalStateException( "Operator " + operator + " cannot be fused." );
+            };
+        }
+
+
         private boolean isEqual( PolyValue v ) {
             if ( v.isNumber() ) {
                 return v.equals( valueAsNumber() );
@@ -416,6 +486,48 @@ public class FilterValue implements SettingValue {
                 return v.asMap().containsKey( s );
             }
             return false;
+        }
+
+
+        private RexNode valueAsLiteral( AlgDataType outType ) {
+            return valueAsLiteral( value, outType );
+        }
+
+
+        private RexNode valueAsLiteral( String value, AlgDataType outType ) {
+            PolyValue polyValue = ActivityUtils.stringToPolyValue( value, outType.getPolyType() );
+            return ActivityUtils.getRexLiteral( polyValue, outType );
+        }
+
+
+        private RexNode isEqualAsRex( RexBuilder builder, RexIndexRef indexRef, AlgDataType type ) {
+            if ( ignoreCase ) {
+                RexNode left = builder.makeCall( OperatorRegistry.get( OperatorName.UPPER ), indexRef );
+                RexNode right = builder.makeCall( OperatorRegistry.get( OperatorName.UPPER ), valueAsLiteral( type ) );
+                return builder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), left, right );
+            }
+            return builder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), indexRef, valueAsLiteral( type ) );
+        }
+
+
+        private RexNode includesAsRex( RexBuilder builder, RexIndexRef indexRef, AlgDataType type ) {
+            List<RexNode> nodes = values.stream().map( v -> {
+                if ( ignoreCase ) {
+                    RexNode left = builder.makeCall( OperatorRegistry.get( OperatorName.UPPER ), indexRef );
+                    RexNode right = builder.makeCall( OperatorRegistry.get( OperatorName.UPPER ), valueAsLiteral( v, type ) );
+                    return builder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), left, right );
+                }
+                return builder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), indexRef, valueAsLiteral( v, type ) );
+            } ).toList();
+            if ( nodes.size() == 1 ) {
+                return nodes.get( 0 );
+            }
+            return builder.makeCall( OperatorRegistry.get( OperatorName.OR ), nodes );
+        }
+
+
+        private static RexNode not( RexBuilder builder, RexNode node ) {
+            return builder.makeCall( OperatorRegistry.get( OperatorName.NOT ), node );
         }
 
 
@@ -497,8 +609,8 @@ public class FilterValue implements SettingValue {
         LESS_THAN,
         GREATER_THAN_EQUALS,
         LESS_THAN_EQUALS,
-        REGEX,
-        REGEX_NOT,
+        REGEX( true, false, false ),
+        REGEX_NOT( true, false, false ),
         NULL( false ),
         NON_NULL( false ),
         /**
@@ -509,14 +621,16 @@ public class FilterValue implements SettingValue {
         /**
          * Whether the value appears as an entry in an array or value in an object or is equal to an atomic value
          */
-        CONTAINS,
-        NOT_CONTAINS,
+        CONTAINS( true, false, false ),
+        NOT_CONTAINS( true, false, false ),
         HAS_KEY, // for array: corresponds to index, for Map: the actual key
-        IS_ARRAY( false ),
-        IS_OBJECT( false );
+        IS_ARRAY( false, true, false ),
+        IS_OBJECT( false, true, false ),
+        ;
 
         public final boolean hasValue; // whether value must not be null
         public final boolean allowBlankValue; // whether the value can be a blank string
+        public final boolean canFuse;
 
 
         Operator() {
@@ -530,8 +644,14 @@ public class FilterValue implements SettingValue {
 
 
         Operator( boolean hasValue, boolean allowBlank ) {
+            this( hasValue, allowBlank, true );
+        }
+
+
+        Operator( boolean hasValue, boolean allowBlank, boolean canFuse ) {
             this.hasValue = hasValue;
             this.allowBlankValue = allowBlank;
+            this.canFuse = canFuse;
         }
     }
 
