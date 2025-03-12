@@ -131,19 +131,33 @@ public class RelLookupActivity implements Activity {
             throw new InvalidInputException( "Only a table or collection can be used as lookup input", 1 );
         }
 
-        if ( inTypes.stream().anyMatch( t -> !t.isPresent() ) || !settings.keysPresent( "leftFields", "keepKeys", "rightFields", "valueFields", "matchType" ) ) {
-            return UnknownType.ofRel().asOutTypes();
-        }
-        List<String> leftFields = settings.getOrThrow( "leftFields", FieldSelectValue.class ).getInclude();
-        List<String> rightFields = settings.getOrThrow( "rightFields", FieldSelectValue.class ).getInclude();
-        List<String> values = settings.getOrThrow( "valueFields", FieldSelectValue.class ).getInclude();
-        String prefix = Objects.requireNonNullElse( settings.getNullableString( "target" ), "" );
-        AlgDataType inType = left.getNullableType();
-        AlgDataType relType = right.getDataModel() == DataModel.RELATIONAL ? right.getNullableType() : null;
+        if ( settings.keysPresent( "leftFields", "keepKeys", "rightFields", "valueFields", "matchType" ) ) {
+            List<String> leftFields = settings.getOrThrow( "leftFields", FieldSelectValue.class ).getInclude();
+            List<String> rightFields = settings.getOrThrow( "rightFields", FieldSelectValue.class ).getInclude();
+            List<String> values = settings.getOrThrow( "valueFields", FieldSelectValue.class ).getInclude();
 
-        validate( leftFields, rightFields, values, inType, relType, settings.getString( "matchType" ) );
-        AlgDataType outType = getType( leftFields, values, inType, relType, prefix, settings.getBool( "keepKeys" ) );
-        return RelType.of( outType ).asOutTypes();
+            if ( leftFields.size() != rightFields.size() ) {
+                throw new InvalidSettingException( "The same number of key fields must be selected", "rightFields" );
+            } else if ( left.isEmpty() ) {
+                throw new InvalidSettingException( "At least one key column must be selected.", "leftFields" );
+            } else if ( values.isEmpty() ) {
+                throw new InvalidSettingException( "At least one value field must be selected.", "valueFields" );
+            } else if ( !settings.getString( "matchType" ).equals( "EXACT" ) && leftFields.size() > 1 ) {
+                throw new InvalidSettingException( "The match type '" + settings.getString( "matchType" ) + "' is not supported with multiple key columns", "leftFields" );
+            }
+
+            if ( inTypes.stream().allMatch( TypePreview::isPresent ) ) {
+                String prefix = Objects.requireNonNullElse( settings.getNullableString( "target" ), "" );
+                AlgDataType inType = left.getNullableType();
+                AlgDataType relType = right.getDataModel() == DataModel.RELATIONAL ? right.getNullableType() : null;
+
+                validate( leftFields, rightFields, values, inType, relType );
+                AlgDataType outType = getType( leftFields, values, inType, relType, prefix, settings.getBool( "keepKeys" ) );
+                return RelType.of( outType ).asOutTypes();
+            }
+
+        }
+        return UnknownType.ofRel().asOutTypes();
     }
 
 
@@ -306,7 +320,7 @@ public class RelLookupActivity implements Activity {
     }
 
 
-    private void validate( List<String> left, List<String> right, List<String> values, AlgDataType leftType, AlgDataType rightType, String matchType ) throws ActivityException {
+    private void validate( List<String> left, List<String> right, List<String> values, AlgDataType leftType, AlgDataType rightType ) throws ActivityException {
         Optional<String> invalid = left.stream().filter( f -> !leftType.getFieldNames().contains( f ) ).findAny();
         if ( invalid.isPresent() ) {
             throw new InvalidSettingException( "Key column does not exist in input table: " + invalid.get(), "leftFields" );
@@ -322,16 +336,6 @@ public class RelLookupActivity implements Activity {
             if ( invalid.isPresent() ) {
                 throw new InvalidSettingException( "Value column does not exist in lookup table: " + invalid.get(), "valueFields" );
             }
-        }
-
-        if ( left.size() != right.size() ) {
-            throw new InvalidSettingException( "The same number of key fields must be selected", "rightFields" );
-        } else if ( left.isEmpty() ) {
-            throw new InvalidSettingException( "At least one key column must be selected.", "leftFields" );
-        } else if ( values.isEmpty() ) {
-            throw new InvalidSettingException( "At least one value field must be selected.", "valueFields" );
-        } else if ( !matchType.equals( "EXACT" ) && left.size() > 1 ) {
-            throw new InvalidSettingException( "The match type '" + matchType + "' is not supported with multiple key columns", "leftFields" );
         }
     }
 

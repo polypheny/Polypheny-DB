@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -89,6 +90,19 @@ public class GraphMapValue implements SettingValue {
             labels.addAll( mapping.getKnownEdgeLabels() );
         }
         return labels;
+    }
+
+
+    @JsonIgnore
+    public Set<String> getRemainingProps( Collection<String> fieldNames, int i ) {
+        Set<String> props = new HashSet<>( fieldNames );
+        for ( InputMapping mapping : mappings ) {
+            if ( mapping.inputIdx == i ) {
+                props.removeAll( mapping.getDisappearingProps() );
+                return props;
+            }
+        }
+        return Set.of();
     }
 
 
@@ -290,6 +304,22 @@ public class GraphMapValue implements SettingValue {
                 }
             }
             return joinFields;
+        }
+
+
+        public Set<String> getDisappearingProps() {
+            Set<String> props = new HashSet<>();
+            if ( edgeOnly ) {
+                props.addAll( edge.getExcludedEdgeProps() );
+            } else {
+                if ( dynamicNodeLabels ) {
+                    props.add( nodeLabels.get( 0 ) );
+                }
+                for ( EdgeMapping edge : edges ) {
+                    props.add( edge.rightField );
+                }
+            }
+            return props;
         }
 
     }

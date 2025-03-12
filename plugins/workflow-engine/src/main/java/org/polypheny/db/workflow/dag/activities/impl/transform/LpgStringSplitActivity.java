@@ -55,6 +55,7 @@ import org.polypheny.db.workflow.dag.settings.FieldSelectValue;
 import org.polypheny.db.workflow.dag.settings.GroupDef;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
+import org.polypheny.db.workflow.dag.settings.StringSettingDef.AutoCompleteType;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
@@ -70,6 +71,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 )
 
 @StringSetting(key = "field", displayName = "Property to Split", pos = 0,
+        autoCompleteType = AutoCompleteType.FIELD_NAMES,
         nonBlank = true, maxLength = 1024,
         shortDescription = "The string property to split. If the property does not exist or is not a string, the activity fails.")
 @EnumSetting(key = "mode", displayName = "Splitting Mode", pos = 1,
@@ -92,7 +94,8 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         subPointer = "mode", subValues = { "\"pattern\"" }
 )
 
-@FieldSelectSetting(key = "labels", displayName = "Target Labels", simplified = true, targetInput = 0, pos = 0,
+@FieldSelectSetting(key = "labels", displayName = "Target Labels", simplified = true, pos = 0,
+        targetInput = 0, forLabels = true,
         group = GroupDef.ADVANCED_GROUP,
         shortDescription = "Specify the target nodes or edges by their label(s). If no label is specified, all become targets.")
 @BoolSetting(key = "keepField", displayName = "Keep Original Property", pos = 1,
@@ -107,7 +110,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         subPointer = "fail", subValues = { "false" }, defaultValue = false,
         shortDescription = "If true, ensures that the array always has the same length, equal to the maximum number of expected splits. Has no effect if 'limit' is set to 0."
 )
-@StringSetting(key = "target", displayName = "Output Field", pos = 4,
+@StringSetting(key = "target", displayName = "Output Property", pos = 4,
         maxLength = 128, group = GroupDef.ADVANCED_GROUP,
         shortDescription = "The output property for the splits array. If empty, the name is derived from the input property.")
 @BoolSetting(key = "matchAll", displayName = "Match Entire String", pos = 5,

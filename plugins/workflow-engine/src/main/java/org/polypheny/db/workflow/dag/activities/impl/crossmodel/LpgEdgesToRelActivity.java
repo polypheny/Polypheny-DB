@@ -83,7 +83,8 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 @DefaultGroup(subgroups = { @Subgroup(key = "manual", displayName = "Custom Mapping") })
 
-@FieldSelectSetting(key = "labels", displayName = "Target Edges", simplified = true, targetInput = 0, pos = 0, group = ADVANCED_GROUP,
+@FieldSelectSetting(key = "labels", displayName = "Target Edges", simplified = true, pos = 0, group = ADVANCED_GROUP,
+        targetInput = 0, forLabels = true,
         shortDescription = "Specify the edges to map by their label(s). If no label is specified, all edges are mapped to rows.")
 @EnumSetting(key = "mode", displayName = "Property Mapping", style = EnumStyle.RADIO_BUTTON, pos = 1,
         options = { "auto", "fixed", "manual" }, defaultValue = "auto",
@@ -99,7 +100,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
         shortDescription = "Whether to insert a '" + DIR_FIELD + "' field indicating the edge direction.")
 
 @CastSetting(key = "columns", displayName = "Properties to Columns", defaultType = PolyType.BIGINT, pos = 1, subGroup = "manual",
-        allowTarget = true, duplicateSource = true, allowJson = true, targetInput = -1,
+        allowTarget = true, duplicateSource = true, allowJson = true, targetInput = 0,
         subPointer = "mode", subValues = { "\"manual\"" },
         shortDescription = "Specify how edge properties are mapped to columns.")
 @EnumSetting(key = "handleMissing", displayName = "Missing Property Handling", options = { "null", "skip", "fail" }, defaultValue = "fail",

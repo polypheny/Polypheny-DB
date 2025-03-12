@@ -82,7 +82,7 @@ public class RelJoinActivity implements Activity, Fusable {
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
         TypePreview left = inTypes.get( 0 ), right = inTypes.get( 1 );
 
-        if ( left.isEmpty() || right.isEmpty() || !settings.keysPresent( "leftCols", "rightCols" ) ) {
+        if ( left.isEmpty() || right.isEmpty() || !settings.keysPresent( "leftCols", "rightCols", "keepCols" ) ) {
             return UnknownType.ofRel().asOutTypes();
         }
 
@@ -90,7 +90,8 @@ public class RelJoinActivity implements Activity, Fusable {
                 left.getNullableType(),
                 right.getNullableType(),
                 settings.get( "leftCols", FieldSelectValue.class ).orElseThrow().getInclude(),
-                settings.get( "rightCols", FieldSelectValue.class ).orElseThrow().getInclude()
+                settings.get( "rightCols", FieldSelectValue.class ).orElseThrow().getInclude(),
+                settings.getBool( "keepCols" )
         ) ).asOutTypes();
     }
 
@@ -146,7 +147,7 @@ public class RelJoinActivity implements Activity, Fusable {
     }
 
 
-    private AlgDataType getType( AlgDataType left, AlgDataType right, List<String> leftCols, List<String> rightCols ) throws ActivityException {
+    private AlgDataType getType( AlgDataType left, AlgDataType right, List<String> leftCols, List<String> rightCols, boolean keepCols ) throws ActivityException {
         if ( leftCols.size() != rightCols.size() ) {
             throw new InvalidSettingException( "The same number of columns must be selected", "rightCols" );
         } else if ( leftCols.isEmpty() ) {
@@ -161,6 +162,10 @@ public class RelJoinActivity implements Activity, Fusable {
         unknown = rightCols.stream().filter( c -> !rightLower.contains( c.toLowerCase( Locale.ROOT ) ) ).findAny();
         if ( unknown.isPresent() ) {
             throw new InvalidSettingException( "Unknown column '" + unknown.get() + "'", "rightCols" );
+        }
+        right = ActivityUtils.removeField( right, PK_COL );
+        if ( !keepCols ) {
+            right = ActivityUtils.removeFields( right, rightCols );
         }
         return ActivityUtils.concatTypes( left, right );
     }

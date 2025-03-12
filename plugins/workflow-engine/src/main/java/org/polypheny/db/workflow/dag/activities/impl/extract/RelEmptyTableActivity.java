@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.dag.activities.impl.transform;
+package org.polypheny.db.workflow.dag.activities.impl.extract;
 
 import java.util.List;
 import java.util.Optional;

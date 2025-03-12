@@ -248,8 +248,8 @@ class GlobalSchedulerTest {
 
 
     @Test
-    void combinedFuseAndPipeTest() throws Exception {
-        Pair<Workflow, List<UUID>> pair = WorkflowUtils.getCombinedFuseAndPipe();
+    void fuseOverwritesPipeTest() throws Exception {
+        Pair<Workflow, List<UUID>> pair = WorkflowUtils.fuseOverwritesPipe();
         List<UUID> ids = pair.right;
         scheduler.startExecution( pair.left, sm, null );
         scheduler.awaitResultProcessor( 5000 );
@@ -259,6 +259,19 @@ class GlobalSchedulerTest {
         System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 2 ), 0 ) );
         assertFalse( sm.hasCheckpoint( ids.get( 3 ), 0 ) );
         assertFalse( sm.hasCheckpoint( ids.get( 4 ), 0 ) );
+        assertFalse( sm.hasCheckpoint( ids.get( 5 ), 0 ) );
+        System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 6 ), 0 ) );
+    }
+
+
+    @Test
+    void pipeOverwritesFuseTest() throws Exception {
+        Pair<Workflow, List<UUID>> pair = WorkflowUtils.pipeOverwritesFuse();
+        List<UUID> ids = pair.right;
+        scheduler.startExecution( pair.left, sm, null );
+        scheduler.awaitResultProcessor( 5000 );
+
+        ids.subList( 0, 5 ).forEach( id -> assertFalse( sm.hasCheckpoint( id, 0 ) ) );
         System.out.println( StorageUtils.readCheckpoint( sm, ids.get( 5 ), 0 ) );
     }
 
@@ -539,7 +552,7 @@ class GlobalSchedulerTest {
         assertEquals( WorkflowState.IDLE, workflow.getState(), "Workflow did not finish its execution" );
         for ( UUID n : saved ) {
             assertEquals( ActivityState.SAVED, workflow.getActivity( n ).getState() );
-            System.out.println( StorageUtils.readCheckpoint( sm, n, 0 ) );
+            StorageUtils.readCheckpoint( sm, n, 0 );
         }
         checkFailed( workflow, failed );
         for ( UUID n : skipped ) {

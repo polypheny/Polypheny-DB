@@ -66,7 +66,8 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         @Subgroup(key = "nodes", displayName = "Incident Nodes")
 })
 
-@FieldSelectSetting(key = "labels", displayName = "Target Edges", simplified = true, targetInput = 0, pos = 0, group = ADVANCED_GROUP,
+@FieldSelectSetting(key = "labels", displayName = "Target Edges", simplified = true, pos = 0, group = ADVANCED_GROUP,
+        targetInput = 0, forLabels = true,
         shortDescription = "Specify the edges to map by their label(s). If no label is specified, all edges are mapped to documents.")
 @BoolSetting(key = "includeLabels", displayName = "Include Labels", defaultValue = true, pos = 1,
         shortDescription = "Whether to insert an array field '" + LABEL_FIELD + "' that contains the edge labels.")

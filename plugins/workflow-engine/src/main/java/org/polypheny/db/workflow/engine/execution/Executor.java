@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -51,9 +52,9 @@ public abstract class Executor implements Callable<Void> {
     final Workflow workflow;
     final ExecutionInfo info;
     boolean isInterrupted;
+    private final List<CheckpointReader> activeReaders = new ArrayList<>();
 
 
-    // TODO: add reference to monitor for monitoring the progress of activities
     protected Executor( StorageManager sm, Workflow workflow, ExecutionInfo info ) {
         this.sm = sm;
         this.workflow = workflow;
@@ -75,6 +76,14 @@ public abstract class Executor implements Callable<Void> {
     }
 
 
+    public void forceInterrupt() {
+        if ( !isInterrupted ) {
+            interrupt();
+        }
+        activeReaders.forEach( CheckpointReader::close );
+    }
+
+
     @Override
     public Void call() throws ExecutorException {
         if ( !isInterrupted ) {
@@ -90,6 +99,7 @@ public abstract class Executor implements Callable<Void> {
         for ( Edge edge : inEdges ) {
             if ( edge instanceof DataEdge dataEdge && dataEdge.getState() != EdgeState.INACTIVE ) {
                 CheckpointReader reader = sm.readCheckpoint( dataEdge.getFrom().getId(), dataEdge.getFromPort() );
+                activeReaders.add( reader );
                 PortType toPortType = target.getDef().getInPortType( dataEdge.getToPort() );
                 inputs[dataEdge.getToPort()] = reader;
                 if ( !toPortType.couldBeCompatibleWith( reader.getDataModel() ) ) {
@@ -107,12 +117,12 @@ public abstract class Executor implements Callable<Void> {
 
 
     CheckpointReader getReader( ActivityWrapper target, int toPort ) throws ExecutorException {
-        // TODO: multi-port
         DataEdge edge = workflow.getDataEdge( target.getId(), toPort );
         if ( edge == null || edge.getState() == EdgeState.INACTIVE ) {
             return null;
         }
         CheckpointReader reader = sm.readCheckpoint( edge.getFrom().getId(), edge.getFromPort() );
+        activeReaders.add( reader );
         PortType toPortType = target.getDef().getInPortType( toPort );
         if ( !toPortType.couldBeCompatibleWith( reader.getDataModel() ) ) {
             reader.close();

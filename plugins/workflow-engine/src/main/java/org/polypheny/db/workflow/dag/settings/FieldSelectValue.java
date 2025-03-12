@@ -18,7 +18,6 @@ package org.polypheny.db.workflow.dag.settings;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Value;
@@ -43,7 +42,7 @@ public class FieldSelectValue implements SettingValue {
 
     public List<String> getSelected( Collection<String> candidates ) {
         List<String> selected = new ArrayList<>();
-        Set<String> remaining = new HashSet<>( candidates );
+        List<String> remaining = new ArrayList<>( candidates );
 
         int insertIdx = -1;
         for ( int i = 0; i < include.size(); i++ ) {
@@ -62,7 +61,7 @@ public class FieldSelectValue implements SettingValue {
             }
             for ( String r : remaining ) {
                 if ( !exclude.contains( r ) ) {
-                    selected.add( insertIdx, r );
+                    selected.add( insertIdx++, r );
                 }
             }
         }

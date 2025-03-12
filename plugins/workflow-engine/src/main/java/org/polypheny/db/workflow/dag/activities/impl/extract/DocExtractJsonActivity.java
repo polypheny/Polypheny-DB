@@ -70,8 +70,8 @@ public class DocExtractJsonActivity implements Activity, Pipeable {
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
-        if (settings.keysPresent( "nameField" ) && settings.getBool( "nameField" )) {
-            return DocType.of(Set.of(nameField.value)).asOutTypes();
+        if ( settings.keysPresent( "nameField" ) && settings.getBool( "nameField" ) ) {
+            return DocType.of( Set.of( nameField.value ) ).asOutTypes();
         }
         return DocType.of().asOutTypes();
     }
@@ -80,6 +80,29 @@ public class DocExtractJsonActivity implements Activity, Pipeable {
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         Pipeable.super.execute( inputs, settings, ctx );
+    }
+
+
+    @Override
+    public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
+        if ( settings.keysPresent( "file" ) ) {
+            FileValue file = settings.getOrThrow( "file", FileValue.class );
+            try {
+                List<Source> sources = file.getSources( EXTENSIONS );
+                if ( sources.size() > 1 ) {
+                    return "Extract JSONs";
+                } else if ( sources.size() == 1 ) {
+                    String name = ActivityUtils.resourceNameFromSource( sources.get( 0 ) );
+                    if ( name.length() > 40 ) {
+                        name = name.substring( 0, 37 ) + "...";
+                    }
+                    return "Extract JSON: " + name;
+                }
+
+            } catch ( Exception ignored ) {
+            }
+        }
+        return null;
     }
 
 

@@ -33,6 +33,7 @@ public class FieldRenameSettingDef extends SettingDef {
     boolean allowRegex;
     boolean allowIndex;
     int targetInput;
+    boolean forLabels; // when renaming a graph, autocomplete needs to know if labels or props are renamed
 
 
     public FieldRenameSettingDef( FieldRenameSetting a ) {
@@ -42,6 +43,7 @@ public class FieldRenameSettingDef extends SettingDef {
         this.allowRegex = a.allowRegex();
         this.allowIndex = a.allowIndex();
         this.targetInput = a.targetInput();
+        this.forLabels = a.forLabels();
     }
 
 

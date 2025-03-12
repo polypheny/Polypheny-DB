@@ -31,6 +31,7 @@ public class FieldSelectSettingDef extends SettingDef {
     boolean reorder;
     boolean defaultAll;
     int targetInput;
+    boolean forLabels; // when selecting in a graph, autocomplete needs to know if labels or props are selected
 
 
     public FieldSelectSettingDef( FieldSelectSetting a ) {
@@ -40,6 +41,7 @@ public class FieldSelectSettingDef extends SettingDef {
         this.reorder = a.reorder();
         this.defaultAll = a.defaultAll();
         this.targetInput = a.targetInput();
+        this.forLabels = a.forLabels();
     }
 
 

@@ -595,8 +595,10 @@ public class StorageManagerImpl implements StorageManager {
         rollbackCommonTransaction( CommonType.EXTRACT );
         rollbackCommonTransaction( CommonType.LOAD );
         for ( Transaction t : localTransactions.values() ) {
-            assert !t.isActive() : "local transactions should get explicitly committed or aborted";
-            t.rollback( null );
+            if ( t.isActive() ) {
+                log.warn( "Local workflow transactions should get explicitly committed or aborted, but found active transaction {}", t.getXid() );
+                t.rollback( null );
+            }
         }
 
         dropAllCheckpoints();

@@ -56,12 +56,14 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
         outPorts = { @OutPort(type = PortType.LPG, description = "The graph with renamed property fields.") },
         shortDescription = "Rename the fields of node or edge properties by defining rules."
 )
-@FieldSelectSetting(key = "labels", displayName = "Targets", simplified = true, targetInput = 0, pos = 0,
+@FieldSelectSetting(key = "labels", displayName = "Targets", simplified = true, pos = 0,
+        targetInput = 0, forLabels = true,
         shortDescription = "Specify the target nodes or edges by their label(s). If no label is specified, all become targets.")
 @BoolSetting(key = "nodes", displayName = "Rename Node Properties", defaultValue = true, pos = 1)
 @BoolSetting(key = "edges", displayName = "Rename Edge Properties", defaultValue = true, pos = 2)
 
-@FieldRenameSetting(key = "rename", displayName = "Renaming Rules", allowRegex = true, allowIndex = false, targetInput = -1, pos = 3,
+@FieldRenameSetting(key = "rename", displayName = "Renaming Rules", allowRegex = true, allowIndex = false, pos = 3,
+        targetInput = 0, forLabels = false,
         shortDescription = "The source fields can be selected by their actual (exact) name or with Regex. "
                 + "The replacement can reference capture groups such as '$0' for the original name.",
         longDescription = """

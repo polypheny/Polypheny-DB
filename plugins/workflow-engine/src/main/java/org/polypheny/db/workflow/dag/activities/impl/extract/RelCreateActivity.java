@@ -69,7 +69,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         displayOptions = { "Comma (',')", "Semicolon (';')", "Tab", "Pipe ('|')", "Space", "Colon (':')", "Tilde ('~')" },
         defaultValue = "COMMA", shortDescription = "The delimiter that separates individual fields.")
 @BoolSetting(key = "header", displayName = "First Row is Header", pos = 2,
-        defaultValue = false,
+        defaultValue = true,
         shortDescription = "If true, the values of the first row are used as column names. For missing or invalid names, a fallback value is used."
 )
 @BoolSetting(key = "inferType", displayName = "Infer Column Types", pos = 3,

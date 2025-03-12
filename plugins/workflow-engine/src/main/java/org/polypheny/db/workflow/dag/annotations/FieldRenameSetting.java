@@ -74,6 +74,8 @@ public @interface FieldRenameSetting {
 
     int targetInput() default 0;
 
+    boolean forLabels() default false;
+
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)

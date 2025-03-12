@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.dag.activities;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -236,7 +237,7 @@ public abstract class TypePreview implements Wrapper {
 
 
         public static DocType of( Set<String> knownFields ) {
-            if (knownFields == null || knownFields.isEmpty()) {
+            if ( knownFields == null || knownFields.isEmpty() ) {
                 return empty;
             }
             return new DocType( knownFields );
@@ -259,15 +260,15 @@ public abstract class TypePreview implements Wrapper {
 
         private static final LpgType empty = new LpgType( Set.of(), Set.of() );
         @Getter
-        private final Set<String> knownNodeLabels;
+        private final Set<String> knownLabels;
         @Getter
-        private final Set<String> knownEdgeLabels;
+        private final Set<String> knownProperties;
 
 
-        private LpgType( Set<String> knownNodeLabels, Set<String> knownEdgeLabels ) {
+        private LpgType( Set<String> knownLabels, Set<String> knownProperties ) {
             super( GraphType.of() );
-            this.knownNodeLabels = Collections.unmodifiableSet( knownNodeLabels );
-            this.knownEdgeLabels = Collections.unmodifiableSet( knownEdgeLabels );
+            this.knownLabels = Collections.unmodifiableSet( knownLabels );
+            this.knownProperties = Collections.unmodifiableSet( knownProperties );
         }
 
 
@@ -282,13 +283,20 @@ public abstract class TypePreview implements Wrapper {
         }
 
 
-        public static LpgType of( Set<String> knownNodeLabels, Set<String> knownEdgeLabels ) {
-            return new LpgType( knownNodeLabels, knownEdgeLabels );
+        public static LpgType of( Set<String> knownLabels, Set<String> knownProperties ) {
+            return new LpgType( knownLabels, knownProperties );
+        }
+
+
+        public static LpgType of( Set<String> knownNodeLabels, Set<String> knownEdgeLabels, Set<String> knownProperties ) {
+            Set<String> labels = new HashSet<>( knownNodeLabels );
+            labels.addAll( knownEdgeLabels );
+            return new LpgType( labels, knownProperties );
         }
 
 
         public static LpgType of( LpgMetadata metadata ) {
-            return LpgType.of( metadata.getNodeLabels(), metadata.getEdgeLabels() );
+            return LpgType.of( metadata.getLabels(), metadata.getProperties() );
         }
 
     }

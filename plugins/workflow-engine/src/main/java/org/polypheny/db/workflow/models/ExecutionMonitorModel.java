@@ -35,6 +35,7 @@ public class ExecutionMonitorModel {
     int failCount;
     int skipCount;
     Map<ExecutorType, Integer> countByExecutorType;
+    long tuplesWritten;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     Boolean isSuccess;
 

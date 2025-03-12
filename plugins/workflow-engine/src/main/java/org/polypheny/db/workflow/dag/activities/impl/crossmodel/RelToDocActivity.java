@@ -16,10 +16,8 @@
 
 package org.polypheny.db.workflow.dag.activities.impl.crossmodel;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
@@ -29,6 +27,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -151,30 +150,30 @@ public class RelToDocActivity implements Activity, Fusable, Pipeable {
         }
 
         for ( List<PolyValue> row : inputs.get( 0 ) ) {
-            Map<PolyString, PolyValue> map = new HashMap<>();
+            PolyDocument doc = new PolyDocument();
             for ( int i = skipPk ? 1 : 0; i < row.size(); i++ ) {
                 PolyValue value = row.get( i );
                 if ( jsonCols.contains( i ) ) {
                     try {
                         String serialized = value.toJson().replace( "\\\\", "\\" ).replace( "\\\"", "\"" );
                         PolyValue deserialized = PolyValue.fromJson( serialized );
-                        if ( unwrap && deserialized instanceof PolyDocument doc ) {
-                            map.putAll( doc.map );
+                        if ( unwrap && deserialized instanceof PolyDocument inner ) {
+                            doc.putAll( inner );
                         } else {
-                            map.put( PolyString.of( fieldNames.get( i ) ), deserialized );
+                            doc.put( PolyString.of( fieldNames.get( i ) ), deserialized );
                         }
                     } catch ( Exception e ) {
                         if ( failOnInvalid ) {
                             throw e;
                         }
-                        map.put( PolyString.of( fieldNames.get( i ) ), value );
+                        doc.put( PolyString.of( fieldNames.get( i ) ), value );
                     }
                 } else {
-                    map.put( PolyString.of( fieldNames.get( i ) ), value );
+                    doc.put( PolyString.of( fieldNames.get( i ) ), value == null ? PolyNull.NULL : value );
                 }
             }
-            ActivityUtils.addDocId( map );
-            if ( !output.put( PolyDocument.ofDocument( map ) ) ) {
+            ActivityUtils.addDocId( doc );
+            if ( !output.put( doc ) ) {
                 finish( inputs );
                 return;
             }

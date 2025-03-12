@@ -42,10 +42,10 @@ public class TypePreviewModel {
     Set<String> fields; // null if not yet known or not document
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    Set<String> nodeLabels; // null if not yet known or not lpg
+    Set<String> labels; // null if not yet known or not lpg
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    Set<String> edgeLabels; // null if not yet known or not lpg
+    Set<String> properties; // null if not yet known or not lpg
     boolean notConnected; // only relevant for inputs
 
 
@@ -56,8 +56,8 @@ public class TypePreviewModel {
 
         List<FieldDefinition> columns = null;
         Set<String> fields = null;
-        Set<String> nodeLabels = null;
-        Set<String> edgeLabels = null;
+        Set<String> labels = null;
+        Set<String> properties = null;
 
         switch ( portType ) {
             case REL -> {
@@ -75,8 +75,8 @@ public class TypePreviewModel {
             }
             case LPG -> {
                 if ( preview.isPresent() && preview instanceof LpgType lpg ) {
-                    nodeLabels = lpg.getKnownNodeLabels();
-                    edgeLabels = lpg.getKnownEdgeLabels();
+                    labels = lpg.getKnownLabels();
+                    properties = lpg.getKnownProperties();
                 }
             }
             case ANY -> {
@@ -85,8 +85,8 @@ public class TypePreviewModel {
         }
         this.columns = columns;
         this.fields = fields;
-        this.nodeLabels = nodeLabels;
-        this.edgeLabels = edgeLabels;
+        this.labels = labels;
+        this.properties = properties;
     }
 
 

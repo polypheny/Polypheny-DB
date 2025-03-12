@@ -57,6 +57,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 @BoolSetting(key = "nodes", displayName = "Rename Node Labels", defaultValue = true, pos = 0)
 @BoolSetting(key = "edges", displayName = "Rename Edge Labels", defaultValue = true, pos = 1)
 @FieldRenameSetting(key = "rename", displayName = "Renaming Rules", allowRegex = true, allowIndex = false, pos = 2,
+        forLabels = true,
         shortDescription = "The source labels can be selected by their actual (exact) name or with Regex. " // TODO update description
                 + "The replacement can reference capture groups such as '$0' for the original label name.",
         longDescription = """
@@ -85,8 +86,8 @@ public class LpgLabelRenameActivity implements Activity, Pipeable {
             }
             FieldRenameValue rename = settings.getOrThrow( "rename", FieldRenameValue.class );
 
-            Set<String> nodeLabels = new HashSet<>( lpgType.getKnownNodeLabels() );
-            Set<String> edgeLabels = new HashSet<>( lpgType.getKnownEdgeLabels() );
+            Set<String> nodeLabels = new HashSet<>( lpgType.getKnownLabels() );
+            Set<String> edgeLabels = new HashSet<>( lpgType.getKnownProperties() );
 
             if ( isNodes ) {
                 nodeLabels = rename.getRenamedSet( nodeLabels );
@@ -95,7 +96,7 @@ public class LpgLabelRenameActivity implements Activity, Pipeable {
                 edgeLabels = rename.getRenamedSet( edgeLabels );
             }
 
-            return LpgType.of( nodeLabels, edgeLabels ).asOutTypes();
+            return LpgType.of( nodeLabels, edgeLabels, lpgType.getKnownProperties() ).asOutTypes();
         }
         return LpgType.of().asOutTypes();
     }

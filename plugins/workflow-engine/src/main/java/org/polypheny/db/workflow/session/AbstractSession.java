@@ -82,6 +82,7 @@ public abstract class AbstractSession {
 
     ExecutionMonitor executionMonitor; // corresponds to the last started execution
     Instant lastInteraction = Instant.now();
+    private boolean terminationFailed;
 
 
     protected AbstractSession( SessionModelType type, Workflow workflow, UUID sessionId ) {
@@ -110,10 +111,16 @@ public abstract class AbstractSession {
             scheduler.interruptExecution( sessionId );
         }
         try {
-            if ( scheduler.awaitExecutionFinish( sessionId, 60 ) ) {
+            if ( terminationFailed ) {
+                log.warn( "Graceful termination of session {} failed. Rolling back transactions...", sessionId );
+                scheduler.forceInterruptExecution( sessionId );
+                sm.close();
+            }
+            if ( scheduler.awaitExecutionFinish( sessionId, 30 ) ) {
                 sm.close();
             } else {
-                throw new GenericRuntimeException( "Timed out waiting for execution to finish. Try terminating the session when the workflow is idle." );
+                terminationFailed = true;
+                throw new GenericRuntimeException( "Timed out waiting for execution to finish. Try again to forcefully shut down the session." );
             }
         } catch ( GenericRuntimeException e ) {
             throw e;
@@ -208,7 +215,7 @@ public abstract class AbstractSession {
         try {
             executionMonitor = GlobalScheduler.getInstance().startExecution( workflow, sm, nestedManager, targetActivity, this::broadcastMessage );
         } catch ( Exception e ) {
-            throw new IllegalStateException( "Unable to start workflow execution: " + e.getMessage(), e );
+            throw new IllegalStateException( "Unable to start workflow execution", e );
         }
     }
 

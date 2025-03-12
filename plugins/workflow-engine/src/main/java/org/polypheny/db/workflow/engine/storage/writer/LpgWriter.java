@@ -71,7 +71,7 @@ public class LpgWriter extends CheckpointWriter {
             throw new GenericRuntimeException( "Cannot write node after writing edges" );
         }
         if ( nodeWriteCount < MAX_INSPECTIONS ) {
-            metadata.asLpg().addLabels( node );
+            metadata.asLpg().addLabelsAndProps( node );
         }
         nodeWriteCount++;
         writer.write( node );
@@ -88,7 +88,7 @@ public class LpgWriter extends CheckpointWriter {
 
     public void writeEdge( PolyEdge edge ) {
         if ( edgeWriteCount < MAX_INSPECTIONS ) {
-            metadata.asLpg().addLabels( edge );
+            metadata.asLpg().addLabelsAndProps( edge );
         }
         edgeWriteCount++;
         writer.write( edge );

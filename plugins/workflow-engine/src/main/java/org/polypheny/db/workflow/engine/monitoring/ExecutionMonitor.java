@@ -55,6 +55,7 @@ public class ExecutionMonitor {
     // needs to be updated manually
     private int successCount;
     private int failCount;
+    private long tuplesWritten;
     @Getter
     private boolean isOverallSuccess;
 
@@ -191,6 +192,7 @@ public class ExecutionMonitor {
                 failCount,
                 skippedActivities.size(),
                 getActivityCounts(),
+                tuplesWritten,
                 workflowDuration.isStopped() ? isOverallSuccess : null
         );
     }
@@ -213,10 +215,15 @@ public class ExecutionMonitor {
     private void updateCounts() {
         int successCount = 0;
         int failCount = 0;
+        long tuplesWritten = 0;
         for ( ExecutionInfo info : infos ) {
             if ( info.isDone() ) {
                 if ( info.isSuccess() ) {
                     successCount += info.getActivities().size();
+                    long tuples = info.getTuplesWritten();
+                    if ( tuples > 0 ) {
+                        tuplesWritten += tuples;
+                    }
                 } else {
                     failCount += info.getActivities().size();
                 }
@@ -224,6 +231,7 @@ public class ExecutionMonitor {
         }
         this.successCount = successCount;
         this.failCount = failCount;
+        this.tuplesWritten = tuplesWritten;
     }
 
 }

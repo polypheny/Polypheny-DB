@@ -54,15 +54,15 @@ public class LpgUnionActivity implements Activity, Pipeable {
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
-        Set<String> nodes = new HashSet<>();
-        Set<String> edges = new HashSet<>();
+        Set<String> labels = new HashSet<>();
+        Set<String> props = new HashSet<>();
         for ( TypePreview preview : inTypes ) {
             if ( preview instanceof LpgType type ) {
-                nodes.addAll( type.getKnownNodeLabels() );
-                edges.addAll( type.getKnownEdgeLabels() );
+                labels.addAll( type.getKnownLabels() );
+                props.addAll( type.getKnownProperties() );
             }
         }
-        return LpgType.of( nodes, edges ).asOutTypes();
+        return LpgType.of( labels, props ).asOutTypes();
     }
 
 

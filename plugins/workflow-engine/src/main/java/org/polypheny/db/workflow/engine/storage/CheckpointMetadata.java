@@ -25,6 +25,7 @@ import lombok.Setter;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
@@ -121,27 +122,22 @@ public abstract class CheckpointMetadata {
         private final Set<String> fieldNames = new HashSet<>();
 
 
-        public boolean addField( String fieldName ) {
+        public void addField( String fieldName ) {
             if ( fieldNames.size() < MAX_FIELDS ) {
                 fieldNames.add( fieldName );
-                return true;
             }
-            return false;
         }
 
 
-        public boolean addFields( PolyDocument doc ) {
+        public void addFields( PolyDocument doc ) {
             int delta = MAX_FIELDS - fieldNames.size();
             if ( delta > 0 ) {
                 List<String> names = doc.map.keySet().stream().map( key -> key.value ).toList();
                 if ( names.size() > delta ) {
                     fieldNames.addAll( names.subList( 0, delta ) );
-                    return false;
                 }
                 fieldNames.addAll( names );
-                return true;
             }
-            return false;
         }
 
 
@@ -174,38 +170,67 @@ public abstract class CheckpointMetadata {
         private long edgeCount = -1;
 
         public static final int MAX_LABELS = 20;
+        public static final int MAX_PROPS = 20;
 
         private final Set<String> nodeLabels = new HashSet<>();
         private final Set<String> edgeLabels = new HashSet<>();
+        private final Set<String> nodeProperties = new HashSet<>();
+        private final Set<String> edgeProperties = new HashSet<>();
 
 
-        public boolean addLabels( PolyNode node ) {
-            int delta = MAX_LABELS - nodeLabels.size();
-            if ( delta > 0 ) {
-                List<String> labels = node.labels.stream().map( label -> label.value ).toList();
-                if ( labels.size() > delta ) {
-                    nodeLabels.addAll( labels.subList( 0, delta ) );
-                    return false;
+        public void addLabelsAndProps( PolyNode node ) {
+            if ( MAX_LABELS - nodeLabels.size() > 0 ) {
+                List<String> labels = node.labels.stream().map( PolyString::getValue ).toList();
+                for ( String label : labels ) {
+                    if ( nodeLabels.size() < MAX_PROPS ) {
+                        nodeLabels.add( label );
+                    }
                 }
-                nodeLabels.addAll( labels );
-                return true;
             }
-            return false;
+
+            if ( MAX_PROPS - nodeProperties.size() > 0 ) {
+                List<String> props = node.properties.keySet().stream().map( PolyString::getValue ).toList();
+                for ( String prop : props ) {
+                    if ( nodeProperties.size() < MAX_PROPS ) {
+                        nodeProperties.add( prop );
+                    }
+                }
+            }
         }
 
 
-        public boolean addLabels( PolyEdge edge ) {
-            int delta = MAX_LABELS - edgeLabels.size();
-            if ( delta > 0 ) {
-                List<String> labels = edge.labels.stream().map( label -> label.value ).toList();
-                if ( labels.size() > delta ) {
-                    edgeLabels.addAll( labels.subList( 0, delta ) );
-                    return false;
+        public void addLabelsAndProps( PolyEdge edge ) {
+            if ( MAX_LABELS - edgeLabels.size() > 0 ) {
+                List<String> labels = edge.labels.stream().map( PolyString::getValue ).toList();
+                for ( String label : labels ) {
+                    if ( edgeLabels.size() < MAX_PROPS ) {
+                        edgeLabels.add( label );
+                    }
                 }
-                edgeLabels.addAll( labels );
-                return true;
             }
-            return false;
+
+            if ( MAX_PROPS - edgeProperties.size() > 0 ) {
+                List<String> props = edge.properties.keySet().stream().map( PolyString::getValue ).toList();
+                for ( String prop : props ) {
+                    if ( edgeProperties.size() < MAX_PROPS ) {
+                        edgeProperties.add( prop );
+                    }
+                }
+            }
+        }
+
+
+        public Set<String> getLabels() {
+            Set<String> labels = new HashSet<>( nodeLabels );
+            labels.addAll( edgeLabels );
+            return Collections.unmodifiableSet( labels );
+        }
+
+
+        public Set<String> getProperties() {
+            Set<String> props = new HashSet<>( nodeProperties );
+            props.addAll( edgeProperties );
+            return Collections.unmodifiableSet( props );
         }
 
 

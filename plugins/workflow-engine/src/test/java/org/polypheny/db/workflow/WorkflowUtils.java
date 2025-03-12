@@ -225,11 +225,31 @@ public class WorkflowUtils {
     }
 
 
-    public static Pair<Workflow, List<UUID>> getCombinedFuseAndPipe() {
-        // 0 - 4 - 5  should fuse
-        // 3 -/
+    public static Pair<Workflow, List<UUID>> fuseOverwritesPipe() {
+        // 2, cannot fuse, 4 cannot pipe. Piping 1-2-3 and fusing rest is suboptimal. Better only pipe 1-2 and fuse rest.
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "relExtract", extractTableSetting() ),
+                new ActivityModel( "relExtract", extractTableSetting() ),
+                new ActivityModel( "debug", Map.of( "canPipe", TRUE ) ), // can only pipe, not fuse!
+                new ActivityModel( "identity" ),
+                new ActivityModel( "debug", Map.of( "canFuse", TRUE ) ), // can only fuse, not pipe!
+                new ActivityModel( "relUnion" ),
+                new ActivityModel( "identity" )
+        );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 5 ), 0 ),
+                EdgeModel.of( activities.get( 1 ), activities.get( 2 ), 0 ),
+                EdgeModel.of( activities.get( 2 ), activities.get( 3 ), 0 ),
+                EdgeModel.of( activities.get( 3 ), activities.get( 4 ), 0 ), // a greedy optimizer would create the checkpoint here instead of 2 -> 3, which is not optimal (fuse considered more efficient than pipe)
+                EdgeModel.of( activities.get( 4 ), activities.get( 5 ), 1 ),
+                EdgeModel.of( activities.get( 5 ), activities.get( 6 ), 0 )
+        );
+        return getWorkflowWithActivities( activities, edges, true, true, 1 );
+    }
 
-        // 1 = 2 should pipe
+
+    public static Pair<Workflow, List<UUID>> pipeOverwritesFuse() {
+        // 2 cannot fuse, but all can pipe -> its best if all pipe
         List<ActivityModel> activities = List.of(
                 new ActivityModel( "relExtract", extractTableSetting() ),
                 new ActivityModel( "relExtract", extractTableSetting() ),
@@ -468,7 +488,7 @@ public class WorkflowUtils {
                 getAdvancedFusion().left,
                 getSimplePipe(),
                 getLongRunningPipe( 10000 ),
-                getCombinedFuseAndPipe().left,
+                pipeOverwritesFuse().left,
                 getVariableWritingWorkflow(),
                 getParallelBranchesWorkflow( 10, 1000, 10 ),
                 getCommonTransactionsWorkflow( false ).left,

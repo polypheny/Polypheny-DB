@@ -80,7 +80,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         displayOptions = { "Comma (',')", "Semicolon (';')", "Tab", "Pipe ('|')", "Space", "Colon (':')", "Tilde ('~')" },
         defaultValue = "COMMA", shortDescription = "The delimiter that separates individual fields.")
 @BoolSetting(key = "header", displayName = "First Row is Header", pos = 3, subGroup = "format",
-        defaultValue = false,
+        defaultValue = true,
         shortDescription = "If true, the values of the first row are used as column names. For missing or invalid names, a valid name is derived."
 )
 @BoolSetting(key = "inferType", displayName = "Infer Column Types", pos = 4, subGroup = "format",
@@ -197,6 +197,29 @@ public class RelExtractCsvActivity implements Activity, Pipeable {
     @Override
     public void reset() {
         sources = null;
+    }
+
+
+    @Override
+    public String getDynamicName( List<TypePreview> inTypes, SettingsPreview settings ) {
+        if ( settings.keysPresent( "file" ) ) {
+            FileValue file = settings.getOrThrow( "file", FileValue.class );
+            try {
+                sources = file.getSources( EXTENSIONS );
+                if ( sources.size() > 1 ) {
+                    return "Extract CSVs";
+                } else if ( sources.size() == 1 ) {
+                    String name = ActivityUtils.resourceNameFromSource( sources.get( 0 ) );
+                    if ( name.length() > 40 ) {
+                        name = name.substring( 0, 37 ) + "...";
+                    }
+                    return "Extract CSV: " + name;
+                }
+
+            } catch ( Exception ignored ) {
+            }
+        }
+        return null;
     }
 
 

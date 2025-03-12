@@ -134,6 +134,21 @@ public class GlobalScheduler {
     }
 
 
+    public synchronized void forceInterruptExecution( UUID sessionId ) {
+        if ( !interruptedSessions.contains( sessionId ) ) {
+            throw new GenericRuntimeException( "Force Interrupt can only be called after a regular interrupt attempt" );
+        }
+        WorkflowScheduler scheduler = schedulers.get( sessionId );
+        if ( scheduler == null ) {
+            return;
+        }
+        for ( ExecutionSubmission submission : activeSubmissions.get( sessionId ) ) {
+            submission.getExecutor().forceInterrupt();
+        }
+
+    }
+
+
     public synchronized void shutdownNow() {
         for ( UUID sessionId : schedulers.keySet() ) {
             interruptExecution( sessionId );

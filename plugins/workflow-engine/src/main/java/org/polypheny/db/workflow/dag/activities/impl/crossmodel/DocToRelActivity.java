@@ -82,11 +82,14 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 @CastSetting(key = "columns", displayName = "Fields to Columns", defaultType = PolyType.BIGINT, pos = 1, subGroup = "manual",
         allowTarget = true, duplicateSource = true, allowJson = true, subPointer = "mode", subValues = { "\"manual\"" },
         shortDescription = "Specify how (sub)fields are mapped to columns.")
+@BoolSetting(key = "includeId", displayName = "Include Document ID", pos = 2,
+        subPointer = "mode", subValues = { "\"auto\"" },
+        shortDescription = "Whether to insert a column for the document ID.", defaultValue = false)
 @EnumSetting(key = "handleMissing", displayName = "Missing Field Handling", options = { "null", "skip", "fail" }, defaultValue = "fail",
-        pos = 2, style = EnumStyle.RADIO_BUTTON, subGroup = "manual",
+        pos = 3, style = EnumStyle.RADIO_BUTTON, subGroup = "manual",
         displayOptions = { "Use Null", "Skip Document", "Fail Execution" }, subPointer = "mode", subValues = { "auto", "\"manual\"" },
         shortDescription = "Determines the strategy for handling documents where a field is missing.")
-@BoolSetting(key = "unspecified", displayName = "Column for Unspecified Fields", defaultValue = false, pos = 3, subGroup = "manual",
+@BoolSetting(key = "unspecified", displayName = "Column for Unspecified Fields", defaultValue = false, pos = 4, subGroup = "manual",
         subPointer = "mode", subValues = { "\"manual\"" },
         shortDescription = "Adds a column containing any remaining unspecified (top-level) fields as JSON.")
 @SuppressWarnings("unused")
@@ -132,7 +135,7 @@ public class DocToRelActivity implements Activity, Pipeable {
             ctx.createRelWriter( 0, type );
             return;
         }
-        CastValue cols = getAutoCols( it.next() );
+        CastValue cols = getAutoCols( it.next(), settings.getBool( "includeId" ) );
         AlgDataType type = ActivityUtils.addPkCol( cols.asAlgDataType() );
 
         autoWrite( reader, ctx.createRelWriter( 0, type ), cols, settings.getString( "handleMissing" ), ctx );
@@ -301,9 +304,11 @@ public class DocToRelActivity implements Activity, Pipeable {
     }
 
 
-    private CastValue getAutoCols( PolyDocument document ) {
+    private CastValue getAutoCols( PolyDocument document, boolean includeId ) {
         List<SingleCast> casts = new ArrayList<>();
-        casts.add( SingleCast.of( DocumentType.DOCUMENT_ID, PolyType.VARCHAR, 24, false ) );
+        if ( includeId ) {
+            casts.add( SingleCast.of( DocumentType.DOCUMENT_ID, PolyType.VARCHAR, 24, false ) );
+        }
 
         Set<PolyType> toJsonTypes = Set.of( PolyType.ARRAY, PolyType.MAP, PolyType.DOCUMENT, PolyType.JSON );
         for ( Entry<PolyString, PolyValue> entry : document.entrySet() ) {

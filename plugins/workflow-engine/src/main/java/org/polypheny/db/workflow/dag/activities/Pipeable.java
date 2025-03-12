@@ -73,13 +73,17 @@ public interface Pipeable extends Activity {
                 (InputPipe) new CheckpointInputPipe( reader ) ).toList();
 
         PipeExecutionContext pipeCtx = (ExecutionContextImpl) ctx;
-
-        List<Long> inCounts = inputs.stream().map( reader -> reader == null ? null : reader.getTupleCount() ).toList();
-        long tupleCount = estimateTupleCount( inputTypes, settings, inCounts, pipeCtx::getTransaction );
-        CheckpointWriter writer = ctx.createWriter( 0, type );
-
-        try ( OutputPipe outPipe = new CheckpointOutputPipe( type, writer, ctx, tupleCount ) ) {
-            pipe( inPipes, outPipe, settings, pipeCtx );
+        try {
+            if ( type != null ) {
+                List<Long> inCounts = inputs.stream().map( reader -> reader == null ? null : reader.getTupleCount() ).toList();
+                long tupleCount = estimateTupleCount( inputTypes, settings, inCounts, pipeCtx::getTransaction );
+                CheckpointWriter writer = ctx.createWriter( 0, type );
+                try ( OutputPipe outPipe = new CheckpointOutputPipe( type, writer, ctx, tupleCount ) ) {
+                    pipe( inPipes, outPipe, settings, pipeCtx );
+                }
+            } else {
+                pipe( inPipes, null, settings, pipeCtx );
+            }
         } catch ( PipeInterruptedException e ) {
             ctx.throwException( "Activity execution was interrupted" );
         } finally {

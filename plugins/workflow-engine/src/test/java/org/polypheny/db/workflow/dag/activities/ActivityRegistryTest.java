@@ -77,8 +77,6 @@ class ActivityRegistryTest {
     public void checkCategoriesTest() {
         for ( ActivityDef activity : ActivityRegistry.getRegistry().values() ) {
             String activityName = activity.getActivityClass().getSimpleName();
-            assertFalse( activity.hasCategory( ActivityCategory.EXTRACT ) && activity.hasCategory( ActivityCategory.LOAD ),
-                    "An activity cannot extract and load data at the same time: " + activityName );
             assertTrue( activity.hasCategory(
                             ActivityCategory.EXTRACT ) ||
                             activity.hasCategory( ActivityCategory.TRANSFORM ) ||

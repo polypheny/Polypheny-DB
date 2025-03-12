@@ -224,7 +224,8 @@ public abstract class CheckpointReader implements AutoCloseable {
 
         ExecutedContext executedContext = QueryUtils.executeQuery( parsed, statement );
         if ( executedContext.getException().isPresent() ) {
-            throw new GenericRuntimeException( "An error occurred while executing a query on a checkpoint." );
+            Throwable e = executedContext.getException().get();
+            throw new GenericRuntimeException( "An error occurred while executing a query: " + e.getMessage(), e );
         }
 
         Iterator<PolyValue[]> iterator = executedContext.getIterator().getIterator();

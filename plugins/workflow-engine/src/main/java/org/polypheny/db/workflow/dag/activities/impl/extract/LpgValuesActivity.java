@@ -106,11 +106,12 @@ public class LpgValuesActivity implements Activity, Pipeable {
 
         Set<String> nodeLabels = settings.get( "nodeLabels", StringValue.class )
                 .map( s -> (Set<String>) new HashSet<>( s.splitAndTrim( "," ) ) )
-                .orElse( Set.of() );
+                .orElse( new HashSet<>() );
         Set<String> edgeLabels = settings.get( "edgeLabels", StringValue.class )
                 .map( s -> (Set<String>) new HashSet<>( s.splitAndTrim( "," ) ) )
                 .orElse( Set.of() );
-        return LpgType.of( nodeLabels, edgeLabels ).asOutTypes();
+        Set<String> props = Set.of( "name", "lastName", "age", "salary", "since" );
+        return LpgType.of( nodeLabels, edgeLabels, props ).asOutTypes();
     }
 
 

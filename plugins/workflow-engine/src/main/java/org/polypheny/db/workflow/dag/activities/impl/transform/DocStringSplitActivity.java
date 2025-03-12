@@ -74,16 +74,16 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         displayDescriptions = { "Specify a Regex delimiter and a limit.", "Match capturing groups specified using Regex." },
         defaultValue = "delimiter", style = EnumStyle.RADIO_BUTTON)
 
-@StringSetting(key = "delimiter", displayName = "Regex Delimiter", nonBlank = true, pos = 10,
+@StringSetting(key = "delimiter", displayName = "Regex Delimiter", pos = 10,
         defaultValue = ",",
-        subPointer = "mode", subValues = { "\"delimiter\"" }, containsRegex = true, maxLength = 1024)
+        subPointer = "mode", subValues = { "\"delimiter\"" }, containsRegex = true, minLength = 1, maxLength = 1024)
 @IntSetting(key = "limit", displayName = "Maximum Number of Parts", pos = 11,
         subPointer = "mode", subValues = { "\"delimiter\"" }, defaultValue = 0, min = 0, max = 10000,
         shortDescription = "The maximum number of parts to create, or 0 to set no limit.")
 
-@StringSetting(key = "pattern", displayName = "Regex Pattern", nonBlank = true, pos = 100,
+@StringSetting(key = "pattern", displayName = "Regex Pattern", pos = 100,
         defaultValue = "https?://([^/]+)",
-        subPointer = "mode", subValues = { "\"pattern\"" }, containsRegex = true, maxLength = 1024)
+        subPointer = "mode", subValues = { "\"pattern\"" }, containsRegex = true, minLength = 1, maxLength = 1024)
 @BoolSetting(key = "ignoreCase", displayName = "Ignore Case", pos = 101,
         subPointer = "mode", subValues = { "\"pattern\"" }
 )

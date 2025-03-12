@@ -496,11 +496,8 @@ public class RelImputationActivity implements Activity, Fusable, Pipeable {
                         throw new GenericRuntimeException( "Detected required lookup value that is null in row: " + row );
                     }
                     out.set( target, ActivityUtils.castPolyValue( lookup, targetTypes.get( target ) ) );
-                    System.out.println( "casted value " + ActivityUtils.castPolyValue( lookup, targetTypes.get( target ) ) );
                 }
             }
-            System.out.println( "Value before: " + row );
-            System.out.println( "Value after: " + out );
             if ( !outPipe.put( out ) ) {
                 inPipe.finishIteration();
                 return;

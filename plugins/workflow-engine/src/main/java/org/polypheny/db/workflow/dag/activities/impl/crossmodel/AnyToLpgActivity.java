@@ -42,6 +42,7 @@ import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidInputEx
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
+import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
 import org.polypheny.db.workflow.dag.activities.TypePreview.LpgType;
 import org.polypheny.db.workflow.dag.activities.TypePreview.RelType;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
@@ -86,11 +87,11 @@ public class AnyToLpgActivity implements Activity {
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
-        Set<String> nodes = new HashSet<>();
-        Set<String> edges = new HashSet<>();
+        Set<String> labels = new HashSet<>();
+        Set<String> props = new HashSet<>();
         if ( inTypes.get( 0 ) instanceof LpgType type ) {
-            nodes.addAll( type.getKnownNodeLabels() );
-            edges.addAll( type.getKnownEdgeLabels() );
+            labels.addAll( type.getKnownLabels() );
+            props.addAll( type.getKnownProperties() );
         }
         for ( int i = 1; i < inTypes.size(); i++ ) {
             if ( inTypes.get( i ) instanceof LpgType ) {
@@ -104,8 +105,8 @@ public class AnyToLpgActivity implements Activity {
             } catch ( IllegalArgumentException e ) {
                 throw new InvalidSettingException( e.getMessage(), "mapping" );
             }
-            nodes.addAll( mapping.getKnownNodeLabels() );
-            edges.addAll( mapping.getKnownEdgeLabels() );
+            labels.addAll( mapping.getKnownNodeLabels() );
+            labels.addAll( mapping.getKnownEdgeLabels() );
             for ( int i = 1; i < inTypes.size(); i++ ) {
                 if ( inTypes.get( i ) instanceof RelType relType ) {
                     try {
@@ -113,11 +114,14 @@ public class AnyToLpgActivity implements Activity {
                     } catch ( IllegalArgumentException e ) {
                         throw new InvalidInputException( e.getMessage(), i );
                     }
+                    props.addAll( mapping.getRemainingProps( relType.getNullableType().getFieldNames(), i - 1 ) );
+                } else if ( inTypes.get( i ) instanceof DocType docType ) {
+                    props.addAll( mapping.getRemainingProps( docType.getKnownFields(), i - 1 ) );
                 }
             }
         }
 
-        return LpgType.of( nodes, edges ).asOutTypes();
+        return LpgType.of( labels, props ).asOutTypes();
     }
 
 

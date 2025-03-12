@@ -196,6 +196,17 @@ public class ActivityUtils {
     }
 
 
+    public static AlgDataType removeFields( AlgDataType type, Collection<String> fieldNames ) {
+        Builder builder = factory.builder();
+        for ( AlgDataTypeField field : type.getFields() ) {
+            if ( !fieldNames.contains( field.getName() ) ) {
+                builder.add( field );
+            }
+        }
+        return builder.build();
+    }
+
+
     /**
      * Concatenates the specified types and uniquifies them.
      */

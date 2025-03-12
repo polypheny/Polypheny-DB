@@ -57,6 +57,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 @BoolSetting(key = "filterNodes", displayName = "Filter Nodes", defaultValue = true, subGroup = "nodes", pos = 0)
 @FieldSelectSetting(key = "nodeLabels", displayName = "Select Node Labels", reorder = false,
+        targetInput = 0, forLabels = true,
         subPointer = "filterNodes", subValues = { "true" }, subGroup = "nodes", pos = 1,
         shortDescription = "Specify the nodes to include by their label.")
 @BoolSetting(key = "nodeTie", displayName = "Include Conflicting", defaultValue = false,
@@ -65,6 +66,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 @BoolSetting(key = "filterEdges", displayName = "Filter Edges", defaultValue = false, subGroup = "edges", pos = 0)
 @FieldSelectSetting(key = "edgeLabels", displayName = "Select Edge Labels", reorder = false,
+        targetInput = 0, forLabels = true,
         subPointer = "filterEdges", subValues = { "true" }, subGroup = "edges", pos = 1,
         shortDescription = "Specify the edges to include by their label.")
 @BoolSetting(key = "edgeTie", displayName = "Include Conflicting", defaultValue = false,
@@ -79,9 +81,11 @@ public class LpgFilterLabelsActivity implements Activity, Pipeable {
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
         Set<String> nodes = new HashSet<>();
         Set<String> edges = new HashSet<>();
+        Set<String> props = new HashSet<>();
         if ( inTypes.get( 0 ) instanceof LpgType lpg ) {
-            nodes.addAll( lpg.getKnownNodeLabels() );
-            edges.addAll( lpg.getKnownEdgeLabels() );
+            nodes.addAll( lpg.getKnownLabels() );
+            edges.addAll( lpg.getKnownProperties() );
+            props.addAll( lpg.getKnownProperties() );
         }
         if ( settings.keysPresent( "filterNodes", "nodeLabels" ) && settings.getBool( "filterNodes" ) ) {
             FieldSelectValue nodeLabels = settings.getOrThrow( "nodeLabels", FieldSelectValue.class );
@@ -93,8 +97,7 @@ public class LpgFilterLabelsActivity implements Activity, Pipeable {
             edgeLabels.getExclude().forEach( edges::remove );
             edges.addAll( edgeLabels.getInclude() );
         }
-
-        return LpgType.of( nodes, edges ).asOutTypes();
+        return LpgType.of( nodes, edges, props ).asOutTypes();
     }
 
 

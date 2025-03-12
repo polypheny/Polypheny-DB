@@ -85,6 +85,8 @@ public @interface FieldSelectSetting {
 
     int targetInput() default 0;
 
+    boolean forLabels() default false;
+
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)

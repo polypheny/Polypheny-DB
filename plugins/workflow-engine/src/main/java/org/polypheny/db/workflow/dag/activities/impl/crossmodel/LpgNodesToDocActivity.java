@@ -56,8 +56,8 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         outPorts = { @OutPort(type = PortType.DOC, description = "The output collection where each document corresponds to a node in the graph.") },
         shortDescription = "Maps nodes of a graph to documents in a collection."
 )
-@FieldSelectSetting(key = "labels", displayName = "Target Nodes", simplified = true, targetInput = 0, pos = 0,
-        group = ADVANCED_GROUP,
+@FieldSelectSetting(key = "labels", displayName = "Target Nodes", simplified = true, pos = 0,
+        targetInput = 0, forLabels = true, group = ADVANCED_GROUP,
         shortDescription = "Specify the nodes to map by their label(s). If no label is specified, all nodes are mapped to documents.")
 @BoolSetting(key = "includeLabels", displayName = "Include Labels", defaultValue = true, pos = 1,
         shortDescription = "Whether to insert an array field '" + LABEL_FIELD + "' that contains the node labels.")

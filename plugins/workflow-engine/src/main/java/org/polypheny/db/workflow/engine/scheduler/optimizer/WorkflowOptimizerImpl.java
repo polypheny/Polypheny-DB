@@ -28,6 +28,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
 import org.polypheny.db.util.graph.TopologicalOrderIterator;
 import org.polypheny.db.workflow.dag.Workflow;
@@ -50,6 +51,19 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
 
     @Override
     public List<SubmissionFactory> computeNextTrees( CommonType commonType ) {
+        ColoredDag colored = getColoredSubDag( commonType, true );
+        if ( isFusionEnabled ) {
+            ColoredDag alternative = getColoredSubDag( commonType, false );
+            if ( getSkippedCheckpointsCount( alternative ) > getSkippedCheckpointsCount( colored ) ) {
+                // while we do prefer fusion of pipelining, a higher number of skipped checkpoints is always better
+                colored = alternative;
+            }
+        }
+        return createFactories( colored.left, getFirstConnectedComponents( colored.left, colored.middle, colored.right ), commonType );
+    }
+
+
+    private ColoredDag getColoredSubDag( CommonType commonType, boolean fuseBeforePipe ) {
         AttributedDirectedGraph<UUID, ExecutionEdge> subDag = AttributedDirectedGraph.create( new ExecutionEdgeFactory() );
         Map<UUID, NodeColor> nodeColors = new HashMap<>();
         Map<ExecutionEdge, EdgeColor> edgeColors = new HashMap<>();
@@ -57,14 +71,16 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
 
         // order determines priority if an activity implements multiple interfaces
         determineVariableWriters( subDag, nodeColors, edgeColors );
-        if ( isFusionEnabled ) {
+        if ( fuseBeforePipe && isFusionEnabled ) {
             determineFusions( subDag, nodeColors, edgeColors );
         }
         if ( isPipelineEnabled ) {
             determinePipes( subDag, nodeColors, edgeColors );
         }
-
-        return createFactories( subDag, getFirstConnectedComponents( subDag, nodeColors, edgeColors ), commonType );
+        if ( !fuseBeforePipe && isFusionEnabled ) {
+            determineFusions( subDag, nodeColors, edgeColors );
+        }
+        return ColoredDag.of( subDag, nodeColors, edgeColors );
     }
 
 
@@ -171,6 +187,11 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
     }
 
 
+    private int getSkippedCheckpointsCount( ColoredDag colored ) {
+        return (int) colored.right.values().stream().filter( c -> c == EdgeColor.FUSED || c == EdgeColor.PIPED ).count();
+    }
+
+
     private List<Pair<Set<UUID>, NodeColor>> getFirstConnectedComponents( AttributedDirectedGraph<UUID, ExecutionEdge> subDag, Map<UUID, NodeColor> nodeColors, Map<ExecutionEdge, EdgeColor> edgeColors ) {
 
         // TODO: replace with contracted graph to make cleaner?
@@ -260,6 +281,20 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
             result.add( queue.remove().right );
         }
         return result;
+    }
+
+
+    private static class ColoredDag extends Triple<AttributedDirectedGraph<UUID, ExecutionEdge>, Map<UUID, NodeColor>, Map<ExecutionEdge, EdgeColor>> {
+
+        public ColoredDag( AttributedDirectedGraph<UUID, ExecutionEdge> left, Map<UUID, NodeColor> middle, Map<ExecutionEdge, EdgeColor> right ) {
+            super( left, middle, right );
+        }
+
+
+        public static ColoredDag of( AttributedDirectedGraph<UUID, ExecutionEdge> left, Map<UUID, NodeColor> middle, Map<ExecutionEdge, EdgeColor> right ) {
+            return new ColoredDag( left, middle, right );
+        }
+
     }
 
 
