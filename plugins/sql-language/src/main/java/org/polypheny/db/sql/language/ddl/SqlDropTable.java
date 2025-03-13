@@ -79,6 +79,7 @@ public class SqlDropTable extends SqlDropObject {
         DdlManager.getInstance().dropTable( table, statement );
     }
 
+
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
         return getMapOfTableLockable( name, context, LockType.EXCLUSIVE );

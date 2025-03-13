@@ -85,6 +85,7 @@ public class SqlTruncate extends SqlDdl implements ExecutableStatement {
         DdlManager.getInstance().truncate( table, statement );
     }
 
+
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
         return getMapOfTableLockable( name, context, LockType.EXCLUSIVE );

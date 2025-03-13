@@ -16,7 +16,6 @@
 
 package org.polypheny.db.sql.language.ddl.altermaterializedview;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,7 +34,6 @@ import org.polypheny.db.sql.language.ddl.SqlAlterMaterializedView;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
-import org.polypheny.db.transaction.locking.LockableUtils;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -86,8 +84,10 @@ public class SqlAlterMaterializedViewDropIndex extends SqlAlterMaterializedView 
         DdlManager.getInstance().dropIndex( table, indexName.getSimple(), statement );
     }
 
+
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
         return getMapOfTableLockable( table, context, LockType.EXCLUSIVE );
     }
+
 }
