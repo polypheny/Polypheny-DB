@@ -17,11 +17,9 @@
 package org.polypheny.db.sql.language.ddl.alternamespace;
 
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
@@ -33,7 +31,6 @@ import org.polypheny.db.sql.language.ddl.SqlAlterNamespace;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
-import org.polypheny.db.transaction.locking.LockableUtils;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -84,8 +81,10 @@ public class SqlAlterNamespaceOwner extends SqlAlterNamespace {
         throw new UnsupportedOperationException( "This functionality is not yet supported." );
     }
 
+
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
         return getMapOfNamespaceLockable( namespace, context, LockType.EXCLUSIVE );
     }
+
 }

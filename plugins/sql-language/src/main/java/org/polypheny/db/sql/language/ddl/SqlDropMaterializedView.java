@@ -16,7 +16,6 @@
 
 package org.polypheny.db.sql.language.ddl;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.polypheny.db.algebra.constant.Kind;
@@ -34,7 +33,6 @@ import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
-import org.polypheny.db.transaction.locking.LockableUtils;
 import org.polypheny.db.view.MaterializedViewManager;
 
 public class SqlDropMaterializedView extends SqlDropObject {
@@ -83,6 +81,7 @@ public class SqlDropMaterializedView extends SqlDropObject {
 
         materializedManager.isDroppingMaterialized = false;
     }
+
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {

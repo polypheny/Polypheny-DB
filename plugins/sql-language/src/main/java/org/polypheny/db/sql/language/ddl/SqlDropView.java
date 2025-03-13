@@ -82,6 +82,7 @@ public class SqlDropView extends SqlDropObject {
 
     }
 
+
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
         return getMapOfTableLockable( name, context, LockType.EXCLUSIVE );
