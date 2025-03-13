@@ -16,9 +16,7 @@
 
 package org.polypheny.db.nodes;
 
-import java.util.HashMap;
 import java.util.Map;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
@@ -40,4 +38,5 @@ public interface UnsupportedExecutableStatement extends ExecutableStatement {
     default Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
         return Map.of();
     }
+
 }
