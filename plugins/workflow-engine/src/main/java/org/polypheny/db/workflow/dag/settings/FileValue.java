@@ -52,17 +52,16 @@ public class FileValue implements SettingValue {
     public Source getSource() throws IOException {
         switch ( type ) {
             case ABS_FILE:
+                if ( path.startsWith( "classpath://" ) ) {
+                    return getClassPathSource( path.substring( "classpath://".length() ) );
+                }
                 File absFile = new File( path );
                 if ( !absFile.exists() || !absFile.isFile() ) {
                     throw new FileNotFoundException( "File not found: " + path );
                 }
                 return Sources.of( absFile );
-            case REL_FILE:
-                URL resource = this.getClass().getClassLoader().getResource( path );
-                if ( resource == null ) {
-                    throw new FileNotFoundException( "Resource not found: " + path );
-                }
-                return Sources.of( resource );
+            case REL_FILE: // TODO: change to something actually useful. e.g. relative to .polypheny
+                return getClassPathSource( path );
             case URL:
                 return Sources.of( new URL( path ) );
         }
@@ -98,6 +97,15 @@ public class FileValue implements SettingValue {
                         ext -> file.getName().endsWith( "." + ext.toLowerCase( Locale.ROOT ) ) ) )
                 .map( Sources::of )
                 .toList();
+    }
+
+
+    private static Source getClassPathSource( String path ) throws FileNotFoundException {
+        URL resource = FileValue.class.getClassLoader().getResource( path );
+        if ( resource == null ) {
+            throw new FileNotFoundException( "Resource not found: " + path );
+        }
+        return Sources.of( resource );
     }
 
 

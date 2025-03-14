@@ -1,0 +1,138 @@
+{
+    "activities": [
+        {
+            "type": "docExtractJson",
+            "id": "ebc7353e-4174-49d2-b747-ac55df32b5bc",
+            "settings": {
+                "nameField": false,
+                "file": {
+                    "path": "classpath://sample_data/hospital_contact_tracing_250.json",
+                    "type": "ABS_FILE",
+                    "multi": false
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
+            },
+            "rendering": {
+                "posX": -611.1029636512528,
+                "posY": 529.8228721609563,
+                "name": "Extract Contact Tracing JSON",
+                "notes": null
+            }
+        },
+        {
+            "type": "relDeduplicate",
+            "id": "87d72d5b-b926-43ae-8872-97a2bb4a7232",
+            "settings": {
+                "columns": {
+                    "include": [],
+                    "exclude": [],
+                    "unspecifiedIndex": -1
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
+            },
+            "rendering": {
+                "posX": 1310.2428352815575,
+                "posY": 311.9950678710587,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "query",
+            "id": "ff2bc35b-efca-4202-85ca-42563157037c",
+            "settings": {
+                "query": {
+                    "query": "",
+                    "queryLanguage": "SQL"
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
+            },
+            "rendering": {
+                "posX": 781.936635388455,
+                "posY": 309.950907295305,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relExtractCsv",
+            "id": "b2291884-67ff-4faa-9de7-12a3f6a1c88a",
+            "settings": {
+                "preview": true,
+                "fail": false,
+                "file": {
+                    "path": "classpath://sample_data/hospital_patients_100.csv",
+                    "type": "ABS_FILE",
+                    "multi": false
+                },
+                "quote": "\"",
+                "nameCol": false,
+                "emptyIsNull": true,
+                "header": true,
+                "escape": "BACKSLASH",
+                "inferType": true,
+                "sep": "COMMA"
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
+            },
+            "rendering": {
+                "posX": -611.2247500896663,
+                "posY": 128.9266717721527,
+                "name": "Extract Patients CSV",
+                "notes": null
+            }
+        }
+    ],
+    "edges": [
+        {
+            "fromId": "ff2bc35b-efca-4202-85ca-42563157037c",
+            "toId": "87d72d5b-b926-43ae-8872-97a2bb4a7232",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        }
+    ],
+    "config": {
+        "preferredStores": {
+            "GRAPH": "hsqldb_disk",
+            "RELATIONAL": "hsqldb_disk",
+            "DOCUMENT": "hsqldb_disk"
+        },
+        "fusionEnabled": false,
+        "pipelineEnabled": false,
+        "timeoutSeconds": 0,
+        "dropUnusedCheckpoints": false,
+        "maxWorkers": 1,
+        "pipelineQueueCapacity": 1000,
+        "logCapacity": 100
+    },
+    "variables": {},
+    "format_version": "0.0.1"
+}

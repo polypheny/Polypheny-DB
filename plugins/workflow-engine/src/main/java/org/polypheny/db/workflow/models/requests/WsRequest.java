@@ -41,6 +41,7 @@ public class WsRequest {
         CLONE_ACTIVITY,
         CREATE_EDGE,
         DELETE_EDGE,
+        MOVE_MULTI_EDGE,
         EXECUTE,
         INTERRUPT,
         RESET,
@@ -97,6 +98,14 @@ public class WsRequest {
     public static class DeleteEdgeRequest extends WsRequest {
 
         public EdgeModel edge;
+
+    }
+
+
+    public static class MoveMultiEdgeRequest extends WsRequest {
+
+        public EdgeModel edge;
+        public int targetIndex;  // -1 to move to the end
 
     }
 

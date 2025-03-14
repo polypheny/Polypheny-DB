@@ -57,6 +57,7 @@ import org.polypheny.db.workflow.dag.annotations.FileSetting;
 import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
 import org.polypheny.db.workflow.dag.settings.FileValue;
+import org.polypheny.db.workflow.dag.settings.FileValue.SourceType;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
@@ -71,7 +72,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         shortDescription = "Extracts a table from one or multiple CSV files stored locally or remotely.")
 @DefaultGroup(subgroups = { @Subgroup(key = "format", displayName = "CSV Format") })
 @FileSetting(key = "file", displayName = "File Location", pos = 0,
-        multi = true,
+        multi = true, modes = { SourceType.ABS_FILE, SourceType.URL },
         shortDescription = "Select the location of the file(s) to extract. In case of multiple files, the union of their rows is computed.")
 @BoolSetting(key = "nameCol", displayName = "Add File Name Column", pos = 1)
 

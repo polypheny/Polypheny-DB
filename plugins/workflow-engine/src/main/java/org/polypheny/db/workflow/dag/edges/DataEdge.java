@@ -76,6 +76,14 @@ public class DataEdge extends Edge {
     }
 
 
+    public int getMultiIndex() {
+        if ( !isMulti ) {
+            throw new IllegalStateException( "Edge is not a multi-edge." );
+        }
+        return toPort + 1 - to.getDef().getInPorts().length;
+    }
+
+
     @Override
     public String toString() {
         return "DataEdge{" +

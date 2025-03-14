@@ -43,6 +43,7 @@ import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.FileSetting;
 import org.polypheny.db.workflow.dag.settings.FileValue;
+import org.polypheny.db.workflow.dag.settings.FileValue.SourceType;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
@@ -56,7 +57,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         outPorts = { @OutPort(type = PortType.DOC, description = "The extracted collection.") },
         shortDescription = "Extracts a collection from one or multiple JSON files stored locally or remotely. The file can either contain a single object, an array of objects or one object per line.")
 @FileSetting(key = "file", displayName = "File Location", pos = 0,
-        multi = true,
+        multi = true, modes = { SourceType.ABS_FILE, SourceType.URL },
         shortDescription = "Select the location of the file(s) to extract. In case of multiple files, the union of their documents is computed.")
 @BoolSetting(key = "nameField", displayName = "Add File Name Field", pos = 1)
 

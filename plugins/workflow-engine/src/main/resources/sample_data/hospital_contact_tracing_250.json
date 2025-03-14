@@ -1,0 +1,1752 @@
+[
+    {
+        "patient1_id": 98,
+        "patient2_id": 42,
+        "duration_minutes": 31,
+        "date": "2025-02-10",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 19,
+        "patient2_id": 11,
+        "duration_minutes": 7,
+        "date": "2025-02-21",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 53,
+        "patient2_id": 45,
+        "duration_minutes": 87,
+        "date": "2025-02-09",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 74,
+        "patient2_id": 77,
+        "duration_minutes": 24,
+        "date": "2025-02-19",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 40,
+        "patient2_id": 55,
+        "duration_minutes": 22,
+        "date": "2025-03-08",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 49,
+        "patient2_id": 40,
+        "duration_minutes": 75,
+        "date": "2025-02-16",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 82,
+        "patient2_id": 83,
+        "duration_minutes": 37,
+        "date": "2025-02-17",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 16,
+        "patient2_id": 79,
+        "duration_minutes": 83,
+        "date": "2025-02-09",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 2,
+        "patient2_id": 5,
+        "duration_minutes": 24,
+        "date": "2025-02-27",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 99,
+        "patient2_id": 2,
+        "duration_minutes": 7,
+        "date": "2025-02-13",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 4,
+        "patient2_id": 40,
+        "duration_minutes": 62,
+        "date": "2025-03-02",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 56,
+        "patient2_id": 73,
+        "duration_minutes": 47,
+        "date": "2025-02-21",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 43,
+        "patient2_id": 77,
+        "duration_minutes": 76,
+        "date": "2025-03-10",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 12,
+        "patient2_id": 98,
+        "duration_minutes": 84,
+        "date": "2025-02-12",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 52,
+        "patient2_id": 18,
+        "duration_minutes": 70,
+        "date": "2025-02-21",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 84,
+        "patient2_id": 65,
+        "duration_minutes": 57,
+        "date": "2025-02-26",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 36,
+        "patient2_id": 37,
+        "duration_minutes": 86,
+        "date": "2025-02-25",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 7,
+        "patient2_id": 100,
+        "duration_minutes": 75,
+        "date": "2025-02-09",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 75,
+        "patient2_id": 59,
+        "duration_minutes": 54,
+        "date": "2025-03-06",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 20,
+        "patient2_id": 77,
+        "duration_minutes": 29,
+        "date": "2025-03-05",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 83,
+        "patient2_id": 9,
+        "duration_minutes": 47,
+        "date": "2025-03-01",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 90,
+        "patient2_id": 98,
+        "duration_minutes": 21,
+        "date": "2025-02-12",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 72,
+        "patient2_id": 94,
+        "duration_minutes": 41,
+        "date": "2025-03-01",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 17,
+        "patient2_id": 79,
+        "duration_minutes": 65,
+        "date": "2025-02-22",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 85,
+        "patient2_id": 54,
+        "duration_minutes": 9,
+        "date": "2025-02-28",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 16,
+        "patient2_id": 35,
+        "duration_minutes": 8,
+        "date": "2025-03-09",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 70,
+        "patient2_id": 30,
+        "duration_minutes": 91,
+        "date": "2025-03-05",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 52,
+        "patient2_id": 31,
+        "duration_minutes": 33,
+        "date": "2025-03-03",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 68,
+        "patient2_id": 44,
+        "duration_minutes": 52,
+        "date": "2025-03-07",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 90,
+        "patient2_id": 78,
+        "duration_minutes": 3,
+        "date": "2025-02-24",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 10,
+        "patient2_id": 44,
+        "duration_minutes": 42,
+        "date": "2025-02-21",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 3,
+        "patient2_id": 89,
+        "duration_minutes": 29,
+        "date": "2025-03-07",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 19,
+        "patient2_id": 44,
+        "duration_minutes": 73,
+        "date": "2025-02-11",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 78,
+        "patient2_id": 79,
+        "duration_minutes": 82,
+        "date": "2025-03-06",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 25,
+        "patient2_id": 31,
+        "duration_minutes": 16,
+        "date": "2025-02-26",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 73,
+        "patient2_id": 77,
+        "duration_minutes": 93,
+        "date": "2025-03-02",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 93,
+        "patient2_id": 73,
+        "duration_minutes": 38,
+        "date": "2025-03-09",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 91,
+        "patient2_id": 39,
+        "duration_minutes": 48,
+        "date": "2025-03-11",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 37,
+        "patient2_id": 47,
+        "duration_minutes": 76,
+        "date": "2025-02-11",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 22,
+        "patient2_id": 25,
+        "duration_minutes": 42,
+        "date": "2025-02-25",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 51,
+        "patient2_id": 29,
+        "duration_minutes": 35,
+        "date": "2025-02-20",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 10,
+        "patient2_id": 93,
+        "duration_minutes": 52,
+        "date": "2025-02-24",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 37,
+        "patient2_id": 70,
+        "duration_minutes": 96,
+        "date": "2025-02-23",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 76,
+        "patient2_id": 89,
+        "duration_minutes": 85,
+        "date": "2025-03-04",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 53,
+        "patient2_id": 5,
+        "duration_minutes": 40,
+        "date": "2025-02-13",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 47,
+        "patient2_id": 89,
+        "duration_minutes": 5,
+        "date": "2025-02-13",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 14,
+        "patient2_id": 100,
+        "duration_minutes": 27,
+        "date": "2025-02-13",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 32,
+        "patient2_id": 55,
+        "duration_minutes": 5,
+        "date": "2025-03-01",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 34,
+        "patient2_id": 68,
+        "duration_minutes": 82,
+        "date": "2025-03-03",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 52,
+        "patient2_id": 77,
+        "duration_minutes": 9,
+        "date": "2025-02-21",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 45,
+        "patient2_id": 87,
+        "duration_minutes": 8,
+        "date": "2025-02-28",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 76,
+        "patient2_id": 86,
+        "duration_minutes": 66,
+        "date": "2025-02-21",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 81,
+        "patient2_id": 58,
+        "duration_minutes": 56,
+        "date": "2025-02-12",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 84,
+        "patient2_id": 77,
+        "duration_minutes": 66,
+        "date": "2025-03-01",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 38,
+        "patient2_id": 3,
+        "duration_minutes": 24,
+        "date": "2025-02-11",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 20,
+        "patient2_id": 4,
+        "duration_minutes": 61,
+        "date": "2025-02-10",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 1,
+        "patient2_id": 21,
+        "duration_minutes": 27,
+        "date": "2025-02-28",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 13,
+        "patient2_id": 90,
+        "duration_minutes": 50,
+        "date": "2025-03-04",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 58,
+        "patient2_id": 47,
+        "duration_minutes": 40,
+        "date": "2025-02-13",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 86,
+        "patient2_id": 68,
+        "duration_minutes": 72,
+        "date": "2025-02-17",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 32,
+        "patient2_id": 50,
+        "duration_minutes": 42,
+        "date": "2025-02-11",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 6,
+        "patient2_id": 10,
+        "duration_minutes": 84,
+        "date": "2025-02-12",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 58,
+        "patient2_id": 74,
+        "duration_minutes": 65,
+        "date": "2025-02-14",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 40,
+        "patient2_id": 79,
+        "duration_minutes": 48,
+        "date": "2025-02-23",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 93,
+        "patient2_id": 25,
+        "duration_minutes": 27,
+        "date": "2025-02-23",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 62,
+        "patient2_id": 82,
+        "duration_minutes": 50,
+        "date": "2025-02-18",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 93,
+        "patient2_id": 16,
+        "duration_minutes": 23,
+        "date": "2025-03-01",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 88,
+        "patient2_id": 17,
+        "duration_minutes": 6,
+        "date": "2025-02-10",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 54,
+        "patient2_id": 8,
+        "duration_minutes": 61,
+        "date": "2025-02-09",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 30,
+        "patient2_id": 1,
+        "duration_minutes": 77,
+        "date": "2025-03-10",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 9,
+        "patient2_id": 67,
+        "duration_minutes": 53,
+        "date": "2025-02-27",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 11,
+        "patient2_id": 39,
+        "duration_minutes": 32,
+        "date": "2025-03-01",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 33,
+        "patient2_id": 64,
+        "duration_minutes": 81,
+        "date": "2025-02-09",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 46,
+        "patient2_id": 66,
+        "duration_minutes": 31,
+        "date": "2025-02-12",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 7,
+        "patient2_id": 9,
+        "duration_minutes": 100,
+        "date": "2025-03-08",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 8,
+        "patient2_id": 68,
+        "duration_minutes": 46,
+        "date": "2025-03-07",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 15,
+        "patient2_id": 11,
+        "duration_minutes": 17,
+        "date": "2025-02-28",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 3,
+        "patient2_id": 71,
+        "duration_minutes": 56,
+        "date": "2025-03-05",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 30,
+        "patient2_id": 78,
+        "duration_minutes": 9,
+        "date": "2025-02-14",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 98,
+        "patient2_id": 82,
+        "duration_minutes": 44,
+        "date": "2025-02-19",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 87,
+        "patient2_id": 43,
+        "duration_minutes": 66,
+        "date": "2025-02-11",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 20,
+        "patient2_id": 81,
+        "duration_minutes": 30,
+        "date": "2025-02-11",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 38,
+        "patient2_id": 78,
+        "duration_minutes": 32,
+        "date": "2025-03-11",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 49,
+        "patient2_id": 88,
+        "duration_minutes": 60,
+        "date": "2025-02-20",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 27,
+        "patient2_id": 3,
+        "duration_minutes": 10,
+        "date": "2025-02-20",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 49,
+        "patient2_id": 80,
+        "duration_minutes": 83,
+        "date": "2025-02-15",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 6,
+        "patient2_id": 15,
+        "duration_minutes": 95,
+        "date": "2025-02-12",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 70,
+        "patient2_id": 83,
+        "duration_minutes": 32,
+        "date": "2025-02-20",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 30,
+        "patient2_id": 84,
+        "duration_minutes": 20,
+        "date": "2025-02-27",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 97,
+        "patient2_id": 29,
+        "duration_minutes": 43,
+        "date": "2025-02-16",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 59,
+        "patient2_id": 78,
+        "duration_minutes": 37,
+        "date": "2025-02-14",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 4,
+        "patient2_id": 77,
+        "duration_minutes": 16,
+        "date": "2025-02-15",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 84,
+        "patient2_id": 59,
+        "duration_minutes": 6,
+        "date": "2025-02-18",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 83,
+        "patient2_id": 21,
+        "duration_minutes": 100,
+        "date": "2025-03-10",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 28,
+        "patient2_id": 56,
+        "duration_minutes": 43,
+        "date": "2025-02-10",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 23,
+        "patient2_id": 45,
+        "duration_minutes": 43,
+        "date": "2025-02-18",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 43,
+        "patient2_id": 2,
+        "duration_minutes": 72,
+        "date": "2025-03-09",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 91,
+        "patient2_id": 50,
+        "duration_minutes": 5,
+        "date": "2025-03-04",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 45,
+        "patient2_id": 44,
+        "duration_minutes": 45,
+        "date": "2025-02-16",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 19,
+        "patient2_id": 97,
+        "duration_minutes": 73,
+        "date": "2025-02-14",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 22,
+        "patient2_id": 62,
+        "duration_minutes": 81,
+        "date": "2025-02-09",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 74,
+        "patient2_id": 29,
+        "duration_minutes": 39,
+        "date": "2025-03-01",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 47,
+        "patient2_id": 95,
+        "duration_minutes": 22,
+        "date": "2025-03-01",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 26,
+        "patient2_id": 5,
+        "duration_minutes": 91,
+        "date": "2025-02-12",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 77,
+        "patient2_id": 66,
+        "duration_minutes": 6,
+        "date": "2025-02-24",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 56,
+        "patient2_id": 42,
+        "duration_minutes": 4,
+        "date": "2025-02-20",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 69,
+        "patient2_id": 4,
+        "duration_minutes": 44,
+        "date": "2025-03-01",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 20,
+        "patient2_id": 75,
+        "duration_minutes": 82,
+        "date": "2025-02-21",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 66,
+        "patient2_id": 78,
+        "duration_minutes": 87,
+        "date": "2025-02-24",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 99,
+        "patient2_id": 33,
+        "duration_minutes": 34,
+        "date": "2025-02-10",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 99,
+        "patient2_id": 24,
+        "duration_minutes": 50,
+        "date": "2025-02-14",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 99,
+        "patient2_id": 18,
+        "duration_minutes": 12,
+        "date": "2025-02-27",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 38,
+        "patient2_id": 23,
+        "duration_minutes": 80,
+        "date": "2025-02-16",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 19,
+        "patient2_id": 44,
+        "duration_minutes": 96,
+        "date": "2025-03-08",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 89,
+        "patient2_id": 80,
+        "duration_minutes": 86,
+        "date": "2025-03-10",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 56,
+        "patient2_id": 11,
+        "duration_minutes": 52,
+        "date": "2025-02-22",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 94,
+        "patient2_id": 19,
+        "duration_minutes": 78,
+        "date": "2025-03-05",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 6,
+        "patient2_id": 56,
+        "duration_minutes": 62,
+        "date": "2025-02-26",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 48,
+        "patient2_id": 1,
+        "duration_minutes": 43,
+        "date": "2025-03-08",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 31,
+        "patient2_id": 64,
+        "duration_minutes": 11,
+        "date": "2025-03-07",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 22,
+        "patient2_id": 79,
+        "duration_minutes": 4,
+        "date": "2025-03-08",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 83,
+        "patient2_id": 41,
+        "duration_minutes": 55,
+        "date": "2025-03-11",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 61,
+        "patient2_id": 58,
+        "duration_minutes": 38,
+        "date": "2025-02-12",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 9,
+        "patient2_id": 66,
+        "duration_minutes": 5,
+        "date": "2025-03-11",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 62,
+        "patient2_id": 57,
+        "duration_minutes": 55,
+        "date": "2025-02-19",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 12,
+        "patient2_id": 71,
+        "duration_minutes": 88,
+        "date": "2025-02-20",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 90,
+        "patient2_id": 88,
+        "duration_minutes": 86,
+        "date": "2025-03-06",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 35,
+        "patient2_id": 83,
+        "duration_minutes": 90,
+        "date": "2025-03-09",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 44,
+        "patient2_id": 27,
+        "duration_minutes": 38,
+        "date": "2025-03-09",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 93,
+        "patient2_id": 28,
+        "duration_minutes": 78,
+        "date": "2025-03-09",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 56,
+        "patient2_id": 41,
+        "duration_minutes": 54,
+        "date": "2025-03-09",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 78,
+        "patient2_id": 39,
+        "duration_minutes": 56,
+        "date": "2025-02-26",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 46,
+        "patient2_id": 98,
+        "duration_minutes": 11,
+        "date": "2025-03-09",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 31,
+        "patient2_id": 16,
+        "duration_minutes": 69,
+        "date": "2025-03-06",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 63,
+        "patient2_id": 80,
+        "duration_minutes": 3,
+        "date": "2025-03-05",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 18,
+        "patient2_id": 66,
+        "duration_minutes": 45,
+        "date": "2025-02-27",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 21,
+        "patient2_id": 9,
+        "duration_minutes": 90,
+        "date": "2025-03-09",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 73,
+        "patient2_id": 19,
+        "duration_minutes": 45,
+        "date": "2025-03-06",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 61,
+        "patient2_id": 91,
+        "duration_minutes": 19,
+        "date": "2025-03-06",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 76,
+        "patient2_id": 78,
+        "duration_minutes": 39,
+        "date": "2025-03-01",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 66,
+        "patient2_id": 80,
+        "duration_minutes": 88,
+        "date": "2025-02-22",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 88,
+        "patient2_id": 78,
+        "duration_minutes": 24,
+        "date": "2025-03-08",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 76,
+        "patient2_id": 2,
+        "duration_minutes": 4,
+        "date": "2025-03-06",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 80,
+        "patient2_id": 52,
+        "duration_minutes": 67,
+        "date": "2025-02-25",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 80,
+        "patient2_id": 30,
+        "duration_minutes": 68,
+        "date": "2025-03-05",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 67,
+        "patient2_id": 23,
+        "duration_minutes": 7,
+        "date": "2025-03-03",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 17,
+        "patient2_id": 28,
+        "duration_minutes": 2,
+        "date": "2025-02-11",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 69,
+        "patient2_id": 7,
+        "duration_minutes": 66,
+        "date": "2025-02-14",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 98,
+        "patient2_id": 24,
+        "duration_minutes": 87,
+        "date": "2025-02-27",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 45,
+        "patient2_id": 22,
+        "duration_minutes": 23,
+        "date": "2025-03-09",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 47,
+        "patient2_id": 17,
+        "duration_minutes": 98,
+        "date": "2025-02-27",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 25,
+        "patient2_id": 75,
+        "duration_minutes": 61,
+        "date": "2025-02-20",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 70,
+        "patient2_id": 14,
+        "duration_minutes": 49,
+        "date": "2025-02-12",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 10,
+        "patient2_id": 64,
+        "duration_minutes": 27,
+        "date": "2025-02-20",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 68,
+        "patient2_id": 74,
+        "duration_minutes": 9,
+        "date": "2025-03-07",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 59,
+        "patient2_id": 67,
+        "duration_minutes": 87,
+        "date": "2025-02-12",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 85,
+        "patient2_id": 10,
+        "duration_minutes": 57,
+        "date": "2025-03-05",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 7,
+        "patient2_id": 51,
+        "duration_minutes": 80,
+        "date": "2025-03-02",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 69,
+        "patient2_id": 79,
+        "duration_minutes": 24,
+        "date": "2025-02-09",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 26,
+        "patient2_id": 85,
+        "duration_minutes": 49,
+        "date": "2025-02-20",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 39,
+        "patient2_id": 40,
+        "duration_minutes": 46,
+        "date": "2025-02-21",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 6,
+        "patient2_id": 4,
+        "duration_minutes": 77,
+        "date": "2025-02-22",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 89,
+        "patient2_id": 74,
+        "duration_minutes": 42,
+        "date": "2025-02-14",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 92,
+        "patient2_id": 45,
+        "duration_minutes": 55,
+        "date": "2025-03-08",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 56,
+        "patient2_id": 86,
+        "duration_minutes": 81,
+        "date": "2025-03-05",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 38,
+        "patient2_id": 66,
+        "duration_minutes": 60,
+        "date": "2025-02-15",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 24,
+        "patient2_id": 36,
+        "duration_minutes": 13,
+        "date": "2025-02-26",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 86,
+        "patient2_id": 59,
+        "duration_minutes": 70,
+        "date": "2025-02-12",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 7,
+        "patient2_id": 54,
+        "duration_minutes": 40,
+        "date": "2025-02-11",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 80,
+        "patient2_id": 71,
+        "duration_minutes": 53,
+        "date": "2025-02-19",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 33,
+        "patient2_id": 88,
+        "duration_minutes": 85,
+        "date": "2025-03-10",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 83,
+        "patient2_id": 22,
+        "duration_minutes": 12,
+        "date": "2025-02-18",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 39,
+        "patient2_id": 48,
+        "duration_minutes": 33,
+        "date": "2025-03-01",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 11,
+        "patient2_id": 53,
+        "duration_minutes": 22,
+        "date": "2025-02-10",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 55,
+        "patient2_id": 65,
+        "duration_minutes": 1,
+        "date": "2025-02-14",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 71,
+        "patient2_id": 33,
+        "duration_minutes": 82,
+        "date": "2025-03-04",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 23,
+        "patient2_id": 66,
+        "duration_minutes": 28,
+        "date": "2025-02-19",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 11,
+        "patient2_id": 29,
+        "duration_minutes": 47,
+        "date": "2025-03-03",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 29,
+        "patient2_id": 90,
+        "duration_minutes": 29,
+        "date": "2025-02-16",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 15,
+        "patient2_id": 78,
+        "duration_minutes": 41,
+        "date": "2025-02-26",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 10,
+        "patient2_id": 2,
+        "duration_minutes": 15,
+        "date": "2025-02-21",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 88,
+        "patient2_id": 23,
+        "duration_minutes": 15,
+        "date": "2025-03-01",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 46,
+        "patient2_id": 12,
+        "duration_minutes": 39,
+        "date": "2025-02-11",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 59,
+        "patient2_id": 42,
+        "duration_minutes": 55,
+        "date": "2025-03-06",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 91,
+        "patient2_id": 43,
+        "duration_minutes": 21,
+        "date": "2025-02-22",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 20,
+        "patient2_id": 87,
+        "duration_minutes": 52,
+        "date": "2025-03-03",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 9,
+        "patient2_id": 39,
+        "duration_minutes": 13,
+        "date": "2025-02-20",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 17,
+        "patient2_id": 87,
+        "duration_minutes": 37,
+        "date": "2025-02-28",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 25,
+        "patient2_id": 23,
+        "duration_minutes": 100,
+        "date": "2025-02-22",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 46,
+        "patient2_id": 23,
+        "duration_minutes": 97,
+        "date": "2025-03-09",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 64,
+        "patient2_id": 43,
+        "duration_minutes": 36,
+        "date": "2025-02-23",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 62,
+        "patient2_id": 78,
+        "duration_minutes": 99,
+        "date": "2025-02-11",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 37,
+        "patient2_id": 65,
+        "duration_minutes": 23,
+        "date": "2025-02-21",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 8,
+        "patient2_id": 13,
+        "duration_minutes": 61,
+        "date": "2025-03-04",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 70,
+        "patient2_id": 4,
+        "duration_minutes": 19,
+        "date": "2025-03-06",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 28,
+        "patient2_id": 1,
+        "duration_minutes": 60,
+        "date": "2025-03-07",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 65,
+        "patient2_id": 36,
+        "duration_minutes": 52,
+        "date": "2025-02-19",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 28,
+        "patient2_id": 88,
+        "duration_minutes": 70,
+        "date": "2025-02-28",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 100,
+        "patient2_id": 82,
+        "duration_minutes": 51,
+        "date": "2025-03-03",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 45,
+        "patient2_id": 79,
+        "duration_minutes": 81,
+        "date": "2025-02-10",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 50,
+        "patient2_id": 67,
+        "duration_minutes": 48,
+        "date": "2025-02-20",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 91,
+        "patient2_id": 73,
+        "duration_minutes": 66,
+        "date": "2025-02-10",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 43,
+        "patient2_id": 97,
+        "duration_minutes": 88,
+        "date": "2025-02-28",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 67,
+        "patient2_id": 82,
+        "duration_minutes": 40,
+        "date": "2025-02-16",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 43,
+        "patient2_id": 25,
+        "duration_minutes": 71,
+        "date": "2025-03-09",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 96,
+        "patient2_id": 89,
+        "duration_minutes": 29,
+        "date": "2025-02-12",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 65,
+        "patient2_id": 18,
+        "duration_minutes": 28,
+        "date": "2025-02-26",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 55,
+        "patient2_id": 75,
+        "duration_minutes": 18,
+        "date": "2025-02-16",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 76,
+        "patient2_id": 29,
+        "duration_minutes": 90,
+        "date": "2025-03-05",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 88,
+        "patient2_id": 68,
+        "duration_minutes": 54,
+        "date": "2025-03-03",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 23,
+        "patient2_id": 92,
+        "duration_minutes": 14,
+        "date": "2025-03-07",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 53,
+        "patient2_id": 82,
+        "duration_minutes": 56,
+        "date": "2025-02-14",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 49,
+        "patient2_id": 77,
+        "duration_minutes": 35,
+        "date": "2025-02-09",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 7,
+        "patient2_id": 33,
+        "duration_minutes": 91,
+        "date": "2025-02-14",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 17,
+        "patient2_id": 43,
+        "duration_minutes": 17,
+        "date": "2025-03-11",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 99,
+        "patient2_id": 38,
+        "duration_minutes": 61,
+        "date": "2025-02-26",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 67,
+        "patient2_id": 49,
+        "duration_minutes": 60,
+        "date": "2025-02-24",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 38,
+        "patient2_id": 3,
+        "duration_minutes": 57,
+        "date": "2025-02-17",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 84,
+        "patient2_id": 32,
+        "duration_minutes": 9,
+        "date": "2025-02-16",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 68,
+        "patient2_id": 91,
+        "duration_minutes": 50,
+        "date": "2025-03-03",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 42,
+        "patient2_id": 20,
+        "duration_minutes": 30,
+        "date": "2025-02-11",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 26,
+        "patient2_id": 30,
+        "duration_minutes": 4,
+        "date": "2025-02-09",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 28,
+        "patient2_id": 59,
+        "duration_minutes": 79,
+        "date": "2025-02-20",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 64,
+        "patient2_id": 44,
+        "duration_minutes": 58,
+        "date": "2025-02-10",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 44,
+        "patient2_id": 46,
+        "duration_minutes": 79,
+        "date": "2025-03-08",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 73,
+        "patient2_id": 11,
+        "duration_minutes": 45,
+        "date": "2025-02-10",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 10,
+        "patient2_id": 17,
+        "duration_minutes": 29,
+        "date": "2025-02-11",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 69,
+        "patient2_id": 65,
+        "duration_minutes": 35,
+        "date": "2025-02-16",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 95,
+        "patient2_id": 23,
+        "duration_minutes": 88,
+        "date": "2025-02-15",
+        "location": "Cafeteria"
+    },
+    {
+        "patient1_id": 40,
+        "patient2_id": 68,
+        "duration_minutes": 84,
+        "date": "2025-03-10",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 2,
+        "patient2_id": 17,
+        "duration_minutes": 99,
+        "date": "2025-03-04",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 74,
+        "patient2_id": 17,
+        "duration_minutes": 78,
+        "date": "2025-02-19",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 59,
+        "patient2_id": 22,
+        "duration_minutes": 61,
+        "date": "2025-02-24",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 100,
+        "patient2_id": 91,
+        "duration_minutes": 90,
+        "date": "2025-03-07",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 70,
+        "patient2_id": 46,
+        "duration_minutes": 6,
+        "date": "2025-02-13",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 64,
+        "patient2_id": 93,
+        "duration_minutes": 82,
+        "date": "2025-02-16",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 31,
+        "patient2_id": 97,
+        "duration_minutes": 3,
+        "date": "2025-02-25",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 5,
+        "patient2_id": 44,
+        "duration_minutes": 72,
+        "date": "2025-03-07",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 19,
+        "patient2_id": 89,
+        "duration_minutes": 73,
+        "date": "2025-02-18",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 82,
+        "patient2_id": 30,
+        "duration_minutes": 20,
+        "date": "2025-02-11",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 4,
+        "patient2_id": 81,
+        "duration_minutes": 70,
+        "date": "2025-02-27",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 47,
+        "patient2_id": 71,
+        "duration_minutes": 5,
+        "date": "2025-02-12",
+        "location": "General Ward"
+    },
+    {
+        "patient1_id": 49,
+        "patient2_id": 74,
+        "duration_minutes": 18,
+        "date": "2025-02-24",
+        "location": "Lobby"
+    },
+    {
+        "patient1_id": 78,
+        "patient2_id": 5,
+        "duration_minutes": 78,
+        "date": "2025-02-17",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 32,
+        "patient2_id": 73,
+        "duration_minutes": 74,
+        "date": "2025-02-14",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 16,
+        "patient2_id": 65,
+        "duration_minutes": 42,
+        "date": "2025-02-15",
+        "location": "Emergency Room"
+    },
+    {
+        "patient1_id": 12,
+        "patient2_id": 62,
+        "duration_minutes": 14,
+        "date": "2025-03-10",
+        "location": "ICU"
+    },
+    {
+        "patient1_id": 81,
+        "patient2_id": 17,
+        "duration_minutes": 2,
+        "date": "2025-02-11",
+        "location": "Waiting Area"
+    },
+    {
+        "patient1_id": 91,
+        "patient2_id": 36,
+        "duration_minutes": 92,
+        "date": "2025-02-10",
+        "location": "Pharmacy"
+    },
+    {
+        "patient1_id": 64,
+        "patient2_id": 48,
+        "duration_minutes": 96,
+        "date": "2025-02-27",
+        "location": "Waiting Area"
+    }
+]

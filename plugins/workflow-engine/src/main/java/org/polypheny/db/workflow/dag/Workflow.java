@@ -181,6 +181,15 @@ public interface Workflow {
 
     void deleteEdge( EdgeModel model, StorageManager sm );
 
+    /**
+     * Reorder the multi-edges by moving the specified edge to the targetIndex
+     *
+     * @param edge the edge to move
+     * @param targetIndex the new index in the list of multi-edges for that activity. -1 to move to the end
+     * @param sm the storage manager
+     */
+    void moveMultiEdge( EdgeModel edge, int targetIndex, StorageManager sm );
+
     ActivityWrapper updateActivity( UUID activityId, @Nullable Map<String, JsonNode> settings, @Nullable ActivityConfigModel config, @Nullable RenderModel rendering, StorageManager sm );
 
     /**

@@ -1,0 +1,285 @@
+{
+    "activities": [
+        {
+            "type": "relLookup",
+            "id": "6a7297d2-67e9-4385-84ba-6aff471b5993",
+            "settings": {
+                "leftFields": {
+                    "include": [],
+                    "exclude": [],
+                    "unspecifiedIndex": -1
+                },
+                "fail": false,
+                "rightFields": {
+                    "include": [],
+                    "exclude": [],
+                    "unspecifiedIndex": -1
+                },
+                "keepKeys": true,
+                "matchType": "EXACT",
+                "valueFields": {
+                    "include": [],
+                    "exclude": [],
+                    "unspecifiedIndex": -1
+                },
+                "target": ""
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
+            },
+            "rendering": {
+                "posX": 1192.134494088384,
+                "posY": -1199.3108447843865,
+                "name": null,
+                "notes": "TODO: change settings"
+            }
+        },
+        {
+            "type": "relCast",
+            "id": "aea1d436-4b3e-4373-b3d2-5f694bf95ffa",
+            "settings": {
+                "cast": {
+                    "casts": [
+                        {
+                            "source": "salary",
+                            "target": null,
+                            "type": "BIGINT",
+                            "nullable": false,
+                            "collectionsType": "",
+                            "precision": null,
+                            "scale": null,
+                            "dimension": -1,
+                            "cardinality": -1
+                        }
+                    ]
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
+            },
+            "rendering": {
+                "posX": 185.63748794293247,
+                "posY": -1501.8622022263978,
+                "name": null,
+                "notes": "Attempts to make the salary column non-nullable."
+            }
+        },
+        {
+            "type": "relMerge",
+            "id": "449f4bb7-d91d-4c18-8d96-bc0ea18ccb77",
+            "settings": {},
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
+            },
+            "rendering": {
+                "posX": 3158.4927640547457,
+                "posY": -1487.889369712647,
+                "name": null,
+                "notes": "Merges the original and \"CATCH\" branch"
+            }
+        },
+        {
+            "type": "relLoad",
+            "id": "eb870c38-4500-4cb9-bb80-1c5e3c38eaba",
+            "settings": {
+                "drop": true,
+                "adapter": "hsqldb_disk",
+                "keepPk": true,
+                "create": true,
+                "pkCols": {
+                    "include": [],
+                    "exclude": [],
+                    "unspecifiedIndex": -1
+                },
+                "table": {
+                    "namespace": "relational",
+                    "name": "employees_with_salary"
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
+            },
+            "rendering": {
+                "posX": 4170.689240382435,
+                "posY": -1487.4292370528935,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relExtractCsv",
+            "id": "9cc3b1eb-bdd6-48a6-8f32-000df11b4b20",
+            "settings": {
+                "preview": true,
+                "fail": false,
+                "file": {
+                    "path": "classpath://sample_data/hospital_employees_incomplete.csv",
+                    "type": "ABS_FILE",
+                    "multi": false
+                },
+                "quote": "\"",
+                "nameCol": false,
+                "emptyIsNull": true,
+                "header": true,
+                "escape": "BACKSLASH",
+                "inferType": true,
+                "sep": "COMMA"
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
+            },
+            "rendering": {
+                "posX": -577.5924244346439,
+                "posY": -1199.7912397426744,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relCast",
+            "id": "1c16827f-aabc-412b-aa79-ac962c26498b",
+            "settings": {
+                "cast": {
+                    "casts": [
+                        {
+                            "source": "salary",
+                            "target": null,
+                            "type": "BIGINT",
+                            "nullable": false,
+                            "collectionsType": "",
+                            "precision": null,
+                            "scale": null,
+                            "dimension": -1,
+                            "cardinality": -1
+                        }
+                    ]
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
+            },
+            "rendering": {
+                "posX": 3659.385290643448,
+                "posY": -1485.820414749013,
+                "name": "Validate Column Types",
+                "notes": null
+            }
+        },
+        {
+            "type": "docExtractJson",
+            "id": "1bc594ee-b7d0-49de-8c5e-e060909a041f",
+            "settings": {
+                "nameField": false,
+                "file": {
+                    "path": "C:\\Daten\\Drive\\Studium\\10101 - MSc Thesis\\Code Snippets\\Sample Data\\User Study\\job_adverts.json",
+                    "type": "ABS_FILE",
+                    "multi": false
+                }
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
+            },
+            "rendering": {
+                "posX": 657.3370628039081,
+                "posY": -1001.3176861568393,
+                "name": null,
+                "notes": "-> \"CATCH\" branch"
+            }
+        }
+    ],
+    "edges": [
+        {
+            "fromId": "1c16827f-aabc-412b-aa79-ac962c26498b",
+            "toId": "eb870c38-4500-4cb9-bb80-1c5e3c38eaba",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "aea1d436-4b3e-4373-b3d2-5f694bf95ffa",
+            "toId": "449f4bb7-d91d-4c18-8d96-bc0ea18ccb77",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "449f4bb7-d91d-4c18-8d96-bc0ea18ccb77",
+            "toId": "1c16827f-aabc-412b-aa79-ac962c26498b",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "9cc3b1eb-bdd6-48a6-8f32-000df11b4b20",
+            "toId": "6a7297d2-67e9-4385-84ba-6aff471b5993",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "9cc3b1eb-bdd6-48a6-8f32-000df11b4b20",
+            "toId": "aea1d436-4b3e-4373-b3d2-5f694bf95ffa",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        },
+        {
+            "fromId": "1bc594ee-b7d0-49de-8c5e-e060909a041f",
+            "toId": "6a7297d2-67e9-4385-84ba-6aff471b5993",
+            "fromPort": 0,
+            "toPort": 1,
+            "isControl": false
+        }
+    ],
+    "config": {
+        "preferredStores": {
+            "DOCUMENT": "hsqldb_disk",
+            "GRAPH": "hsqldb_disk",
+            "RELATIONAL": "hsqldb_disk"
+        },
+        "fusionEnabled": false,
+        "pipelineEnabled": false,
+        "timeoutSeconds": 0,
+        "dropUnusedCheckpoints": false,
+        "maxWorkers": 1,
+        "pipelineQueueCapacity": 1000,
+        "logCapacity": 100
+    },
+    "variables": {},
+    "format_version": "0.0.1"
+}

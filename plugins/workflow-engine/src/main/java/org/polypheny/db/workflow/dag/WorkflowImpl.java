@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,6 +29,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;
@@ -470,6 +472,40 @@ public class WorkflowImpl implements Workflow {
                 edges.get( movedEdge.toPair() ).add( movedEdge );
                 nextEdge = getDataEdge( toId, ++nextIdx );
             }
+        }
+    }
+
+
+    @Override
+    public void moveMultiEdge( EdgeModel model, int targetIndex, StorageManager sm ) {
+        Edge edge = getEdge( model );
+        if ( edge == null ) {
+            throw new GenericRuntimeException( "The specified edge does not exist" );
+        }
+        if ( edge instanceof DataEdge dataEdge && dataEdge.isMulti() ) {
+            List<DataEdge> multiEdges = getInEdges( model.getToId() ).stream()
+                    .filter( e -> e instanceof DataEdge d && d.isMulti() )
+                    .map( e -> (DataEdge) e )
+                    .sorted( Comparator.comparing( DataEdge::getToPort ) )
+                    .collect( Collectors.toCollection( ArrayList::new ) );
+
+            if ( targetIndex < 0 || targetIndex >= multiEdges.size() ) {
+                targetIndex = multiEdges.size() - 1;
+            }
+            if ( targetIndex == dataEdge.getMultiIndex() ) {
+                return;
+            }
+            multiEdges.forEach( e -> edges.get( e.toPair() ).remove( e ) ); // remove old edges from workflow
+            multiEdges.add( targetIndex, multiEdges.remove( dataEdge.getMultiIndex() ) ); // move edge in list
+            int multiPortIdx = edge.getTo().getDef().getInPorts().length - 1;
+            for ( int i = 0; i < multiEdges.size(); ++i ) {
+                DataEdge oldEdge = multiEdges.get( i );
+                DataEdge updatedEdge = new DataEdge( oldEdge.getFrom(), oldEdge.getTo(), oldEdge.getFromPort(), multiPortIdx + i );
+                edges.computeIfAbsent( updatedEdge.toPair(), k -> new ArrayList<>() ).add( updatedEdge );
+            }
+            reset( edge.getTo().getId(), sm );
+        } else {
+            throw new GenericRuntimeException( "The specified edge is not a multi-edge" );
         }
     }
 

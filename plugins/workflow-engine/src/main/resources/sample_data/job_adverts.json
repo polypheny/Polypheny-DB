@@ -1,0 +1,137 @@
+[
+    {
+        "role": "Doctor",
+        "entry_salary": 120000,
+        "description": "We are looking for a dedicated physician to join our hospital. Must be board-certified and licensed.",
+        "qualifications": [
+            "Medical degree",
+            "Board certification",
+            "5+ years of experience"
+        ],
+        "contact_email": "careers@hospital.com"
+    },
+    {
+        "role": "Nurse",
+        "entry_salary": 60000,
+        "description": "Seeking compassionate nurses to provide patient care and support physicians.",
+        "shift": "Rotating shifts (day/night)",
+        "benefits": [
+            "Health insurance",
+            "Paid time off",
+            "401(k)"
+        ]
+    },
+    {
+        "role": "Surgeon",
+        "entry_salary": 150000,
+        "description": "Experienced surgeon needed to perform complex procedures in a fast-paced environment.",
+        "required_experience": "10+ years in surgery",
+        "certifications": [
+            "Fellowship training",
+            "Board-certified"
+        ]
+    },
+    {
+        "role": "Anesthesiologist",
+        "entry_salary": 130000,
+        "description": "We need an anesthesiologist to administer anesthesia and monitor patients during surgery.",
+        "work_schedule": "On-call rotations",
+        "contact_phone": "(555) 123-4567"
+    },
+    {
+        "role": "Radiologist",
+        "entry_salary": 100000,
+        "description": "Radiologist needed to interpret medical images and assist in diagnoses.",
+        "equipment_used": [
+            "MRI",
+            "CT Scan",
+            "X-ray"
+        ],
+        "work_location": "Main hospital campus"
+    },
+    {
+        "role": "Pharmacist",
+        "entry_salary": 80000,
+        "description": "Responsible for dispensing medications and advising on drug interactions.",
+        "required_degree": "Doctor of Pharmacy (PharmD)",
+        "licenses": [
+            "State pharmacy license"
+        ]
+    },
+    {
+        "role": "Lab Technician",
+        "entry_salary": 50000,
+        "description": "Conducts medical laboratory tests for diagnosis and treatment.",
+        "required_skills": [
+            "Microscopy",
+            "Sample analysis",
+            "Equipment maintenance"
+        ],
+        "work_environment": "Clinical lab"
+    },
+    {
+        "role": "Physical Therapist",
+        "entry_salary": 70000,
+        "description": "Helps patients recover mobility and manage pain through therapy.",
+        "patient_types": [
+            "Post-surgical",
+            "Athletes",
+            "Elderly"
+        ],
+        "certifications": [
+            "Physical Therapy License"
+        ]
+    },
+    {
+        "role": "Medical Assistant",
+        "entry_salary": 40000,
+        "description": "Provides support to doctors and nurses with patient care and administrative tasks.",
+        "responsibilities": [
+            "Scheduling appointments",
+            "Taking vital signs",
+            "Assisting in exams"
+        ]
+    },
+    {
+        "role": "Paramedic",
+        "entry_salary": 45000,
+        "description": "Responds to emergency situations and provides life-saving care.",
+        "certifications": [
+            "EMT-P Certification"
+        ],
+        "work_conditions": "High-pressure, field-based"
+    },
+    {
+        "role": "Hospital Administrator",
+        "entry_salary": 90000,
+        "description": "Oversees hospital operations and ensures efficient service delivery.",
+        "key_responsibilities": [
+            "Budgeting",
+            "Staff management",
+            "Compliance"
+        ],
+        "required_education": "Master’s in Healthcare Administration"
+    },
+    {
+        "role": "Receptionist",
+        "entry_salary": 35000,
+        "description": "Greets patients, manages front-desk operations, and schedules appointments.",
+        "skills": [
+            "Customer service",
+            "Multi-tasking",
+            "Data entry"
+        ],
+        "work_hours": "8 AM - 5 PM, Monday to Friday"
+    },
+    {
+        "role": "Janitor",
+        "entry_salary": 30000,
+        "description": "Maintains cleanliness and hygiene throughout the hospital.",
+        "tasks": [
+            "Sanitizing surfaces",
+            "Trash disposal",
+            "Floor cleaning"
+        ],
+        "uniform_provided": true
+    }
+]

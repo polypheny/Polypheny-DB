@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.dag.activities.impl.transform;
 
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
@@ -67,6 +68,12 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
 
 
     @Override
+    public Optional<Boolean> canPipe( List<TypePreview> inTypes, SettingsPreview settings ) {
+        return settings.get( "all", BoolValue.class ).map( BoolValue::getValue ); // union with deduplication cannot be easily piped
+    }
+
+
+    @Override
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
         return ActivityUtils.mergeTypesOrThrow( inTypes );
     }
@@ -74,7 +81,6 @@ public class RelUnionActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
-        // TODO: Implement all=false or disable pipelining
         for ( InputPipe input : inputs ) {
             for ( List<PolyValue> tuple : input ) {
                 if ( !output.put( tuple ) ) {

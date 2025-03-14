@@ -58,6 +58,7 @@ import org.polypheny.db.workflow.models.requests.WsRequest.DeleteEdgeRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.ExecuteRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.GetCheckpointRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.InterruptRequest;
+import org.polypheny.db.workflow.models.requests.WsRequest.MoveMultiEdgeRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.ResetRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateConfigRequest;
@@ -277,6 +278,11 @@ public abstract class AbstractSession {
 
 
     public void handleRequest( DeleteEdgeRequest request ) {
+        throwUnsupported( request );
+    }
+
+
+    public void handleRequest( MoveMultiEdgeRequest request ) {
         throwUnsupported( request );
     }
 

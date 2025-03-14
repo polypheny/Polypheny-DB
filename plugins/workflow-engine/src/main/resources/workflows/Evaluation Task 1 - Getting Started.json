@@ -1,0 +1,96 @@
+{
+    "activities": [
+        {
+            "type": "relExtractCsv",
+            "id": "21aa81e6-5187-4bb6-9229-7be36b295cab",
+            "settings": {
+                "preview": true,
+                "fail": false,
+                "file": {
+                    "path": "classpath://sample_data/hospital_employees.csv",
+                    "type": "ABS_FILE",
+                    "multi": false
+                },
+                "quote": "\"",
+                "nameCol": false,
+                "emptyIsNull": true,
+                "header": true,
+                "escape": "BACKSLASH",
+                "inferType": true,
+                "sep": "COMMA"
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
+            },
+            "rendering": {
+                "posX": 21.751627514541802,
+                "posY": -50.98046982549837,
+                "name": null,
+                "notes": null
+            }
+        },
+        {
+            "type": "relEfficientFilter",
+            "id": "7fec1e82-1ebc-4490-926e-b18a44b5d0cb",
+            "settings": {
+                "filter": {
+                    "conditions": [
+                        {
+                            "field": "salary",
+                            "operator": "LESS_THAN",
+                            "value": "200000",
+                            "ignoreCase": false
+                        }
+                    ],
+                    "targetMode": "EXACT",
+                    "combineWithOr": false
+                },
+                "negate": false
+            },
+            "config": {
+                "enforceCheckpoint": false,
+                "timeoutSeconds": 0,
+                "preferredStores": null,
+                "commonType": "NONE",
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
+            },
+            "rendering": {
+                "posX": 603.5010850096946,
+                "posY": -50.98046982549837,
+                "name": null,
+                "notes": null
+            }
+        }
+    ],
+    "edges": [
+        {
+            "fromId": "21aa81e6-5187-4bb6-9229-7be36b295cab",
+            "toId": "7fec1e82-1ebc-4490-926e-b18a44b5d0cb",
+            "fromPort": 0,
+            "toPort": 0,
+            "isControl": false
+        }
+    ],
+    "config": {
+        "preferredStores": {
+            "DOCUMENT": "hsqldb_disk",
+            "GRAPH": "hsqldb_disk",
+            "RELATIONAL": "hsqldb_disk"
+        },
+        "fusionEnabled": false,
+        "pipelineEnabled": false,
+        "timeoutSeconds": 0,
+        "dropUnusedCheckpoints": false,
+        "maxWorkers": 1,
+        "pipelineQueueCapacity": 1000,
+        "logCapacity": 100
+    },
+    "variables": {},
+    "format_version": "0.0.1"
+}

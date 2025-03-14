@@ -118,7 +118,13 @@ public class WorkflowManager {
                 if ( repo.doesNameExist( fileName ) ) {
                     continue;
                 }
-                String group = fileName.startsWith( "Demo " ) ? "Demonstration" : "Sample Workflows for Debugging";
+                String group = "Sample Workflows for Debugging";
+                if ( fileName.startsWith( "Demo " ) ) {
+                    group = "Demonstration";
+                } else if ( fileName.startsWith( "Evaluation " ) ) {
+                    group = "Evaluation";
+                    fileName = fileName.substring( "Evaluation ".length() );
+                }
                 repo.importWorkflow( fileName, group, workflow );
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
