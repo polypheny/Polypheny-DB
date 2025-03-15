@@ -155,8 +155,6 @@ public class MvccUtils {
 
 
     private static long validateRelWrites( long sequenceNumber, Entity writtenEntity, Transaction transaction ) {
-        // ToDo TH: think about what happens to deletions
-        // FIXME: inner should be: SELECT ABS(_eid) FROM %s WHERE _vid = %d
         String queryTemplate = """
                 SELECT CAST(MAX(a._vid) AS DECIMAL) AS max_vid
                 FROM %s AS a

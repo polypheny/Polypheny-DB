@@ -58,7 +58,7 @@ public class RelCommitStateFilterRewrite extends DeferredAlgTreeModification<Log
                 new RexLiteral(
                         PolyBigDecimal.of( 0 ),
                         IdentifierUtils.VERSION_ALG_TYPE,
-                        PolyType.BIGINT
+                        IdentifierUtils.VERSION_ALG_TYPE.getPolyType()
                 )
         );
 

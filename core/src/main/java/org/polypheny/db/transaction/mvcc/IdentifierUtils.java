@@ -51,11 +51,11 @@ public class IdentifierUtils {
     public static final long MISSING_IDENTIFIER = 0;
     public static final long MISSING_VERSION = 0;
 
-    public static final AlgDataType IDENTIFIER_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BIGINT, false );
-    public static final AlgDataType VERSION_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BIGINT, false );
+    public static final AlgDataType IDENTIFIER_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.DECIMAL, false );
+    public static final AlgDataType VERSION_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.DECIMAL, false );
 
     public static final ColumnTypeInformation IDENTIFIER_COLUMN_TYPE = new ColumnTypeInformation(
-            PolyType.BIGINT, // binary not supported by hsqldb TODO TH: check for other stores, datatypes
+            IDENTIFIER_ALG_TYPE.getPolyType(), // binary not supported by hsqldb TODO TH: check for other stores, datatypes
             null,
             null,
             null,
@@ -74,7 +74,7 @@ public class IdentifierUtils {
     );
 
     public static final ColumnTypeInformation VERSION_COLUMN_TYPE = new ColumnTypeInformation(
-            PolyType.BIGINT,
+            VERSION_ALG_TYPE.getPolyType(),
             null,
             null,
             null,
