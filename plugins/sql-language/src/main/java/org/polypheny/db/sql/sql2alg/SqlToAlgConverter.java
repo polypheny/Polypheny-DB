@@ -223,6 +223,7 @@ import org.polypheny.db.sql.language.validate.SqlValidatorNamespace;
 import org.polypheny.db.sql.language.validate.SqlValidatorScope;
 import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyString;
@@ -2896,13 +2897,14 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     protected void collectInsertTargets( SqlInsert call, final RexNode sourceRef, final List<String> targetColumnNames, List<RexNode> columnExprs ) {
         final Entity targetTable = getTargetTable( call );
         final AlgDataType tableRowType = targetTable.getTupleType(false);
+        final AlgDataType sourceRowType = IdentifierUtils.removeIdentifierFields( sourceRef.getType(), typeFactory );
         SqlNodeList targetColumnList = call.getTargetColumnList();
         if ( targetColumnList == null ) {
             if ( validator.getConformance().isInsertSubsetColumnsAllowed() ) {
                 final AlgDataType targetRowType =
                         typeFactory.createStructType(
                                 tableRowType.getFields()
-                                        .subList( 0, sourceRef.getType().getFieldCount() ) );
+                                        .subList( 0, sourceRowType.getFieldCount() ) );
                 targetColumnNames.addAll( targetRowType.getFieldNames() );
             } else {
                 targetColumnNames.addAll( tableRowType.getFieldNames() );

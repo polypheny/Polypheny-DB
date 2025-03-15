@@ -874,7 +874,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param targetRowType Desired row type, must not be null, may be the data type 'unknown'.
      */
     protected void validateNamespace( final SqlValidatorNamespace namespace, AlgDataType targetRowType, Entity target ) {
-        namespace.validate( targetRowType, target);
+        namespace.validate( targetRowType, target );
         if ( namespace.getNode() != null ) {
             setValidatedNodeType( namespace.getNode(), namespace.getType() );
         }
@@ -1344,6 +1344,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         // For the source, we need to anonymize the fields, so that for a statement like UPDATE T SET I = I + 1, there's no ambiguity for the "I" in "I + 1";
         // this is OK because the source and target have identical values due to the self-join.
         // Note that we anonymize the source rather than the target because downstream, the optimizer rules don't want to see any projection on top of the target.
+
         IdentifierNamespace ns = new IdentifierNamespace( this, target, null, null );
         AlgDataType rowType = ns.getTupleType();
         SqlNode source = (SqlNode) updateCall.getTargetTable().clone( ParserPos.ZERO );
@@ -1745,10 +1746,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         this.expandIdentifiers = expandIdentifiers;
     }
 
+
     @Override
     public void setIsMvccInternal( boolean isMvccInternal ) {
         this.isMvccInternal = isMvccInternal;
     }
+
 
     @Override
     public boolean getIsMvccInternal() {
@@ -3984,6 +3987,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         // REVIEW jvs: In FRG-365, this namespace row type is discarding the type inferred by inferUnknownTypes (which was invoked from validateSelect above).
         // It would be better if that information were used here so that we never saw any untyped nulls during checkTypeAssignment.
+        if ( !isMvccInternal ) {
+            getSqlNamespace( source ).setType( IdentifierUtils.removeIdentifierFields( getNamespace( source ).getTupleType(), typeFactory ) );
+        }
         final AlgDataType sourceRowType = getSqlNamespace( source ).getTupleType();
         final AlgDataType logicalTargetRowType = getLogicalTargetRowType( targetRowType, insert, table );
         setValidatedNodeType( insert, targetRowType );
@@ -4019,10 +4025,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         final List<ColumnStrategy> strategies = table.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies( true );
         for ( final AlgDataTypeField field : table.getTupleType( true ).getFields() ) {
             final AlgDataTypeField targetField = logicalTargetRowType.getField( field.getName(), true, false );
-            switch ( strategies.get( field.getIndex()) ) {
+            switch ( strategies.get( field.getIndex() ) ) {
                 case NOT_NULLABLE:
                     assert !field.getType().isNullable();
-                    if ( targetField == null && !IdentifierUtils.isIdentifier( field )) {
+                    if ( targetField == null && !IdentifierUtils.isIdentifier( field ) ) {
                         throw newValidationError( node, RESOURCE.columnNotNullable( field.getName() ) );
                     }
                     break;
@@ -4066,7 +4072,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     protected AlgDataType getLogicalTargetRowType( AlgDataType targetRowType, SqlInsert insert, Entity entity ) {
         if ( insert.getTargetColumnList() == null && conformance.isInsertSubsetColumnsAllowed() ) {
-            final AlgDataType implicitTargetRowType = typeFactory.createStructType( targetRowType.getFields());
+            final AlgDataType implicitTargetRowType = typeFactory.createStructType( targetRowType.getFields() );
             final SqlValidatorNamespace targetNamespace = getSqlNamespace( insert );
             validateNamespace( targetNamespace, implicitTargetRowType, entity );
             return implicitTargetRowType;
@@ -4083,7 +4089,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     protected void checkTypeAssignment( AlgDataType sourceRowType, AlgDataType targetRowType, final SqlNode query ) {
-
 
         // NOTE jvs 23-Feb-2006: subclasses may allow for extra targets representing system-maintained columns, so stop after all sources matched
         List<AlgDataTypeField> sourceFields = sourceRowType.getFields();
