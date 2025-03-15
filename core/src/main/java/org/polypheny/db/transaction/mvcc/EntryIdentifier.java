@@ -19,6 +19,7 @@ package org.polypheny.db.transaction.mvcc;
 import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
 public record EntryIdentifier( Entity entity, long entryIdentifier ) {
@@ -48,8 +49,8 @@ public record EntryIdentifier( Entity entity, long entryIdentifier ) {
     }
 
 
-    public PolyLong getEntryIdentifierAsPolyLong() {
-        return PolyLong.of( entryIdentifier );
+    public PolyBigDecimal asPolyBigDecimal() {
+        return PolyBigDecimal.of( entryIdentifier );
     }
 
 

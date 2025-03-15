@@ -526,11 +526,8 @@ public class PolyAlgUtils {
 
         private String visitLiteral( RexLiteral literal, RexDigestIncludeType includeType ) {
             PolyValue value = literal.value;
-            String str = visitPolyValue( value );
-            if ( str == null ) {
-                str = literal.computeDigest( includeType );
-            }
-            return str;
+            String str = value == null ? literal.computeDigest( includeType ) : visitPolyValue( value );
+            return str == null ? literal.computeDigest( includeType ) : str;
         }
 
 

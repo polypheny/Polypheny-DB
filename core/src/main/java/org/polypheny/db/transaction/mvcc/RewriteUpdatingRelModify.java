@@ -93,7 +93,7 @@ public class RewriteUpdatingRelModify implements AlgTreeModification<LogicalRelM
                 newProjects.add( new RexLiteral(
                         IdentifierUtils.getVersionAsPolyBigDecimal( statement.getTransaction().getSequenceNumber(), false ),
                         IdentifierUtils.VERSION_ALG_TYPE,
-                        PolyType.BIGINT
+                        IdentifierUtils.VERSION_ALG_TYPE.getPolyType()
                 ) );
                 continue;
             }

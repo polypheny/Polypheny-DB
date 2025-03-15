@@ -74,7 +74,7 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
                 new RexLiteral(
                         IdentifierUtils.getVersionAsPolyBigDecimal( statement.getTransaction().getSequenceNumber(), false ),
                         IdentifierUtils.VERSION_ALG_TYPE,
-                        PolyType.BIGINT
+                        IdentifierUtils.VERSION_ALG_TYPE.getPolyType()
                 )
         );
 
@@ -85,7 +85,7 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
                 new RexLiteral(
                         IdentifierUtils.getVersionAsPolyBigDecimal( statement.getTransaction().getSequenceNumber(), true ),
                         IdentifierUtils.VERSION_ALG_TYPE,
-                        PolyType.BIGINT
+                        IdentifierUtils.VERSION_ALG_TYPE.getPolyType()
                 )
         );
 
@@ -96,7 +96,7 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
                 new RexLiteral(
                         PolyBigDecimal.of( 0 ),
                         IdentifierUtils.VERSION_ALG_TYPE,
-                        PolyType.BIGINT
+                        IdentifierUtils.VERSION_ALG_TYPE.getPolyType()
                 )
         );
 
@@ -218,7 +218,7 @@ public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalR
                         new RexLiteral(
                                 PolyBigDecimal.of( 0 ),
                                 IdentifierUtils.IDENTIFIER_ALG_TYPE,
-                                PolyType.BIGINT
+                                IdentifierUtils.IDENTIFIER_ALG_TYPE.getPolyType()
                         )
                 ),
                 true

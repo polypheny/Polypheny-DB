@@ -120,8 +120,8 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
             return input.select( row -> {
                 EntryIdentifier identifier = entity.getEntryIdentifiers()
                         .getNextEntryIdentifier();
-                row[0] = identifier.getEntryIdentifierAsPolyLong();
-                row[1] = IdentifierUtils.getVersionAsPolyLong( versionId, false );
+                row[0] = identifier.asPolyBigDecimal();
+                row[1] = IdentifierUtils.getVersionAsPolyBigDecimal( versionId, false );
                 return row;
             } );
         };
@@ -138,10 +138,10 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
                     if ( value instanceof PolyDocument ) {
                         ((PolyDocument) value).put(
                                 IdentifierUtils.getIdentifierKeyAsPolyString(),
-                                identifier.getEntryIdentifierAsPolyLong() );
+                                identifier.asPolyBigDecimal() );
                         ((PolyDocument) value).put(
                                 IdentifierUtils.getVersionKeyAsPolyString(),
-                                IdentifierUtils.getVersionAsPolyLong( versionId, false ) );
+                                IdentifierUtils.getVersionAsPolyBigDecimal( versionId, false ) );
                     }
                 }
                 return row;
@@ -159,9 +159,9 @@ public class EnumerableIdentifier extends Identifier implements EnumerableAlg {
                     EntryIdentifier identifier = entity.getEntryIdentifiers().getNextEntryIdentifier();
                     if ( value instanceof GraphPropertyHolder ) {
                         ((GraphPropertyHolder) value).getProperties()
-                                .put( IdentifierUtils.getIdentifierKeyAsPolyString(), identifier.getEntryIdentifierAsPolyLong() );
+                                .put( IdentifierUtils.getIdentifierKeyAsPolyString(), identifier.asPolyBigDecimal() );
                         ((GraphPropertyHolder) value).getProperties()
-                                .put( IdentifierUtils.getVersionKeyAsPolyString(), IdentifierUtils.getVersionAsPolyLong( versionId, false ) );
+                                .put( IdentifierUtils.getVersionKeyAsPolyString(), IdentifierUtils.getVersionAsPolyBigDecimal( versionId, false ) );
                     }
                 }
                 return row;
