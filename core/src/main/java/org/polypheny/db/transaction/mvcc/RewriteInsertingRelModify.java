@@ -16,16 +16,26 @@
 
 package org.polypheny.db.transaction.mvcc;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIdentifier;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexNode;
 
 public class RewriteInsertingRelModify implements AlgTreeModification<LogicalRelModify, LogicalRelModify> {
 
     @Override
     public LogicalRelModify apply( LogicalRelModify node ) {
         AlgNode input = node.getInput();
+        if ( input instanceof LogicalRelProject project ) {
+            input = rewriteProject( project );
+        }
         LogicalRelIdentifier identifier = LogicalRelIdentifier.create(
                 node.getEntity(),
                 input,
@@ -34,4 +44,41 @@ public class RewriteInsertingRelModify implements AlgTreeModification<LogicalRel
         return node.copy( node.getTraitSet(), List.of( identifier ) );
     }
 
+
+    public LogicalRelProject rewriteProject( LogicalRelProject project ) {
+        List<AlgDataTypeField> oldFields = project.getInput().getTupleType().getFields();
+        List<RexNode> oldProjects = project.getProjects();  // Use projects for field names
+        List<String> newFieldNames = new ArrayList<>();
+        List<RexNode> newProjects = new ArrayList<>();
+
+        Map<Integer, Integer> indexMapping = new HashMap<>();
+        int newIndex = 0;
+        for (int i = 0; i < oldFields.size(); i++) {
+            if (IdentifierUtils.isIdentifier( oldFields.get(i) )) {
+                continue;
+            }
+            indexMapping.put(newIndex, i);
+            newIndex++;
+        }
+
+        if (newIndex == oldFields.size()) {
+            return project;
+        }
+
+        for (int i = 0; i < oldProjects.size(); i++) {
+            RexNode projectNode = oldProjects.get(i);
+            if (projectNode instanceof RexIndexRef indexRef) {
+                Integer updatedIndex = indexMapping.get(indexRef.getIndex());
+                if (updatedIndex != null) {
+                    newProjects.add(new RexIndexRef(updatedIndex, oldFields.get(updatedIndex).getType()));
+                    newFieldNames.add(oldFields.get(updatedIndex).getName());
+                }
+            } else {
+                newProjects.add(projectNode);
+                newFieldNames.add(oldFields.get(i).getName());
+            }
+        }
+
+        return LogicalRelProject.create(project.getInput(), newProjects, newFieldNames);
+    }
 }
