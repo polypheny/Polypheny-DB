@@ -62,7 +62,7 @@ public enum RuntimeConfig {
     REL_DEFAULT_CONCURRENCY_CONTROL(
             "runtime/relDefaultConcurrencyControl",
             "Define which concurrency control mechanism should be used for relational namespaces by default.",
-            ConcurrencyControlType.MVCC,
+            ConcurrencyControlType.S2PL,
             ConfigType.ENUM
     ),
 

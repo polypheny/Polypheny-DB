@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -69,6 +68,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexCall;
@@ -87,7 +87,6 @@ import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.BsonUtil;
-import org.polypheny.db.util.Pair;
 
 public class AlgTreeRewriter extends AlgModifyingShuttle {
 
@@ -98,6 +97,7 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
 
     private final Statement statement;
 
+
     public AlgTreeRewriter( Statement statement ) {
         this.statement = statement;
     }
@@ -106,7 +106,7 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
     public AlgRoot process( AlgRoot root ) {
         AlgNode rootAlg = root.alg.accept( this );
 
-        if (!pendingModifications.isEmpty()) {
+        if ( !pendingModifications.isEmpty() ) {
             Iterator<DeferredAlgTreeModification> iterator = pendingModifications.iterator();
             while ( iterator.hasNext() ) {
                 DeferredAlgTreeModification modification = iterator.next();
@@ -118,7 +118,7 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
             }
         }
 
-        if (!(rootAlg instanceof Modify<?>)) {
+        if ( isMvccModify( rootAlg ) ) {
             rootAlg = new CreateMvccResultProject().apply( rootAlg );
         }
 
@@ -136,6 +136,15 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
 
     private Transaction getTransaction() {
         return statement.getTransaction();
+    }
+
+
+    private boolean isMvccModify( AlgNode node ) {
+        if ( node instanceof Modify<? extends Entity> modify ) {
+            Entity entitiy = modify.getEntity();
+            return MvccUtils.isInNamespaceUsingMvcc( entitiy );
+        }
+        return false;
     }
 
 
