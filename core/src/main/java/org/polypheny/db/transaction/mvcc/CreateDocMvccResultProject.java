@@ -16,47 +16,20 @@
 
 package org.polypheny.db.transaction.mvcc;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.rex.RexIndexRef;
-import org.polypheny.db.rex.RexNode;
 
-public class CreateDocMvccResultProject implements AlgTreeModification<AlgNode, AlgNode>{
+public class CreateDocMvccResultProject implements AlgTreeModification<AlgNode, AlgNode> {
+
     @Override
     public AlgNode apply( AlgNode node ) {
-        if (node.getModel() != DataModel.DOCUMENT) {
-            throw new IllegalArgumentException("This tree modification is only applicable to document nodes.");
+        if ( node.getModel() != DataModel.DOCUMENT ) {
+            throw new IllegalArgumentException( "This tree modification is only applicable to document nodes." );
         }
 
-        //TODO: remove this:
-        return node;
-
-        /**
-        List<AlgDataTypeField> oldFields = node.getTupleType().getFields();
-        List<String> newFieldNames = new ArrayList<>();
-        List<RexNode> projects = new ArrayList<>();
-
-        for ( int i = 0; i < oldFields.size(); i++ ) {
-            AlgDataTypeField currentField = oldFields.get( i );
-            if ( currentField.getName().equals( IdentifierUtils.IDENTIFIER_KEY ) ) {
-                continue;
-            }
-            if ( currentField.getName().equals( IdentifierUtils.VERSION_KEY ) ) {
-                continue;
-            }
-            newFieldNames.add( currentField.getName() );
-            projects.add( new RexIndexRef( i, currentField.getType() ) );
-        }
-
-        return LogicalRelProject.create(
-                node,
-                projects,
-                newFieldNames
-        );
-         **/
+        return LogicalDocumentProject.create( node, List.of( IdentifierUtils.IDENTIFIER_KEY, IdentifierUtils.VERSION_KEY ) );
     }
+
 }
