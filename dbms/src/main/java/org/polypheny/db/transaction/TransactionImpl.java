@@ -69,6 +69,7 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.SequenceNumberGenerator;
+import org.polypheny.db.transaction.mvcc.MvccCommitValidator;
 import org.polypheny.db.transaction.mvcc.MvccUtils;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.DeadlockException;
@@ -219,12 +220,13 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         boolean okToCommit = true;
 
         if ( !writtenEntities.isEmpty() ) {
-            if ( !MvccUtils.validateWriteSet( getSequenceNumber(), writtenEntities, this ) ) {
+            MvccCommitValidator validator = new MvccCommitValidator( this );
+            if ( !validator.validateWriteSet(writtenEntities) ) {
                 String error = "Rolling back due to MVCC write conflict.";
                 rollback( error );
                 throw new TransactionException( error );
             }
-            sequenceNumber = MvccUtils.updateWrittenVersionIds( sequenceNumber, writtenEntities, this ); // a rollback reverts this
+            sequenceNumber = validator.updateWrittenVersionIds( writtenEntities );
         }
 
         Pair<Boolean, String> isValid = checkIntegrity();

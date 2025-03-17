@@ -118,8 +118,12 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
             }
         }
 
-        if ( rootAlg instanceof Modify<?> && includesMvccEntities ) {
-            rootAlg = new CreateMvccResultProject().apply( rootAlg );
+        if ( !(rootAlg instanceof Modify<?>) && includesMvccEntities ) {
+            rootAlg = switch(rootAlg.getModel()) {
+                case RELATIONAL -> new CreateRelMvccResultProject().apply( rootAlg );
+                case DOCUMENT -> new CreateDocMvccResultProject().apply(rootAlg);
+                case GRAPH -> throw new NotImplementedException("MVCC graph selects not supported yet");
+            };
         }
 
         if ( !pendingModifications.isEmpty() ) {

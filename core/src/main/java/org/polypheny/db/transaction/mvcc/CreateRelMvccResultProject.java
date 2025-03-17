@@ -19,15 +19,21 @@ package org.polypheny.db.transaction.mvcc;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 
-public class CreateMvccResultProject implements AlgTreeModification<AlgNode, AlgNode> {
+public class CreateRelMvccResultProject implements AlgTreeModification<AlgNode, AlgNode> {
 
     @Override
     public AlgNode apply( AlgNode node ) {
+        if (node.getModel() != DataModel.RELATIONAL) {
+            throw new IllegalArgumentException("This tree modification is only applicable to relational nodes.");
+        }
+
         List<AlgDataTypeField> oldFields = node.getTupleType().getFields();
         List<String> newFieldNames = new ArrayList<>();
         List<RexNode> projects = new ArrayList<>();
