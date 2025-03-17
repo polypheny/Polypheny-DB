@@ -68,7 +68,6 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexCall;
@@ -96,6 +95,7 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
     private static final AlgDataType ARRAY_TYPE = new ArrayType( CHAR_255_ALG_TYPE, false );
 
     private final Statement statement;
+    private boolean includesMvccEntities = false;
 
 
     public AlgTreeRewriter( Statement statement ) {
@@ -118,7 +118,7 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
             }
         }
 
-        if ( isMvccModify( rootAlg ) ) {
+        if ( rootAlg instanceof Modify<?> && includesMvccEntities ) {
             rootAlg = new CreateMvccResultProject().apply( rootAlg );
         }
 
@@ -136,15 +136,6 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
 
     private Transaction getTransaction() {
         return statement.getTransaction();
-    }
-
-
-    private boolean isMvccModify( AlgNode node ) {
-        if ( node instanceof Modify<? extends Entity> modify ) {
-            Entity entitiy = modify.getEntity();
-            return MvccUtils.isInNamespaceUsingMvcc( entitiy );
-        }
-        return false;
     }
 
 
@@ -166,6 +157,7 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
     public AlgNode visit( LogicalRelScan scan ) {
         if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
             pendingModifications.add( new LimitRelScanToSnapshot( scan, statement ) );
+            includesMvccEntities = true;
         }
         return scan;
     }
@@ -318,6 +310,7 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
         if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
             // TODO reactivate this once the rest is working
             //pendingModifications.add( new DeferredAlgTreeModification( scan, Modification.LIMIT_LPG_SCAN_TO_SNAPSHOT, statement ) );
+            includesMvccEntities = true;
         }
         return scan;
     }
@@ -541,6 +534,7 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
     public AlgNode visit( LogicalDocumentScan scan ) {
         if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
             pendingModifications.add( new LimitDocScanToSnapshot( scan, statement ) );
+            includesMvccEntities = true;
         }
         return scan;
     }
