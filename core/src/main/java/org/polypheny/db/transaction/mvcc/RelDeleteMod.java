@@ -18,30 +18,27 @@ package org.polypheny.db.transaction.mvcc;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.processing.DeepCopyShuttle;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexCorrelVariable;
-import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.mvcc.RelCommitStateFilterRewrite.CommitState;
-import org.polypheny.db.type.PolyType;
+import org.polypheny.db.transaction.mvcc.RelCommitStateFilterMod.CommitState;
 
-public class RewriteUpdatingRelModify implements AlgTreeModification<LogicalRelModify, LogicalRelModify> {
+public class RelDeleteMod implements AlgTreeModification<LogicalRelModify, LogicalRelModify> {
 
     private final Statement statement;
 
 
-    public RewriteUpdatingRelModify( Statement statement ) {
+    public RelDeleteMod( Statement statement ) {
         this.statement = statement;
     }
 
@@ -58,15 +55,36 @@ public class RewriteUpdatingRelModify implements AlgTreeModification<LogicalRelM
         throwOnIllegalInputNode( node );
         LogicalRelProject originalProject = (LogicalRelProject) node.getInput();
 
-        List<AlgDataTypeField> inputFields = originalProject.getRowType().getFields().stream()
-                .filter( f -> !(originalProject.getProjects().get( f.getIndex() ) instanceof RexLiteral) ).collect( Collectors.toCollection( ArrayList::new ) );
+        List<AlgDataTypeField> inputFields = originalProject.getRowType().getFields();
 
         assert IdentifierUtils.IDENTIFIER_KEY.equals( inputFields.get( 0 ).getName() );
         assert IdentifierUtils.VERSION_KEY.equals( inputFields.get( 1 ).getName() );
 
-        LogicalRelModify updatingSubtree = createUpdatingSubtree( node );
-        MvccUtils.executeDmlAlgTree( AlgRoot.of( updatingSubtree, Kind.UPDATE ), statement, node.getEntity().getNamespaceId() );
+        AlgRoot deletingSubtree = createDeletingSubtree( node );
+        MvccUtils.executeDmlAlgTree( deletingSubtree, statement, node.getEntity().getNamespaceId() );
         return createInsertingSubtree( node );
+    }
+
+
+    private AlgRoot createDeletingSubtree( LogicalRelModify originalModify ) {
+        throwOnIllegalInputNode( originalModify );
+        /*
+        Idea: We know that if we move down the tree there will be a join at some point due to the mvcc snapshot filtering.
+        There we will place the filter into the left subtree to remove versions accordingly.
+         */
+        MvccJoinLhsFilterRewriter lhsFilterRewriter = new MvccJoinLhsFilterRewriter( CommitState.UNCOMMITTED );
+        LogicalRelProject originalProject = (LogicalRelProject) lhsFilterRewriter.visit( (LogicalRelProject) originalModify.getInput() );
+
+        LogicalRelModify deletingModify = LogicalRelModify.create(
+                originalModify.getEntity(),
+                originalProject,
+                Operation.DELETE,
+                null,
+                null,
+                false
+        );
+
+        return AlgRoot.of( deletingModify, Kind.DELETE );
     }
 
 
@@ -79,18 +97,24 @@ public class RewriteUpdatingRelModify implements AlgTreeModification<LogicalRelM
         MvccJoinLhsFilterRewriter lhsFilterRewriter = new MvccJoinLhsFilterRewriter( CommitState.COMMITTED );
         LogicalRelProject originalProject = (LogicalRelProject) lhsFilterRewriter.visit( (LogicalRelProject) originalModify.getInput() );
 
-        List<RexNode> originalProjects = originalProject.getProjects().stream()
-                .filter( p -> p instanceof RexIndexRef)
-                .toList();
+        List<AlgDataTypeField> inputFields = originalProject.getRowType().getFields();
 
-        List<RexNode> newProjects = new ArrayList<>( originalProjects.size() );
-        List<String> newFieldNames = new ArrayList<>( originalProjects.size() );
-        for ( int i = 0; i < originalProjects.size(); i++ ) {
-            AlgDataTypeField originalField = originalProject.getRowType().getFields().get( i );
-            newFieldNames.add( originalField.getName() );
+        List<RexNode> projects = new ArrayList<>( inputFields.size() );
+
+        for ( int i = 0; i < inputFields.size(); i++ ) {
+            AlgDataTypeField field = inputFields.get( i );
+            if ( i == 0 ) {
+                // swap the sign of the entity id
+                projects.add( new RexCall(
+                        IdentifierUtils.IDENTIFIER_ALG_TYPE,
+                        OperatorRegistry.get( OperatorName.UNARY_MINUS ),
+                        new RexIndexRef( field.getIndex(), field.getType() ) ) );
+                continue;
+            }
+
             if ( i == 1 ) {
                 // replace _vid
-                newProjects.add( new RexLiteral(
+                projects.add( new RexLiteral(
                         IdentifierUtils.getVersionAsPolyBigDecimal( statement.getTransaction().getSequenceNumber(), false ),
                         IdentifierUtils.VERSION_ALG_TYPE,
                         IdentifierUtils.VERSION_ALG_TYPE.getPolyType()
@@ -98,25 +122,13 @@ public class RewriteUpdatingRelModify implements AlgTreeModification<LogicalRelM
                 continue;
             }
 
-            if ( originalModify.getUpdateColumns().contains( originalField.getName() ) ) {
-                // replace updated values
-                int updateIndex = originalModify.getUpdateColumns().indexOf( originalField.getName() );
-                RexNode sourceExp = originalModify.getSourceExpressions().get( updateIndex );
-                if (sourceExp instanceof RexCall ) {
-                    newProjects.add(originalProject.getProjects().get( originalProjects.size() + updateIndex ));
-                    continue;
-                }
-                newProjects.add( sourceExp );
-                continue;
-            }
-
-            newProjects.add( originalProjects.get( i ) );
+            projects.add( new RexIndexRef( field.getIndex(), field.getType() ) );
         }
 
         LogicalRelProject project = LogicalRelProject.create(
                 originalProject.getInput(),
-                newProjects,
-                newFieldNames
+                projects,
+                inputFields.stream().map( AlgDataTypeField::getName ).toList()
         );
 
         return LogicalRelModify.create(
@@ -127,30 +139,6 @@ public class RewriteUpdatingRelModify implements AlgTreeModification<LogicalRelM
                 null,
                 false
         );
-    }
-
-
-    private LogicalRelModify createUpdatingSubtree( LogicalRelModify originalModify ) {
-        originalModify = (LogicalRelModify) new DeepCopyShuttle().visit( originalModify );
-        throwOnIllegalInputNode( originalModify );
-
-        /*
-        Idea: We know that if we move down the tree there will be a join at some point due to the mvcc snapshot filtering.
-        There we will place the filter into the left subtree to remove versions accordingly.
-         */
-        MvccJoinLhsFilterRewriter lhsFilterRewriter = new MvccJoinLhsFilterRewriter( CommitState.UNCOMMITTED );
-        LogicalRelProject originalProject = (LogicalRelProject) lhsFilterRewriter.visit( originalModify.getInput() );
-
-        return LogicalRelModify.create(
-                originalModify.getEntity(),
-                originalProject,
-                Operation.UPDATE,
-                originalModify.getUpdateColumns(),
-                originalModify.getSourceExpressions(),
-                false
-        );
-
-
     }
 
 }

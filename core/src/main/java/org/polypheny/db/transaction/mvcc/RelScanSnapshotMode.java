@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
@@ -34,7 +32,6 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -42,16 +39,15 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
-import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.util.ImmutableBitSet;
 
-public class LimitRelScanToSnapshot extends DeferredAlgTreeModification<LogicalRelScan, LogicalRelProject> {
+public class RelScanSnapshotMode extends DeferredAlgTreeModification<LogicalRelScan, LogicalRelProject> {
 
     private static final AlgDataType BOOLEAN_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BOOLEAN, true );
 
 
-    protected LimitRelScanToSnapshot( LogicalRelScan target, Statement statement ) {
+    protected RelScanSnapshotMode( LogicalRelScan target, Statement statement ) {
         super( target, statement );
     }
 

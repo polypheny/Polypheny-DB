@@ -28,20 +28,20 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 
-public class RewriteInsertingRelModify implements AlgTreeModification<LogicalRelModify, LogicalRelModify> {
+public class RelInsertMod implements AlgTreeModification<LogicalRelModify, LogicalRelModify> {
 
     @Override
-    public LogicalRelModify apply( LogicalRelModify node ) {
-        AlgNode input = node.getInput();
+    public LogicalRelModify apply( LogicalRelModify modify ) {
+        AlgNode input = modify.getInput();
         if ( input instanceof LogicalRelProject project ) {
             input = rewriteProject( project );
         }
         LogicalRelIdentifier identifier = LogicalRelIdentifier.create(
-                node.getEntity(),
+                modify.getEntity(),
                 input,
                 input.getTupleType()
         );
-        return node.copy( node.getTraitSet(), List.of( identifier ) );
+        return modify.copy( modify.getTraitSet(), List.of( identifier ) );
     }
 
 
