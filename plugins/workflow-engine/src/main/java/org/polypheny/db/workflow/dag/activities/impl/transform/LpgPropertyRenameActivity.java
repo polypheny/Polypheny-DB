@@ -56,7 +56,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
         outPorts = { @OutPort(type = PortType.LPG, description = "The graph with renamed property fields.") },
         shortDescription = "Rename the fields of node or edge properties by defining rules."
 )
-@FieldSelectSetting(key = "labels", displayName = "Targets", simplified = true, pos = 0,
+@FieldSelectSetting(key = "labels", displayName = "Target Labels", simplified = true, pos = 0,
         targetInput = 0, forLabels = true,
         shortDescription = "Specify the target nodes or edges by their label(s). If no label is specified, all become targets.")
 @BoolSetting(key = "nodes", displayName = "Rename Node Properties", defaultValue = true, pos = 1)

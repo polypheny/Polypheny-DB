@@ -65,14 +65,14 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 public class DocExtractJsonActivity implements Activity, Pipeable {
 
     private static final ObjectMapper mapper = new ObjectMapper();
-    private final PolyString nameField = PolyString.of( "fileName" );
+    public static final PolyString NAME_FIELD = PolyString.of( "fileName" );
     private static final Set<String> EXTENSIONS = Set.of( "json", "ndjson", "geojson", "txt", "jso", "ldjson", "jsonl" );
 
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
         if ( settings.keysPresent( "nameField" ) && settings.getBool( "nameField" ) ) {
-            return DocType.of( Set.of( nameField.value ) ).asOutTypes();
+            return DocType.of( Set.of( NAME_FIELD.value ) ).asOutTypes();
         }
         return DocType.of().asOutTypes();
     }
@@ -137,7 +137,7 @@ public class DocExtractJsonActivity implements Activity, Pipeable {
                     ObjectNode node = mapper.readTree( parser );
                     PolyDocument doc = DocCreateActivity.getDocument( node );
                     if ( addNameField ) {
-                        doc.put( nameField, polyName );
+                        doc.put( NAME_FIELD, polyName );
                     }
                     if ( !output.put( doc ) ) {
                         return false;
@@ -152,7 +152,7 @@ public class DocExtractJsonActivity implements Activity, Pipeable {
                     ObjectNode node = iterator.next();
                     PolyDocument doc = DocCreateActivity.getDocument( node );
                     if ( addNameField ) {
-                        doc.put( nameField, polyName );
+                        doc.put( NAME_FIELD, polyName );
                     }
                     if ( !output.put( doc ) ) {
                         return false;

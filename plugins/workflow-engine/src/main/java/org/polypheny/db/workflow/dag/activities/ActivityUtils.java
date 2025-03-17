@@ -385,6 +385,12 @@ public class ActivityUtils {
     }
 
 
+    public static RexLiteral getRexLiteral( String s) {
+        PolyValue value = PolyString.of( s );
+        return new RexLiteral( value, factory.createPolyType( value.type ), value.type );
+    }
+
+
     public static RexLiteral getRexLiteral( PolyValue value, AlgDataType type ) {
         return new RexLiteral( value, type, value.type );
     }

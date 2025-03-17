@@ -115,15 +115,15 @@ public class WorkflowManager {
             fileName = fileName.substring( 0, fileName.length() - ".json".length() );
             try {
                 WorkflowModel workflow = mapper.readValue( file, WorkflowModel.class );
-                if ( repo.doesNameExist( fileName ) ) {
-                    continue;
-                }
                 String group = "Sample Workflows for Debugging";
                 if ( fileName.startsWith( "Demo " ) ) {
                     group = "Demonstration";
                 } else if ( fileName.startsWith( "Evaluation " ) ) {
                     group = "Evaluation";
                     fileName = fileName.substring( "Evaluation ".length() );
+                }
+                if ( repo.doesNameExist( fileName ) ) {
+                    continue;
                 }
                 repo.importWorkflow( fileName, group, workflow );
             } catch ( IOException e ) {

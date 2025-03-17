@@ -115,6 +115,7 @@ public abstract class PolyTypeTransforms {
                     switch ( typeToTransform.getPolyType() ) {
                         case VARCHAR:
                         case VARBINARY:
+                        case TEXT:
                             return typeToTransform;
                     }
 

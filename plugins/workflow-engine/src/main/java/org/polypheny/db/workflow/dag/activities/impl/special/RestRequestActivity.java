@@ -256,13 +256,10 @@ public class RestRequestActivity implements Activity {
     private static List<PolyDocument> jsonToDocuments( String json, String pointer ) throws JsonProcessingException, IllegalArgumentException {
         JsonPointer jsonPointer = ActivityUtils.dotToJsonPointer( pointer );
         JsonNode root = mapper.readTree( json ).requiredAt( jsonPointer ); // throws illegal argument exception if invalid
-        System.out.println( "Root: " + root );
         List<PolyDocument> documents = new ArrayList<>();
         if ( root.isArray() ) {
             for ( JsonNode node : root ) {
                 if ( node.isObject() ) {
-                    System.out.println( "Node is Object: " + node );
-                    System.out.println( "Polyvalue from it: " + PolyValue.fromJson( node.toString() ) + ", " + PolyValue.fromJson( node.toString() ).type );
                     documents.add( PolyValue.fromJson( node.toString() ).asDocument() );
                 } else {
                     // array does not only contain objects -> map array to single document
@@ -273,7 +270,6 @@ public class RestRequestActivity implements Activity {
         } else if ( root.isObject() ) {
             documents.add( PolyValue.fromJson( root.toString() ).asDocument() );
         } else {
-            System.out.println( "Root is not an object: " + root + ", " + root.getNodeType() );
             documents.add( new PolyDocument( Map.of( PolyString.of( "response" ), PolyValue.fromJson( root.toString() ) ) ) );
         }
 
