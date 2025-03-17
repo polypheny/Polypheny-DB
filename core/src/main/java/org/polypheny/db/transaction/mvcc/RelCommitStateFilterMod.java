@@ -30,7 +30,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 
-public class RelCommitStateFilterRewrite extends DeferredAlgTreeModification<LogicalRelFilter, LogicalRelFilter> {
+public class RelCommitStateFilterMod extends DeferredAlgTreeModification<LogicalRelFilter, LogicalRelFilter> {
     private static final AlgDataType BOOLEAN_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BOOLEAN, true );
     private final CommitState removedCommitState;
 
@@ -39,7 +39,7 @@ public class RelCommitStateFilterRewrite extends DeferredAlgTreeModification<Log
         COMMITTED
     }
 
-    public RelCommitStateFilterRewrite(CommitState removedCommitState, LogicalRelFilter target, Statement statement) {
+    public RelCommitStateFilterMod(CommitState removedCommitState, LogicalRelFilter target, Statement statement) {
         super(target, statement);
         this.removedCommitState = removedCommitState;
     }

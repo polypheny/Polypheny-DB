@@ -18,7 +18,7 @@ package org.polypheny.db.transaction.mvcc;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
-import org.polypheny.db.transaction.mvcc.RelCommitStateFilterRewrite.CommitState;
+import org.polypheny.db.transaction.mvcc.RelCommitStateFilterMod.CommitState;
 
 public class MvccJoinLhsFilterRewriter extends AlgModifyingShuttle {
     private final CommitState commitState;
@@ -33,7 +33,7 @@ public class MvccJoinLhsFilterRewriter extends AlgModifyingShuttle {
     public AlgNode visit( LogicalRelFilter filter ) {
         LogicalRelFilter filter1 = visitChild( filter, 0, filter.getInput() );
         if (filter1.isMvccLhsScopeFilter()) {
-            pendingModifications.add( new RelCommitStateFilterRewrite(commitState, filter1, null  ));
+            pendingModifications.add( new RelCommitStateFilterMod(commitState, filter1, null  ));
         }
         return filter1;
     }

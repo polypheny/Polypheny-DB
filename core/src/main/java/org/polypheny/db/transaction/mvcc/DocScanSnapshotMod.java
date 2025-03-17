@@ -18,7 +18,6 @@ package org.polypheny.db.transaction.mvcc;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
@@ -41,14 +40,14 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
-public class LimitDocScanToSnapshot extends DeferredAlgTreeModification<LogicalDocumentScan, LogicalDocumentFilter> {
+public class DocScanSnapshotMod extends DeferredAlgTreeModification<LogicalDocumentScan, LogicalDocumentFilter> {
 
     private static final PolyString MQL_IDENTIFIER_KEY = PolyString.of( "_id" );
     private static final AlgDataType BOOLEAN_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BOOLEAN, true );
     private static final AlgDataType DOCUMENT_ALG_TYPE = new DocumentType( List.of(), List.of() );
 
 
-    protected LimitDocScanToSnapshot( LogicalDocumentScan target, Statement statement ) {
+    protected DocScanSnapshotMod( LogicalDocumentScan target, Statement statement ) {
         super( target, statement );
     }
 

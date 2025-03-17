@@ -16,20 +16,19 @@
 
 package org.polypheny.db.transaction.mvcc;
 
-import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.catalog.logistic.DataModel;
 
-public class CreateDocMvccResultProject implements AlgTreeModification<AlgNode, AlgNode> {
+public class DocMvccResultProjectionMod implements AlgTreeModification<AlgNode, AlgNode> {
 
     @Override
     public AlgNode apply( AlgNode node ) {
         if ( node.getModel() != DataModel.DOCUMENT ) {
             throw new IllegalArgumentException( "This tree modification is only applicable to document nodes." );
         }
-
-        return LogicalDocumentProject.create( node, List.of( IdentifierUtils.IDENTIFIER_KEY, IdentifierUtils.VERSION_KEY ) );
+        //TODO: Debug - remove this!
+        return node;
+        //return LogicalDocumentProject.create( node, List.of( IdentifierUtils.IDENTIFIER_KEY, IdentifierUtils.VERSION_KEY ) );
     }
 
 }
