@@ -46,6 +46,9 @@ public class LogicalDocumentProject extends DocumentProject {
         return new LogicalDocumentProject( node.getCluster(), node.getTraitSet(), node, includes, excludes );
     }
 
+    public static LogicalDocumentProject create(AlgNode node, List<String> excludes) {
+        return create(node, List.of(), List.of(), excludes);
+    }
 
     public static LogicalDocumentProject create( AlgNode node, List<RexNode> includes, List<String> includesName, List<String> excludes ) {
         return create( node, Pair.zip( includesName, includes ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) ), excludes );
