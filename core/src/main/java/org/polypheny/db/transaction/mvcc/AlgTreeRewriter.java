@@ -124,8 +124,8 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
 
         if ( !(rootAlg instanceof Modify<?>) && includesMvccEntities ) {
             rootAlg = switch(rootAlg.getModel()) {
-                case RELATIONAL -> new CreateRelMvccResultProject().apply( rootAlg );
-                case DOCUMENT -> new CreateDocMvccResultProject().apply(rootAlg);
+                case RELATIONAL -> new RelMvccResultProjectionMod().apply( rootAlg );
+                case DOCUMENT -> new DocMvccResultProjectionMod().apply(rootAlg);
                 case GRAPH -> throw new NotImplementedException("MVCC graph selects not supported yet");
             };
         }
@@ -160,7 +160,7 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
     @Override
     public AlgNode visit( LogicalRelScan scan ) {
         if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
-            pendingModifications.add( new LimitRelScanToSnapshot( scan, statement ) );
+            pendingModifications.add( new RelScanSnapshotMode( scan, statement ) );
             includesMvccEntities = true;
         }
         return scan;
@@ -267,9 +267,9 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
         getTransaction().addWrittenEntitiy( modify1.getEntity() );
 
         return switch ( modify1.getOperation() ) {
-            case INSERT -> new RewriteInsertingRelModify().apply( modify1 );
-            case UPDATE -> new RewriteUpdatingRelModify( statement ).apply( modify1 );
-            case DELETE -> new RewriteDeletingRelModify( statement ).apply( modify1 );
+            case INSERT -> new RelInsertMod().apply( modify1 );
+            case UPDATE -> new RelUpdateMod( statement ).apply( modify1 );
+            case DELETE -> new RelDeleteMod( statement ).apply( modify1 );
             default -> modify1;
         };
     }
@@ -392,25 +392,12 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
 
         statement.getTransaction().addWrittenEntitiy( modify.getEntity() );
 
-        switch ( modify1.getOperation() ) {
-            case INSERT:
-                AlgNode input = modify1.getInput();
-                LogicalDocIdentifier identifier = LogicalDocIdentifier.create(
-                        modify1.getEntity(),
-                        input
-                );
-                return modify1.copy( modify1.getTraitSet(), List.of( identifier ) );
-            case UPDATE:
-                IdentifierUtils.throwIfContainsDisallowedFieldName( modify1.getUpdates().keySet() );
-                return getRewriteOfUpdateDocModify( modify1 );
-
-            case DELETE:
-                return getRewriteOfDeleteDocModify( modify1 );
-
-            default:
-                return modify1;
-
-        }
+        return switch ( modify1.getOperation() ) {
+            case INSERT -> new DocInsertMod(statement.getTransaction().getSequenceNumber()).apply( modify1 );
+            //case UPDATE -> new DocUpdateMod( statement ).apply( modify1 );
+            //case DELETE -> new DocDeleteMod( statement ).apply( modify1 );
+            default -> modify1;
+        };
     }
 
 
@@ -537,7 +524,7 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
     @Override
     public AlgNode visit( LogicalDocumentScan scan ) {
         if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
-            pendingModifications.add( new LimitDocScanToSnapshot( scan, statement ) );
+            pendingModifications.add( new DocScanSnapshotMod( scan, statement ) );
             includesMvccEntities = true;
         }
         return scan;
