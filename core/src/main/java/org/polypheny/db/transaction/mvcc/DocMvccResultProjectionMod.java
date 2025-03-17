@@ -16,7 +16,9 @@
 
 package org.polypheny.db.transaction.mvcc;
 
+import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.catalog.logistic.DataModel;
 
 public class DocMvccResultProjectionMod implements AlgTreeModification<AlgNode, AlgNode> {
@@ -26,9 +28,7 @@ public class DocMvccResultProjectionMod implements AlgTreeModification<AlgNode, 
         if ( node.getModel() != DataModel.DOCUMENT ) {
             throw new IllegalArgumentException( "This tree modification is only applicable to document nodes." );
         }
-        //TODO: Debug - remove this!
-        return node;
-        //return LogicalDocumentProject.create( node, List.of( IdentifierUtils.IDENTIFIER_KEY, IdentifierUtils.VERSION_KEY ) );
+        return LogicalDocumentProject.create( node, List.of( IdentifierUtils.IDENTIFIER_KEY, IdentifierUtils.VERSION_KEY ) );
     }
 
 }
