@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.transaction.mvcc;
+package org.polypheny.db.transaction.mvcc.rewriting;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 
 public class RelInsertMod implements AlgTreeModification<LogicalRelModify, LogicalRelModify> {
 
@@ -54,7 +55,7 @@ public class RelInsertMod implements AlgTreeModification<LogicalRelModify, Logic
         Map<Integer, Integer> indexMapping = new HashMap<>();
         int newIndex = 0;
         for (int i = 0; i < oldFields.size(); i++) {
-            if (IdentifierUtils.isIdentifier( oldFields.get(i) )) {
+            if ( IdentifierUtils.isIdentifier( oldFields.get(i) )) {
                 continue;
             }
             indexMapping.put(newIndex, i);

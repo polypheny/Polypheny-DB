@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.transaction.mvcc;
+package org.polypheny.db.transaction.mvcc.rewriting;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;

@@ -41,7 +41,7 @@ import org.polypheny.db.processing.QueryContext.PhysicalQueryContext;
 import org.polypheny.db.processing.QueryContext.TranslatedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.mvcc.AlgTreeRewriter;
+import org.polypheny.db.transaction.mvcc.rewriting.AlgTreeRewriter;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
