@@ -18,6 +18,7 @@ package org.polypheny.db.transaction.mvcc;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
@@ -42,7 +43,7 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 
 public class LimitDocScanToSnapshot extends DeferredAlgTreeModification<LogicalDocumentScan, LogicalDocumentFilter> {
 
-    private static final PolyString IDENTIFIER_KEY = PolyString.of( "_id" );
+    private static final PolyString MQL_IDENTIFIER_KEY = PolyString.of( "_id" );
     private static final AlgDataType BOOLEAN_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BOOLEAN, true );
     private static final AlgDataType DOCUMENT_ALG_TYPE = new DocumentType( List.of(), List.of() );
 
@@ -87,13 +88,14 @@ public class LimitDocScanToSnapshot extends DeferredAlgTreeModification<LogicalD
         List<List<PolyValue>> res;
         HashMap<Long, Long> documents = new HashMap<>();
 
-        // ToDo: replace this with something more efficient once $abs works properly in mql
+        // ToDo TH: Optimization - Replace this with something more efficient once $abs works properly in mql
+
         try ( ResultIterator iterator = MvccUtils.executeStatement( QueryLanguage.from( "mql" ), query, node.getEntity().getNamespaceId(), statement ).getIterator() ) {
             res = iterator.getNextBatch();
             res.forEach( r -> {
                 PolyDocument document = r.get( 0 ).asDocument();
 
-                long eid = document.get( IDENTIFIER_KEY ).asLong().longValue();
+                long eid = document.get( MQL_IDENTIFIER_KEY ).asBigDecimal().longValue();
                 if ( eid < 0 ) {
                     eid = -eid;
                 }
@@ -138,5 +140,4 @@ public class LimitDocScanToSnapshot extends DeferredAlgTreeModification<LogicalD
         );
         return LogicalDocumentFilter.create( input, condition );
     }
-
 }
