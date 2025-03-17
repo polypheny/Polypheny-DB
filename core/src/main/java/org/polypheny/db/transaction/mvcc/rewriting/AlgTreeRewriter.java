@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.transaction.mvcc;
+package org.polypheny.db.transaction.mvcc.rewriting;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,7 +29,6 @@ import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
-import org.polypheny.db.algebra.logical.document.LogicalDocIdentifier;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
@@ -77,6 +76,8 @@ import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.mvcc.IdentifierUtils;
+import org.polypheny.db.transaction.mvcc.MvccUtils;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -160,7 +161,7 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
     @Override
     public AlgNode visit( LogicalRelScan scan ) {
         if ( MvccUtils.isInNamespaceUsingMvcc( scan.getEntity() ) ) {
-            pendingModifications.add( new RelScanSnapshotMode( scan, statement ) );
+            pendingModifications.add( new RelScanSnapshotMod( scan, statement ) );
             includesMvccEntities = true;
         }
         return scan;
@@ -394,7 +395,7 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
 
         return switch ( modify1.getOperation() ) {
             case INSERT -> new DocInsertMod(statement.getTransaction().getSequenceNumber()).apply( modify1 );
-            //case UPDATE -> new DocUpdateMod( statement ).apply( modify1 );
+            case UPDATE -> new DocUpdateMod( statement ).apply( modify1 );
             //case DELETE -> new DocDeleteMod( statement ).apply( modify1 );
             default -> modify1;
         };

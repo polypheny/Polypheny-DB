@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.transaction.mvcc;
+package org.polypheny.db.transaction.mvcc.rewriting;
 
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -26,6 +26,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;

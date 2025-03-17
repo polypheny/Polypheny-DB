@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.transaction.mvcc;
+package org.polypheny.db.transaction.mvcc.rewriting;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 
 public class RelMvccResultProjectionMod implements AlgTreeModification<AlgNode, AlgNode> {
 

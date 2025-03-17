@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.transaction.mvcc;
+package org.polypheny.db.transaction.mvcc.rewriting;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
@@ -22,6 +22,8 @@ import org.polypheny.db.algebra.logical.document.LogicalDocIdentifier;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.transaction.mvcc.EntryIdentifierRegistry;
+import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
 public class DocInsertMod implements AlgTreeModification<LogicalDocumentModify, LogicalDocumentModify> {

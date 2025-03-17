@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.transaction.mvcc;
+package org.polypheny.db.transaction.mvcc.rewriting;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
-import org.polypheny.db.transaction.mvcc.RelCommitStateFilterMod.CommitState;
+import org.polypheny.db.transaction.mvcc.rewriting.RelCommitStateFilterMod.CommitState;
 
 public class MvccJoinLhsFilterRewriter extends AlgModifyingShuttle {
     private final CommitState commitState;

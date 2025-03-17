@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.transaction.mvcc;
+package org.polypheny.db.transaction.mvcc.rewriting;
 
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
@@ -37,17 +37,18 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.util.ImmutableBitSet;
 
-public class RelScanSnapshotMode extends DeferredAlgTreeModification<LogicalRelScan, LogicalRelProject> {
+public class RelScanSnapshotMod extends DeferredAlgTreeModification<LogicalRelScan, LogicalRelProject> {
 
     private static final AlgDataType BOOLEAN_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BOOLEAN, true );
 
 
-    protected RelScanSnapshotMode( LogicalRelScan target, Statement statement ) {
+    protected RelScanSnapshotMod( LogicalRelScan target, Statement statement ) {
         super( target, statement );
     }
 
