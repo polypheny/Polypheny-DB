@@ -79,12 +79,9 @@ public class MvccCommitValidator {
         String writeSetQuery = String.format( writeSetTemplate, writtenEntity.getName(), -transaction.getSequenceNumber() );
         HashSet<Long> entryIds = new HashSet<>();
         try ( ResultIterator iterator = MvccUtils.executeStatement( QueryLanguage.from( "mql" ), writeSetQuery, writtenEntity.getNamespaceId(), transaction ).getIterator() ) {
-            iterator.getIterator().forEachRemaining( r -> entryIds.add(
-                    (Objects.requireNonNull(
-                            r[0].asDocument().get( IdentifierUtils.getIdentifierKeyAsPolyString() )
-                                    .asBigDecimal()
-                                    .getValue() )
-                    ).longValue() ) );
+            iterator.getIterator().forEachRemaining(
+                    r -> entryIds.add(r[0].asDocument().get( IdentifierUtils.getIdentifierKeyAsPolyString() ).asBigDecimal().longValue())
+            );
         }
 
         // step 2: get max of version ids present for each of the written entry ids
@@ -97,7 +94,7 @@ public class MvccCommitValidator {
         String getMaxQuery = String.format( getMaxTemplate, writtenEntity.getName(), entryIdString );
         try ( ResultIterator iterator = MvccUtils.executeStatement( QueryLanguage.from( "mql" ), getMaxQuery, writtenEntity.getNamespaceId(), transaction ).getIterator() ) {
             PolyDocument result = iterator.getNextBatch().get( 0 ).get( 0 ).asDocument();
-            return Objects.requireNonNull(result.get( PolyString.of( "max_vid" ) ).asBigDecimal().getValue()).longValue();
+            return result.get( PolyString.of( "max_vid" ) ).asBigDecimal().longValue();
         }
     }
 
