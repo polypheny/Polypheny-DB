@@ -24,11 +24,10 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 
-public class CreateMvccResultProject implements AlgTreeModification<AlgNode, LogicalRelProject> {
+public class CreateMvccResultProject implements AlgTreeModification<AlgNode, AlgNode> {
 
     @Override
-    public LogicalRelProject apply( AlgNode node ) {
-
+    public AlgNode apply( AlgNode node ) {
         List<AlgDataTypeField> oldFields = node.getTupleType().getFields();
         List<String> newFieldNames = new ArrayList<>();
         List<RexNode> projects = new ArrayList<>();
