@@ -17,7 +17,8 @@
                 "header": true,
                 "escape": "BACKSLASH",
                 "inferType": true,
-                "sep": "COMMA"
+                "sep": "COMMA",
+                "maxCount": -1
             },
             "config": {
                 "enforceCheckpoint": false,

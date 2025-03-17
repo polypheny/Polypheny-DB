@@ -16,6 +16,8 @@
 
 package org.polypheny.db.workflow.dag.activities.impl.extract;
 
+import static org.polypheny.db.workflow.dag.settings.GroupDef.ADVANCED_GROUP;
+
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +55,7 @@ import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.DefaultGroup;
 import org.polypheny.db.workflow.dag.annotations.FileSetting;
 import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
+import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
 import org.polypheny.db.workflow.dag.settings.FileValue;
 import org.polypheny.db.workflow.dag.settings.FileValue.SourceType;
@@ -79,9 +82,11 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 @BoolSetting(key = "cast", displayName = "Cast Values", subGroup = "xml", pos = 2,
         defaultValue = true
 )
-@StringSetting(key = "pointer", displayName = "Target Field", pos = 20,
+@StringSetting(key = "pointer", displayName = "Target Field", pos = 3,
         maxLength = 1024, subGroup = "xml",
         shortDescription = "The target (sub)field of the mapped XML document. If it is an array of objects, each object becomes its own output document.")
+@IntSetting(key = "maxCount", displayName = "Maximum Document Count", defaultValue = -1, min = -1, pos = 4, group = ADVANCED_GROUP,
+        shortDescription = "The maximum number of documents to extract per file or -1 to extract all.")
 
 @SuppressWarnings("unused")
 public class DocExtractXmlActivity implements Activity, Pipeable {
@@ -95,6 +100,7 @@ public class DocExtractXmlActivity implements Activity, Pipeable {
     private boolean addNameField;
     private boolean cast;
     private String pointer;
+    private int maxCount;
 
 
     public DocExtractXmlActivity() {
@@ -151,6 +157,7 @@ public class DocExtractXmlActivity implements Activity, Pipeable {
         cast = settings.getBool( "cast" );
         pointer = settings.getString( "pointer" );
         FileValue file = settings.get( "file", FileValue.class );
+        maxCount = settings.getInt( "maxCount" );
         for ( Source source : file.getSources( EXTENSIONS ) ) {
             if ( !writeDocuments( output, source, ctx ) ) {
                 return;
@@ -163,12 +170,13 @@ public class DocExtractXmlActivity implements Activity, Pipeable {
         String name = ActivityUtils.resourceNameFromSource( source );
         PolyString polyName = PolyString.of( name );
         ctx.logInfo( "Extracting " + name );
+        long docCount = 0;
         try ( InputStream stream = source.openStream() ) {
 
             XMLStreamReader reader = xmlFactory.createXMLStreamReader( stream );
             PolyDocument root = toPolyDocument( reader, cast );
             List<PolyDocument> docs = new ArrayList<>();
-            if ( !pointer.isEmpty() ) {
+            if ( !pointer.isEmpty() ) { // TODO: improve performance by resolving pointer during parsing
                 PolyValue value;
                 try {
                     value = ActivityUtils.getSubValue( root, pointer );
@@ -191,6 +199,9 @@ public class DocExtractXmlActivity implements Activity, Pipeable {
             }
 
             for ( PolyDocument doc : docs ) {
+                if ( maxCount >= 0 && docCount++ == maxCount ) {
+                    return true;
+                }
                 if ( addNameField ) {
                     doc.put( DocExtractJsonActivity.NAME_FIELD, polyName );
                 }
@@ -282,7 +293,7 @@ public class DocExtractXmlActivity implements Activity, Pipeable {
 
     @Override
     public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
-        if (settings.getString( "pointer" ).isBlank() ) {
+        if ( settings.getString( "pointer" ).isBlank() ) {
             return 1; // only the root element
         }
         return 1_000_000; // an arbitrary estimate to show some progress for larger files

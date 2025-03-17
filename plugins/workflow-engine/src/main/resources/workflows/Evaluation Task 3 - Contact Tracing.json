@@ -9,7 +9,8 @@
                     "path": "classpath://sample_data/hospital_contact_tracing_250.json",
                     "type": "ABS_FILE",
                     "multi": false
-                }
+                },
+                "maxCount": -1
             },
             "config": {
                 "enforceCheckpoint": false,
@@ -92,7 +93,8 @@
                 "header": true,
                 "escape": "BACKSLASH",
                 "inferType": true,
-                "sep": "COMMA"
+                "sep": "COMMA",
+                "maxCount": -1
             },
             "config": {
                 "enforceCheckpoint": false,

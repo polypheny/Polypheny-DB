@@ -55,6 +55,7 @@ import org.polypheny.db.workflow.dag.annotations.DefaultGroup;
 import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.FileSetting;
 import org.polypheny.db.workflow.dag.annotations.Group.Subgroup;
+import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
 import org.polypheny.db.workflow.dag.settings.FileValue;
 import org.polypheny.db.workflow.dag.settings.FileValue.SourceType;
@@ -109,6 +110,8 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         defaultValue = true,
         shortDescription = "If true, the first lines of the file are fetched before the actual execution to preview the output type."
 )
+@IntSetting(key = "maxCount", displayName = "Maximum Row Count", defaultValue = -1, min = -1, pos = 15, group = ADVANCED_GROUP,
+        shortDescription = "The maximum number of data rows to extract per file or -1 to extract all rows.")
 
 @SuppressWarnings("unused")
 public class RelExtractCsvActivity implements Activity, Pipeable {
@@ -150,6 +153,7 @@ public class RelExtractCsvActivity implements Activity, Pipeable {
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         boolean addNameCol = settings.getBool( "nameCol" );
         boolean fail = settings.getBool( "fail" );
+        int maxCount = settings.getInt( "maxCount" );
         PolyValue pkVal = PolyLong.of( 0 );
         AlgDataType type = output.getType();
         int count = type.getFieldCount() - (addNameCol ? 2 : 1); // -1 for pkCol
@@ -158,10 +162,13 @@ public class RelExtractCsvActivity implements Activity, Pipeable {
             String name = ActivityUtils.resourceNameFromSource( source );
             PolyString polyName = PolyString.of( name );
             ctx.logInfo( "Extracting " + name );
-
+            long rowCount = 0; // reset for each file
             try ( CSVReader reader = getCSVReader( source.openStream(), settings, true ) ) {
                 String[] row = reader.readNext();
                 while ( row != null ) {
+                    if ( maxCount >= 0 && rowCount == maxCount ) {
+                        break;
+                    }
                     if ( row.length < count ) {
                         row = reader.readNext();
                         continue; // possibly empty line
@@ -188,6 +195,7 @@ public class RelExtractCsvActivity implements Activity, Pipeable {
                     if ( !output.put( outRow ) ) {
                         return;
                     }
+                    rowCount++;
                     row = reader.readNext();
                 }
             }

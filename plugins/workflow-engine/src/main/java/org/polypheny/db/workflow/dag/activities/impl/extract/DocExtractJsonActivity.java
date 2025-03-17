@@ -16,6 +16,8 @@
 
 package org.polypheny.db.workflow.dag.activities.impl.extract;
 
+import static org.polypheny.db.workflow.dag.settings.GroupDef.ADVANCED_GROUP;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.MappingIterator;
@@ -42,6 +44,7 @@ import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.FileSetting;
+import org.polypheny.db.workflow.dag.annotations.IntSetting;
 import org.polypheny.db.workflow.dag.settings.FileValue;
 import org.polypheny.db.workflow.dag.settings.FileValue.SourceType;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
@@ -60,6 +63,8 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         multi = true, modes = { SourceType.ABS_FILE, SourceType.URL },
         shortDescription = "Select the location of the file(s) to extract. In case of multiple files, the union of their documents is computed.")
 @BoolSetting(key = "nameField", displayName = "Add File Name Field", pos = 1)
+@IntSetting(key = "maxCount", displayName = "Maximum Document Count", defaultValue = -1, min = -1, pos = 2, group = ADVANCED_GROUP,
+        shortDescription = "The maximum number of documents to extract per file or -1 to extract all.")
 
 @SuppressWarnings("unused")
 public class DocExtractJsonActivity implements Activity, Pipeable {
@@ -117,23 +122,28 @@ public class DocExtractJsonActivity implements Activity, Pipeable {
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         boolean addNameField = settings.getBool( "nameField" );
         FileValue file = settings.get( "file", FileValue.class );
+        int maxCount = settings.getInt( "maxCount" );
         for ( Source source : file.getSources( EXTENSIONS ) ) {
-            if ( !writeDocuments( output, source, addNameField, ctx ) ) {
+            if ( !writeDocuments( output, source, addNameField, maxCount, ctx ) ) {
                 return;
             }
         }
     }
 
 
-    private boolean writeDocuments( OutputPipe output, Source source, boolean addNameField, PipeExecutionContext ctx ) throws Exception {
+    private boolean writeDocuments( OutputPipe output, Source source, boolean addNameField, int maxCount, PipeExecutionContext ctx ) throws Exception {
         String name = ActivityUtils.resourceNameFromSource( source );
         PolyString polyName = PolyString.of( name );
         ctx.logInfo( "Extracting " + name );
+        long docCount = 0;
         try ( InputStream stream = source.openStream() ) {
             JsonParser parser = mapper.getFactory().createParser( stream );
             JsonToken firstToken = parser.nextToken();
             if ( firstToken == JsonToken.START_ARRAY ) {
                 while ( parser.nextToken() == JsonToken.START_OBJECT ) {
+                    if ( maxCount >= 0 && docCount++ == maxCount ) {
+                        return true;
+                    }
                     ObjectNode node = mapper.readTree( parser );
                     PolyDocument doc = DocCreateActivity.getDocument( node );
                     if ( addNameField ) {
@@ -149,6 +159,9 @@ public class DocExtractJsonActivity implements Activity, Pipeable {
                 }
                 MappingIterator<ObjectNode> iterator = mapper.readerFor( ObjectNode.class ).readValues( parser );
                 while ( iterator.hasNext() ) {
+                    if ( maxCount >= 0 && docCount++ == maxCount ) {
+                        return true;
+                    }
                     ObjectNode node = iterator.next();
                     PolyDocument doc = DocCreateActivity.getDocument( node );
                     if ( addNameField ) {
