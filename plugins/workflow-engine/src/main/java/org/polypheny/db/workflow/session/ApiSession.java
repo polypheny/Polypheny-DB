@@ -30,6 +30,7 @@ import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.models.SessionModel;
+import org.polypheny.db.workflow.models.WorkflowConfigModel;
 import org.polypheny.db.workflow.models.requests.WsRequest.GetCheckpointRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
 import org.polypheny.db.workflow.models.responses.CheckpointResponse;
@@ -97,6 +98,14 @@ public class ApiSession extends AbstractSession {
         }
         workflow.reset( targetId, sm );
         broadcastMessage( new StateUpdateResponse( null, workflow ) );
+    }
+
+
+    public void setWorkflowConfig( WorkflowConfigModel config ) throws WorkflowApiException {
+        if ( workflow.getState() != WorkflowState.IDLE ) {
+            throw new WorkflowApiException( "Workflow is currently not idle: " + workflow.getState(), HttpCode.CONFLICT );
+        }
+        setConfig( config );
     }
 
 

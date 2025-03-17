@@ -19,12 +19,10 @@ package org.polypheny.db.workflow.session;
 import static org.polypheny.db.workflow.models.SessionModel.SessionModelType.USER_SESSION;
 
 import io.javalin.websocket.WsMessageContext;
-import java.util.Map.Entry;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.util.Triple;
 import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.workflow.dag.Workflow;
@@ -132,11 +130,7 @@ public class UserSession extends AbstractSession {
     @Override
     public void handleRequest( UpdateConfigRequest request ) {
         throwIfNotEditable();
-        workflow.setConfig( request.workflowConfig );
-        for ( Entry<DataModel, String> entry : request.workflowConfig.getPreferredStores().entrySet() ) {
-            sm.setDefaultStore( entry.getKey(), entry.getValue() );
-        }
-        // broadcasting the updated config is not required
+        setConfig( request.workflowConfig );
     }
 
 

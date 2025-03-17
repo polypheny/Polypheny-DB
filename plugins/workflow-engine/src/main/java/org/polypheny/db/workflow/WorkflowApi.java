@@ -23,6 +23,7 @@ import lombok.Getter;
 import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.workflow.dag.activities.ActivityRegistry;
+import org.polypheny.db.workflow.models.WorkflowConfigModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.session.SessionManager;
 
@@ -57,6 +58,7 @@ public class WorkflowApi {
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/execute", this::execute, HandlerType.POST ); // queryParam: target = null
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/reset", this::reset, HandlerType.POST ); // queryParam: target = null
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/interrupt", this::interrupt, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/config", this::setWorkflowConfig, HandlerType.POST );
 
         server.addSerializedRoute( PATH + "/sessions", this::terminateSessions, HandlerType.DELETE );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}", this::terminateSession, HandlerType.DELETE );
@@ -187,6 +189,16 @@ public class WorkflowApi {
         UUID target = targetParam == null ? null : UUID.fromString( targetParam );
         process( ctx, () -> {
             sessionManager.getApiSessionOrThrow( sessionId ).reset( target );
+            return "success";
+        } );
+    }
+
+
+    private void setWorkflowConfig( final Context ctx ) {
+        UUID sessionId = UUID.fromString( ctx.pathParam( "sessionId" ) );
+        WorkflowConfigModel config = ctx.bodyAsClass( WorkflowConfigModel.class );
+        process( ctx, () -> {
+            sessionManager.getApiSessionOrThrow( sessionId ).setWorkflowConfig( config );
             return "success";
         } );
     }

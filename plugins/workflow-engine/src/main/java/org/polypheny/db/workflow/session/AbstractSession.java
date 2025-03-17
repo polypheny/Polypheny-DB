@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
@@ -31,6 +32,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Triple;
 import org.polypheny.db.webui.models.results.Result;
@@ -218,6 +220,16 @@ public abstract class AbstractSession {
         } catch ( Exception e ) {
             throw new IllegalStateException( "Unable to start workflow execution", e );
         }
+    }
+
+
+    void setConfig( WorkflowConfigModel config ) {
+        throwIfNotIdle();
+        workflow.setConfig( config );
+        for ( Entry<DataModel, String> entry : config.getPreferredStores().entrySet() ) {
+            sm.setDefaultStore( entry.getKey(), entry.getValue() );
+        }
+        // broadcasting the updated config is not required
     }
 
 

@@ -202,7 +202,7 @@
             "settings": {
                 "nameField": false,
                 "file": {
-                    "path": "C:\\Daten\\Drive\\Studium\\10101 - MSc Thesis\\Code Snippets\\Sample Data\\User Study\\job_adverts.json",
+                    "path": "classpath://sample_data/job_adverts.json",
                     "type": "ABS_FILE",
                     "multi": false
                 },

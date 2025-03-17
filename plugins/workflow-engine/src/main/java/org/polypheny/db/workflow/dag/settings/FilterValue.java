@@ -43,6 +43,7 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -400,21 +401,21 @@ public class FilterValue implements SettingValue {
 
         private Predicate<PolyValue> constructPredicate() {
             return v -> switch ( operator ) {
-                case EQUALS -> isEqual( v );
-                case NOT_EQUALS -> !isEqual( v );
-                case GREATER_THAN -> compareWith( v ) > 0;
-                case LESS_THAN -> compareWith( v ) < 0;
-                case GREATER_THAN_EQUALS -> compareWith( v ) > 0 || isEqual( v );
-                case LESS_THAN_EQUALS -> compareWith( v ) < 0 || isEqual( v );
+                case EQUALS -> !isNull( v ) && isEqual( v );
+                case NOT_EQUALS -> !isNull( v ) && !isEqual( v );
+                case GREATER_THAN -> !isNull( v ) && compareWith( v ) > 0;
+                case LESS_THAN -> !isNull( v ) && compareWith( v ) < 0;
+                case GREATER_THAN_EQUALS -> !isNull( v ) && (compareWith( v ) > 0 || isEqual( v ));
+                case LESS_THAN_EQUALS -> !isNull( v ) && (compareWith( v ) < 0 || isEqual( v ));
                 case REGEX -> valuePattern.matcher( ActivityUtils.valueToString( v ).value ).matches();
                 case REGEX_NOT -> !valuePattern.matcher( ActivityUtils.valueToString( v ).value ).matches();
-                case NULL -> v == null || v.isNull();
-                case NON_NULL -> v != null && !v.isNull();
-                case INCLUDED -> includes( v );
-                case NOT_INCLUDED -> !includes( v );
-                case CONTAINS -> contains( v );
-                case NOT_CONTAINS -> !contains( v );
-                case HAS_KEY -> hasKey( v );
+                case NULL -> isNull( v );
+                case NON_NULL -> !isNull( v );
+                case INCLUDED -> !isNull( v ) && includes( v );
+                case NOT_INCLUDED -> !isNull( v ) && !includes( v );
+                case CONTAINS -> !isNull( v ) && contains( v );
+                case NOT_CONTAINS -> !isNull( v ) && !contains( v );
+                case HAS_KEY -> !isNull( v ) && hasKey( v );
                 case IS_ARRAY -> v != null && v.isList();
                 case IS_OBJECT -> v != null && (v.isMap() || v.isDocument());
                 default -> throw new NotImplementedException( "Operator " + operator + " is not implemented" );
@@ -550,6 +551,11 @@ public class FilterValue implements SettingValue {
         }
 
 
+        private boolean isNull( PolyValue v ) {
+            return v == null || v.isNull();
+        }
+
+
         private PolyNumber valueAsNumber() {
             return (PolyNumber) convertedValues.computeIfAbsent( PolyNumber.class, k -> toNumber( value ) );
         }
@@ -579,6 +585,9 @@ public class FilterValue implements SettingValue {
 
 
         private static PolyNumber toNumber( String value ) {
+            if ( value == null || value.isEmpty() ) {
+                return PolyNull.NULL.asNumber();
+            }
             try {
                 Number number = NumberFormat.getInstance( Locale.US ).parse( value );
                 if ( number instanceof Long ) {

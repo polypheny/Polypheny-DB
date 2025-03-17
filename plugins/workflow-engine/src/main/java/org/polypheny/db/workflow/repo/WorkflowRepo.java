@@ -219,7 +219,7 @@ public interface WorkflowRepo {
      * @throws WorkflowRepoException if the workflow cannot be created.
      */
     default UUID createWorkflowFromVersion( UUID id, int version, String newName, String newGroup ) throws WorkflowRepoException {
-        WorkflowDefModel old = getWorkflowDefs().get( id );
+        WorkflowDefModel old = getWorkflowDef( id );
         UUID newId = createWorkflow( newName, newGroup );
         writeVersion( newId, "Copy of '" + old.getName() + " v" + version + "'", readVersion( id, version ) );
         return newId;

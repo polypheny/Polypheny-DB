@@ -81,8 +81,9 @@ class ActivityRegistryTest {
                             ActivityCategory.EXTRACT ) ||
                             activity.hasCategory( ActivityCategory.TRANSFORM ) ||
                             activity.hasCategory( ActivityCategory.LOAD ) ||
-                            activity.hasCategory( ActivityCategory.VARIABLES ),
-                    "Found activity without any one of the required categories (EXTRACT, TRANSFORM, LOAD or VARIABLES): " + activityName );
+                            activity.hasCategory( ActivityCategory.VARIABLES ) ||
+                            activity.hasCategory( ActivityCategory.EXTERNAL ),
+                    "Found activity without any one of the required categories (EXTRACT, TRANSFORM, LOAD, VARIABLES or EXTERNAL): " + activityName );
         }
 
     }
