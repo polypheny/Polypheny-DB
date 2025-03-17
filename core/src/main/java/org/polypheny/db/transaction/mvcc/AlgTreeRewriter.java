@@ -118,16 +118,16 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
             }
         }
 
+        if ( !pendingModifications.isEmpty() ) {
+            throw new IllegalStateException( "No pending tree modifications must be left on root level." );
+        }
+
         if ( !(rootAlg instanceof Modify<?>) && includesMvccEntities ) {
             rootAlg = switch(rootAlg.getModel()) {
                 case RELATIONAL -> new CreateRelMvccResultProject().apply( rootAlg );
                 case DOCUMENT -> new CreateDocMvccResultProject().apply(rootAlg);
                 case GRAPH -> throw new NotImplementedException("MVCC graph selects not supported yet");
             };
-        }
-
-        if ( !pendingModifications.isEmpty() ) {
-            throw new IllegalStateException( "No pending tree modifications must be left on root level." );
         }
 
         Kind kind = switch ( root.kind ) {
