@@ -33,7 +33,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.transaction.mvcc.MvccUtils;
-import org.polypheny.db.transaction.mvcc.rewriting.RelCommitStateFilterMod.CommitState;
 
 public class RelUpdateMod implements AlgTreeModification<LogicalRelModify, LogicalRelModify> {
 
@@ -75,11 +74,11 @@ public class RelUpdateMod implements AlgTreeModification<LogicalRelModify, Logic
         Idea: We know that if we move down the tree there will be a join at some point due to the mvcc snapshot filtering.
         There we will place the filter into the left subtree to remove versions accordingly.
          */
-        MvccJoinLhsFilterRewriter lhsFilterRewriter = new MvccJoinLhsFilterRewriter( CommitState.COMMITTED );
-        LogicalRelProject originalProject = (LogicalRelProject) lhsFilterRewriter.visit( (LogicalRelProject) originalModify.getInput() );
+        RelSnapshotFilterRewriter filterRewriter = new RelSnapshotFilterRewriter( CommitState.COMMITTED, originalModify.getEntity() );
+        LogicalRelProject originalProject = (LogicalRelProject) filterRewriter.visit( (LogicalRelProject) originalModify.getInput() );
 
         List<RexNode> originalProjects = originalProject.getProjects().stream()
-                .filter( p -> p instanceof RexIndexRef)
+                .filter( p -> p instanceof RexIndexRef )
                 .toList();
 
         List<RexNode> newProjects = new ArrayList<>( originalProjects.size() );
@@ -101,8 +100,8 @@ public class RelUpdateMod implements AlgTreeModification<LogicalRelModify, Logic
                 // replace updated values
                 int updateIndex = originalModify.getUpdateColumns().indexOf( originalField.getName() );
                 RexNode sourceExp = originalModify.getSourceExpressions().get( updateIndex );
-                if (sourceExp instanceof RexCall ) {
-                    newProjects.add(originalProject.getProjects().get( originalProjects.size() + updateIndex ));
+                if ( sourceExp instanceof RexCall ) {
+                    newProjects.add( originalProject.getProjects().get( originalProjects.size() + updateIndex ) );
                     continue;
                 }
                 newProjects.add( sourceExp );
@@ -137,8 +136,8 @@ public class RelUpdateMod implements AlgTreeModification<LogicalRelModify, Logic
         Idea: We know that if we move down the tree there will be a join at some point due to the mvcc snapshot filtering.
         There we will place the filter into the left subtree to remove versions accordingly.
          */
-        MvccJoinLhsFilterRewriter lhsFilterRewriter = new MvccJoinLhsFilterRewriter( CommitState.UNCOMMITTED );
-        LogicalRelProject originalProject = (LogicalRelProject) lhsFilterRewriter.visit( originalModify.getInput() );
+        RelSnapshotFilterRewriter filterRewriter = new RelSnapshotFilterRewriter( CommitState.UNCOMMITTED, originalModify.getEntity() );
+        LogicalRelProject originalProject = (LogicalRelProject) filterRewriter.visit( originalModify.getInput() );
 
         return LogicalRelModify.create(
                 originalModify.getEntity(),

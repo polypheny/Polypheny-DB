@@ -69,7 +69,7 @@ public class RelScanSnapshotMod extends DeferredAlgTreeModification<LogicalRelSc
                 OperatorRegistry.get( OperatorName.EQUALS ),
                 new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE ),
                 new RexLiteral(
-                        IdentifierUtils.getVersionAsPolyBigDecimal( statement.getTransaction().getSequenceNumber(), false ),
+                        IdentifierUtils.getVersionAsPolyBigDecimal( statement.orElseThrow().getTransaction().getSequenceNumber(), false ),
                         IdentifierUtils.VERSION_ALG_TYPE,
                         IdentifierUtils.VERSION_ALG_TYPE.getPolyType()
                 )
@@ -80,7 +80,7 @@ public class RelScanSnapshotMod extends DeferredAlgTreeModification<LogicalRelSc
                 OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ),
                 new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE ),
                 new RexLiteral(
-                        IdentifierUtils.getVersionAsPolyBigDecimal( statement.getTransaction().getSequenceNumber(), true ),
+                        IdentifierUtils.getVersionAsPolyBigDecimal( statement.orElseThrow().getTransaction().getSequenceNumber(), true ),
                         IdentifierUtils.VERSION_ALG_TYPE,
                         IdentifierUtils.VERSION_ALG_TYPE.getPolyType()
                 )
