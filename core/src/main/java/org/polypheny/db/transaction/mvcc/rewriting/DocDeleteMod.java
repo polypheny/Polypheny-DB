@@ -19,7 +19,6 @@ package org.polypheny.db.transaction.mvcc.rewriting;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -27,34 +26,44 @@ import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.DeepCopyShuttle;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.transaction.mvcc.MvccUtils;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
-public class DocUpdateMod extends DocFieldUpdateMod<LogicalDocumentModify, LogicalDocumentModify> {
+public class DocDeleteMod extends DocFieldUpdateMod<LogicalDocumentModify, LogicalDocumentModify> {
 
+    private static final AlgDataType ANY_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.ANY, false );
+    public static final AlgDataType CHAR_255_ALG_TYPE = AlgDataTypeFactoryImpl.DEFAULT.createPolyType( PolyType.CHAR, 255 );
+    private static final AlgDataType DOCUMENT_ALG_TYPE = new DocumentType( List.of(), List.of() );
+    private static final AlgDataType ARRAY_TYPE = new ArrayType( CHAR_255_ALG_TYPE, false );
 
     private final Statement statement;
 
 
-    public DocUpdateMod( Statement statement ) {
+    public DocDeleteMod( Statement statement ) {
         this.statement = statement;
     }
 
 
     @Override
     public LogicalDocumentModify apply( LogicalDocumentModify node ) {
-        LogicalDocumentModify updatingSubtree = createUpdatingSubtree( node );
+        LogicalDocumentModify updatingSubtree = createDeleting( node );
         MvccUtils.executeDmlAlgTree( AlgRoot.of( updatingSubtree, Kind.UPDATE ), statement, node.getEntity().getNamespaceId() );
         return createInsertingSubtree( node );
     }
@@ -66,7 +75,7 @@ public class DocUpdateMod extends DocFieldUpdateMod<LogicalDocumentModify, Logic
 
         input = createIdModification( input );
         input = createVersionIdModification( input, statement );
-        input = createUpdateModifications( input, originalModify );
+        input = createEntryIdModification( input );
 
         return LogicalDocumentModify.create(
                 originalModify.getEntity(),
@@ -79,56 +88,54 @@ public class DocUpdateMod extends DocFieldUpdateMod<LogicalDocumentModify, Logic
     }
 
 
-    private AlgNode createUpdateModifications( AlgNode node, LogicalDocumentModify originalModify ) {
-        Map<String, ? extends RexNode> updates = originalModify.getUpdates();
-        AlgNode current = node;
-        for ( Entry<String, ? extends RexNode> update : updates.entrySet() ) {
-            current = LogicalDocumentProject.create(
-                    current,
-                    buildIncludeCall( update )
-            );
-        }
-        return current;
-    }
-
-
-    private Map<String, RexNode> buildIncludeCall( Entry<String, ? extends RexNode> update ) {
-        Map<String, RexNode> includes = new HashMap<>();
-        includes.put( null, new RexCall(
+    private LogicalDocumentProject createEntryIdModification( AlgNode node ) {
+        Map<String, RexNode> eidIncludes = new HashMap<>();
+        eidIncludes.put( null, new RexCall(
                         DOCUMENT_ALG_TYPE,
                         OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ADD_FIELDS ),
                         new RexIndexRef( 0, DOCUMENT_ALG_TYPE ),
                         new RexLiteral(
-                                PolyList.of( new PolyString( update.getKey() ) ),
+                                PolyList.of( IdentifierUtils.getIdentifierKeyAsPolyString() ),
                                 ARRAY_TYPE,
                                 PolyType.ARRAY
                         ),
-                        update.getValue()
+                        new RexCall(
+                                ANY_ALG_TYPE,
+                                OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MINUS ),
+                                new RexLiteral(
+                                        PolyLong.of( 0 ),
+                                        DOCUMENT_ALG_TYPE,
+                                        PolyType.DOCUMENT
+                                ),
+                                new RexNameRef(
+                                        List.of( IdentifierUtils.IDENTIFIER_KEY ),
+                                        null,
+                                        DOCUMENT_ALG_TYPE
+                                )
+                        )
                 )
         );
-        return includes;
+
+        return LogicalDocumentProject.create(
+                node,
+                eidIncludes
+        );
     }
 
 
-    private LogicalDocumentModify createUpdatingSubtree( LogicalDocumentModify originalModify ) {
+    private LogicalDocumentModify createDeleting( LogicalDocumentModify originalModify ) {
         originalModify = (LogicalDocumentModify) new DeepCopyShuttle().visit( originalModify );
 
         DocSnapshotFilterRewriter filterRewriter = new DocSnapshotFilterRewriter( CommitState.UNCOMMITTED, originalModify.getEntity() );
         AlgNode input = filterRewriter.visit( originalModify.getInput() );
 
-        Map<String, RexNode> updates = new HashMap<>( originalModify.getUpdates() );
-        updates.put( IdentifierUtils.VERSION_KEY, new RexLiteral( IdentifierUtils.getVersionAsPolyBigDecimal(
-                statement.getTransaction().getSequenceNumber(), false ),
-                IdentifierUtils.VERSION_ALG_TYPE,
-                PolyType.DOCUMENT )
-        );
         return LogicalDocumentModify.create(
                 originalModify.getEntity(),
                 input,
-                Operation.UPDATE,
-                updates,
-                List.of(),
-                Map.of()
+                Operation.DELETE,
+                null,
+                null,
+                null
         );
     }
 
