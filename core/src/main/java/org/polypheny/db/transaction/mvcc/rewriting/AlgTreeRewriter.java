@@ -16,11 +16,9 @@
 
 package org.polypheny.db.transaction.mvcc.rewriting;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -63,37 +61,14 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelTableFunctionScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
-import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexIndexRef;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNameRef;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.transaction.mvcc.MvccUtils;
-import org.polypheny.db.type.ArrayType;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
-import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
-import org.polypheny.db.type.entity.numerical.PolyLong;
-import org.polypheny.db.util.BsonUtil;
 
 public class AlgTreeRewriter extends AlgModifyingShuttle {
-
-    private static final AlgDataType ANY_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.ANY, false );
-    private static final AlgDataType DOCUMENT_ALG_TYPE = new DocumentType( List.of(), List.of() );
-    public static final AlgDataType CHAR_255_ALG_TYPE = AlgDataTypeFactoryImpl.DEFAULT.createPolyType( PolyType.CHAR, 255 );
-    private static final AlgDataType ARRAY_TYPE = new ArrayType( CHAR_255_ALG_TYPE, false );
 
     private final Statement statement;
     private boolean includesMvccEntities = false;
@@ -124,10 +99,10 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
         }
 
         if ( !(rootAlg instanceof Modify<?>) && includesMvccEntities ) {
-            rootAlg = switch(rootAlg.getModel()) {
+            rootAlg = switch ( rootAlg.getModel() ) {
                 case RELATIONAL -> new RelMvccResultProjectionMod().apply( rootAlg );
-                case DOCUMENT -> new DocMvccResultProjectionMod().apply(rootAlg);
-                case GRAPH -> throw new NotImplementedException("MVCC graph selects not supported yet");
+                case DOCUMENT -> new DocMvccResultProjectionMod().apply( rootAlg );
+                case GRAPH -> throw new NotImplementedException( "MVCC graph selects not supported yet" );
             };
         }
 
@@ -394,110 +369,11 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
         statement.getTransaction().addWrittenEntitiy( modify.getEntity() );
 
         return switch ( modify1.getOperation() ) {
-            case INSERT -> new DocInsertMod(statement.getTransaction().getSequenceNumber()).apply( modify1 );
+            case INSERT -> new DocInsertMod( statement.getTransaction().getSequenceNumber() ).apply( modify1 );
             case UPDATE -> new DocUpdateMod( statement ).apply( modify1 );
             //case DELETE -> new DocDeleteMod( statement ).apply( modify1 );
             default -> modify1;
         };
-    }
-
-
-    private LogicalDocumentModify getRewriteOfDeleteDocModify( LogicalDocumentModify modify ) {
-        Map<String, RexNode> eidIncludes = new HashMap<>();
-        eidIncludes.put( null, new RexCall(
-                DOCUMENT_ALG_TYPE,
-                OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ADD_FIELDS ),
-                new RexIndexRef( 0, DOCUMENT_ALG_TYPE ),
-                new RexLiteral(
-                        PolyList.of( IdentifierUtils.getIdentifierKeyAsPolyString() ),
-                        ARRAY_TYPE,
-                        PolyType.ARRAY
-                ),
-                new RexCall(
-                        ANY_ALG_TYPE,
-                        OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MINUS ),
-                        new RexLiteral(
-                                PolyLong.of( 0 ),
-                                DOCUMENT_ALG_TYPE,
-                                PolyType.DOCUMENT
-                        ),
-                        new RexNameRef(
-                                List.of( IdentifierUtils.IDENTIFIER_KEY ),
-                                null,
-                                DOCUMENT_ALG_TYPE
-                        )
-                )
-        ) );
-
-        LogicalDocumentProject eidProject = LogicalDocumentProject.create(
-                modify.getInput(),
-                eidIncludes,
-                List.of()
-        );
-
-        Map<String, RexNode> vidIncludes = new HashMap<>();
-        vidIncludes.put( null, new RexCall(
-                        DOCUMENT_ALG_TYPE,
-                        OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ADD_FIELDS ),
-                        new RexIndexRef( 0, DOCUMENT_ALG_TYPE ),
-                        new RexLiteral(
-                                PolyList.of( IdentifierUtils.getVersionKeyAsPolyString() ),
-                                ARRAY_TYPE,
-                                PolyType.ARRAY
-                        ),
-                        new RexLiteral(
-                                IdentifierUtils.getVersionAsPolyLong( statement.getTransaction().getSequenceNumber(), false ),
-                                DOCUMENT_ALG_TYPE,
-                                PolyType.DOCUMENT
-                        )
-                )
-        );
-
-        LogicalDocumentProject vidProject = LogicalDocumentProject.create(
-                eidProject,
-                vidIncludes,
-                List.of()
-        );
-
-        Map<String, RexNode> idIncludes = new HashMap<>();
-        idIncludes.put( null, new RexCall(
-                        DOCUMENT_ALG_TYPE,
-                        OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ADD_FIELDS ),
-                        new RexIndexRef( 0, DOCUMENT_ALG_TYPE ),
-                        new RexLiteral(
-                                PolyList.of( PolyString.of( "_id" ) ),
-                                ARRAY_TYPE,
-                                PolyType.ARRAY
-                        ),
-                        new RexLiteral(
-                                PolyString.of( BsonUtil.getObjectId() ),
-                                DOCUMENT_ALG_TYPE,
-                                PolyType.DOCUMENT
-                        )
-                )
-        );
-
-        LogicalDocumentProject idProject = LogicalDocumentProject.create(
-                vidProject,
-                idIncludes,
-                List.of()
-        );
-
-        return LogicalDocumentModify.create(
-                modify.getEntity(),
-                idProject,
-                Operation.INSERT,
-                null,
-                null,
-                null
-        );
-    }
-
-
-    private LogicalDocumentModify getRewriteOfUpdateDocModify( LogicalDocumentModify modify ) {
-
-        throw new NotImplementedException();
-        //ToDo TH: implement
     }
 
 

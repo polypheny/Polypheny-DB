@@ -33,7 +33,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.transaction.mvcc.MvccUtils;
-import org.polypheny.db.transaction.mvcc.rewriting.RelCommitStateFilterMod.CommitState;
 
 public class RelDeleteMod implements AlgTreeModification<LogicalRelModify, LogicalRelModify> {
 
@@ -74,8 +73,8 @@ public class RelDeleteMod implements AlgTreeModification<LogicalRelModify, Logic
         Idea: We know that if we move down the tree there will be a join at some point due to the mvcc snapshot filtering.
         There we will place the filter into the left subtree to remove versions accordingly.
          */
-        MvccJoinLhsFilterRewriter lhsFilterRewriter = new MvccJoinLhsFilterRewriter( CommitState.UNCOMMITTED );
-        LogicalRelProject originalProject = (LogicalRelProject) lhsFilterRewriter.visit( (LogicalRelProject) originalModify.getInput() );
+        RelSnapshotFilterRewriter filterRewriter = new RelSnapshotFilterRewriter( CommitState.UNCOMMITTED, originalModify.getEntity() );
+        LogicalRelProject originalProject = (LogicalRelProject) filterRewriter.visit( (LogicalRelProject) originalModify.getInput() );
 
         LogicalRelModify deletingModify = LogicalRelModify.create(
                 originalModify.getEntity(),
@@ -96,8 +95,8 @@ public class RelDeleteMod implements AlgTreeModification<LogicalRelModify, Logic
         Idea: We know that if we move down the tree there will be a join at some point due to the mvcc snapshot filtering.
         There we will place the filter into the left subtree to remove versions accordingly.
          */
-        MvccJoinLhsFilterRewriter lhsFilterRewriter = new MvccJoinLhsFilterRewriter( CommitState.COMMITTED );
-        LogicalRelProject originalProject = (LogicalRelProject) lhsFilterRewriter.visit( (LogicalRelProject) originalModify.getInput() );
+        RelSnapshotFilterRewriter filterRewriter = new RelSnapshotFilterRewriter( CommitState.COMMITTED, originalModify.getEntity() );
+        LogicalRelProject originalProject = (LogicalRelProject) filterRewriter.visit( (LogicalRelProject) originalModify.getInput() );
 
         List<AlgDataTypeField> inputFields = originalProject.getRowType().getFields();
 

@@ -18,23 +18,24 @@ package org.polypheny.db.transaction.mvcc.rewriting;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
-import org.polypheny.db.transaction.mvcc.rewriting.RelCommitStateFilterMod.CommitState;
+import org.polypheny.db.catalog.entity.Entity;
 
-public class MvccJoinLhsFilterRewriter extends AlgModifyingShuttle {
-    private final CommitState commitState;
+public class RelSnapshotFilterRewriter extends SnapshotFilterRewriter {
 
-
-    public MvccJoinLhsFilterRewriter( CommitState commitState ) {
-        this.commitState = commitState;
+    public RelSnapshotFilterRewriter( CommitState commitState, Entity entity ) {
+        super(commitState, entity);
     }
-
 
     @Override
     public AlgNode visit( LogicalRelFilter filter ) {
         LogicalRelFilter filter1 = visitChild( filter, 0, filter.getInput() );
-        if (filter1.isMvccLhsScopeFilter()) {
-            pendingModifications.add( new RelCommitStateFilterMod(commitState, filter1, null  ));
+        if ( !filter1.isMvccLhsScopeFilter() ) {
+            return filter1;
+        }
+        if (matchesTarget( filter1.getInput().getEntity() ) ) {
+            pendingModifications.add( new RelCommitStateFilterMod( commitState, filter1) );
         }
         return filter1;
     }
+
 }

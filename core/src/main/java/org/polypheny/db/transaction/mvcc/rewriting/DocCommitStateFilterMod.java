@@ -16,56 +16,59 @@
 
 package org.polypheny.db.transaction.mvcc.rewriting;
 
-import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
+import java.util.List;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.rex.RexNameRef;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
-import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
-public class RelCommitStateFilterMod extends DeferredAlgTreeModification<LogicalRelFilter, LogicalRelFilter> {
+
+public class DocCommitStateFilterMod extends DeferredAlgTreeModification<LogicalDocumentFilter, LogicalDocumentFilter> {
+
     private static final AlgDataType BOOLEAN_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BOOLEAN, true );
+    private static final AlgDataType DOCUMENT_ALG_TYPE = new DocumentType( List.of(), List.of() );
+
     private final CommitState removedCommitState;
 
-    public RelCommitStateFilterMod(CommitState removedCommitState, LogicalRelFilter target) {
-        super(target);
+
+    public DocCommitStateFilterMod( CommitState removedCommitState, LogicalDocumentFilter target ) {
+        super( target );
         this.removedCommitState = removedCommitState;
     }
 
+
     @Override
-    public LogicalRelFilter apply( LogicalRelFilter node ) {
-        Operator filterOperator = switch(removedCommitState) {
-            case COMMITTED -> OperatorRegistry.get(OperatorName.GREATER_THAN_OR_EQUAL);
-            case UNCOMMITTED -> OperatorRegistry.get(OperatorName.LESS_THAN);
+    public LogicalDocumentFilter apply( LogicalDocumentFilter node ) {
+        Operator filterOperator = switch ( removedCommitState ) {
+            case COMMITTED -> OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_GTE );
+            case UNCOMMITTED -> OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_LTE );
         };
 
-        RexCall commitStateCondition = new RexCall(
+        RexNode committedCondition = new RexCall(
                 BOOLEAN_ALG_TYPE,
                 filterOperator,
-                new RexIndexRef( 1, IdentifierUtils.VERSION_ALG_TYPE ),
-                new RexLiteral(
-                        PolyBigDecimal.of( 0 ),
-                        IdentifierUtils.VERSION_ALG_TYPE,
-                        IdentifierUtils.VERSION_ALG_TYPE.getPolyType()
-                )
+                new RexNameRef( IdentifierUtils.VERSION_KEY, null, IdentifierUtils.VERSION_ALG_TYPE ),
+                new RexLiteral( PolyLong.of( 0 ), DOCUMENT_ALG_TYPE, PolyType.DOCUMENT )
         );
-
-        RexCall extendedCondition = new RexCall(
+        RexNode newCondition = new RexCall(
                 BOOLEAN_ALG_TYPE,
                 OperatorRegistry.get( OperatorName.AND ),
-                node.getCondition(),
-                commitStateCondition
+                List.of( node.getCondition(), committedCondition )
         );
 
-        return node.copy( node.getTraitSet(), node.getInput(), extendedCondition );
+        return LogicalDocumentFilter.create( node.getInput(), newCondition );
     }
 
 }

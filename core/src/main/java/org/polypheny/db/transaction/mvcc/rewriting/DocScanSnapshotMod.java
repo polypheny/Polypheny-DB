@@ -81,17 +81,18 @@ public class DocScanSnapshotMod extends DeferredAlgTreeModification<LogicalDocum
                 ]);
                 """;
 
+        Statement localStatement = statement.orElseThrow();
         String query = String.format(
                 queryTemplate,
                 node.getEntity().getName(),
-                statement.getTransaction().getSequenceNumber(),
-                -statement.getTransaction().getSequenceNumber() );
+                localStatement.getTransaction().getSequenceNumber(),
+                -localStatement.getTransaction().getSequenceNumber() );
         List<List<PolyValue>> res;
         HashMap<Long, Long> documents = new HashMap<>();
 
         // ToDo TH: Optimization - Replace this with something more efficient once $abs works properly in mql
 
-        try ( ResultIterator iterator = MvccUtils.executeStatement( QueryLanguage.from( "mql" ), query, node.getEntity().getNamespaceId(), statement ).getIterator() ) {
+        try ( ResultIterator iterator = MvccUtils.executeStatement( QueryLanguage.from( "mql" ), query, node.getEntity().getNamespaceId(), localStatement ).getIterator() ) {
             res = iterator.getNextBatch();
             res.forEach( r -> {
                 PolyDocument document = r.get( 0 ).asDocument();
@@ -120,13 +121,13 @@ public class DocScanSnapshotMod extends DeferredAlgTreeModification<LogicalDocum
                                 new RexCall(
                                         BOOLEAN_ALG_TYPE,
                                         OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_EQUALS ),
-                                        new RexNameRef( "_eid", null, IdentifierUtils.IDENTIFIER_ALG_TYPE ),
+                                        new RexNameRef( IdentifierUtils.IDENTIFIER_KEY, null, IdentifierUtils.IDENTIFIER_ALG_TYPE ),
                                         new RexLiteral( PolyLong.of( d.getKey() ), DOCUMENT_ALG_TYPE, PolyType.DOCUMENT )
                                 ),
                                 new RexCall(
                                         BOOLEAN_ALG_TYPE,
                                         OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_EQUALS ),
-                                        new RexNameRef( "_vid", null, IdentifierUtils.VERSION_ALG_TYPE ),
+                                        new RexNameRef( IdentifierUtils.VERSION_KEY, null, IdentifierUtils.VERSION_ALG_TYPE ),
                                         new RexLiteral( PolyLong.of( d.getValue() ), DOCUMENT_ALG_TYPE, PolyType.DOCUMENT )
 
                                 )

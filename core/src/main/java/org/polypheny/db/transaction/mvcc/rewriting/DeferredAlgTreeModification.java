@@ -16,19 +16,26 @@
 
 package org.polypheny.db.transaction.mvcc.rewriting;
 
+import com.drew.lang.annotations.NotNull;
 import java.util.List;
+import java.util.Optional;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.transaction.Statement;
 
 public abstract class DeferredAlgTreeModification<T extends AlgNode, U extends AlgNode> implements AlgTreeModification<T, U> {
 
     protected final T target;
-    protected final Statement statement;
+    protected final Optional<Statement> statement;
 
 
-    protected DeferredAlgTreeModification( T target, Statement statement ) {
+    protected DeferredAlgTreeModification( @NotNull T target, Statement statement ) {
         this.target = target;
-        this.statement = statement;
+        this.statement = Optional.ofNullable( statement );
+    }
+
+    protected DeferredAlgTreeModification( T target) {
+        this.target = target;
+        this.statement = Optional.empty();
     }
 
 
