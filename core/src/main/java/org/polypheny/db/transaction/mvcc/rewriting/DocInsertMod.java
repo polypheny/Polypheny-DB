@@ -27,7 +27,7 @@ import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
 public class DocInsertMod implements AlgTreeModification<LogicalDocumentModify, LogicalDocumentModify> {
-    long versionIdentifier;
+    private final long versionIdentifier;
 
     public DocInsertMod( long versionIdentifier ) {
         this.versionIdentifier = versionIdentifier;
