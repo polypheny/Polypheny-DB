@@ -371,7 +371,7 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
         return switch ( modify1.getOperation() ) {
             case INSERT -> new DocInsertMod( statement.getTransaction().getSequenceNumber() ).apply( modify1 );
             case UPDATE -> new DocUpdateMod( statement ).apply( modify1 );
-            //case DELETE -> new DocDeleteMod( statement ).apply( modify1 );
+            case DELETE -> new DocDeleteMod( statement ).apply( modify1 );
             default -> modify1;
         };
     }
