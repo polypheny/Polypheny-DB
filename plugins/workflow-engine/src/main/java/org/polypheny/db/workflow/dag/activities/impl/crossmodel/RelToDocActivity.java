@@ -112,7 +112,8 @@ public class RelToDocActivity implements Activity, Fusable, Pipeable {
     @Override
     public Optional<Boolean> canFuse( List<TypePreview> inTypes, SettingsPreview settings ) {
         // TODO: enable when fusion works
-        return settings.get( "jsonCols", FieldSelectValue.class ).map( select -> select.getInclude().isEmpty() );
+        return Optional.of( false );
+        //return settings.get( "jsonCols", FieldSelectValue.class ).map( select -> select.getInclude().isEmpty() );
     }
 
 

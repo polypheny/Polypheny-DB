@@ -199,6 +199,7 @@ public class RelExtractCsvActivity implements Activity, Pipeable {
                     row = reader.readNext();
                 }
             }
+            ctx.logInfo( "Extracted " + rowCount + " rows from " + name );
         }
     }
 

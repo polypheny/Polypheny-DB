@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.engine.storage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -29,6 +30,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
+@Slf4j
 public class BatchWriter implements AutoCloseable {
 
     private static final long MAX_BYTES_PER_BATCH = 10 * 1024 * 1024L; // 10 MiB, upper limit to (estimated) size of batch in bytes
@@ -83,7 +85,7 @@ public class BatchWriter implements AutoCloseable {
         List<List<PolyValue>> results = executedContext.getIterator().getAllRowsAndClose();
         long changedCount = results.size() == 1 ? results.get( 0 ).get( 0 ).asNumber().longValue() : 0;
         if ( changedCount != batchSize ) {
-            throw new GenericRuntimeException( "Unable to write all values of the batch: " + changedCount + " of " + batchSize + " tuples were written" );
+            log.warn( "Unable to write all values of the batch: {} of {} tuples were written", changedCount, batchSize );
         }
 
         paramValues.clear();

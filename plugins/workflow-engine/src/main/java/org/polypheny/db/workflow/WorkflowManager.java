@@ -118,9 +118,12 @@ public class WorkflowManager {
                 String group = "Sample Workflows for Debugging";
                 if ( fileName.startsWith( "Demo " ) ) {
                     group = "Demonstration";
+                    continue; // TODO: remove after evaluation
                 } else if ( fileName.startsWith( "Evaluation " ) ) {
                     group = "Evaluation";
                     fileName = fileName.substring( "Evaluation ".length() );
+                } else {
+                    continue; // TODO: remove after evaluation
                 }
                 if ( repo.doesNameExist( fileName ) ) {
                     continue;
