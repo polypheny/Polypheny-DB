@@ -108,6 +108,12 @@ public class MockRelSnapshot implements LogicalRelSnapshot {
 
 
     @Override
+    public @NonNull List<LogicalColumn> getInternalColumns( long tableId ) {
+        return List.of();
+    }
+
+
+    @Override
     public @NonNull List<LogicalColumn> getColumns( @Nullable Pattern tableName, @Nullable Pattern columnName ) {
         throw new UnsupportedOperationException();
     }

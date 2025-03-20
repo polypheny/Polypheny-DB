@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.Nullable;
@@ -63,6 +64,8 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.util.CatalogEvent;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.mvcc.IdentifierUtils;
+import org.polypheny.db.transaction.mvcc.MvccUtils;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -462,14 +465,23 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         Snapshot snapshot = Catalog.snapshot();
         List<LogicalKey> childKeys = snapshot.rel().getTableKeys( referencesTableId );
 
+        boolean referencesMvccTable = MvccUtils.isInNamespaceUsingMvcc(tables.get(referencesTableId));
+        if (referencesMvccTable) {
+            referencesIds.addAll( snapshot.rel().getInternalColumns( referencesTableId ).stream().map( f -> f.id ).toList() );
+        }
+
         for ( LogicalKey refKey : childKeys ) {
             if ( refKey.fieldIds.size() != referencesIds.size() || !refKey.fieldIds.containsAll( referencesIds ) || !new HashSet<>( referencesIds ).containsAll( refKey.fieldIds ) ) {
                 continue;
             }
+
             int i = 0;
             for ( long referencedColumnId : refKey.fieldIds ) {
-                LogicalColumn referencingColumn = snapshot.rel().getColumn( columnIds.get( i++ ) ).orElseThrow();
                 LogicalColumn referencedColumn = snapshot.rel().getColumn( referencedColumnId ).orElseThrow();
+                if (referencesMvccTable && IdentifierUtils.isIdentifier( referencedColumn.getName() )) {
+                    continue;
+                }
+                LogicalColumn referencingColumn = snapshot.rel().getColumn( columnIds.get( i++ ) ).orElseThrow();
                 if ( referencedColumn.type != referencingColumn.type ) {
                     throw new GenericRuntimeException( "The data type of the referenced columns does not match the data type of the referencing column: %s != %s", referencingColumn.type.name(), referencedColumn.type );
                 }

@@ -42,7 +42,6 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
-import org.polypheny.db.type.entity.numerical.PolyLong;
 
 public class IdentifierUtils {
 
@@ -50,7 +49,6 @@ public class IdentifierUtils {
     public static final String VERSION_KEY = "_vid";
 
     public static final long MISSING_IDENTIFIER = 0;
-    public static final long MISSING_VERSION = 0;
 
     public static final AlgDataType IDENTIFIER_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.DECIMAL, false );
     public static final AlgDataType VERSION_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.DECIMAL, false );
@@ -127,10 +125,15 @@ public class IdentifierUtils {
     }
 
     public static boolean isIdentifier( AlgDataTypeField field ) {
-        if ( field.getName().equals( IDENTIFIER_KEY ) ) {
+        return isIdentifier( field.getName() );
+    }
+
+
+    public static boolean isIdentifier( String fieldName ) {
+        if ( fieldName.equals( IDENTIFIER_KEY ) ) {
             return true;
         }
-        return field.getName().equals( VERSION_KEY );
+        return fieldName.equals( VERSION_KEY );
     }
 
 
@@ -139,17 +142,12 @@ public class IdentifierUtils {
     }
 
 
-    public static PolyLong getVersionAsPolyLong( long version, boolean isCommitted ) {
-        return PolyLong.of( isCommitted ? version : version * -1 );
-    }
-
-
     public static PolyBigDecimal getVersionAsPolyBigDecimal( long version, boolean isCommitted ) {
         return PolyBigDecimal.of( isCommitted ? version : version * -1 );
     }
 
 
-    public static List<FieldInformation> addMvccFieldsIfAbsent( List<FieldInformation> fields ) {
+    public static List<FieldInformation> addIdentifierFieldsIfAbsent( List<FieldInformation> fields ) {
         List<FieldInformation> newFields = new LinkedList<>();
 
         boolean hasIdentifier = fields.get( 0 ).name().equals( IDENTIFIER_KEY );
@@ -176,7 +174,6 @@ public class IdentifierUtils {
 
         return newFields;
     }
-
 
     public static void throwIfIsDisallowedFieldName( String fieldName ) {
         throwIfIsDisallowedFieldName( fieldName, false );

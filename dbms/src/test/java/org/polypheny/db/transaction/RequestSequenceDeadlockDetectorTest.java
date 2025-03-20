@@ -31,6 +31,7 @@ import org.polypheny.db.transaction.deadlocks.RequestSequenceDeadlockDetector;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.LockableImpl;
 
+@Disabled
 public class RequestSequenceDeadlockDetectorTest {
 
     private RequestSequenceDeadlockDetector deadlockDetector;

@@ -96,6 +96,10 @@ public interface LogicalRelSnapshot {
     @NonNull
     List<LogicalColumn> getColumns( long tableId );
 
+
+    @NonNull
+    List<LogicalColumn> getInternalColumns(long tableId);
+
     /**
      * Get all columns of the specified database which fit to the specified filter patterns.
      * <code>getAllocColumns(xid, databaseName, null, null, null)</code> returns all columns of the database.
