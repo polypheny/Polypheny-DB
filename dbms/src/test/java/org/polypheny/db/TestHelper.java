@@ -110,6 +110,22 @@ public class TestHelper {
             if ( defaultStoreName != null ) {
                 polyphenyDb.defaultStoreName = defaultStoreName;
             }
+            String defaultS2PLLockingLevel = System.getProperty( "s2plLockingLevel" );
+            if ( defaultS2PLLockingLevel != null ) {
+                polyphenyDb.s2plDefaultLockingLevel = defaultS2PLLockingLevel;
+            }
+            String relDefaultMode = System.getProperty( "relDefaultConcurrencyControl" );
+            if (relDefaultMode != null) {
+                polyphenyDb.relDefaultConcurrencyControl = relDefaultMode;
+            }
+            String docDefaultMode = System.getProperty( "docDefaultConcurrencyControl" );
+            if (docDefaultMode != null) {
+                polyphenyDb.docDefaultConcurrencyControl = docDefaultMode;
+            }
+            String graphDefaultMode = System.getProperty( "graphDefaultConcurrencyControl" );
+            if (docDefaultMode != null) {
+                polyphenyDb.graphDefaultConcurrencyControl = graphDefaultMode;
+            }
             // polyphenyDb.resetCatalog = true;
             polyphenyDb.runPolyphenyDb();
         };

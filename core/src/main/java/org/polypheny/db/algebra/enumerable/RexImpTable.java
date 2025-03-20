@@ -482,6 +482,7 @@ public class RexImpTable {
     private void defineMongoMethods() {
         QueryLanguage mongo = QueryLanguage.from( "mongo" );
         defineBinary( OperatorRegistry.get( mongo, OperatorName.MQL_ITEM ), ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
+        defineImplementor( OperatorRegistry.get(mongo, OperatorName.MQL_ID), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_ID.method ), false  );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_EQ.method ), false );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GT.method ), false );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GTE.method ), false );

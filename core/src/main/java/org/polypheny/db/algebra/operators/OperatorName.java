@@ -632,6 +632,8 @@ public enum OperatorName {
     //-------------------------------------------------------------
     //                   SPECIAL OPERATORS
     //-------------------------------------------------------------
+    MQL_ID( LangFunctionOperator.class),
+
     ROW( Operator.class ),
 
     /**

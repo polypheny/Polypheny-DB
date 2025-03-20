@@ -16,8 +16,10 @@
 
 package org.polypheny.db.transaction.mvcc.rewriting;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
@@ -40,7 +42,7 @@ import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 
 public class DocScanSnapshotMod extends DeferredAlgTreeModification<LogicalDocumentScan, LogicalDocumentFilter> {
 
@@ -115,31 +117,44 @@ public class DocScanSnapshotMod extends DeferredAlgTreeModification<LogicalDocum
 
     private LogicalDocumentFilter buildDocScopeFilter( HashMap<Long, Long> documents, AlgNode input ) {
         List<RexCall> documentConditions = documents.entrySet().stream()
-                .map( d -> new RexCall(
-                                BOOLEAN_ALG_TYPE,
-                                OperatorRegistry.get( OperatorName.AND ),
-                                new RexCall(
-                                        BOOLEAN_ALG_TYPE,
-                                        OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_EQUALS ),
-                                        new RexNameRef( IdentifierUtils.IDENTIFIER_KEY, null, IdentifierUtils.IDENTIFIER_ALG_TYPE ),
-                                        new RexLiteral( PolyLong.of( d.getKey() ), DOCUMENT_ALG_TYPE, PolyType.DOCUMENT )
-                                ),
-                                new RexCall(
-                                        BOOLEAN_ALG_TYPE,
-                                        OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_EQUALS ),
-                                        new RexNameRef( IdentifierUtils.VERSION_KEY, null, IdentifierUtils.VERSION_ALG_TYPE ),
-                                        new RexLiteral( PolyLong.of( d.getValue() ), DOCUMENT_ALG_TYPE, PolyType.DOCUMENT )
+                .map( d -> docIdentifierMatch( d.getKey(), d.getValue() ) )
+                .collect( Collectors.toCollection( ArrayList::new ) );
+        documentConditions.add( docIdentifierMatch( IdentifierUtils.MISSING_IDENTIFIER, IdentifierUtils.MISSING_IDENTIFIER ) );
 
-                                )
-                        )
-                )
-                .toList();
+        RexNode condition;
 
-        RexNode condition = new RexCall(
-                BOOLEAN_ALG_TYPE,
-                OperatorRegistry.get( OperatorName.OR ),
-                documentConditions
-        );
+        if ( documentConditions.size() > 1 ) {
+            condition = new RexCall(
+                    BOOLEAN_ALG_TYPE,
+                    OperatorRegistry.get( OperatorName.OR ),
+                    documentConditions
+            );
+        } else {
+            condition = documentConditions.get( 0 );
+        }
+
         return LogicalDocumentFilter.create( input, condition );
     }
+
+
+    private RexCall docIdentifierMatch( long entry, long version ) {
+        return new RexCall(
+                BOOLEAN_ALG_TYPE,
+                OperatorRegistry.get( OperatorName.AND ),
+                new RexCall(
+                        BOOLEAN_ALG_TYPE,
+                        OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_EQUALS ),
+                        new RexNameRef( IdentifierUtils.IDENTIFIER_KEY, null, IdentifierUtils.IDENTIFIER_ALG_TYPE ),
+                        new RexLiteral( PolyBigDecimal.of( entry ), DOCUMENT_ALG_TYPE, PolyType.DOCUMENT )
+                ),
+                new RexCall(
+                        BOOLEAN_ALG_TYPE,
+                        OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_EQUALS ),
+                        new RexNameRef( IdentifierUtils.VERSION_KEY, null, IdentifierUtils.VERSION_ALG_TYPE ),
+                        new RexLiteral( PolyBigDecimal.of( version ), DOCUMENT_ALG_TYPE, PolyType.DOCUMENT )
+
+                )
+        );
+    }
+
 }

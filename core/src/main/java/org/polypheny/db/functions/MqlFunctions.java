@@ -40,6 +40,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Pair;
 
 
@@ -52,6 +53,11 @@ public class MqlFunctions {
 
     private MqlFunctions() {
         // empty on purpose
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyValue mqlId() {
+        return PolyString.of(BsonUtil.getObjectId());
     }
 
 

@@ -32,6 +32,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 
 
@@ -53,14 +54,14 @@ public class DocCommitStateFilterMod extends DeferredAlgTreeModification<Logical
     public LogicalDocumentFilter apply( LogicalDocumentFilter node ) {
         Operator filterOperator = switch ( removedCommitState ) {
             case COMMITTED -> OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_GTE );
-            case UNCOMMITTED -> OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_LTE );
+            case UNCOMMITTED -> OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_LT );
         };
 
         RexNode committedCondition = new RexCall(
                 BOOLEAN_ALG_TYPE,
                 filterOperator,
                 new RexNameRef( IdentifierUtils.VERSION_KEY, null, IdentifierUtils.VERSION_ALG_TYPE ),
-                new RexLiteral( PolyLong.of( 0 ), DOCUMENT_ALG_TYPE, PolyType.DOCUMENT )
+                new RexLiteral( PolyBigDecimal.of( 0 ), DOCUMENT_ALG_TYPE, PolyType.DOCUMENT )
         );
         RexNode newCondition = new RexCall(
                 BOOLEAN_ALG_TYPE,
