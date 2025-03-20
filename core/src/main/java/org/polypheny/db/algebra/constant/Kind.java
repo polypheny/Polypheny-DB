@@ -1244,6 +1244,11 @@ public enum Kind {
     CROSS_MODEL_ITEM,
 
     /**
+     * Creates a new uuid for a document
+     */
+    MQL_ID,
+
+    /**
      * Document model transform document into string representation
      */
     MQL_JSONIFY,

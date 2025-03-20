@@ -13,6 +13,9 @@ jobs:
             fail-fast: false
             matrix:
                 adapter: [ mongodb, hsqldb, monetdb, postgresql, file, cottontail, neo4j ]
+                s2pl_locking_level: [GLOBAL, NAMESPACE, ENTITY]
+                rel_default_cc: [S2PL, MVCC]
+                doc_default_cc: [S2PL, MVCC]
         name: ${{ matrix.adapter }}
         steps:
             -   name: Checkout
@@ -36,4 +39,4 @@ jobs:
                 run: ./gradlew assemblePlugins -PwithoutpullingUi=true
             -   name: Execute integration tests for ${{ matrix.adapter }}
                 timeout-minutes: 30
-                run: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }} -PwithoutpullingUi=true
+                run: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }} -Ds2plLockingLevel=${{ matrix.s2pl_locking_level }} -DrelDefaultConcurrencyControl=${{ matrix.rel_default_cc }} -DdocDefaultConcurrencyControl=${{ matrix.doc_default_cc }} -PwithoutpullingUi=true

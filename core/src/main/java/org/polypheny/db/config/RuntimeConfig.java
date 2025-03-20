@@ -576,6 +576,7 @@ public enum RuntimeConfig {
             ConfigType.INTEGER );
 
 
+    @Getter
     private final String key;
     private final String description;
 
@@ -746,7 +747,6 @@ public enum RuntimeConfig {
             config.withUi( webUiGroup );
         }
     }
-
 
     public boolean getBoolean() {
         return configManager.getConfig( key ).getBoolean();

@@ -29,6 +29,7 @@ public class DocMvccResultProjectionMod implements AlgTreeModification<AlgNode, 
         if ( node.getModel() != DataModel.DOCUMENT ) {
             throw new IllegalArgumentException( "This tree modification is only applicable to document nodes." );
         }
+
         return LogicalDocumentProject.create( node, List.of( IdentifierUtils.IDENTIFIER_KEY, IdentifierUtils.VERSION_KEY ) );
     }
 

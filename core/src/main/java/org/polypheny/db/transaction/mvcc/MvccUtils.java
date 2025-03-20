@@ -34,6 +34,7 @@ import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.ConcurrencyControlType;
+import org.polypheny.db.transaction.locking.S2plLockingLevel;
 
 public class MvccUtils {
 

@@ -78,6 +78,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
+import org.polypheny.db.transaction.locking.S2plLockingLevel;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.view.MaterializedViewManager;
@@ -126,8 +127,6 @@ public class PolyphenyDb {
 
     @Option(name = { "-defaultStore" }, description = "Type of default storeId")
     public String defaultStoreName = "hsqldb";
-    //public String defaultStoreName = "neo4j";
-    //public String defaultStoreName = "mongodb";
 
     @Option(name = { "-defaultSource" }, description = "Type of default source")
     public static String defaultSourceName = "csv";
@@ -137,6 +136,18 @@ public class PolyphenyDb {
 
     @Option(name = { "-v", "--version" }, description = "Current version of Polypheny-DB")
     public boolean versionOptionEnabled = false;
+
+    @Option(name = { "-s2plLockingLevel"}, description = "Level on which locks should be acquired by concurrency control")
+    public String s2plDefaultLockingLevel;
+
+    @Option(name = { "-relDefaultConcurrencyControl"}, description = "Concurrency control mode to use for relational namespaces")
+    public String relDefaultConcurrencyControl;
+
+    @Option(name = { "-docDefaultConcurrencyControl"}, description = "Concurrency control mode to use for document namespaces")
+    public String docDefaultConcurrencyControl;
+
+    @Option(name = { "-graphDefaultConcurrencyControl"}, description = "Concurrency control mode to use for graph namespaces")
+    public String graphDefaultConcurrencyControl;
 
     // required for unit tests to determine when the system is ready to process queries
     @Getter
@@ -257,6 +268,19 @@ public class PolyphenyDb {
         if ( applicationConfPath != null && PolyphenyHomeDirManager.getInstance().getHomeFile( applicationConfPath ).isPresent() ) {
             ConfigManager.getInstance();
             ConfigManager.setApplicationConfFile( new File( applicationConfPath ) );
+        }
+
+        if (s2plDefaultLockingLevel != null) {
+            ConfigManager.getInstance().getConfig( RuntimeConfig.S2PL_DEADLOCK_DETECTOR_TYPE.getKey() ).setEnum( S2plLockingLevel.valueOf( s2plDefaultLockingLevel ) );
+        }
+        if (relDefaultConcurrencyControl != null) {
+            ConfigManager.getInstance().getConfig( RuntimeConfig.REL_DEFAULT_CONCURRENCY_CONTROL.getKey() ).setEnum( S2plLockingLevel.valueOf( relDefaultConcurrencyControl ) );
+        }
+        if (docDefaultConcurrencyControl != null) {
+            ConfigManager.getInstance().getConfig( RuntimeConfig.DOC_DEFAULT_CONCURRENCY_CONTROL.getKey() ).setEnum( S2plLockingLevel.valueOf( docDefaultConcurrencyControl ) );
+        }
+        if (graphDefaultConcurrencyControl != null) {
+            ConfigManager.getInstance().getConfig( RuntimeConfig.GRAPH_DEFAULT_CONCURRENCY_CONTROL.getKey() ).setEnum( S2plLockingLevel.valueOf( graphDefaultConcurrencyControl ) );
         }
 
         // Generate UUID for Polypheny (if there isn't one already)

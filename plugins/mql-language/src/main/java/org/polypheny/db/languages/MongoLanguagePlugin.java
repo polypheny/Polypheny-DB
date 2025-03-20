@@ -148,6 +148,8 @@ public class MongoLanguagePlugin extends PolyPlugin {
         if ( isInit ) {
             throw new GenericRuntimeException( "Mql operators were already registered." );
         }
+        register( OperatorName.MQL_ID, new LangFunctionOperator( "MQL_ID", Kind.MQL_ID, PolyType.DOCUMENT ));
+
         register( OperatorName.MQL_EQUALS, new LangFunctionOperator( "MQL_EQUALS", Kind.EQUALS, PolyType.BOOLEAN ) );
 
         register( OperatorName.MQL_SIZE_MATCH, new LangFunctionOperator( "MQL_SIZE_MATCH", Kind.MQL_SIZE_MATCH, PolyType.BOOLEAN ) );

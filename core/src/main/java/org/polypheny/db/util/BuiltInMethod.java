@@ -486,6 +486,7 @@ public enum BuiltInMethod {
     ST_NUMGEOMETRIES( GeoFunctions.class, "stNumGeometries", PolyGeometry.class ),
     ST_GEOMETRYN( GeoFunctions.class, "stGeometryN", PolyGeometry.class, PolyInteger.class ),
     /// MQL BUILT-IN METHODS
+    MQL_ID( MqlFunctions.class, "mqlId"),
     MQL_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
     MQL_GT( MqlFunctions.class, "docGt", PolyValue.class, PolyValue.class ),
     MQL_GTE( MqlFunctions.class, "docGte", PolyValue.class, PolyValue.class ),

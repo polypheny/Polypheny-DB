@@ -37,7 +37,6 @@ import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.util.BsonUtil;
 
 public abstract class DocFieldUpdateMod<T, U extends AlgNode> implements AlgTreeModification<T, U> {
 
@@ -57,10 +56,9 @@ public abstract class DocFieldUpdateMod<T, U extends AlgNode> implements AlgTree
                                 ARRAY_TYPE,
                                 PolyType.ARRAY
                         ),
-                        new RexLiteral(
-                                PolyString.of( BsonUtil.getObjectId() ),
+                        new RexCall(
                                 DOCUMENT_ALG_TYPE,
-                                PolyType.DOCUMENT
+                                OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ID )
                         )
                 )
         );
@@ -84,7 +82,7 @@ public abstract class DocFieldUpdateMod<T, U extends AlgNode> implements AlgTree
                                 PolyType.ARRAY
                         ),
                         new RexLiteral(
-                                IdentifierUtils.getVersionAsPolyLong( statement.getTransaction().getSequenceNumber(), false ),
+                                IdentifierUtils.getVersionAsPolyBigDecimal( statement.getTransaction().getSequenceNumber(), false ),
                                 DOCUMENT_ALG_TYPE,
                                 PolyType.DOCUMENT
                         )

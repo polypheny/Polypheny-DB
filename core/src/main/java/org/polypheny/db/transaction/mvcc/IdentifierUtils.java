@@ -16,7 +16,6 @@
 
 package org.polypheny.db.transaction.mvcc;
 
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import java.text.MessageFormat;
 import java.util.LinkedList;
 import java.util.List;
@@ -134,8 +133,9 @@ public class IdentifierUtils {
         return field.getName().equals( VERSION_KEY );
     }
 
-    public static AlgDataType removeIdentifierFields(AlgDataType type, AlgDataTypeFactory typeFactory) {
-        return typeFactory.createStructType(type.getFields().stream().filter( f -> !isIdentifier( f ) ).toList());
+
+    public static AlgDataType removeIdentifierFields( AlgDataType type, AlgDataTypeFactory typeFactory ) {
+        return typeFactory.createStructType( type.getFields().stream().filter( f -> !isIdentifier( f ) ).toList() );
     }
 
 

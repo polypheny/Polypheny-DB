@@ -18,6 +18,7 @@ package org.polypheny.db.transaction.mvcc.rewriting;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -44,11 +45,9 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
     private final Statement statement;
     private boolean includesMvccEntities = false;
 
-
     public AlgTreeRewriter( Statement statement ) {
         this.statement = statement;
     }
-
 
     public AlgRoot process( AlgRoot root ) {
         AlgNode rootAlg = root.alg.accept( this );
@@ -138,7 +137,7 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
         statement.getTransaction().addWrittenEntitiy( modify.getEntity() );
 
         return switch ( modify1.getOperation() ) {
-            case INSERT -> new LpgInsertMod(statement.getTransaction().getSequenceNumber()).apply( modify1 );
+            case INSERT -> new LpgInsertMod( statement.getTransaction().getSequenceNumber() ).apply( modify1 );
             //case UPDATE -> new LpgUpdateMod( statement ).apply( modify1 );
             //case DELETE -> new LpgDeleteMod( statement ).apply( modify1 );
             default -> modify1;
@@ -176,6 +175,14 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
         if ( !MvccUtils.isInNamespaceUsingMvcc( modify.getEntity() ) ) {
             return modify1;
         }
+
+        Stream.concat(
+                Stream.concat(
+                        modify1.getRenames().keySet().stream(),
+                        modify1.getRemoves().stream()
+                ),
+                modify1.getUpdates().keySet().stream()
+        ).forEach( IdentifierUtils::throwIfIsDisallowedFieldName );
 
         statement.getTransaction().addWrittenEntitiy( modify.getEntity() );
 
