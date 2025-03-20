@@ -555,6 +555,13 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void createIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement ) throws TransactionException {
         List<Long> columnIds = new ArrayList<>();
+
+        if (MvccUtils.isInNamespaceUsingMvcc( table )) {
+            columnNames = new ArrayList<>(columnNames);
+            columnNames.add(IdentifierUtils.IDENTIFIER_KEY);
+            columnNames.add(IdentifierUtils.VERSION_KEY);
+        }
+
         for ( String columnName : columnNames ) {
             LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
             columnIds.add( logicalColumn.id );
@@ -689,6 +696,13 @@ public class DdlManagerImpl extends DdlManager {
     public void createPolyphenyIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws TransactionException {
         indexName = indexName.toLowerCase();
         List<Long> columnIds = new LinkedList<>();
+
+        if (MvccUtils.isInNamespaceUsingMvcc( table )) {
+            columnNames = new ArrayList<>(columnNames);
+            columnNames.add(IdentifierUtils.IDENTIFIER_KEY);
+            columnNames.add(IdentifierUtils.VERSION_KEY);
+        }
+
         for ( String columnName : columnNames ) {
             LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
             columnIds.add( logicalColumn.id );
@@ -2077,7 +2091,7 @@ public class DdlManagerImpl extends DdlManager {
 
         boolean isMvccNamespace = MvccUtils.isNamespaceUsingMvcc( namespaceId );
         if ( isMvccNamespace ) {
-            fields = IdentifierUtils.addMvccFieldsIfAbsent( fields );
+            fields = IdentifierUtils.addIdentifierFieldsIfAbsent( fields );
             constraints = IdentifierUtils.rewriteConstraints( constraints );
         }
 

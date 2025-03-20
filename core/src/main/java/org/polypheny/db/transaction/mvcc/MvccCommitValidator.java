@@ -42,6 +42,9 @@ public class MvccCommitValidator {
         long maxVersion = 0;
 
         for ( Entity writtenEntity : writtenEntities ) {
+            if (transaction.getSnapshot().getLogicalEntity( writtenEntity.getId() ).isEmpty()) {
+                continue;
+            }
             maxVersion = Math.max( maxVersion, switch ( writtenEntity.getDataModel() ) {
                 case RELATIONAL -> validateRelWrites( writtenEntity);
                 case DOCUMENT -> validateDocWrites( writtenEntity);
@@ -99,7 +102,7 @@ public class MvccCommitValidator {
     }
 
 
-    public static long validateGraphWrites(Entity writtenEntity) {
+    public long validateGraphWrites(Entity writtenEntity) {
         throw new NotImplementedException();
         //ToDo TH: implement this
     }
@@ -109,6 +112,9 @@ public class MvccCommitValidator {
         long commitSequenceNumber = SequenceNumberGenerator.getInstance().getNextNumber();
 
         for ( Entity writtenEntity : writtenEntities ) {
+            if (transaction.getSnapshot().getLogicalEntity( writtenEntity.getId() ).isEmpty()) {
+                continue;
+            }
             switch ( writtenEntity.getDataModel() ) {
                 case RELATIONAL -> updateWrittenRelVersionIds(commitSequenceNumber, writtenEntity);
                 case DOCUMENT -> updateWrittenDocVersionIds(commitSequenceNumber, writtenEntity);

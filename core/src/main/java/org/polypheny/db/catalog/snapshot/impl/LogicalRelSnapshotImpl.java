@@ -366,6 +366,12 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
+    public @NonNull List<LogicalColumn> getInternalColumns( long tableId ) {
+        return getColumns( tableId ).stream().filter( LogicalColumn::isInternal ).toList();
+    }
+
+
+    @Override
     public @NonNull List<LogicalColumn> getColumns( Pattern tableName, Pattern columnName ) {
         List<LogicalTable> tables = getTables( null, tableName );
         if ( columnName == null ) {
