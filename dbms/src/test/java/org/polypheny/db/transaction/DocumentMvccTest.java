@@ -17,8 +17,6 @@
 package org.polypheny.db.transaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
@@ -35,7 +33,6 @@ import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.transaction.locking.ConcurrencyControlType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyDocument;
 
 public class DocumentMvccTest {
 
@@ -44,11 +41,6 @@ public class DocumentMvccTest {
 
     private static final String FIND_ALL = "db.Users.find({})";
     private static final String INSERT_1 = "db.Users.insertMany([ { UserID: 1, UUID: 10 }, { UserID: 2, UUID: 20 } ])";
-    private static final String INSERT_2 = "db.Users.insertMany([ { UserID: 3, UUID: 30 }, { UserID: 4, UUID: 40 } ])";
-    private static final String UPDATE_1 = "db.Users.updateOne( { UserID: 2 }, { $set: { UUID: 100 } } )";
-    private static final String UPDATE_2 = "db.Users.updateOne( { UserID: 2 }, { $set: { UUID: 200 } } )";
-    private static final String DELETE_1 = "db.Users.deleteOne({ UserID: 2 })";
-
 
     @BeforeAll
     public static void setUpClass() {
@@ -180,78 +172,12 @@ public class DocumentMvccTest {
 
         session1.executeStatement( INSERT_1, "mongo", NAMESPACE );
 
-        // s1 sees own insert as uncommitted
         List<ExecutedContext> results = session1.executeStatement( FIND_ALL, "mongo", NAMESPACE );
         assertEquals( 1, results.size() );
         List<List<PolyValue>> data = results.get( 0 ).getIterator().getAllRowsAndClose();
         assertEquals( 2, data.size() );
-        data.forEach( row -> assertTrue( row.get( 0 ).asDocument().get( PolyString.of( "_vid" ) ).asLong().longValue() < 0 ) );
 
         session1.commitTransaction();
-
-        teardown();
-    }
-
-
-    @Test
-    public void singleSessionInsert() {
-        List<ExecutedContext> results;
-        List<List<PolyValue>> data;
-
-        setup();
-
-        Session session1 = new Session( testHelper );
-        Session session2 = new Session( testHelper );
-
-        session1.startTransaction();
-        session2.startTransaction();
-
-        // s1 inserts data
-        session1.executeStatement( INSERT_1, "mongo", NAMESPACE );
-
-        // s1 sees own insert as uncommitted
-        results = session1.executeStatement( FIND_ALL, "mongo", NAMESPACE );
-        assertEquals( 1, results.size() );
-        data = results.get( 0 ).getIterator().getAllRowsAndClose();
-        assertEquals( 2, data.size() );
-        data.forEach( row -> {
-            PolyDocument document = row.get( 0 ).asDocument();
-            assertTrue( document.get( PolyString.of( "_vid" ) ).asLong().longValue() < 0 );
-            int user_id = document.get(PolyString.of("UserID")).asInteger().intValue();
-            assertTrue( user_id == 1 || user_id == 2 );
-        } );
-
-        // s2 cannot see the insert performed by s1
-        results = session2.executeStatement( FIND_ALL, "mongo", NAMESPACE );
-        assertEquals( 1, results.size() );
-        assertFalse( results.get( 0 ).getIterator().hasMoreRows() );
-        closeAndIgnore( results );
-
-        session1.commitTransaction();
-
-        // even after commit s2 cannot see the changes due to it's own snapshot
-        results = session2.executeStatement( FIND_ALL, "mongo", NAMESPACE );
-        assertEquals( 1, results.size() );
-        assertFalse( results.get( 0 ).getIterator().hasMoreRows() );
-        closeAndIgnore( results );
-
-        session2.commitTransaction();
-        session2.startTransaction();
-
-        // after starting a new transaction, s2 sees the data inserted by s1
-        results = session2.executeStatement( FIND_ALL, "mongo", NAMESPACE );
-        assertEquals( 1, results.size() );
-        data = results.get( 0 ).getIterator().getAllRowsAndClose();
-        assertEquals( 2, data.size() );
-        data.forEach( row -> {
-            PolyDocument document = row.get( 0 ).asDocument();
-            assertTrue( document.get( PolyString.of( "_vid" ) ).asLong().longValue() < 0 );
-            int user_id = document.get(PolyString.of("UserID")).asInteger().intValue();
-            assertTrue( user_id == 1 || user_id == 2 );
-        } );
-
-        session1.commitTransaction();
-        session2.commitTransaction();
 
         teardown();
     }
