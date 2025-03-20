@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.polypheny.db.transaction.deadlocks.RequestSequenceDeadlockDetector;
@@ -40,7 +41,6 @@ public class RequestSequenceDeadlockDetectorTest {
     private LockableImpl lockable1;
     private LockableImpl lockable2;
     private LockableImpl lockable3;
-    private LockableImpl lockable4;
 
     Set<Transaction> emptySet;
 
@@ -57,7 +57,6 @@ public class RequestSequenceDeadlockDetectorTest {
         lockable1 = new LockableImpl( null );
         lockable2 = new LockableImpl( null );
         lockable3 = new LockableImpl( null );
-        lockable4 = new LockableImpl( null );
 
         emptySet = new HashSet<>();
     }
@@ -169,6 +168,4 @@ public class RequestSequenceDeadlockDetectorTest {
         criticalTransactions = deadlockDetector.getConflictingTransactions();
         assertTrue( criticalTransactions.contains( transaction3 ) || criticalTransactions.contains( transaction4 ) );
     }
-
-
 }
