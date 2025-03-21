@@ -94,7 +94,6 @@ public class UniqueConstraintTest {
 
 
     @Test
-    // X TODO TH: Fix: Nothing thrown
     public void insertCompositeConflictTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -152,7 +151,6 @@ public class UniqueConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    //X TODO TH: nothig thrown
     public void insertExternalConflictTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -233,7 +231,7 @@ public class UniqueConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    //X TODO TH: Fix: Broken as table to table copy is broken
+    //TODO: Fix: Broken as table to table copy is broken
     public void insertSelectNoConflictTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -349,7 +347,6 @@ public class UniqueConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    //X TODO TH: nothing thrown
     public void batchInsertTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -432,8 +429,7 @@ public class UniqueConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    @Disabled
-    //TODO: Fix: this breaks the tests
+    //TODO: Fix: this hangs indefinitely
     public void batchUpdateTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -525,7 +521,7 @@ public class UniqueConstraintTest {
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
     @Tag("cottontailExcluded")
-    //X TODO TH: Fix: A new planner state error.
+    //TODO: Fix: A new planner state error.
     public void updateNoConflictTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -587,7 +583,6 @@ public class UniqueConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    //X TODO TH: Fix: Nothing thrown
     public void updateConflictTest( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
