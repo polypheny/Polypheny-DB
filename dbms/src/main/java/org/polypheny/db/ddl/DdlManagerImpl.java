@@ -558,8 +558,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if (MvccUtils.isInNamespaceUsingMvcc( table )) {
             columnNames = new ArrayList<>(columnNames);
-            //columnNames.add(IdentifierUtils.IDENTIFIER_KEY);
-            columnNames.add(IdentifierUtils.VERSION_KEY);
+            columnNames.add(IdentifierUtils.VERSION_KEY); //TODO: opt: do we need this?
         }
 
         for ( String columnName : columnNames ) {
@@ -699,8 +698,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if (MvccUtils.isInNamespaceUsingMvcc( table )) {
             columnNames = new ArrayList<>(columnNames);
-            //columnNames.add(IdentifierUtils.IDENTIFIER_KEY);
-            columnNames.add(IdentifierUtils.VERSION_KEY);
+            columnNames.add(IdentifierUtils.VERSION_KEY); //TODO: opt: do we need this?
         }
 
         for ( String columnName : columnNames ) {
@@ -856,11 +854,6 @@ public class DdlManagerImpl extends DdlManager {
         checkIfDdlPossible( table.entityType );
 
         checkModelLogic( table, null );
-
-        if (MvccUtils.isInNamespaceUsingMvcc( table )) {
-            //columnNames.add( IdentifierUtils.IDENTIFIER_KEY );
-            columnNames.add( IdentifierUtils.VERSION_KEY );
-        }
 
         List<Long> columnIds = new ArrayList<>();
         for ( String columnName : columnNames ) {
@@ -2092,7 +2085,6 @@ public class DdlManagerImpl extends DdlManager {
         boolean isMvccNamespace = MvccUtils.isNamespaceUsingMvcc( namespaceId );
         if ( isMvccNamespace ) {
             fields = IdentifierUtils.addIdentifierFieldsIfAbsent( fields );
-            constraints = IdentifierUtils.rewriteConstraints( constraints );
         }
 
         if ( stores == null ) {

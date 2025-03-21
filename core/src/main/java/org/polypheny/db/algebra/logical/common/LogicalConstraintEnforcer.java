@@ -135,7 +135,15 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             //builder.relScan( table.getNamespaceName(), table.name );
             for ( LogicalConstraint constraint : constraints ) {
                 builder.clear();
-                final AlgNode scan = LogicalRelScan.create( modify.getCluster(), modify.getEntity() );
+
+                LogicalRelScan logicalScan = LogicalRelScan.create( modify.getCluster(), modify.getEntity() );
+                final AlgNode scan;
+                if ( MvccUtils.isInNamespaceUsingMvcc( modify.getEntity() ) ) {
+                    scan = new RelScanSnapshotMod( logicalScan, statement ).apply( logicalScan );
+                } else {
+                    scan = logicalScan;
+                }
+
                 builder.push( scan );
                 // Enforce uniqueness between the already existing values and the new values
                 List<RexIndexRef> keys = constraint.key
@@ -279,7 +287,16 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             //builder.relScan( table.getNamespaceName(), table.name );
             for ( LogicalConstraint constraint : constraints ) {
                 builder.clear();
-                builder.relScan( table );//LogicalTableScan.create( modify.getCluster(), modify.getTable() );
+
+                LogicalRelScan logicalScan = (LogicalRelScan) builder.relScan( table ).build();
+                final AlgNode scan;
+                if ( MvccUtils.isInNamespaceUsingMvcc( table ) ) {
+                    scan = new RelScanSnapshotMod( logicalScan, statement ).apply( logicalScan );
+                } else {
+                    scan = logicalScan;
+                }
+                builder.push( scan );
+
                 // Enforce uniqueness between the already existing values and the new values
                 List<RexIndexRef> keys = constraint.key
                         .getFieldNames()

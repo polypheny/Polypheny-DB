@@ -315,6 +315,7 @@ public class ForeignKeyConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
+    // TODO: Fix: This is broken under mvcc as a project following a sort causes the sort to disappear in the physical plan thus breaking the order by statement.
     public void testUpdateOutConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
