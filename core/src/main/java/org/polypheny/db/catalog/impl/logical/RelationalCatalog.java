@@ -465,11 +465,6 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         Snapshot snapshot = Catalog.snapshot();
         List<LogicalKey> childKeys = snapshot.rel().getTableKeys( referencesTableId );
 
-        boolean referencesMvccTable = MvccUtils.isInNamespaceUsingMvcc(tables.get(referencesTableId));
-        if (referencesMvccTable) {
-            referencesIds.addAll( snapshot.rel().getInternalColumns( referencesTableId ).stream().filter(c -> c.getName().equals( IdentifierUtils.VERSION_KEY )).map( f -> f.id ).toList() );
-        }
-
         for ( LogicalKey refKey : childKeys ) {
             if ( refKey.fieldIds.size() != referencesIds.size() || !refKey.fieldIds.containsAll( referencesIds ) || !new HashSet<>( referencesIds ).containsAll( refKey.fieldIds ) ) {
                 continue;
@@ -478,9 +473,6 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             int i = 0;
             for ( long referencedColumnId : refKey.fieldIds ) {
                 LogicalColumn referencedColumn = snapshot.rel().getColumn( referencedColumnId ).orElseThrow();
-                if (referencesMvccTable && IdentifierUtils.isIdentifier( referencedColumn.getName() )) {
-                    continue;
-                }
                 LogicalColumn referencingColumn = snapshot.rel().getColumn( columnIds.get( i++ ) ).orElseThrow();
                 if ( referencedColumn.type != referencingColumn.type ) {
                     throw new GenericRuntimeException( "The data type of the referenced columns does not match the data type of the referencing column: %s != %s", referencingColumn.type.name(), referencedColumn.type );

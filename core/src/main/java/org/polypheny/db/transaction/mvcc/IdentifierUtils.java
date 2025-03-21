@@ -233,19 +233,4 @@ public class IdentifierUtils {
                 .map( s -> s.asString().getValue() )
                 .forEach( IdentifierUtils::throwIfIsDisallowedFieldName );
     }
-
-
-    public static List<ConstraintInformation> rewriteConstraints( List<ConstraintInformation> constraints ) {
-        return constraints.stream()
-                .map( constraint -> constraint.getType().equals( ConstraintType.FOREIGN )
-                        ? constraint
-                        : constraint.getCopyWithNewColumnNames(
-                                Stream.concat(
-                                        constraint.getColumnNames().stream(),
-                                        Stream.of( VERSION_KEY ) // removed IDENTIFIER_KEY
-                                ).toList()
-                        ) )
-                .toList();
-    }
-
 }
