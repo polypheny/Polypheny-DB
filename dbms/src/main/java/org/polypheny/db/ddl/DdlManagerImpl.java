@@ -558,7 +558,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if (MvccUtils.isInNamespaceUsingMvcc( table )) {
             columnNames = new ArrayList<>(columnNames);
-            columnNames.add(IdentifierUtils.IDENTIFIER_KEY);
+            //columnNames.add(IdentifierUtils.IDENTIFIER_KEY);
             columnNames.add(IdentifierUtils.VERSION_KEY);
         }
 
@@ -699,7 +699,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if (MvccUtils.isInNamespaceUsingMvcc( table )) {
             columnNames = new ArrayList<>(columnNames);
-            columnNames.add(IdentifierUtils.IDENTIFIER_KEY);
+            //columnNames.add(IdentifierUtils.IDENTIFIER_KEY);
             columnNames.add(IdentifierUtils.VERSION_KEY);
         }
 
@@ -858,7 +858,7 @@ public class DdlManagerImpl extends DdlManager {
         checkModelLogic( table, null );
 
         if (MvccUtils.isInNamespaceUsingMvcc( table )) {
-            columnNames.add( IdentifierUtils.IDENTIFIER_KEY );
+            //columnNames.add( IdentifierUtils.IDENTIFIER_KEY );
             columnNames.add( IdentifierUtils.VERSION_KEY );
         }
 

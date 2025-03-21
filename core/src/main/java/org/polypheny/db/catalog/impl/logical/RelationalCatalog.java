@@ -467,7 +467,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
         boolean referencesMvccTable = MvccUtils.isInNamespaceUsingMvcc(tables.get(referencesTableId));
         if (referencesMvccTable) {
-            referencesIds.addAll( snapshot.rel().getInternalColumns( referencesTableId ).stream().map( f -> f.id ).toList() );
+            referencesIds.addAll( snapshot.rel().getInternalColumns( referencesTableId ).stream().filter(c -> c.getName().equals( IdentifierUtils.VERSION_KEY )).map( f -> f.id ).toList() );
         }
 
         for ( LogicalKey refKey : childKeys ) {

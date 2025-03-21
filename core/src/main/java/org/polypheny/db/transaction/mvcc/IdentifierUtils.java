@@ -236,7 +236,7 @@ public class IdentifierUtils {
                         : constraint.getCopyWithNewColumnNames(
                                 Stream.concat(
                                         constraint.getColumnNames().stream(),
-                                        Stream.of( IDENTIFIER_KEY, VERSION_KEY )
+                                        Stream.of( VERSION_KEY ) // removed IDENTIFIER_KEY
                                 ).toList()
                         ) )
                 .toList();
