@@ -29,8 +29,8 @@ public class FieldSelectValue implements SettingValue {
     List<String> include;
     List<String> exclude;
     /**
-     * If <0 unspecified fields are excluded by default.
-     * If >0 unspecified fields are inserted at the given index
+     * If &lt;0 unspecified fields are excluded by default.
+     * If &gt;0 unspecified fields are inserted at the given index
      */
     int unspecifiedIndex;
 

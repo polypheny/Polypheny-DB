@@ -52,7 +52,6 @@ import org.polypheny.db.workflow.engine.execution.context.FuseExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
-import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 @ActivityDefinition(type = "reorderCols", displayName = "Select / Reorder Columns", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL, ActivityCategory.CLEANING, ActivityCategory.ESSENTIALS },
@@ -64,7 +63,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 @FieldSelectSetting(key = "cols", displayName = "Columns", reorder = true, defaultAll = true,
         subPointer = "mode", subValues = { "\"fieldSelect\"" },
-        shortDescription = "Specify the names of the columns to include. Alternatively, you can include all columns except for the excluded ones. The \"" + StorageManager.PK_COL + "\" column must always be included.")
+        shortDescription = "Specify the names of the columns to include. Alternatively, you can include all columns except for the excluded ones.")
 @StringSetting(key = "regex", displayName = "Regex", maxLength = 1024, containsRegex = true,
         subPointer = "mode", subValues = { "\"regex\"" },
         shortDescription = "Specify the columns to include using a regular expression. It is not possible to reorder the columns in this mode.")
