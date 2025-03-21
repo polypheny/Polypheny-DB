@@ -48,7 +48,7 @@ public class RelScanSnapshotMod extends DeferredAlgTreeModification<LogicalRelSc
     private static final AlgDataType BOOLEAN_ALG_TYPE = ((PolyTypeFactoryImpl) AlgDataTypeFactoryImpl.DEFAULT).createBasicPolyType( PolyType.BOOLEAN, true );
 
 
-    protected RelScanSnapshotMod( LogicalRelScan target, Statement statement ) {
+    public RelScanSnapshotMod( LogicalRelScan target, Statement statement ) {
         super( target, statement );
     }
 

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.transaction.mvcc;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.PolyImplementation;
@@ -23,7 +24,11 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
@@ -34,12 +39,25 @@ import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.ConcurrencyControlType;
-import org.polypheny.db.transaction.locking.S2plLockingLevel;
 
 public class MvccUtils {
 
     public static boolean isInNamespaceUsingMvcc( Entity entity ) {
         return isNamespaceUsingMvcc( entity.getNamespaceId() );
+    }
+
+
+    public static boolean isInNamespaceUsingMvcc( LogicalRelSnapshot snapshot, String... tableNames ) {
+        final List<String> names = ImmutableList.copyOf( tableNames );
+        final LogicalTable entity;
+        if ( names.size() == 2 ) {
+            entity = snapshot.getTable( names.get( 0 ), names.get( 1 ) ).orElseThrow( () -> new GenericRuntimeException( String.join( ".", names ) ) );
+        } else if ( names.size() == 1 ) {
+            entity = snapshot.getTable( Catalog.DEFAULT_NAMESPACE_NAME, names.get( 0 ) ).orElseThrow( () -> new GenericRuntimeException( String.join( ".", names ) ) );
+        } else {
+            throw new GenericRuntimeException( "Invalid table name: " + String.join( ".", names ) );
+        }
+        return isInNamespaceUsingMvcc( entity );
     }
 
 
