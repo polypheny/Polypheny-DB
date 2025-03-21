@@ -68,7 +68,12 @@ public class MvccCommitValidator {
         List<List<PolyValue>> res;
         try ( ResultIterator iterator = MvccUtils.executeStatement( QueryLanguage.from( "sql" ), query, writtenEntity.getNamespaceId(), transaction ).getIterator() ) {
             res = iterator.getNextBatch();
-            return Objects.requireNonNull( res.get( 0 ).get( 0 ).asBigDecimal().getValue() ).longValue();
+            PolyValue maxVid = res.get( 0 ).get( 0 );
+            return switch (maxVid.getType()) {
+                case BIGINT -> maxVid.asLong().getValue();
+                case DECIMAL -> maxVid.asBigDecimal().longValue();
+                default -> throw new IllegalArgumentException( "Unsupported commit validation result of type: " + maxVid.getType() );
+            };
         }
     }
 
@@ -97,7 +102,12 @@ public class MvccCommitValidator {
         String getMaxQuery = String.format( getMaxTemplate, writtenEntity.getName(), entryIdString );
         try ( ResultIterator iterator = MvccUtils.executeStatement( QueryLanguage.from( "mql" ), getMaxQuery, writtenEntity.getNamespaceId(), transaction ).getIterator() ) {
             PolyDocument result = iterator.getNextBatch().get( 0 ).get( 0 ).asDocument();
-            return result.get( PolyString.of( "max_vid" ) ).asBigDecimal().longValue();
+            PolyValue maxVid = result.get( PolyString.of( "max_vid" ) );
+            return switch (maxVid.getType()) {
+                case BIGINT -> maxVid.asLong().getValue();
+                case DECIMAL -> maxVid.asBigDecimal().longValue();
+                default -> throw new IllegalArgumentException( "Unsupported commit validation result of type: " + maxVid.getType() );
+            };
         }
     }
 
