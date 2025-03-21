@@ -43,7 +43,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -55,6 +54,8 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.mvcc.MvccUtils;
+import org.polypheny.db.transaction.mvcc.rewriting.RelScanSnapshotMod;
 
 
 @Slf4j
@@ -167,8 +168,22 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 builder.clear();
                 final LogicalTable scanOptTable = snapshot.getTable( foreignKey.entityId ).orElseThrow();
                 final LogicalTable refOptTable = snapshot.getTable( foreignKey.referencedKeyEntityId ).orElseThrow();
-                final AlgNode scan = LogicalRelScan.create( modify.getCluster(), scanOptTable );
-                final LogicalRelScan ref = LogicalRelScan.create( modify.getCluster(), refOptTable );
+
+                LogicalRelScan logicalScan = LogicalRelScan.create( modify.getCluster(), scanOptTable );
+                final AlgNode scan;
+                if ( MvccUtils.isInNamespaceUsingMvcc( scanOptTable ) ) {
+                    scan = new RelScanSnapshotMod( logicalScan, statement ).apply( logicalScan );
+                } else {
+                    scan = logicalScan;
+                }
+
+                LogicalRelScan logicalRef = LogicalRelScan.create( modify.getCluster(), refOptTable );
+                final AlgNode ref;
+                if ( MvccUtils.isInNamespaceUsingMvcc( scanOptTable ) ) {
+                    ref = new RelScanSnapshotMod( logicalRef, statement ).apply( logicalRef );
+                } else {
+                    ref = logicalRef;
+                }
 
                 builder.push( scan );
                 builder.project( foreignKey.getFieldNames().stream().map( builder::field ).collect( Collectors.toList() ) );
@@ -294,8 +309,21 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             for ( final LogicalForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).toList() ) {
                 builder.clear();
 
-                final AlgNode scan = builder.relScan( foreignKey.getSchemaName(), foreignKey.getTableName() ).build();
-                final AlgNode ref = builder.relScan( foreignKey.getSchemaName(), foreignKey.getReferencedKeyEntityName() ).build();
+                LogicalRelScan logicalScan = (LogicalRelScan) builder.relScan( foreignKey.getSchemaName(), foreignKey.getTableName() ).build();
+                AlgNode scan;
+                if ( MvccUtils.isInNamespaceUsingMvcc( snapshot, foreignKey.getSchemaName(), foreignKey.getTableName() ) ) {
+                    scan = new RelScanSnapshotMod( logicalScan, statement ).apply( logicalScan );
+                } else {
+                    scan = logicalScan;
+                }
+
+                LogicalRelScan logicalRef = (LogicalRelScan) builder.relScan( foreignKey.getSchemaName(), foreignKey.getReferencedKeyEntityName() ).build();
+                AlgNode ref;
+                if ( MvccUtils.isInNamespaceUsingMvcc( snapshot, foreignKey.getSchemaName(), foreignKey.getReferencedKeyEntityName() ) ) {
+                    ref = new RelScanSnapshotMod( logicalRef, statement ).apply( logicalRef );
+                } else {
+                    ref = logicalRef;
+                }
 
                 builder.push( scan );
                 builder.project( foreignKey.getFieldNames().stream().map( builder::field ).collect( Collectors.toList() ) );
@@ -393,6 +421,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 this.getExceptionClasses(),
                 this.getExceptionMessages() );
     }
+
 
     public AlgNode copy( List<AlgNode> inputs ) {
         return new LogicalConstraintEnforcer(

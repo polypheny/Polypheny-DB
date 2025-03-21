@@ -179,8 +179,7 @@ public class ForeignKeyConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    //@Disabled // todo dl enable as soon as such inserts work correctly
-    // TODO TH: broken for mvcc
+    // TODO TH: Fix: Broken as table to table copy is broken
     public void testInsertSelectNoConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -224,7 +223,7 @@ public class ForeignKeyConstraintTest {
 
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
-    // TODO TH: broken for mvcc
+    // TODO TH: Fix: Broken as table to table copy is broken
     public void testInsertSelectConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -374,10 +373,10 @@ public class ForeignKeyConstraintTest {
         }
     }
 
-
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
     @Tag("cottontailExcluded") // only with indexes, cannot find column during update
+    // TODO: Fix: This is broken under mvcc as a project following a sort causes the sort to disappear in the physical plan thus breaking the order by statement.
     public void testUpdateInNoConflict( boolean useIndex ) throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -420,7 +419,7 @@ public class ForeignKeyConstraintTest {
         }
     }
 
-
+    // TODO TH: does not throw
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
     @Tag("cottontailExcluded") // only with indexes, cannot find column during update
@@ -512,7 +511,7 @@ public class ForeignKeyConstraintTest {
         }
     }
 
-
+    //TODO TH: does not throw expected
     @ParameterizedTest(name = "{index}. Create Index: {0}")
     @ValueSource(booleans = { false, true })
     public void testDeleteConflict( boolean useIndex ) throws SQLException {

@@ -76,6 +76,8 @@ public class AlgTreeRewriter extends AlgModifyingShuttle {
             };
         }
 
+
+
         Kind kind = switch ( root.kind ) {
             case UPDATE, DELETE -> Kind.INSERT;
             default -> root.kind;
