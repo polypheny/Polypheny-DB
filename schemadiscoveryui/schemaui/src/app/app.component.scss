@@ -1,0 +1,18 @@
+.card {
+  display: block;
+  width: 100%;
+  min-height: 100px;
+  background-color: black;
+  align-content: center;
+}
+
+.button {
+  width: 60%;
+  justify-content: center;
+  align-items: center;
+  margin-left: 200px;
+}
+
+.button:hover {
+  background-color: #0056b3;
+}

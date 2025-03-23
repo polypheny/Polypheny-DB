@@ -868,6 +868,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         ctx.json( result );
     }
 
+    void sendConfirmation( final Context ctx ) {
+        log.info( "Sending confirmation" );
+        String result = "Angular confirmation message";
+        ctx.result( result );
+    }
+
 
     /**
      * Update a row from a table. The row is determined by the value of every PK column in that row (conjunction).
