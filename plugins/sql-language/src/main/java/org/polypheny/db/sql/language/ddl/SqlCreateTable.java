@@ -294,6 +294,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                 String constraintName = constraint.getName() != null ? constraint.getName().getSimple() : null;
 
                 constraintInformation.add( getConstraintInformation( constraintName, constraint ) );
+                continue;
             } else {
                 throw new AssertionError( c.e.getClass() );
             }
