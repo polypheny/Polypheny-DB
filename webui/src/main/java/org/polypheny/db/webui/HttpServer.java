@@ -156,15 +156,7 @@ public class HttpServer implements Runnable {
 
         // Log all requests
         server.before( ctx -> {
-            log.info( "Request: {} {}", ctx.method(), ctx.path() ); // TODO: change log level to DEBUG
-        } );
-
-        // TODO: remove logging statements
-        server.after( ctx -> {
-            log.info( "Request completed: {} {}", ctx.method(), ctx.path() );
-        } );
-        server.exception( Exception.class, ( e, ctx ) -> {
-            log.info( "Exception: {}, {}", ctx.method(), ctx.path(), e );
+            log.debug( "Request: {} {}", ctx.method(), ctx.path() );
         } );
 
         attachRoutes( server, crud );

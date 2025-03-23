@@ -183,11 +183,9 @@ public class GlobalScheduler {
 
     private void submit( List<ExecutionSubmission> submissions ) {
         for ( ExecutionSubmission submission : submissions ) {
-            log.info( "Submitting {}", submission );
             UUID sessionId = submission.getSessionId();
 
             completionService.submit( () -> {
-                log.info( "Begin actual execution {}", submission );
                 submission.getInfo().setState( ExecutionState.EXECUTING );
                 if ( interruptedSessions.contains( sessionId ) ) {
                     return new ExecutionResult( submission, new ExecutorException( "Execution was interrupted before it started" ) );
@@ -231,7 +229,6 @@ public class GlobalScheduler {
                 ExecutionInfo info = null;
                 try {
                     ExecutionResult result = completionService.take().get();
-                    log.info( "processing next result: " + result );
                     info = result.getInfo();
                     info.setState( ExecutionState.PROCESSING_RESULT );
                     WorkflowScheduler scheduler = schedulers.get( result.getSessionId() );
@@ -249,7 +246,6 @@ public class GlobalScheduler {
                 } finally {
                     if ( info != null ) {
                         info.setState( ExecutionState.DONE );
-                        log.info( info.toString() );
                     }
                 }
 
@@ -269,7 +265,9 @@ public class GlobalScheduler {
 
 
     private void updateWorkerCount() {
-        log.warn( "Updating worker count from " + globalWorkerCount + " to " + Math.max( 1, RuntimeConfig.WORKFLOWS_WORKERS.getInteger() ) );
+        if ( globalWorkerCount != Math.max( 1, RuntimeConfig.WORKFLOWS_WORKERS.getInteger() ) ) {
+            log.info( "Updating worker count from {} to {}", globalWorkerCount, Math.max( 1, RuntimeConfig.WORKFLOWS_WORKERS.getInteger() ) );
+        }
         globalWorkerCount = Math.max( 1, RuntimeConfig.WORKFLOWS_WORKERS.getInteger() );
         if ( !executor.isShutdown() ) {
             executor.setMaximumPoolSize( globalWorkerCount );

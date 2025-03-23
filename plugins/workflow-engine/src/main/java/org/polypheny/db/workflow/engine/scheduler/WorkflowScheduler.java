@@ -103,10 +103,8 @@ public class WorkflowScheduler {
         }
 
         this.execDag = targetActivity == null ? prepareExecutionDag() : prepareExecutionDag( List.of( targetActivity ) );
-        log.info( "ExecDag after initialization: {}", this.execDag );
 
         workflow.validateStructure( sm, this.execDag );
-        log.info( "Structure is valid" );
         workflow.setState( WorkflowState.EXECUTING );
         this.optimizer = new WorkflowOptimizerImpl( workflow, execDag );
 
@@ -266,16 +264,9 @@ public class WorkflowScheduler {
             result.getException().printStackTrace();
             setErrorVariable( result.getActivities(), result.getException() );
         }
-        log.info( "Root variables: " + workflow.getActivity( result.getRootId() ).getVariables() );
 
         updateGraph( result.isSuccess(), result.getActivities(), result.getRootId(), execDag );
         updatePartitions();
-
-        if ( remainingActivities.size() < 10 ) {
-            log.warn( "Remaining activities: " + remainingActivities );
-        } else {
-            log.warn( "Number of remaining activities: " + remainingActivities.size() );
-        }
 
         if ( remainingActivities.isEmpty() ) {
             assert pendingCount == 0;
@@ -436,7 +427,6 @@ public class WorkflowScheduler {
                     // previously skipped because of common extract that succeeded on its own, but transaction failed
                     target.setState( ActivityState.QUEUED );
                     remainingActivities.add( target.getId() );
-                    log.warn( "Setting skipped to queued!" );
                 }
             }
             case INACTIVE -> {
