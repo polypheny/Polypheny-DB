@@ -28,12 +28,14 @@ import org.polypheny.db.adapter.oracle.OracleSqlDialect;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlDialect;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
-
+import java.util.stream.Collectors;
+// TODO: Find out oracle credentials to log in and adjust URL if necessary.
 
 @Slf4j
 @AdapterProperties(
@@ -43,7 +45,7 @@ import java.util.Map;
         defaultMode = DeployMode.REMOTE)
 @AdapterSettingString(name = "host", defaultValue = "localhost", position = 1, //TODO: Find out correct hostname, IP.
         description = "Hostname or IP address of the remote oracle instance.")
-@AdapterSettingInteger(name = "port", defaultValue = 16345, position = 2, //TODO: Find out correct port number.
+@AdapterSettingInteger(name = "port", defaultValue = 1521, position = 2, //TODO: Find out correct port number.
         description = "Port number of the remote oracle instance.")
 @AdapterSettingString(name = "database", defaultValue = "polypheny", position = 3,
         description = "Name of the database to connect with.")
@@ -102,7 +104,15 @@ public class OracleSource extends AbstractJdbcSource {
 
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-        return List.of();
-    }
+        PhysicalTable table = adapterCatalog.createTable(
+                logical.table.getNamespaceName(),
+                logical.table.name,
+                logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
+                logical.table,
+                logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
+                logical.pkIds, allocation );
 
+        adapterCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( table ) );
+        return List.of( table );
+    }
 }

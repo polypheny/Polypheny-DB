@@ -7,4 +7,56 @@ dependencies {
 
     implementation group: 'com.oracle.database.jdbc', name: 'ojdbc8', version: '19.8.0.0'
 
+    testImplementation project(path: ":core", configuration: "tests")
+}
+
+
+compileJava {
+    dependsOn(":core:processResources")
+    dependsOn(":plugins:sql-language:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
+    mustRunAfter(":plugins:jdbc-adapter-framework:processResources")
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "test-classes")
+    }
+}
+
+
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+
+licensee {
+    allow('MIT')
+    allow('Apache-2.0')
 }
