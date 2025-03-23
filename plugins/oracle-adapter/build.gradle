@@ -1,0 +1,10 @@
+group "org.polypheny"
+
+dependencies {
+    compileOnly project(":core")
+    compileOnly project(":plugins:sql-language")
+    compileOnly project(":plugins:jdbc-adapter-framework")
+
+    implementation group: 'com.oracle.database.jdbc', name: 'ojdbc8', version: '19.8.0.0'
+
+}

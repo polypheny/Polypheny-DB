@@ -56,6 +56,7 @@ include 'plugins:mongodb-adapter'
 include 'plugins:file-adapter'
 include 'plugins:google-sheet-adapter'
 include 'plugins:excel-adapter'
+include 'plugins:oracle-adapter'
 
 // other plugins
 include 'plugins:notebooks'
