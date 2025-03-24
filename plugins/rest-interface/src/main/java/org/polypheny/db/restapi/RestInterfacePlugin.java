@@ -17,16 +17,11 @@
 package org.polypheny.db.restapi;
 
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.ApiBuilder;
 import io.javalin.http.Context;
-import io.javalin.plugin.json.JavalinJackson;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -145,8 +140,8 @@ public class RestInterfacePlugin extends PolyPlugin {
 
         @Override
         public void run() {
-            log.info( "{} begins preparations for startup.", INTERFACE_NAME );
             restServer = Javalin.create( config -> {
+                /*
                 config.jsonMapper( new JavalinJackson( new ObjectMapper() {
                     {
                         setSerializationInclusion( JsonInclude.Include.NON_NULL );
@@ -155,9 +150,9 @@ public class RestInterfacePlugin extends PolyPlugin {
                         writerWithDefaultPrettyPrinter();
                     }
                 } ) );
+                */
                 config.enableCorsForAllOrigins();
             } ).start( port );
-            log.info( "Rest server created successfully." );
             /*restServer = Javalin.create( config -> {// todo dl enable, when we removed avatica and can finally bump javalin
                 config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );
                 config.staticFiles.add( "webapp" );
