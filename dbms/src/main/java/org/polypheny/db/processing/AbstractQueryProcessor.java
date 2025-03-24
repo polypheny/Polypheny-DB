@@ -443,7 +443,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 AlgRoot parameterizedRoot = plan.parameterizedRoot();
                 PreparedResult<PolyValue> preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
                 AlgNode optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
-                if ( preparedResult != null ) {
+                if ( optimalNode != null && preparedResult != null ) {
                     PolyImplementation result = createPolyImplementation(
                             preparedResult,
                             parameterizedRoot.kind,
