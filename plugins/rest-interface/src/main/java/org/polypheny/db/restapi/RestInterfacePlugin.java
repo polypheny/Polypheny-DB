@@ -145,17 +145,17 @@ public class RestInterfacePlugin extends PolyPlugin {
 
         @Override
         public void run() {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
+            mapper.configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
+            mapper.configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
+            mapper.writerWithDefaultPrettyPrinter();
+
             restServer = Javalin.create( config -> {
-                config.jsonMapper( new JavalinJackson( new ObjectMapper() {
-                    {
-                        setSerializationInclusion( JsonInclude.Include.NON_NULL );
-                        configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
-                        configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
-                        writerWithDefaultPrettyPrinter();
-                    }
-                } ) );
+                config.jsonMapper( new JavalinJackson( mapper ) );
                 config.enableCorsForAllOrigins();
             } ).start( port );
+
             /*restServer = Javalin.create( config -> {// todo dl enable, when we removed avatica and can finally bump javalin
                 config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );
                 config.staticFiles.add( "webapp" );
