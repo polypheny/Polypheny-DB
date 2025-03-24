@@ -75,7 +75,7 @@ public class RelGarbageCollector implements GarbageCollector {
         Set<Long> releasedIds = new HashSet<>(); //ToDo TH: this will become a problem with table size
         Statement statement1 = transaction.createStatement();
         ResultIterator iterator = MvccUtils.executeStatement( QueryLanguage.from( REL_CLEANUP_LANGUAGE ), releasedEidQuery, entity.getNamespaceId(), statement1, transaction ).getIterator();
-        iterator.getIterator().forEachRemaining( r -> releasedIds.add( r[0].asLong().longValue() ) );
+        iterator.getIterator().forEachRemaining( r -> releasedIds.add( MvccUtils.collectLong( r[0] ) ) );
         iterator.close();
         statement1.close();
 
