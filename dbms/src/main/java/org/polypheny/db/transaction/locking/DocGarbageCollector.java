@@ -112,7 +112,7 @@ public class DocGarbageCollector implements GarbageCollector {
                 matchConditions.append( String.format(
                         "{ \"$and\": [ { \"_eid\": %d }, { \"_vid\": { \"$ne\": %d } } ] },",
                         document.get( identifierKey ).asLong().longValue(),
-                        document.get( IdentifierUtils.getVersionKeyAsPolyString() ).asBigDecimal().longValue()
+                        MvccUtils.collectLong( document.get( IdentifierUtils.getVersionKeyAsPolyString() ) )
                 ) );
             } );
         }
@@ -136,7 +136,7 @@ public class DocGarbageCollector implements GarbageCollector {
         try ( ResultIterator iterator = MvccUtils.executeStatement( QueryLanguage.from( DOC_CLEANUP_LANGUAGE ), findGarbageQuery, entity.getNamespaceId(), statement, transaction ).getIterator() ) {
             iterator.getIterator().forEachRemaining( r -> {
                 PolyDocument document = r[0].asDocument();
-                documentsToDelete.add( document.get( identifierKey ).asLong().longValue() );
+                documentsToDelete.add( MvccUtils.collectLong( document.get( identifierKey ) ) );
             } );
         }
         statement.close();
@@ -167,7 +167,7 @@ public class DocGarbageCollector implements GarbageCollector {
         try ( ResultIterator iterator = MvccUtils.executeStatement( QueryLanguage.from( DOC_CLEANUP_LANGUAGE ), releasedEidQuery, entity.getNamespaceId(), statement, transaction ).getIterator() ) {
             iterator.getIterator().forEachRemaining( r -> {
                 PolyDocument document = r[0].asDocument();
-                releasedIds.add( document.get( IdentifierUtils.getVersionKeyAsPolyString() ).asLong().longValue() );
+                releasedIds.add( MvccUtils.collectLong( document.get( IdentifierUtils.getVersionKeyAsPolyString() ) ) );
             } );
         }
         entity.getEntryIdentifiers().releaseEntryIdentifiers( releasedIds );

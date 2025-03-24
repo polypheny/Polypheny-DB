@@ -28,7 +28,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
-import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
@@ -39,6 +38,7 @@ import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.ConcurrencyControlType;
+import org.polypheny.db.type.entity.PolyValue;
 
 public class MvccUtils {
 
@@ -146,6 +146,15 @@ public class MvccUtils {
                 .transactionManager( statement.getTransaction().getTransactionManager() )
                 .build();
         return ParsedQueryContext.fromQuery( "", null, dummyContext );
+    }
+
+
+    public static long collectLong( PolyValue value ) {
+        return switch ( value.getType() ) {
+            case BIGINT -> value.asLong().getValue();
+            case DECIMAL -> value.asBigDecimal().longValue();
+            default -> throw new IllegalArgumentException( "Unsupported commit validation result of type: " + value.getType() );
+        };
     }
 
 }
