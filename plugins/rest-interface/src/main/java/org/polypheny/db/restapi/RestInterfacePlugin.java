@@ -145,6 +145,8 @@ public class RestInterfacePlugin extends PolyPlugin {
 
         @Override
         public void run() {
+            log.info( "Using javalin version: {}", io.javalin.Javalin.class.getPackage().getImplementationVersion() );
+
             ObjectMapper mapper = new ObjectMapper();
             mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
             mapper.configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );

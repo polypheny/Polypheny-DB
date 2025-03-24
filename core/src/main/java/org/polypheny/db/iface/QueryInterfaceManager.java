@@ -111,6 +111,7 @@ public class QueryInterfaceManager {
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted on join()", e );
         }
+
         if ( error.get() != null ) {
             throw new GenericRuntimeException( error.get() );
         }
