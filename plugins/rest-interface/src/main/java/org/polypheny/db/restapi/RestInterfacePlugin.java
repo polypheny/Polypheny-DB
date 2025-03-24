@@ -157,6 +157,7 @@ public class RestInterfacePlugin extends PolyPlugin {
                 } ) );
                 config.enableCorsForAllOrigins();
             } ).start( port );
+            log.info( "Rest server created successfully." );
             /*restServer = Javalin.create( config -> {// todo dl enable, when we removed avatica and can finally bump javalin
                 config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );
                 config.staticFiles.add( "webapp" );
