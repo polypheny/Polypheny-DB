@@ -145,7 +145,7 @@ public class RestInterfacePlugin extends PolyPlugin {
 
         @Override
         public void run() {
-
+            log.info( "{} begins preparations for startup.", INTERFACE_NAME );
             restServer = Javalin.create( config -> {
                 config.jsonMapper( new JavalinJackson( new ObjectMapper() {
                     {
