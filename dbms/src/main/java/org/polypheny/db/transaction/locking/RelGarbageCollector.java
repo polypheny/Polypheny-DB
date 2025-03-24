@@ -41,24 +41,24 @@ public class RelGarbageCollector implements GarbageCollector {
             WHERE EXISTS (
                 SELECT 1
                 FROM (
-                    SELECT 
+                    SELECT
                         ABS(_eid) AS eid,
                         MAX(_vid) AS max_vid
-                    FROM 
+                    FROM
                         %s
-                    GROUP BY 
+                    GROUP BY
                         ABS(_eid)
                 ) AS _MaxVid
                 JOIN %s AS t
                 ON ABS(t._eid) = _MaxVid.eid
-                WHERE 
-                    t._vid < %d 
+                WHERE
+                    t._vid < %d
                     AND (
-                        _MaxVid.max_vid >= %d 
-                        OR t._vid < _MaxVid.max_vid 
+                        _MaxVid.max_vid >= %d
+                        OR t._vid < _MaxVid.max_vid
                         OR t._eid < 0
                     )
-                AND %s._eid = t._eid 
+                AND %s._eid = t._eid
                 AND %s._vid = t._vid
             );
             """;
