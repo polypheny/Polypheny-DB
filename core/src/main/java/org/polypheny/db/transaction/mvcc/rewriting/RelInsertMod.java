@@ -34,6 +34,11 @@ public class RelInsertMod implements AlgTreeModification<LogicalRelModify, Logic
     @Override
     public LogicalRelModify apply( LogicalRelModify modify ) {
         AlgNode input = modify.getInput();
+        return rewriteUsingIdentifier( modify, input );
+    }
+
+
+    private LogicalRelModify rewriteUsingIdentifier( LogicalRelModify modify, AlgNode input ) {
         if ( input instanceof LogicalRelProject project ) {
             input = rewriteProject( project );
         }
@@ -46,9 +51,9 @@ public class RelInsertMod implements AlgTreeModification<LogicalRelModify, Logic
     }
 
 
-    public LogicalRelProject rewriteProject( LogicalRelProject project ) {
+    private LogicalRelProject rewriteProject( LogicalRelProject project ) {
         List<AlgDataTypeField> oldFields = project.getInput().getTupleType().getFields();
-        List<RexNode> oldProjects = project.getProjects();  // Use projects for field names
+        List<RexNode> oldProjects = project.getProjects();
         List<String> newFieldNames = new ArrayList<>();
         List<RexNode> newProjects = new ArrayList<>();
 
