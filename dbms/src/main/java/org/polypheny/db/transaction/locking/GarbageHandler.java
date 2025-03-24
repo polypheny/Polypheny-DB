@@ -18,7 +18,6 @@ package org.polypheny.db.transaction.locking;
 
 import java.util.HashMap;
 import java.util.List;
-import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
