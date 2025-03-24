@@ -17,25 +17,17 @@
 package org.polypheny.db.transaction.locking;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import org.polypheny.db.ResultIterator;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.transaction.mvcc.IdentifierUtils;
 import org.polypheny.db.transaction.mvcc.MvccUtils;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.document.PolyDocument;
 
 public class GarbageHandler {
 
@@ -46,7 +38,7 @@ public class GarbageHandler {
     private long lastCleanupSequenceNumber;
     private volatile boolean isRunning;
 
-    private final HashMap<DataModel,GarbageCollector> garbageCollectors;
+    private final HashMap<DataModel, GarbageCollector> garbageCollectors;
 
 
     public GarbageHandler( TransactionManager transactionManager ) {
@@ -54,9 +46,9 @@ public class GarbageHandler {
         this.lastCleanupSequenceNumber = 0;
         this.isRunning = false;
         this.garbageCollectors = new HashMap<>();
-        garbageCollectors.put(DataModel.RELATIONAL, new RelGarbageCollector());
-        garbageCollectors.put(DataModel.DOCUMENT, new DocGarbageCollector());
-        garbageCollectors.put(DataModel.GRAPH, new LpgGarbageCollector());
+        garbageCollectors.put( DataModel.RELATIONAL, new RelGarbageCollector() );
+        garbageCollectors.put( DataModel.DOCUMENT, new DocGarbageCollector() );
+        garbageCollectors.put( DataModel.GRAPH, new LpgGarbageCollector() );
     }
 
 
@@ -81,6 +73,7 @@ public class GarbageHandler {
         List<LogicalEntity> entities = snapshot.getNamespaces( null ).stream()
                 .filter( MvccUtils::isNamespaceUsingMvcc )
                 .flatMap( n -> snapshot.getLogicalEntities( n.getId() ).stream() )
+                .filter( Entity::isModifiable )
                 .toList();
 
         if ( entities.isEmpty() ) {
@@ -90,8 +83,9 @@ public class GarbageHandler {
         // for each entity run cleanup
         isRunning = true;
         Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, TRANSACTION_ORIGIN );
-        entities.forEach( e -> garbageCollectors.get(e.getDataModel()).collect( e, lowestActiveTransaction, transaction ) );
+        entities.forEach( e -> garbageCollectors.get( e.getDataModel() ).collect( e, lowestActiveTransaction, transaction ) );
         transaction.commit();
         isRunning = false;
     }
+
 }
