@@ -24,7 +24,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.http.staticfiles.Location;
-import io.javalin.plugin.json.JavalinJackson;
+import io.javalin.json.JavalinJackson;
+import io.javalin.plugin.bundled.CorsPluginConfig.CorsRule;
 import io.javalin.websocket.WsConfig;
 import java.io.BufferedReader;
 import java.io.File;
@@ -98,9 +99,9 @@ public class HttpServer implements Runnable {
     private final Javalin server = Javalin.create( config -> {
         File finalUi = handleUiFiles();
 
-        config.jsonMapper( new JavalinJackson( mapper ) );
-        config.enableCorsForAllOrigins();
-        config.addStaticFiles( staticFileConfig -> {
+        config.jsonMapper( new JavalinJackson( mapper, false ) );
+        config.bundledPlugins.enableCors( cors -> cors.addRule( CorsRule::anyHost ) );
+        config.staticFiles.add( staticFileConfig -> {
             staticFileConfig.directory = finalUi.getAbsolutePath();
             staticFileConfig.location = Location.EXTERNAL;
             staticFileConfig.hostedPath = "/";
