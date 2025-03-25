@@ -18,14 +18,12 @@ package org.polypheny.db.http;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonSyntaxException;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
-import io.javalin.plugin.json.JavalinJackson;
+import io.javalin.json.JavalinJackson;
+import io.javalin.plugin.bundled.CorsPluginConfig.CorsRule;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
@@ -129,25 +127,13 @@ public class HttpInterfacePlugin extends PolyPlugin {
 
         @Override
         public void run() {
-            /*server = Javalin.create( config -> {  // todo dl enable, when we removed avatica and can finally bump javalin
-                config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );
-                config.staticFiles.add( "webapp" );
+            server = Javalin.create( config -> {
+                config.bundledPlugins.enableCors( cors -> cors.addRule( CorsRule::anyHost ) );
                 config.jsonMapper( new JavalinJackson().updateMapper( mapper -> {
                     mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
                 } ) );
-            } ).start( port );*/
-
-            server = Javalin.create( config -> {
-                config.jsonMapper( new JavalinJackson( new ObjectMapper() {
-                    {
-                        setSerializationInclusion( JsonInclude.Include.NON_NULL );
-                        configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
-                        configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
-                        writerWithDefaultPrettyPrinter();
-                    }
-                } ) );
-                config.enableCorsForAllOrigins();
             } ).start( port );
+
             server.exception( Exception.class, ( e, ctx ) -> {
                 log.warn( "Caught exception in the HTTP interface", e );
                 if ( e instanceof JsonSyntaxException ) {
@@ -157,9 +143,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
                 }
             } );
 
-            server.routes( () -> {
-                StatusNotificationService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
-            } );
+            StatusNotificationService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
 
             LanguageManager.getLanguages().forEach( this::addRoute );
         }
@@ -175,7 +159,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
 
         public void anyQuery( QueryLanguage language, final Context ctx ) {
             QueryRequest query = ctx.bodyAsClass( QueryRequest.class );
-            String sessionId = ctx.req.getSession().getId();
+            String sessionId = ctx.req().getSession().getId();
             Crud.cleanupOldSession( sessionXids, sessionId );
             LogicalNamespace namespace = Catalog.snapshot().getNamespace( query.namespace ).orElse( null );
 
