@@ -29,7 +29,11 @@ import com.google.gson.JsonParseException;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
 import io.javalin.http.Context;
-import io.javalin.http.HttpCode;
+import io.javalin.http.HttpStatus;
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.Part;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
@@ -65,10 +69,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.Part;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -567,7 +567,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             int i = 0;
             for ( LogicalColumn logicalColumn : logicalColumns ) {
                 //part is null if it does not exist
-                Part part = ctx.req.getPart( logicalColumn.name );
+                Part part = ctx.req().getPart( logicalColumn.name );
                 if ( part == null ) {
                     //don't add if default value is set
                     if ( logicalColumn.defaultValue == null ) {
@@ -878,7 +878,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         Map<String, String> oldValues = null;
         long entityId = Long.parseLong( Objects.requireNonNull( ctx.formParam( "entityId" ) ) );
         try {
-            String _oldValues = new BufferedReader( new InputStreamReader( ctx.req.getPart( "oldValues" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+            String _oldValues = new BufferedReader( new InputStreamReader( ctx.req().getPart( "oldValues" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
             oldValues = gson.fromJson( _oldValues, Map.class );
         } catch ( IOException | ServletException e ) {
             ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
@@ -893,7 +893,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         int i = 0;
         for ( LogicalColumn logicalColumn : logicalColumns ) {
-            Part part = ctx.req.getPart( logicalColumn.name );
+            Part part = ctx.req().getPart( logicalColumn.name );
             if ( part == null ) {
                 continue;
             }
@@ -938,7 +938,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         initMultipart( ctx );
         BatchUpdateRequest request;
 
-        String jsonRequest = new BufferedReader( new InputStreamReader( ctx.req.getPart( "request" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+        String jsonRequest = new BufferedReader( new InputStreamReader( ctx.req().getPart( "request" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
         request = gson.fromJson( jsonRequest, BatchUpdateRequest.class );
 
         Transaction transaction = getTransaction();
@@ -947,7 +947,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         List<Result<?, ?>> results = new ArrayList<>();
         for ( Update update : request.updates ) {
             statement = transaction.createStatement();
-            String query = update.getQuery( request.tableId, statement, ctx.req );
+            String query = update.getQuery( request.tableId, statement, ctx.req() );
 
             results.add( LanguageCrud.anyQueryResult(
                     QueryContext.builder()
@@ -2071,9 +2071,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         final AdapterModel adapterModel;
         if ( ctx.isMultipartFormData() ) {
             // collect all files e.g. csv files
-            for ( Part part : ctx.req.getParts() ) {
+            for ( Part part : ctx.req().getParts() ) {
                 if ( part.getName().equals( "body" ) ) {
-                    body = IOUtils.toString( ctx.req.getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 );
+                    body = IOUtils.toString( ctx.req().getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 );
                 } else {
                     inputStreams.put( part.getName(), part.getInputStream() );
                 }
@@ -2082,7 +2082,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         } else if ( "application/json".equals( ctx.contentType() ) ) {
             adapterModel = ctx.bodyAsClass( AdapterModel.class );
         } else {
-            ctx.status( HttpCode.BAD_REQUEST );
+            ctx.status( HttpStatus.BAD_REQUEST );
             return;
         }
 
@@ -2142,7 +2142,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     public void startAccessRequest( Context ctx ) {
         PathAccessRequest request = ctx.bodyAsClass( PathAccessRequest.class );
-        UUID uuid = SecurityManager.getInstance().requestPathAccess( request.getName(), ctx.req.getSession().getId(), Path.of( request.getDirectoryName() ) );
+        UUID uuid = SecurityManager.getInstance().requestPathAccess( request.getName(), ctx.req().getSession().getId(), Path.of( request.getDirectoryName() ) );
         if ( uuid != null ) {
             ctx.json( uuid );
         } else {
@@ -2519,7 +2519,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             ctx.header( "Content-Disposition", "attachment; filename=" + "file" );
         }
         long fileLength = f.length();
-        String range = ctx.req.getHeader( "Range" );
+        String range = ctx.req().getHeader( "Range" );
         if ( range != null ) {
             long rangeStart = 0;
             long rangeEnd = 0;
@@ -2547,14 +2547,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
             try {
                 //see https://github.com/dessalines/torrenttunes-client/blob/master/src/main/java/com/torrenttunes/client/webservice/Platform.java
-                ctx.res.setHeader( "Accept-Ranges", "bytes" );
+                ctx.res().setHeader( "Accept-Ranges", "bytes" );
                 ctx.status( 206 );//partial content
                 int len = Long.valueOf( rangeEnd - rangeStart ).intValue() + 1;
-                ctx.res.setHeader( "Content-Range", String.format( "bytes %d-%d/%d", rangeStart, rangeEnd, fileLength ) );
+                ctx.res().setHeader( "Content-Range", String.format( "bytes %d-%d/%d", rangeStart, rangeEnd, fileLength ) );
 
                 RandomAccessFile raf = new RandomAccessFile( f, "r" );
                 raf.seek( rangeStart );
-                ServletOutputStream os = ctx.res.getOutputStream();
+                ServletOutputStream os = ctx.res().getOutputStream();
                 byte[] buf = new byte[256];
                 while ( len > 0 ) {
                     int read = raf.read( buf, 0, Math.min( buf.length, len ) );
@@ -2569,8 +2569,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
         } else {
             if ( sendBack ) {
-                ctx.res.setContentLengthLong( (int) fileLength );
-                try ( FileInputStream fis = new FileInputStream( f ); ServletOutputStream os = ctx.res.getOutputStream() ) {
+                ctx.res().setContentLengthLong( (int) fileLength );
+                try ( FileInputStream fis = new FileInputStream( f ); ServletOutputStream os = ctx.res().getOutputStream() ) {
                     IOUtils.copyLarge( fis, os );
                     os.flush();
                 } catch ( IOException ignored ) {
@@ -2595,8 +2595,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             ctx.status( 500 );
             log.error( "Could not zip directory", e );
         }
-        ctx.res.setContentLengthLong( zipFile.length() );
-        try ( OutputStream os = ctx.res.getOutputStream(); InputStream is = new FileInputStream( zipFile ) ) {
+        ctx.res().setContentLengthLong( zipFile.length() );
+        try ( OutputStream os = ctx.res().getOutputStream(); InputStream is = new FileInputStream( zipFile ) ) {
             IOUtils.copy( is, os );
         } catch ( IOException e ) {
             log.error( "Could not write zipOutputStream to response", e );
@@ -2610,7 +2610,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void getCatalog( final Context ctx ) {
         // Assigning the result to a variable causes an error when the switch expression is not exhaustive
         Context ignore = switch ( Catalog.mode ) {
-            case PRODUCTION -> ctx.status( HttpCode.FORBIDDEN ).result( "Forbidden" );
+            case PRODUCTION -> ctx.status( HttpStatus.FORBIDDEN ).result( "Forbidden" );
             case DEVELOPMENT, BENCHMARK, TEST -> ctx.json( Catalog.getInstance().getJson() );
         };
     }
@@ -2787,7 +2787,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
             ctx.json( DockerManager.getInstance().getInstanceById( dockerId ).map( DockerInstance::getInfo ).orElseThrow( () -> new DockerUserException( 404, "No Docker instance with that id" ) ) );
         } catch ( NumberFormatException e ) {
-            ctx.status( HttpCode.BAD_REQUEST ).result( "Malformed dockerId value" );
+            ctx.status( HttpStatus.BAD_REQUEST ).result( "Malformed dockerId value" );
         } catch ( DockerUserException e ) {
             ctx.status( e.getStatus() ).result( e.getMessage() );
         }
@@ -2829,7 +2829,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
             ctx.json( new InstancesAndAutoDocker( DockerManager.getInstance().getDockerInstancesMap(), AutoDocker.getInstance().getStatus() ) );
         } catch ( NumberFormatException e ) {
-            ctx.status( HttpCode.BAD_REQUEST ).result( "Malformed id value" );
+            ctx.status( HttpStatus.BAD_REQUEST ).result( "Malformed id value" );
         } catch ( DockerUserException e ) {
             ctx.status( e.getStatus() ).result( e.getMessage() );
         }
@@ -2922,13 +2922,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     public void loadPlugins( final Context ctx ) {
         ctx.uploadedFiles( "plugins" ).forEach( file -> {
-            String[] splits = file.getFilename().split( "/" );
+            String[] splits = file.filename().split( "/" );
             String normalizedFileName = splits[splits.length - 1];
             splits = normalizedFileName.split( "\\\\" );
             normalizedFileName = splits[splits.length - 1];
             File f = new File( System.getProperty( "user.home" ), ".polypheny/plugins/" + normalizedFileName );
             try {
-                FileUtils.copyInputStreamToFile( file.getContent(), f );
+                FileUtils.copyInputStreamToFile( file.content(), f );
             } catch ( IOException e ) {
                 throw new GenericRuntimeException( e );
             }
