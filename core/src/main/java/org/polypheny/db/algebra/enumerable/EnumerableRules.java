@@ -93,6 +93,18 @@ public class EnumerableRules {
 
     public static final EnumerableLpgIdentifierRule ENUMERABLE_LPG_IDENTIFIER_RULE = new EnumerableLpgIdentifierRule();
 
+    public static final EnumerableIdentifierRule ENUMERABLE_REL_IDENTIFIER_RULE = EnumerableIdentifierRule.REL_INSTANCE;
+
+    public static final EnumerableIdentifierRule ENUMERABLE_DOC_IDENTIFIER_RULE = EnumerableIdentifierRule.DOC_INSTANCE;
+
+    public static final EnumerableIdentifierRule ENUMERABLE_LPG_IDENTIFIER_RULE = EnumerableIdentifierRule.GRAPH_INSTANCE;
+
+    public static final EnumerableIdCollectorRule ENUMERABLE_REL_ID_COLLECTOR_RULE = EnumerableIdCollectorRule.REL_INSTANCE;
+
+    public static final EnumerableIdCollectorRule ENUMERABLE_DOC_ID_COLLECTOR_RULE = EnumerableIdCollectorRule.DOC_INSTANCE;
+
+    public static final EnumerableIdCollectorRule ENUMERABLE_LPG_ID_COLLECTOR_RULE = EnumerableIdCollectorRule.GRAPH_INSTANCE;
+
     public static final EnumerableConditionalExecuteRule ENUMERABLE_CONDITIONAL_EXECUTE_RULE = new EnumerableConditionalExecuteRule();
 
     public static final EnumerableConditionalExecuteTrueRule ENUMERABLE_CONDITIONAL_EXECUTE_TRUE_RULE = new EnumerableConditionalExecuteTrueRule();

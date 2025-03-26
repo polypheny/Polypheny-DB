@@ -141,9 +141,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private Set<Entity> writtenEntities = new HashSet<>();
 
-    @Getter
-    private Set<Long> readSet = new HashSet<>();
-
 
     TransactionImpl(
             PolyXid xid,
@@ -501,18 +498,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public void addWrittenEntitiy( Entity entity ) {
         writtenEntities.add( entity );
-    }
-
-
-    @Override
-    public long getTransactionTimestamp() {
-        return transactionTimestamp;
-    }
-
-
-    @Override
-    public long getTransactionTimestamp() {
-        return transactionTimestamp;
     }
 
 
