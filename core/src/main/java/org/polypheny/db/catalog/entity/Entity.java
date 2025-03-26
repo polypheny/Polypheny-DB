@@ -100,16 +100,6 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
         };
     }
 
-    public AlgDataType getTupleType(boolean hideIdentifier) {
-        return switch ( dataModel ) {
-            case RELATIONAL -> throw new UnsupportedOperationException( "Should be overwritten by child" );
-            //TODO TH: adjust where necessary
-            case DOCUMENT -> DocumentType.ofId();
-            case GRAPH -> GraphType.of();
-        };
-    }
-
-
     @Override
     public AlgDataType getTupleType( AlgDataTypeFactory typeFactory ) {
         return getTupleType(false);

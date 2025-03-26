@@ -79,29 +79,6 @@ public class LogicalLpgModify extends LpgModify<Entity> implements RelationalTra
         return new LogicalLpgModify( inputs.get( 0 ).getCluster(), traitSet, entity, inputs.get( 0 ), operation, ids, operations );
     }
 
-
-    public LogicalLpgModify copy( List<AlgNode> inputs ) {
-        return new LogicalLpgModify( inputs.get( 0 ).getCluster(), traitSet, entity, inputs.get( 0 ), operation, ids, operations );
-    }
-
-
-    public static LogicalLpgModify create(
-            Entity entity,
-            AlgNode input,
-            Operation operation,
-            List<PolyString> ids,
-            List<? extends RexNode> operations ) {
-        final AlgCluster cluster = input.getCluster();
-        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalLpgModify( cluster, traitSet, entity, input, operation, ids, operations );
-    }
-
-
-    public LogicalLpgModify copy( List<AlgNode> inputs ) {
-        return new LogicalLpgModify( inputs.get( 0 ).getCluster(), traitSet, entity, inputs.get( 0 ), operation, ids, operations );
-    }
-
-
     public static LogicalLpgModify create(
             Entity entity,
             AlgNode input,

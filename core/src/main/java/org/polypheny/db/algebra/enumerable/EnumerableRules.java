@@ -45,7 +45,6 @@ import org.polypheny.db.algebra.enumerable.common.EnumerableContextSwitcherRule;
 import org.polypheny.db.algebra.enumerable.common.EnumerableModifyCollectRule;
 import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentUnwindRule;
 import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentValuesRule;
-import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgIdentifierRule;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgMatchRule;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgTransformerRule;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgValuesRule;
@@ -74,24 +73,6 @@ public class EnumerableRules {
 
     private EnumerableRules() {
     }
-
-    public static final EnumerableIdentifierInjectionRule ENUMERABLE_IDENTIFIER_INJECTION_RULE = new EnumerableIdentifierInjectionRule();
-
-    public static final EnumerableIdentifierRule ENUMERABLE_REL_IDENTIFIER_RULE = EnumerableIdentifierRule.REL_INSTANCE;
-
-    public static final EnumerableIdentifierRule ENUMERABLE_DOC_IDENTIFIER_RULE = EnumerableIdentifierRule.DOC_INSTANCE;
-
-    public static final EnumerableIdentifierRule ENUMERABLE_LPG_IDENTIFIER_RULE = EnumerableIdentifierRule.GRAPH_INSTANCE;
-
-    public static final EnumerableIdCollectorRule ENUMERABLE_REL_ID_COLLECTOR_RULE = EnumerableIdCollectorRule.REL_INSTANCE;
-
-    public static final EnumerableIdCollectorRule ENUMERABLE_DOC_ID_COLLECTOR_RULE = EnumerableIdCollectorRule.DOC_INSTANCE;
-
-    public static final EnumerableIdCollectorRule ENUMERABLE_LPG_ID_COLLECTOR_RULE = EnumerableIdCollectorRule.GRAPH_INSTANCE;
-
-    public static final EnumerableLpgIdentifierRule ENUMERABLE_LPG_IDENTIFIER_RULE = new EnumerableLpgIdentifierRule();
-
-    public static final EnumerableLpgIdentifierRule ENUMERABLE_LPG_IDENTIFIER_RULE = new EnumerableLpgIdentifierRule();
 
     public static final EnumerableIdentifierRule ENUMERABLE_REL_IDENTIFIER_RULE = EnumerableIdentifierRule.REL_INSTANCE;
 
