@@ -41,6 +41,12 @@ sourceSets {
 }
 
 
+delombok {
+    dependsOn(":plugins:sql-language:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
+}
+
+
 jar {
     manifest {
         attributes "Manifest-Version": "1.0"
@@ -59,4 +65,6 @@ java {
 licensee {
     allow('MIT')
     allow('Apache-2.0')
+    // allow('https://www.oracle.com/downloads/licenses/oracle-free-license.html')
+    allowUrl('https://www.oracle.com/downloads/licenses/oracle-free-license.html')
 }

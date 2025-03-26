@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.oracle;
 
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.oracle.source.OracleSource;
+import org.polypheny.db.adapter.oracle.store.OracleStore;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.sql.language.SqlDialectRegistry;
@@ -28,6 +29,7 @@ public class OraclePlugin extends PolyPlugin {
 
     public static final String ADAPTER_NAME = "Oracle";
     private long sourceId;
+    private long storeId;
 
 
     public OraclePlugin( PluginContext context ) { super( context ); }
@@ -35,8 +37,9 @@ public class OraclePlugin extends PolyPlugin {
 
     @Override
     public void afterCatalogInit() {
-        SqlDialectRegistry.registerDialect( "Oracle", OracleSqlDialect.DEFAULT ); // TODO: Dialect might not be necessary.
+        // SqlDialectRegistry.registerDialect( "Oracle", OracleSqlDialect.DEFAULT ); // TODO: Dialect might not be necessary.
         this.sourceId = AdapterManager.addAdapterTemplate( OracleSource.class, ADAPTER_NAME, OracleSource::new );
+        this.storeId = AdapterManager.addAdapterTemplate( OracleStore.class, ADAPTER_NAME, OracleStore::new );
     }
 
 

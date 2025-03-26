@@ -223,7 +223,7 @@ public class DdlManagerImpl extends DdlManager {
         }
         // Create table, columns etc.
         for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
-            // Make sure the table name is unique
+            // Make sure the table name is uniqueString tableName = entry.getKey();
             String tableName = entry.getKey();
             if ( catalog.getSnapshot().rel().getTable( namespace, tableName ).isPresent() ) {
                 int i = 0;
