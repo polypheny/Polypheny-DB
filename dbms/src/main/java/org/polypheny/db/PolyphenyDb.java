@@ -78,6 +78,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
+import org.polypheny.db.transaction.locking.ConcurrencyControlType;
 import org.polypheny.db.transaction.locking.S2plLockingLevel;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
@@ -274,13 +275,13 @@ public class PolyphenyDb {
             ConfigManager.getInstance().getConfig( RuntimeConfig.S2PL_DEADLOCK_DETECTOR_TYPE.getKey() ).setEnum( S2plLockingLevel.valueOf( s2plDefaultLockingLevel ) );
         }
         if (relDefaultConcurrencyControl != null) {
-            ConfigManager.getInstance().getConfig( RuntimeConfig.REL_DEFAULT_CONCURRENCY_CONTROL.getKey() ).setEnum( S2plLockingLevel.valueOf( relDefaultConcurrencyControl ) );
+            ConfigManager.getInstance().getConfig( RuntimeConfig.REL_DEFAULT_CONCURRENCY_CONTROL.getKey() ).setEnum( ConcurrencyControlType.valueOf( relDefaultConcurrencyControl ) );
         }
         if (docDefaultConcurrencyControl != null) {
-            ConfigManager.getInstance().getConfig( RuntimeConfig.DOC_DEFAULT_CONCURRENCY_CONTROL.getKey() ).setEnum( S2plLockingLevel.valueOf( docDefaultConcurrencyControl ) );
+            ConfigManager.getInstance().getConfig( RuntimeConfig.DOC_DEFAULT_CONCURRENCY_CONTROL.getKey() ).setEnum( ConcurrencyControlType.valueOf( docDefaultConcurrencyControl ) );
         }
         if (graphDefaultConcurrencyControl != null) {
-            ConfigManager.getInstance().getConfig( RuntimeConfig.GRAPH_DEFAULT_CONCURRENCY_CONTROL.getKey() ).setEnum( S2plLockingLevel.valueOf( graphDefaultConcurrencyControl ) );
+            ConfigManager.getInstance().getConfig( RuntimeConfig.GRAPH_DEFAULT_CONCURRENCY_CONTROL.getKey() ).setEnum( ConcurrencyControlType.valueOf( graphDefaultConcurrencyControl ) );
         }
 
         // Generate UUID for Polypheny (if there isn't one already)
