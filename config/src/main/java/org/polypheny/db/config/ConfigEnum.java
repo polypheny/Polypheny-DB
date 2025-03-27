@@ -112,7 +112,7 @@ public class ConfigEnum extends Config {
                 return false;
             }
         } else {
-            throw new ConfigRuntimeException( "This enum in the specified enum class." );
+            throw new ConfigRuntimeException( "The specified value is not part of the enum of this configuration." );
         }
     }
 

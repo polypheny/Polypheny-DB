@@ -272,7 +272,7 @@ public class PolyphenyDb {
         }
 
         if (s2plDefaultLockingLevel != null) {
-            ConfigManager.getInstance().getConfig( RuntimeConfig.S2PL_DEADLOCK_DETECTOR_TYPE.getKey() ).setEnum( S2plLockingLevel.valueOf( s2plDefaultLockingLevel ) );
+            ConfigManager.getInstance().getConfig( RuntimeConfig.S2PL_LOCKING_LEVEL.getKey() ).setEnum( S2plLockingLevel.valueOf( s2plDefaultLockingLevel ) );
         }
         if (relDefaultConcurrencyControl != null) {
             ConfigManager.getInstance().getConfig( RuntimeConfig.REL_DEFAULT_CONCURRENCY_CONTROL.getKey() ).setEnum( ConcurrencyControlType.valueOf( relDefaultConcurrencyControl ) );
