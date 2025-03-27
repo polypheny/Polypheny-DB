@@ -56,7 +56,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
 @AdapterSettingList(name = "tableType", options = { "Memory", "Cached" }, position = 1, defaultValue = "Memory")
-@AdapterSettingInteger(name = "maxConnections", defaultValue = 25)
+@AdapterSettingInteger(name = "maxConnections", defaultValue = 50)
 @AdapterSettingList(name = "trxControlMode", options = { "locks", "mvlocks", "mvcc" }, defaultValue = "mvcc")
 @AdapterSettingList(name = "trxIsolationLevel", options = { "read_committed", "serializable" }, defaultValue = "read_committed")
 @AdapterSettingList(name = "type", options = { "Memory", "File" }, defaultValue = "Memory")
