@@ -16,11 +16,20 @@
 
 package org.polypheny.db.workflow.engine.storage;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcTableModify;
+import org.polypheny.db.adapter.jdbc.JdbcSchema;
+import org.polypheny.db.adapter.jdbc.JdbcTable;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
@@ -28,15 +37,19 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.functions.RefactorFunctions;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
+@Slf4j
 public class DocBatchWriter implements AutoCloseable {
 
     private static final long MAX_BYTES_PER_BATCH = 10 * 1024 * 1024L; // 10 MiB, upper limit to (estimated) size of batch in bytes
@@ -49,6 +62,11 @@ public class DocBatchWriter implements AutoCloseable {
     private long batchSize = -1;
     private final AlgRoot root;
     private final Statement statement;
+
+    // for manual prepared statements
+    private boolean isJdbc = true;
+    private JdbcSchema jdbcSchema;
+    private String insertQuery;
 
 
     public DocBatchWriter( LogicalCollection collection, Transaction transaction ) {
@@ -86,6 +104,9 @@ public class DocBatchWriter implements AutoCloseable {
 
 
     private void executeBatch() {
+        if ( execManualPreparedStatement() ) {
+            return;
+        }
         int batchSize = paramValues.size();
 
         Statement statement = transaction.createStatement();
@@ -113,6 +134,75 @@ public class DocBatchWriter implements AutoCloseable {
 
         paramValues.clear();
         statement.getDataContext().resetParameterValues();
+    }
+
+
+    /**
+     * Manually insert values to be able to use prepared statements
+     */
+    private boolean execManualPreparedStatement() {
+        if ( !isJdbc ) {
+            return false;
+        }
+        Statement statement = transaction.createStatement();
+        if ( jdbcSchema == null ) {
+            AlgCluster cluster = AlgCluster.createDocument(
+                    statement.getQueryProcessor().getPlanner(),
+                    new RexBuilder( statement.getTransaction().getTypeFactory() ),
+                    statement.getDataContext().getSnapshot() );
+
+            // get JdbcTable from physical query plan
+            AlgNode values = LogicalDocumentValues.create( cluster, List.of( paramValues.get( 0 ).get( 0L ).asDocument() ) ); // these values are not used
+            AlgNode modify = LogicalDocumentModify.create( collection, values, Operation.INSERT, null, null, null );
+            AlgRoot root = AlgRoot.of( modify, Kind.INSERT );
+
+            PolyImplementation implementation = statement.getQueryProcessor().prepareQuery( root, false );
+            PreparedResultImpl<PolyValue> prepared = (PreparedResultImpl<PolyValue>) implementation.getPreparedResult();
+
+            JdbcTable table = new AlgVisitor() {
+                JdbcTable table = null;
+
+
+                @Override
+                public void visit( AlgNode node, int ordinal, AlgNode parent ) {
+                    if ( node instanceof JdbcTableModify tableModify ) {
+                        table = tableModify.getEntity();
+                        return;
+                    }
+                    super.visit( node, ordinal, parent );
+                }
+
+
+                public JdbcTable getTable( AlgNode node ) {
+                    go( node );
+                    return table;
+                }
+            }.getTable( prepared.getRootAlg() );
+
+            if ( table == null ) {
+                isJdbc = false;
+                return false;
+            }
+
+            jdbcSchema = table.getSchema();
+            insertQuery = "INSERT INTO \"" + table.namespaceName + "\".\"" + table.name + "\" (" + QueryUtils.quoteAndJoin( table.getColumnNames() ) + ") VALUES (?, ?)";
+        }
+
+        ConnectionHandler handler = jdbcSchema.getConnectionHandler( statement.getDataContext() );
+        try ( PreparedStatement stmt = handler.prepareStatement( insertQuery ) ) {
+            for ( Map<Long, PolyValue> map : paramValues ) {
+                PolyDocument doc = map.get( 0L ).asDocument();
+                stmt.setString( 1, RefactorFunctions.fromDocument( RefactorFunctions.get( doc, new PolyString( "_id" ) ) ).value );
+                stmt.setString( 2, RefactorFunctions.fromDocument( RefactorFunctions.removeNames( doc, List.of( "_id" ) ) ).value );
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+        } catch ( SQLException e ) {
+            throw new GenericRuntimeException( e );
+        }
+
+        paramValues.clear();
+        return true;
     }
 
 

@@ -14,6 +14,7 @@ dependencies {
     compileOnly project(":plugins:sql-language")
     compileOnly project(":plugins:mql-language")
     compileOnly project(":plugins:cypher-language")
+    compileOnly project(":plugins:jdbc-adapter-framework")
     compileOnly group: "io.javalin", name: "javalin", version: javalin_version
     compileOnly group: "org.apache.commons", name: "commons-collections4", version: commons_collections_version
     compileOnly group: "com.opencsv", name: "opencsv", version: opencsv_version
@@ -69,6 +70,7 @@ compileJava {
     dependsOn(":plugins:sql-language:processResources")
     dependsOn(":plugins:mql-language:processResources")
     dependsOn(":plugins:cypher-language:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
 
 delombok {

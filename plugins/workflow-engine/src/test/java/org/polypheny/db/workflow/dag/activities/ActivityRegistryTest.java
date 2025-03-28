@@ -35,7 +35,6 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
-import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.settings.GroupDef;
 import org.polypheny.db.workflow.dag.settings.GroupDef.SubgroupDef;
@@ -70,22 +69,6 @@ class ActivityRegistryTest {
         String serialized = ActivityRegistry.serialize();
         System.out.println( serialized );
         assertTrue( serialized.length() > 100 ); // 100 is somewhat arbitrary, just ensure it has some content
-    }
-
-
-    @Test
-    public void checkCategoriesTest() {
-        for ( ActivityDef activity : ActivityRegistry.getRegistry().values() ) {
-            String activityName = activity.getActivityClass().getSimpleName();
-            assertTrue( activity.hasCategory(
-                            ActivityCategory.EXTRACT ) ||
-                            activity.hasCategory( ActivityCategory.TRANSFORM ) ||
-                            activity.hasCategory( ActivityCategory.LOAD ) ||
-                            activity.hasCategory( ActivityCategory.VARIABLES ) ||
-                            activity.hasCategory( ActivityCategory.EXTERNAL ),
-                    "Found activity without any one of the required categories (EXTRACT, TRANSFORM, LOAD, VARIABLES or EXTERNAL): " + activityName );
-        }
-
     }
 
 

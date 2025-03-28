@@ -22,6 +22,7 @@ import static org.polypheny.db.workflow.dag.activities.impl.extract.RelValuesAct
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -54,7 +55,6 @@ import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition.OutPort;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
-import org.polypheny.db.workflow.dag.settings.BoolValue;
 import org.polypheny.db.workflow.dag.settings.IntValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
@@ -77,6 +77,8 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
         shortDescription = "The number of documents to generate.")
 @BoolSetting(key = "fixSeed", displayName = "Fix Random Seed", defaultValue = false,
         shortDescription = "If enabled, ensures the same random values are generated each time.")
+@BoolSetting(key = "array", displayName = "Include Array Data", defaultValue = true,
+        shortDescription = "If enabled, each document has a + 'skills' array.")
 
 @SuppressWarnings("unused")
 public class DocValuesActivity implements Activity, Fusable, Pipeable {
@@ -86,7 +88,11 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
-        return DocType.of( Set.of( "name", "lastName", "age", "salary", "skills" ) ).asOutTypes();
+        Set<String> fields = new HashSet<>( Set.of( "name", "lastName", "age", "salary" ) );
+        if ( settings.keysPresent( "array" ) && settings.getBool( "array" ) ) {
+            fields.add( "skills" );
+        }
+        return DocType.of( fields ).asOutTypes();
     }
 
 
@@ -94,8 +100,9 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
         DocWriter writer = ctx.createDocWriter( 0 );
         writer.writeFromIterator( getValues(
-                settings.get( "count", IntValue.class ).getValue(),
-                settings.get( "fixSeed", BoolValue.class ).getValue()
+                settings.getInt( "count" ),
+                settings.getBool( "fixSeed" ),
+                settings.getBool( "array" )
         ).iterator() );
     }
 
@@ -108,10 +115,10 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
-        int n = settings.get( "count", IntValue.class ).getValue();
-        boolean fixSeed = settings.get( "fixSeed", BoolValue.class ).getValue();
+        int n = settings.getInt( "count" );
+        boolean fixSeed = settings.getBool( "fixSeed" );
 
-        List<String> shuffled = new ArrayList<>( SKILLS );
+        List<String> shuffled = settings.getBool( "array" ) ? new ArrayList<>( SKILLS ) : null;
         Random random = fixSeed ? new Random( 42 ) : new Random();
         for ( int i = 0; i < n; i++ ) {
             PolyDocument doc = getValue( random, shuffled );
@@ -131,8 +138,9 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
     @Override
     public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster, FuseExecutionContext ctx ) throws Exception {
         List<PolyDocument> values = getValues(
-                settings.get( "count", IntValue.class ).getValue(),
-                settings.get( "fixSeed", BoolValue.class ).getValue()
+                settings.getInt( "count" ),
+                settings.getBool( "fixSeed" ),
+                settings.getBool( "array" )
         );
         return new LogicalDocumentValues( cluster, cluster.traitSetOf( ModelTrait.DOCUMENT ), values );
     }
@@ -144,9 +152,9 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
     }
 
 
-    private static List<PolyDocument> getValues( int n, boolean fixSeed ) {
+    private static List<PolyDocument> getValues( int n, boolean fixSeed, boolean includeArray ) {
         Random random = fixSeed ? new Random( 42 ) : new Random();
-        List<String> shuffled = new ArrayList<>( SKILLS );
+        List<String> shuffled = includeArray ? new ArrayList<>( SKILLS ) : null;
         List<PolyDocument> documents = new ArrayList<>();
         for ( int i = 0; i < n; i++ ) {
             documents.add( getValue( random, shuffled ) );
@@ -160,9 +168,11 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
         String lastName = LAST_NAMES.get( random.nextInt( LAST_NAMES.size() ) );
         int age = random.nextInt( 18, 66 );
         int salary = random.nextInt( 5000, 10000 );
-        Collections.shuffle( skills, random );
-        List<String> subSkills = skills.subList( 0, random.nextInt( 0, skills.size() ) );
-
+        List<String> subSkills = null;
+        if ( skills != null ) {
+            Collections.shuffle( skills, random );
+            subSkills = skills.subList( 0, random.nextInt( 0, skills.size() ) );
+        }
         return getDocument( firstName, lastName, age, salary, subSkills );
     }
 
@@ -174,7 +184,9 @@ public class DocValuesActivity implements Activity, Fusable, Pipeable {
         map.put( PolyString.of( "lastName" ), PolyString.of( lastName ) );
         map.put( PolyString.of( "age" ), PolyInteger.of( age ) );
         map.put( PolyString.of( "salary" ), PolyInteger.of( salary ) );
-        map.put( PolyString.of( "skills" ), getSkillsArray( skills ) );
+        if ( skills != null ) {
+            map.put( PolyString.of( "skills" ), getSkillsArray( skills ) );
+        }
 
         return new PolyDocument( map );
     }

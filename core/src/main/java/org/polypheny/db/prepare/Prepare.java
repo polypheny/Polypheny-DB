@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Objects;
+import lombok.Getter;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -212,6 +213,7 @@ public abstract class Prepare<T> {
      */
     public abstract static class PreparedResultImpl<T> implements PreparedResult<T>, Typed {
 
+        @Getter
         protected final AlgNode rootAlg;
         protected final AlgDataType parameterRowType;
         protected final AlgDataType rowType;
