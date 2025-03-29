@@ -5,6 +5,7 @@ dependencies {
     compileOnly project(":core")
     compileOnly project(":plugins:sql-language")
     api group: 'org.apache.commons', name: 'commons-dbcp2', version: commons_dbcp2_version
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

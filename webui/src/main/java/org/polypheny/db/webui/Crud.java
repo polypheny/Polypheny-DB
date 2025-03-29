@@ -44,6 +44,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -209,7 +210,8 @@ import org.polypheny.db.webui.models.results.RelationalResult.RelationalResultBu
 import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.webui.models.results.Result.ResultBuilder;
 import org.polypheny.db.webui.models.results.ResultType;
-
+import org.polypheny.db.webui.schemaDiscovery.DataHandling.DatabaseInfo;
+import org.polypheny.db.webui.schemaDiscovery.PostgreSqlConnection;
 
 @Getter
 @Slf4j
@@ -870,8 +872,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void sendConfirmation( final Context ctx ) {
         log.info( "Sending confirmation" );
-        String result = "Angular confirmation message";
-        ctx.result( result );
+        // String result = "Angular confirmation message";
+        //ctx.result( result );
+        try {
+            List<DatabaseInfo> dbs = PostgreSqlConnection.getDatabasesSchemasAndTables();
+            ctx.json( dbs );
+        } catch ( SQLException e ) {
+            System.err.println("Fehler bei der Schema-Erkennung: " + e.getMessage());
+        }
     }
 
 

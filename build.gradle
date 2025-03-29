@@ -144,6 +144,7 @@ allprojects {
 
         implementation group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
         implementation group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version  // Apache 2.0
+        implementation 'org.postgresql:postgresql:42.7.2'
 
         testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4j_version) {
             exclude group: "org.slf4j"
