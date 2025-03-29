@@ -67,7 +67,7 @@ public class OracleStore extends AbstractJdbcSource {
                 uniqueName,
                 settings,
                 mode,
-                "oracle.jdbc.OralceDriver",
+                "oracle.jdbc.OracleDriver",
                 OracleSqlDialect.DEFAULT,
                 false );
     }
