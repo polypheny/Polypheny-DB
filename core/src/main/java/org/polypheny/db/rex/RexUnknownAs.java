@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,14 +95,10 @@ public enum RexUnknownAs {
 
 
     public boolean toBoolean() {
-        switch ( this ) {
-            case FALSE:
-                return false;
-            case TRUE:
-                return true;
-            default:
-                throw new IllegalArgumentException( "unknown" );
-        }
+        return switch ( this ) {
+            case FALSE -> false;
+            case TRUE -> true;
+            case UNKNOWN -> throw new IllegalArgumentException( "unknown" );
+        };
     }
 }
-

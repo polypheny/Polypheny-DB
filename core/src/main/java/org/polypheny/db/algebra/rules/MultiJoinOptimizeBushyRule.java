@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,7 +110,7 @@ public class MultiJoinOptimizeBushyRule extends AlgOptRule {
         int x = 0;
         for ( int i = 0; i < multiJoin.getNumJoinFactors(); i++ ) {
             final AlgNode alg = multiJoin.getJoinFactor( i );
-            double cost = mq.getTupleCount( alg );
+            double cost = mq.getTupleCount( alg ).orElse( Double.MAX_VALUE );
             vertexes.add( new LeafVertex( i, alg, cost, x ) );
             x += alg.getTupleType().getFieldCount();
         }
@@ -123,7 +123,7 @@ public class MultiJoinOptimizeBushyRule extends AlgOptRule {
 
         // Comparator that chooses the best edge. A "good edge" is one that has a large difference in the number of rows on LHS and RHS.
         final Comparator<LoptMultiJoin.Edge> edgeComparator =
-                new Comparator<LoptMultiJoin.Edge>() {
+                new Comparator<>() {
                     @Override
                     public int compare( LoptMultiJoin.Edge e0, LoptMultiJoin.Edge e1 ) {
                         return Double.compare( rowCountDiff( e0 ), rowCountDiff( e1 ) );

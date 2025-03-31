@@ -110,7 +110,6 @@ public class AlgOptRuleOperand {
     }
 
 
-
     public int hashCode() {
         return Objects.hash( clazz, trait, children );
     }
@@ -161,4 +160,3 @@ public class AlgOptRuleOperand {
     }
 
 }
-

@@ -1,4 +1,3 @@
-
 /**
  * Defines relational expressions.
  *
@@ -11,4 +10,3 @@
  */
 
 package org.polypheny.db.algebra;
-

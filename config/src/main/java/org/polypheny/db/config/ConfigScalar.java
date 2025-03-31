@@ -38,4 +38,5 @@ abstract class ConfigScalar extends Config {
     protected ConfigScalar( final String key, final String description ) {
         super( key, description );
     }
+
 }

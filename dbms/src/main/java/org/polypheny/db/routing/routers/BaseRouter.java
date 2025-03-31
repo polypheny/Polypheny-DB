@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
@@ -120,11 +121,11 @@ public abstract class BaseRouter implements Router {
 
         if ( entity.unwrap( LogicalTable.class ).isPresent() ) {
             List<AllocationEntity> allocations = statement.getTransaction().getSnapshot().alloc().getFromLogical( entity.id );
-            table = entity.unwrap( LogicalTable.class ).orElseThrow();
+            table = entity.unwrapOrThrow( LogicalTable.class );
             builder.relScan( allocations.get( 0 ) );
         } else if ( entity.unwrap( AllocationTable.class ).isPresent() ) {
             builder.relScan( entity.unwrap( AllocationTable.class ).get() );
-            table = statement.getTransaction().getSnapshot().rel().getTable( entity.unwrap( AllocationTable.class ).orElseThrow().logicalId ).orElseThrow();
+            table = statement.getTransaction().getSnapshot().rel().getTable( entity.unwrapOrThrow( AllocationTable.class ).logicalId ).orElseThrow();
         } else {
             throw new NotImplementedException();
         }
@@ -285,7 +286,7 @@ public abstract class BaseRouter implements Router {
 
         // todo dl: remove after RowType refactor
         if ( catalog.getSnapshot().getNamespace( columnDistribution.getTable().namespaceId ).orElseThrow().dataModel == DataModel.DOCUMENT ) {
-            AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( 1L, "d", 0, context.getCluster().getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
+            AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( 1L, DocumentType.DOCUMENT_FIELD, 0, context.getCluster().getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
             builder.push( LogicalTransformer.create(
                     node.getCluster(),
                     List.of( node ),
@@ -319,7 +320,7 @@ public abstract class BaseRouter implements Router {
 
         LogicalNamespace namespace = snapshot.getNamespace( alg.entity.namespaceId ).orElseThrow();
 
-        LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class ).orElseThrow();
+        LogicalGraph graph = alg.entity.unwrapOrThrow( LogicalGraph.class );
 
         List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( graph.id ).stream().filter( p -> excludedPlacements == null || !excludedPlacements.contains( p.id ) ).toList();
         if ( targetAlloc != null ) {

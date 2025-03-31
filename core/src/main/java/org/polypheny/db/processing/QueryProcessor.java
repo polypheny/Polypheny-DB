@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,23 @@ public interface QueryProcessor {
 
     /**
      * @param logicalRoot Logical query plan.
+     * @param isRouted Indicated whether query already routed.
+     * @param withMonitoring Activates or deactivates the monitoring.
+     * @return prepared PolyphenyDbSignature
+     */
+    PolyImplementation prepareQuery( AlgRoot logicalRoot, boolean isRouted, boolean withMonitoring );
+
+    /**
+     * @param root Logical query plan.
+     * @param isRouted Indicated whether query already routed.
+     * @param isPhysical Indicates whether root is a physical query plan
+     * @param withMonitoring Activates or deactivates the monitoring.
+     * @return prepared PolyphenyDbSignature
+     */
+    PolyImplementation prepareQuery( AlgRoot root, boolean isRouted, boolean isPhysical, boolean withMonitoring );
+
+    /**
+     * @param logicalRoot Logical query plan.
      * @param parameters Row type (required with prepared statements).
      * @param withMonitoring Activates or deactivates the monitoring.
      * @return prepared PolyphenyDbSignature
@@ -50,6 +67,17 @@ public interface QueryProcessor {
      * @return prepared PolyphenyDbSignature
      */
     PolyImplementation prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean isRouted, boolean isSubquery, boolean withMonitoring );
+
+    /**
+     * @param root Logical or physical query plan
+     * @param parameters Row type (required with prepared statements).
+     * @param isRouted Indicates whether query already routed.
+     * @param isPhysical Indicates whether root is a physical query plan
+     * @param isSubquery Indicates whether the query is a subquery (used with constraint enforcement)
+     * @param withMonitoring Activates or deactivates the monitoring.
+     * @return prepared PolyphenyDbSignature
+     */
+    PolyImplementation prepareQuery( AlgRoot root, AlgDataType parameters, boolean isRouted, boolean isPhysical, boolean isSubquery, boolean withMonitoring );
 
     /**
      * @return Gets the planner.

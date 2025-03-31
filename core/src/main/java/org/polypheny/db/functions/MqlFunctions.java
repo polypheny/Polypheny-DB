@@ -540,6 +540,7 @@ public class MqlFunctions {
         return value;
     }
 
+
     /**
      * Special less than operation, which conforms the MongoQl standard.
      * As it is able to deal with null values and matches values compared to arrays correctly

@@ -291,8 +291,6 @@ public class MongoPlugin extends PolyPlugin {
 
         @Override
         public void shutdown() {
-            DockerContainer.getContainerByUUID( deploymentId ).ifPresent( DockerContainer::destroy );
-
             removeInformationPage();
         }
 
@@ -423,7 +421,7 @@ public class MongoPlugin extends PolyPlugin {
         public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
             for ( PhysicalEntity entity : entities ) {
                 updateNamespace( entity.namespaceName, entity.namespaceId );
-                adapterCatalog.addPhysical( alloc, currentNamespace.createEntity( entity, entity.unwrap( PhysicalTable.class ).orElseThrow().columns ) );
+                adapterCatalog.addPhysical( alloc, currentNamespace.createEntity( entity, entity.unwrapOrThrow( PhysicalTable.class ).columns ) );
             }
         }
 
@@ -523,7 +521,7 @@ public class MongoPlugin extends PolyPlugin {
 
             List<PhysicalField> fields = new ArrayList<>( physical.fields.stream().filter( f -> f.id != newCol.id ).toList() );
             fields.add( column );
-            fields = fields.stream().map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() ).sorted( Comparator.comparingInt( f -> f.position ) ).map( f -> f.unwrapOrThrow( PhysicalField.class ) ).toList();
+            fields = fields.stream().map( f -> f.unwrapOrThrow( PhysicalColumn.class ) ).sorted( Comparator.comparingInt( f -> f.position ) ).map( f -> f.unwrapOrThrow( PhysicalField.class ) ).toList();
 
             BsonDocument filter = new BsonDocument();
             List<BsonDocument> updates = Collections.singletonList( new BsonDocument( "$set", new BsonDocument( physical.name, new BsonDocument( "$convert", new BsonDocument()

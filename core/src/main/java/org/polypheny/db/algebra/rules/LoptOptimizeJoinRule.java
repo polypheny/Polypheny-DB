@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import org.polypheny.db.algebra.AlgNode;
@@ -1398,14 +1399,13 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
             return !multiJoin.isLeftFactorInRemovableSelfJoin( ((LoptJoinTree.Leaf) left.getFactorTree()).getId() );
         }
 
-        final Double leftRowCount = mq.getTupleCount( left.getJoinTree() );
-        final Double rightRowCount = mq.getTupleCount( right.getJoinTree() );
+        Optional<Double> leftRowCount = mq.getTupleCount( left.getJoinTree() );
+        Optional<Double> rightRowCount = mq.getTupleCount( right.getJoinTree() );
 
         // The left side is smaller than the right if it has fewer rows, or if it has the same number of rows as the right (excluding roundoff), but fewer columns.
-        if ( (leftRowCount != null)
-                && (rightRowCount != null)
-                && ((leftRowCount < rightRowCount)
-                || ((Math.abs( leftRowCount - rightRowCount )
+        if ( (leftRowCount.isPresent()) && (rightRowCount.isPresent())
+                && ((leftRowCount.get() < rightRowCount.get())
+                || ((Math.abs( leftRowCount.get() - rightRowCount.get() )
                 < AlgOptUtil.EPSILON)
                 && (rowWidthCost( left.getJoinTree() )
                 < rowWidthCost( right.getJoinTree() )))) ) {

@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.snapshot.impl;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,7 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
@@ -100,6 +102,8 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     ImmutableMap<Long, AlgNode> nodes;
 
+    ImmutableMap<Long, AlgCollation> collations;
+
     ImmutableMap<Long, List<LogicalView>> connectedViews;
 
 
@@ -151,6 +155,8 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         /// ALGNODES e.g. views and materializedViews
         this.nodes = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getNodes().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
 
+        this.collations = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getCollations().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
+
         this.views = buildViews();
 
         this.connectedViews = buildConnectedViews();
@@ -193,7 +199,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     private ImmutableMap<Long, TreeSet<LogicalColumn>> buildTableColumns() {
         Map<Long, TreeSet<LogicalColumn>> map = new HashMap<>();
-        tables.values().forEach( t -> map.put( t.id, new TreeSet<>( ( a, b ) -> a.position == b.position ? (int) (a.id - b.id) : a.position - b.position ) ) ); // while this should not happen, we ensure consistency with this
+        tables.values().forEach( t -> map.put( t.id, new TreeSet<>( Comparator.<LogicalColumn>comparingLong( a -> a.position ).thenComparingLong( a -> a.id ) ) ) ); // while this should not happen, we ensure consistency with this
         columns.forEach( ( k, v ) -> {
             map.get( v.tableId ).add( v );
         } );
@@ -522,6 +528,12 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     @Override
     public AlgNode getNodeInfo( long id ) {
         return nodes.get( id );
+    }
+
+
+    @Override
+    public AlgCollation getCollationInfo( long id ) {
+        return collations.get( id );
     }
 
 

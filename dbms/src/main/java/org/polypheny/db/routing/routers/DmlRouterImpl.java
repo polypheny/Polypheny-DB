@@ -35,9 +35,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.core.common.BatchIterator;
-import org.polypheny.db.algebra.core.common.ConditionalExecute;
-import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
@@ -59,7 +56,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -332,8 +328,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         } else {
             return new LogicalModifyCollect( modify.getCluster(), modify.getTraitSet(), modifies, true );
         }
-
-
     }
 
 
@@ -594,13 +588,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode handleConditionalExecute( AlgNode node, RoutingContext context ) {
-        LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
+    public LogicalConditionalExecute handleConditionalExecute( LogicalConditionalExecute lce, RoutingContext context ) {
         RoutedAlgBuilder builder = context.getRoutedAlgBuilder();
         builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( lce.getLeft(), builder, context );
         AlgNode action;
-        if ( lce.getRight() instanceof LogicalConditionalExecute ) {
-            action = handleConditionalExecute( lce.getRight(), context );
+        if ( lce.getRight() instanceof LogicalConditionalExecute logicalConditionalExecute ) {
+            action = handleConditionalExecute( logicalConditionalExecute, context );
         } else if ( lce.getRight() instanceof LogicalRelModify ) {
             action = routeRelationalDml( (LogicalRelModify) lce.getRight(), context.getStatement() );
         } else {
@@ -612,20 +605,19 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode handleConstraintEnforcer( AlgNode alg, RoutingContext context ) {
-        LogicalConstraintEnforcer constraint = (LogicalConstraintEnforcer) alg;
+    public LogicalConstraintEnforcer handleConstraintEnforcer( LogicalConstraintEnforcer constraint, RoutingContext context ) {
         RoutedAlgBuilder builder = context.getRoutedAlgBuilder();
         builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( constraint.getRight(), builder, context );
 
-        if ( constraint.getLeft() instanceof RelModify ) {
+        if ( constraint.getLeft() instanceof LogicalRelModify logicalRelModify ) {
             return LogicalConstraintEnforcer.create(
-                    routeRelationalDml( (LogicalRelModify) constraint.getLeft(), context.getStatement() ),
+                    routeRelationalDml( logicalRelModify, context.getStatement() ),
                     builder.build(),
                     constraint.getExceptionClasses(),
                     constraint.getExceptionMessages() );
-        } else if ( constraint.getLeft() instanceof BatchIterator ) {
+        } else if ( constraint.getLeft() instanceof LogicalBatchIterator logicalBatchIterator ) {
             return LogicalConstraintEnforcer.create(
-                    handleBatchIterator( constraint.getLeft(), context ),
+                    handleBatchIterator( logicalBatchIterator, context ),
                     builder.build(),
                     constraint.getExceptionClasses(),
                     constraint.getExceptionMessages() );
@@ -636,15 +628,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode handleBatchIterator( AlgNode alg, RoutingContext context ) {
-        LogicalBatchIterator iterator = (LogicalBatchIterator) alg;
+    public LogicalBatchIterator handleBatchIterator( LogicalBatchIterator iterator, RoutingContext context ) {
         AlgNode input;
-        if ( iterator.getInput() instanceof RelModify ) {
-            input = routeRelationalDml( (LogicalRelModify) iterator.getInput(), context.getStatement() );
-        } else if ( iterator.getInput() instanceof ConditionalExecute ) {
-            input = handleConditionalExecute( iterator.getInput(), context );
-        } else if ( iterator.getInput() instanceof ConstraintEnforcer ) {
-            input = handleConstraintEnforcer( iterator.getInput(), context );
+        if ( iterator.getInput() instanceof LogicalRelModify logicalRelModify ) {
+            input = routeRelationalDml( logicalRelModify, context.getStatement() );
+        } else if ( iterator.getInput() instanceof LogicalConditionalExecute logicalConditionalExecute ) {
+            input = handleConditionalExecute( logicalConditionalExecute, context );
+        } else if ( iterator.getInput() instanceof LogicalConstraintEnforcer logicalConstraintEnforcer ) {
+            input = handleConstraintEnforcer( logicalConstraintEnforcer, context );
         } else {
             throw new GenericRuntimeException( "BachIterator had an unknown child!" );
         }
@@ -694,7 +685,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             return alg;
         }
 
-        LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class ).orElseThrow();
+        LogicalGraph graph = alg.entity.unwrapOrThrow( LogicalGraph.class );
 
         if ( target != null ) {
             return new LogicalLpgModify( alg.getCluster(),
@@ -898,7 +889,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         builder = super.handleValues( values, builder );
 
-        List<LogicalColumn> columns = Catalog.snapshot().rel().getColumns( table.id );
+        List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
         if ( columns.size() == placements.size() ) { // full placement, no additional checks required
             return builder;
         } else if ( node.getTupleType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
@@ -959,7 +950,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 }
                 columnName = columnNames[1];
             } else if ( columnNames.length == 3 ) { // schemaName.tableName.columnName
-                if ( !Catalog.snapshot().getNamespace( catalogTable.id ).orElseThrow().name.equalsIgnoreCase( columnNames[0] ) ) {
+                if ( !catalog.getSnapshot().getNamespace( catalogTable.id ).orElseThrow().name.equalsIgnoreCase( columnNames[0] ) ) {
                     throw new GenericRuntimeException( "Schema name does not match expected schema name: " + field.getName() );
                 }
                 if ( !catalogTable.name.equalsIgnoreCase( columnNames[1] ) ) {
@@ -969,8 +960,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             } else {
                 throw new GenericRuntimeException( "Invalid column name: " + field.getName() );
             }
-            column = Catalog.snapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
-            if ( Catalog.snapshot().alloc().getColumn( placements.get( 0 ).placementId, column.id ).isEmpty() ) {
+            column = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
+            if ( catalog.getSnapshot().alloc().getColumn( placements.get( 0 ).placementId, column.id ).isEmpty() ) {
                 throw new GenericRuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: Use indexes

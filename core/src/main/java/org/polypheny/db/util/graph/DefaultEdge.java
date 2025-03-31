@@ -70,5 +70,5 @@ public class DefaultEdge {
     public static <V> DirectedGraph.EdgeFactory<V, DefaultEdge> factory() {
         return DefaultEdge::new;
     }
-}
 
+}

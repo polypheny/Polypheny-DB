@@ -65,6 +65,9 @@ dependencies {
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
     testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version // MIT
     testImplementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
+
+    // GIS
+    testImplementation group: "org.locationtech.jts", name: "jts-core", version: jts_version // Eclipse Public License 2.0 && Eclipse Distribution License 1.0 (BSD-3 Clause)
 }
 
 
@@ -94,6 +97,7 @@ sourceSets {
 licensee {
     allow('Apache-2.0')
     allow('MIT')
+    allowUrl('https://opensource.org/licenses/MIT') { because 'is MIT' }
     allow('BSD-2-Clause')
     allow('BSD-3-Clause')
 
@@ -125,6 +129,9 @@ licensee {
     allowDependency('org.ow2.asm', 'asm-tree', '9.4') { because 'BSD 3-Clause' }
     allowDependency('org.ow2.asm', 'asm-commons', '9.4') { because 'BSD 3-Clause' }
 
+    // GIS
+    allowDependency('org.locationtech.jts', 'jts-core', '1.19.0') { because 'Eclipse Public License v. 2.0' }
+    allowDependency('org.locationtech.jts.io', 'jts-io-common', '1.19.0') { because 'Eclipse Public License v. 2.0' }
 
     // Glassfish
     allowDependency('org.glassfish.hk2.external', 'jakarta.inject', '2.6.1') { because 'Eclipse Public License v. 2.0' }

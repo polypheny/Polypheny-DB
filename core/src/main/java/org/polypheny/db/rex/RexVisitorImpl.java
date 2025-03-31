@@ -205,5 +205,5 @@ public class RexVisitorImpl<R> implements RexVisitor<R> {
         }
         return false;
     }
-}
 
+}

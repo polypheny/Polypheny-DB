@@ -218,18 +218,18 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
     @Override
     public AlgDataType createTypeWithNullability( final AlgDataType type, final boolean nullable ) {
         final AlgDataType newType;
-        if ( type instanceof BasicPolyType ) {
-            newType = ((BasicPolyType) type).createWithNullability( nullable );
-        } else if ( type instanceof MapPolyType ) {
-            newType = copyMapType( type, nullable );
-        } else if ( type instanceof ArrayType ) {
-            newType = copyArrayType( type, nullable );
-        } else if ( type instanceof MultisetPolyType ) {
-            newType = copyMultisetType( type, nullable );
-        } else if ( type instanceof IntervalPolyType ) {
-            newType = copyIntervalType( type, nullable );
-        } else if ( type instanceof ObjectPolyType ) {
-            newType = copyObjectType( type, nullable );
+        if ( type instanceof BasicPolyType basicPolyType) {
+            newType = basicPolyType.createWithNullability( nullable );
+        } else if ( type instanceof MapPolyType mapPolyType ) {
+            newType = copyMapType( mapPolyType, nullable );
+        } else if ( type instanceof ArrayType arrayType ) {
+            newType = copyArrayType( arrayType, nullable );
+        } else if ( type instanceof MultisetPolyType multisetPolyType ) {
+            newType = copyMultisetType( multisetPolyType, nullable );
+        } else if ( type instanceof IntervalPolyType intervalPolyType ) {
+            newType = copyIntervalType( intervalPolyType, nullable );
+        } else if ( type instanceof ObjectPolyType objectPolyType ) {
+            newType = copyObjectType( objectPolyType, nullable );
         } else {
             return super.createTypeWithNullability( type, nullable );
         }
@@ -482,19 +482,18 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
     }
 
 
-    private AlgDataType copyMultisetType( AlgDataType type, boolean nullable ) {
-        MultisetPolyType mt = (MultisetPolyType) type;
+    private AlgDataType copyMultisetType( MultisetPolyType mt, boolean nullable ) {
         AlgDataType elementType = copyType( mt.getComponentType() );
         return new MultisetPolyType( elementType, nullable );
     }
 
 
-    private AlgDataType copyIntervalType( AlgDataType type, boolean nullable ) {
+    private AlgDataType copyIntervalType( IntervalPolyType type, boolean nullable ) {
         return new IntervalPolyType( typeSystem, type.getIntervalQualifier(), nullable );
     }
 
 
-    private AlgDataType copyObjectType( AlgDataType type, boolean nullable ) {
+    private AlgDataType copyObjectType( ObjectPolyType type, boolean nullable ) {
         return new ObjectPolyType(
                 type.getPolyType(),
                 nullable,
@@ -503,15 +502,13 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
     }
 
 
-    private AlgDataType copyArrayType( AlgDataType type, boolean nullable ) {
-        ArrayType at = (ArrayType) type;
+    private AlgDataType copyArrayType( ArrayType at, boolean nullable ) {
         AlgDataType elementType = copyType( at.getComponentType() );
         return new ArrayType( elementType, nullable, at.getCardinality(), at.getDimension() );
     }
 
 
-    private AlgDataType copyMapType( AlgDataType type, boolean nullable ) {
-        MapPolyType mt = type.unwrap( MapPolyType.class ).orElseThrow();
+    private AlgDataType copyMapType( MapPolyType mt, boolean nullable ) {
         AlgDataType keyType = copyType( mt.getKeyType() );
         AlgDataType valueType = copyType( mt.getValueType() );
         return new MapPolyType( keyType, valueType, nullable );

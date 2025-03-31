@@ -29,6 +29,7 @@ import java.util.Optional;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
@@ -68,7 +69,7 @@ public class AdapterManager {
 
     public static void removeAdapterTemplate( long templateId ) {
         AdapterTemplate template = Catalog.snapshot().getAdapterTemplate( templateId ).orElseThrow();
-        if ( Catalog.getInstance().getSnapshot().getAdapters().stream().anyMatch( a -> a.adapterName.equals( template.adapterName ) && a.type == template.adapterType ) ) {
+        if ( Catalog.snapshot().getAdapters().stream().anyMatch( a -> a.adapterName.equals( template.adapterName ) && a.type == template.adapterType ) ) {
             throw new GenericRuntimeException( "Adapter is still deployed!" );
         }
         Catalog.getInstance().dropAdapterTemplate( templateId );
@@ -176,6 +177,13 @@ public class AdapterManager {
 
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
 
+
+        for ( AbstractAdapterSetting setting : adapterTemplate.settings ) {
+            if ( setting.appliesTo.stream().noneMatch( s -> s.appliesTo( mode ) ) ) {
+                settings.remove( setting.name );
+            }
+        }
+
         long adapterId = Catalog.getInstance().createAdapter( uniqueName, adapterName, adapterType, settings, mode );
         try {
             Adapter<?> adapter = adapterTemplate.getDeployer().get( adapterId, uniqueName, settings, mode );
@@ -196,10 +204,10 @@ public class AdapterManager {
         }
         Adapter<?> adapterInstance = optionalAdapter.get();
 
-        LogicalAdapter logicalAdapter = Catalog.getInstance().getSnapshot().getAdapter( adapterId ).orElseThrow();
+        LogicalAdapter logicalAdapter = Catalog.snapshot().getAdapter( adapterId ).orElseThrow();
 
         // Check if the store has any placements
-        List<AllocationEntity> placements = Catalog.getInstance().getSnapshot().alloc().getEntitiesOnAdapter( logicalAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
+        List<AllocationEntity> placements = Catalog.snapshot().alloc().getEntitiesOnAdapter( logicalAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
         if ( !placements.isEmpty() ) {
             if ( adapterInstance instanceof DataStore<?> ) {
                 throw new GenericRuntimeException( "There is still data placed on this data store" );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,12 +70,14 @@ public class AlgMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
     }
 
 
+    @SuppressWarnings("unused") // used by codegen
     public Double getPercentageOriginalRows( Aggregate alg, AlgMetadataQuery mq ) {
         // REVIEW jvs: The assumption here seems to be that aggregation does not apply any filtering, so it does not modify the percentage. That's very much oversimplified.
         return mq.getPercentageOriginalRows( alg.getInput() );
     }
 
 
+    @SuppressWarnings("unused") // used by codegen
     public Double getPercentageOriginalRows( Union alg, AlgMetadataQuery mq ) {
         double numerator = 0.0;
         double denominator = 0.0;
@@ -87,7 +89,7 @@ public class AlgMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
         // case where a huge table has been completely filtered away.
 
         for ( AlgNode input : alg.getInputs() ) {
-            double rowCount = mq.getTupleCount( input );
+            double rowCount = mq.getTupleCount( input ).orElse( Double.MAX_VALUE );
             double percentage = mq.getPercentageOriginalRows( input );
             if ( percentage != 0.0 ) {
                 denominator += rowCount / percentage;
@@ -99,6 +101,7 @@ public class AlgMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
     }
 
 
+    @SuppressWarnings("unused") // used by codegen
     public Double getPercentageOriginalRows( Join alg, AlgMetadataQuery mq ) {
         // Assume any single-table filter conditions have already been pushed down.
 
@@ -132,8 +135,7 @@ public class AlgMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
         }
 
         // Compute product of percentage filtering from this alg (assuming any filtering is the effect of single-table filters) with the percentage filtering performed by the child.
-        Double algPercentage =
-                quotientForPercentage( mq.getTupleCount( alg ), mq.getTupleCount( child ) );
+        Double algPercentage = quotientForPercentage( mq.getTupleCount( alg ).orElse( Double.MAX_VALUE ), mq.getTupleCount( child ).orElse( Double.MAX_VALUE ) );
         if ( algPercentage == null ) {
             return null;
         }

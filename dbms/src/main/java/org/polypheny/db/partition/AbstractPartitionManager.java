@@ -47,7 +47,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     @Override
     public boolean probePartitionGroupDistributionChange( LogicalTable table, int storeId, long columnId, int threshold ) {
         // Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
-        for ( Long partitionIds : Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionIds ) {
+        for ( Long partitionIds : catalog.getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionIds ) {
             List<AllocationColumn> ccps = catalog.getSnapshot().alloc().getColumnAllocsByPartitionGroup( table.id, partitionIds, columnId );
             if ( ccps.size() <= threshold ) {
                 for ( AllocationColumn placement : ccps ) {
@@ -71,8 +71,8 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                 if ( excludedAdapters.contains( allocation.adapterId ) ) {
                     continue;
                 }
-                List<AllocationColumn> allocColumns = allocation.unwrap( AllocationTable.class ).orElseThrow().getColumns();
-                if( placementDistribution.containsKey( allocation.partitionId ) ){
+                List<AllocationColumn> allocColumns = allocation.unwrapOrThrow( AllocationTable.class ).getColumns();
+                if ( placementDistribution.containsKey( allocation.partitionId ) ) {
                     List<AllocationColumn> existingAllocColumns = placementDistribution.get( allocation.partitionId );
                     List<Long> existingColumnsIds = existingAllocColumns.stream().map( e -> e.columnId ).toList();
                     List<Long> allocColumnIds = allocColumns.stream().map( c -> c.columnId ).toList();

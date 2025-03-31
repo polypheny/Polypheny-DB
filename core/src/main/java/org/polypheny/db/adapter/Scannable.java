@@ -50,7 +50,7 @@ import org.polypheny.db.type.PolyType;
 public interface Scannable {
 
     static PhysicalTable createSubstitutionTable( Scannable scannable, Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<ColumnContext> nameLength, int amountPk ) {
-        return createSubstitutionEntity( scannable, context, logical, allocation, name, nameLength, amountPk ).unwrap( PhysicalTable.class ).orElseThrow();
+        return createSubstitutionEntity( scannable, context, logical, allocation, name, nameLength, amountPk ).unwrapOrThrow( PhysicalTable.class );
     }
 
     static PhysicalEntity createSubstitutionEntity( Scannable scannable, Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<ColumnContext> columnsInformations, int amountPk ) {
@@ -137,7 +137,7 @@ public interface Scannable {
 
     static AlgNode getDocumentScanSubstitute( Scannable scannable, long allocId, AlgBuilder builder ) {
         builder.clear();
-        PhysicalEntity table = scannable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrap( PhysicalEntity.class ).orElseThrow();
+        PhysicalEntity table = scannable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrapOrThrow( PhysicalEntity.class );
         builder.relScan( table );
         AlgDataType rowType = DocumentType.ofId();
         builder.transform( ModelTrait.DOCUMENT, rowType, false, null );
@@ -250,7 +250,7 @@ public interface Scannable {
     void renameLogicalColumn( long id, String newColumnName );
 
 
-    record ColumnContext(String name, Integer precision, PolyType type, boolean nullable) {
+    record ColumnContext( String name, Integer precision, PolyType type, boolean nullable ) {
 
     }
 

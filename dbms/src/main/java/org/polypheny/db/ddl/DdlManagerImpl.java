@@ -111,6 +111,7 @@ import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
@@ -211,12 +212,12 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createSource( String uniqueName, String adapterName, long namespace, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
+    public void createSource( Transaction transaction, String uniqueName, String adapterName, long namespace, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
         uniqueName = uniqueName.toLowerCase();
         DataSource<?> adapter = (DataSource<?>) AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
         namespace = adapter.getCurrentNamespace() == null ? namespace : adapter.getCurrentNamespace().getId(); // TODO: clean implementation. Sources should either create their own namespace or there should be default namespaces for different models.
         if ( adapter.supportsRelational() ) {
-            createRelationalSource( adapter, namespace );
+            createRelationalSource( transaction, adapter, namespace );
         }
         if ( adapter.supportsDocument() ) {
             createDocumentSource( adapter, namespace );
@@ -252,7 +253,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void createRelationalSource( DataSource<?> adapter, long namespace ) {
+    private void createRelationalSource( Transaction transaction, DataSource<?> adapter, long namespace ) {
         Map<String, List<ExportedColumn>> exportedColumns;
         try {
             exportedColumns = adapter.asRelationalDataSource().getExportedColumns();
@@ -303,7 +304,7 @@ public class DdlManagerImpl extends DdlManager {
 
             buildRelationalNamespace( namespace, logical, adapter );
 
-            catalog.attachCommitAction( () ->
+            transaction.attachCommitAction( () ->
                     // we can execute with initial logical and allocation data as this is a source and this will not change
                     adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns ) ) );
             catalog.updateSnapshot();
@@ -531,7 +532,7 @@ public class DdlManagerImpl extends DdlManager {
         List<DataStore<?>> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewRelField( addedColumn );
 
         // Add column on underlying data stores and insert default value
-        catalog.attachCommitAction( () -> {
+        statement.getTransaction().attachCommitAction( () -> {
             for ( DataStore<?> store : stores ) {
                 AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( store.getAdapterId(), table.id ).orElseThrow();
 
@@ -797,7 +798,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.updateSnapshot();
 
         List<LogicalColumn> finalColumns = adjustedColumns;
-        catalog.attachCommitAction( () -> {
+        statement.getTransaction().attachCommitAction( () -> {
             // Copy data to the newly added placements
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
             dataMigrator.copyData( statement.getTransaction(), catalog.getSnapshot().getAdapter( dataStore.getAdapterId() ).orElseThrow(), table, finalColumns, placement );
@@ -829,7 +830,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         if ( oldPk != null ) {
-            dropConstraint( table, ConstraintType.PRIMARY.name() );
+            dropConstraint( statement.getTransaction(), table, ConstraintType.PRIMARY.name() );
         }
 
         catalog.getLogicalRel( table.namespaceId ).addPrimaryKey( table.id, columnIds, statement );
@@ -849,7 +850,7 @@ public class DdlManagerImpl extends DdlManager {
                             placement.adapterId,
                             PlacementType.AUTOMATIC,
                             0 );
-                    catalog.attachCommitAction( () -> {
+                    statement.getTransaction().attachCommitAction( () -> {
                         for ( AllocationPartition partition : catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ) ) {
                             AllocationEntity entity = catalog.getSnapshot().alloc().getAlloc( placement.id, partition.id ).orElseThrow();
                             AdapterManager.getInstance().getStore( placement.adapterId ).orElseThrow().addColumn(
@@ -942,7 +943,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( table.entityType == EntityType.ENTITY ) {
             // we use closure to cache the physical we have to delete later
             List<AllocationEntity> allocsOfPlacement = catalog.getSnapshot().alloc().getAllocsOfPlacement( allocationColumn.placementId );
-            catalog.attachCommitAction( () -> {
+            statement.getTransaction().attachCommitAction( () -> {
                 for ( AllocationEntity allocation : allocsOfPlacement ) {
                     AdapterManager.getInstance().getStore( allocationColumn.adapterId )
                             .orElseThrow()
@@ -974,7 +975,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropConstraint( LogicalTable table, String constraintName ) {
+    public void dropConstraint( Transaction transaction, LogicalTable table, String constraintName ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
 
@@ -983,7 +984,7 @@ public class DdlManagerImpl extends DdlManager {
         Supplier<Boolean> stillUsed = () -> getKeyUniqueCount( constraint.keyId ) < 2;
         if ( constraint.type == ConstraintType.UNIQUE && isForeignKey( constraint.key.id ) && stillUsed.get() ) {
             // maybe we delete multiple constraints in this transaction, so we need to check again
-            catalog.attachCommitConstraint(
+            transaction.attachCommitConstraint(
                     stillUsed,
                     "The constraint " + constraintName + " is used on a key which is referenced by at least one foreign key which requires this key to be unique. Unable to drop unique constraint." );
         }
@@ -1050,7 +1051,7 @@ public class DdlManagerImpl extends DdlManager {
             DataStore<?> store = AdapterManager.getInstance().getStore( index.location ).orElseThrow();
             AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( store.getAdapterId(), table.id ).orElseThrow();
 
-            catalog.attachCommitAction( () -> {
+            statement.getTransaction().attachCommitAction( () -> {
                 catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ).forEach( allocation -> {
                     store.dropIndex( statement.getPrepareContext(), index, List.of( allocation.id ) );
                 } );
@@ -1079,7 +1080,7 @@ public class DdlManagerImpl extends DdlManager {
                     // Delete polystore index
                     IndexManager.getInstance().deleteIndex( index );
                 } else {
-                    catalog.attachCommitAction( () -> {
+                    statement.getTransaction().attachCommitAction( () -> {
                         // Delete index on storeId
                         AdapterManager.getInstance().getStore( index.location )
                                 .orElseThrow()
@@ -1111,7 +1112,7 @@ public class DdlManagerImpl extends DdlManager {
 
     private void dropAllocation( long namespaceId, DataStore<?> store, Statement statement, long allocId ) {
         // Physically delete the data from the storeId
-        catalog.attachCommitAction( () -> {
+        statement.getTransaction().attachCommitAction( () -> {
             store.dropTable( statement.getPrepareContext(), allocId );
         } );
 
@@ -1153,7 +1154,7 @@ public class DdlManagerImpl extends DdlManager {
                 type.cardinality() );
         catalog.updateSnapshot();
         for ( AllocationColumn allocationColumn : catalog.getSnapshot().alloc().getColumnFromLogical( logicalColumn.id ).orElseThrow() ) {
-            catalog.attachCommitAction( () -> {
+            statement.getTransaction().attachCommitAction( () -> {
                 for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocsOfPlacement( allocationColumn.placementId ) ) {
                     AdapterManager.getInstance().getStore( allocationColumn.adapterId )
                             .orElseThrow()
@@ -1187,6 +1188,11 @@ public class DdlManagerImpl extends DdlManager {
 
         // Check if model permits operation
         checkModelLogic( table, columnName );
+
+        // Check that column is not part of a primary key
+        if ( catalog.getLogicalRel( table.namespaceId ).getKeys().values().stream().filter( v -> v instanceof LogicalPrimaryKey ).flatMap( v -> v.fieldIds.stream() ).anyMatch( l -> l == logicalColumn.id ) ) {
+            throw new GenericRuntimeException( "Primary key cannot be nullable" );
+        }
 
         catalog.getLogicalRel( table.namespaceId ).setNullable( logicalColumn.id, nullable );
 
@@ -1470,13 +1476,13 @@ public class DdlManagerImpl extends DdlManager {
 
             for ( long partitionId : addedPartitions ) {
                 AllocationTable allocation = addAllocationTable( table.namespaceId, statement, table, placement.id, partitionId, store, true );
-                catalog.attachCommitAction( () -> {
+                statement.getTransaction().attachCommitAction( () -> {
                     dataMigrator.copyData( statement.getTransaction(), catalog.getSnapshot().getAdapter( storeId ).orElseThrow(), table, columns, allocation );
                 } );
             }
 
             // Add indexes on this new Partition Placement if there is already an index
-            catalog.attachCommitAction( () -> {
+            statement.getTransaction().attachCommitAction( () -> {
                 for ( LogicalIndex currentIndex : catalog.getSnapshot().rel().getIndexes( table.id, false ) ) {
                     if ( currentIndex.location == storeId ) {
                         store.addIndex( statement.getPrepareContext(), currentIndex, catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ).stream().map( a -> a.unwrapOrThrow( AllocationTable.class ) ).toList() );
@@ -1488,7 +1494,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( !removedPartitions.isEmpty() ) {
             //  Remove indexes
-            catalog.attachCommitAction( () -> {
+            statement.getTransaction().attachCommitAction( () -> {
                 for ( LogicalIndex currentIndex : catalog.getSnapshot().rel().getIndexes( table.id, false ) ) {
                     if ( currentIndex.location == storeId ) {
                         store.dropIndex( null, currentIndex, removedPartitions.stream().map( p -> p.partitionId ).toList() );
@@ -1534,7 +1540,7 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.MANUAL );
 
         } else {
-            catalog.attachCommitAction( () -> {
+            statement.getTransaction().attachCommitAction( () -> {
                 // Create column placement
                 catalog.getAllocRel( table.namespaceId ).addColumn(
                         placement.id,
@@ -1594,7 +1600,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( primaryKey.fieldIds.contains( column.id ) ) {
             throw new GenericRuntimeException( "Cannot drop primary key" );
         }
-        catalog.attachCommitAction( () -> {
+        statement.getTransaction().attachCommitAction( () -> {
             for ( AllocationPartition partition : catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ) ) {
                 AllocationEntity allocation = catalog.getSnapshot().alloc().getAlloc( placement.id, partition.id ).orElseThrow();
                 // Drop Column on store
@@ -1808,7 +1814,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.updateSnapshot();
 
         List<DataStore<?>> finalStores = stores;
-        catalog.attachCommitAction( () -> {
+        statement.getTransaction().attachCommitAction( () -> {
             // Selected data from tables is added into the newly crated materialized view
             MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
             materializedManager.addData( statement.getTransaction(), finalStores, algRoot, view );
@@ -2112,7 +2118,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( constraints.stream().noneMatch( c -> c.type == ConstraintType.PRIMARY ) ) {
             // no primary was set for now, we attach condition to check on commit
-            catalog.attachCommitConstraint(
+            statement.getTransaction().attachCommitConstraint(
                     () -> logical.primaryKey != null && catalog.getSnapshot().rel().getPrimaryKey( logical.primaryKey ).isPresent(),
                     "No primary key defined for table: " + name );
         }
@@ -2197,7 +2203,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( postpone ) {
             // normally we want to postpone
-            catalog.attachCommitAction( action );
+            statement.getTransaction().attachCommitAction( action );
         } else {
             // we are already committing currently
             action.run();
@@ -2401,7 +2407,7 @@ public class DdlManagerImpl extends DdlManager {
         List<AllocationEntity> sourceAllocs = new ArrayList<>( catalog.getSnapshot().alloc().getFromLogical( unPartitionedTable.id ).stream().filter( a -> initialProperty.partitionIds.contains( a.partitionId ) ).toList() );
 
         List<DataStore<?>> finalStores = stores;
-        catalog.attachCommitAction( () -> {
+        statement.getTransaction().attachCommitAction( () -> {
             for ( AllocationPlacement placement : placements ) {
                 if ( !fillStores ) {
                     continue;
@@ -2441,7 +2447,7 @@ public class DdlManagerImpl extends DdlManager {
         for ( LogicalIndex index : indexes ) {
             // Remove old index
             DataStore<?> ds = AdapterManager.getInstance().getStore( index.location ).orElseThrow();
-            catalog.attachCommitAction( () -> ds.dropIndex( statement.getPrepareContext(), index, result.right.partitionIds ) );
+            statement.getTransaction().attachCommitAction( () -> ds.dropIndex( statement.getPrepareContext(), index, result.right.partitionIds ) );
             catalog.getLogicalRel( partitionInfo.table.namespaceId ).deleteIndex( index.id );
             // Add new index
             LogicalIndex newIndex = catalog.getLogicalRel( partitionInfo.table.namespaceId ).addIndex(
@@ -2456,7 +2462,7 @@ public class DdlManagerImpl extends DdlManager {
             if ( index.location < 0 ) {
                 IndexManager.getInstance().addIndex( newIndex, statement );
             } else {
-                catalog.attachCommitAction( () -> {
+                statement.getTransaction().attachCommitAction( () -> {
                     String physicalName = ds.addIndex(
                             statement.getPrepareContext(),
                             index, newAllocations.entrySet().stream().filter( e -> e.getKey().adapterId == ds.adapterId ).findFirst().orElseThrow().getValue() );//catalog.getSnapshot().alloc().getPartitionsOnDataPlacement( ds.getAdapterId(), unPartitionedTable.id ) );
@@ -2465,7 +2471,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        catalog.attachCommitAction( () -> {
+        statement.getTransaction().attachCommitAction( () -> {
             // Remove old tables
             sourceAllocs.forEach( s -> deleteAllocation( statement, s ) );
 
@@ -2726,7 +2732,7 @@ public class DdlManagerImpl extends DdlManager {
             AllocationTable targetTable = addAllocationTable( table.namespaceId, statement, table, placement.id, partitionProperty.left.id, store, true );
 
             catalog.updateSnapshot();
-            catalog.attachCommitAction( () -> {
+            statement.getTransaction().attachCommitAction( () -> {
                 dataMigrator.copyAllocationData(
                         statement.getTransaction(),
                         catalog.getSnapshot().getAdapter( store.getAdapterId() ).orElseThrow(),
@@ -2743,7 +2749,7 @@ public class DdlManagerImpl extends DdlManager {
         for ( LogicalIndex index : indexes ) {
             // Remove old index
             DataStore<?> ds = AdapterManager.getInstance().getStore( index.location ).orElseThrow();
-            catalog.attachCommitAction( () -> ds.dropIndex( statement.getPrepareContext(), index, property.partitionIds ) );
+            statement.getTransaction().attachCommitAction( () -> ds.dropIndex( statement.getPrepareContext(), index, property.partitionIds ) );
             catalog.getLogicalRel( table.namespaceId ).deleteIndex( index.id );
             // Add new index
             LogicalIndex newIndex = catalog.getLogicalRel( table.namespaceId ).addIndex(
@@ -2758,7 +2764,7 @@ public class DdlManagerImpl extends DdlManager {
             if ( index.location < 0 ) {
                 IndexManager.getInstance().addIndex( newIndex, statement );
             } else {
-                catalog.attachCommitAction( () -> {
+                statement.getTransaction().attachCommitAction( () -> {
                     AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( ds.adapterId, tableId ).orElseThrow();
                     ds.addIndex(
                             statement.getPrepareContext(),
@@ -2768,7 +2774,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        catalog.attachCommitAction( () -> {
+        statement.getTransaction().attachCommitAction( () -> {
             // Needs to be separated from loop above. Otherwise, we loose data
             sources.forEach( s -> deleteAllocation( statement, s ) );
             property.partitionIds.forEach( id -> catalog.getAllocRel( table.namespaceId ).deletePartition( id ) );
@@ -2964,7 +2970,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // delete constraints
         for ( LogicalConstraint constraint : snapshot.rel().getConstraints( table.id ) ) {
-            dropConstraint( table, constraint.name );
+            dropConstraint( statement.getTransaction(), table, constraint.name );
         }
 
         // delete keys
@@ -2999,7 +3005,7 @@ public class DdlManagerImpl extends DdlManager {
 
     private void deleteAllocation( Statement statement, AllocationEntity allocation ) {
         AdapterManager manager = AdapterManager.getInstance();
-        catalog.attachCommitAction( () -> manager.getStore( allocation.adapterId ).orElseThrow().dropTable( statement.getPrepareContext(), allocation.id ) );
+        statement.getTransaction().attachCommitAction( () -> manager.getStore( allocation.adapterId ).orElseThrow().dropTable( statement.getPrepareContext(), allocation.id ) );
 
         catalog.getAllocRel( allocation.namespaceId ).deleteAllocation( allocation.id );
 

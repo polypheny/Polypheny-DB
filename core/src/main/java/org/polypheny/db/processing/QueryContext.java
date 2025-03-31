@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,16 +25,22 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.entity.PolyValue;
 
+@Slf4j
 @Value
 @NonFinal
 @SuperBuilder(toBuilder = true)
@@ -86,8 +92,14 @@ public class QueryContext {
     List<Transaction> transactions = new ArrayList<>();
 
 
+    public void removeTransaction( Transaction transaction ) {
+        transactions.remove( transaction );
+    }
+
+
     @EqualsAndHashCode(callSuper = true)
     @Value
+    @NonFinal
     @SuperBuilder(toBuilder = true)
     public static class ParsedQueryContext extends QueryContext {
 
@@ -99,8 +111,18 @@ public class QueryContext {
             long namespaceId = context.namespaceId;
 
             if ( queryNode != null && queryNode.getNamespaceName() != null ) {
-                namespaceId = Catalog.snapshot().getNamespace( queryNode.getNamespaceName() ).map( n -> n.id ).orElse( queryNode.getNamespaceId() );
+                namespaceId = Catalog.snapshot().getNamespace( queryNode.getNamespaceName() ).map( n -> n.id ).orElse( namespaceId );
             }
+
+            if ( context.transactions.stream().anyMatch( t -> !t.isActive() ) ) {
+                throw new GenericRuntimeException( "No active transaction" );
+            }
+
+            if ( context.transactions.size() > 1 ) {
+                log.warn( "Multiple active transactions {}", context.transactions.size() );
+            }
+
+            log.debug( "query: {}", query );
 
             return ParsedQueryContext.builder()
                     .query( query )
@@ -126,7 +148,79 @@ public class QueryContext {
     }
 
 
+    @EqualsAndHashCode(callSuper = true)
+    @Value
+    @NonFinal
+    @SuperBuilder(toBuilder = true)
+    public static class TranslatedQueryContext extends ParsedQueryContext {
+
+        AlgRoot root;
+        boolean isRouted;
+
+
+        // A TranslatedQueryContext is not associated with a specific a namespaceId or queryNode
+        public static TranslatedQueryContext fromQuery( String query, AlgRoot root, boolean isRouted, QueryContext context ) {
+            return TranslatedQueryContext.builder()
+                    .query( query )
+                    .queryNode( null )
+                    .language( context.language )
+                    .isAnalysed( context.isAnalysed )
+                    .usesCache( context.usesCache )
+                    .userId( context.userId )
+                    .origin( context.getOrigin() )
+                    .batch( context.batch )
+                    .statement( context.statement )
+                    .transactions( context.transactions )
+                    .transactionManager( context.transactionManager )
+                    .informationTarget( context.informationTarget )
+                    .root( root )
+                    .isRouted( isRouted )
+                    .build();
+        }
+
+    }
+
+
+    @EqualsAndHashCode(callSuper = true)
+    @Value
+    @SuperBuilder(toBuilder = true)
+    public static class PhysicalQueryContext extends TranslatedQueryContext {
+
+        List<PolyValue> dynamicValues;
+        List<AlgDataType> dynamicTypes;
+
+
+        // AlgRoot represents a physical execution plan
+        public static PhysicalQueryContext fromQuery( String query, AlgRoot root, List<PolyValue> dynamicValues, List<AlgDataType> dynamicTypes, QueryContext context ) {
+            return PhysicalQueryContext.builder()
+                    .query( query )
+                    .queryNode( null )
+                    .language( context.language )
+                    .isAnalysed( context.isAnalysed )
+                    .usesCache( context.usesCache )
+                    .userId( context.userId )
+                    .origin( context.getOrigin() )
+                    .batch( context.batch )
+                    .statement( context.statement )
+                    .transactions( context.transactions )
+                    .transactionManager( context.transactionManager )
+                    .informationTarget( context.informationTarget )
+                    .root( root )
+                    .dynamicValues( dynamicValues )
+                    .dynamicTypes( dynamicTypes )
+                    .isRouted( true )
+                    .build();
+        }
+
+    }
+
+
     public <T extends QueryContext> T addTransaction( Transaction transaction ) {
+        if ( transaction == null ) {
+            return (T) this;
+        } else if ( !transaction.isActive() ) {
+            throw new GenericRuntimeException( "Transaction is not active" );
+        }
         transactions = new ArrayList<>( transactions );
         transactions.add( transaction );
         return (T) this;

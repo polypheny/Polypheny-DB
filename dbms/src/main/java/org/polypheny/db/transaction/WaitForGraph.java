@@ -147,6 +147,7 @@ public class WaitForGraph {
         private List<TransactionImpl> getCycleFromPath( List<TransactionImpl> path, TransactionImpl target ) {
             return path.subList( path.indexOf( target ), path.size() );
         }
+
     }
 
 }

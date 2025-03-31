@@ -498,7 +498,7 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
     public void rewriteAlg( LogicalDocumentScan scan ) {
         AlgNode alg = scan;
         if ( scan.entity.isPhysical() ) {
-            alg = scan.entity.unwrap( TranslatableEntity.class ).orElseThrow().toAlg( cluster, scan.traitSet );
+            alg = scan.entity.unwrapOrThrow( TranslatableEntity.class ).toAlg( cluster, scan.traitSet );
         }
         setNewForOldAlg( scan, alg );
     }
@@ -527,7 +527,7 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
     public void rewriteAlg( LogicalLpgScan scan ) {
         AlgNode alg = scan;
         if ( scan.entity.isPhysical() ) {
-            alg = scan.entity.unwrap( TranslatableEntity.class ).orElseThrow().toAlg( cluster, scan.traitSet );
+            alg = scan.entity.unwrapOrThrow( TranslatableEntity.class ).toAlg( cluster, scan.traitSet );
         }
         setNewForOldAlg( scan, alg );
     }
@@ -945,7 +945,6 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
     private class RewriteAlgVisitor extends AlgVisitor {
 
 
-
         @Override
         public void visit( AlgNode p, int ordinal, AlgNode parent ) {
             // Rewrite children first
@@ -1097,4 +1096,3 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
     }
 
 }
-

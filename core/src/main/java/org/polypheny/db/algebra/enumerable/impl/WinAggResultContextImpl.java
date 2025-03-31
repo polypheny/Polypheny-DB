@@ -122,5 +122,5 @@ public abstract class WinAggResultContextImpl extends AggResultContextImpl imple
     public Expression getPartitionRowCount() {
         return getFrame().getPartitionRowCount();
     }
-}
 
+}

@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
 import java.util.ArrayList;
@@ -54,7 +55,7 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable );
 
 
-    public record IndexMethodModel( String name, String displayName ) {
+    public record IndexMethodModel( @JsonProperty String name, @JsonProperty String displayName ) {
 
     }
 
@@ -64,7 +65,7 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
         public List<String> getColumnNames() {
             List<String> columnNames = new ArrayList<>( columnIds.size() );
             for ( long columnId : columnIds ) {
-                columnNames.add( Catalog.getInstance().getSnapshot().rel().getColumn( columnId ).orElseThrow().name );
+                columnNames.add( Catalog.snapshot().rel().getColumn( columnId ).orElseThrow().name );
             }
             return columnNames;
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class StatementImpl implements Statement {
     @Getter
     private final long id;
     @Getter
-    private final TransactionImpl transaction;
+    private final Transaction transaction;
     private final List<FileInputHandle> fileInputHandles = new ArrayList<>();
 
     private QueryProcessor queryProcessor;
@@ -60,7 +60,7 @@ public class StatementImpl implements Statement {
     private StatementEvent statementEvent;
 
 
-    StatementImpl( TransactionImpl transaction ) {
+    StatementImpl( Transaction transaction ) {
         this.id = STATEMENT_COUNTER.getAndIncrement();
         this.transaction = transaction;
     }
@@ -146,6 +146,12 @@ public class StatementImpl implements Statement {
 
 
     @Override
+    public long getIndex() {
+        return id;
+    }
+
+
+    @Override
     public void setMonitoringEvent( StatementEvent event ) {
         this.statementEvent = event;
     }
@@ -155,6 +161,7 @@ public class StatementImpl implements Statement {
         InformationManager im = transaction.getQueryAnalyzer();
         if ( executionTimePage == null ) {
             executionTimePage = new InformationPage( "Execution Time", "Query processing & execution time" );
+            executionTimePage.setStmtLabel( id );
             im.addPage( executionTimePage );
         }
         InformationGroup group = new InformationGroup( executionTimePage, title );

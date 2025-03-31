@@ -1993,7 +1993,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         Entity table = SqlValidatorUtil.getLogicalEntity( fromNamespace, snapshot, datasetName, usedDataset );
         if ( extendedColumns != null && extendedColumns.size() > 0 ) {
             assert table != null;
-            final ValidatorTable validatorTable = table.unwrap( ValidatorTable.class ).orElseThrow();
+            final ValidatorTable validatorTable = table.unwrapOrThrow( ValidatorTable.class );
             final List<AlgDataTypeField> extendedFields = SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), table, extendedColumns );
         }
         final AlgNode tableRel;
@@ -2732,7 +2732,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     public AlgNode toAlg( final Entity table ) {
-        final AlgNode scan = table.unwrap( TranslatableEntity.class ).orElseThrow().toAlg( cluster, cluster.traitSet() );
+        final AlgNode scan = table.unwrapOrThrow( TranslatableEntity.class ).toAlg( cluster, cluster.traitSet() );
         final InitializerExpressionFactory ief = table.unwrap( InitializerExpressionFactory.class ).orElse( NullInitializerExpressionFactory.INSTANCE );
 
         // Lazily create a blackboard that contains all non-generated columns.
@@ -2848,7 +2848,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         int j = 0;
 
         // Assign expressions for non-generated columns.
-        final List<ColumnStrategy> strategies = targetTable.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies();
+        final List<ColumnStrategy> strategies = targetTable.unwrapOrThrow( LogicalTable.class ).getColumnStrategies();
         final List<String> targetFields = targetTable.getTupleType().getFieldNames();
         for ( String targetColumnName : targetColumnNames ) {
             final int i = targetFields.indexOf( targetColumnName );
@@ -2930,7 +2930,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final Blackboard bb = createInsertBlackboard( targetTable, sourceRef, targetColumnNames );
 
         // Next, assign expressions for generated columns.
-        final List<ColumnStrategy> strategies = targetTable.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies();
+        final List<ColumnStrategy> strategies = targetTable.unwrapOrThrow( LogicalTable.class ).getColumnStrategies();
         for ( String columnName : targetColumnNames ) {
             final int i = tableRowType.getFieldNames().indexOf( columnName );
             final RexNode expr;

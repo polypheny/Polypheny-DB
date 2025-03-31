@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.webui;
 
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
@@ -62,7 +63,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.servlet.MultipartConfigElement;
@@ -74,8 +74,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.websocket.api.Session;
-import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSettingDirectory;
 import org.polypheny.db.adapter.AbstractAdapterSettingString;
@@ -89,14 +87,8 @@ import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
@@ -121,11 +113,9 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.NameGenerator;
 import org.polypheny.db.catalog.logistic.PartitionType;
-import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
@@ -149,6 +139,7 @@ import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionFunctionInfo;
@@ -205,7 +196,6 @@ import org.polypheny.db.webui.models.catalog.AdapterModel;
 import org.polypheny.db.webui.models.catalog.PolyTypeModel;
 import org.polypheny.db.webui.models.catalog.SnapshotModel;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
-import org.polypheny.db.webui.models.requests.AlgRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
@@ -213,6 +203,7 @@ import org.polypheny.db.webui.models.requests.ConstraintRequest;
 import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
+import org.polypheny.db.webui.models.requests.PolyAlgRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.RelationalResult.RelationalResultBuilder;
@@ -353,12 +344,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         try {
             transaction.commit();
         } catch ( TransactionException e ) {
-            log.error( "Caught exception while committing transaction", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException transactionException ) {
-                log.error( "Exception while rollback", transactionException );
-            }
+            transaction.rollback( "Caught exception while committing transaction. " + e );
         }
         return resultBuilder.build();
     }
@@ -1250,7 +1236,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
 
             // change default value
-            if ( oldColumn.defaultValue == null || newColumn.defaultValue == null || !oldColumn.defaultValue.equals( newColumn.defaultValue ) ) {
+            if ( !Objects.equals( oldColumn.defaultValue, newColumn.defaultValue ) ) {
                 String query;
                 if ( newColumn.defaultValue == null ) {
                     query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" DROP DEFAULT", tableId, newColumn.name );
@@ -1298,9 +1284,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .transactionManager( transactionManager )
                             .build(), UIRequest.builder().build() ).get( 0 );
             ctx.json( result );
+            if ( result.error != null ) {
+                break;
+            }
         }
-
-
     }
 
 
@@ -1679,7 +1666,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
 
         if ( table.entityType == EntityType.VIEW ) {
-            ImmutableMap<Long, List<Long>> underlyingTableOriginal = table.unwrap( LogicalView.class ).orElseThrow().underlyingTables;
+            ImmutableMap<Long, List<Long>> underlyingTableOriginal = table.unwrapOrThrow( LogicalView.class ).underlyingTables;
             Map<String, List<String>> underlyingTable = new HashMap<>();
             for ( Entry<Long, List<Long>> entry : underlyingTableOriginal.entrySet() ) {
                 List<String> columns = new ArrayList<>();
@@ -1705,7 +1692,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     private PlacementModel getPlacements( final IndexModel index ) {
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        Snapshot snapshot = Catalog.snapshot();
 
         LogicalTable table = Catalog.snapshot().rel().getTable( index.entityId ).orElseThrow();
         PlacementModel p = new PlacementModel( snapshot.alloc().getFromLogical( table.id ).size() > 1, snapshot.alloc().getPartitionGroupNames( table.id ), table.entityType );
@@ -1832,9 +1819,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         // Check whether the selected partition function supports the selected partition column
         LogicalColumn partitionColumn;
 
-        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( request.schemaName ).orElseThrow();
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( request.schemaName ).orElseThrow();
 
-        partitionColumn = Catalog.getInstance().getSnapshot().rel().getColumn( namespace.id, request.tableName, request.column ).orElseThrow();
+        partitionColumn = Catalog.snapshot().rel().getColumn( namespace.id, request.tableName, request.column ).orElseThrow();
 
         if ( !partitionManager.supportsColumnOfType( partitionColumn.type ) ) {
             ctx.json( new PartitionFunctionModel( "The partition function " + request.method + " does not support columns of type " + partitionColumn.type ) );
@@ -2033,12 +2020,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             transaction.createStatement().getQueryProcessor().resetCaches();
             transaction.commit();
         } catch ( TransactionException e ) {
-            try {
-                transaction.rollback();
-            } catch ( TransactionException transactionException ) {
-                log.error( "Exception while rollback", transactionException );
+            String error = "Error while resetting caches: " + e.getMessage();
+            if ( transaction != null ) {
+                transaction.rollback( error );
             }
-            ctx.json( RelationalResult.builder().error( "Error while resetting caches: " + e.getMessage() ).build() );
+
+            ctx.json( RelationalResult.builder().error( error ).build() );
             return;
         }
 
@@ -2373,205 +2360,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    // helper for relAlg materialized View
-    private TimeUnit getFreshnessType( String freshnessId ) {
-        return switch ( freshnessId ) {
-            case "min", "minutes" -> TimeUnit.MINUTES;
-            case "hours" -> TimeUnit.HOURS;
-            case "sec", "seconds" -> TimeUnit.SECONDS;
-            case "days", "day" -> TimeUnit.DAYS;
-            case "millisec", "milliseconds" -> TimeUnit.MILLISECONDS;
-            default -> TimeUnit.MINUTES;
-        };
-    }
-
-
-    /**
-     * Execute a logical plan coming from the Web-Ui plan builder
-     */
-    RelationalResult executeAlg( final AlgRequest request, Session session ) {
-        Transaction transaction = getTransaction( request.analyze, request.useCache, this );
-        transaction.getQueryAnalyzer().setSession( session );
-
-        Statement statement = transaction.createStatement();
-        long executionTime = 0;
-        long temp = 0;
-
-        InformationManager queryAnalyzer = transaction.getQueryAnalyzer().observe( this );
-
-        AlgNode result;
-        try {
-            temp = System.nanoTime();
-            result = QueryPlanBuilder.buildFromTree( request.topNode, statement );
-        } catch ( Exception e ) {
-            log.error( "Caught exception while building the plan builder tree", e );
-            return RelationalResult.builder().error( e.getMessage() ).build();
-        }
-
-        // Wrap {@link AlgNode} into a AlgRoot
-        final AlgDataType rowType = result.getTupleType();
-        final List<Pair<Integer, String>> fields = Pair.zip( IntStream.range( 0, rowType.getFieldCount() ).boxed().toList(), rowType.getFieldNames() );
-        final AlgCollation collation =
-                result instanceof Sort
-                        ? ((Sort) result).collation
-                        : AlgCollations.EMPTY;
-        AlgRoot root = new AlgRoot( result, result.getTupleType(), Kind.SELECT, fields, collation );
-
-        // Prepare
-        PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( root, true );
-
-        if ( request.createView ) {
-
-            String viewName = request.viewName;
-            boolean replace = false;
-            String viewType;
-
-            if ( request.freshness != null ) {
-                viewType = "Materialized View";
-                DataStore<?> store = AdapterManager.getInstance().getStore( request.store ).orElseThrow();
-                List<DataStore<?>> stores = new ArrayList<>();
-                stores.add( store );
-
-                PlacementType placementType = PlacementType.MANUAL;
-
-                List<String> columns = new ArrayList<>();
-                root.alg.getTupleType().getFields().forEach( f -> columns.add( f.getName() ) );
-
-                // Default Namespace
-                long namespaceId = transaction.getDefaultNamespace().id;
-
-                MaterializedCriteria materializedCriteria;
-                if ( request.freshness.toUpperCase().equalsIgnoreCase( CriteriaType.INTERVAL.toString() ) ) {
-                    materializedCriteria = new MaterializedCriteria( CriteriaType.INTERVAL, Integer.parseInt( request.interval ), getFreshnessType( request.timeUnit ) );
-                } else if ( request.freshness.toUpperCase().equalsIgnoreCase( CriteriaType.UPDATE.toString() ) ) {
-                    materializedCriteria = new MaterializedCriteria( CriteriaType.UPDATE, Integer.parseInt( request.interval ) );
-                } else if ( request.freshness.toUpperCase().equalsIgnoreCase( CriteriaType.MANUAL.toString() ) ) {
-                    materializedCriteria = new MaterializedCriteria( CriteriaType.MANUAL );
-                } else {
-                    materializedCriteria = new MaterializedCriteria();
-                }
-
-                Gson gson = new Gson();
-
-                DdlManager.getInstance().createMaterializedView(
-                        viewName,
-                        namespaceId,
-                        root,
-                        replace,
-                        statement,
-                        stores,
-                        placementType,
-                        columns,
-                        materializedCriteria,
-                        gson.toJson( request.topNode ),
-                        QueryLanguage.from( "rel" ),
-                        false,
-                        false
-                );
-            } else {
-                viewType = "View";
-                List<DataStore<?>> store = null;
-                PlacementType placementType = PlacementType.AUTOMATIC;
-
-                List<String> columns = new ArrayList<>();
-                root.alg.getTupleType().getFields().forEach( f -> columns.add( f.getName() ) );
-
-                // Default Namespace
-                long namespaceId = transaction.getDefaultNamespace().id;
-
-                Gson gson = new Gson();
-
-                DdlManager.getInstance().createView(
-                        viewName,
-                        namespaceId,
-                        root.alg,
-                        root.collation,
-                        replace,
-                        statement,
-                        placementType,
-                        columns,
-                        gson.toJson( request.topNode ),
-                        QueryLanguage.from( "rel" )
-                );
-            }
-            try {
-                transaction.commit();
-            } catch ( TransactionException e ) {
-                log.error( "Caught exception while creating View from Planbuilder.", e );
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException transactionException ) {
-                    log.error( "Exception while rollback", transactionException );
-                }
-                throw new GenericRuntimeException( e );
-            }
-
-            return RelationalResult.builder().query( "Created " + viewType + " \"" + viewName + "\" from logical query plan" ).build();
-        }
-
-        List<List<PolyValue>> rows;
-        try {
-            ResultIterator iterator = polyImplementation.execute( statement, getPageSize() );
-            rows = iterator.getNextBatch();
-            iterator.close();
-        } catch ( Exception e ) {
-            log.error( "Caught exception while iterating the plan builder tree", e );
-            return RelationalResult.builder().error( e.getMessage() ).build();
-        }
-
-        UiColumnDefinition[] header = new UiColumnDefinition[polyImplementation.getTupleType().getFieldCount()];
-        int counter = 0;
-        for ( AlgDataTypeField col : polyImplementation.getTupleType().getFields() ) {
-            header[counter++] = UiColumnDefinition.builder()
-                    .name( col.getName() )
-                    .dataType( col.getType().getFullTypeString() )
-                    .nullable( col.getType().isNullable() )
-                    .precision( col.getType().getPrecision() ).build();
-        }
-
-        List<String[]> data = LanguageCrud.computeResultData( rows, List.of( header ), statement.getTransaction() );
-
-        try {
-            executionTime += System.nanoTime() - temp;
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception while committing the plan builder tree", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException transactionException ) {
-                log.error( "Exception while rollback", transactionException );
-            }
-            throw new GenericRuntimeException( e );
-        }
-        RelationalResult finalResult = RelationalResult.builder()
-                .header( header )
-                .data( data.toArray( new String[0][] ) )
-                .xid( transaction.getXid().toString() )
-                .query( "Execute logical query plan" )
-                .build();
-
-        if ( queryAnalyzer != null ) {
-            InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
-            InformationGroup g1 = new InformationGroup( p1, "Execution time" );
-            InformationText text;
-            if ( executionTime < 1e4 ) {
-                text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
-            } else {
-                long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
-                // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
-                DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
-                String durationText = df.format( new Date( millis ) );
-                text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
-            }
-            queryAnalyzer.addPage( p1 );
-            queryAnalyzer.addGroup( g1 );
-            queryAnalyzer.registerInformation( text );
-        }
-
-        return finalResult;
-    }
-
-
     /**
      * Create or drop a namespace
      */
@@ -2820,6 +2608,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         ctx.result( "" );
     }
 
+
+    void getCatalog( final Context ctx ) {
+        // Assigning the result to a variable causes an error when the switch expression is not exhaustive
+        Context ignore = switch ( Catalog.mode ) {
+            case PRODUCTION -> ctx.status( HttpCode.FORBIDDEN ).result( "Forbidden" );
+            case DEVELOPMENT, BENCHMARK, TEST -> ctx.json( Catalog.getInstance().getJson() );
+        };
+    }
+
     // -----------------------------------------------------------------------
     //                                Helper
     // -----------------------------------------------------------------------
@@ -2935,6 +2732,29 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    public void getPolyAlgRegistry( Context ctx ) {
+        ctx.json( PolyAlgRegistry.serialize() );
+    }
+
+
+    /**
+     * @return a serialized version of the plan built from the given polyAlgRequest
+     * @throws NodeParseException if the parser is not able to construct the intermediary PolyAlgNode tree
+     * @throws RuntimeException if polyAlg cannot be parsed into a valid AlgNode tree
+     */
+    public void buildPlanFromPolyAlg( final Context ctx ) {
+        PolyAlgRequest request = ctx.bodyAsClass( PolyAlgRequest.class );
+        try {
+            AlgNode node = PolyPlanBuilder.buildFromPolyAlg( request.polyAlg, request.planType ).alg;
+            ctx.json( node.serializePolyAlgebra( new ObjectMapper() ) );
+        } catch ( Exception e ) {
+            //e.printStackTrace();
+            ctx.json( Map.of( "errorMsg", e.getMessage() ) );
+            ctx.status( 400 );
+        }
+    }
+
+
     void createDockerInstance( final Context ctx ) {
         try {
             CreateDockerRequest req = ctx.bodyAsClass( CreateDockerRequest.class );
@@ -2949,9 +2769,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             );
 
             ctx.json( new CreateDockerResponse( res.orElse( null ), DockerManager.getInstance().getDockerInstancesMap() ) );
-        } catch ( DockerUserException e ) {
+        } catch (
+                DockerUserException e ) {
             ctx.status( e.getStatus() ).result( e.getMessage() );
         }
+
+
     }
 
 

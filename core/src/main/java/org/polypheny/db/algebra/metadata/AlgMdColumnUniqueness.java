@@ -154,12 +154,9 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
 
 
     public Boolean areColumnsUnique( Correlate alg, AlgMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls ) {
-        switch ( alg.getJoinType() ) {
-            case ANTI:
-            case SEMI:
-                return mq.areColumnsUnique( alg.getLeft(), columns, ignoreNulls );
-            case LEFT:
-            case INNER:
+        return switch ( alg.getJoinType() ) {
+            case ANTI, SEMI -> mq.areColumnsUnique( alg.getLeft(), columns, ignoreNulls );
+            case LEFT, INNER -> {
                 final Pair<ImmutableBitSet, ImmutableBitSet> leftAndRightColumns = splitLeftAndRightColumns( alg.getLeft().getTupleType().getFieldCount(), columns );
                 final ImmutableBitSet leftColumns = leftAndRightColumns.left;
                 final ImmutableBitSet rightColumns = leftAndRightColumns.right;
@@ -170,16 +167,15 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
                     Boolean leftUnique = mq.areColumnsUnique( left, leftColumns, ignoreNulls );
                     Boolean rightUnique = mq.areColumnsUnique( right, rightColumns, ignoreNulls );
                     if ( leftUnique == null || rightUnique == null ) {
-                        return null;
+                        yield null;
                     } else {
-                        return leftUnique && rightUnique;
+                        yield leftUnique && rightUnique;
                     }
                 } else {
-                    return null;
+                    yield null;
                 }
-            default:
-                throw new IllegalStateException( "Unknown join type " + alg.getJoinType() + " for correlate relation " + alg );
-        }
+            }
+        };
     }
 
 

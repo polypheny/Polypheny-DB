@@ -19,6 +19,9 @@ package org.polypheny.db.routing;
 import java.util.List;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
+import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
@@ -39,11 +42,11 @@ public interface DmlRouter {
     /**
      * Routes conditional executes and directly returns a RelNode.
      */
-    AlgNode handleConditionalExecute( AlgNode node, RoutingContext context );
+    LogicalConditionalExecute handleConditionalExecute( LogicalConditionalExecute node, RoutingContext context );
 
-    AlgNode handleConstraintEnforcer( AlgNode alg, RoutingContext context );
+    LogicalConstraintEnforcer handleConstraintEnforcer( LogicalConstraintEnforcer alg, RoutingContext context );
 
-    AlgNode handleBatchIterator( AlgNode alg, RoutingContext context );
+    LogicalBatchIterator handleBatchIterator( LogicalBatchIterator alg, RoutingContext context );
 
     AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements );
 

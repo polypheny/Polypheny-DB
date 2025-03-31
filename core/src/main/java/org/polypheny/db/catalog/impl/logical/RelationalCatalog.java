@@ -16,9 +16,11 @@
 
 package org.polypheny.db.catalog.impl.logical;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeClass;
 import java.beans.PropertyChangeSupport;
 import java.sql.Timestamp;
 import java.util.HashSet;
@@ -74,25 +76,32 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Serialize
+    @JsonProperty
     public LogicalNamespace logicalNamespace;
 
     @Serialize
-    public Map<Long, LogicalTable> tables;
+    @JsonProperty
+    public Map<Long, @SerializeClass(subclasses = { LogicalView.class, LogicalTable.class, LogicalMaterializedView.class }) LogicalTable> tables;
 
     @Serialize
+    @JsonProperty
     public Map<Long, LogicalColumn> columns;
 
     public Map<Long, AlgNode> nodes;
+    public Map<Long, AlgCollation> collations;
 
 
     @Serialize
+    @JsonProperty
     public Map<Long, LogicalIndex> indexes;
 
     // while keys "belong" to a specific table, they can reference other namespaces, atm they are place here, might change later
     @Serialize
+    @JsonProperty
     public Map<Long, LogicalKey> keys;
 
     @Serialize
+    @JsonProperty
     public Map<Long, LogicalConstraint> constraints;
 
     Set<Long> tablesFlaggedForDeletion = new HashSet<>();
@@ -120,6 +129,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         this.keys = new ConcurrentHashMap<>( keys );
         this.constraints = new ConcurrentHashMap<>( constraints );
         this.nodes = new ConcurrentHashMap<>();
+        this.collations = new ConcurrentHashMap<>();
         listeners.addPropertyChangeListener( Catalog.getInstance().getChangeListener() );
     }
 
@@ -155,10 +165,11 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     public LogicalView addView( String name, long namespaceId, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, List<Long> connectedViews, AlgDataType fieldList, String query, QueryLanguage language ) {
         long id = idBuilder.getNewLogicalId();
 
-        LogicalView view = new LogicalView( id, name, namespaceId, EntityType.VIEW, query, algCollation, underlyingTables, language );
+        LogicalView view = new LogicalView( id, name, namespaceId, EntityType.VIEW, query, underlyingTables, language );
 
         tables.put( id, view );
         nodes.put( id, definition );
+        collations.put( id, algCollation );
         change( CatalogEvent.VIEW_CREATED, null, id );
         return view;
     }
@@ -173,7 +184,6 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
                 name,
                 namespaceId,
                 query,
-                algCollation,
                 underlyingTables,
                 language,
                 materializedCriteria,
@@ -182,6 +192,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
         tables.put( id, materializedViewTable );
         nodes.put( id, definition );
+        collations.put( id, algCollation );
         change( CatalogEvent.MATERIALIZED_VIEW_CREATED, null, id );
         return materializedViewTable;
     }
@@ -314,7 +325,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
         }
 
-        columns.put( columnId, columns.get( columnId ).toBuilder().type( type ).length( length ).scale( scale ).dimension( dimension ).cardinality( cardinality ).build() );
+        columns.put( columnId, columns.get( columnId ).toBuilder().type( type ).collectionsType( collectionsType ).length( length ).scale( scale ).dimension( dimension ).cardinality( cardinality ).build() );
         change( CatalogEvent.LOGICAL_REL_FIELD_TYPE_CHANGED, columnId, type );
     }
 
@@ -440,7 +451,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         }
 
         LogicalTable table = tables.get( tableId );
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        Snapshot snapshot = Catalog.snapshot();
         List<LogicalKey> childKeys = snapshot.rel().getTableKeys( referencesTableId );
 
         for ( LogicalKey refKey : childKeys ) {
@@ -580,6 +591,12 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Override
     public boolean isTableFlaggedForDeletion( long tableId ) {
         return tablesFlaggedForDeletion.contains( tableId );
+    }
+
+
+    public void setNodeAndCollation( long id, AlgNode node, AlgCollation collation ) {
+        this.nodes.put( id, node );
+        this.collations.put( id, collation );
     }
 
 }

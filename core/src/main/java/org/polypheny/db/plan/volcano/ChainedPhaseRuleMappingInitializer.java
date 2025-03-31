@@ -74,5 +74,5 @@ public abstract class ChainedPhaseRuleMappingInitializer implements VolcanoPlann
      * @see VolcanoPlannerPhaseRuleMappingInitializer
      */
     public abstract void chainedInitialize( Map<VolcanoPlannerPhase, Set<String>> phaseRuleMap );
-}
 
+}

@@ -78,11 +78,9 @@ public class SqlCountAggFunction extends SqlAggFunction implements CountAggFunct
     }
 
 
-
     @Override
     public FunctionType getFunctionType() {
         return FunctionType.COUNT;
     }
 
 }
-

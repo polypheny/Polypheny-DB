@@ -120,7 +120,7 @@ public class ScanNode implements Node {
 
         final Enumerable<Row<PolyValue>> rowEnumerable;
         if ( elementType instanceof Class<?> type ) {
-            final Queryable<PolyValue[]> queryable = Schemas.queryable( root, List.of( Catalog.getInstance().getSnapshot().getNamespace( alg.entity.namespaceId ).orElseThrow().name, alg.entity.name ) );
+            final Queryable<PolyValue[]> queryable = Schemas.queryable( root, List.of( Catalog.snapshot().getNamespace( alg.entity.namespaceId ).orElseThrow().name, alg.entity.name ) );
             ImmutableList.Builder<Field> fieldBuilder = ImmutableList.builder();
             for ( Field field : type.getFields() ) {
                 if ( Modifier.isPublic( field.getModifiers() ) && !Modifier.isStatic( field.getModifiers() ) ) {
@@ -141,7 +141,7 @@ public class ScanNode implements Node {
                 return new Row<>( values, PolyValue.class );
             } );
         } else {
-            rowEnumerable = Schemas.queryableRow( root, Object.class, List.of( Catalog.getInstance().getSnapshot().getNamespace( alg.entity.namespaceId ).orElseThrow().name, alg.getEntity().name ) );
+            rowEnumerable = Schemas.queryableRow( root, Object.class, List.of( Catalog.snapshot().getNamespace( alg.entity.namespaceId ).orElseThrow().name, alg.getEntity().name ) );
         }
         return createEnumerable( compiler, alg, rowEnumerable, null, filters, projects );
     }

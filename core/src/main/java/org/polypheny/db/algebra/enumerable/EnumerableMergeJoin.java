@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,10 +35,10 @@ package org.polypheny.db.algebra.enumerable;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -58,15 +58,18 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.IntArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 
 
 /**
@@ -81,7 +84,7 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
     }
 
 
-    public static EnumerableMergeJoin create( AlgNode left, AlgNode right, RexLiteral condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, JoinAlgType joinType ) throws InvalidAlgException {
+    public static EnumerableMergeJoin create( AlgNode left, AlgNode right, RexNode condition, ImmutableList<Integer> leftKeys, ImmutableList<Integer> rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
         final AlgCluster cluster = right.getCluster();
         AlgTraitSet traitSet = cluster.traitSet();
         if ( traitSet.isEnabled( AlgCollationTraitDef.INSTANCE ) ) {
@@ -89,7 +92,19 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
             final List<AlgCollation> collations = AlgMdCollation.mergeJoin( mq, left, right, leftKeys, rightKeys );
             traitSet = traitSet.replace( collations );
         }
-        return new EnumerableMergeJoin( cluster, traitSet, left, right, condition, leftKeys, rightKeys, ImmutableSet.of(), joinType );
+        return new EnumerableMergeJoin( cluster, traitSet, left, right, condition, leftKeys, rightKeys, variablesSet, joinType );
+    }
+
+
+    public static EnumerableMergeJoin create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        Triple<RexNode, Set<CorrelationId>, JoinAlgType> extracted = extractArgs( args );
+        ImmutableList<Integer> leftKeys = ImmutableList.copyOf( args.getListArg( "leftKeys", IntArg.class ).map( IntArg::getArg ) );
+        ImmutableList<Integer> rightKeys = ImmutableList.copyOf( args.getListArg( "rightKeys", IntArg.class ).map( IntArg::getArg ) );
+        try {
+            return create( children.get( 0 ), children.get( 1 ), extracted.left, leftKeys, rightKeys, extracted.middle, extracted.right );
+        } catch ( InvalidAlgException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
@@ -111,8 +126,11 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
         // We assume that the inputs are sorted. The price of sorting them has already been paid. The cost of the join is therefore proportional to the input and output size.
         final double rightRowCount = right.estimateTupleCount( mq );
         final double leftRowCount = left.estimateTupleCount( mq );
-        final double rowCount = mq.getTupleCount( this );
-        final double d = leftRowCount + rightRowCount + rowCount;
+        Optional<Double> rowCount = mq.getTupleCount( this );
+        if ( rowCount.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+        final double d = leftRowCount + rightRowCount + rowCount.get();
         return planner.getCostFactory().makeCost( d, 0, 0 );
     }
 
@@ -151,6 +169,14 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
                                         EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType(), rightResult.physType() ) ),
                                         Expressions.constant( joinType.generatesNullsOnLeft() ),
                                         Expressions.constant( joinType.generatesNullsOnRight() ) ) ) ).toBlock() );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = super.bindArguments();
+        return args.put( "leftKeys", new ListArg<>( leftKeys, IntArg::new ) )
+                .put( "rightKeys", new ListArg<>( rightKeys, IntArg::new ) );
     }
 
 }

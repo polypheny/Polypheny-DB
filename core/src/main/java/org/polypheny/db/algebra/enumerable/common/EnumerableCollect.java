@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.enumerable.common;
 
 
+import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -28,6 +29,8 @@ import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
@@ -42,6 +45,12 @@ public class EnumerableCollect extends Collect implements EnumerableAlg {
         super( cluster, traitSet, child, fieldName );
         assert getConvention() instanceof EnumerableConvention;
         assert getConvention() == child.getConvention();
+    }
+
+
+    public static EnumerableCollect create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        String fieldName = args.getArg( "field", StringArg.class ).getArg();
+        return new EnumerableCollect( cluster, children.get( 0 ).getTraitSet(), children.get( 0 ), fieldName );
     }
 
 
@@ -63,6 +72,13 @@ public class EnumerableCollect extends Collect implements EnumerableAlg {
 
         builder.add( Expressions.return_( null, Expressions.call( BuiltInMethod.SINGLETON_ENUMERABLE.method, list_ ) ) );
         return implementor.result( physType, builder.toBlock() );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( "field", new StringArg( fieldName ) );
     }
 
 }

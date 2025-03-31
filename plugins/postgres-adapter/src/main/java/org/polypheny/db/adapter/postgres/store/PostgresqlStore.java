@@ -337,6 +337,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case DECIMAL -> "DECIMAL";
             case VARCHAR -> "VARCHAR";
             case JSON, TEXT -> "TEXT";
+            case GEOMETRY -> "GEOMETRY";
             case DATE -> "DATE";
             case TIME -> "TIME";
             case TIMESTAMP -> "TIMESTAMP";
@@ -421,7 +422,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
     public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
         PhysicalEntity table = entities.get( 0 );
         updateNamespace( table.namespaceName, table.namespaceId );
-        adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrap( PhysicalTable.class ).orElseThrow() ) );
+        adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrapOrThrow( PhysicalTable.class ) ) );
     }
 
 }

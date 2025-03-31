@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,10 @@ package org.polypheny.db.algebra.core;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
@@ -45,6 +47,12 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
+import org.polypheny.db.algebra.polyalg.arguments.CorrelationArg;
+import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.rules.JoinAddRedundantSemiJoinRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
@@ -56,6 +64,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Triple;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.ValidatorUtil;
 
@@ -154,8 +163,11 @@ public abstract class Join extends BiAlg {
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // REVIEW jvs: Just for now...
-        double rowCount = mq.getTupleCount( this );
-        return planner.getCostFactory().makeCost( rowCount, 0, 0 );
+        Optional<Double> rowCount = mq.getTupleCount( this );
+        if ( rowCount.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+        return planner.getCostFactory().makeCost( rowCount.get(), 0, 0 );
     }
 
 
@@ -244,6 +256,25 @@ public abstract class Join extends BiAlg {
                 right.algCompareString() + "$" +
                 (condition != null ? condition.hashCode() : "") + "$" +
                 (joinType != null ? joinType.name() : "") + "&";
+    }
+
+
+    protected static Triple<RexNode, Set<CorrelationId>, JoinAlgType> extractArgs( PolyAlgArgs args ) {
+        RexArg condition = args.getArg( "condition", RexArg.class );
+        EnumArg<JoinAlgType> type = args.getEnumArg( "type", JoinAlgType.class );
+        List<CorrelationId> variables = args.getListArg( "variables", CorrelationArg.class ).map( CorrelationArg::getCorrId );
+        return Triple.of( condition.getNode(), new HashSet<>( variables ), type.getArg() );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+
+        args.put( 0, new RexArg( condition ) )
+                .put( "type", new EnumArg<>( joinType, ParamType.JOIN_TYPE_ENUM ) )
+                .put( "variables", new ListArg<>( variablesSet.asList(), CorrelationArg::new ) );
+        return args;
     }
 
 

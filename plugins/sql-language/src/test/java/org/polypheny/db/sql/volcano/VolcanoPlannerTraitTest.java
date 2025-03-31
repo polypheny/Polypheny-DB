@@ -163,6 +163,7 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
             return traitDef;
         }
 
+
         public boolean equals( Object other ) {
             if ( other == this ) {
                 return true;
@@ -496,6 +497,7 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
             return getOutConvention();
         }
 
+
         @Override
         public void onMatch( AlgOptRuleCall call ) {
             NoneSingleAlg alg = call.alg( 0 );
@@ -506,6 +508,7 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
         }
 
     }
+
 
     /**
      * Planner rule that converts from PHYS to ENUMERABLE convention.

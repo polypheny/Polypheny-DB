@@ -137,6 +137,18 @@ public abstract class RexWindowBound {
 
 
     /**
+     * Returns a string representation of the bound using the given visitor to transform
+     * any RexNode in the process to a string.
+     *
+     * @param visitor the RexVisitor used to transform RexNodes into strings
+     * @return String representation of this bound
+     */
+    public String toString( RexVisitor<String> visitor ) {
+        return toString();
+    }
+
+
+    /**
      * Implements UNBOUNDED PRECEDING/FOLLOWING bound.
      */
     private static class RexWindowBoundUnbounded extends RexWindowBound {
@@ -298,6 +310,15 @@ public abstract class RexWindowBound {
         @Override
         public String toString() {
             return offset.toString() + " " + kind.toString();
+        }
+
+
+        @Override
+        public String toString( RexVisitor<String> visitor ) {
+            if ( visitor == null ) {
+                return toString();
+            }
+            return offset.accept( visitor ) + " " + kind.toString();
         }
 
 

@@ -53,6 +53,7 @@ public class CottontailScan extends RelScan<CottontailEntity> implements Cottont
                 + entity.getLayer() + "&";
     }
 
+
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );

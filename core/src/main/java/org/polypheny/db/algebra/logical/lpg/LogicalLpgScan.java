@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,12 @@ import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgCluster;
@@ -43,8 +47,18 @@ public class LogicalLpgScan extends LpgScan<Entity> implements RelationalTransfo
      * Subclass of {@link LpgScan} not targeted at any particular engine or calling convention.
      */
     public LogicalLpgScan( AlgCluster cluster, AlgTraitSet traitSet, Entity graph, AlgDataType rowType ) {
-        super( cluster, traitSet.replace( ModelTrait.GRAPH ), graph );
+        super( cluster, traitSet.plus( ModelTrait.GRAPH ), graph );
         this.rowType = rowType;
+    }
+
+
+    public static LogicalLpgScan create( AlgCluster cluster, final Entity entity ) {
+        return new LogicalLpgScan( cluster, cluster.traitSet(), entity, entity.getTupleType() );
+    }
+
+
+    public static LogicalLpgScan create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return create( cluster, args.getArg( 0, EntityArg.class ).getEntity() );
     }
 
 
@@ -91,6 +105,15 @@ public class LogicalLpgScan extends LpgScan<Entity> implements RelationalTransfo
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( 0,
+                new EntityArg( entity, Catalog.snapshot(), DataModel.GRAPH ) );
     }
 
 }

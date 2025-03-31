@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ package org.polypheny.db.algebra.core;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import java.util.Optional;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -43,6 +44,8 @@ import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -128,10 +131,13 @@ public abstract class Filter extends SingleAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double dRows = mq.getTupleCount( this );
-        double dCpu = mq.getTupleCount( getInput() );
+        Optional<Double> dRows = mq.getTupleCount( this );
+        Optional<Double> dCpu = mq.getTupleCount( getInput() );
         double dIo = 0;
-        return planner.getCostFactory().makeCost( dRows, dCpu, dIo );
+        if ( dRows.isEmpty() || dCpu.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+        return planner.getCostFactory().makeCost( dRows.get(), dCpu.get(), dIo );
     }
 
 
@@ -152,6 +158,13 @@ public abstract class Filter extends SingleAlg {
         return this.getClass().getSimpleName() + "$" +
                 input.algCompareString() + "$" +
                 (condition != null ? condition.hashCode() : "") + "&";
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( 0, new RexArg( condition ) );
     }
 
 }

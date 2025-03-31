@@ -232,7 +232,7 @@ public class ImmutableBitSetTest {
             assertEquals( list1, listView );
             assertThat( list1.hashCode(), equalTo( listView.hashCode() ) );
 
-            final Set<Integer> set = new HashSet<>( list1 );
+            final Set<Integer> set = Set.copyOf( list1 );
             assertThat( setView.hashCode(), is( set.hashCode() ) );
             assertThat( setView, equalTo( set ) );
 
@@ -577,5 +577,5 @@ public class ImmutableBitSetTest {
         assertThat( emptyBitSet.get( 7, 10000 ), is( ImmutableBitSet.of() ) );
         assertThat( emptyBitSet.get( 73, 10000 ), is( ImmutableBitSet.of() ) );
     }
-}
 
+}

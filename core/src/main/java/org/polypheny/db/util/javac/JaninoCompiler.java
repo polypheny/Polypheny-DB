@@ -163,6 +163,7 @@ public class JaninoCompiler implements JavaCompiler {
         public void setFullClassName( String fullClassName ) {
             this.fullClassName = fullClassName;
         }
+
     }
 
 
@@ -214,6 +215,7 @@ public class JaninoCompiler implements JavaCompiler {
             }
             return map;
         }
-    }
-}
 
+    }
+
+}

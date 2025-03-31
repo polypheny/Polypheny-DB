@@ -71,5 +71,5 @@ public class SourceSorter<TAccumulate, TSource, TSortKey> {
             accumulator1 = accumulatorAdder.apply( accumulator1, source );
         }
     }
-}
 
+}

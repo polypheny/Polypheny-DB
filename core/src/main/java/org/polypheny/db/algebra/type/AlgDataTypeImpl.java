@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
@@ -69,7 +68,7 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
         if ( fields != null ) {
             // Create a defensive copy of the list.
             this.fields = ImmutableList.copyOf( fields );
-            this.ids = fields.stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() );
+            this.ids = fields.stream().map( AlgDataTypeField::getId ).toList();
         } else {
             this.fields = null;
             this.ids = null;
@@ -161,7 +160,10 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
 
     @Override
     public List<String> getFieldNames() {
-        return fields.stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
+        if ( fields == null ) {
+            return ImmutableList.of();
+        }
+        return fields.stream().map( AlgDataTypeField::getName ).toList();
     }
 
 
@@ -172,10 +174,10 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
 
 
     public List<String> getPhysicalFieldNames() {
-        // TODO MV: Is there a more efficient way for doing this?
-        List<String> l = new ArrayList<>();
-        fields.forEach( f -> l.add( f.getPhysicalName() ) );
-        return l;
+        if ( fields == null ) {
+            return ImmutableList.of();
+        }
+        return fields.stream().map( AlgDataTypeField::getPhysicalName ).toList();
     }
 
 
@@ -207,8 +209,7 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
 
     @Override
     public boolean equals( Object obj ) {
-        if ( obj instanceof AlgDataTypeImpl ) {
-            final AlgDataTypeImpl that = (AlgDataTypeImpl) obj;
+        if ( obj instanceof AlgDataTypeImpl that ) {
             return this.digest.equals( that.digest );
         }
         return false;

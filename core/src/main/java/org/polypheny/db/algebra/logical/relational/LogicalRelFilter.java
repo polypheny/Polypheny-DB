@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ package org.polypheny.db.algebra.logical.relational;
 
 
 import com.google.common.collect.ImmutableSet;
+import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
@@ -48,6 +49,10 @@ import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.CorrelationArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -102,6 +107,19 @@ public final class LogicalRelFilter extends Filter implements RelAlg {
     }
 
 
+    public static LogicalRelFilter create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        RexArg condition = args.getArg( "condition", RexArg.class );
+        List<CorrelationId> variables = args.getListArg( "variables", CorrelationArg.class ).map( CorrelationArg::getCorrId );
+        return create( children.get( 0 ), condition.getNode(), ImmutableSet.copyOf( variables ) );
+    }
+
+
+    @Override
+    public ImmutableSet<CorrelationId> getVariablesSet() {
+        return variablesSet;
+    }
+
+
     @Override
     public LogicalRelFilter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
@@ -120,4 +138,12 @@ public final class LogicalRelFilter extends Filter implements RelAlg {
         return super.explainTerms( pw );
     }
 
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = super.bindArguments();
+        return args.put( "variables", new ListArg<>( variablesSet.asList(), CorrelationArg::new ) );
+    }
+
 }
+

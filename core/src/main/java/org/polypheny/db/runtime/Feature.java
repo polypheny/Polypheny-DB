@@ -46,5 +46,5 @@ public class Feature extends Resources.ExInstWithCause<PolyphenyDbContextExcepti
     public Feature( String base, Locale locale, Method method, Object... args ) {
         super( base, locale, method, args );
     }
-}
 
+}

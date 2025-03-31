@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity.logical;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
@@ -25,7 +26,6 @@ import java.util.Comparator;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
@@ -51,6 +51,7 @@ public class LogicalTable extends LogicalEntity {
 
     @Serialize
     @SerializeNullable
+    @JsonProperty
     public Long primaryKey;
 
 
@@ -74,7 +75,7 @@ public class LogicalTable extends LogicalEntity {
     public AlgDataType getTupleType() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-        for ( LogicalColumn column : Catalog.getInstance().getSnapshot().rel().getColumns( id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
+        for ( LogicalColumn column : Catalog.snapshot().rel().getColumns( id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             fieldInfo.add( column.id, column.name, null, sqlType ).nullable( column.nullable );
         }
@@ -95,7 +96,7 @@ public class LogicalTable extends LogicalEntity {
 
 
     public List<LogicalColumn> getColumns() {
-        return Catalog.getInstance().getSnapshot().rel().getColumns( id );
+        return Catalog.snapshot().rel().getColumns( id );
     }
 
 
@@ -111,30 +112,12 @@ public class LogicalTable extends LogicalEntity {
 
     @Override
     public String getNamespaceName() {
-        return Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElseThrow().name;
+        return Catalog.snapshot().getNamespace( namespaceId ).orElseThrow().name;
     }
 
 
     public List<Long> getConstraintIds() {
         return List.of();
-    }
-
-
-    @RequiredArgsConstructor
-    public static class PrimitiveCatalogTable {
-
-        public final String tableCat;
-        public final String tableSchem;
-        public final String tableName;
-        public final String tableType;
-        public final String remarks;
-        public final String typeCat;
-        public final String typeSchem;
-        public final String typeName;
-        public final String selfReferencingColName;
-        public final String refGeneration;
-        public final String owner;
-
     }
 
 

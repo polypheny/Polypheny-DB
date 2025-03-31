@@ -66,13 +66,15 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
     SqlNodeList columns;
     @Getter
     SqlNode query;
-    @Nullable List<SqlIdentifier> store;
-    @Nullable String freshnessType;
+    @Nullable
+    List<SqlIdentifier> store;
+    @Nullable
+    String freshnessType;
     Integer freshnessTime;
     SqlIdentifier freshnessId;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE MATERIALIZED VIEW", Kind.CREATE_MATERIALIZED_VIEW );
-    Snapshot snapshot = Catalog.getInstance().getSnapshot();
+    Snapshot snapshot = Catalog.snapshot();
 
 
     /**

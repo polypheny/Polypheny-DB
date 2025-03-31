@@ -24,11 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter;
@@ -51,7 +49,6 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.RunMode;
 
 public abstract class Catalog implements ExtensionPoint {
@@ -109,13 +106,9 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void change();
 
-    public abstract void executeCommitActions();
-
-    public abstract void clearCommitActions();
+    public abstract String getJson();
 
     public abstract void commit();
-
-    public abstract Pair<@NotNull Boolean, @Nullable String> checkIntegrity();
 
     public abstract void rollback();
 
@@ -258,11 +251,6 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract Snapshot getSnapshot();
 
 
-    public Snapshot getSnapshot( long id ) {
-        return snapshot();
-    }
-
-
     public static Snapshot snapshot() {
         return INSTANCE.getSnapshot();
     }
@@ -284,10 +272,5 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public abstract void restore( Transaction transaction );
-
-
-    public abstract void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description );
-
-    public abstract void attachCommitAction( Runnable action );
 
 }

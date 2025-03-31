@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.entity.allocation;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import lombok.Value;
@@ -25,12 +26,16 @@ import org.polypheny.db.catalog.entity.PolyObject;
 public class AllocationPlacement implements PolyObject {
 
     @Serialize
+    @JsonProperty
     public long id;
     @Serialize
+    @JsonProperty
     public long adapterId;
     @Serialize
+    @JsonProperty
     public long namespaceId;
     @Serialize
+    @JsonProperty
     public long logicalEntityId;
 
 

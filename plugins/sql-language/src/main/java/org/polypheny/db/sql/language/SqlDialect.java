@@ -18,14 +18,12 @@ package org.polypheny.db.sql.language;
 
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Pattern;
 import lombok.NonNull;
 import lombok.Value;
@@ -50,7 +48,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect;
 import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect.JethroInfo;
@@ -63,6 +60,7 @@ import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.category.PolyBlob;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.temporal.DateTimeUtils;
 import org.polypheny.db.util.temporal.TimeUnit;
 
@@ -81,60 +79,6 @@ public class SqlDialect {
      * Empty context.
      */
     public static final Context EMPTY_CONTEXT = emptyContext();
-
-    /**
-     * Built-in scalar functions and operators common for every dialect.
-     */
-    protected static final Set<Operator> BUILT_IN_OPERATORS_LIST =
-            ImmutableSet.<Operator>builder()
-                    .add( OperatorRegistry.get( OperatorName.ABS ) )
-                    .add( OperatorRegistry.get( OperatorName.ACOS ) )
-                    .add( OperatorRegistry.get( OperatorName.AND ) )
-                    .add( OperatorRegistry.get( OperatorName.ASIN ) )
-                    .add( OperatorRegistry.get( OperatorName.BETWEEN ) )
-                    .add( OperatorRegistry.get( OperatorName.CASE ) )
-                    .add( OperatorRegistry.get( OperatorName.CAST ) )
-                    .add( OperatorRegistry.get( OperatorName.CEIL ) )
-                    .add( OperatorRegistry.get( OperatorName.CHAR_LENGTH ) )
-                    .add( OperatorRegistry.get( OperatorName.CHARACTER_LENGTH ) )
-                    .add( OperatorRegistry.get( OperatorName.COALESCE ) )
-                    .add( OperatorRegistry.get( OperatorName.CONCAT ) )
-                    .add( OperatorRegistry.get( OperatorName.COS ) )
-                    .add( OperatorRegistry.get( OperatorName.COT ) )
-                    .add( OperatorRegistry.get( OperatorName.DIVIDE ) )
-                    .add( OperatorRegistry.get( OperatorName.EQUALS ) )
-                    .add( OperatorRegistry.get( OperatorName.FLOOR ) )
-                    .add( OperatorRegistry.get( OperatorName.GREATER_THAN ) )
-                    .add( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ) )
-                    .add( OperatorRegistry.get( OperatorName.IN ) )
-                    .add( OperatorRegistry.get( OperatorName.IS_NOT_NULL ) )
-                    .add( OperatorRegistry.get( OperatorName.IS_NULL ) )
-                    .add( OperatorRegistry.get( OperatorName.LESS_THAN ) )
-                    .add( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ) )
-                    .add( OperatorRegistry.get( OperatorName.LIKE ) )
-                    .add( OperatorRegistry.get( OperatorName.LN ) )
-                    .add( OperatorRegistry.get( OperatorName.LOG10 ) )
-                    .add( OperatorRegistry.get( OperatorName.MINUS ) )
-                    .add( OperatorRegistry.get( OperatorName.MOD ) )
-                    .add( OperatorRegistry.get( OperatorName.MULTIPLY ) )
-                    .add( OperatorRegistry.get( OperatorName.NOT ) )
-                    .add( OperatorRegistry.get( OperatorName.NOT_BETWEEN ) )
-                    .add( OperatorRegistry.get( OperatorName.NOT_EQUALS ) )
-                    .add( OperatorRegistry.get( OperatorName.NOT_IN ) )
-                    .add( OperatorRegistry.get( OperatorName.NOT_LIKE ) )
-                    .add( OperatorRegistry.get( OperatorName.OR ) )
-                    .add( OperatorRegistry.get( OperatorName.PI ) )
-                    .add( OperatorRegistry.get( OperatorName.PLUS ) )
-                    .add( OperatorRegistry.get( OperatorName.POWER ) )
-                    .add( OperatorRegistry.get( OperatorName.RAND ) )
-                    .add( OperatorRegistry.get( OperatorName.ROUND ) )
-                    .add( OperatorRegistry.get( OperatorName.ROW ) )
-                    .add( OperatorRegistry.get( OperatorName.SIN ) )
-                    .add( OperatorRegistry.get( OperatorName.SQRT ) )
-                    .add( OperatorRegistry.get( OperatorName.SUBSTRING ) )
-                    .add( OperatorRegistry.get( OperatorName.TAN ) )
-                    .build();
-
 
     @NonNull
     String name;
@@ -539,6 +483,11 @@ public class SqlDialect {
                 type = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ).createPolyType( PolyType.VARCHAR, precision );
             }
 
+            if ( List.of( PolyType.JSON, PolyType.NODE, PolyType.GEOMETRY ).contains( type.getPolyType() ) ) {
+                precision = 2024;
+                type = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ).createPolyType( PolyType.VARCHAR, precision );
+            }
+
             switch ( type.getPolyType() ) {
                 case JSON:
                 case VARCHAR:
@@ -731,6 +680,21 @@ public class SqlDialect {
     }
 
 
+    public boolean supportsGeoJson() {
+        return false;
+    }
+
+
+    public boolean supportsPostGIS() {
+        return false;
+    }
+
+
+    public List<OperatorName> supportedGeoFunctions() {
+        return List.of();
+    }
+
+
     public boolean supportsComplexBinary() {
         return true;
     }
@@ -742,6 +706,7 @@ public class SqlDialect {
             case FILE, AUDIO, VIDEO, IMAGE -> Expressions.call( PolyBlob.class, methodName, Expressions.convert_( child, byte[].class ) );
             case TEXT -> Expressions.call( PolyString.class, methodName, Expressions.convert_( child, String.class ) );
             case VARBINARY -> Expressions.call( PolyBinary.class, "fromTypedJson", Expressions.convert_( child, String.class ), Expressions.constant( PolyBinary.class ) );
+            case GEOMETRY -> Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( child, String.class ) );
             default -> child;
         };
 

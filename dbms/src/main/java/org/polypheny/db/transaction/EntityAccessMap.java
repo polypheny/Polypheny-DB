@@ -273,7 +273,7 @@ public class EntityAccessMap {
             if ( p.unwrap( RelModify.class ).isPresent() ) {
                 newAccess = Mode.WRITE_ACCESS;
                 if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-                    extractWriteConstraints( entity.unwrap( LogicalTable.class ).orElseThrow() );
+                    extractWriteConstraints( entity.unwrapOrThrow( LogicalTable.class ) );
                 }
             } else {
                 newAccess = Mode.READ_ACCESS;
@@ -287,7 +287,7 @@ public class EntityAccessMap {
                 relevantAllocations = accessedPartitions.get( p.getEntity().id );
             } else {
                 if ( entity.dataModel == DataModel.RELATIONAL ) {
-                    List<AllocationEntity> allocations = Catalog.getInstance().getSnapshot().alloc().getFromLogical( entity.id );
+                    List<AllocationEntity> allocations = Catalog.snapshot().alloc().getFromLogical( entity.id );
                     relevantAllocations = allocations.stream().map( a -> a.id ).toList();
                 } else {
                     relevantAllocations = List.of();
@@ -344,7 +344,7 @@ public class EntityAccessMap {
         private void extractWriteConstraints( LogicalTable logicalTable ) {
 
             for ( long constraintTable : logicalTable.getConstraintIds() ) {
-                PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( logicalTable.id ).orElseThrow();
+                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( logicalTable.id ).orElseThrow();
                 for ( long constraintPartitionIds : property.partitionIds ) {
 
                     EntityIdentifier id = new EntityIdentifier( constraintTable, constraintPartitionIds, NamespaceLevel.ENTITY_LEVEL );

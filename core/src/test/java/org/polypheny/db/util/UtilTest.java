@@ -808,7 +808,7 @@ public class UtilTest {
         final Set<Integer> set = IntegerIntervalSet.of( s );
         assertEquals( set.size(), ints.length );
         List<Integer> list = new ArrayList<>( set );
-        assertEquals( new HashSet<>( Ints.asList( ints ) ), set );
+        assertEquals( Set.copyOf( Ints.asList( ints ) ), set );
         return list;
     }
 
@@ -980,26 +980,8 @@ public class UtilTest {
     private void checkCompositeMap( String[] beatles, Map<String, Integer> map ) {
         assertThat( 4, equalTo( map.size() ) );
         assertThat( false, equalTo( map.isEmpty() ) );
-        assertThat( map.keySet(), equalTo( (Set<String>) new HashSet<>( Arrays.asList( beatles ) ) ) );
+        assertThat( map.keySet(), equalTo(  Set.copyOf( Arrays.asList( beatles ) ) ) );
         assertThat( ImmutableMultiset.copyOf( map.values() ), equalTo( ImmutableMultiset.copyOf( Arrays.asList( 4, 4, 6, 5 ) ) ) );
-    }
-
-
-    /**
-     * Tests {@link Util#commaList(java.util.List)}.
-     */
-    @Test
-    public void testCommaList() {
-        try {
-            String s = Util.commaList( null );
-            fail( "expected NPE, got " + s );
-        } catch ( NullPointerException e ) {
-            // ok
-        }
-        assertThat( Util.commaList( ImmutableList.of() ), equalTo( "" ) );
-        assertThat( Util.commaList( ImmutableList.of( 1 ) ), equalTo( "1" ) );
-        assertThat( Util.commaList( ImmutableList.of( 2, 3 ) ), equalTo( "2, 3" ) );
-        assertThat( Util.commaList( Arrays.asList( 2, null, 3 ) ), equalTo( "2, null, 3" ) );
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,13 +34,22 @@
 package org.polypheny.db.algebra.logical.relational;
 
 
+import java.util.List;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
+import org.polypheny.db.algebra.AlgDistributions;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.SortExchange;
 import org.polypheny.db.algebra.core.relational.RelAlg;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
+import org.polypheny.db.algebra.polyalg.arguments.CollationArg;
+import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
+import org.polypheny.db.algebra.polyalg.arguments.IntArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -72,9 +81,29 @@ public class LogicalSortExchange extends SortExchange implements RelAlg {
     }
 
 
+    public static LogicalSortExchange create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        ListArg<CollationArg> collations = args.getListArg( "order", CollationArg.class );
+        AlgDistribution.Type type = args.getEnumArg( "distributionType", AlgDistribution.Type.class ).getArg();
+        List<Integer> numbers = args.getListArg( "numbers", IntArg.class ).map( IntArg::getArg );
+        return create( children.get( 0 ),
+                AlgDistributions.getDistribution( type, numbers ),
+                AlgCollations.of( collations.map( CollationArg::getColl ) ) );
+    }
+
+
     @Override
     public SortExchange copy( AlgTraitSet traitSet, AlgNode newInput, AlgDistribution newDistribution, AlgCollation newCollation ) {
         return new LogicalSortExchange( this.getCluster(), traitSet, newInput, newDistribution, newCollation );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+
+        return args.put( "order", new ListArg<>( collation.getFieldCollations(), CollationArg::new ) )
+                .put( "distributionType", new EnumArg<>( distribution.getType(), ParamType.DISTRIBUTION_TYPE_ENUM ) )
+                .put( "numbers", new ListArg<>( distribution.getKeys(), IntArg::new ) );
     }
 
 }

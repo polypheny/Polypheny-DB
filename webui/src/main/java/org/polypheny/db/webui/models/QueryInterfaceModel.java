@@ -39,7 +39,8 @@ public class QueryInterfaceModel {
     public Map<String, String> currentSettings;
     public QueryInterfaceSetting[] availableSettings;
 
-    public QueryInterfaceModel ( final QueryInterface i ) {
+
+    public QueryInterfaceModel( final QueryInterface i ) {
         this.uniqueName = i.getUniqueName();
         this.interfaceType = i.getInterfaceType();
         this.currentSettings = i.getCurrentSettings();

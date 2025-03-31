@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,10 +63,12 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -103,7 +105,7 @@ import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
- * Relational expression representing a relScan of a table in a JDBC data source.
+ * Relational expression representing a scan of a table in a JDBC data source.
  */
 @Slf4j
 public class JdbcToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
@@ -146,6 +148,11 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     protected JdbcToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
+    }
+
+
+    public static AlgNode create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return new JdbcToEnumerableConverter( cluster, children.get( 0 ).getTraitSet().replace( EnumerableConvention.INSTANCE ), children.get( 0 ) );
     }
 
 
@@ -345,7 +352,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     @NonNull
     private static Expression getPreprocessArrayExpression( ParameterExpression resultSet_, int i, SqlDialect dialect, AlgDataType fieldType ) {
-        if ( (dialect.supportsArrays() && (fieldType.unwrap( ArrayType.class ).orElseThrow().getDimension() == 1 || dialect.supportsNestedArrays())) ) {
+        if ( (dialect.supportsArrays() && (fieldType.unwrapOrThrow( ArrayType.class ).getDimension() == 1 || dialect.supportsNestedArrays())) ) {
             ParameterExpression argument = Expressions.parameter( Object.class );
 
             AlgDataType componentType = fieldType.getComponentType();
@@ -429,29 +436,14 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             case VIDEO:
                 poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
                 break;
+            case GEOMETRY:
+                poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
+                break;
             default:
                 log.warn( "potentially unhandled polyValue" );
                 poly = source;
         }
         return poly;
-    }
-
-
-    private Method getMethod( PolyType polyType, boolean nullable, boolean offset ) {
-        return switch ( polyType ) {
-            case ARRAY -> BuiltInMethod.JDBC_DEEP_ARRAY_TO_LIST.method;
-            default -> throw new AssertionError( polyType + ":" + nullable );
-        };
-    }
-
-
-    private Method getMethod2( PolyType polyType ) {
-        return switch ( polyType ) {
-            case DATE -> BuiltInMethod.RESULT_SET_GET_DATE2.method;
-            case TIME -> BuiltInMethod.RESULT_SET_GET_TIME2.method;
-            case TIMESTAMP -> BuiltInMethod.RESULT_SET_GET_TIMESTAMP2.method;
-            default -> throw new AssertionError( polyType );
-        };
     }
 
 

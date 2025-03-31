@@ -49,7 +49,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -124,7 +123,7 @@ public abstract class SetOp extends AbstractAlgNode {
         final List<AlgDataType> inputRowTypes = Lists.transform( inputs, AlgNode::getTupleType );
         final AlgDataType rowType = getCluster().getTypeFactory().leastRestrictive( inputRowTypes );
         if ( rowType == null ) {
-            throw new IllegalArgumentException( "Cannot compute compatible row type for arguments to set op: " + Util.sepList( inputRowTypes, ", " ) );
+            throw new IllegalArgumentException( "Cannot compute compatible row type for arguments to set op: " + String.join( ", ", inputRowTypes.stream().map( Object::toString ).toList() ) );
         }
         return rowType;
     }

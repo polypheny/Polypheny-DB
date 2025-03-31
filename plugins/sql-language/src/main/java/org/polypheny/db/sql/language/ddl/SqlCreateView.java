@@ -64,7 +64,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE VIEW", Kind.CREATE_VIEW );
 
 
-    private final Snapshot snapshot = Catalog.getInstance().getSnapshot();
+    private final Snapshot snapshot = Catalog.snapshot();
 
 
     /**
@@ -112,12 +112,11 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
 
         PlacementType placementType = PlacementType.AUTOMATIC;
 
-        QueryLanguage language = QueryLanguage.from( "sql" );
-        Processor sqlProcessor = statement.getTransaction().getProcessor( language );
+        Processor sqlProcessor = statement.getTransaction().getProcessor( query.getLanguage() );
         AlgRoot algRoot = sqlProcessor.translate( statement,
                 ParsedQueryContext.builder()
-                        .query( query.toString() )
-                        .language( language )
+                        .query( query.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).toString() )
+                        .language( query.getLanguage() )
                         .queryNode(
                                 sqlProcessor.validate(
                                         statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left )

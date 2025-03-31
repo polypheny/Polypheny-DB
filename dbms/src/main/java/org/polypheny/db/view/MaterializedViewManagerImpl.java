@@ -106,7 +106,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     public synchronized Map<Long, MaterializedCriteria> updateMaterializedViewInfo() {
         List<Long> toRemove = new ArrayList<>();
         for ( long id : materializedInfo.keySet() ) {
-            if ( Catalog.getInstance().getSnapshot().getLogicalEntity( id ).isEmpty() ) {
+            if ( Catalog.snapshot().getLogicalEntity( id ).isEmpty() ) {
                 toRemove.add( id );
             }
         }
@@ -213,7 +213,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * @param potentialInteresting id of underlying entity that was updated
      */
     public void materializedUpdate( long potentialInteresting ) {
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        Snapshot snapshot = Catalog.snapshot();
         List<LogicalView> connectedViews = snapshot.rel().getConnectedViews( potentialInteresting );
 
         for ( LogicalView view : connectedViews ) {
@@ -276,7 +276,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void prepareToUpdate( long materializedId ) {
         Catalog catalog = Catalog.getInstance();
-        LogicalTable entity = catalog.getSnapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalTable.class ).orElseThrow() ).orElseThrow();
+        LogicalTable entity = catalog.getSnapshot().getLogicalEntity( materializedId ).flatMap( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
 
         Transaction transaction = getTransactionManager().startTransaction(
                 Catalog.defaultUserId,
@@ -313,7 +313,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         DataMigrator dataMigrator = transaction.getDataMigrator();
         for ( AllocationEntity allocation : transaction.getSnapshot().alloc().getFromLogical( materializedView.id ) ) {
             Statement sourceStatement = transaction.createStatement();
-            prepareSourceAlg( sourceStatement, materializedView.getAlgCollation(), algRoot.alg );
+            prepareSourceAlg( sourceStatement, Catalog.snapshot().rel().getCollationInfo( materializedView.id ), algRoot.alg );
             Statement targetStatement = transaction.createStatement();
 
             if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {
@@ -346,7 +346,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         List<AllocationColumn> columnPlacements = new ArrayList<>();
 
         if ( Catalog.snapshot().getLogicalEntity( materializedId ).isPresent() && materializedInfo.containsKey( materializedId ) ) {
-            LogicalMaterializedView materializedView = Catalog.snapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalMaterializedView.class ).orElseThrow() ).orElseThrow();
+            LogicalMaterializedView materializedView = Catalog.snapshot().getLogicalEntity( materializedId ).flatMap( e -> e.unwrap( LogicalMaterializedView.class ) ).orElseThrow();
 
             Catalog.snapshot().rel().getColumns( materializedId );
 
@@ -380,7 +380,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                     transaction,
                     List.of(),
                     AlgRoot.of( Catalog.snapshot().rel().getNodeInfo( materializedId ), Kind.SELECT ),
-                    Catalog.snapshot().rel().getTable( materializedId ).orElseThrow().unwrap( LogicalMaterializedView.class ).orElseThrow() );
+                    Catalog.snapshot().rel().getTable( materializedId ).orElseThrow().unwrapOrThrow( LogicalMaterializedView.class ) );
         }
     }
 
@@ -390,12 +390,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             // Locks are released within commit
             transaction.commit();
         } catch ( TransactionException e ) {
-            log.error( "Caught exception while executing a query from the console", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
+            transaction.rollback( "Caught exception while executing a query from the console. " + e );
         } finally {
             // Release lock
             LockManager.INSTANCE.unlock( transaction );

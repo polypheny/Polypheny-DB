@@ -2,6 +2,8 @@
 # Generated files
 gen/
 
+# webapp
+webui/src/main/resources/webapp/*
 
 
 # Created by .ignore support plugin (hsz.mobi)

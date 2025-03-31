@@ -144,7 +144,7 @@ public class IndexManager {
 
 
     public void restoreIndexes() throws TransactionException {
-        for ( final LogicalIndex index : Catalog.getInstance().getSnapshot().rel().getIndexes() ) {
+        for ( final LogicalIndex index : Catalog.snapshot().rel().getIndexes() ) {
             if ( index.location < 0 ) {
                 addIndex( index );
             }
@@ -175,7 +175,7 @@ public class IndexManager {
                 method,
                 unique,
                 persistent,
-                Catalog.getInstance().getSnapshot().getNamespace( key.namespaceId ).orElseThrow(),
+                Catalog.snapshot().getNamespace( key.namespaceId ).orElseThrow(),
                 table,
                 key.getFieldNames(),
                 pk.getFieldNames() );

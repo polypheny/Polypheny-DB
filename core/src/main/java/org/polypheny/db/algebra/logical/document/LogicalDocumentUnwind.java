@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.polypheny.db.algebra.logical.document;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentUnwind;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -34,9 +36,21 @@ public class LogicalDocumentUnwind extends DocumentUnwind {
     }
 
 
+    public static LogicalDocumentUnwind create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return create( args.getArg( "path", StringArg.class ).getArg(), children.get( 0 ) );
+    }
+
+
     @Override
     public LogicalDocumentUnwind copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new LogicalDocumentUnwind( inputs.get( 0 ).getCluster(), traitSet, path, inputs.get( 0 ) );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( "path", new StringArg( path ) );
     }
 
 }

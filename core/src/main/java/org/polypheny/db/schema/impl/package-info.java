@@ -1,4 +1,3 @@
-
 /**
  * Utilities to help implement Polypheny-DB's SPIs.
  */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -187,11 +187,6 @@ public class CrossModelFunctions {
     }
 
 
-    public static PolyValue cypherOnlyLabelGraph( PolyValue value, PolyString label ) {
-        return null;
-    }
-
-
     /**
      * Modify operation, which inserts edge properties.
      *
@@ -220,8 +215,8 @@ public class CrossModelFunctions {
     private static void edgeTableInsert( DataContext context, List<Function0<Enumerable<?>>> enumerables, int i, AlgDataType idType, AlgDataType labelType, PolyEdge edge ) {
         context.addParameterValues( 0, idType, Collections.nCopies( edge.labels.size(), edge.id ) );
         context.addParameterValues( 1, labelType, List.of( edge.labels.get( 0 ) ) );
-        context.addParameterValues( 2, idType, List.of( edge.source ) );
-        context.addParameterValues( 3, idType, List.of( edge.target ) );
+        context.addParameterValues( 2, idType, List.of( edge.left ) );
+        context.addParameterValues( 3, idType, List.of( edge.right ) );
 
         // execute all inserts
         drainInserts( enumerables.get( i ), edge.labels.size() );
@@ -340,7 +335,7 @@ public class CrossModelFunctions {
      */
     private static void edgeTableDelete( DataContext context, List<Function0<Enumerable<?>>> enumerables, int enumIndex, AlgDataType idType, AlgDataType labelType, PolyEdge edge ) {
         context.addParameterValues( 0, idType, List.of( edge.id ) );
-        context.addParameterValues( 1, labelType, List.of( edge.labels ) );
+        context.addParameterValues( 1, labelType, List.copyOf( edge.labels ) );
         Enumerator<?> enumerable = enumerables.get( enumIndex ).apply().enumerator();
         enumerable.moveNext();
         context.resetParameterValues();

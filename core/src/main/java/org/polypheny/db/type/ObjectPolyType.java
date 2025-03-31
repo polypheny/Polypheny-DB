@@ -34,12 +34,11 @@
 package org.polypheny.db.type;
 
 
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataTypeComparability;
 import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-
-import java.util.List;
 
 
 /**
@@ -86,4 +85,3 @@ public class ObjectPolyType extends AbstractPolyType {
     }
 
 }
-

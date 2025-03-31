@@ -256,7 +256,7 @@ public class SqlProcessor extends Processor {
 
         if ( oldColumnList != null ) {
             LogicalTable catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
-            DataModel dataModel = Catalog.getInstance().getSnapshot().getNamespace( catalogTable.namespaceId ).orElseThrow().dataModel;
+            DataModel dataModel = Catalog.snapshot().getNamespace( catalogTable.namespaceId ).orElseThrow().dataModel;
 
             catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
 

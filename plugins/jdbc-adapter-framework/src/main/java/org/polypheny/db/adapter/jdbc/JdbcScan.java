@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
@@ -61,8 +63,14 @@ public class JdbcScan extends RelScan<JdbcTable> implements JdbcAlg {
 
 
     public JdbcScan( AlgCluster cluster, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
-        super( cluster, cluster.traitSetOf( jdbcConvention ).replace( ModelTrait.RELATIONAL ), jdbcTable );
+        super( cluster, cluster.traitSetOf( jdbcConvention ).plus( ModelTrait.RELATIONAL ), jdbcTable );
         this.jdbcTable = jdbcTable;
+    }
+
+
+    public static JdbcScan create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        JdbcTable table = (JdbcTable) args.getArg( "entity", EntityArg.class ).getEntity();
+        return new JdbcScan( cluster, table, table.getSchema().getConvention() );
     }
 
 

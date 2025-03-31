@@ -30,10 +30,10 @@ jobs:
                 run: ./gradlew printJavaVersion
             -   name: Assemble
                 timeout-minutes: 60
-                run: ./gradlew assemble
+                run: ./gradlew assemble -PwithoutpullingUi=true
             -   name: Build Plugins
                 timeout-minutes: 60
-                run: ./gradlew assemblePlugins
+                run: ./gradlew assemblePlugins -PwithoutpullingUi=true
             -   name: Execute tests
                 timeout-minutes: 30
-                run: ./gradlew -p plugins test
+                run: ./gradlew -p plugins test -PwithoutpullingUi=true

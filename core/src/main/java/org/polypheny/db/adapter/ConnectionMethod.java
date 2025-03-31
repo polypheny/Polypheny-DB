@@ -23,6 +23,7 @@ public enum ConnectionMethod {
     URL;
 
 
+
     public static ConnectionMethod from( String name ) {
         return ConnectionMethod.valueOf( name.toUpperCase() );
     }

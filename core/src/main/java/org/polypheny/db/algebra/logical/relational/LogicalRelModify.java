@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,15 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.util.Quadruple;
 
 
 /**
@@ -76,6 +79,13 @@ public final class LogicalRelModify extends RelModify<Entity> {
         final AlgCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalRelModify( cluster, traitSet, table, input, operation, updateColumns, sourceExpressions, flattened );
+    }
+
+
+    public static LogicalRelModify create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        EntityArg entity = args.getArg( "table", EntityArg.class );
+        Quadruple<Operation, List<String>, List<? extends RexNode>, Boolean> extracted = extractArgs( args );
+        return create( entity.getEntity(), children.get( 0 ), extracted.a, extracted.b, extracted.c, extracted.d );
     }
 
 

@@ -104,7 +104,6 @@ public class CypherLiteral extends CypherExpression {
 
     @Override
     public PolyValue getComparable() {
-
         return switch ( literalType ) {
             case TRUE -> PolyBoolean.of( true );
             case FALSE -> PolyBoolean.of( false );
@@ -127,16 +126,10 @@ public class CypherLiteral extends CypherExpression {
 
     @Override
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
-        RexNode node;
-        switch ( literalType ) {
-            case TRUE:
-            case FALSE:
-                node = context.rexBuilder.makeLiteral( (Boolean) value );
-                break;
-            case NULL:
-                node = context.rexBuilder.makeLiteral( null, context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), false );
-                break;
-            case LIST:
+        RexNode node = switch ( literalType ) {
+            case TRUE, FALSE -> context.rexBuilder.makeLiteral( (Boolean) value );
+            case NULL -> context.rexBuilder.makeLiteral( null, context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), false );
+            case LIST -> {
                 List<RexNode> list = listValue.stream().map( e -> e.getRex( context, type ).right ).toList();
                 AlgDataType dataType = context.typeFactory.createPolyType( PolyType.ANY );
 
@@ -144,25 +137,13 @@ public class CypherLiteral extends CypherExpression {
                     dataType = list.get( 0 ).getType();
                 }
                 dataType = context.typeFactory.createArrayType( dataType, -1 );
-                node = context.rexBuilder.makeLiteral( PolyList.copyOf( list.stream().map( e -> ((RexLiteral) e).value ).toList() ), dataType, false );
-                break;
-            case MAP:
-            case STAR:
-            case OCTAL:
-            case HEX:
-                throw new UnsupportedOperationException();
-            case STRING:
-                node = context.rexBuilder.makeLiteral( (String) value );
-                break;
-            case DOUBLE:
-                node = context.rexBuilder.makeApproxLiteral( BigDecimal.valueOf( (Double) value ) );
-                break;
-            case DECIMAL:
-                node = context.rexBuilder.makeExactLiteral( BigDecimal.valueOf( (Integer) value ) );
-                break;
-            default:
-                throw new IllegalStateException( "Unexpected value: " + literalType );
-        }
+                yield context.rexBuilder.makeLiteral( PolyList.copyOf( list.stream().map( e -> ((RexLiteral) e).value ).toList() ), dataType, false );
+            }
+            case MAP, STAR, OCTAL, HEX -> throw new UnsupportedOperationException();
+            case STRING -> context.rexBuilder.makeLiteral( (String) value );
+            case DOUBLE -> context.rexBuilder.makeApproxLiteral( BigDecimal.valueOf( (Double) value ) );
+            case DECIMAL -> context.rexBuilder.makeExactLiteral( BigDecimal.valueOf( (Integer) value ) );
+        };
         return Pair.of( null, node );
     }
 

@@ -28,7 +28,6 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AbstractAlgNode;
-import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
@@ -51,11 +50,22 @@ public class LogicalView extends LogicalTable {
     @Serialize
     public ImmutableMap<Long, List<Long>> underlyingTables;
     @Serialize
+    public String languageName;
     public QueryLanguage language;
     @Serialize
-    public AlgCollation algCollation;
-    @Serialize
     public String query;
+
+
+    public LogicalView(
+            long id,
+            String name,
+            long namespaceId,
+            EntityType entityType,
+            String query,
+            Map<Long, List<Long>> underlyingTables,
+            QueryLanguage language ) {
+        this( id, name, namespaceId, entityType, query, underlyingTables, language.serializedName() );
+    }
 
 
     public LogicalView(
@@ -64,9 +74,8 @@ public class LogicalView extends LogicalTable {
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("entityType") EntityType entityType,
             @Deserialize("query") String query,
-            @Deserialize("algCollation") AlgCollation algCollation,
             @Deserialize("underlyingTables") Map<Long, List<Long>> underlyingTables,
-            @Deserialize("language") QueryLanguage language ) {
+            @Deserialize("languageName") String languageName ) {
         super(
                 id,
                 name,
@@ -75,9 +84,9 @@ public class LogicalView extends LogicalTable {
                 null,
                 false );
         this.query = query;
-        this.algCollation = algCollation;
         this.underlyingTables = ImmutableMap.copyOf( underlyingTables );
-        this.language = language;
+        this.languageName = languageName;
+        this.language = QueryLanguage.from( languageName );
     }
 
 
@@ -93,17 +102,17 @@ public class LogicalView extends LogicalTable {
 
 
     public void prepareView( AlgNode viewLogicalRoot, AlgCluster algCluster ) {
-        if ( viewLogicalRoot instanceof AbstractAlgNode ) {
-            ((AbstractAlgNode) viewLogicalRoot).setCluster( algCluster );
+        if ( viewLogicalRoot instanceof AbstractAlgNode algNode ) {
+            algNode.setCluster( algCluster );
         }
-        if ( viewLogicalRoot instanceof BiAlg ) {
-            prepareView( ((BiAlg) viewLogicalRoot).getLeft(), algCluster );
-            prepareView( ((BiAlg) viewLogicalRoot).getRight(), algCluster );
-        } else if ( viewLogicalRoot instanceof SingleAlg ) {
-            prepareView( ((SingleAlg) viewLogicalRoot).getInput(), algCluster );
+        if ( viewLogicalRoot instanceof BiAlg biAlg ) {
+            prepareView( biAlg.getLeft(), algCluster );
+            prepareView( biAlg.getRight(), algCluster );
+        } else if ( viewLogicalRoot instanceof SingleAlg singleAlg ) {
+            prepareView( singleAlg.getInput(), algCluster );
         }
-        if ( viewLogicalRoot instanceof LogicalRelViewScan ) {
-            prepareView( ((LogicalRelViewScan) viewLogicalRoot).getAlgNode(), algCluster );
+        if ( viewLogicalRoot instanceof LogicalRelViewScan logicalRelViewScan ) {
+            prepareView( logicalRelViewScan.getAlgNode(), algCluster );
         }
     }
 

@@ -202,7 +202,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
         parseCorrelTable( e, x );
         if ( input instanceof Aggregate ) {
             final Builder builder;
-            if ( input.unwrap( Aggregate.class ).orElseThrow().getInput() instanceof Project ) {
+            if ( input.unwrapOrThrow( Aggregate.class ).getInput() instanceof Project ) {
                 builder = x.builder( e, true );
                 builder.clauses.add( Clause.HAVING );
             } else {
@@ -273,7 +273,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
 
 
     public Result visit( RelScan<?> e ) {
-        return result( new SqlIdentifier( List.of( e.getEntity().unwrap( LogicalTable.class ).orElseThrow().getNamespaceName(), e.getEntity().name ), ParserPos.ZERO ),
+        return result( new SqlIdentifier( List.of( e.getEntity().unwrapOrThrow( LogicalTable.class ).getNamespaceName(), e.getEntity().name ), ParserPos.ZERO ),
                 ImmutableList.of( Clause.FROM ),
                 e,
                 null );
@@ -430,7 +430,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
         final Context context = aliasContext( pairs, false );
 
         // Target Table Name
-        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getEntity().unwrap( JdbcTable.class ).orElseThrow() );
+        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getEntity().unwrapOrThrow( JdbcTable.class ) );
 
         switch ( modify.getOperation() ) {
             case INSERT: {
@@ -443,7 +443,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
                         sqlTargetTable,
                         sqlSource,
                         physicalIdentifierList(
-                                modify.getEntity().unwrap( JdbcTable.class ).orElseThrow(),
+                                modify.getEntity().unwrapOrThrow( JdbcTable.class ),
                                 modify.getInput().getTupleType().getFieldNames() ) );
                 return result( sqlInsert, ImmutableList.of(), modify, null );
             }
@@ -452,7 +452,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
                 final SqlUpdate sqlUpdate = new SqlUpdate(
                         POS,
                         sqlTargetTable,
-                        physicalIdentifierList( modify.getEntity().unwrap( JdbcTable.class ).orElseThrow(), modify.getUpdateColumns() ),
+                        physicalIdentifierList( modify.getEntity().unwrapOrThrow( JdbcTable.class ), modify.getUpdateColumns() ),
                         exprList( context, modify.getSourceExpressions() ),
                         ((SqlSelect) input.node).getWhere(),
                         input.asSelect(),

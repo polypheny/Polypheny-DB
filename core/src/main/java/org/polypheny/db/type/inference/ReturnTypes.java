@@ -654,5 +654,10 @@ public abstract class ReturnTypes {
         }
     };
 
+    /**
+     * Type-inference strategy whereby the result type of a call is GEOMETRY.
+     */
+    public static final PolyReturnTypeInference GEOMETRY = explicit( PolyType.GEOMETRY );
+
 }
 

@@ -174,11 +174,7 @@ public class SqlLanguageDependent {
 
         manager.createTable( id, "contact", columns, constraints, true, null, null, transaction.createStatement() );
 
-        try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
-        }
+        transaction.commit();
     }
 
 }

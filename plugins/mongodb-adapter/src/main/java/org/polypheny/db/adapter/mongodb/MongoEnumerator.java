@@ -39,6 +39,8 @@ import com.mongodb.client.gridfs.GridFSBucket;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Function;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
@@ -62,6 +64,7 @@ import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -177,7 +180,24 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
                 }
             }
             case BOOLEAN -> PolyBoolean.of( o.asBoolean().getValue() );
-            case TEXT, CHAR, VARCHAR -> PolyString.of( o.asString().getValue() );
+            case TEXT, CHAR, VARCHAR -> {
+                if ( o.isString() ) {
+                    yield PolyString.of( o.asString().getValue() );
+                } else if ( o.isDocument() ) {
+                    BsonDocument doc = o.asDocument();
+                    Set<Entry<String, BsonValue>> entries = doc.entrySet();
+                    if ( entries.size() != 1 ) {
+                        throw new NotImplementedException( "Expected exactly one key in BSON document to string" );
+                    }
+                    Entry<String, BsonValue> s = entries.stream().findFirst().get();
+                    if ( !s.getKey().equals( "$literal" ) ) {
+                        throw new NotImplementedException( String.format( "Expected exactly one key '$literal' not '%s' in BSON document to string", s.getKey() ) );
+                    }
+                    yield PolyString.of( s.getValue().asString().getValue() );
+                } else {
+                    throw new NotImplementedException( String.format( "Cannot convert BSON object of type %s to string", o.getBsonType() ) );
+                }
+            }
             case DECIMAL -> {
                 if ( o.isNumber() ) {
                     yield PolyBigDecimal.of( o.asNumber().doubleValue() );
@@ -204,6 +224,7 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
             case DATE -> PolyDate.of( o.asNumber().longValue() );
             case DOCUMENT -> polyDocumentFromBson( o.asDocument() );
             case ARRAY -> BsonUtil.toPolyValue( o.asArray() );
+            case GEOMETRY -> PolyGeometry.of( o.asString().getValue() );
             default -> throw new NotImplementedException();
         };
 

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.impl.logical;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
@@ -43,9 +44,11 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
     IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Serialize
+    @JsonProperty
     public LogicalNamespace logicalNamespace;
 
     @Serialize
+    @JsonProperty
     public Map<Long, LogicalCollection> collections;
 
     PropertyChangeSupport listeners = new PropertyChangeSupport( this );

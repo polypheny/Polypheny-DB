@@ -255,7 +255,7 @@ public class StatisticsTest {
                         true );
 
                 waiter.await( 20, TimeUnit.SECONDS );
-                Snapshot snapshot = Catalog.getInstance().getSnapshot();
+                Snapshot snapshot = Catalog.snapshot();
                 LogicalTable catalogTableNation = snapshot.rel().getTable( "statisticschema", "nation" ).orElseThrow();
                 LogicalTable catalogTableRegion = snapshot.rel().getTable( "statisticschema", "region" ).orElseThrow();
 

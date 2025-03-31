@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -245,7 +245,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
      * @return true if {@link RexDigestIncludeType#OPTIONAL} digest would include data type
      * @see RexCall#computeDigest(boolean)
      */
-    RexDigestIncludeType digestIncludesType() {
+    public RexDigestIncludeType digestIncludesType() {
         return shouldIncludeType( value, type );
     }
 
@@ -279,7 +279,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case VARBINARY -> // not allowed -- use Binary
                     value.isBinary();
             case BINARY -> value.isBinary();
-            case VARCHAR, CHAR ->
+            case VARCHAR, CHAR, TEXT ->
                 // A SqlLiteral's charset and collation are optional; not so a RexLiteral.
                     value.isString();
             case SYMBOL -> value.isSymbol();
@@ -410,6 +410,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     private static void printAsJava( PolyValue value, PrintWriter pw, PolyType typeName, boolean java ) {
         switch ( typeName ) {
             case VARCHAR:
+            case TEXT:
             case CHAR:
                 PolyString string = value.asString();
                 if ( java ) {
@@ -508,7 +509,11 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 break;
             case DOCUMENT:
                 // assert value.isDocument(); documents can be any PolyValue
-                pw.println( value );
+                if ( !value.isDocument() ) {
+                    printAsJava( value, pw, value.getType(), java );
+                } else {
+                    pw.println( value );
+                }
                 break;
             default:
                 assert valueMatchesType( value, typeName, true );

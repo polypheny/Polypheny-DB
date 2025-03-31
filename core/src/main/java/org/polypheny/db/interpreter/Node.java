@@ -40,5 +40,5 @@ package org.polypheny.db.interpreter;
 public interface Node {
 
     void run() throws InterruptedException;
-}
 
+}
