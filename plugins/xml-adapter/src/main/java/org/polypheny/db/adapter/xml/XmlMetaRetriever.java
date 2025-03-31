@@ -99,8 +99,8 @@ final class XmlMetaRetriever {
 
 
     private static String deriveEntityName( String fileName ) {
-        fileName = fileName.replaceAll( "/+$", "" );  // remove trailing "/"
         return fileName
+                .replaceAll( "/+$", "" )  // remove trailing "/"
                 .substring( fileName.lastIndexOf( '/' ) + 1 )  // extract file name after last "/"
                 .toLowerCase()
                 .replace( ".xml.gz", "" )
