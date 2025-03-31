@@ -207,6 +207,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     protected abstract boolean requiresSchema();
 
 
+    @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         Map<String, List<ExportedColumn>> map = new HashMap<>();
         PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
