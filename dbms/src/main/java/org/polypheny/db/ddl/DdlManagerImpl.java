@@ -233,7 +233,7 @@ public class DdlManagerImpl extends DdlManager {
     private void createDocumentSource( DataSource<?> adapter, long namespace ) {
         List<ExportedDocument> exportedCollections;
         try {
-            exportedCollections = adapter.asDocumentDataSource().getExportedCollection();
+            exportedCollections = adapter.asDocumentDataSource().getExportedCollections();
         } catch ( Exception e ) {
             AdapterManager.getInstance().removeAdapter( adapter.getAdapterId() );
             throw new GenericRuntimeException( "Could not deploy adapter", e );

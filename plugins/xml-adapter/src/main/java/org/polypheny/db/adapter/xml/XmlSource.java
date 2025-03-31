@@ -149,7 +149,7 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
 
 
     @Override
-    public List<ExportedDocument> getExportedCollection() {
+    public List<ExportedDocument> getExportedCollections() {
         try {
             return XmlMetaRetriever.getDocuments( xmlFiles );
         } catch ( IOException e ) {

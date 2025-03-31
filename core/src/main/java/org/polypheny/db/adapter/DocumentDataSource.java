@@ -17,12 +17,11 @@
 package org.polypheny.db.adapter;
 
 import java.util.List;
-import lombok.Getter;
 import org.polypheny.db.catalog.logistic.EntityType;
 
 public interface DocumentDataSource {
 
-    List<ExportedDocument> getExportedCollection();
+    List<ExportedDocument> getExportedCollections();
 
     record ExportedDocument( String name, boolean isModifiable, EntityType type ) {
 

@@ -149,7 +149,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
 
 
     @Override
-    public List<ExportedDocument> getExportedCollection() {
+    public List<ExportedDocument> getExportedCollections() {
         try {
             return JsonMetaRetriever.getDocuments( jsonFiles );
         } catch ( IOException e ) {
