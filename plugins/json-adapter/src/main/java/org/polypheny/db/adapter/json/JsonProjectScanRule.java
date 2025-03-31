@@ -31,7 +31,7 @@ final class JsonProjectScanRule extends AlgOptRule {
         super(
                 operand( LogicalDocumentScan.class, none() ),
                 algBuilderFactory,
-                "JsonProjectScanRule"
+                JsonProjectScanRule.class.getSimpleName()
         );
     }
 

@@ -31,7 +31,7 @@ final class XmlProjectScanRule extends AlgOptRule {
         super(
                 operand( LogicalDocumentScan.class, none() ),
                 algBuilderFactory,
-                "XmlProjectScanRule"
+                XmlProjectScanRule.class.getSimpleName()
         );
     }
 
