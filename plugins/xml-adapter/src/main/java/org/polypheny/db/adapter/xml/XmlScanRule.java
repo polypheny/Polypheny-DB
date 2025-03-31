@@ -22,16 +22,16 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
-final class XmlProjectScanRule extends AlgOptRule {
+final class XmlScanRule extends AlgOptRule {
 
-    static final XmlProjectScanRule INSTANCE = new XmlProjectScanRule( AlgFactories.LOGICAL_BUILDER );
+    static final XmlScanRule INSTANCE = new XmlScanRule( AlgFactories.LOGICAL_BUILDER );
 
 
-    private XmlProjectScanRule( AlgBuilderFactory algBuilderFactory ) {
+    private XmlScanRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 operand( LogicalDocumentScan.class, none() ),
                 algBuilderFactory,
-                XmlProjectScanRule.class.getSimpleName()
+                XmlScanRule.class.getSimpleName()
         );
     }
 

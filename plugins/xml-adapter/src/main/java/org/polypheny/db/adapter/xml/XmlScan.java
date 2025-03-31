@@ -36,6 +36,7 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.types.ScannableEntity;
 
 public final class XmlScan extends DocumentScan<XmlCollection> implements EnumerableAlg {
 
@@ -71,7 +72,7 @@ public final class XmlScan extends DocumentScan<XmlCollection> implements Enumer
 
     @Override
     public void register( @NotNull AlgPlanner planner ) {
-        planner.addRule( XmlProjectScanRule.INSTANCE );
+        planner.addRule( XmlScanRule.INSTANCE );
     }
 
 
@@ -86,7 +87,7 @@ public final class XmlScan extends DocumentScan<XmlCollection> implements Enumer
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
 
-        return implementor.result( physType, Blocks.toBlock( Expressions.call( entity.asExpression( XmlCollection.class ), "project", implementor.getRootExpression() ) ) );
+        return implementor.result( physType, Blocks.toBlock( Expressions.call( entity.asExpression( ScannableEntity.class ), "scan", implementor.getRootExpression() ) ) );
     }
 
 }

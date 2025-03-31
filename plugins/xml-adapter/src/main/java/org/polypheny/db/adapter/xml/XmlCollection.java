@@ -50,7 +50,7 @@ final class XmlCollection extends PhysicalCollection implements ScannableEntity,
     @Override
     public Expression asExpression() {
         Expression argExp = Expressions.constant( this.id );
-        return Expressions.convert_( Expressions.call( Expressions.call( this.adapter.asExpression(), "getAdapterCatalog" ), "getPhysical", argExp ), XmlCollection.class );
+        return Expressions.convert_( Expressions.call( Expressions.call( this.adapter.asExpression(), "getAdapterCatalog" ), "getPhysical", argExp ), ScannableEntity.class );
     }
 
 
@@ -68,17 +68,6 @@ final class XmlCollection extends PhysicalCollection implements ScannableEntity,
 
     public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         return new XmlScan( cluster, this );
-    }
-
-
-    public Enumerable<PolyValue[]> project( final DataContext dataContext ) {
-        dataContext.getStatement().getTransaction().registerInvolvedAdapter( adapter );
-        return new AbstractEnumerable<>() {
-            @Override
-            public Enumerator<PolyValue[]> enumerator() {
-                return new XmlEnumerator( url );
-            }
-        };
     }
 
 }

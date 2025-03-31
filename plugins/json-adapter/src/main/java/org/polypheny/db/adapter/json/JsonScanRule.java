@@ -22,16 +22,16 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
-final class JsonProjectScanRule extends AlgOptRule {
+final class JsonScanRule extends AlgOptRule {
 
-    static final JsonProjectScanRule INSTANCE = new JsonProjectScanRule( AlgFactories.LOGICAL_BUILDER );
+    static final JsonScanRule INSTANCE = new JsonScanRule( AlgFactories.LOGICAL_BUILDER );
 
 
-    private JsonProjectScanRule( AlgBuilderFactory algBuilderFactory ) {
+    private JsonScanRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 operand( LogicalDocumentScan.class, none() ),
                 algBuilderFactory,
-                JsonProjectScanRule.class.getSimpleName()
+                JsonScanRule.class.getSimpleName()
         );
     }
 

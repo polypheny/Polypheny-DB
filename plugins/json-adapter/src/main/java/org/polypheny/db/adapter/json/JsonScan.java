@@ -31,12 +31,12 @@ import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.types.ScannableEntity;
 
 public final class JsonScan extends DocumentScan<JsonCollection> implements EnumerableAlg {
 
@@ -72,7 +72,7 @@ public final class JsonScan extends DocumentScan<JsonCollection> implements Enum
 
     @Override
     public void register( @NotNull AlgPlanner planner ) {
-        planner.addRule( JsonProjectScanRule.INSTANCE );
+        planner.addRule( JsonScanRule.INSTANCE );
     }
 
 
@@ -87,7 +87,7 @@ public final class JsonScan extends DocumentScan<JsonCollection> implements Enum
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
 
-        return implementor.result( physType, Blocks.toBlock( Expressions.call( entity.asExpression( JsonCollection.class ), "project", implementor.getRootExpression() ) ) );
+        return implementor.result( physType, Blocks.toBlock( Expressions.call( entity.asExpression( ScannableEntity.class ), "scan", implementor.getRootExpression() ) ) );
     }
 
 }
