@@ -51,6 +51,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         textEditor = true, language = "plain_text",
         shortDescription = "The string to insert. Can use the template expression '{varName}' to insert other variables. Sub-variables can be specified as JsonPointers.")
 @StringSetting(key = "target", displayName = "Target Variable", pos = 1,
+        nonBlank = true,
         shortDescription = "The target (sub)variable.")
 @BoolSetting(key = "fail", displayName = "Fail on Non-Literal Variable", pos = 2,
         shortDescription = "Whether the execution should fail if the target (sub)variable is not a JSON literal. Otherwise, its JSON representation is inserted.")
@@ -73,7 +74,7 @@ public class VariableStringTemplateActivity implements VariableWriter {
         boolean fail = settings.getBool( "fail" );
 
         Map<String, JsonNode> variables = ctx.getVariableStore().getPublicVariables( true, false );
-        StringSubstitutor substitutor = new StringSubstitutor( v -> resoleVariable( variables, v, fail ), "{", "}", '\\' )
+        StringSubstitutor substitutor = new StringSubstitutor( v -> resolveVariable( variables, v, fail ), "{", "}", '\\' )
                 .setDisableSubstitutionInValues( true );
         String resolved = substitutor.replace( template );
 
@@ -87,7 +88,7 @@ public class VariableStringTemplateActivity implements VariableWriter {
     }
 
 
-    private String resoleVariable( Map<String, JsonNode> variables, String refString, boolean fail ) {
+    public static String resolveVariable( Map<String, JsonNode> variables, String refString, boolean fail ) {
         if ( refString.startsWith( "/" ) ) {
             refString = refString.substring( 1 );
         }

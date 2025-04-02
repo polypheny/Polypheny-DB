@@ -91,7 +91,6 @@ public class DocBatchWriter implements AutoCloseable {
     public void write( PolyDocument value ) {
         if ( batchSize == -1 ) {
             batchSize = QueryUtils.computeBatchSize( new PolyValue[]{ value }, MAX_BYTES_PER_BATCH, MAX_TUPLES_PER_BATCH );
-            System.out.println( "Batch size is " + batchSize );
         }
         paramValues.add( Map.of( 0L, value ) );
 

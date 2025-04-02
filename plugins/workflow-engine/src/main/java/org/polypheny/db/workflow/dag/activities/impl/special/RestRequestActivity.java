@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -62,6 +63,7 @@ import org.polypheny.db.workflow.dag.annotations.StringSetting;
 import org.polypheny.db.workflow.dag.settings.EnumSettingDef.EnumStyle;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
+import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.reader.DocReader;
@@ -84,6 +86,9 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
         maxLength = 10 * 1024, subPointer = "bodyFromInput", subValues = { "false" }, defaultValue = "{}",
         shortDescription = "The request body to send. If empty, the body also remains empty.")
 
+@BoolSetting(key = "multiRequests", displayName = "One Request per Input Document", pos = 24,
+        defaultValue = false, subPointer = "bodyFromInput", subValues = { "true" }, group = ADVANCED_GROUP,
+        shortDescription = "If true, each document in the input collection is used as the body of a request. Otherwise, only the first document is used.")
 @StringSetting(key = "pointer", displayName = "Response Field", pos = 20,
         maxLength = 1024, group = ADVANCED_GROUP,
         shortDescription = "The target (sub)field of the response, given the response is valid json. If the target is an array of objects, its entries are mapped to individual documents.")
@@ -104,6 +109,7 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 public class RestRequestActivity implements Activity {
 
     private static final ObjectMapper mapper = new ObjectMapper();
+    private HttpClient client;
 
 
     @Override
@@ -154,20 +160,10 @@ public class RestRequestActivity implements Activity {
         String method = settings.getString( "method" ); // GET, POST ...
         Map<String, String> queryParams = jsonToMap( settings.getString( "queryParams" ) );
         Map<String, String> headers = jsonToMap( settings.getString( "headers" ) );
+        boolean fail = settings.getBool( "fail" );
         int timeout = settings.getInt( "timeout" );
         String pointer = settings.getString( "pointer" );
-
-        String body = settings.getString( "body" );
-        if ( settings.getBool( "bodyFromInput" ) ) {
-            DocReader reader = (DocReader) inputs.get( 0 );
-            body = "";
-            for ( PolyDocument doc : reader.getDocIterable() ) {
-                doc.remove( docId );
-                body = Objects.requireNonNullElse( doc.toJson(), "" );
-                break;
-            }
-        }
-        ctx.logInfo( "Body: " + body );
+        DocWriter output = ctx.createDocWriter( 0 );
 
         // Append query parameters
         if ( !queryParams.isEmpty() ) {
@@ -180,9 +176,44 @@ public class RestRequestActivity implements Activity {
         }
         ctx.logInfo( "Target URL with queryParams: " + target );
 
-        HttpClient client = HttpClient.newBuilder()
-                .connectTimeout( Duration.ofSeconds( timeout ) )
-                .build();
+        boolean multiRequests = settings.getBool( "multiRequests" );
+        if ( settings.getBool( "bodyFromInput" ) ) {
+            DocReader reader = (DocReader) inputs.get( 0 );
+            String body = "";
+            for ( PolyDocument doc : reader.getDocIterable() ) {
+                doc.remove( docId );
+                body = Objects.requireNonNullElse( doc.toJson(), "" );
+
+                makeRequest( target, method, headers, body, fail, timeout, output, pointer, ctx );
+                if ( !multiRequests ) {
+                    break; // break after first request
+                }
+            }
+        } else {
+            String body = settings.getString( "body" );
+            makeRequest( target, method, headers, body, fail, timeout, output, pointer, ctx );
+        }
+    }
+
+
+    @Override
+    public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
+        if ( settings.getBool( "bodyFromInput" ) && settings.getBool( "multiRequests" ) ) {
+            return inCounts.get( 0 );
+        }
+        return 1;
+    }
+
+
+    private void makeRequest(
+            String target, String method, Map<String, String> headers, String body, boolean fail, int timeout,
+            DocWriter output, String pointer, ExecutionContext ctx ) throws ExecutorException, IOException, InterruptedException {
+        if ( client == null ) {
+            client = HttpClient.newBuilder()
+                    .connectTimeout( Duration.ofSeconds( timeout ) )
+                    .build();
+        }
+        ctx.logInfo( "Body: " + body );
         HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri( URI.create( target ) )
                 .timeout( Duration.ofSeconds( timeout ) );
@@ -201,11 +232,9 @@ public class RestRequestActivity implements Activity {
         HttpResponse<String> response = client.send( requestBuilder.build(), HttpResponse.BodyHandlers.ofString() );
         String responseBody = response.body();
         boolean isSuccess = response.statusCode() >= 200 && response.statusCode() < 300;
-        if ( settings.getBool( "fail" ) && !isSuccess ) {
+        if ( fail && !isSuccess ) {
             ctx.throwException( "HTTP request failed with status code: " + response.statusCode() + " and body: " + responseBody );
         }
-
-        DocWriter output = ctx.createDocWriter( 0 );
         if ( responseBody == null ) {
             ctx.logInfo( "Received Null Response with status code: " + response.statusCode() );
             return;
@@ -217,12 +246,6 @@ public class RestRequestActivity implements Activity {
         } catch ( JsonProcessingException e ) { // response is not valid json
             output.write( new PolyDocument( Map.of( PolyString.of( "response_text" ), PolyString.of( responseBody ) ) ) );
         }
-    }
-
-
-    @Override
-    public long estimateTupleCount( List<AlgDataType> inTypes, Settings settings, List<Long> inCounts, Supplier<Transaction> transactionSupplier ) {
-        return 1;
     }
 
 
