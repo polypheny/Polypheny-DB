@@ -108,6 +108,10 @@ public class LockableImpl implements Lockable {
 
     public void release( @NotNull Transaction transaction ) {
         concurrencyLock.lock();
+        if ( !owners.containsKey( transaction ) ) {
+            concurrencyLock.unlock();
+            return;
+        }
         try {
             if ( state == LockState.EXCLUSIVE ) {
                 if ( owners.size() != 1 ) {
