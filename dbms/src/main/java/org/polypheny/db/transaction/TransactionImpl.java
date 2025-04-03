@@ -69,6 +69,7 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.SequenceNumberGenerator;
+import org.polypheny.db.transaction.mvcc.MvccCommitValidator;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
@@ -214,7 +215,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         }
         boolean okToCommit = true;
 
-        /**
         if ( !writtenEntities.isEmpty() ) {
             MvccCommitValidator validator = new MvccCommitValidator( this );
             if ( !validator.validateWriteSet(writtenEntities) ) {
@@ -224,7 +224,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             }
             sequenceNumber = validator.updateWrittenVersionIds( writtenEntities );
         }
-         **/
 
         Pair<Boolean, String> isValid = checkIntegrity();
         if ( !isValid.left ) {
