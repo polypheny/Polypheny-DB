@@ -93,7 +93,6 @@ public class VariableValidateActivity implements Activity {
 
         String json = mapper.writeValueAsString( variables.getPublicVariables(true, false) );
         PolyDocument varDoc = PolyValue.fromJson( json ).asDocument();
-        System.out.println(varDoc.toJson());
 
         if ( !predicate.test( varDoc ) ) {
             ctx.throwException( "A variable does not meet the specified condition." );

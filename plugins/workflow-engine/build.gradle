@@ -80,6 +80,7 @@ delombok {
     dependsOn(":plugins:sql-language:processResources")
     dependsOn(":plugins:mql-language:processResources")
     dependsOn(":plugins:cypher-language:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
 }
 
 
