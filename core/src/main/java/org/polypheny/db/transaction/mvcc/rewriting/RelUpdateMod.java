@@ -70,7 +70,7 @@ public class RelUpdateMod implements AlgTreeModification<LogicalRelModify, Logic
         MvccUtils.executeDmlAlgTree( AlgRoot.of( updatingSubtree, Kind.UPDATE ), statement, node.getEntity().getNamespaceId() );
 
         long endTs = System.nanoTime();
-        System.out.printf( "UUU %d", endTs - startTs );
+        System.out.printf( "UUU %d\n", endTs - startTs );
 
         return createInsertingSubtree( node );
     }

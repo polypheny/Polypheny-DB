@@ -206,7 +206,7 @@ public class LanguageManager {
                         root = new AlgTreeRewriter( statement ).process( root );
 
                         long endTs = System.nanoTime();
-                        System.out.printf( "RRR %d", endTs - startTs );
+                        System.out.printf( "RRR %d\n", endTs - startTs );
                     }
 
                     if ( transaction.isAnalyze() && !statement.getOverviewDuration().isStopped( "Translation" ) ) {

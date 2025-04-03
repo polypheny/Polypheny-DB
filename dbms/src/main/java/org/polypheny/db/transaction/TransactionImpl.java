@@ -229,7 +229,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         }
 
         long endTs = System.nanoTime();
-        System.out.printf( "VVV %d", endTs - startTs );
+        System.out.printf( "VVV %d\n", endTs - startTs );
 
         Pair<Boolean, String> isValid = checkIntegrity();
         if ( !isValid.left ) {
