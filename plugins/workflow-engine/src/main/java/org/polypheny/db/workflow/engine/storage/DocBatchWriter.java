@@ -45,9 +45,9 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.workflow.dag.activities.Activity;
 
 @Slf4j
 public class DocBatchWriter implements AutoCloseable {
@@ -188,11 +188,12 @@ public class DocBatchWriter implements AutoCloseable {
         }
 
         ConnectionHandler handler = jdbcSchema.getConnectionHandler( statement.getDataContext() );
+        List<String> docIdList = List.of( DocumentType.DOCUMENT_ID );
         try ( PreparedStatement stmt = handler.prepareStatement( insertQuery ) ) {
             for ( Map<Long, PolyValue> map : paramValues ) {
                 PolyDocument doc = map.get( 0L ).asDocument();
-                stmt.setString( 1, RefactorFunctions.fromDocument( RefactorFunctions.get( doc, new PolyString( "_id" ) ) ).value );
-                stmt.setString( 2, RefactorFunctions.fromDocument( RefactorFunctions.removeNames( doc, List.of( "_id" ) ) ).value );
+                stmt.setString( 1, RefactorFunctions.fromDocument( RefactorFunctions.get( doc, Activity.docId ) ).value );
+                stmt.setString( 2, RefactorFunctions.fromDocument( RefactorFunctions.removeNames( doc, docIdList ) ).value );
                 stmt.addBatch();
             }
             stmt.executeBatch();

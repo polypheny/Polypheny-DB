@@ -57,15 +57,15 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 @StringSetting(key = "pointer", displayName = "Relative Path", pos = 1, group = GroupDef.ADVANCED_GROUP, autoCompleteType = AutoCompleteType.FIELD_NAMES,
         shortDescription = "Optionally specify a (sub)field such as 'owner.address'. All conditions will act relative to this field. If a document does not contain that field, the filter matches by default.")
-@BoolSetting(key = "all", displayName = "Match Subfields", pos = 2,
-        subPointer = "filter/targetMode", subValues = { "\"REGEX\"" }, defaultValue = false,
-        shortDescription = "If enabled, the search extends to all subfields.")
 @FieldSelectSetting(key = "requiredFields", displayName = "Required Fields", simplified = true, targetInput = 0, pos = 3,
         shortDescription = "Specify all (sub)fields that must exist in the document. Useful in combination with a condition, as conditions evaluate to true if the target field does not exist.")
 @FilterSetting(key = "filter", displayName = "Conditions", pos = 4,
         modes = { SelectMode.EXACT, SelectMode.REGEX },
         shortDescription = "Define a list of conditions on fields. In 'Exact' mode, subfields can be specified. If a (sub)field does not exist, the condition evaluates to true.")
-@BoolSetting(key = "negate", displayName = "Negate Filter", pos = 5, defaultValue = false, group = GroupDef.ADVANCED_GROUP,
+@BoolSetting(key = "all", displayName = "Match Subfields", pos = 5,
+        subPointer = "filter/targetMode", subValues = { "\"REGEX\"" }, defaultValue = false,
+        shortDescription = "If enabled, the search extends to all subfields.")
+@BoolSetting(key = "negate", displayName = "Negate Filter", pos = 6, defaultValue = false, group = GroupDef.ADVANCED_GROUP,
         shortDescription = "If enabled, the filter is negated.")
 
 @SuppressWarnings("unused")
