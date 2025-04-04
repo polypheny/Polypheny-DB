@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.cypher.CypherTestTemplate;
@@ -47,9 +48,11 @@ public class StorageUtils {
 
 
     public static void addHsqldbStore( String name, String trxControlMode ) throws SQLException {
-        TestHelper.executeSQL( "ALTER ADAPTERS ADD \"%s\" USING 'Hsqldb' AS 'Store'".formatted( name )
-                + " WITH '{maxConnections:\"25\",trxControlMode:%s,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'".formatted( trxControlMode )
-        );
+        if (AdapterManager.getInstance().getAdapter( name ).isEmpty()) {
+            TestHelper.executeSQL( "ALTER ADAPTERS ADD \"%s\" USING 'Hsqldb' AS 'Store'".formatted( name )
+                    + " WITH '{maxConnections:\"25\",trxControlMode:%s,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'".formatted( trxControlMode )
+            );
+        }
     }
 
 
