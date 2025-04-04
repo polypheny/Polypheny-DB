@@ -54,7 +54,7 @@ public class StorageUtils {
 
 
     public static void addHsqldbLocksStore( String name ) throws SQLException {
-        addHsqldbStore( name, HSQLDB_LOCKS );
+        addHsqldbStore( name, "locks" );
     }
 
 
