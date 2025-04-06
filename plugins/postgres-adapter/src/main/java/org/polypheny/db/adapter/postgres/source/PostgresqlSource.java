@@ -46,11 +46,11 @@ import org.polypheny.db.prepare.Context;
         description = "Hostname or IP address of the remote PostgreSQL instance.")
 @AdapterSettingInteger(name = "port", defaultValue = 5432, position = 2,
         description = "JDBC port number on the remote PostgreSQL instance.")
-@AdapterSettingString(name = "database", defaultValue = "polypheny", position = 3,
+@AdapterSettingString(name = "database", defaultValue = "postgres", position = 3,
         description = "Name of the database to connect to.")
-@AdapterSettingString(name = "username", defaultValue = "polypheny", position = 4,
+@AdapterSettingString(name = "username", defaultValue = "postgres", position = 4,
         description = "Username to be used for authenticating at the remote instance.")
-@AdapterSettingString(name = "password", defaultValue = "polypheny", position = 5,
+@AdapterSettingString(name = "password", defaultValue = "password", position = 5,
         description = "Password to be used for authenticating at the remote instance.")
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25,
         description = "Maximum number of concurrent JDBC connections.")

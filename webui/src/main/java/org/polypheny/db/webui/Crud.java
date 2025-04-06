@@ -278,6 +278,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         String fullTableName = getFullEntityName( request.entityId );
+        // String fullTableName = "\"TEST\"";
         query.append( "SELECT * FROM " )
                 .append( fullTableName )
                 .append( where )
@@ -440,6 +441,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     private String getFullEntityName( long entityId ) {
         LogicalTable table = Catalog.snapshot().rel().getTable( entityId ).orElseThrow();
+        // TODO Change Namepsace for oraale !!!
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( table.namespaceId ).orElseThrow();
         return String.format( "\"%s\".\"%s\"", namespace.name, table.name );
     }
@@ -2634,6 +2636,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     private long getTableSize( Transaction transaction, final UIRequest request ) {
         String tableId = getFullEntityName( request.entityId );
+        // String tableId = "\"TEST\"";
+
+        // TODO: Change sql query here to: tableID = ""system"."test""
         String query = "SELECT count(*) FROM " + tableId;
         if ( request.filter != null ) {
             query += " " + filterTable( request.filter );

@@ -112,6 +112,7 @@ public class WebSocket implements Consumer<WsConfig> {
         if ( ctx.message().equals( "\"keepalive\"" ) ) {
             return;
         }
+        log.error( "UI message received: " + ctx.message() );
         //close analyzers of a previous query that was sent over the same socket.
         Crud.cleanupOldSession( queryAnalyzers, ctx.getSessionId() );
 
@@ -246,6 +247,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 if ( result.xid != null ) {
                     xIds.add( result.xid );
                 }
+                System.out.println( result );
                 ctx.send( result );
                 break;
             default:

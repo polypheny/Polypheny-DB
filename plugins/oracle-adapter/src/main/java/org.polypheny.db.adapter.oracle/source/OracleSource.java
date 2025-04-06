@@ -23,19 +23,28 @@ import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
 import org.polypheny.db.adapter.oracle.OracleSqlDialect;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.transaction.PUID;
+import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.type.PolyType;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-// TODO: Find out oracle credentials to log in and adjust URL if necessary.
 
 @Slf4j
 @AdapterProperties(
@@ -43,15 +52,15 @@ import java.util.stream.Collectors;
         description = "Data source explicit for relational oracle database systems.",
         usedModes = DeployMode.REMOTE,
         defaultMode = DeployMode.REMOTE)
-@AdapterSettingString(name = "host", defaultValue = "localhost", position = 1, //TODO: Find out correct hostname, IP.
+@AdapterSettingString(name = "host", defaultValue = "localhost", position = 1,
         description = "Hostname or IP address of the remote oracle instance.")
-@AdapterSettingInteger(name = "port", defaultValue = 1521, position = 2, //TODO: Find out correct port number.
+@AdapterSettingInteger(name = "port", defaultValue = 1521, position = 2,
         description = "Port number of the remote oracle instance.")
-@AdapterSettingString(name = "database", defaultValue = "polypheny", position = 3,
-        description = "Name of the database to connect with.")
-@AdapterSettingString(name = "username", defaultValue = "polypheny", position = 4,
+@AdapterSettingString(name = "database", defaultValue = "XE", position = 3,
+        description = "Name of the database to connect to.")
+@AdapterSettingString(name = "username", defaultValue = "system", position = 4,
         description = "Username used for authentication at the remote instance.")
-@AdapterSettingString(name = "password", defaultValue = "polypheny", position = 5,
+@AdapterSettingString(name = "password", defaultValue = "roman123", position = 5,
         description = "Password used for authentication at the remote instance.")
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25,
         description = "Maximum number of concurrent connections.")
@@ -75,7 +84,7 @@ public class OracleSource extends AbstractJdbcSource {
 
     @Override
     protected String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
-        return String.format( "jdbc:oracle:thin:@//%s:%d/%s", dbHostname, dbPort, dbName );
+        return String.format( "jdbc:oracle:thin:@%s:%d/%s", dbHostname, dbPort, dbName );
     }
 
 
@@ -115,4 +124,86 @@ public class OracleSource extends AbstractJdbcSource {
         adapterCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( table ) );
         return List.of( table );
     }
+
+
+    @Override
+    public Map<String, List<ExportedColumn>> getExportedColumns() {
+        Map<String, List<ExportedColumn>> map = new HashMap<>();
+
+        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID);
+        try {
+            ConnectionHandler connectionHandler = connectionFactory.getOrCreateConnectionHandler(xid);
+            java.sql.Statement statement = connectionHandler.getStatement();
+            Connection connection = statement.getConnection();
+            DatabaseMetaData dbmd = connection.getMetaData();
+
+            // Für Oracle: Nimm den User (z. B. SYSTEM) als Schema
+            String schema = "SYSTEM";  // liefert z. B. SYSTEM
+            String tableName = "TEST"; // <- oder hole den Namen dynamisch aus settings
+
+            List<String> primaryKeyColumns = new ArrayList<>();
+            try ( ResultSet pk = dbmd.getPrimaryKeys(null, schema, tableName)) {
+                while (pk.next()) {
+                    primaryKeyColumns.add(pk.getString("COLUMN_NAME"));
+                }
+            }
+
+            try (ResultSet columns = dbmd.getColumns(null, schema, tableName, "%")) {
+                List<ExportedColumn> exportedColumns = new ArrayList<>();
+
+                while (columns.next()) {
+                    PolyType type = PolyType.getNameForJdbcType(columns.getInt("DATA_TYPE"));
+                    Integer length = null;
+                    Integer scale = null;
+
+                    switch (type) {
+                        case DECIMAL:
+                            length = columns.getInt("COLUMN_SIZE");
+                            scale = columns.getInt("DECIMAL_DIGITS");
+                            break;
+                        case CHAR:
+                        case VARCHAR:
+                            type = PolyType.VARCHAR;
+                            length = columns.getInt("COLUMN_SIZE");
+                            break;
+                        case VARBINARY:
+                        case BINARY:
+                            type = PolyType.VARBINARY;
+                            length = columns.getInt("COLUMN_SIZE");
+                            break;
+                        case TIME:
+                        case TIMESTAMP:
+                            length = columns.getInt("DECIMAL_DIGITS");
+                            break;
+                        default:
+                            // andere Typen ohne Length/Scale
+                            break;
+                    }
+
+                    exportedColumns.add(new ExportedColumn(
+                            columns.getString("COLUMN_NAME").toLowerCase(),
+                            type,
+                            null, // keine collection
+                            length,
+                            scale,
+                            null,
+                            null,
+                            "YES".equalsIgnoreCase(columns.getString("IS_NULLABLE")),
+                            schema,
+                            tableName,
+                            columns.getString("COLUMN_NAME"),
+                            columns.getInt("ORDINAL_POSITION"),
+                            primaryKeyColumns.contains(columns.getString("COLUMN_NAME"))
+                    ));
+                }
+
+                map.put(tableName, exportedColumns);
+            }
+        } catch ( SQLException | ConnectionHandlerException e) {
+            throw new GenericRuntimeException("Exception while collecting Oracle schema info", e);
+        }
+
+        return map;
+    }
+
 }
