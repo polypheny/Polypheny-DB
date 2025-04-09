@@ -55,7 +55,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
                 @InPort(type = PortType.DOC, description = "The source collection containing the value(s) to insert.")
         },
         outPorts = { @OutPort(type = PortType.DOC, description = "The modified target collection.") },
-        shortDescription = "Inserts the specified value from document(s) in the source collection into the target collection."
+        shortDescription = "Inserts the specified value from document(s) in the source collection (second input) into the target collection (first input)."
 )
 
 @StringSetting(key = "target", displayName = "Target Field", pos = 0,

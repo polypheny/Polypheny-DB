@@ -40,7 +40,7 @@ public class StringValue implements SettingValue {
     public List<Integer> toIntList( String regex, int min, int max ) throws NumberFormatException {
         List<Integer> list = splitAndTrim( regex ).stream().map( Integer::parseInt ).toList();
         if ( list.stream().anyMatch( v -> v < min || v >= max ) ) {
-            throw new NumberFormatException("Integer value is out of range: " + min + " - " + max);
+            throw new NumberFormatException( "Integer value is out of range: " + min + " - " + max );
         }
         return list;
     }
@@ -54,7 +54,7 @@ public class StringValue implements SettingValue {
 
     public static StringValue of( JsonNode node ) {
         if ( !node.isTextual() ) {
-            throw new IllegalArgumentException( node + " does not represent a string." );
+            throw new IllegalArgumentException( node.getNodeType() + " does not represent a string." );
         }
         return new StringValue( node.textValue() );
     }

@@ -138,7 +138,7 @@ public class RelLookupActivity implements Activity {
 
             if ( leftFields.size() != rightFields.size() ) {
                 throw new InvalidSettingException( "The same number of key fields must be selected", "rightFields" );
-            } else if ( left.isEmpty() ) {
+            } else if ( leftFields.isEmpty() ) {
                 throw new InvalidSettingException( "At least one key column must be selected.", "leftFields" );
             } else if ( values.isEmpty() ) {
                 throw new InvalidSettingException( "At least one value field must be selected.", "valueFields" );

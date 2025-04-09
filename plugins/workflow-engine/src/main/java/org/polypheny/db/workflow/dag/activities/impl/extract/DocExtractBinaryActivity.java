@@ -17,26 +17,24 @@
 package org.polypheny.db.workflow.dag.activities.impl.extract;
 
 import static org.polypheny.db.workflow.dag.activities.impl.extract.DocExtractTextActivity.MAX_STRING_LENGTH;
-import static org.polypheny.db.workflow.dag.settings.GroupDef.ADVANCED_GROUP;
+import static org.polypheny.db.workflow.dag.activities.impl.extract.DocExtractTextActivity.dataField;
+import static org.polypheny.db.workflow.dag.activities.impl.extract.DocExtractTextActivity.nameField;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.UncheckedIOException;
-import java.nio.charset.Charset;
-import java.util.Iterator;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
@@ -52,7 +50,7 @@ import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.EnumSetting;
 import org.polypheny.db.workflow.dag.annotations.FileSetting;
 import org.polypheny.db.workflow.dag.annotations.IntSetting;
-import org.polypheny.db.workflow.dag.annotations.StringSetting;
+import org.polypheny.db.workflow.dag.settings.EnumSettingDef.EnumStyle;
 import org.polypheny.db.workflow.dag.settings.FileValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
@@ -62,36 +60,30 @@ import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
-@ActivityDefinition(type = "docExtractText", displayName = "Extract Text", categories = { ActivityCategory.EXTRACT, ActivityCategory.DOCUMENT, ActivityCategory.EXTERNAL },
+@ActivityDefinition(type = "docExtractBinary", displayName = "Extract Binary Data", categories = { ActivityCategory.EXTRACT, ActivityCategory.DOCUMENT, ActivityCategory.EXTERNAL },
         inPorts = {},
         outPorts = { @OutPort(type = PortType.DOC, description = "The extracted collection.") },
-        shortDescription = "Extracts a collection from one or multiple text files with limited knowledge about their structure.")
+        shortDescription = "Extracts a collection from one or multiple files with limited knowledge about their structure. If the file contains textual data, the 'Extract Text' activity is better suited.")
 @FileSetting(key = "file", displayName = "File Location", pos = 0,
         multi = true,
         shortDescription = "Select the location of the file(s) to extract. In case of multiple files, the union of their documents is computed.")
 @EnumSetting(key = "split", displayName = "Splitting Strategy", pos = 1,
-        options = { "none", "chunks", "char", "whitespace", "newline", "custom" },
-        displayOptions = { "No Splitting", "Fixed Size Chunks", "Individual Characters", "Split Words (Whitespace)", "Split Lines", "Custom Split Pattern" },
-        defaultValue = "newline",
-        shortDescription = "The strategy that determines how the input text is split into chunks. Each chunk becomes its own document.")
-@StringSetting(key = "custom", displayName = "Custom Regex Pattern", pos = 2,
-        subPointer = "split", subValues = { "\"custom\"" }, maxLength = 100)
+        options = { "none", "chunks" },
+        displayOptions = { "No Splitting", "Fixed Size Chunks" },
+        defaultValue = "chunks", style = EnumStyle.RADIO_BUTTON,
+        shortDescription = "The strategy that determines how the input is split into chunks. Each chunk becomes its own document.")
 @IntSetting(key = "size", displayName = "Chunk Size in Bytes", pos = 3,
         subPointer = "split", subValues = { "\"chunks\"" }, defaultValue = 1000,
         min = 1, max = MAX_STRING_LENGTH) // max document size is 16MB
-@EnumSetting(key = "encoding", displayName = "Character Encoding", pos = 4,
-        options = { "UTF-8", "UTF-16", "ISO-8859-1", "US-ASCII" },
-        displayOptions = { "UTF-8", "UTF-16", "Latin-1 (ISO-8859-1)", "US-ASCII" },
-        defaultValue = "UTF-8", group = ADVANCED_GROUP,
-        shortDescription = "The character encoding used in the file(s).")
+@EnumSetting(key = "encoding", displayName = "Output Encoding", pos = 4,
+        options = { "raw", "base64", "array" },
+        displayOptions = { "Raw", "Base64", "Array of Numbers" },
+        defaultValue = "base64", style = EnumStyle.RADIO_BUTTON,
+        shortDescription = "How the binary data is encoded for storage in a document.")
 @BoolSetting(key = "nameField", displayName = "Add File Name Field", pos = 5)
 
 @SuppressWarnings("unused")
-public class DocExtractTextActivity implements Activity, Pipeable {
-
-    static final int MAX_STRING_LENGTH = 16_000_000;
-    static final PolyString nameField = PolyString.of( "fileName" );
-    static final PolyString dataField = PolyString.of( "data" );
+public class DocExtractBinaryActivity implements Activity, Pipeable {
 
 
     @Override
@@ -120,19 +112,18 @@ public class DocExtractTextActivity implements Activity, Pipeable {
         boolean addNameField = settings.getBool( "nameField" );
         FileValue file = settings.get( "file", FileValue.class );
         String splitMode = settings.getString( "split" );
-        String custom = settings.getString( "custom" );
+        String encoding = settings.getString( "encoding" );
         int size = settings.getInt( "size" );
-        Charset charset = Charset.forName( settings.getString( "encoding" ) );
 
         for ( Source source : file.getSources() ) {
-            if ( !writeDocuments( output, source, addNameField, splitMode, custom, size, charset, ctx ) ) {
+            if ( !writeDocuments( output, source, addNameField, splitMode, size, encoding, ctx ) ) {
                 return;
             }
         }
     }
 
 
-    private boolean writeDocuments( OutputPipe output, Source source, boolean addNameField, String splitMode, String custom, int size, Charset charset, PipeExecutionContext ctx ) throws Exception {
+    private boolean writeDocuments( OutputPipe output, Source source, boolean addNameField, String splitMode, int size, String encoding, PipeExecutionContext ctx ) throws Exception {
         String name = ActivityUtils.resourceNameFromSource( source );
         PolyString fileName = PolyString.of( name );
         ctx.logInfo( "Extracting " + name );
@@ -140,49 +131,15 @@ public class DocExtractTextActivity implements Activity, Pipeable {
         try ( InputStream stream = source.openStream() ) {
             switch ( splitMode ) {
                 case "none" -> {
-                    String str = new String( stream.readAllBytes(), charset );
-                    return writeDoc( str, output, addNameField, fileName );
-                }
-                case "char" -> {
-                    try ( BufferedReader reader = new BufferedReader( new InputStreamReader( stream, charset ) ) ) {
-                        Iterator<String> chars = readerToCharIterator( reader );
-                        while ( chars.hasNext() ) {
-                            if ( !writeDoc( chars.next(), output, addNameField, fileName ) ) {
-                                return false;
-                            }
-                        }
-                    }
-                }
-                case "whitespace", "custom" -> {
-                    String delimiter = splitMode.equals( "custom" ) ? custom : "\\s+";
-                    try ( Scanner scanner = new Scanner( new InputStreamReader( stream, charset ) ) ) {
-                        scanner.useDelimiter( delimiter );
-                        while ( scanner.hasNext() ) {
-                            if ( !writeDoc( scanner.next(), output, addNameField, fileName ) ) {
-                                return false;
-                            }
-                        }
-                    }
-                }
-                case "newline" -> {
-                    try ( BufferedReader reader = new BufferedReader( new InputStreamReader( stream, charset ) ) ) {
-                        String line;
-                        while ( (line = reader.readLine()) != null ) {
-                            if ( !writeDoc( line, output, addNameField, fileName ) ) {
-                                return false;
-                            }
-                        }
-                    }
+                    return writeDoc( stream.readAllBytes(), encoding, output, addNameField, fileName );
                 }
                 case "chunks" -> {
-                    try ( BufferedReader reader = new BufferedReader( new InputStreamReader( stream, charset ) ) ) {
-                        char[] buffer = new char[size];
-                        int bytesRead;
-                        while ( (bytesRead = reader.read( buffer )) != -1 ) {
-                            String chunk = new String( buffer, 0, bytesRead );
-                            if ( !writeDoc( chunk, output, addNameField, fileName ) ) {
-                                return false;
-                            }
+                    byte[] buffer = new byte[size];
+                    int bytesRead;
+                    while ( (bytesRead = stream.read( buffer )) != -1 ) {
+                        byte[] chunk = Arrays.copyOf( buffer, bytesRead ); // we need a copy to ensure the array is not overwritten
+                        if ( !writeDoc( chunk, encoding, output, addNameField, fileName ) ) {
+                            return false;
                         }
                     }
                 }
@@ -192,36 +149,33 @@ public class DocExtractTextActivity implements Activity, Pipeable {
     }
 
 
-    private boolean writeDoc( String str, OutputPipe output, boolean addNameField, PolyString fileName ) throws InterruptedException {
-        if ( str == null ) {
+    private boolean writeDoc( byte[] data, String encoding, OutputPipe output, boolean addNameField, PolyString fileName ) throws InterruptedException {
+        if ( data == null || data.length == 0 ) {
             return true;
         }
-        if ( str.length() > MAX_STRING_LENGTH ) {
-            throw new GenericRuntimeException( "String is too long: " + str.length() );
+        if ( data.length > MAX_STRING_LENGTH ) {
+            throw new GenericRuntimeException( "Binary data is too long: " + data.length );
         }
+        PolyValue value = switch ( encoding ) {
+            case "raw" -> PolyBinary.of( data );
+            case "base64" -> PolyString.of( Base64.getEncoder().encodeToString( data ) );
+            case "array" -> {
+                PolyList<PolyValue> list = new PolyList<>();
+                for ( byte b : data ) {
+                    list.add( PolyInteger.of( b ) );
+                }
+                yield list;
+            }
+            default -> throw new GenericRuntimeException( "Unsupported encoding: " + encoding );
+        };
+
         PolyDocument doc = new PolyDocument();
-        doc.put( dataField, PolyString.of( str ) );
+        doc.put( dataField, value );
         if ( addNameField ) {
             doc.put( nameField, fileName );
         }
         ActivityUtils.addDocId( doc );
         return output.put( doc );
-    }
-
-
-    private Iterator<String> readerToCharIterator( Reader reader ) {
-        // A single Unicode character might correspond to multiple chars -> map to string instead
-        return IntStream.generate( () -> {
-                    try {
-                        return reader.read();
-                    } catch ( IOException e ) {
-                        throw new UncheckedIOException( e );
-                    }
-                } )
-                .takeWhile( cp -> cp != -1 )
-                .mapToObj( Character::toChars )
-                .map( String::new )
-                .iterator();
     }
 
 
