@@ -144,7 +144,7 @@ public class OracleSource extends AbstractJdbcSource {
             List<String> primaryKeyColumns = new ArrayList<>();
             try ( ResultSet pk = dbmd.getPrimaryKeys(null, schema, tableName)) {
                 while (pk.next()) {
-                    primaryKeyColumns.add(pk.getString("COLUMN_NAME"));
+                    primaryKeyColumns.add(pk.getString("COLUMN_NAME").toUpperCase());
                 }
             }
 
@@ -181,7 +181,7 @@ public class OracleSource extends AbstractJdbcSource {
                     }
 
                     exportedColumns.add(new ExportedColumn(
-                            columns.getString("COLUMN_NAME").toLowerCase(),
+                            columns.getString("COLUMN_NAME").toUpperCase(),
                             type,
                             null, // keine collection
                             length,
@@ -191,9 +191,9 @@ public class OracleSource extends AbstractJdbcSource {
                             "YES".equalsIgnoreCase(columns.getString("IS_NULLABLE")),
                             schema,
                             tableName,
-                            columns.getString("COLUMN_NAME"),
+                            columns.getString("COLUMN_NAME").toUpperCase(),
                             columns.getInt("ORDINAL_POSITION"),
-                            primaryKeyColumns.contains(columns.getString("COLUMN_NAME"))
+                            primaryKeyColumns.contains(columns.getString("COLUMN_NAME").toUpperCase())
                     ));
                 }
 
