@@ -53,16 +53,8 @@ public class ImplementationContext {
 
     public ExecutedContext execute( Statement statement ) {
         Stopwatch stopwatch = Stopwatch.createStarted();
-
-        //TODO: remove after debug
-        long startTs = System.nanoTime();
-
         try {
             ResultIterator result = implementation.execute( statement, query.getBatch(), query.isAnalysed(), query.isAnalysed(), false );
-
-            long endTs = System.nanoTime();
-            System.out.printf( "TTT %d\n", endTs - startTs );
-
             return new ExecutedContext( implementation, null, query, stopwatch.elapsed().getNano(), result, statement );
         } catch ( Throwable e ) {
             return ExecutedContext.ofError( e, this, (long) stopwatch.elapsed().getNano() );

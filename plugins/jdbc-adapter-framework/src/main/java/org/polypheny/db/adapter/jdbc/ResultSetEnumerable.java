@@ -389,11 +389,18 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
 
     @Override
     public Enumerator<PolyValue[]> enumerator() {
+        long startTs = System.nanoTime();
+
+        Enumerator<PolyValue[]> enumerator;
         if ( preparedStatementEnricher == null ) {
-            return enumeratorBasedOnStatement();
+            enumerator = enumeratorBasedOnStatement();
         } else {
-            return enumeratorBasedOnPreparedStatement();
+            enumerator = enumeratorBasedOnPreparedStatement();
         }
+
+        long endTs = System.nanoTime();
+        System.out.println( "EEE " + (endTs - startTs) );
+        return enumerator;
     }
 
 
@@ -403,22 +410,13 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
             statement = connectionHandler.getStatement();
             setTimeoutIfPossible( statement );
 
-            //ToDo: remove after debug
-            long startTs = System.nanoTime();
-
             if ( statement.execute( sql ) ) {
                 final ResultSet resultSet = statement.getResultSet();
                 statement = null;
 
-                long endTs = System.nanoTime();
-                System.out.printf( "EEE %d\n", endTs - startTs );
-
                 return new ResultSetEnumerator( resultSet, rowBuilderFactory );
             } else {
                 int updateCount = statement.getUpdateCount();
-
-                long endTs = System.nanoTime();
-                System.out.printf( "EEE %d\n", endTs - startTs );
 
                 return Linq4j.singletonEnumerator( new PolyValue[]{ PolyLong.of( updateCount ) } );
             }

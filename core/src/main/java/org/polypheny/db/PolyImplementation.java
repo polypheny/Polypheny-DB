@@ -180,7 +180,9 @@ public class PolyImplementation {
 
 
     public ResultIterator execute( Statement statement, int batch, boolean isAnalyzed, boolean isTimed, boolean isIndex ) {
-        return new ResultIterator(
+        long startTs = System.nanoTime();
+
+        ResultIterator iter = new ResultIterator(
                 createIterator( getBindable(), statement, isAnalyzed ),
                 statement,
                 batch,
@@ -190,6 +192,11 @@ public class PolyImplementation {
                 tupleType,
                 executionTimeMonitor,
                 this );
+
+        long endTs = System.nanoTime();
+        System.out.println( "TTT " + (endTs - startTs) );
+
+        return iter;
     }
 
 
