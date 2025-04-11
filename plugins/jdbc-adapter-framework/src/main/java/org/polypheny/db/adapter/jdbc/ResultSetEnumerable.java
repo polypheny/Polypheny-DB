@@ -35,7 +35,6 @@ package org.polypheny.db.adapter.jdbc;
 
 
 import java.sql.Array;
-import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -403,12 +402,24 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
         try {
             statement = connectionHandler.getStatement();
             setTimeoutIfPossible( statement );
+
+            //ToDo: remove after debug
+            long startTs = System.nanoTime();
+
             if ( statement.execute( sql ) ) {
                 final ResultSet resultSet = statement.getResultSet();
                 statement = null;
+
+                long endTs = System.nanoTime();
+                System.out.printf( "EEE %d\n", endTs - startTs );
+
                 return new ResultSetEnumerator( resultSet, rowBuilderFactory );
             } else {
                 int updateCount = statement.getUpdateCount();
+
+                long endTs = System.nanoTime();
+                System.out.printf( "EEE %d\n", endTs - startTs );
+
                 return Linq4j.singletonEnumerator( new PolyValue[]{ PolyLong.of( updateCount ) } );
             }
         } catch ( Throwable e ) {

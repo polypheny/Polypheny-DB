@@ -63,14 +63,7 @@ public class RelUpdateMod implements AlgTreeModification<LogicalRelModify, Logic
         assert IdentifierUtils.VERSION_KEY.equals( inputFields.get( 1 ).getName() );
 
         LogicalRelModify updatingSubtree = createUpdatingSubtree( node );
-
-        //TODO TH: remove debug
-        long startTs = System.nanoTime();
-
         MvccUtils.executeDmlAlgTree( AlgRoot.of( updatingSubtree, Kind.UPDATE ), statement, node.getEntity().getNamespaceId() );
-
-        long endTs = System.nanoTime();
-        System.out.printf( "UUU %d\n", endTs - startTs );
 
         return createInsertingSubtree( node );
     }

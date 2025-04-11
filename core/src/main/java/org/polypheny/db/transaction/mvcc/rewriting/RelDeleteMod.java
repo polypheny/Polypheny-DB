@@ -62,13 +62,7 @@ public class RelDeleteMod implements AlgTreeModification<LogicalRelModify, Logic
         assert IdentifierUtils.VERSION_KEY.equals( inputFields.get( 1 ).getName() );
 
         AlgRoot deletingSubtree = createDeletingSubtree( node );
-
-        long startTs = System.nanoTime();
-
         MvccUtils.executeDmlAlgTree( deletingSubtree, statement, node.getEntity().getNamespaceId() );
-
-        long endTs = System.nanoTime();
-        System.out.printf( "DDD %d\n", endTs - startTs );
 
         return createInsertingSubtree( node );
     }

@@ -200,13 +200,7 @@ public class LanguageManager {
 
                     AlgRoot root = processor.translate( statement, parsed );
                     if ( !context.isMvccInternal ) {
-                        // TODO TH: remove debug
-                        long startTs = System.nanoTime();
-
                         root = new AlgTreeRewriter( statement ).process( root );
-
-                        long endTs = System.nanoTime();
-                        System.out.printf( "RRR %d\n", endTs - startTs );
                     }
 
                     if ( transaction.isAnalyze() && !statement.getOverviewDuration().isStopped( "Translation" ) ) {

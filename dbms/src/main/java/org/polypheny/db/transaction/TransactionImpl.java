@@ -213,11 +213,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             log.trace( "This transaction has already been finished!" );
             return;
         }
+
         boolean okToCommit = true;
-
-        //TODO TH: remove debug
-        long startTs = System.nanoTime();
-
         if ( !writtenEntities.isEmpty() ) {
             MvccCommitValidator validator = new MvccCommitValidator( this );
             if ( !validator.validateWriteSet(writtenEntities) ) {
@@ -227,9 +224,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             }
             sequenceNumber = validator.updateWrittenVersionIds( writtenEntities );
         }
-
-        long endTs = System.nanoTime();
-        System.out.printf( "VVV %d\n", endTs - startTs );
 
         Pair<Boolean, String> isValid = checkIntegrity();
         if ( !isValid.left ) {
