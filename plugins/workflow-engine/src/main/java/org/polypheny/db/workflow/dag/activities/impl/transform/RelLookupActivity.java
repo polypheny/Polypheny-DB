@@ -308,7 +308,7 @@ public class RelLookupActivity implements Activity {
             }
             List<PolyValue> value = new ArrayList<>();
             for ( String field : valueFields ) {
-                PolyValue v = ActivityUtils.valueToString( ActivityUtils.getSubValue( doc, field ) );
+                PolyValue v = ActivityUtils.valueToPolyString( ActivityUtils.getSubValue( doc, field ) );
                 value.add( Objects.requireNonNullElse( v, PolyNull.NULL ) );
             }
             if ( isExact ) {

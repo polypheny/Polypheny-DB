@@ -26,6 +26,7 @@ import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.Fusable;
+import org.polypheny.db.workflow.dag.activities.Pipeable.PipeInterruptedException;
 import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.engine.execution.Executor.ExecutorException;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
@@ -44,7 +45,7 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
     private final ExecutionInfo info;
     private final PortType[] remainingOutPorts; // contains the PortType for each outPort or null after the checkpoint was created to avoid duplicate checkpoints
     private final List<CheckpointWriter> writers = new ArrayList<>();
-    private final List<Long> inCounts; // a PipeExecutionContext provides access to estimated number of input tuples
+    private List<Long> inCounts; // a PipeExecutionContext provides access to estimated number of input tuples
 
     private volatile boolean interrupt = false;  // can be set by external thread to indicate that the activity should stop its execution
 
@@ -75,6 +76,14 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
         if ( interrupt ) {
             logWarning( "Execution was interrupted" );
             throwException( "Activity execution was interrupted" );
+        }
+    }
+
+
+    @Override
+    public void checkPipeInterrupted() throws PipeInterruptedException {
+        if ( interrupt || Thread.interrupted() ) {
+            throw new PipeInterruptedException();
         }
     }
 
@@ -191,6 +200,12 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
 
     public void setInterrupted() {
         interrupt = true;
+    }
+
+
+    public PipeExecutionContext toPipeExecutionContext( List<Long> inCounts ) {
+        this.inCounts = inCounts;
+        return this;
     }
 
 

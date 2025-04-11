@@ -244,12 +244,17 @@ public class ActivityUtils {
     }
 
 
-    public static PolyString valueToString( PolyValue value ) {
+    public static PolyString valueToPolyString( PolyValue value ) {
         return switch ( value.getType() ) {
             case NULL -> PolyString.of( null );
             case ANY, DOCUMENT, GRAPH, NODE, EDGE, PATH, ARRAY, MAP -> value.toPolyJson();
             default -> PolyString.convert( value );
         };
+    }
+
+
+    public static String valueToString( PolyValue value ) {
+        return valueToPolyString( value ).value;
     }
 
 
@@ -289,7 +294,7 @@ public class ActivityUtils {
             return value;
         }
         if ( type.getFamily() == PolyTypeFamily.CHARACTER ) { // -> string casts succeed more often
-            return ActivityUtils.valueToString( value );
+            return ActivityUtils.valueToPolyString( value );
         } else if ( value.isString() && value.asString().value.isEmpty() ) {
             return PolyNull.NULL;
         } else if ( type == PolyType.BOOLEAN && value.isString() ) {
@@ -385,7 +390,7 @@ public class ActivityUtils {
     }
 
 
-    public static RexLiteral getRexLiteral( String s) {
+    public static RexLiteral getRexLiteral( String s ) {
         PolyValue value = PolyString.of( s );
         return new RexLiteral( value, factory.createPolyType( value.type ), value.type );
     }
@@ -793,7 +798,7 @@ public class ActivityUtils {
                 PolyType target = targetTypes[i];
                 if ( target != null ) {
                     if ( target == PolyType.TEXT ) {
-                        value = valueToString( value );
+                        value = valueToPolyString( value );
                     } else {
                         throw new NotImplementedException( "Target type " + target + " is not yet implemented" );
                     }

@@ -407,8 +407,8 @@ public class FilterValue implements SettingValue {
                 case LESS_THAN -> !isNull( v ) && compareWith( v ) < 0;
                 case GREATER_THAN_EQUALS -> !isNull( v ) && (compareWith( v ) > 0 || isEqual( v ));
                 case LESS_THAN_EQUALS -> !isNull( v ) && (compareWith( v ) < 0 || isEqual( v ));
-                case REGEX -> valuePattern.matcher( ActivityUtils.valueToString( v ).value ).matches();
-                case REGEX_NOT -> !valuePattern.matcher( ActivityUtils.valueToString( v ).value ).matches();
+                case REGEX -> !isNull( v ) && valuePattern.matcher( ActivityUtils.valueToString( v ) ).matches();
+                case REGEX_NOT -> !isNull( v ) && !valuePattern.matcher( ActivityUtils.valueToString( v ) ).matches();
                 case NULL -> isNull( v );
                 case NON_NULL -> !isNull( v );
                 case INCLUDED -> !isNull( v ) && includes( v );
@@ -446,8 +446,8 @@ public class FilterValue implements SettingValue {
             if ( v.isNumber() ) {
                 return v.equals( valueAsNumber() );
             }
-            String s = ActivityUtils.valueToString( v ).value;
-            return ignoreCase ? s.equalsIgnoreCase( value ) : s.equals( value );
+            String s = ActivityUtils.valueToString( v );
+            return ignoreCase ? value.equalsIgnoreCase( s ) : value.equals( s );
         }
 
 
@@ -456,8 +456,8 @@ public class FilterValue implements SettingValue {
                 if ( v.isNumber() ) {
                     return v.equals( toNumber( entry ) );
                 }
-                String s = ActivityUtils.valueToString( v ).value;
-                return ignoreCase ? s.equalsIgnoreCase( entry ) : s.equals( entry );
+                String s = ActivityUtils.valueToString( v );
+                return ignoreCase ? entry.equalsIgnoreCase( s ) : entry.equals( s );
             } );
         }
 
@@ -547,7 +547,7 @@ public class FilterValue implements SettingValue {
             if ( v.isNumber() ) {
                 return v.compareTo( valueAsNumber() );
             }
-            return ActivityUtils.valueToString( v ).compareTo( valueAsString() );
+            return ActivityUtils.valueToPolyString( v ).compareTo( valueAsString() );
         }
 
 

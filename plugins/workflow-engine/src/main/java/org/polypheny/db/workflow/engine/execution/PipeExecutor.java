@@ -261,7 +261,7 @@ public class PipeExecutor extends Executor {
             if ( currentId.equals( rootId ) ) {
                 outPipe = getCheckpointWriterPipe( rootId, rootType );
             } else {
-                outPipe = new QueuePipe( queueCapacity, outTypes.get( currentId ), contexts.get( currentId ), outCounts.get( currentId ) ); // TODO: adapt queue capacity to tuple size?
+                outPipe = new QueuePipe( queueCapacity, outTypes.get( currentId ), contexts.get( currentId ), outCounts.get( currentId ) );
                 outQueues.put( currentId, (QueuePipe) outPipe );
             }
             callables.add( getCallable( wrapper, inPipes, outPipe ) );

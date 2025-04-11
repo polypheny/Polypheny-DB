@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.engine.execution.pipe;
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.workflow.dag.activities.Pipeable.PipeInterruptedException;
 
 public interface OutputPipe extends AutoCloseable {
 
@@ -30,9 +31,9 @@ public interface OutputPipe extends AutoCloseable {
      * @param value the tuple to insert
      * @return false if any future value being put into this pipe is ignored. This allows the producer to prematurely stop in the case where the consumer
      * is not interested in any more values.
-     * @throws InterruptedException if the thread was interrupted while waiting
+     * @throws PipeInterruptedException if the thread was interrupted while waiting
      */
-    boolean put( List<PolyValue> value ) throws InterruptedException;
+    boolean put( List<PolyValue> value ) throws PipeInterruptedException;
 
     /**
      * Puts the specified value into this pipe, possibly waiting for the pipe to have sufficient free capacity.
@@ -42,9 +43,9 @@ public interface OutputPipe extends AutoCloseable {
      * @param value the single value to insert
      * @return false if any future value being put into this pipe is ignored. This allows the producer to prematurely stop in the case where the consumer
      * is not interested in any more values.
-     * @throws InterruptedException if the thread was interrupted while waiting
+     * @throws PipeInterruptedException if the thread was interrupted while waiting
      */
-    default boolean put( PolyValue value ) throws InterruptedException {
+    default boolean put( PolyValue value ) throws PipeInterruptedException {
         return put( List.of( value ) );
     }
 

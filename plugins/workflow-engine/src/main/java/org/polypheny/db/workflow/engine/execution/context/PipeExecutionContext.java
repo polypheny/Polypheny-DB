@@ -19,11 +19,18 @@ package org.polypheny.db.workflow.engine.execution.context;
 import java.util.List;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.workflow.dag.activities.Activity;
+import org.polypheny.db.workflow.dag.activities.Pipeable.PipeInterruptedException;
 
 public interface PipeExecutionContext {
 
-    // no checkInterrupted(), since we use actual Interrupts. This is required to be able to interrupt
-    // activities blocked by a pipe.
+    /**
+     * Checks whether pipe execution was interrupted.
+     * This function generally does not have to be called manually, as the interrupt check is performed while putting a value in the output pipe.
+     * If the activity is a pure tuple consumer, then it is recommended to periodically call it.
+     *
+     * @throws PipeInterruptedException if execution was interrupted
+     */
+    void checkPipeInterrupted() throws PipeInterruptedException;
 
     /**
      * Manually update the progress of this activity.

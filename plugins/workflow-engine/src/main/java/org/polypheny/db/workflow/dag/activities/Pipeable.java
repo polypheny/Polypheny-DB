@@ -72,13 +72,13 @@ public interface Pipeable extends Activity {
         List<InputPipe> inPipes = inputs.stream().map( reader -> reader == null ? null :
                 (InputPipe) new CheckpointInputPipe( reader ) ).toList();
 
-        PipeExecutionContext pipeCtx = (ExecutionContextImpl) ctx;
+        List<Long> inCounts = inputs.stream().map( reader -> reader == null ? null : reader.getTupleCount() ).toList();
+        PipeExecutionContext pipeCtx = ((ExecutionContextImpl) ctx).toPipeExecutionContext( inCounts );
         try {
             if ( type != null ) {
-                List<Long> inCounts = inputs.stream().map( reader -> reader == null ? null : reader.getTupleCount() ).toList();
                 long tupleCount = estimateTupleCount( inputTypes, settings, inCounts, pipeCtx::getTransaction );
                 CheckpointWriter writer = ctx.createWriter( 0, type );
-                try ( OutputPipe outPipe = new CheckpointOutputPipe( type, writer, ctx, tupleCount ) ) {
+                try ( OutputPipe outPipe = new CheckpointOutputPipe( type, writer, pipeCtx, tupleCount ) ) {
                     pipe( inPipes, outPipe, settings, pipeCtx );
                 }
             } else {

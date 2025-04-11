@@ -235,7 +235,6 @@ public class RelLoadActivity implements Activity, Pipeable {
         int mapCapacity = (int) Math.ceil( table.getTupleType().getFieldCount() / 0.75 );
         long rowCount = 0;
         long countDelta = Math.max( totalRows / 100, 1 );
-        int startIdx = keepPkCol ? 0 : 1;
         try ( BatchWriter writer = new BatchWriter( context, transaction.createStatement(), paramTypes ) ) {
             for ( List<PolyValue> row : rows ) {
                 Map<Long, PolyValue> map = new HashMap<>( mapCapacity );
@@ -260,6 +259,7 @@ public class RelLoadActivity implements Activity, Pipeable {
                         ctx.checkInterrupted();
                     } else {
                         pipeCtx.updateProgress( progress );
+                        pipeCtx.checkPipeInterrupted();
                     }
                 }
             }

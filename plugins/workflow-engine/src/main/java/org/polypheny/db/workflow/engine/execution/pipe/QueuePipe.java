@@ -24,13 +24,13 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Pipeable.PipeInterruptedException;
-import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 
 public class QueuePipe implements InputPipe, OutputPipe {
 
     private final BlockingQueue<List<PolyValue>> queue;
     private final AlgDataType type;
-    private final ExecutionContext ctx;
+    private final PipeExecutionContext ctx;
     private boolean hasNext = true; // whether all tuples to ever be produced have been consumed
     private List<PolyValue> nextValue;
     private boolean startedIteration;
@@ -42,7 +42,7 @@ public class QueuePipe implements InputPipe, OutputPipe {
     private long count;
 
 
-    public QueuePipe( int capacity, AlgDataType type, ExecutionContext sourceCtx, long estimatedTotalCount ) {
+    public QueuePipe( int capacity, AlgDataType type, PipeExecutionContext sourceCtx, long estimatedTotalCount ) {
         this.queue = new LinkedBlockingQueue<>( capacity );
         this.type = type;
         this.ctx = sourceCtx;
@@ -59,12 +59,16 @@ public class QueuePipe implements InputPipe, OutputPipe {
 
 
     @Override
-    public boolean put( List<PolyValue> value ) throws InterruptedException {
+    public boolean put( List<PolyValue> value ) throws PipeInterruptedException {
         assert !value.isEmpty() : "Cannot pipe empty list, as it is used as an end marker.";
-        if (finishedByConsumer) {
+        if ( finishedByConsumer ) {
             return false; // prevent deadlock, since consumer does no longer consume
         }
-        queue.put( value );
+        try {
+            queue.put( value );
+        } catch ( InterruptedException e ) {
+            throw new PipeInterruptedException();
+        }
         count++;
         if ( canEstimateProgress && count % countDelta == 0 ) {
             ctx.updateProgress( getEstimatedProgress() );
@@ -110,7 +114,7 @@ public class QueuePipe implements InputPipe, OutputPipe {
 
     @Override
     public void finishIteration() {
-        if (!hasNext || finishedByConsumer) {
+        if ( !hasNext || finishedByConsumer ) {
             return;
         }
         finishedByConsumer = true;

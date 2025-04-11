@@ -38,6 +38,7 @@ import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
+import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
@@ -88,12 +89,16 @@ public class DocSelectFieldsActivity implements Activity, Fusable, Pipeable {
                 switch ( mode ) {
                     case "fieldSelect" -> {
                         Optional<FieldSelectValue> select = settings.get( "fields", FieldSelectValue.class );
-                        select.ifPresent( s -> {
+                        if ( select.isPresent() ) {
+                            FieldSelectValue s = select.get();
+                            if ( !s.isSelected( docId.value ) ) {
+                                throw new InvalidSettingException( "'" + docId.value + "' field must always be included", "fields" );
+                            }
                             s.getExclude().forEach( fields::remove );
                             if ( !s.includeUnspecified() ) {
                                 fields.retainAll( s.getInclude() );
                             }
-                        } );
+                        }
                     }
                     case "regex" -> {
                         Optional<StringValue> regex = settings.get( "regex", StringValue.class );

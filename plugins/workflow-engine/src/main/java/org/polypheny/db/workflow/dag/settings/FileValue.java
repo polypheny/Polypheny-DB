@@ -100,6 +100,19 @@ public class FileValue implements SettingValue {
     }
 
 
+    @JsonIgnore
+    public File getFile( boolean isDirectoryAllowed, boolean mustExist ) throws IOException {
+        File file = new File( path );
+        if ( !isDirectoryAllowed && file.isDirectory() ) {
+            throw new IOException( "Expected a file, but got a directory: " + path );
+        }
+        if ( mustExist && !file.exists() ) {
+            throw new IOException( "File does not exist: " + path );
+        }
+        return file;
+    }
+
+
     private static Source getClassPathSource( String path ) throws FileNotFoundException {
         URL resource = FileValue.class.getClassLoader().getResource( path );
         if ( resource == null ) {

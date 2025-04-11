@@ -51,7 +51,7 @@ public class WorkflowApi {
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/{activityId}", this::getActivity, HandlerType.GET ); // queryParam: state = true
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/{activityId}/statistics", this::getActivityStats, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/{activityId}/{outIndex}", this::getIntermediaryResult, HandlerType.GET );  // queryParam: limit = null
-        server.addSerializedRoute( PATH + "/registry", this::getActivityRegistry, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/registry", this::getActivityRegistry, HandlerType.GET ); // queryParam: array = false
         server.addSerializedRoute( PATH + "/registry/{activityType}", this::getActivityDef, HandlerType.GET );
 
         server.addSerializedRoute( PATH + "/sessions", this::createSession, HandlerType.POST ); // queryParam: execute = false       <- if true: immediately execute workflow
@@ -134,7 +134,13 @@ public class WorkflowApi {
 
 
     private void getActivityRegistry( final Context ctx ) {
-        process( ctx, ActivityRegistry::getRegistry );
+        boolean asArray = getQueryParam( ctx, "array", false );
+        process( ctx, () -> {
+            if ( asArray ) {
+                return ActivityRegistry.getRegistry().values();
+            }
+            return ActivityRegistry.getRegistry();
+        } );
     }
 
 

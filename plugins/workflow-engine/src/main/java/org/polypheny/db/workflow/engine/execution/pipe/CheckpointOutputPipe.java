@@ -20,21 +20,21 @@ import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.workflow.dag.activities.Pipeable.PipeInterruptedException;
-import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
+import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 
 public class CheckpointOutputPipe implements OutputPipe {
 
     private final AlgDataType type;
     private final CheckpointWriter writer;
-    private final ExecutionContext ctx;
+    private final PipeExecutionContext ctx;
     private final long totalCount;
     private final long countDelta;
     private final boolean canEstimateProgress;
     private long count;
 
 
-    public CheckpointOutputPipe( AlgDataType type, CheckpointWriter writer, ExecutionContext sourceCtx, long estimatedTotalCount ) {
+    public CheckpointOutputPipe( AlgDataType type, CheckpointWriter writer, PipeExecutionContext sourceCtx, long estimatedTotalCount ) {
         this.type = type;
         this.writer = writer;
 
@@ -46,10 +46,8 @@ public class CheckpointOutputPipe implements OutputPipe {
 
 
     @Override
-    public boolean put( List<PolyValue> value ) throws InterruptedException {
-        if ( Thread.interrupted() ) { // get the same behavior as with QueuePipe -> adds ability to interrupt execution
-            throw new PipeInterruptedException();
-        }
+    public boolean put( List<PolyValue> value ) throws PipeInterruptedException {
+        ctx.checkPipeInterrupted();
         writer.write( value );
         count++;
         if ( canEstimateProgress && count % countDelta == 0 ) {
