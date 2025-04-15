@@ -94,7 +94,7 @@ public class LockableImpl implements Lockable {
             }
             Set<Transaction> ownerSet = owners.stream().filter( t -> !t.equals( transaction ) ).collect( Collectors.toSet() );
             if ( DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, ownerSet ) ) {
-                throw new InterruptedException( "Deadlock detected" );
+                throw new DeadlockException( "Deadlock detected" );
             }
             concurrencyCondition.await();
         }
