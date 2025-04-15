@@ -134,6 +134,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Getter
     private final Set<Lockable> lockedEntities = new HashSet<>();
 
+    private boolean releasePhase = false;
+
 
     TransactionImpl(
             PolyXid xid,
@@ -411,6 +413,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public void releaseAllLocks() {
+        releasePhase = true;
         lockedEntities.forEach( lockedEntity -> {
             try {
                 lockedEntity.release( this );
@@ -424,6 +427,12 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public void acquireLockable( Lockable lockable, Lockable.LockType lockType ) {
+        if ( !isActive() ) {
+            throw new IllegalStateException( "Cannot acquire lock: transaction is not active!" );
+        }
+        if ( releasePhase ) {
+            throw new IllegalStateException( "Cannot acquire lock: transaction is in release phase!" );
+        }
         lockable.acquire( this, lockType );
         lockedEntities.add( lockable );
     }
