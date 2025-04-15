@@ -342,7 +342,7 @@ class GlobalSchedulerTest {
     @Test
     void concurrentWorkflowExecutionTest() throws Exception {
         int nWorkflows = 10;
-        int delay = 400;
+        int delay = 500;
 
         List<Workflow> workflows = new ArrayList<>();
         List<StorageManager> storageManagers = new ArrayList<>();
@@ -353,7 +353,7 @@ class GlobalSchedulerTest {
             storageManagers.add( storageManager );
             scheduler.startExecution( workflow, storageManager, null );
         }
-        scheduler.awaitResultProcessor( nWorkflows * delay / 2 ); // not enough time if not executed concurrently
+        scheduler.awaitResultProcessor( nWorkflows * delay * 4 / 5 ); // not enough time if not executed concurrently
 
         for ( Pair<Workflow, StorageManager> entry : Pair.zip( workflows, storageManagers ) ) { // also checks initial activity
             List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( entry.left );

@@ -186,6 +186,7 @@ public class GlobalScheduler {
             UUID sessionId = submission.getSessionId();
 
             completionService.submit( () -> {
+                log.info( "Starting Execution (global worker count: {})", globalWorkerCount );
                 submission.getInfo().setState( ExecutionState.EXECUTING );
                 if ( interruptedSessions.contains( sessionId ) ) {
                     return new ExecutionResult( submission, new ExecutorException( "Execution was interrupted before it started" ) );
@@ -216,6 +217,7 @@ public class GlobalScheduler {
                 }
                 activeSubmissions.get( sessionId ).remove( submission );
                 submission.getInfo().setState( ExecutionState.AWAIT_PROCESSING );
+                log.info( "Finished Execution" );
                 return result;
             } );
         }
