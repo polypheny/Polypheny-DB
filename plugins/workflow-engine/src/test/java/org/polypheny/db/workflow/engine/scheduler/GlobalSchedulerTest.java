@@ -342,7 +342,7 @@ class GlobalSchedulerTest {
     @Test
     void concurrentWorkflowExecutionTest() throws Exception {
         int nWorkflows = 10;
-        int delay = 200;
+        int delay = 400;
 
         List<Workflow> workflows = new ArrayList<>();
         List<StorageManager> storageManagers = new ArrayList<>();
@@ -357,7 +357,9 @@ class GlobalSchedulerTest {
 
         for ( Pair<Workflow, StorageManager> entry : Pair.zip( workflows, storageManagers ) ) { // also checks initial activity
             List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( entry.left );
+            assertEquals( WorkflowState.IDLE, entry.left.getState(), "Workflow did not finish its execution" );
             assertTrue( entry.right.hasCheckpoint( ids.get( ids.size() - 1 ), 0 ) );
+            entry.right.close();
         }
     }
 
