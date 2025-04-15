@@ -87,8 +87,6 @@ public interface Transaction {
 
     MultimediaFlavor getFlavor();
 
-    void wakeup();
-
     long getNumberOfStatements();
 
     DataMigrator getDataMigrator();
