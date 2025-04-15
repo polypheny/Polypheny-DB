@@ -46,14 +46,6 @@ public class DeadlockHandler {
                 return true;
             }
             return false;
-//            return conflictingTransactions.contains( transaction );
-//            if ( !conflictingTransactions.isEmpty() ) {
-//                if ( !conflictingTransactions.contains( transaction ) ) {
-//                    throw new AssertionError( "Expected to be part of conflicting transactions" );
-//                }
-//                return true;
-//            }
-//            return false;
         } finally {
             lock.unlock();
         }
