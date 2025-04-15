@@ -147,7 +147,7 @@ public class LockableImplTest {
                 transaction2.acquireLockable( lockable, LockType.EXCLUSIVE );
                 assertEquals( LockType.EXCLUSIVE, lockable.getLockType() );
                 assertEquals( 1, lockable.getCopyOfOwners().size() );
-                assertTrue( lockable.getCopyOfOwners().containsKey( transaction2 ) );
+                assertTrue( lockable.getCopyOfOwners().contains( transaction2 ) );
                 transaction2.commit();
             } catch ( Exception e ) {
                 fail( "Transaction 2 failed: " + e.getMessage() );
@@ -183,7 +183,7 @@ public class LockableImplTest {
                 transaction2.acquireLockable( lockable, LockType.EXCLUSIVE );
                 assertEquals( LockType.EXCLUSIVE, lockable.getLockType() );
                 assertEquals( 1, lockable.getCopyOfOwners().size() );
-                assertTrue( lockable.getCopyOfOwners().containsKey( transaction2 ) );
+                assertTrue( lockable.getCopyOfOwners().contains( transaction2 ) );
                 transaction2.commit();
             } catch ( Exception e ) {
                 fail( "Transaction 2 failed: " + e.getMessage() );
