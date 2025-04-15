@@ -53,7 +53,6 @@ public class LockableImpl implements Lockable {
                     case EXCLUSIVE -> acquireExclusive( transaction );
                 }
             } else {
-                // TODO Assertion
                 LockType heldLockType = getLockType();
                 if ( heldLockType == lockType ) {
                     return;
@@ -85,7 +84,9 @@ public class LockableImpl implements Lockable {
 
     private void upgradeToExclusive( Transaction transaction ) throws InterruptedException {
         if ( state == LockState.EXCLUSIVE ) {
-            // TODO: Assertion
+            if ( owners.size() != 1 || !owners.containsKey( transaction ) ) {
+                throw new AssertionError( "Exclusive lock not held exclusively" );
+            }
             return;
         }
         while ( owners.size() != 1 ) {
