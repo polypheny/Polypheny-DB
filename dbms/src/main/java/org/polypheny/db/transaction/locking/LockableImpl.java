@@ -17,8 +17,7 @@
 package org.polypheny.db.transaction.locking;
 
 import java.text.MessageFormat;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -34,7 +33,7 @@ public class LockableImpl implements Lockable {
 
     private final ReentrantLock concurrencyLock = new ReentrantLock( true );
     private final Condition concurrencyCondition = concurrencyLock.newCondition();
-    private final HashMap<Transaction, Long> owners = new HashMap<>();
+    private final HashSet<Transaction> owners = new HashSet<>();
     private final Lockable parent;
     private LockState state = LockState.SHARED;
 
@@ -47,7 +46,7 @@ public class LockableImpl implements Lockable {
     public void acquire( @NotNull Transaction transaction, @NotNull LockType lockType ) throws DeadlockException {
         try {
             concurrencyLock.lock();
-            if ( !owners.containsKey( transaction ) ) {
+            if ( !owners.contains( transaction ) ) {
                 switch ( lockType ) {
                     case SHARED -> acquireShared( transaction );
                     case EXCLUSIVE -> acquireExclusive( transaction );
@@ -84,22 +83,22 @@ public class LockableImpl implements Lockable {
 
     private void upgradeToExclusive( Transaction transaction ) throws InterruptedException {
         if ( state == LockState.EXCLUSIVE ) {
-            if ( owners.size() != 1 || !owners.containsKey( transaction ) ) {
+            if ( owners.size() != 1 || !owners.contains( transaction ) ) {
                 throw new AssertionError( "Exclusive lock not held exclusively" );
             }
             return;
         }
         while ( owners.size() != 1 ) {
-            if ( owners.isEmpty() || !owners.containsKey( transaction ) ) {
+            if ( owners.isEmpty() || !owners.contains( transaction ) ) {
                 throw new AssertionError( "Expected the lock to have at least one owner and to be an owner of the lock" );
             }
-            Set<Transaction> ownerSet = owners.keySet().stream().filter( t -> !t.equals( transaction ) ).collect( Collectors.toSet() );
+            Set<Transaction> ownerSet = owners.stream().filter( t -> !t.equals( transaction ) ).collect( Collectors.toSet() );
             if ( DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, ownerSet ) ) {
                 throw new InterruptedException( "Deadlock detected" );
             }
             concurrencyCondition.await();
         }
-        if ( !owners.containsKey( transaction ) ) {
+        if ( !owners.contains( transaction ) ) {
             throw new AssertionError( "Expected to be the sole owner of the exclusive lock" );
         }
         state = LockState.EXCLUSIVE;
@@ -109,7 +108,7 @@ public class LockableImpl implements Lockable {
 
     public void release( @NotNull Transaction transaction ) {
         concurrencyLock.lock();
-        if ( !owners.containsKey( transaction ) ) {
+        if ( !owners.contains( transaction ) ) {
             concurrencyLock.unlock();
             return;
         }
@@ -139,8 +138,8 @@ public class LockableImpl implements Lockable {
     }
 
 
-    public Map<Transaction, Long> getCopyOfOwners() {
-        return Map.copyOf( owners );
+    public Set<Transaction> getCopyOfOwners() {
+        return Set.copyOf( owners );
     }
 
 
@@ -155,7 +154,7 @@ public class LockableImpl implements Lockable {
             parent.acquire( transaction, LockType.SHARED );
         }
         while ( state == LockState.EXCLUSIVE || hasWaitingTransactions() ) {
-            if ( DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners.keySet() ) ) {
+            if ( DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners ) ) {
                 throw new InterruptedException( "Deadlock detected" );
             }
             concurrencyCondition.await();
@@ -163,7 +162,7 @@ public class LockableImpl implements Lockable {
         if ( state != LockState.SHARED ) {
             throw new AssertionError( "Expected lock to be shared" );
         }
-        owners.put( transaction, 1L );
+        owners.add( transaction );
         printAcquiredInfo( "ASh", transaction );
     }
 
@@ -173,7 +172,7 @@ public class LockableImpl implements Lockable {
             parent.acquire( transaction, LockType.SHARED );
         }
         while ( !owners.isEmpty() ) {
-            if ( DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners.keySet() ) ) {
+            if ( DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners ) ) {
                 throw new InterruptedException( "Deadlock detected" );
             }
             concurrencyCondition.await();
@@ -182,7 +181,7 @@ public class LockableImpl implements Lockable {
             throw new AssertionError( "Expected lock to be shared" );
         }
         state = LockState.EXCLUSIVE;
-        owners.put( transaction, 1L );
+        owners.add( transaction );
         printAcquiredInfo( "AEx", transaction );
     }
 
