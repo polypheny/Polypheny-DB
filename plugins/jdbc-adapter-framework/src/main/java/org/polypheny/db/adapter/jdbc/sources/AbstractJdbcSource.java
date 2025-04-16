@@ -204,7 +204,6 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     protected abstract boolean requiresSchema();
 
 
-    // TODO: Handle case if it is an oracle adapter (not possible to define a database).
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         Map<String, List<ExportedColumn>> map = new HashMap<>();

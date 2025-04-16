@@ -152,6 +152,8 @@ import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.schemaDiscovery.MetadataProvider;
+import org.polypheny.db.schemaDiscovery.Node;
 import org.polypheny.db.security.SecurityManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -441,7 +443,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     private String getFullEntityName( long entityId ) {
         LogicalTable table = Catalog.snapshot().rel().getTable( entityId ).orElseThrow();
-        // TODO Change Namepsace for oraale !!!
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( table.namespaceId ).orElseThrow();
         return String.format( "\"%s\".\"%s\"", namespace.name, table.name );
     }

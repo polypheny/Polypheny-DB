@@ -18,6 +18,8 @@ package org.polypheny.db.adapter.postgres.source;
 
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,6 +36,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.schemaDiscovery.MetadataProvider;
+import org.polypheny.db.schemaDiscovery.Node;
 
 
 @Slf4j
@@ -59,6 +63,66 @@ import org.polypheny.db.prepare.Context;
 @AdapterSettingString(name = "tables", defaultValue = "foo,bar",
         description = "List of tables which should be imported. The names must to be separated by a comma.")
 public class PostgresqlSource extends AbstractJdbcSource {
+
+
+
+    public Node fetchMetadataTree() {
+        Node root = new Node("relational", getUniqueName());
+
+        Map<String, List<ExportedColumn>> exported = getExportedColumns();
+
+        Map<String, Map<String, List<ExportedColumn>>> grouped = new HashMap<>();
+        for (Map.Entry<String, List<ExportedColumn>> entry : exported.entrySet()) {
+            for (ExportedColumn col : entry.getValue()) {
+                grouped
+                        .computeIfAbsent(col.physicalSchemaName, k -> new HashMap<>())
+                        .computeIfAbsent(col.physicalTableName, k -> new ArrayList<>())
+                        .add(col);
+            }
+        }
+
+        for (Map.Entry<String, Map<String, List<ExportedColumn>>> schemaEntry : grouped.entrySet()) {
+            Node schemaNode = new Node("schema", schemaEntry.getKey());
+
+            for (Map.Entry<String, List<ExportedColumn>> tableEntry : schemaEntry.getValue().entrySet()) {
+                Node tableNode = new Node("table", tableEntry.getKey());
+
+                for (ExportedColumn col : tableEntry.getValue()) {
+                    Node colNode = new Node("column", col.getName());
+                    colNode.addProperty("type", col.type.getName());
+                    colNode.addProperty("nullable", col.nullable);
+                    colNode.addProperty("primaryKey", col.primary);
+
+                    if (col.length != null) {
+                        colNode.addProperty("length", col.length);
+                    }
+                    if (col.scale != null) {
+                        colNode.addProperty("scale", col.scale);
+                    }
+
+                    tableNode.addChild(colNode);
+                }
+
+                schemaNode.addChild(tableNode);
+            }
+
+            root.addChild(schemaNode);
+        }
+
+        return root;
+    }
+
+
+    private void printTree(Node node, int depth) {
+        System.out.println("  ".repeat(depth) + node.getType() + ": " + node.getName());
+        for (Map.Entry<String, Object> entry : node.getProperties().entrySet()) {
+            System.out.println("  ".repeat(depth + 1) + "- " + entry.getKey() + ": " + entry.getValue());
+        }
+        for (Node child : node.getChildren()) {
+            printTree(child, depth + 1);
+        }
+    }
+
 
     public PostgresqlSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
         super(
@@ -112,6 +176,8 @@ public class PostgresqlSource extends AbstractJdbcSource {
                 logical.pkIds, allocation );
 
         adapterCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( table ) );
+        Node node = fetchMetadataTree();
+        printTree( node, 0 );
         return List.of( table );
     }
 

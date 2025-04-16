@@ -44,46 +44,63 @@ public class PostgreSqlConnection {
         List<DatabaseInfo> dbs = new ArrayList<>();
 
         String metaUrl = "jdbc:postgresql://" + host + ":" + port + "/postgres";
-        try ( Connection metaConn = DriverManager.getConnection( metaUrl, user, password );
+        try (
+                Connection metaConn = DriverManager.getConnection(metaUrl, user, password);
                 Statement stmt = metaConn.createStatement();
-                ResultSet rs = stmt.executeQuery( "SELECT datname FROM pg_database WHERE datistemplate = false" ) ) {
-
-            while ( rs.next() ) {
-                String dbName = rs.getString( "datname" );
-                DatabaseInfo dbInfo = new DatabaseInfo( dbName );
+                ResultSet rs = stmt.executeQuery("SELECT datname FROM pg_database WHERE datistemplate = false")
+        ) {
+            while (rs.next()) {
+                String dbName = rs.getString("datname");
+                DatabaseInfo dbInfo = new DatabaseInfo(dbName);
 
                 String dbUrl = "jdbc:postgresql://" + host + ":" + port + "/" + dbName;
-                try ( Connection dbConn = DriverManager.getConnection( dbUrl, user, password ) ) {
+                try (Connection dbConn = DriverManager.getConnection(dbUrl, user, password)) {
                     DatabaseMetaData meta = dbConn.getMetaData();
 
                     ResultSet schemas = meta.getSchemas();
-                    while ( schemas.next() ) {
-                        String schemaName = schemas.getString( "TABLE_SCHEM" );
-                        SchemaInfo schema = new SchemaInfo( schemaName );
+                    while (schemas.next()) {
+                        String schemaName = schemas.getString("TABLE_SCHEM");
+                        SchemaInfo schema = new SchemaInfo(schemaName);
 
-                        ResultSet tables = meta.getTables( null, schemaName, "%", new String[]{ "TABLE" } );
-                        while ( tables.next() ) {
-                            String tableName = tables.getString( "TABLE_NAME" );
-                            TableInfo table = new TableInfo( tableName );
+                        ResultSet tables = meta.getTables(null, schemaName, "%", new String[]{"TABLE"});
+                        while (tables.next()) {
+                            String tableName = tables.getString("TABLE_NAME");
+                            TableInfo table = new TableInfo(tableName);
 
-                            ResultSet columns = meta.getColumns( null, schemaName, tableName, "%" );
-                            while ( columns.next() ) {
-                                String columnName = columns.getString( "COLUMN_NAME" );
-                                String columnType = columns.getString( "TYPE_NAME" );
-                                table.attributes.add( new AttributeInfo( columnName, columnType ) );
+                            ResultSet columns = meta.getColumns(null, schemaName, tableName, "%");
+                            while (columns.next()) {
+                                String columnName = columns.getString("COLUMN_NAME");
+                                String columnType = columns.getString("TYPE_NAME");
+
+                                AttributeInfo attribute = new AttributeInfo(columnName, columnType);
+
+                                String sampleQuery = "SELECT \"" + columnName + "\" FROM \"" + schemaName + "\".\"" + tableName + "\" LIMIT 20";
+                                try (
+                                        Statement sampleStmt = dbConn.createStatement();
+                                        ResultSet sampleRs = sampleStmt.executeQuery(sampleQuery)
+                                ) {
+                                    while (sampleRs.next()) {
+                                        Object value = sampleRs.getObject(columnName);
+                                        attribute.sampleValues.add(value != null ? value.toString() : "NULL");
+                                    }
+                                } catch (SQLException e) {
+                                    System.err.println("Fehler beim Abrufen von Beispieldaten für Spalte " + columnName + ": " + e.getMessage());
+                                }
+
+                                table.attributes.add(attribute);
                             }
 
-                            schema.tables.add( table );
+                            schema.tables.add(table);
                         }
 
-                        dbInfo.schemas.add( schema );
+                        dbInfo.schemas.add(schema);
                     }
 
-                } catch ( SQLException e ) {
-                    System.err.println( "Fehler beim Abrufen von Schemas für DB " + dbName + ": " + e.getMessage() );
+                } catch (SQLException e) {
+                    System.err.println("Fehler beim Abrufen von Schemas für DB " + dbName + ": " + e.getMessage());
                 }
 
-                dbs.add( dbInfo );
+                dbs.add(dbInfo);
             }
         }
 
@@ -93,7 +110,8 @@ public class PostgreSqlConnection {
 
 
 
-    /*public static void main(String[] args) {
+
+    public static void main(String[] args) {
         try {
             List<DatabaseInfo> dbs = getDatabasesSchemasAndTables();
             for (DatabaseInfo db : dbs) {
@@ -105,6 +123,6 @@ public class PostgreSqlConnection {
             System.err.println("Fehler bei der Schema-Erkennung: " + e.getMessage());
             e.printStackTrace();
         }
-    }*/
+    }
 
 }

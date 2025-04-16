@@ -29,7 +29,7 @@ public class OraclePlugin extends PolyPlugin {
 
     public static final String ADAPTER_NAME = "Oracle";
     private long sourceId;
-    // private long storeId;
+    private long storeId;
 
 
     public OraclePlugin( PluginContext context ) { super( context ); }
@@ -39,7 +39,7 @@ public class OraclePlugin extends PolyPlugin {
     public void afterCatalogInit() {
         // SqlDialectRegistry.registerDialect( "Oracle", OracleSqlDialect.DEFAULT ); // TODO: Dialect might not be necessary.
         this.sourceId = AdapterManager.addAdapterTemplate( OracleSource.class, ADAPTER_NAME, OracleSource::new );
-        // this.storeId = AdapterManager.addAdapterTemplate( OracleStore.class, ADAPTER_NAME, OracleStore::new );
+        this.storeId = AdapterManager.addAdapterTemplate( OracleStore.class, ADAPTER_NAME, OracleStore::new );
     }
 
 
@@ -47,5 +47,6 @@ public class OraclePlugin extends PolyPlugin {
     public void stop() {
         SqlDialectRegistry.unregisterDialect( "Oracle" ); // TODO: if dialect is not necessary, unregistering dialect is redundant.
         AdapterManager.removeAdapterTemplate( this.sourceId );
+        AdapterManager.removeAdapterTemplate( this.storeId );
     }
 }

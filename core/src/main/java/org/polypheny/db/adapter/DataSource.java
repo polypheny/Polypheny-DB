@@ -25,6 +25,7 @@ import lombok.Getter;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
+import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import org.polypheny.db.type.PolyType;
 
 @Getter
@@ -47,6 +48,7 @@ public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> im
     @AllArgsConstructor
     public static class ExportedColumn {
 
+        @Getter
         public final String name;
         public final PolyType type;
         public final PolyType collectionsType;

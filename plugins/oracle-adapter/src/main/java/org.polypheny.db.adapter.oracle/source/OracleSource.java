@@ -114,7 +114,8 @@ public class OracleSource extends AbstractJdbcSource {
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
         PhysicalTable table = adapterCatalog.createTable(
-                logical.table.getNamespaceName(),
+                // logical.table.getNamespaceName(),
+                "SYSTEM",
                 logical.table.name,
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                 logical.table,
@@ -130,80 +131,77 @@ public class OracleSource extends AbstractJdbcSource {
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         Map<String, List<ExportedColumn>> map = new HashMap<>();
 
-        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID);
+        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
         try {
-            ConnectionHandler connectionHandler = connectionFactory.getOrCreateConnectionHandler(xid);
+            ConnectionHandler connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
             java.sql.Statement statement = connectionHandler.getStatement();
             Connection connection = statement.getConnection();
             DatabaseMetaData dbmd = connection.getMetaData();
 
-            // Für Oracle: Nimm den User (z. B. SYSTEM) als Schema
-            String schema = "SYSTEM";  // liefert z. B. SYSTEM
-            String tableName = "TEST"; // <- oder hole den Namen dynamisch aus settings
+            String schema = "SYSTEM";
+            String tableName = "TEST";
 
             List<String> primaryKeyColumns = new ArrayList<>();
-            try ( ResultSet pk = dbmd.getPrimaryKeys(null, schema, tableName)) {
-                while (pk.next()) {
-                    primaryKeyColumns.add(pk.getString("COLUMN_NAME").toUpperCase());
+            try ( ResultSet pk = dbmd.getPrimaryKeys( null, schema, tableName ) ) {
+                while ( pk.next() ) {
+                    primaryKeyColumns.add( pk.getString( "COLUMN_NAME" ).toUpperCase() );
                 }
             }
-
-            try (ResultSet columns = dbmd.getColumns(null, schema, tableName, "%")) {
+            try ( ResultSet columns = dbmd.getColumns( null, schema, tableName, "%" ) ) {
                 List<ExportedColumn> exportedColumns = new ArrayList<>();
-
-                while (columns.next()) {
-                    PolyType type = PolyType.getNameForJdbcType(columns.getInt("DATA_TYPE"));
+                while ( columns.next() ) {
+                    PolyType type = PolyType.getNameForJdbcType( columns.getInt( "DATA_TYPE" ) );
                     Integer length = null;
                     Integer scale = null;
 
-                    switch (type) {
+                    switch ( type ) {
                         case DECIMAL:
-                            length = columns.getInt("COLUMN_SIZE");
-                            scale = columns.getInt("DECIMAL_DIGITS");
+                            length = columns.getInt( "COLUMN_SIZE" );
+                            scale = columns.getInt( "DECIMAL_DIGITS" );
                             break;
                         case CHAR:
                         case VARCHAR:
                             type = PolyType.VARCHAR;
-                            length = columns.getInt("COLUMN_SIZE");
+                            length = columns.getInt( "COLUMN_SIZE" );
                             break;
                         case VARBINARY:
                         case BINARY:
                             type = PolyType.VARBINARY;
-                            length = columns.getInt("COLUMN_SIZE");
+                            length = columns.getInt( "COLUMN_SIZE" );
                             break;
                         case TIME:
                         case TIMESTAMP:
-                            length = columns.getInt("DECIMAL_DIGITS");
+                            length = columns.getInt( "DECIMAL_DIGITS" );
                             break;
                         default:
-                            // andere Typen ohne Length/Scale
                             break;
                     }
 
-                    exportedColumns.add(new ExportedColumn(
-                            columns.getString("COLUMN_NAME").toUpperCase(),
+                    exportedColumns.add( new ExportedColumn(
+                            columns.getString( "COLUMN_NAME" ).toUpperCase(),
                             type,
-                            null, // keine collection
+                            null,
                             length,
                             scale,
                             null,
                             null,
-                            "YES".equalsIgnoreCase(columns.getString("IS_NULLABLE")),
+                            "YES".equalsIgnoreCase( columns.getString( "IS_NULLABLE" ) ),
                             schema,
                             tableName,
-                            columns.getString("COLUMN_NAME").toUpperCase(),
-                            columns.getInt("ORDINAL_POSITION"),
-                            primaryKeyColumns.contains(columns.getString("COLUMN_NAME").toUpperCase())
-                    ));
+                            columns.getString( "COLUMN_NAME" ).toUpperCase(),
+                            columns.getInt( "ORDINAL_POSITION" ),
+                            primaryKeyColumns.contains( columns.getString( "COLUMN_NAME" ).toUpperCase() )
+                    ) );
                 }
 
-                map.put(tableName, exportedColumns);
+                map.put( tableName, exportedColumns );
             }
-        } catch ( SQLException | ConnectionHandlerException e) {
-            throw new GenericRuntimeException("Exception while collecting Oracle schema info", e);
+        } catch ( SQLException | ConnectionHandlerException e ) {
+            throw new GenericRuntimeException( "Exception while collecting Oracle schema info", e );
         }
 
         return map;
     }
+
 
 }

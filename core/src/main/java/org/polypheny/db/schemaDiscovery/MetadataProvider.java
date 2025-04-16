@@ -14,19 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.schemaDiscovery.DataHandling;
+package org.polypheny.db.schemaDiscovery;
 
-import java.util.ArrayList;
-import java.util.List;
+public interface MetadataProvider {
 
-public class AttributeInfo {
-    public String name;
-    public String type;
-    public List<String> sampleValues;
+    Node fetchMetadataTree();
 
-    public AttributeInfo( String name, String type ) {
-        this.name = name;
-        this.type = type;
-        this.sampleValues = new ArrayList<>();
-    }
+    Object fetchpreview();
+
+
 }
