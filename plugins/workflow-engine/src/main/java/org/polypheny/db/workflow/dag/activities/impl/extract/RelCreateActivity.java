@@ -74,7 +74,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 )
 @BoolSetting(key = "inferType", displayName = "Infer Column Types", pos = 3,
         defaultValue = true,
-        shortDescription = "If true, the column types are inferred from the first (non-header) row. Otherwise, all columns are textual."
+        shortDescription = "If true, the column types are inferred from the first 100 (non-header) rows. Otherwise, all columns are textual."
 )
 
 // advanced
@@ -97,6 +97,8 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 @SuppressWarnings("unused")
 public class RelCreateActivity implements Activity, Pipeable {
 
+    private static final int MAX_TYPE_INFER_ROWS = 100;
+
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
@@ -110,7 +112,7 @@ public class RelCreateActivity implements Activity, Pipeable {
             boolean emptyIsNull = settings.getBool( "emptyIsNull" );
 
             try ( CSVReader reader = ActivityUtils.openCSVReader( new StringReader( csv ), sep, quote, escape, 0, emptyIsNull ) ) {
-                List<String[]> firstRows = getRawRows( reader, 2 );
+                List<String[]> firstRows = getRawRows( reader, MAX_TYPE_INFER_ROWS );
                 return RelType.of( getType( firstRows, hasHeader, inferType ) ).asOutTypes();
             } catch ( InvalidSettingException e ) {
                 throw e;
@@ -131,7 +133,7 @@ public class RelCreateActivity implements Activity, Pipeable {
     @Override
     public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
         try ( CSVReader reader = getReader( settings, false ) ) {
-            List<String[]> firstRows = getRawRows( reader, 2 );
+            List<String[]> firstRows = getRawRows( reader, MAX_TYPE_INFER_ROWS );
             return getType( firstRows, settings.getBool( "header" ), settings.getBool( "inferType" ) );
         }
     }
@@ -239,8 +241,32 @@ public class RelCreateActivity implements Activity, Pipeable {
             if ( hasHeader && rawRows.size() < 2 ) {
                 throw new InvalidSettingException( "Not enough rows to infer column types", "inferType" );
             }
-            for ( String value : rawRows.get( hasHeader ? 1 : 0 ) ) {
-                PolyType polyType = ActivityUtils.inferPolyType( value, PolyType.TEXT );
+            PolyType[] polyTypes = new PolyType[count];
+            for ( String[] row : rawRows.subList( hasHeader ? 1 : 0, rawRows.size() ) ) {
+                for ( int i = 0; i < count; i++ ) {
+                    String value = row[i];
+                    if ( value == null || value.isEmpty() ) {
+                        continue; // gets replaced later
+                    }
+                    PolyType polyType = ActivityUtils.inferPolyType( value, PolyType.TEXT );
+                    PolyType previousType = polyTypes[i];
+                    if ( previousType == null ) {
+                        polyTypes[i] = polyType; // first type for column i
+                    } else if ( previousType != polyType ) {
+                        // Choose the more general type
+                        if ( previousType == PolyType.TEXT || polyType == PolyType.TEXT ||
+                                previousType == PolyType.BOOLEAN || polyType == PolyType.BOOLEAN ) {
+                            polyTypes[i] = PolyType.TEXT;
+                        } else {
+                            polyTypes[i] = PolyType.DOUBLE; // BIGINT or DOUBLE -> DOUBLE
+                        }
+                    }
+                }
+            }
+            for ( PolyType polyType : polyTypes ) {
+                if ( polyType == null ) { // type could not be inferred
+                    polyType = PolyType.TEXT;
+                }
                 colTypes.add( factory.createPolyType( polyType ) );
             }
         } else {

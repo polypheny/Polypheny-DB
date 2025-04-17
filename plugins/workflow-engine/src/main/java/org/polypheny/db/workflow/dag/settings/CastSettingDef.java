@@ -73,7 +73,7 @@ public class CastSettingDef extends SettingDef {
     private static SettingValue constructDefault( boolean singleCast, PolyType defaultType ) {
         if ( singleCast ) {
             return new CastValue( List.of(
-                    SingleCast.of( "", defaultType, true )
+                    SingleCast.of( "new_col", defaultType, true )
             ) );
         }
         return new CastValue( List.of() );

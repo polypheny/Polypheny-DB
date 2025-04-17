@@ -87,7 +87,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 )
 @BoolSetting(key = "inferType", displayName = "Infer Column Types", pos = 4, subGroup = "format",
         defaultValue = true,
-        shortDescription = "If true, the column types are inferred from the first (non-header) row. Otherwise, all columns are textual."
+        shortDescription = "If true, the column types are inferred from the first 100 (non-header) rows. Otherwise, all columns are textual."
 )
 
 // advanced
@@ -118,6 +118,7 @@ public class RelExtractCsvActivity implements Activity, Pipeable {
 
     private List<Source> sources;
     private static final Set<String> EXTENSIONS = Set.of( "csv", "tsv", "txt" );
+    private static final int MAX_TYPE_INFER_ROWS = 100;
 
 
     @Override
@@ -241,7 +242,7 @@ public class RelExtractCsvActivity implements Activity, Pipeable {
 
     private AlgDataType getType( Source source, Settings settings ) throws Exception {
         try ( CSVReader reader = getCSVReader( source.openStream(), settings, false ) ) {
-            List<String[]> firstRows = RelCreateActivity.getRawRows( reader, 2 );
+            List<String[]> firstRows = RelCreateActivity.getRawRows( reader, MAX_TYPE_INFER_ROWS );
             AlgDataType type = RelCreateActivity.getType( firstRows, settings.getBool( "header" ), settings.getBool( "inferType" ) );
             if ( settings.getBool( "nameCol" ) ) {
                 type = ActivityUtils.appendField( type, "file_name", factory.createPolyType( PolyType.VARCHAR, 255 ) );

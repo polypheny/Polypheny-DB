@@ -60,7 +60,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 @Slf4j
-@ActivityDefinition(type = "relAddCol", displayName = "Add Constant Column", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL, ActivityCategory.ESSENTIALS },
+@ActivityDefinition(type = "relAddCol", displayName = "Set Column to Constant", categories = { ActivityCategory.TRANSFORM, ActivityCategory.RELATIONAL, ActivityCategory.ESSENTIALS },
         inPorts = { @InPort(type = PortType.REL) },
         outPorts = { @OutPort(type = PortType.REL) },
         shortDescription = "Adds or replaces a column filled with a constant value."

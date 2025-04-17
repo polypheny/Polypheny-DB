@@ -313,7 +313,7 @@ class GlobalSchedulerTest {
     @Test
     void largeConcurrentActivityExecutionTest() throws Exception {
         int nBranches = 10; // more branches => more consistent failure of test
-        int delay = 200;
+        int delay = 500;
 
         Workflow workflow = WorkflowUtils.getAdvancedParallelBranchesWorkflow( nBranches, delay, nBranches );
         List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
