@@ -27,6 +27,7 @@ import org.polypheny.db.adapter.AbstractAdapterSettingList;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.Function5;
+import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
@@ -98,6 +99,18 @@ public class AdapterTemplate {
 
     public DeployMode getDefaultMode() {
         return clazz.getAnnotation( AdapterProperties.class ).defaultMode();
+    }
+
+
+    public DataSource<?> createEphemeral( Map<String, String> settings ) {
+        String previewName = "_preview" + System.nanoTime();
+        Adapter<?> adapter = deployer.get( -1L, previewName, settings, DeployMode.REMOTE );
+
+        if ( !(adapter instanceof DataSource<?> ds ) ) {
+            throw new GenericRuntimeException( "The adapter does not implement DataSource." );
+        }
+
+        return ds;
     }
 
 }

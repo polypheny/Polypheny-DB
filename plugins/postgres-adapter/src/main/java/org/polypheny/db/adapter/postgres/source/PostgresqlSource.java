@@ -181,5 +181,9 @@ public class PostgresqlSource extends AbstractJdbcSource {
         return List.of( table );
     }
 
+    public static void getPreview() {
+        log.error( "Methodenaufruf für Postgresql-Preview funktioniert !!!" );
+    }
+
 
 }

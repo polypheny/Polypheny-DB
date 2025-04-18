@@ -2078,6 +2078,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     /**
+     * Get Metadata and preview of data before creating the adapter.
+     */
+    void getMetadataAndPreview( final Context ctx ) {
+
+    }
+
+
+    /**
      * Deploy a new adapter
      */
     void createAdapter( final Context ctx ) throws ServletException, IOException {
@@ -2111,7 +2119,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
         AdapterTemplate adapter = AdapterManager.getAdapterTemplate( a.adapterName, a.type );
         Map<String, AbstractAdapterSetting> allSettings = adapter.settings.stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
-
         for ( Map.Entry<String, String> entry : a.settings.entrySet() ) {
             AbstractAdapterSetting set = allSettings.get( entry.getKey() );
             if ( set == null ) {
