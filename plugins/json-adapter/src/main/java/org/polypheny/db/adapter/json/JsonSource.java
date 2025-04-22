@@ -194,20 +194,6 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         }
     }
 
-
-    @Override
-    public void dropCollection( Context context, AllocationCollection allocation ) {
-        // TODO: What is this supposed to do?
-    }
-
-
-    @Override
-    public void renameLogicalColumn( long id, String newColumnName ) {
-        // TODO: Ask David: Why is this part of this interface?
-        log.debug( "NOT SUPPORTED: JSON source does not support method renameLogicalColumn()" );
-    }
-
-
     @Override
     public void truncate( Context context, long allocId ) {
         log.debug( "NOT SUPPORTED: JSON source does not support method truncate()." );
@@ -219,7 +205,6 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         log.debug( "NOT SUPPORTED: JSON source does not support method prepare()." );
         return true;
     }
-
 
     @Override
     public void commit( PolyXid xid ) {

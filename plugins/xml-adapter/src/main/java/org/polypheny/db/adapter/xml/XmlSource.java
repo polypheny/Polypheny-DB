@@ -166,7 +166,7 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
 
     @Override
     public void restoreCollection( AllocationCollection allocation, List<PhysicalEntity> entities, Context context ) {
-        PhysicalEntity collection = entities.get( 0 ); // TODO: set breakpoint and take a look at what's in this list...
+        PhysicalEntity collection = entities.get( 0 );
         updateNamespace( collection.getNamespaceName(), collection.getNamespaceId() );
         try {
             PhysicalCollection physicalCollection = new XmlCollection( XmlMetaRetriever.findDocumentUrl( xmlFiles, collection.getName() ), collection, allocation.getId(), namespace, this );
@@ -197,13 +197,11 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
 
     @Override
     public void dropCollection( Context context, AllocationCollection allocation ) {
-        // TODO: What is this supposed to do?
     }
 
 
     @Override
     public void renameLogicalColumn( long id, String newColumnName ) {
-        // TODO: Ask David: Why is this part of this interface?
         log.debug( "NOT SUPPORTED: XML source does not support method renameLogicalColumn()" );
     }
 
