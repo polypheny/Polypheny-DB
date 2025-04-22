@@ -26,6 +26,8 @@ public class PreviewRequest {
     public Map<String, String> settings;
     public int rowLimit;
 
+    public PreviewRequest() { }
+
     public PreviewRequest(
             String adapterName,
             AdapterType adapterType,

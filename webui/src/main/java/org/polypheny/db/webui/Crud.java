@@ -17,6 +17,7 @@
 package org.polypheny.db.webui;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -26,6 +27,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
 import io.javalin.http.Context;
@@ -87,6 +89,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
+import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResult;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
 import org.polypheny.db.catalog.Catalog;
@@ -206,6 +209,7 @@ import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
 import org.polypheny.db.webui.models.requests.PolyAlgRequest;
+import org.polypheny.db.webui.models.requests.PreviewRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.RelationalResult.RelationalResultBuilder;
@@ -2078,11 +2082,23 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     /**
-     * Get Metadata and preview of data before creating the adapter.
+     * Get Metadata and preview of data before fully creating the adapter.
      */
-    void getMetadataAndPreview( final Context ctx ) {
+    public void getMetadataAndPreview( final Context ctx ) {
+        try {
+            PreviewRequest req = ctx.bodyAsClass( PreviewRequest.class );
+            log.info( "Parsed preview request: {}", req );
 
+            AdapterTemplate template = AdapterTemplate.fromString( req.adapterName, req.adapterType );
+            PreviewResult result = template.preview( req.settings, req.rowLimit );
+
+            ctx.json( result );
+        } catch ( Exception e ) {
+            log.error( "🔥 Error while handling preview request", e );
+            ctx.status( 500 ).json( Map.of( "error", "Internal error: " + e.getMessage() ) );
+        }
     }
+
 
 
     /**

@@ -62,10 +62,10 @@ import org.polypheny.db.schemaDiscovery.Node;
         description = "Which level of transaction isolation should be used.")
 @AdapterSettingString(name = "tables", defaultValue = "foo,bar",
         description = "List of tables which should be imported. The names must to be separated by a comma.")
-public class PostgresqlSource extends AbstractJdbcSource {
+public class PostgresqlSource extends AbstractJdbcSource implements MetadataProvider {
 
 
-
+    @Override
     public Node fetchMetadataTree() {
         Node root = new Node("relational", getUniqueName());
 
@@ -110,6 +110,12 @@ public class PostgresqlSource extends AbstractJdbcSource {
         }
 
         return root;
+    }
+
+
+    @Override
+    public Object fetchpreview( int limit ) {
+        return null;
     }
 
 

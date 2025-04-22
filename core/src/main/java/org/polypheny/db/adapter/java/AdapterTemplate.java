@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSettingList;
 import org.polypheny.db.adapter.Adapter;
@@ -35,7 +36,10 @@ import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.schemaDiscovery.MetadataProvider;
+import org.polypheny.db.schemaDiscovery.Node;
 
+@Slf4j
 @Value
 public class AdapterTemplate {
 
@@ -104,6 +108,7 @@ public class AdapterTemplate {
 
     public DataSource<?> createEphemeral( Map<String, String> settings ) {
         String previewName = "_preview" + System.nanoTime();
+        log.info( "Creating ephemeral adapter {} with name {}", clazz.getName(), previewName );
         Adapter<?> adapter = deployer.get( -1L, previewName, settings, DeployMode.REMOTE );
 
         if ( !(adapter instanceof DataSource<?> ds ) ) {
@@ -111,6 +116,32 @@ public class AdapterTemplate {
         }
 
         return ds;
+    }
+
+
+    public PreviewResult preview( Map<String, String> settings, int limit ) {
+        DataSource<?> tmp = createEphemeral( settings );
+        log.info("Adapter class: {}", tmp.getClass().getName());
+        log.info("Implements MetadataProvider: {}", tmp instanceof MetadataProvider);
+        try {
+            if ( tmp instanceof MetadataProvider mp ) {
+                log.info( "🎯 Adapter supports MetadataProvider. Fetching metadata and preview..." );
+                Node meta = mp.fetchMetadataTree();
+                Object rows = mp.fetchpreview( limit );
+                return new PreviewResult( meta, rows );
+            }
+            throw new GenericRuntimeException( "The adapter does not implement MetadataProvider." );
+        } finally {
+            log.info( "🔻 Shutting down preview adapter." );
+            tmp.shutdown();
+        }
+    }
+
+
+    @Value
+    public static class PreviewResult {
+        Node metadata;
+        Object preview;
     }
 
 }
