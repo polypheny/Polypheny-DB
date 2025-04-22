@@ -20,8 +20,8 @@ import java.util.Map;
 import lombok.Value;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.workflow.WorkflowManager;
 import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
+import org.polypheny.db.workflow.engine.storage.StorageManager;
 
 
 @Value
@@ -39,9 +39,9 @@ public class WorkflowConfigModel {
 
     public static WorkflowConfigModel of() {
         return new WorkflowConfigModel(
-                Map.of( DataModel.RELATIONAL, WorkflowManager.DEFAULT_CHECKPOINT_ADAPTER,
-                        DataModel.DOCUMENT, WorkflowManager.DEFAULT_CHECKPOINT_ADAPTER,
-                        DataModel.GRAPH, WorkflowManager.DEFAULT_CHECKPOINT_ADAPTER ),
+                Map.of( DataModel.RELATIONAL, StorageManager.DEFAULT_CHECKPOINT_ADAPTER,
+                        DataModel.DOCUMENT, StorageManager.DEFAULT_CHECKPOINT_ADAPTER,
+                        DataModel.GRAPH, StorageManager.DEFAULT_CHECKPOINT_ADAPTER ),
                 false,
                 false,
                 0,

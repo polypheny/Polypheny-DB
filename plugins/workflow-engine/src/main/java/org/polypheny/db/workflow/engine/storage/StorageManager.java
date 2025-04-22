@@ -45,6 +45,7 @@ public interface StorageManager extends AutoCloseable { // TODO: remove AutoClos
     String ORIGIN = "WorkflowEngine";
     String PK_COL = "_key";
     AlgDataTypeField PK_FIELD = new AlgDataTypeFieldImpl( null, PK_COL, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.BIGINT ) );
+    String DEFAULT_CHECKPOINT_ADAPTER = "hsqldb_disk";
 
     UUID getSessionId();
 

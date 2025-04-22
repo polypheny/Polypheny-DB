@@ -24,15 +24,10 @@ import io.javalin.http.HttpCode;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyphenyDb;
-import org.polypheny.db.adapter.java.AdapterTemplate;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
-import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.webui.ConfigService.HandlerType;
@@ -61,7 +56,6 @@ public class WorkflowManager {
     private final JobManager jobManager;
     private final WorkflowApi apiManager;
     public static final String PATH = "/workflows";
-    public static final String DEFAULT_CHECKPOINT_ADAPTER = "hsqldb_disk";
     private static final ObjectMapper mapper = new ObjectMapper();
 
 
@@ -81,8 +75,14 @@ public class WorkflowManager {
                 new java.util.TimerTask() {
                     @Override
                     public void run() {
+                        while ( TransactionManagerImpl.getInstance().getNumberOfActiveTransactions() > 0 ) {
+                            try {
+                                Thread.sleep( 100 ); // wait for Statistic Manager to finish to avoid deadlock
+                            } catch ( InterruptedException e ) {
+                                throw new RuntimeException( e );
+                            }
+                        }
                         StorageManagerImpl.clearAll(); // remove old namespaces and checkpoints
-                        registerAdapter(); // TODO: only register adapter when the first workflow is opened
                         addSampleWorkflows();
                         try {
                             jobManager.onStartup();
@@ -133,21 +133,6 @@ public class WorkflowManager {
                 throw new RuntimeException( e );
             }
         }
-    }
-
-
-    private void registerAdapter() {
-        if ( Catalog.getInstance().getAdapters().values().stream().anyMatch( a -> a.uniqueName.equals( DEFAULT_CHECKPOINT_ADAPTER ) ) ) {
-            return;
-        }
-
-        AdapterTemplate storeTemplate = Catalog.snapshot().getAdapterTemplate( "HSQLDB", AdapterType.STORE ).orElseThrow();
-        Map<String, String> settings = new HashMap<>( storeTemplate.getDefaultSettings() );
-        settings.put( "trxControlMode", "locks" );
-        settings.put( "type", "File" );
-        settings.put( "tableType", "Cached" );
-
-        DdlManager.getInstance().createStore( DEFAULT_CHECKPOINT_ADAPTER, storeTemplate.getAdapterName(), AdapterType.STORE, settings, storeTemplate.getDefaultMode() );
     }
 
 

@@ -37,7 +37,6 @@ public class WorkflowPlugin extends PolyPlugin {
 
     @Override
     public void afterTransactionInit( TransactionManager tm ) {
-        System.out.println( "WorkflowPlugin: after transaction init" );
         manager = new WorkflowManager();
     }
 

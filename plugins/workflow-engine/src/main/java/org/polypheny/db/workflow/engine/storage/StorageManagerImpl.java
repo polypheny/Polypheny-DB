@@ -28,14 +28,17 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -86,6 +89,7 @@ public class StorageManagerImpl implements StorageManager {
     public static final String LPG_PREFIX = "lpg_";
     public static final String TABLE_PREFIX = "t_";
     public static final String COLLECTION_PREFIX = "c_";
+    public static final AtomicBoolean STARTED_ADAPTER = new AtomicBoolean( false );
 
     private final UUID sessionId;
     private final Map<DataModel, String> defaultStores;
@@ -113,6 +117,10 @@ public class StorageManagerImpl implements StorageManager {
         this.defaultStores.putIfAbsent( DataModel.RELATIONAL, fallbackStore );
         this.defaultStores.putIfAbsent( DataModel.DOCUMENT, fallbackStore );
         this.defaultStores.putIfAbsent( DataModel.GRAPH, fallbackStore );
+
+        if ( !STARTED_ADAPTER.get() && this.defaultStores.containsValue( DEFAULT_CHECKPOINT_ADAPTER ) ) {
+            addDefaultCheckpointAdapterIfMissing();
+        }
 
         String relNsName = getNamespaceName( REL_PREFIX );
         relNamespace = ddlManager.createNamespace(
@@ -490,6 +498,23 @@ public class StorageManagerImpl implements StorageManager {
         }
         transaction.commit();
         registeredNamespaces.clear();
+    }
+
+
+    private void addDefaultCheckpointAdapterIfMissing() {
+        if ( Catalog.getInstance().getAdapters().values().stream().anyMatch( a -> a.uniqueName.equals( DEFAULT_CHECKPOINT_ADAPTER ) ) ) {
+            STARTED_ADAPTER.set( true );
+            return;
+        }
+        if ( STARTED_ADAPTER.compareAndSet( false, true ) ) {
+            log.info( "Adding default workflow checkpoint adapter: " + DEFAULT_CHECKPOINT_ADAPTER );
+            AdapterTemplate storeTemplate = Catalog.snapshot().getAdapterTemplate( "HSQLDB", AdapterType.STORE ).orElseThrow();
+            Map<String, String> settings = new HashMap<>( storeTemplate.getDefaultSettings() );
+            settings.put( "trxControlMode", "locks" );
+            settings.put( "type", "File" );
+            settings.put( "tableType", "Cached" );
+            ddlManager.createStore( DEFAULT_CHECKPOINT_ADAPTER, storeTemplate.getAdapterName(), AdapterType.STORE, settings, storeTemplate.getDefaultMode() );
+        }
     }
 
     // Utils:
