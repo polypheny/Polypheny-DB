@@ -1066,7 +1066,7 @@ public class BasicMaterializedViewTest {
 
 
     @Test
-    // we have to add these additional commits as this can lead to deadlocks atm, due to the locking approach employed struggeling with really slow stores(e.g. cottontail)
+    // we have to add these additional commits as this can lead to deadlocks atm, due to the locking approach employed struggeling with really slow stores(e.g. neo4j)
     public void testUpdateFreshnessIntervals() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
