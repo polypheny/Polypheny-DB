@@ -456,54 +456,12 @@ public class WorkflowUtils {
     }
 
 
-    public static Workflow getRelToDocFusion() {
-        List<ActivityModel> activities = List.of(
-                new ActivityModel( "relValues" ),
-                new ActivityModel( "relToDoc" )
-        );
-        List<EdgeModel> edges = List.of(
-                EdgeModel.of( activities.get( 0 ), activities.get( 1 ), 0 )
-        );
-        return getWorkflow( activities, edges, true, false, 1 );
-    }
-
-
     public static List<UUID> getTopologicalActivityIds( Workflow workflow ) {
         List<UUID> list = new ArrayList<>();
         for ( UUID n : TopologicalOrderIterator.of( workflow.toDag() ) ) {
             list.add( n );
         }
         return list;
-    }
-
-
-    /**
-     * Used for exporting the workflows to use them in a non-test setting
-     */
-    public static void exportWorkflows() { // TODO: delete when no longer required
-        List<Workflow> workflows = List.of(
-                getUnionWorkflow(),
-                getMergeWorkflow( false ),
-                getSimpleFusion(),
-                getAdvancedFusion().left,
-                getSimplePipe(),
-                getLongRunningPipe( 10000 ),
-                pipeOverwritesFuse().left,
-                getVariableWritingWorkflow(),
-                getParallelBranchesWorkflow( 10, 1000, 10 ),
-                getCommonTransactionsWorkflow( false ).left,
-                getCommonExtractSkipActivityWorkflow().left,
-                getCommonLoadGetsSkippedWorkflow().left,
-                getDocumentWorkflow( 5 ),
-                getLpgWorkflow( 5, 0.5, false )
-        );
-        for ( Workflow wf : workflows ) {
-            try {
-                System.out.println( mapper.writeValueAsString( wf.toModel( false ) ) );
-            } catch ( JsonProcessingException e ) {
-                throw new RuntimeException( e );
-            }
-        }
     }
 
 

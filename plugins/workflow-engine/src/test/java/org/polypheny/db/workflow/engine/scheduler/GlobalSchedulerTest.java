@@ -510,25 +510,6 @@ class GlobalSchedulerTest {
     }
 
 
-    @Test
-    @Disabled
-        // TODO: enable to debug
-    void relToDocAlgNodesTest() throws Exception {
-        // See RelToDocActivity.fuse(): AlgNode tree should consist of LogicalRelValues -> LogicalTransformer
-        Workflow workflow = WorkflowUtils.getRelToDocFusion();
-        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
-        executeAllAndCheck( workflow, List.of( ids.get( 1 ) ) );
-    }
-
-
-    @Test
-    @Disabled
-        // TODO: delete when no longer required
-    void exportTestWorkflows() throws Exception {
-        WorkflowUtils.exportWorkflows();
-    }
-
-
     private void checkFailed( Workflow workflow, List<UUID> failedActivityIds ) {
         for ( UUID id : failedActivityIds ) {
             checkFailed( workflow, id );

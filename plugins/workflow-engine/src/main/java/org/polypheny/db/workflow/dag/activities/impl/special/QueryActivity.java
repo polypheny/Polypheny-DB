@@ -55,8 +55,7 @@ import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
 @ActivityDefinition(type = "query", displayName = "Query Transform", categories = { TRANSFORM, RELATIONAL, DOCUMENT, GRAPH, CROSS_MODEL, ESSENTIALS },
         inPorts = {
-                @InPort(type = PortType.ANY, description = "The input data to be queried. Can have any data model."),
-                @InPort(type = PortType.ANY, isOptional = true, description = "An optional second input. Note: Not all query languages support inputs with differing data models.")
+                @InPort(type = PortType.ANY, isMulti = true, description = "The input(s) containing the data to be queried. Note: Not all query languages support inputs with differing data models.")
         },
         outPorts = { @OutPort(type = PortType.ANY, description = "The query result. Note: Cypher queries produce relational results.") },
         shortDescription = "Execute an arbitrary query on the input data."

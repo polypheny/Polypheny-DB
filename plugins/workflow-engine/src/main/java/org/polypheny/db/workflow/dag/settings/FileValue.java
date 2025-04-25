@@ -60,7 +60,7 @@ public class FileValue implements SettingValue {
                     throw new FileNotFoundException( "File not found: " + path );
                 }
                 return Sources.of( absFile );
-            case REL_FILE: // TODO: change to something actually useful. e.g. relative to .polypheny
+            case REL_FILE: // should be changed to something actually useful. e.g. relative to .polypheny
                 return getClassPathSource( path );
             case URL:
                 return Sources.of( new URL( path ) );

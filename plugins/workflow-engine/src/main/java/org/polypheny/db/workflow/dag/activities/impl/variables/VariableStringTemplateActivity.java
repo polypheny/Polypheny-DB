@@ -76,7 +76,7 @@ public class VariableStringTemplateActivity implements VariableWriter {
         Map<String, JsonNode> variables = ctx.getVariableStore().getPublicVariables( true, false );
         StringSubstitutor substitutor = new StringSubstitutor( v -> resolveVariable( variables, v, fail ), "{", "}", '\\' )
                 .setDisableSubstitutionInValues( true );
-        String resolved = substitutor.replace( template );
+        String resolved = mapper.writeValueAsString( substitutor.replace( template ) );
 
         String json = mapper.writeValueAsString( ctx.getVariableStore().getDynamicVariables() );
         PolyDocument doc = PolyValue.fromJson( json ).asDocument();

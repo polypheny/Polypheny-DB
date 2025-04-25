@@ -40,34 +40,6 @@ public class FieldRenameValue implements SettingValue {
     boolean ignoreCase; // treat source case insensitive, not relevant for index mode
 
 
-    /*@JsonCreator // TODO: decide whether to keep other constructors and if yes, fix them
-    public FieldRenameValue( List<String> replacements ) {
-        rules = new ArrayList<>();
-        for ( int i = 0; i < replacements.size(); i++ ) {
-            String r = replacements.get( i );
-            rules.add( new RenameRule( i, r ) );
-        }
-        mode = SelectMode.INDEX;
-    }
-
-
-    @JsonCreator
-    public FieldRenameValue( Map<String, String> replacements ) {
-        rules = new ArrayList<>();
-        for ( Entry<String, String> e : replacements.entrySet() ) {
-            rules.add( new RenameRule( e.getKey(), e.getValue() ) );
-        }
-        mode = SelectMode.EXACT;
-    }
-
-
-    @JsonCreator
-    public FieldRenameValue( List<RenameRule> rules, SelectMode mode ) {
-        this.rules = rules;
-        this.mode = mode;
-    }*/
-
-
     public boolean hasDuplicates() {
         Set<String> sources = new HashSet<>();
         for ( RenameRule rule : rules ) {

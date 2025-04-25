@@ -62,7 +62,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         shortDescription = "This activity can be used to create a table from a given csv string. It should only be used for small tables, as the data is stored in the workflow itself."
 )
 @StringSetting(key = "csv", displayName = "CSV", pos = 0,
-        textEditor = true, language = "csv", nonBlank = true, maxLength = 60 * 1024, // TODO: limit size according to websocket message size limit (~64 KB)
+        textEditor = true, language = "csv", nonBlank = true, maxLength = 60 * 1024, // size is limited according to websocket message size limit (~64 KB)
         shortDescription = "A table specified in CSV notation. Its details can be further customized in the settings below.")
 @EnumSetting(key = "sep", displayName = "Separator", pos = 1,
         options = { "COMMA", "SEMICOLON", "TAB", "PIPE", "SPACE", "COLON", "TILDE" },

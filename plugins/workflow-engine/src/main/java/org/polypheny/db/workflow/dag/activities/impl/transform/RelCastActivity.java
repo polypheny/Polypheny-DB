@@ -139,7 +139,6 @@ public class RelCastActivity implements Activity, Fusable, Pipeable {
         Builder builder = ActivityUtils.getBuilder();
         Map<String, SingleCast> casts = cast.asMap();
         for ( AlgDataTypeField field : inType.getFields() ) {
-            // TODO: check compatibility?
             if ( casts.containsKey( field.getName() ) ) {
                 builder.add( field.getName(), null, casts.get( field.getName() ).getAlgDataType() );
             } else {

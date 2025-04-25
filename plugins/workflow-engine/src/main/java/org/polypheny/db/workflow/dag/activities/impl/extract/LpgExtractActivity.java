@@ -140,11 +140,7 @@ public class LpgExtractActivity implements Activity, Pipeable {
 
     private ResultIterator getResultIterator( Transaction transaction, LogicalGraph graph, boolean isEdges ) {
         String query = isEdges ? "MATCH ()-[r]->() RETURN r" : "MATCH (n) RETURN n";
-
-        System.out.println( "Before exec (isEdges: " + isEdges + ")" );
-        long start = System.currentTimeMillis();
         ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery( query, "cypher", graph.namespaceId, transaction );
-        System.out.println( "After exec (isEdges: " + isEdges + ", " + (System.currentTimeMillis() - start) + " ms)" );
         return executedContext.getIterator();
     }
 

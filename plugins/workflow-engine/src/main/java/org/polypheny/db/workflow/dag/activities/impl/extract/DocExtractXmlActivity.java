@@ -176,7 +176,7 @@ public class DocExtractXmlActivity implements Activity, Pipeable {
             XMLStreamReader reader = xmlFactory.createXMLStreamReader( stream );
             PolyDocument root = toPolyDocument( reader, cast );
             List<PolyDocument> docs = new ArrayList<>();
-            if ( !pointer.isEmpty() ) { // TODO: improve performance by resolving pointer during parsing
+            if ( !pointer.isEmpty() ) { // possible improvement: increase performance by resolving pointer during parsing
                 PolyValue value;
                 try {
                     value = ActivityUtils.getSubValue( root, pointer );

@@ -126,7 +126,7 @@ public class DocBatchWriter implements AutoCloseable {
             throw new GenericRuntimeException( "An error occurred while writing a batch: ", executedContext.getException().get() );
         }
         List<List<PolyValue>> results = executedContext.getIterator().getAllRowsAndClose();
-        long changedCount = results.size(); // TODO: result format is weird. For 3 written values: [[1], [1], [1]], for 10000 only 100 times [1]...
+        long changedCount = results.size(); // result format is weird. For 3 written values: [[1], [1], [1]], for 10000 only 100 times [1]...
         if ( changedCount < 1 && batchSize > 0 ) { // Temporary solution
             throw new GenericRuntimeException( "Unable to write all values of the batch: " + changedCount + " of " + batchSize + " tuples were written. Result is " + results );
         }
@@ -207,7 +207,8 @@ public class DocBatchWriter implements AutoCloseable {
 
 
     private void executePreparedBatch() {
-        // TODO: currently results in NullPointerException in RefactorFunctions.fromDocument: "Cannot invoke "org.polypheny.db.type.entity.PolyValue.toTypedJson()" because "doc" is null"
+        // Does not work, but would be preferrable over execManualPreparedStatement.
+        // Results in NullPointerException in RefactorFunctions.fromDocument: "Cannot invoke "org.polypheny.db.type.entity.PolyValue.toTypedJson()" because "doc" is null"
         int batchSize = paramValues.size();
 
         statement.getDataContext().setParameterTypes( Map.of( 0L, DocumentType.ofId() ) );
@@ -220,7 +221,7 @@ public class DocBatchWriter implements AutoCloseable {
             throw new GenericRuntimeException( "An error occurred while writing a batch: ", executedContext.getException().get() );
         }
         List<List<PolyValue>> results = executedContext.getIterator().getAllRowsAndClose();
-        long changedCount = results.size(); // TODO: result format is weird. For 3 written values: [[1], [1], [1]]
+        long changedCount = results.size(); // result format is weird. For 3 written values: [[1], [1], [1]]
         if ( changedCount < 1 && batchSize > 0 ) { // Temporary solution
             throw new GenericRuntimeException( "Unable to write all values of the batch: " + changedCount + " of " + batchSize + " tuples were written. Result is " + results );
         }

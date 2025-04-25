@@ -115,16 +115,7 @@ public class WorkflowManager {
             fileName = fileName.substring( 0, fileName.length() - ".json".length() );
             try {
                 WorkflowModel workflow = mapper.readValue( file, WorkflowModel.class );
-                String group = "Sample Workflows for Debugging";
-                if ( fileName.startsWith( "Demo " ) ) {
-                    group = "Demonstration";
-                    continue; // TODO: remove after evaluation
-                } else if ( fileName.startsWith( "Evaluation " ) ) {
-                    group = "Evaluation";
-                    fileName = fileName.substring( "Evaluation ".length() );
-                } else {
-                    continue; // TODO: remove after evaluation
-                }
+                String group = "Sample Workflows";
                 if ( repo.doesNameExist( fileName ) ) {
                     continue;
                 }

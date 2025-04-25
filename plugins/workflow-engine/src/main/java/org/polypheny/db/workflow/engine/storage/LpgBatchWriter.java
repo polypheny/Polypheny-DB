@@ -18,17 +18,15 @@ package org.polypheny.db.workflow.engine.storage;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgCluster;
@@ -36,7 +34,6 @@ import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
@@ -129,20 +126,8 @@ public class LpgBatchWriter implements AutoCloseable {
                 new RexBuilder( statement.getTransaction().getTypeFactory() ),
                 statement.getDataContext().getSnapshot() );
 
-        AlgNode values = new LogicalLpgValues( cluster, cluster.traitSet(), nodes, edges, ImmutableList.of(), deriveTupleType( cluster, nodes ) );
-        return new LogicalLpgModify( cluster, values.getTraitSet(), graph, values, Operation.INSERT, null, null ); // TODO: what are ids and operations?
-    }
-
-
-    private AlgDataType deriveTupleType( AlgCluster cluster, Collection<PolyNode> nodes ) {
-        // TODO: use static function in LpgValues after PolyAlg is merged
-        AlgDataTypeFactory.Builder builder = cluster.getTypeFactory().builder();
-        AlgDataType nodeType = cluster.getTypeFactory().createPolyType( PolyType.NODE );
-        for ( PolyNode node : nodes ) {
-            String name = node.variableName == null ? "null" : node.variableName.value;
-            builder.add( name, null, nodeType );
-        }
-        return builder.build();
+        AlgNode values = new LogicalLpgValues( cluster, cluster.traitSet(), nodes, edges, ImmutableList.of(), LpgValues.deriveTupleType( cluster, nodes, null, null ) );
+        return new LogicalLpgModify( cluster, values.getTraitSet(), graph, values, Operation.INSERT, null, null );
     }
 
 

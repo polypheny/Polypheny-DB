@@ -31,8 +31,8 @@ import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo.ExecutionState;
 public class ExecutionInfoModel {
 
     String submissionTime; // ISO 8601: "2025-01-17T14:30:00Z"
-    long totalDuration;
-    Map<ExecutionState, Long> durations;
+    long totalDuration; // millis
+    Map<ExecutionState, Double> durations; // millis, double for more accuracy
     List<UUID> activities;
     UUID root;
     ExecutorType executorType;

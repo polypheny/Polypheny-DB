@@ -20,12 +20,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgCluster;
-import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
@@ -37,7 +33,6 @@ import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.activities.ActivityUtils;
-import org.polypheny.db.workflow.dag.activities.Fusable;
 import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
@@ -52,7 +47,6 @@ import org.polypheny.db.workflow.dag.settings.FieldSelectValue;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
-import org.polypheny.db.workflow.engine.execution.context.FuseExecutionContext;
 import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
@@ -75,7 +69,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
         shortDescription = "If the entry in a JSON column is an object, it gets flattened.")
 
 @SuppressWarnings("unused")
-public class RelToDocActivity implements Activity, Fusable, Pipeable {
+public class RelToDocActivity implements Activity, Pipeable {
 
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
@@ -100,32 +94,7 @@ public class RelToDocActivity implements Activity, Fusable, Pipeable {
 
     @Override
     public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
-        if ( settings.get( "jsonCols", FieldSelectValue.class ).getInclude().isEmpty() ) {
-            // TODO: call more efficient fuse implementation
-            // Fusable.super.execute( inputs, settings, ctx );
-            // return;
-        }
         Pipeable.super.execute( inputs, settings, ctx );
-    }
-
-
-    @Override
-    public Optional<Boolean> canFuse( List<TypePreview> inTypes, SettingsPreview settings ) {
-        // TODO: enable when fusion works
-        return Optional.of( false );
-        //return settings.get( "jsonCols", FieldSelectValue.class ).map( select -> select.getInclude().isEmpty() );
-    }
-
-
-    @Override
-    public AlgNode fuse( List<AlgNode> inputs, Settings settings, AlgCluster cluster, FuseExecutionContext ctx ) throws Exception {
-        AlgNode node = inputs.get( 0 );
-        if ( settings.getBool( "skipPk" ) ) {
-            node = ActivityUtils.removePkCol( node, cluster );
-        }
-        // TODO: fix rel -> doc
-        //return new LogicalDocumentProject( cluster, cluster.traitSetOf( ModelTrait.DOCUMENT ), node, Map.of(), List.of() );
-        return LogicalTransformer.create( cluster, List.of( node ), null, ModelTrait.RELATIONAL, ModelTrait.DOCUMENT, getDocType(), true );
     }
 
 
@@ -156,7 +125,7 @@ public class RelToDocActivity implements Activity, Fusable, Pipeable {
                 PolyValue value = row.get( i );
                 if ( jsonCols.contains( i ) ) {
                     try {
-                        String serialized = value.toJson().replace( "\\\\", "\\" ).replace( "\\\"", "\"" );
+                        String serialized = value.isString() ? value.asString().value : value.toJson();
                         PolyValue deserialized = PolyValue.fromJson( serialized );
                         if ( unwrap && deserialized instanceof PolyDocument inner ) {
                             doc.putAll( inner );

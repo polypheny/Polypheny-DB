@@ -160,6 +160,16 @@ public class ExecutionInfo {
     }
 
 
+    public long getDurationNanos( ExecutionState state ) {
+        assert state != ExecutionState.DONE;
+        StopWatch stopWatch = durations.get( state );
+        if ( stopWatch == null ) {
+            return -1;
+        }
+        return stopWatch.getDuration().toNanos();
+    }
+
+
     public boolean isDone() {
         return state == ExecutionState.DONE;
     }
@@ -182,7 +192,7 @@ public class ExecutionInfo {
                 getDurationMillis(),
                 Arrays.stream( ExecutionState.values() )
                         .filter( s -> s != ExecutionState.DONE )
-                        .collect( Collectors.toMap( s -> s, this::getDurationMillis ) ),
+                        .collect( Collectors.toMap( s -> s, s -> getDurationNanos( s ) / 1000000d ) ),
                 new ArrayList<>( activities ),
                 root,
                 executorType,

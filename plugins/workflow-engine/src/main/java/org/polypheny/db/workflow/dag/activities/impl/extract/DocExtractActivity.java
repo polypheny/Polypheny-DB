@@ -149,11 +149,7 @@ public class DocExtractActivity implements Activity, Fusable, Pipeable {
 
     private ResultIterator getResultIterator( Transaction transaction, LogicalCollection collection ) {
         String query = "db.\"" + collection.getName() + "\".find({})";
-
-        System.out.println( "Before exec" );
-        long start = System.currentTimeMillis();
         ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery( query, "MQL", collection.getNamespaceId(), transaction );
-        System.out.println( "After exec (" + (System.currentTimeMillis() - start) + " ms)" );
         return executedContext.getIterator();
     }
 

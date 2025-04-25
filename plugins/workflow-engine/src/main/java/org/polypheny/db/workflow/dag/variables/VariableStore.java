@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.edges.Edge;
@@ -83,7 +84,7 @@ public class VariableStore implements ReadableVariableStore, WritableVariableSto
     public void setVariable( String key, Object obj ) {
         JsonNode jsonNode;
         if ( obj instanceof PolyValue value ) {
-            String serialized = value.toJson();
+            String serialized = ActivityUtils.valueToJson( value );
             try {
                 jsonNode = mapper.readTree( serialized );
             } catch ( JsonProcessingException e ) {

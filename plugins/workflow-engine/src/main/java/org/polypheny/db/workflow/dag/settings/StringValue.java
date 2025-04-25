@@ -54,7 +54,7 @@ public class StringValue implements SettingValue {
 
     public static StringValue of( JsonNode node ) {
         if ( !node.isTextual() ) {
-            throw new IllegalArgumentException( node.getNodeType() + " does not represent a string." );
+            return new StringValue( node.toString() );
         }
         return new StringValue( node.textValue() );
     }

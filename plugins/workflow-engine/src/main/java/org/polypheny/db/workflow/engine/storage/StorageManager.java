@@ -40,12 +40,12 @@ import org.polypheny.db.workflow.models.ActivityConfigModel.CommonType;
  * A StorageManager is responsible for managing the checkpoints of a specific session.
  * It is NOT responsible to enforce compliance of the checkpoint data model with the corresponding ActivityDef.
  */
-public interface StorageManager extends AutoCloseable { // TODO: remove AutoCloseable when transactions are managed by individual readers / writers
+public interface StorageManager extends AutoCloseable {
 
     String ORIGIN = "WorkflowEngine";
     String PK_COL = "_key";
     AlgDataTypeField PK_FIELD = new AlgDataTypeFieldImpl( null, PK_COL, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.BIGINT ) );
-    String DEFAULT_CHECKPOINT_ADAPTER = "hsqldb_disk";
+    String DEFAULT_CHECKPOINT_ADAPTER = "workflow_checkpoints";
 
     UUID getSessionId();
 

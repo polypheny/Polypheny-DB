@@ -193,8 +193,7 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
 
 
     private List<Pair<Set<UUID>, NodeColor>> getFirstConnectedComponents( AttributedDirectedGraph<UUID, ExecutionEdge> subDag, Map<UUID, NodeColor> nodeColors, Map<ExecutionEdge, EdgeColor> edgeColors ) {
-
-        // TODO: replace with contracted graph to make cleaner?
+        // more efficient than contracting graph and returning nodes with no predecessors, but yields the same result
         List<Pair<Set<UUID>, NodeColor>> connected = new ArrayList<>();
         Set<UUID> visited = new HashSet<>();
 
@@ -271,7 +270,7 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
             SubmissionFactory factory = new SubmissionFactory(
                     GraphUtils.getInducedSubgraph( subDag, component.left ),
                     component.left,
-                    component.right.executorType, // TODO: use fusion executor even for single activities if possible
+                    component.right.executorType,
                     commonType );
             queue.add( Pair.of( factory.getActivities().size(), factory ) ); // larger trees have higher priority
         }

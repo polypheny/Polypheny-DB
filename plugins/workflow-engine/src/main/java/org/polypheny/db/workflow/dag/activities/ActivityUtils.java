@@ -275,6 +275,19 @@ public class ActivityUtils {
 
 
     /**
+     * unlike polyValue.toJson(), this always generates valid JSON
+     */
+    public static String valueToJson( PolyValue value ) {
+        if ( value == null ) {
+            return "null";
+        } else if ( value.isString() ) {
+            return value.asString().toQuotedJson();
+        }
+        return value.toJson();
+    }
+
+
+    /**
      * A more forgiving version of PolyValue.getConverter(value).apply(value)
      */
     public static PolyValue castPolyValue( PolyValue value, PolyType type ) {

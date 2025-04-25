@@ -628,7 +628,6 @@ public class StorageManagerImpl implements StorageManager {
 
         dropAllCheckpoints();
         dropNamespaces();
-
     }
 
 

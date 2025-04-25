@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -47,6 +48,15 @@ public class FieldSelectSettingDef extends SettingDef {
 
     @Override
     public SettingValue buildValue( JsonNode node ) {
+        if ( node == null || node.isNull() ) {
+            return new FieldSelectValue( List.of(), List.of(), -1 );
+        } else if ( node.isArray() ) { // support deserialization when only values to include are provided
+            List<String> include = new ArrayList<>();
+            for ( JsonNode item : node ) {
+                include.add( item.asText() );
+            }
+            return new FieldSelectValue( include, List.of(), -1 );
+        }
         return SettingValue.fromJson( node, FieldSelectValue.class );
     }
 

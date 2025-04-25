@@ -341,7 +341,6 @@ public class WorkflowScheduler {
 
     private void updateGraph( boolean isSuccess, Set<UUID> activities, UUID rootId, AttributedDirectedGraph<UUID, ExecutionEdge> dag ) {
         // must not access this.execDag as it might be null at this point
-        // TODO: any not yet executed activity whose input edges are all either Active or Inactive should have their variableStores updated -> reduce number of empty optionals in previews / canFuse etc.
         ActivityWrapper root = workflow.getActivity( rootId );
         boolean isInitialUpdate = root.getState() == ActivityState.SAVED;
 
@@ -437,7 +436,7 @@ public class WorkflowScheduler {
                     targetPartition.setResolved( target.getId(), false ); // no need to catch the exception, as the transaction is already rolled back
                 }
                 // a skipped activity does NOT count as failed -> onFail control edges also become INACTIVE
-                dag.getOutwardEdges( target.getId() ).forEach( e -> propagateResult( false, workflow.getEdge( e ), dag, ignorePartitions ) ); // TODO: out edges from workflow or DAG?
+                dag.getOutwardEdges( target.getId() ).forEach( e -> propagateResult( false, workflow.getEdge( e ), dag, ignorePartitions ) );
             }
         }
     }
@@ -523,10 +522,6 @@ public class WorkflowScheduler {
     }
 
 
-    /**
-     * Currently, this class can be considered unnecessary. But it could be used as a starting point for implementing arbitrary partitions of workflows.
-     * This could be useful for nested workflows.
-     */
     private class Partition {
 
         private final CommonType commonType;
@@ -560,7 +555,6 @@ public class WorkflowScheduler {
                         workflow.getActivity( n ).setState( ActivityState.SKIPPED );
                         remaining.remove( n );
                         remainingActivities.remove( n ); // also remove from workflow-wide remaining list
-                        // TODO: also update inner edges?
                     }
                 }
             }
@@ -591,7 +585,7 @@ public class WorkflowScheduler {
                     try {
                         sm.commitCommonTransaction( commonType );
                     } catch ( TransactionException e ) {
-                        hasFailed = true; // TODO: is a manual rollback required?
+                        hasFailed = true;
                         throw e;
                     }
                 }

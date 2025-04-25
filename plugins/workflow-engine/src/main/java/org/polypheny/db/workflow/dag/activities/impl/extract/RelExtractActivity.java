@@ -172,12 +172,7 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
         String quotedCols = QueryUtils.quoteAndJoin( table.getColumnNames() );
         String quotedName = QueryUtils.quotedIdentifier( table );
         String query = "SELECT 0, " + quotedCols + " FROM " + quotedName; // add a new column for the primary key
-
-        System.out.println( "Before exec" );
-        long start = System.currentTimeMillis();
         ExecutedContext executedContext = QueryUtils.parseAndExecuteQuery( query, "SQL", table.getNamespaceId(), transaction );
-        System.out.println( "After exec (" + (System.currentTimeMillis() - start) + " ms)" );
-
         return executedContext.getIterator();
     }
 

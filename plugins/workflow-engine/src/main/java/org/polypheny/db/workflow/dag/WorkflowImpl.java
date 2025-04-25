@@ -150,14 +150,12 @@ public class WorkflowImpl implements Workflow {
 
     @Override
     public List<Edge> getInEdges( UUID target ) {
-        // TODO: make more efficient
         return getEdges().stream().filter( e -> e.getTo().getId().equals( target ) ).toList();
     }
 
 
     @Override
     public List<Edge> getOutEdges( UUID source ) {
-        // TODO: make more efficient
         return getEdges().stream().filter( e -> e.getFrom().getId().equals( source ) ).toList();
     }
 

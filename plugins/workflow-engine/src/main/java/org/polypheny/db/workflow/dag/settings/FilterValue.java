@@ -16,7 +16,10 @@
 
 package org.polypheny.db.workflow.dag.settings;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -346,6 +349,25 @@ public class FilterValue implements SettingValue {
 
         @JsonIgnore
         Map<Class<? extends PolyValue>, PolyValue> convertedValues = new ConcurrentHashMap<>(); // a cache for reusing casted values
+
+
+        @JsonCreator
+        public Condition(
+                @JsonProperty("field") String field,
+                @JsonProperty("operator") Operator operator,
+                @JsonProperty("value") JsonNode valueNode,
+                @JsonProperty("ignoreCase") boolean ignoreCase ) {
+            this.field = field;
+            this.operator = operator;
+            this.ignoreCase = ignoreCase;
+            if ( valueNode.isArray() ) {
+                List<String> values = new ArrayList<>();
+                valueNode.forEach( v -> values.add( v.asText() ) );
+                this.value = String.join( ",", values );
+            } else {
+                this.value = valueNode.asText();
+            }
+        }
 
 
         public void initialize( SelectMode mode ) throws IllegalArgumentException {

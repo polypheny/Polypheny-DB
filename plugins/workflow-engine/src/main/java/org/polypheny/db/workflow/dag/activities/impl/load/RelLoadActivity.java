@@ -144,7 +144,6 @@ public class RelLoadActivity implements Activity, Pipeable {
 
 
     private LogicalTable getEntity( Settings settings, AlgDataType inType, Supplier<Transaction> txSupplier, Consumer<String> logInfo ) throws ActivityException {
-        // TODO: check if the adapter is a data store (and thus writable)
         EntityValue setting = settings.get( TABLE_KEY, EntityValue.class );
         LogicalTable table = setting.getTable();
         boolean create = settings.getBool( "create" );
@@ -168,7 +167,6 @@ public class RelLoadActivity implements Activity, Pipeable {
                     throw new InvalidSettingException( "Specified namespace cannot be created: " + e.getMessage(), TABLE_KEY );
                 }
             }
-            // TODO: writing to a created table currently does not work.
             logInfo.accept( "Creating table '" + setting.getName() + "'" );
             assert namespace != null;
             // Unfortunately, we have to create the table outside our activity transaction context.

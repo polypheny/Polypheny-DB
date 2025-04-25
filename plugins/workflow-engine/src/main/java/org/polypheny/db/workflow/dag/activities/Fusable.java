@@ -38,7 +38,6 @@ import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 
-// TODO: write test to ensure at most 1 output was specified
 public interface Fusable extends Activity {
 
     /**

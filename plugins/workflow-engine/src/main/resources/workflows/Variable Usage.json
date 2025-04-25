@@ -16,11 +16,12 @@
                 "timeoutSeconds": 0,
                 "preferredStores": null,
                 "commonType": "NONE",
-                "controlStateMerger": "AND_AND"
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
             },
             "rendering": {
-                "posX": 607,
-                "posY": 302,
+                "posX": 557,
+                "posY": 307,
                 "name": null,
                 "notes": "Limit the number of rows based on the\nworkflow variable \"maxrows\"."
             }
@@ -48,11 +49,12 @@
                 "timeoutSeconds": 0,
                 "preferredStores": null,
                 "commonType": "NONE",
-                "controlStateMerger": "AND_AND"
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
             },
             "rendering": {
-                "posX": 1189.8533333333335,
-                "posY": 195,
+                "posX": 1091.38,
+                "posY": 197.5,
                 "name": null,
                 "notes": "Use the value in \"renamed_column\" to specify the new column name."
             }
@@ -74,7 +76,8 @@
                 "timeoutSeconds": 0,
                 "preferredStores": null,
                 "commonType": "NONE",
-                "controlStateMerger": "AND_AND"
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
             },
             "rendering": {
                 "posX": 27,
@@ -94,7 +97,8 @@
                 "timeoutSeconds": 0,
                 "preferredStores": null,
                 "commonType": "NONE",
-                "controlStateMerger": "AND_AND"
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
             },
             "rendering": {
                 "posX": 27,
@@ -124,10 +128,11 @@
                 "timeoutSeconds": 0,
                 "preferredStores": null,
                 "commonType": "NONE",
-                "controlStateMerger": "AND_AND"
+                "controlStateMerger": "AND_AND",
+                "expectedOutcome": "ANY"
             },
             "rendering": {
-                "posX": 607,
+                "posX": 557,
                 "posY": 12,
                 "name": null,
                 "notes": "Create \"renamed_column\" variable"
@@ -166,9 +171,9 @@
     ],
     "config": {
         "preferredStores": {
-            "DOCUMENT": "hsqldb_disk",
-            "GRAPH": "hsqldb_disk",
-            "RELATIONAL": "hsqldb_disk"
+            "DOCUMENT": "workflow_checkpoints",
+            "GRAPH": "workflow_checkpoints",
+            "RELATIONAL": "workflow_checkpoints"
         },
         "fusionEnabled": false,
         "pipelineEnabled": false,

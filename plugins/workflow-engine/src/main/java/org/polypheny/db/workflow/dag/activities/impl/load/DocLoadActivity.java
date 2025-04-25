@@ -138,7 +138,6 @@ public class DocLoadActivity implements Activity, Pipeable {
             String adapter,
             Supplier<Transaction> txSupplier,
             Consumer<String> logInfo ) throws ActivityException {
-        // TODO: check if the adapter is a data store (and thus writable)
         LogicalCollection collection = setting.getCollection();
         if ( collection == null ) {
             if ( !canCreate ) {

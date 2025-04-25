@@ -77,12 +77,6 @@ public class RelReader extends CheckpointReader {
 
     @Override
     public Iterator<PolyValue[]> getArrayIterator() {
-        LogicalTable table = getTable();
-        /* Alternatively: Batch reader approach
-        Iterator<PolyValue[]> iterator = new AsyncRelBatchReader( table, transaction, StorageManager.PK_COL, true );
-        registerIterator( iterator );
-        return iterator;*/
-
         String query = "SELECT " + quotedCols + " FROM " + quotedIdentifier;
         return executeSqlQuery( query );
     }

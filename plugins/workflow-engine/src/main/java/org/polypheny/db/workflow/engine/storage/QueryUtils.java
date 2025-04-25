@@ -94,7 +94,7 @@ public class QueryUtils {
                 .language( QueryLanguage.from( queryLanguage ) )
                 .isAnalysed( false )
                 .origin( StorageManager.ORIGIN )
-                .batch( 100 ) // TODO: ensure this has the desired effect, then change to suitable value
+                .batch( 100 )
                 .namespaceId( namespaceId )
                 .transactionManager( transaction.getTransactionManager() )
                 .transactions( List.of( transaction ) ).build();
@@ -288,7 +288,7 @@ public class QueryUtils {
 
 
     public static Result<?, ?> getRelResult( ExecutedContext context, UIRequest request, Statement statement ) {
-        // TODO decide whether to use this method or LanguageCrud directly
+        // Does basically the same as the LanguageCrud
         if ( context.getException().isPresent() ) {
             return LanguageCrud.buildErrorResult( statement.getTransaction(), context, context.getException().get() ).build();
         }

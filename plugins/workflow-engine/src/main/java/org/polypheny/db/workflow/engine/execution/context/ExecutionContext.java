@@ -120,7 +120,4 @@ public interface ExecutionContext {
 
     void throwException( Throwable cause ) throws ExecutorException;
 
-    // TODO: add ability to create temporary "checkpoints" for intermediary results within an activity
-    // -> identified by sessionId + activityId + "temp" + unique name of save
-
 }
