@@ -6,6 +6,7 @@ dependencies {
     compileOnly project(":plugins:sql-language")
     compileOnly project(":plugins:jdbc-adapter-framework")
 
+    implementation(project(":core"))
     implementation group: "net.postgis", name: "postgis-jdbc", version: postgis_version
     implementation group: "org.postgresql", name: "postgresql", version: postgresql_version  // BSD 2-clause
 

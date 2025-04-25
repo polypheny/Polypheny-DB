@@ -20,7 +20,7 @@ public interface MetadataProvider {
 
     Node fetchMetadataTree();
 
-    Object fetchpreview(int limit);
+    Object fetchPreview(int limit);
 
 
 }

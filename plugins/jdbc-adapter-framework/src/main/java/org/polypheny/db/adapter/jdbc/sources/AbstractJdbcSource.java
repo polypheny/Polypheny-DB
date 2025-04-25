@@ -56,7 +56,7 @@ import org.polypheny.db.type.PolyType;
 public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> implements ExtensionPoint {
 
     @Delegate(excludes = Exclude.class)
-    private final RelationalScanDelegate delegate;
+    protected final RelationalScanDelegate delegate;
 
     protected SqlDialect dialect;
     protected JdbcSchema currentJdbcSchema;

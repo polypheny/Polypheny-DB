@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
@@ -38,6 +39,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import org.polypheny.db.schemaDiscovery.Node;
+import org.polypheny.db.schemaDiscovery.NodeSerializer;
 
 @Slf4j
 @Value
@@ -127,8 +129,11 @@ public class AdapterTemplate {
             if ( tmp instanceof MetadataProvider mp ) {
                 log.info( "🎯 Adapter supports MetadataProvider. Fetching metadata and preview..." );
                 Node meta = mp.fetchMetadataTree();
-                Object rows = mp.fetchpreview( limit );
-                return new PreviewResult( meta, rows );
+                String json = NodeSerializer.serializeNode( meta ).toString();
+                Object rows = mp.fetchPreview( limit );
+                log.error( json );
+                log.error( rows.toString() );
+                return new PreviewResult( json, rows );
             }
             throw new GenericRuntimeException( "The adapter does not implement MetadataProvider." );
         } finally {
@@ -140,7 +145,9 @@ public class AdapterTemplate {
 
     @Value
     public static class PreviewResult {
-        Node metadata;
+        @JsonProperty
+        String metadata;
+        @JsonProperty
         Object preview;
     }
 

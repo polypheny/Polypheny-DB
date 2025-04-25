@@ -2090,7 +2090,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             log.info( "Parsed preview request: {}", req );
 
             AdapterTemplate template = AdapterTemplate.fromString( req.adapterName, req.adapterType );
-            PreviewResult result = template.preview( req.settings, req.rowLimit );
+            log.error( "Row limit: {}", req.limit );
+            PreviewResult result = template.preview( req.settings, req.limit );
 
             ctx.json( result );
         } catch ( Exception e ) {

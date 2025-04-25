@@ -24,7 +24,7 @@ public class PreviewRequest {
     public String adapterName;
     public AdapterType adapterType;
     public Map<String, String> settings;
-    public int rowLimit;
+    public int limit;
 
     public PreviewRequest() { }
 
@@ -36,7 +36,7 @@ public class PreviewRequest {
         this.adapterName = adapterName;
         this.adapterType = adapterType;
         this.settings = settings;
-        this.rowLimit = rowLimit;
+        this.limit = rowLimit;
     }
 
 }
