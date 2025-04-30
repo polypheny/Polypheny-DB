@@ -30,6 +30,7 @@ import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -147,7 +148,6 @@ public class PolyphenyDb {
             if ( log.isDebugEnabled() ) {
                 log.debug( "PolyphenyDb.main( {} )", java.util.Arrays.toString( args ) );
             }
-            TimeZone.setDefault( TimeZone.getTimeZone( "UTC" ) );
             final SingleCommand<PolyphenyDb> parser = SingleCommand.singleCommand( PolyphenyDb.class );
             final PolyphenyDb polyphenyDb = parser.parse( args );
 
@@ -181,6 +181,9 @@ public class PolyphenyDb {
 
 
     public void runPolyphenyDb() {
+        TimeZone.setDefault( TimeZone.getTimeZone( "UTC" ) );
+        Locale.setDefault( Locale.US );
+
         if ( resetDocker ) {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
