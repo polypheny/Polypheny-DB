@@ -40,6 +40,8 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.schemaDiscovery.AbstractNode;
+import org.polypheny.db.schemaDiscovery.AttributeNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import org.polypheny.db.schemaDiscovery.Node;
 import org.polypheny.db.transaction.PUID;
@@ -70,9 +72,11 @@ import org.polypheny.db.transaction.PolyXid;
         description = "List of tables which should be imported. The names must to be separated by a comma.")
 public class PostgresqlSource extends AbstractJdbcSource implements MetadataProvider {
 
+    private AbstractNode metadataRoot;
+
 
     @Override
-    public Node fetchMetadataTree() {
+    public AbstractNode fetchMetadataTree() {
         String dbName = settings.get( "database" );
         Node root = new Node( "relational", dbName );
 
@@ -89,13 +93,13 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
         }
 
         for ( Map.Entry<String, Map<String, List<ExportedColumn>>> schemaEntry : grouped.entrySet() ) {
-            Node schemaNode = new Node( "schema", schemaEntry.getKey() );
+            AbstractNode schemaNode = new Node( "schema", schemaEntry.getKey() );
 
             for ( Map.Entry<String, List<ExportedColumn>> tableEntry : schemaEntry.getValue().entrySet() ) {
-                Node tableNode = new Node( "table", tableEntry.getKey() );
+                AbstractNode tableNode = new Node( "table", tableEntry.getKey() );
 
                 for ( ExportedColumn col : tableEntry.getValue() ) {
-                    Node colNode = new Node( "column", col.getName() );
+                    AbstractNode colNode = new AttributeNode( "column", col.getName() );
                     colNode.addProperty( "type", col.type.getName() );
                     colNode.addProperty( "nullable", col.nullable );
                     colNode.addProperty( "primaryKey", col.primary );
@@ -115,7 +119,8 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
 
             root.addChild( schemaNode );
         }
-        return root;
+        this.metadataRoot = root;
+        return this.metadataRoot;
     }
 
 
@@ -161,12 +166,12 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
 
 
 
-private void printTree( Node node, int depth ) {
+private void printTree( AbstractNode node, int depth ) {
     System.out.println( "  ".repeat( depth ) + node.getType() + ": " + node.getName() );
     for ( Map.Entry<String, Object> entry : node.getProperties().entrySet() ) {
         System.out.println( "  ".repeat( depth + 1 ) + "- " + entry.getKey() + ": " + entry.getValue() );
     }
-    for ( Node child : node.getChildren() ) {
+    for ( AbstractNode child : node.getChildren() ) {
         printTree( child, depth + 1 );
     }
 }
@@ -181,6 +186,7 @@ public PostgresqlSource( final long storeId, final String uniqueName, final Map<
             "org.postgresql.Driver",
             PostgresqlSqlDialect.DEFAULT,
             false );
+    this.metadataRoot = null;
 }
 
 
@@ -224,7 +230,7 @@ public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper lo
             logical.pkIds, allocation );
 
     adapterCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( table ) );
-    Node node = fetchMetadataTree();
+    AbstractNode node = fetchMetadataTree();
     return List.of( table );
 }
 

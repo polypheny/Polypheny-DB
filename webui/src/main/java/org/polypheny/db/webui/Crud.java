@@ -227,6 +227,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     public static final String ORIGIN = "Polypheny-UI";
     private final TransactionManager transactionManager;
 
+    private AdapterTemplate temp;
+
     public final LanguageCrud languageCrud;
     public final StatisticCrud statisticCrud;
 
@@ -245,6 +247,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         this.statisticCrud = new StatisticCrud( this );
         this.catalogCrud = new CatalogCrud( this );
         this.authCrud = new AuthCrud( this );
+        this.temp = null;
 
         Catalog.afterInit( () -> Catalog.getInstance().addObserver( this ) );
     }
@@ -2100,6 +2103,16 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
     }
 
+
+    public void processAttributes( final Context ctx ) {
+        try {
+            String req = ctx.body();
+            log.error( "Attribut Daten" + req );
+        } catch ( Exception e ) {
+            log.error( "Attribute Daten sind nicht vorhanden." );
+        }
+
+    }
 
 
     /**

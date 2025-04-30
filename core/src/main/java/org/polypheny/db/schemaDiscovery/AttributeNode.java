@@ -18,42 +18,16 @@ package org.polypheny.db.schemaDiscovery;
 
 import lombok.Getter;
 import lombok.Setter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-public class Node implements AbstractNode {
+public class AttributeNode extends Node implements AbstractNode {
 
-    @Setter
     @Getter
-    protected String type;
     @Setter
-    @Getter
-    protected String name;
-    @Setter
-    @Getter
-    protected List<AbstractNode> children;
-    @Setter
-    @Getter
-    protected Map<String, Object> properties;
+    private boolean isSelected;
 
-    public Node(String type, String name) {
-        this.type = type;
-        this.name = name;
-        this.children = new ArrayList<>();
-        this.properties = new HashMap<>();
+    public AttributeNode( String type, String name ) {
+        super( type, name );
+        this.isSelected = false;
     }
-
-
-    public void addChild(AbstractNode node) {
-        children.add(node);
-    }
-
-
-    public void addProperty(String key, Object value) {
-        properties.put(key, value);
-    }
-
 
 }

@@ -360,6 +360,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/previewTable", crud::getMetadataAndPreview );
 
+        webuiServer.post( "/sendSelectedMetadata", crud::processAttributes );
+
         webuiServer.get( "/getPolyAlgRegistry", crud::getPolyAlgRegistry );
 
         webuiServer.post( "/buildPolyPlan", crud::buildPlanFromPolyAlg );

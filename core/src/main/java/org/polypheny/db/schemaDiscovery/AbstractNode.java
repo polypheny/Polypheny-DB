@@ -16,11 +16,28 @@
 
 package org.polypheny.db.schemaDiscovery;
 
-public interface MetadataProvider {
+import java.util.List;
+import java.util.Map;
 
-    AbstractNode fetchMetadataTree();
+public interface AbstractNode {
 
-    Object fetchPreview(int limit);
+    String type = "";
+    String name = "";
+    List<AbstractNode> children = null;
+    Map<String, Object> properties = null;
+
+    void addChild(AbstractNode node);
+    void addProperty(String key, Object value);
+
+    String getType();
+    String getName();
+    List<AbstractNode> getChildren();
+    Map<String, Object> getProperties();
+
+    void setType(String type);
+    void setName(String name);
+    void setChildren(List<AbstractNode> children);
+    void setProperties(Map<String, Object> properties);
 
 
 }

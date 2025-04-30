@@ -37,6 +37,7 @@ import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.schemaDiscovery.AbstractNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import org.polypheny.db.schemaDiscovery.Node;
 import org.polypheny.db.schemaDiscovery.NodeSerializer;
@@ -128,7 +129,7 @@ public class AdapterTemplate {
         try {
             if ( tmp instanceof MetadataProvider mp ) {
                 log.info( "🎯 Adapter supports MetadataProvider. Fetching metadata and preview..." );
-                Node meta = mp.fetchMetadataTree();
+                AbstractNode meta = mp.fetchMetadataTree();
                 String json = NodeSerializer.serializeNode( meta ).toString();
                 Object rows = mp.fetchPreview( limit );
                 log.error( json );

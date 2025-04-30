@@ -24,7 +24,7 @@ public class NodeSerializer {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public static ObjectNode serializeNode(Node node) {
+    public static ObjectNode serializeNode(AbstractNode node) {
         ObjectNode json = objectMapper.createObjectNode();
         json.put( "type", node.getType() );
         json.put( "name", node.getName() );
@@ -37,7 +37,7 @@ public class NodeSerializer {
 
         // Children
         ArrayNode children = objectMapper.createArrayNode();
-        for (Node child : node.getChildren()) {
+        for (AbstractNode child : node.getChildren()) {
             children.add(serializeNode(child));
         }
         json.set("children", children);
