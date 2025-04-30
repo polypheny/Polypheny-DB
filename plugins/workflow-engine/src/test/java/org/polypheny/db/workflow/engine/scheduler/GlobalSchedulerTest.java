@@ -510,6 +510,16 @@ class GlobalSchedulerTest {
     }
 
 
+    @Test
+    @Disabled
+        // TODO: Enable test, fix bug, then remove test
+    void joinQueryExceptionTest() throws Exception {
+        Workflow workflow = WorkflowUtils.getJoinQueryExceptionWorkflow();
+        List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( workflow );
+        executeAllAndCheck( workflow, ids );
+    }
+
+
     private void checkFailed( Workflow workflow, List<UUID> failedActivityIds ) {
         for ( UUID id : failedActivityIds ) {
             checkFailed( workflow, id );

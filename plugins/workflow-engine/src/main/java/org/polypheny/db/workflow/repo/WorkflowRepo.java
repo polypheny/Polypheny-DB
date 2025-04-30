@@ -31,7 +31,8 @@ import org.polypheny.db.workflow.models.WorkflowModel;
 public interface WorkflowRepo {
 
     int MAX_NAME_LENGTH = 128;
-    int MAX_DESCRIPTION_LENGTH = 1024;
+    int MAX_WORKFLOW_DESCRIPTION_LENGTH = 1024;
+    int MAX_VERSION_DESCRIPTION_LENGTH = 1024;
 
     /**
      * Retrieves all workflow definitions stored in the repository.
@@ -130,6 +131,12 @@ public interface WorkflowRepo {
      * @throws WorkflowRepoException if the workflow cannot be modified, such as if an error occurs during the process.
      */
     void updateWorkflowGroup( UUID id, String group ) throws WorkflowRepoException;
+
+
+    /**
+     * Changes the description of a workflow to the specified value.
+     */
+    void updateWorkflowDescription( UUID id, String description ) throws WorkflowRepoException;
 
     Map<UUID, JobModel> getJobs() throws WorkflowRepoException;
 
@@ -233,17 +240,11 @@ public interface WorkflowRepo {
             throw new WorkflowRepoException( "Workflow has an invalid format: " + e.getMessage(), HttpCode.BAD_REQUEST );
         }
         UUID workflowId = createWorkflow( name, group );
+        if ( workflow.getDescription() != null ) {
+            updateWorkflowDescription( workflowId, workflow.getDescription() );
+        }
         writeVersion( workflowId, "Imported", validated );
         return workflowId;
-    }
-
-
-    default void printWorkflowDefs() throws WorkflowRepoException {
-        for ( Map.Entry<UUID, WorkflowDefModel> entry : getWorkflowDefs().entrySet() ) {
-            UUID workflowId = entry.getKey();
-            WorkflowDefModel workflowDef = entry.getValue();
-            System.out.println( "Workflow ID: " + workflowId.toString() + " => " + workflowDef );
-        }
     }
 
 

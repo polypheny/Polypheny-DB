@@ -224,7 +224,7 @@ public interface Workflow {
         WorkflowState state = includeState ? getState() : null;
         return new WorkflowModel( getActivities().stream().map( a -> a.toModel( includeState ) ).toList(),
                 getEdges().stream().map( e -> e.toModel( includeState ) ).toList(),
-                getConfig(), getVariables(), state );
+                getConfig(), getVariables(), null, state );
     }
 
 

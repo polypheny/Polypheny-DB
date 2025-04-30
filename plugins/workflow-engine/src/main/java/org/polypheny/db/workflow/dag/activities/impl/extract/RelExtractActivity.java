@@ -58,7 +58,7 @@ import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.RelWriter;
 
-@ActivityDefinition(type = "relExtract", displayName = "Extract Table", categories = { ActivityCategory.EXTRACT, ActivityCategory.RELATIONAL },
+@ActivityDefinition(type = "relExtract", displayName = "Extract Table", categories = { ActivityCategory.EXTRACT, ActivityCategory.RELATIONAL, ActivityCategory.ESSENTIALS },
         inPorts = {},
         outPorts = { @OutPort(type = PortType.REL, description = "The extracted table.") },
         shortDescription = "Extracts an existing table from Polypheny and outputs its rows.")
@@ -86,19 +86,6 @@ public class RelExtractActivity implements Activity, Fusable, Pipeable {
         RelWriter writer = ctx.createRelWriter( 0, type );
         try ( ResultIterator result = getResultIterator( ctx.getTransaction(), table ) ) { // transaction will get committed or rolled back externally
             writer.write( CheckpointReader.arrayToListIterator( result.getIterator(), true ), ctx );
-
-            /* Measuring execution time vs iteration time:
-
-            Iterator<PolyValue[]> it = result.getIterator();
-            int count = 0;
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
-            while ( it.hasNext()) {
-                it.next();
-                count++;
-            }
-            stopWatch.stop();
-            System.out.println("Count: " + count + ", time: " + stopWatch.getDuration().toMillis());*/
         }
 
     }

@@ -119,7 +119,6 @@ public class DocBatchWriter implements AutoCloseable {
         AlgNode modify = LogicalDocumentModify.create( collection, values, Operation.INSERT, null, null, null );
         AlgRoot root = AlgRoot.of( modify, Kind.INSERT );
 
-        System.out.println( "Executing batch of size " + batchSize );
         ExecutedContext executedContext = QueryUtils.executeAlgRoot( root, statement );
 
         if ( executedContext.getException().isPresent() ) {
@@ -214,7 +213,6 @@ public class DocBatchWriter implements AutoCloseable {
         statement.getDataContext().setParameterTypes( Map.of( 0L, DocumentType.ofId() ) );
         statement.getDataContext().setParameterValues( paramValues );
 
-        System.out.println( "Executing prepared batch of size " + batchSize );
         ExecutedContext executedContext = QueryUtils.executeAlgRoot( root, statement );
 
         if ( executedContext.getException().isPresent() ) {

@@ -21,7 +21,8 @@
                 "preferredStores": null,
                 "commonType": "NONE",
                 "controlStateMerger": "AND_AND",
-                "expectedOutcome": "ANY"
+                "expectedOutcome": "ANY",
+                "logErrors": false
             },
             "rendering": {
                 "posX": 562.9,
@@ -45,7 +46,8 @@
                 "preferredStores": null,
                 "commonType": "NONE",
                 "controlStateMerger": "AND_AND",
-                "expectedOutcome": "ANY"
+                "expectedOutcome": "ANY",
+                "logErrors": false
             },
             "rendering": {
                 "posX": 28.321646657887637,
@@ -92,7 +94,8 @@
                 "preferredStores": null,
                 "commonType": "NONE",
                 "controlStateMerger": "AND_AND",
-                "expectedOutcome": "ANY"
+                "expectedOutcome": "ANY",
+                "logErrors": false
             },
             "rendering": {
                 "posX": 562.9,
@@ -116,7 +119,8 @@
                 "preferredStores": null,
                 "commonType": "NONE",
                 "controlStateMerger": "AND_AND",
-                "expectedOutcome": "ANY"
+                "expectedOutcome": "ANY",
+                "logErrors": false
             },
             "rendering": {
                 "posX": 2688.8,
@@ -159,7 +163,8 @@
                 "preferredStores": null,
                 "commonType": "NONE",
                 "controlStateMerger": "AND_AND",
-                "expectedOutcome": "ANY"
+                "expectedOutcome": "ANY",
+                "logErrors": false
             },
             "rendering": {
                 "posX": 1092.9,
@@ -183,7 +188,8 @@
                 "preferredStores": null,
                 "commonType": "NONE",
                 "controlStateMerger": "AND_AND",
-                "expectedOutcome": "ANY"
+                "expectedOutcome": "ANY",
+                "logErrors": false
             },
             "rendering": {
                 "posX": 1092.9,
@@ -222,7 +228,8 @@
                 "preferredStores": null,
                 "commonType": "NONE",
                 "controlStateMerger": "AND_AND",
-                "expectedOutcome": "ANY"
+                "expectedOutcome": "ANY",
+                "logErrors": false
             },
             "rendering": {
                 "posX": 1622.9,
@@ -246,7 +253,8 @@
                 "preferredStores": null,
                 "commonType": "NONE",
                 "controlStateMerger": "AND_AND",
-                "expectedOutcome": "ANY"
+                "expectedOutcome": "ANY",
+                "logErrors": false
             },
             "rendering": {
                 "posX": 27,
@@ -305,7 +313,8 @@
                 "preferredStores": null,
                 "commonType": "NONE",
                 "controlStateMerger": "AND_AND",
-                "expectedOutcome": "ANY"
+                "expectedOutcome": "ANY",
+                "logErrors": false
             },
             "rendering": {
                 "posX": 2158.8,
@@ -395,5 +404,6 @@
         "logCapacity": 100
     },
     "variables": {},
-    "format_version": "0.0.1"
+    "format_version": "0.0.1",
+    "description": "Workflow that showcases basic extraction and data transformations on relational and graph data. \nThe workflow can easily be expanded with 'Load Table' activities to load the results into Polypheny."
 }

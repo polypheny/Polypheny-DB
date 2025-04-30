@@ -91,7 +91,6 @@ public class WorkflowScheduler {
 
 
     public WorkflowScheduler( Workflow workflow, StorageManager sm, @Nullable NestedSessionManager nestedManager, ExecutionMonitor monitor, int globalWorkers, @Nullable UUID targetActivity ) throws Exception {
-        log.info( "Instantiating WorkflowScheduler with target: {}", targetActivity );
         this.workflow = workflow;
         this.sm = sm;
         this.nestedManager = nestedManager;
@@ -260,8 +259,6 @@ public class WorkflowScheduler {
 
         if ( !result.isSuccess() ) {
             sm.dropCheckpoints( result.getRootId() ); // remove any created checkpoints
-            // for debugging
-            result.getException().printStackTrace();
             setErrorVariable( result.getActivities(), result.getException() );
         }
 

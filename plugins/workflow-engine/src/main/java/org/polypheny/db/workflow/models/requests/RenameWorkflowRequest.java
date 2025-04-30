@@ -23,5 +23,6 @@ public class RenameWorkflowRequest {
 
     String name;
     String group;
+    String description;
 
 }

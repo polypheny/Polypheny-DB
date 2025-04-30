@@ -120,4 +120,6 @@ public interface ExecutionContext {
 
     void throwException( Throwable cause ) throws ExecutorException;
 
+    boolean isLogErrors();
+
 }

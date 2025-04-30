@@ -50,7 +50,7 @@ public class QuerySettingDef extends SettingDef {
     public void validateValue( SettingValue value ) throws InvalidSettingException {
         if ( value instanceof QueryValue queryValue ) {
             String language = queryValue.getQueryLanguage();
-            if ( Arrays.stream( queryLanguages ).noneMatch( language::equals ) ) {
+            if ( Arrays.stream( queryLanguages ).noneMatch( language::equalsIgnoreCase ) ) {
                 throwInvalid( "Invalid query language: " + language );
             } else if ( queryValue.getQuery().isBlank() ) {
                 throwInvalid( "Query is empty" );

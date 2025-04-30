@@ -180,6 +180,12 @@ public class ExecutionContextImpl implements ExecutionContext, PipeExecutionCont
 
 
     @Override
+    public boolean isLogErrors() {
+        return activityWrapper.getConfig().isLogErrors();
+    }
+
+
+    @Override
     public void logInfo( String message ) {
         info.appendLog( activityWrapper.getId(), LogLevel.INFO, message );
     }

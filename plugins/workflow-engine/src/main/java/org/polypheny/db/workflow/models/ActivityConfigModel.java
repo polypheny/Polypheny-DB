@@ -40,6 +40,8 @@ public class ActivityConfigModel {
      */
     ExpectedOutcome expectedOutcome;
 
+    boolean logErrors;
+
 
     /**
      * Returns the name of the preferred store corresponding to the given output index
@@ -64,7 +66,8 @@ public class ActivityConfigModel {
             @JsonProperty("preferredStores") String[] preferredStores,
             @JsonProperty(value = "commonType", required = true) CommonType commonType,
             @JsonProperty("controlStateMerger") ControlStateMerger controlStateMerger,
-            @JsonProperty("expectedOutcome") ExpectedOutcome expectedOutcome ) {
+            @JsonProperty("expectedOutcome") ExpectedOutcome expectedOutcome,
+            @JsonProperty("logErrors") boolean logErrors ) {
 
         this.enforceCheckpoint = enforceCheckpoint;
         this.timeoutSeconds = timeoutSeconds;
@@ -72,11 +75,12 @@ public class ActivityConfigModel {
         this.commonType = commonType;
         this.controlStateMerger = controlStateMerger;
         this.expectedOutcome = expectedOutcome != null ? expectedOutcome : ExpectedOutcome.ANY; // Default handling
+        this.logErrors = logErrors;
     }
 
 
     public static ActivityConfigModel of() {
-        return new ActivityConfigModel( false, 0, null, CommonType.NONE, ControlStateMerger.AND_AND, ExpectedOutcome.ANY );
+        return new ActivityConfigModel( false, 0, null, CommonType.NONE, ControlStateMerger.AND_AND, ExpectedOutcome.ANY, true );
     }
 
 

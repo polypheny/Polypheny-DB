@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
-import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -37,18 +36,14 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
-import org.polypheny.db.catalog.entity.logical.LogicalIndex;
-import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.ImplementationContext;
@@ -203,57 +198,6 @@ public class QueryUtils {
             return allowedNamespaces.contains( sub.namespaceId );
         }
         return allowedIds.contains( scan.entity.id );
-    }
-
-
-    public static List<String> getPkCols( LogicalTable table ) {
-        LogicalPrimaryKey pk = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
-        return pk.getFieldNames();
-    }
-
-
-    public static boolean hasIndex( LogicalTable table, List<String> cols ) {
-        for ( LogicalIndex index : Catalog.snapshot().rel().getIndexes( table.id, false ) ) {
-            System.out.println( index );
-            if ( index.key.getFieldNames().equals( cols ) ) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-
-    public static void createIndex( LogicalTable table, List<String> cols, boolean isUnique ) {
-        System.out.println( "creating index for " + table.getName() );
-        AllocationPlacement placement = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).get( 0 );
-
-        Transaction indexTransaction = startTransaction( table.getNamespaceId(), "RelIndex" );
-        try {
-            DdlManager.getInstance().createIndex(
-                    table,
-                    null,
-                    cols,
-                    INDEX_NAME,
-                    isUnique,
-                    AdapterManager.getInstance().getStore( placement.adapterId ).orElse( null ),
-                    indexTransaction.createStatement() );
-            indexTransaction.commit();
-        } catch ( Exception ignored ) {
-            // not all adapters support adding indexes (e.g. MonetDB does not)
-        }
-        System.out.println( "    -> finished!" );
-    }
-
-
-    public static void dropIndex( LogicalTable table, List<String> cols ) {
-        for ( LogicalIndex index : Catalog.snapshot().rel().getIndexes( table.id, false ) ) {
-            if ( index.name.equals( INDEX_NAME ) && index.key.getFieldNames().equals( cols ) ) {
-                Transaction indexTransaction = startTransaction( table.getNamespaceId(), "RelIndexDelete" );
-                DdlManager.getInstance().dropIndex( table, index.name, indexTransaction.createStatement() );
-                indexTransaction.commit();
-                return;
-            }
-        }
     }
 
 

@@ -17,6 +17,7 @@
 package org.polypheny.db.workflow.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +37,9 @@ public class WorkflowModel {
     WorkflowConfigModel config;
     Map<String, JsonNode> variables;
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    String description; // only used for specifying the description in sample workflows. Never gets serialized.
+
     @JsonInclude(JsonInclude.Include.NON_NULL) // do not serialize EdgeState in static version
     WorkflowState state;
 
@@ -46,6 +50,7 @@ public class WorkflowModel {
         config = WorkflowConfigModel.of();
         state = null;
         variables = Map.of();
+        description = null;
     }
 
 
@@ -55,6 +60,7 @@ public class WorkflowModel {
         this.config = config;
         this.variables = variables;
         this.state = null;
+        this.description = null;
     }
 
 

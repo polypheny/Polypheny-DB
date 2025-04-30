@@ -257,7 +257,6 @@ public class GlobalScheduler {
                     submit( nextSubmissions );
                 }
             }
-            log.info( "Processor is finished" );
         } );
         t.start();
         return t;
@@ -265,9 +264,6 @@ public class GlobalScheduler {
 
 
     private void updateWorkerCount() {
-        if ( globalWorkerCount != Math.max( 1, RuntimeConfig.WORKFLOWS_WORKERS.getInteger() ) ) {
-            log.info( "Updating worker count from {} to {}", globalWorkerCount, Math.max( 1, RuntimeConfig.WORKFLOWS_WORKERS.getInteger() ) );
-        }
         globalWorkerCount = Math.max( 1, RuntimeConfig.WORKFLOWS_WORKERS.getInteger() );
         if ( !executor.isShutdown() ) {
             executor.setMaximumPoolSize( globalWorkerCount );

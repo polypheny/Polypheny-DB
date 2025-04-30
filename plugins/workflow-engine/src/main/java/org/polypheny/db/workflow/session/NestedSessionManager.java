@@ -80,7 +80,7 @@ public class NestedSessionManager {
         WorkflowModel model = repo.readVersion( workflowId, version );
         try {
             UUID sId = UUID.randomUUID();
-            NestedSession session = new NestedSession( sId, WorkflowImpl.fromModel( model ), workflowId, version, repo.getWorkflowDef( workflowId ), parentIds );
+            NestedSession session = new NestedSession( sId, WorkflowImpl.fromModel( model ), workflowId, version, parentIds );
             sessions.put( activityId, session );
             sessionManager.putNestedSession( session );
             return session;

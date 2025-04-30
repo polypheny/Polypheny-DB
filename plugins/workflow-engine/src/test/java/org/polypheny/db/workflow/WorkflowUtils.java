@@ -38,6 +38,7 @@ import org.polypheny.db.workflow.dag.activities.Activity.ControlStateMerger;
 import org.polypheny.db.workflow.dag.activities.impl.extract.DocExtractActivity;
 import org.polypheny.db.workflow.dag.activities.impl.extract.LpgExtractActivity;
 import org.polypheny.db.workflow.dag.settings.EntityValue;
+import org.polypheny.db.workflow.dag.settings.QueryValue;
 import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.dag.variables.VariableStore;
 import org.polypheny.db.workflow.engine.storage.StorageUtils;
@@ -456,6 +457,22 @@ public class WorkflowUtils {
     }
 
 
+    public static Workflow getJoinQueryExceptionWorkflow() throws JsonProcessingException {
+        List<ActivityModel> activities = List.of(
+                new ActivityModel( "relValues" ),
+                new ActivityModel( "relValues" ),
+                new ActivityModel( "query", Map.of( "query", new QueryValue(
+                        "SELECT a.name, b.age FROM {?0?} AS a JOIN {?1?} AS b on a.name = b.name LIMIT 10",
+                        "SQL" ).toJson() ) )
+        );
+        List<EdgeModel> edges = List.of(
+                EdgeModel.of( activities.get( 0 ), activities.get( 2 ), 0 ),
+                EdgeModel.of( activities.get( 1 ), activities.get( 2 ), 1 )
+        );
+        return getWorkflow( activities, edges, false, false, 1 );
+    }
+
+
     public static List<UUID> getTopologicalActivityIds( Workflow workflow ) {
         List<UUID> list = new ArrayList<>();
         for ( UUID n : TopologicalOrderIterator.of( workflow.toDag() ) ) {
@@ -493,7 +510,7 @@ public class WorkflowUtils {
 
 
     private static ActivityModel getCommonActivity( String type, Map<String, JsonNode> settings, CommonType commonType ) {
-        ActivityConfigModel config = new ActivityConfigModel( false, 0, null, commonType, ControlStateMerger.AND_AND, ExpectedOutcome.ANY );
+        ActivityConfigModel config = new ActivityConfigModel( false, 0, null, commonType, ControlStateMerger.AND_AND, ExpectedOutcome.ANY, true );
         return new ActivityModel( type, UUID.randomUUID(), settings, config, RenderModel.of() );
     }
 

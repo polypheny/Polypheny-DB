@@ -50,6 +50,7 @@ import org.polypheny.db.workflow.models.ExecutionMonitorModel;
 import org.polypheny.db.workflow.models.SessionModel;
 import org.polypheny.db.workflow.models.SessionModel.SessionModelType;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
+import org.polypheny.db.workflow.models.WorkflowDefModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
 import org.polypheny.db.workflow.models.requests.WsRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.CloneActivityRequest;
@@ -68,6 +69,8 @@ import org.polypheny.db.workflow.models.requests.WsRequest.UpdateVariablesReques
 import org.polypheny.db.workflow.models.responses.ActivityStatsResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse;
 import org.polypheny.db.workflow.models.responses.WsResponse.ResponseType;
+import org.polypheny.db.workflow.repo.WorkflowRepo.WorkflowRepoException;
+import org.polypheny.db.workflow.repo.WorkflowRepoImpl;
 
 @Slf4j
 public abstract class AbstractSession {
@@ -350,6 +353,15 @@ public abstract class AbstractSession {
 
     public WorkflowState getWorkflowState() {
         return workflow.getState();
+    }
+
+
+    public static WorkflowDefModel getWorkflowDefModel( UUID workflowId ) {
+        try {
+            return WorkflowRepoImpl.getInstance().getWorkflowDef( workflowId );
+        } catch ( WorkflowRepoException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 }

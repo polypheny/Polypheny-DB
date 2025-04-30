@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -54,10 +55,12 @@ import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
  * The root of this tree is therefore the only activity in the tree with no successors.
  * Any edge in the tree is guaranteed to be a data edge.
  */
+@Slf4j
 public class FusionExecutor extends Executor {
 
     private final AttributedDirectedGraph<UUID, ExecutionEdge> execTree;
     private final UUID rootId;
+    private boolean logErrors = false; // 1 activity in the execTree that has error printing enabled is sufficient to enable it for all
 
 
     public FusionExecutor( StorageManager sm, Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execTree, UUID rootId, ExecutionInfo info ) {
@@ -85,7 +88,9 @@ public class FusionExecutor extends Executor {
             root = AlgRoot.of( pair.left, Kind.SELECT );
             estimatedTupleCount = pair.right;
         } catch ( Exception e ) {
-            e.printStackTrace();
+            if ( logErrors ) {
+                log.warn( "FusionExecutor caught exception", e );
+            }
             throw new ExecutorException( e );
         }
         DataModel model = root.getModel().dataModel();
@@ -121,7 +126,6 @@ public class FusionExecutor extends Executor {
             info.setProgress( 1 );
             info.setTuplesWritten( writer.getWriteCount() );
         } catch ( Exception e ) {
-            e.printStackTrace();
             if ( e instanceof ExecutorException ex ) {
                 throw ex;
             }
@@ -147,6 +151,7 @@ public class FusionExecutor extends Executor {
 
     private Pair<AlgNode, Long> constructAlgNode( UUID root, AlgCluster cluster, Transaction transaction ) throws Exception {
         ActivityWrapper wrapper = workflow.getActivity( root );
+        updateLogErrors( wrapper );
         List<ExecutionEdge> inEdges = execTree.getInwardEdges( root );
         AlgNode[] inputsArr = new AlgNode[wrapper.getDef().getDynamicInPortCount( workflow.getInEdges( root ) )];
         Long[] inCountsArr = new Long[inputsArr.length];
@@ -189,6 +194,13 @@ public class FusionExecutor extends Executor {
             AlgNode fused = activity.fuse( inputs, settings, cluster, ctx );
             wrapper.mergeOutTypePreview( List.of( fused.getTupleType() ) );
             return Pair.of( fused, tupleCount );
+        }
+    }
+
+
+    private void updateLogErrors( ActivityWrapper wrapper ) {
+        if ( !logErrors ) {
+            logErrors = wrapper.getConfig().isLogErrors();
         }
     }
 

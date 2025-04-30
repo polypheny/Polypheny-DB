@@ -17,7 +17,8 @@
                 "preferredStores": null,
                 "commonType": "NONE",
                 "controlStateMerger": "AND_AND",
-                "expectedOutcome": "ANY"
+                "expectedOutcome": "ANY",
+                "logErrors": false
             },
             "rendering": {
                 "posX": 557,
@@ -50,7 +51,8 @@
                 "preferredStores": null,
                 "commonType": "NONE",
                 "controlStateMerger": "AND_AND",
-                "expectedOutcome": "ANY"
+                "expectedOutcome": "ANY",
+                "logErrors": false
             },
             "rendering": {
                 "posX": 1091.38,
@@ -77,7 +79,8 @@
                 "preferredStores": null,
                 "commonType": "NONE",
                 "controlStateMerger": "AND_AND",
-                "expectedOutcome": "ANY"
+                "expectedOutcome": "ANY",
+                "logErrors": false
             },
             "rendering": {
                 "posX": 27,
@@ -98,7 +101,8 @@
                 "preferredStores": null,
                 "commonType": "NONE",
                 "controlStateMerger": "AND_AND",
-                "expectedOutcome": "ANY"
+                "expectedOutcome": "ANY",
+                "logErrors": false
             },
             "rendering": {
                 "posX": 27,
@@ -129,7 +133,8 @@
                 "preferredStores": null,
                 "commonType": "NONE",
                 "controlStateMerger": "AND_AND",
-                "expectedOutcome": "ANY"
+                "expectedOutcome": "ANY",
+                "logErrors": false
             },
             "rendering": {
                 "posX": 557,
@@ -187,5 +192,6 @@
         "table": "emp",
         "maxrows": 10
     },
-    "format_version": "0.0.1"
+    "format_version": "0.0.1",
+    "description": "Workflow that showcases how setting values can be defined using variables. \n- Variables \"table\" and \"maxrows\" are statically assigned workflow variables.\n- The variable \"renamed_column\" is a dynamic variable that gets assigned during execution."
 }

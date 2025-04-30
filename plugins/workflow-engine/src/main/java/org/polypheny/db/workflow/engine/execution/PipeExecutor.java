@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.util.graph.AttributedDirectedGraph;
@@ -56,6 +57,7 @@ import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
  * Data is moved between threads using pipes.
  * Checkpoints are read and written in the activity thread that uses them, using special checkpoint pipes.
  */
+@Slf4j
 public class PipeExecutor extends Executor {
 
     private final AttributedDirectedGraph<UUID, ExecutionEdge> execTree;
@@ -71,6 +73,7 @@ public class PipeExecutor extends Executor {
 
     private boolean hasDetectedAbort = false;
     private ExecutorService executor;
+    private boolean logErrors = false; // 1 activity in the execTree that has error printing enabled is sufficient to enable it for all
 
 
     public PipeExecutor( StorageManager sm, Workflow workflow, AttributedDirectedGraph<UUID, ExecutionEdge> execTree, UUID rootId, int queueCapacity, ExecutionInfo info ) {
@@ -119,7 +122,9 @@ public class PipeExecutor extends Executor {
                         hasDetectedAbort = true;
                         futures.forEach( future -> future.cancel( true ) ); // ensure all remaining tasks are cancelled
                         abortReason = new ExecutorException( e.getCause() );
-                        e.printStackTrace();
+                        if ( logErrors ) {
+                            log.warn( "PipeExecutor caught exception", e );
+                        }
                     }
                     // only the first task to throw an exception is relevant
                 } catch ( CancellationException ignored ) {
@@ -236,6 +241,7 @@ public class PipeExecutor extends Executor {
         List<CheckpointReader> readers = new ArrayList<>();
         for ( UUID currentId : TopologicalOrderIterator.of( execTree ) ) {
             ActivityWrapper wrapper = workflow.getActivity( currentId );
+            updateLogErrors( wrapper );
             List<ExecutionEdge> inEdges = execTree.getInwardEdges( currentId );
             InputPipe[] inPipesArr = new InputPipe[dynamicInPortCounts.get( currentId )];
             for ( ExecutionEdge edge : inEdges ) {
@@ -299,6 +305,13 @@ public class PipeExecutor extends Executor {
             }
             return null;
         };
+    }
+
+
+    private void updateLogErrors( ActivityWrapper wrapper ) {
+        if ( !logErrors ) {
+            logErrors = wrapper.getConfig().isLogErrors();
+        }
     }
 
 }

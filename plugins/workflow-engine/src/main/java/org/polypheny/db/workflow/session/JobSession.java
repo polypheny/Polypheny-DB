@@ -42,7 +42,6 @@ import org.polypheny.db.workflow.models.JobExecutionModel;
 import org.polypheny.db.workflow.models.JobExecutionModel.JobResult;
 import org.polypheny.db.workflow.models.SessionModel;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
-import org.polypheny.db.workflow.models.WorkflowDefModel;
 import org.polypheny.db.workflow.models.requests.WsRequest.GetCheckpointRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
 import org.polypheny.db.workflow.models.responses.WsResponse.CheckpointDataResponse;
@@ -54,15 +53,13 @@ public class JobSession extends AbstractSession {
     private static final int MAX_HISTORY_SIZE = 50;
     @Getter
     private final JobTrigger trigger;
-    private final WorkflowDefModel workflowDef;
     private final List<JobExecutionModel> executionHistory = new ArrayList<>();
     private final Map<String, JsonNode> initialVariables;
 
 
-    public JobSession( UUID sessionId, Workflow wf, JobTrigger trigger, WorkflowDefModel workflowDef ) {
+    public JobSession( UUID sessionId, Workflow wf, JobTrigger trigger ) {
         super( JOB_SESSION, wf, sessionId, trigger.getWorkfowId(), trigger.getVersion(), null );
         this.trigger = trigger;
-        this.workflowDef = workflowDef;
         if ( trigger.isPerformance() ) {
             WorkflowConfigModel config = wf.getConfig().withOptimizationsEnabled();
             wf.setConfig( config );
@@ -159,7 +156,7 @@ public class JobSession extends AbstractSession {
     public SessionModel toModel() {
         return new SessionModel( getType(), sessionId, getSubscriberCount(),
                 lastInteraction.toString(), workflow.getActivityCount(), workflow.getState(),
-                trigger.getWorkfowId(), trigger.getVersion(), workflowDef,
+                trigger.getWorkfowId(), trigger.getVersion(), getWorkflowDefModel( trigger.getWorkfowId() ),
                 executionHistory, trigger.getJobId() );
     }
 

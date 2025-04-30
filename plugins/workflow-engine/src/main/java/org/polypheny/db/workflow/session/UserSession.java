@@ -29,7 +29,6 @@ import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.Workflow.WorkflowState;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.models.SessionModel;
-import org.polypheny.db.workflow.models.WorkflowDefModel;
 import org.polypheny.db.workflow.models.requests.WsRequest.CloneActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.CreateActivityRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.CreateEdgeRequest;
@@ -54,14 +53,12 @@ public class UserSession extends AbstractSession {
     private final UUID wId;
     @Setter
     private int openedVersion;
-    private final WorkflowDefModel workflowDef;
 
 
-    public UserSession( UUID sessionId, Workflow wf, UUID workflowId, int openedVersion, WorkflowDefModel workflowDef ) {
+    public UserSession( UUID sessionId, Workflow wf, UUID workflowId, int openedVersion ) {
         super( USER_SESSION, wf, sessionId, workflowId, openedVersion, null );
         this.wId = workflowId;
         this.openedVersion = openedVersion;
-        this.workflowDef = workflowDef;
     }
 
 
@@ -174,7 +171,7 @@ public class UserSession extends AbstractSession {
     @Override
     public SessionModel toModel() {
         return new SessionModel( getType(), sessionId, getSubscriberCount(), lastInteraction.toString(), workflow.getActivityCount(), workflow.getState(),
-                wId, openedVersion, workflowDef );
+                wId, openedVersion, getWorkflowDefModel( wId ) );
     }
 
 

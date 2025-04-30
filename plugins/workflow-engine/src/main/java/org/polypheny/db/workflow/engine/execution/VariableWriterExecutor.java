@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.engine.execution;
 
 import java.util.List;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.activities.VariableWriter;
@@ -27,6 +28,7 @@ import org.polypheny.db.workflow.engine.monitoring.ExecutionInfo;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
+@Slf4j
 public class VariableWriterExecutor extends Executor {
 
     private final ActivityWrapper wrapper;
@@ -51,8 +53,12 @@ public class VariableWriterExecutor extends Executor {
             ctx.logInfo( "Starting variable writer execution with settings: " + settings.serialize() );
             activity.execute( inputs, settings, ctx, wrapper.getVariables() );
             wrapper.setOutTypePreview( sm.getCheckpointPreviewTypes( wrapper.getId() ) );
+        } catch ( ExecutorException e ) {
+            throw e;
         } catch ( Exception e ) {
-            e.printStackTrace();
+            if ( wrapper.getConfig().isLogErrors() ) {
+                log.warn( "VariableWriterExecutor caught exception", e );
+            }
             throw new ExecutorException( e, wrapper.getId() );
         }
     }

@@ -60,7 +60,7 @@ import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 
-@ActivityDefinition(type = "docExtract", displayName = "Extract Collection", categories = { ActivityCategory.EXTRACT, ActivityCategory.DOCUMENT },
+@ActivityDefinition(type = "docExtract", displayName = "Extract Collection", categories = { ActivityCategory.EXTRACT, ActivityCategory.DOCUMENT, ActivityCategory.ESSENTIALS },
         inPorts = {},
         outPorts = { @OutPort(type = PortType.DOC, description = "The extracted collection of documents.") },
         shortDescription = "Extracts an existing collection from Polypheny and outputs its documents.")

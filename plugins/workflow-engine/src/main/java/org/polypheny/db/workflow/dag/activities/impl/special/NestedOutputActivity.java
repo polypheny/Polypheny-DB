@@ -64,7 +64,6 @@ public class NestedOutputActivity implements Activity, ContextConsumer {
             ctx.throwException( "A NestedOutputActivity can only be executed from within a parent workflow." );
         }
         if ( settings.getBool( "exportDynamic" ) ) {
-            System.out.println( "Exporting Dynamic Variables: " + ctx.getVariableStore().getDynamicVariables() );
             nestedManager.setOutDynamicVars( ctx.getVariableStore().getDynamicVariables() );
         }
     }

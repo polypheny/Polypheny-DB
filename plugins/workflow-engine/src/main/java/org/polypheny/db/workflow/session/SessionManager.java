@@ -243,9 +243,9 @@ public class SessionManager {
     }
 
 
-    private UUID registerUserSession( Workflow wf, UUID wId, int version ) throws WorkflowRepoException {
+    private UUID registerUserSession( Workflow wf, UUID wId, int version ) {
         UUID sId = UUID.randomUUID();
-        UserSession session = new UserSession( sId, wf, wId, version, repo.getWorkflowDef( wId ) );
+        UserSession session = new UserSession( sId, wf, wId, version );
         userSessions.put( sId, session );
         return sId;
     }
@@ -259,9 +259,9 @@ public class SessionManager {
     }
 
 
-    public UUID registerJobSession( Workflow wf, JobTrigger trigger ) throws WorkflowRepoException {
+    public UUID registerJobSession( Workflow wf, JobTrigger trigger ) {
         UUID sId = UUID.randomUUID();
-        JobSession session = new JobSession( sId, wf, trigger, repo.getWorkflowDef( trigger.getWorkfowId() ) );
+        JobSession session = new JobSession( sId, wf, trigger );
         jobSessions.put( sId, session );
         return sId;
     }

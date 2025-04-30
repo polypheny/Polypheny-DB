@@ -283,6 +283,9 @@ public class WorkflowManager {
             if ( request.getGroup() != null ) {
                 repo.updateWorkflowGroup( workflowId, request.getGroup() );
             }
+            if ( request.getDescription() != null ) {
+                repo.updateWorkflowDescription( workflowId, request.getDescription() );
+            }
             return "success";
         } );
     }

@@ -35,12 +35,16 @@ public class WorkflowDefModel {
     @Setter
     private String group; // null or '' for default group
 
+    @Setter
+    private String description;
+
     private final Map<Integer, VersionInfo> versions;
 
 
-    public WorkflowDefModel( String name, String group ) {
+    public WorkflowDefModel( String name, String group, String description ) {
         this.name = name;
         this.group = group;
+        this.description = description;
         versions = new HashMap<>();
     }
 

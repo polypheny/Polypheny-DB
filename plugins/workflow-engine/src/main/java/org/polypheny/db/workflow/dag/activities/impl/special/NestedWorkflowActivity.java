@@ -176,7 +176,6 @@ public class NestedWorkflowActivity implements VariableWriter, ContextConsumer {
             ctx.logInfo( "Nested Workflow finished successfully" );
             setOutputs( ctx );
             Map<String, JsonNode> dynamicVars = session.getDynamicOutputVariables();
-            System.out.println( "Dynamic vars are " + dynamicVars );
             if ( dynamicVars != null ) {
                 dynamicVars.forEach( writer::setVariable );
             }

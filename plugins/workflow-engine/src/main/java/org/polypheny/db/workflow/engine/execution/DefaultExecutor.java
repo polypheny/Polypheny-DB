@@ -18,6 +18,7 @@ package org.polypheny.db.workflow.engine.execution;
 
 import java.util.List;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
@@ -30,6 +31,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
  * Executor that executes a single activity using its execute() method.
  * This executor should only be used if the activity is neither fusable, pipeable, nor is it a VariableWriter.
  */
+@Slf4j
 public class DefaultExecutor extends Executor {
 
     private final ActivityWrapper wrapper;
@@ -54,8 +56,12 @@ public class DefaultExecutor extends Executor {
             wrapper.getActivity().execute( inputs, settings, ctx );
             wrapper.setOutTypePreview( sm.getCheckpointPreviewTypes( wrapper.getId() ) );
             ctx.updateProgress( 1 ); // ensure progress is correct
+        } catch ( ExecutorException e ) {
+            throw e;
         } catch ( Exception e ) {
-            e.printStackTrace();
+            if ( wrapper.getConfig().isLogErrors() ) {
+                log.warn( "DefaultExecutor caught exception", e );
+            }
             throw new ExecutorException( e, wrapper.getId() );
         }
     }

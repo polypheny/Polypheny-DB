@@ -37,6 +37,7 @@ import org.polypheny.db.workflow.engine.execution.context.FuseExecutionContext;
 import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
+import org.slf4j.LoggerFactory;
 
 public interface Fusable extends Activity {
 
@@ -88,9 +89,12 @@ public interface Fusable extends Activity {
         }
 
         ExecutedContext executedContext = QueryUtils.executeAlgRoot( root, statement );
-        if ( executedContext.getException().isPresent() ) {
-            executedContext.getException().get().printStackTrace();
-            ctx.throwException( "An error occurred while executing the activity: " + executedContext.getException().get().getMessage() );
+        Optional<Throwable> exception = executedContext.getException();
+        if ( exception.isPresent() ) {
+            if ( ctx.isLogErrors() ) {
+                LoggerFactory.getLogger( Fusable.class ).warn( "Caught exception", exception.get() );
+            }
+            ctx.throwException( "An error occurred while executing the activity: " + exception.get().getMessage() );
         }
 
         long countDelta = Math.max( estimatedTupleCount / 100, 1 );
@@ -107,7 +111,6 @@ public interface Fusable extends Activity {
                 ctx.checkInterrupted();
             }
         } catch ( Exception e ) {
-            e.printStackTrace();
             ctx.throwException( e );
         } finally {
             executedContext.getIterator().close();

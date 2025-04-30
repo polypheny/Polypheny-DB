@@ -124,7 +124,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
         } catch ( SecurityException e ) {
             throw new WorkflowRepoException( "Insufficient permissions to create workflow directory: " + workflowDir.getAbsolutePath(), e );
         }
-        serializeToFile( new File( workflowDir, DEF_FILE ), new WorkflowDefModel( name, group ) );
+        serializeToFile( new File( workflowDir, DEF_FILE ), new WorkflowDefModel( name, group, "" ) );
 
         return id;
     }
@@ -149,8 +149,8 @@ public class WorkflowRepoImpl implements WorkflowRepo {
 
     @Override
     public int writeVersion( UUID id, String description, WorkflowModel wf ) throws WorkflowRepoException {
-        if ( description.length() > MAX_DESCRIPTION_LENGTH ) {
-            throw new WorkflowRepoException( "Description must not exceed " + MAX_DESCRIPTION_LENGTH + " characters", HttpCode.BAD_REQUEST );
+        if ( description.length() > MAX_VERSION_DESCRIPTION_LENGTH ) {
+            throw new WorkflowRepoException( "Description must not exceed " + MAX_VERSION_DESCRIPTION_LENGTH + " characters", HttpCode.BAD_REQUEST );
         }
         WorkflowDefModel def = getWorkflowDef( id );
         int version = def.addVersion( description );
@@ -227,6 +227,20 @@ public class WorkflowRepoImpl implements WorkflowRepo {
         }
         def.setGroup( group );
         serializeToFile( new File( getWorkflowDir( id ), DEF_FILE ), def );  // updated definition
+    }
+
+
+    @Override
+    public void updateWorkflowDescription( UUID id, String description ) throws WorkflowRepoException {
+        WorkflowDefModel def = getWorkflowDef( id );
+        if ( def.getDescription().equals( description ) ) {
+            return;
+        }
+        if ( description.length() > MAX_WORKFLOW_DESCRIPTION_LENGTH ) {
+            throw new WorkflowRepoException( "Description must not exceed " + MAX_WORKFLOW_DESCRIPTION_LENGTH + " characters", HttpCode.BAD_REQUEST );
+        }
+        def.setDescription( description );
+        serializeToFile( new File( getWorkflowDir( id ), DEF_FILE ), def );
     }
 
 

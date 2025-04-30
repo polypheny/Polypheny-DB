@@ -43,7 +43,6 @@ import org.polypheny.db.workflow.dag.edges.DataEdge;
 import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.models.SessionModel;
-import org.polypheny.db.workflow.models.WorkflowDefModel;
 import org.polypheny.db.workflow.models.requests.WsRequest.GetCheckpointRequest;
 import org.polypheny.db.workflow.models.requests.WsRequest.UpdateActivityRequest;
 import org.polypheny.db.workflow.models.responses.WsResponse.CheckpointDataResponse;
@@ -56,16 +55,14 @@ public class NestedSession extends AbstractSession {
     private final UUID wId;
     @Getter
     private final int openedVersion;
-    private final WorkflowDefModel workflowDef;
     private final Map<String, JsonNode> initialWorkflowVars;
 
 
-    public NestedSession( UUID sessionId, Workflow wf, UUID workflowId, int openedVersion, WorkflowDefModel workflowDef, Set<Pair<UUID, Integer>> parentWorkflowIds ) {
+    public NestedSession( UUID sessionId, Workflow wf, UUID workflowId, int openedVersion, Set<Pair<UUID, Integer>> parentWorkflowIds ) {
         super( NESTED_SESSION, wf, sessionId, workflowId, openedVersion, parentWorkflowIds );
         assert !parentWorkflowIds.contains( Pair.of( workflowId, openedVersion ) ) : "Detected cycle in nested workflows.";
         this.wId = workflowId;
         this.openedVersion = openedVersion;
-        this.workflowDef = workflowDef;
         this.initialWorkflowVars = wf.getVariables();
     }
 
@@ -146,10 +143,11 @@ public class NestedSession extends AbstractSession {
 
 
     public List<CheckpointReader> getOutputs() {
+        CheckpointReader[] arr = new CheckpointReader[NestedOutputActivity.MAX_OUTPUTS];
         ActivityWrapper wrapper = workflow.getActivities().stream().filter( w -> w.getActivity() instanceof NestedOutputActivity )
                 .findFirst().orElse( null );
         if ( wrapper == null ) {
-            return List.of();
+            return Arrays.asList( arr );
         }
         if ( !wrapper.getState().isSuccess() ) {
             assert getExitCode() != 0;
@@ -158,7 +156,6 @@ public class NestedSession extends AbstractSession {
 
         Set<DataEdge> dataEdges = workflow.getInEdges( wrapper.getId() ).stream().filter( e -> e instanceof DataEdge )
                 .map( e -> (DataEdge) e ).collect( Collectors.toSet() );
-        CheckpointReader[] arr = new CheckpointReader[NestedOutputActivity.MAX_OUTPUTS];
         for ( DataEdge edge : dataEdges ) {
             arr[edge.getToPort()] = sm.readCheckpoint( edge.getFrom().getId(), edge.getFromPort() ); // reader needs to be closed by caller
         }
@@ -195,7 +192,7 @@ public class NestedSession extends AbstractSession {
     @Override
     public SessionModel toModel() {
         return new SessionModel( getType(), sessionId, getSubscriberCount(), lastInteraction.toString(),
-                workflow.getActivityCount(), workflow.getState(), wId, openedVersion, workflowDef );
+                workflow.getActivityCount(), workflow.getState(), wId, openedVersion, getWorkflowDefModel( wId ) );
     }
 
 }

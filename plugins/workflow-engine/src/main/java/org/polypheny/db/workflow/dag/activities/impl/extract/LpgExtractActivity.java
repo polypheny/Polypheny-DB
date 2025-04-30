@@ -51,7 +51,7 @@ import org.polypheny.db.workflow.engine.storage.QueryUtils;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 import org.polypheny.db.workflow.engine.storage.writer.LpgWriter;
 
-@ActivityDefinition(type = "lpgExtract", displayName = "Extract Graph", categories = { ActivityCategory.EXTRACT, ActivityCategory.GRAPH },
+@ActivityDefinition(type = "lpgExtract", displayName = "Extract Graph", categories = { ActivityCategory.EXTRACT, ActivityCategory.GRAPH, ActivityCategory.ESSENTIALS },
         inPorts = {},
         outPorts = { @OutPort(type = PortType.LPG, description = "The extracted graph.") },
         shortDescription = "Extracts an existing graph from Polypheny and outputs it.")
