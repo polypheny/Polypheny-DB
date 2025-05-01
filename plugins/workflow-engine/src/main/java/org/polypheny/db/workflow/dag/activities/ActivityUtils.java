@@ -49,12 +49,14 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -411,6 +413,11 @@ public class ActivityUtils {
 
     public static RexLiteral getRexLiteral( PolyValue value, AlgDataType type ) {
         return new RexLiteral( value, type, value.type );
+    }
+
+
+    public static RexNameRef getDocRexNameRef( String target, @Nullable Integer inputIndex ) {
+        return RexNameRef.create( List.of( target.split( "\\." ) ), inputIndex, DocumentType.ofId() );
     }
 
 

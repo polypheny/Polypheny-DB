@@ -37,6 +37,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Wrapper;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.annotations.ActivityDefinition;
+import org.polypheny.db.workflow.dag.annotations.AggregateSetting;
 import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.CastSetting;
 import org.polypheny.db.workflow.dag.annotations.CollationSetting;
@@ -222,6 +223,10 @@ public abstract class SettingDef {
                 settings.add( new FileSettingDef( a ) );
             } else if ( annotation instanceof FileSetting.List a ) {
                 Arrays.stream( a.value() ).forEach( el -> settings.add( new FileSettingDef( el ) ) );
+            } else if ( annotation instanceof AggregateSetting a ) {
+                settings.add( new AggregateSettingDef( a ) );
+            } else if ( annotation instanceof AggregateSetting.List a ) {
+                Arrays.stream( a.value() ).forEach( el -> settings.add( new AggregateSettingDef( el ) ) );
             }
         }
         return settings;
@@ -258,7 +263,8 @@ public abstract class SettingDef {
         FIELD_SELECT,
         GRAPH_MAP,
         FILE,
-        FILTER
+        FILTER,
+        AGGREGATE
     }
 
 

@@ -48,6 +48,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.workflow.dag.activities.Activity;
+import org.polypheny.db.workflow.dag.activities.ActivityUtils;
 
 @Slf4j
 public class DocBatchWriter implements AutoCloseable {
@@ -191,6 +192,7 @@ public class DocBatchWriter implements AutoCloseable {
         try ( PreparedStatement stmt = handler.prepareStatement( insertQuery ) ) {
             for ( Map<Long, PolyValue> map : paramValues ) {
                 PolyDocument doc = map.get( 0L ).asDocument();
+                ActivityUtils.addDocId( doc );
                 stmt.setString( 1, RefactorFunctions.fromDocument( RefactorFunctions.get( doc, Activity.docId ) ).value );
                 stmt.setString( 2, RefactorFunctions.fromDocument( RefactorFunctions.removeNames( doc, docIdList ) ).value );
                 stmt.addBatch();
