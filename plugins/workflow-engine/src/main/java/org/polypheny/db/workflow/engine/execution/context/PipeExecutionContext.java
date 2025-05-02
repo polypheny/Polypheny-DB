@@ -20,6 +20,7 @@ import java.util.List;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.workflow.dag.activities.Activity;
 import org.polypheny.db.workflow.dag.activities.Pipeable.PipeInterruptedException;
+import org.polypheny.db.workflow.dag.variables.ReadableVariableStore;
 
 public interface PipeExecutionContext {
 
@@ -51,6 +52,7 @@ public interface PipeExecutionContext {
      */
     Transaction getTransaction();
 
+    ReadableVariableStore getVariableStore();
 
     /**
      * Logs an informational message.

@@ -44,7 +44,6 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 )
 @FileSetting(key = "file", displayName = "File Path", pos = 0,
         multi = false, modes = { SourceType.ABS_FILE, SourceType.URL },
-        defaultPath = "classpath://sample_env.json",
         shortDescription = "The path to the JSON file containing environment variables.")
 
 @SuppressWarnings("unused")

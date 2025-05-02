@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.text.StringSubstitutor;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -32,6 +33,7 @@ import org.polypheny.db.workflow.dag.activities.Activity.ActivityCategory;
 import org.polypheny.db.workflow.dag.activities.Activity.PortType;
 import org.polypheny.db.workflow.dag.activities.ActivityException;
 import org.polypheny.db.workflow.dag.activities.ActivityUtils;
+import org.polypheny.db.workflow.dag.activities.Pipeable;
 import org.polypheny.db.workflow.dag.activities.TypePreview;
 import org.polypheny.db.workflow.dag.activities.TypePreview.DocType;
 import org.polypheny.db.workflow.dag.activities.impl.variables.VariableStringTemplateActivity;
@@ -42,10 +44,9 @@ import org.polypheny.db.workflow.dag.annotations.BoolSetting;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
-import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
-import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
-import org.polypheny.db.workflow.engine.storage.reader.DocReader;
-import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
+import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
+import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
+import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 
 @ActivityDefinition(type = "docStringTemplate", displayName = "String Field from Template", categories = { ActivityCategory.TRANSFORM, ActivityCategory.DOCUMENT },
         inPorts = { @InPort(type = PortType.DOC) },
@@ -64,9 +65,10 @@ import org.polypheny.db.workflow.engine.storage.writer.DocWriter;
 @BoolSetting(key = "createNew", displayName = "Create New Document", pos = 2,
         shortDescription = "If true, the target field is added to a new document with the same ID as the corresponding input document.")
 @SuppressWarnings("unused")
-public class DocStringTemplateActivity implements Activity {
+public class DocStringTemplateActivity implements Activity, Pipeable {
 
     private static final ObjectMapper mapper = new ObjectMapper();
+    private PolyDocument currentDoc;
 
 
     @Override
@@ -87,37 +89,45 @@ public class DocStringTemplateActivity implements Activity {
 
 
     @Override
-    public void execute( List<CheckpointReader> inputs, Settings settings, ExecutionContext ctx ) throws Exception {
+    public AlgDataType lockOutputType( List<AlgDataType> inTypes, Settings settings ) throws Exception {
+        return getDocType();
+    }
+
+
+    @Override
+    public void pipe( List<InputPipe> inputs, OutputPipe output, Settings settings, PipeExecutionContext ctx ) throws Exception {
         String template = settings.getString( "template" );
         String target = settings.getString( "target" );
         boolean fail = settings.getBool( "fail" );
         boolean createNew = settings.getBool( "createNew" );
 
         Map<String, JsonNode> variables = ctx.getVariableStore().getPublicVariables( true, false );
+        StringSubstitutor substitutor = new StringSubstitutor( v -> resolve( variables, v, fail ), "{", "}", '\\' )
+                .setDisableSubstitutionInValues( true );
 
-        DocReader reader = (DocReader) inputs.get( 0 );
-        DocWriter writer = ctx.createDocWriter( 0 );
-        for ( PolyDocument doc : reader.getDocIterable() ) {
-            StringSubstitutor substitutor = new StringSubstitutor( v -> resolve( variables, doc, v, fail ), "{", "}", '\\' )
-                    .setDisableSubstitutionInValues( true );
+        for ( List<PolyValue> value : inputs.get( 0 ) ) {
+            currentDoc = value.get( 0 ).asDocument();
             String resolved = substitutor.replace( template );
 
-            PolyDocument docToWrite = createNew ? new PolyDocument( Map.of( docId, doc.get( docId ) ) ) : doc;
+            PolyDocument docToWrite = createNew ? new PolyDocument( Map.of( docId, currentDoc.get( docId ) ) ) : currentDoc;
             ActivityUtils.insertSubValue( docToWrite, target, PolyString.of( resolved ) );
-            writer.write( docToWrite );
+
+            if ( !output.put( docToWrite ) ) {
+                finish( inputs );
+            }
         }
     }
 
 
-    private String resolve( Map<String, JsonNode> variables, PolyDocument doc, String refString, boolean fail ) {
+    private String resolve( Map<String, JsonNode> variables, String refString, boolean fail ) {
         if ( refString.equals( "$" ) ) {
             if ( fail ) {
                 throw new GenericRuntimeException( "Value for reference '" + refString + "' to insert is not a literal value" );
             }
-            return doc.toJson(); // entire document
+            return currentDoc.toJson(); // entire document
         } else if ( refString.startsWith( "$." ) ) {
             try {
-                PolyValue replacement = ActivityUtils.getSubValue( doc, refString.substring( 2 ) );
+                PolyValue replacement = ActivityUtils.getSubValue( currentDoc, refString.substring( 2 ) );
                 if ( replacement == null || replacement.isNull() ) {
                     return null;
                 }
@@ -135,6 +145,12 @@ public class DocStringTemplateActivity implements Activity {
         } else {
             return VariableStringTemplateActivity.resolveVariable( variables, refString, fail );
         }
+    }
+
+
+    @Override
+    public void reset() {
+        currentDoc = null;
     }
 
 }

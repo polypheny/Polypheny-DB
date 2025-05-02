@@ -113,12 +113,12 @@ public class StorageManagerImpl implements StorageManager {
 
         this.sessionId = sessionId;
         this.defaultStores = new ConcurrentHashMap<>( defaultStores );
-        String fallbackStore = Catalog.defaultStore.getAdapterName();
+        String fallbackStore = DEFAULT_CHECKPOINT_ADAPTER;
         this.defaultStores.putIfAbsent( DataModel.RELATIONAL, fallbackStore );
         this.defaultStores.putIfAbsent( DataModel.DOCUMENT, fallbackStore );
         this.defaultStores.putIfAbsent( DataModel.GRAPH, fallbackStore );
 
-        if ( !STARTED_ADAPTER.get() && this.defaultStores.containsValue( DEFAULT_CHECKPOINT_ADAPTER ) ) {
+        if ( !STARTED_ADAPTER.get() ) {
             addDefaultCheckpointAdapterIfMissing();
         }
 
