@@ -90,7 +90,7 @@ public class OracleSource extends AbstractJdbcSource {
 
     @Override
     protected boolean requiresSchema() {
-        return false;
+        return true;
     }
 
 
@@ -138,63 +138,79 @@ public class OracleSource extends AbstractJdbcSource {
             Connection connection = statement.getConnection();
             DatabaseMetaData dbmd = connection.getMetaData();
 
-            String schema = "SYSTEM";
-            String tableName = "TEST";
+            String[] tables = settings.get( "tables" ).split( "," );
+            for ( String str : tables ) {
+                String[] names = str.split( "\\." );
 
-            List<String> primaryKeyColumns = new ArrayList<>();
-            try ( ResultSet pk = dbmd.getPrimaryKeys( null, schema, tableName ) ) {
-                while ( pk.next() ) {
-                    primaryKeyColumns.add( pk.getString( "COLUMN_NAME" ).toUpperCase() );
+                if ( names.length == 0 || names.length > 2 || (requiresSchema() && names.length == 1) ) {
+                    throw new GenericRuntimeException( "Invalid table name: " + tables );
                 }
-            }
-            try ( ResultSet columns = dbmd.getColumns( null, schema, tableName, "%" ) ) {
-                List<ExportedColumn> exportedColumns = new ArrayList<>();
-                while ( columns.next() ) {
-                    PolyType type = PolyType.getNameForJdbcType( columns.getInt( "DATA_TYPE" ) );
-                    Integer length = null;
-                    Integer scale = null;
+                String schema;
+                String tableName;
 
-                    switch ( type ) {
-                        case DECIMAL:
-                            length = columns.getInt( "COLUMN_SIZE" );
-                            scale = columns.getInt( "DECIMAL_DIGITS" );
-                            break;
-                        case CHAR:
-                        case VARCHAR:
-                            type = PolyType.VARCHAR;
-                            length = columns.getInt( "COLUMN_SIZE" );
-                            break;
-                        case VARBINARY:
-                        case BINARY:
-                            type = PolyType.VARBINARY;
-                            length = columns.getInt( "COLUMN_SIZE" );
-                            break;
-                        case TIME:
-                        case TIMESTAMP:
-                            length = columns.getInt( "DECIMAL_DIGITS" );
-                            break;
-                        default:
-                            break;
+                if ( requiresSchema() ) {
+                    schema = names[0].toUpperCase();
+                    tableName = names[1].toUpperCase();
+                } else {
+                    schema = null;
+                    tableName = names[0].toUpperCase();
+                }
+
+                List<String> primaryKeyColumns = new ArrayList<>();
+                try ( ResultSet pk = dbmd.getPrimaryKeys( null, schema, tableName ) ) {
+                    while ( pk.next() ) {
+                        primaryKeyColumns.add( pk.getString( "COLUMN_NAME" ).toUpperCase() );
+                    }
+                }
+                try ( ResultSet columns = dbmd.getColumns( null, schema, tableName, "%" ) ) {
+                    List<ExportedColumn> exportedColumns = new ArrayList<>();
+                    while ( columns.next() ) {
+                        PolyType type = PolyType.getNameForJdbcType( columns.getInt( "DATA_TYPE" ) );
+                        Integer length = null;
+                        Integer scale = null;
+
+                        switch ( type ) {
+                            case DECIMAL:
+                                length = columns.getInt( "COLUMN_SIZE" );
+                                scale = columns.getInt( "DECIMAL_DIGITS" );
+                                break;
+                            case CHAR:
+                            case VARCHAR:
+                                type = PolyType.VARCHAR;
+                                length = columns.getInt( "COLUMN_SIZE" );
+                                break;
+                            case VARBINARY:
+                            case BINARY:
+                                type = PolyType.VARBINARY;
+                                length = columns.getInt( "COLUMN_SIZE" );
+                                break;
+                            case TIME:
+                            case TIMESTAMP:
+                                length = columns.getInt( "DECIMAL_DIGITS" );
+                                break;
+                            default:
+                                break;
+                        }
+
+                        exportedColumns.add( new ExportedColumn(
+                                columns.getString( "COLUMN_NAME" ).toUpperCase(),
+                                type,
+                                null,
+                                length,
+                                scale,
+                                null,
+                                null,
+                                "YES".equalsIgnoreCase( columns.getString( "IS_NULLABLE" ) ),
+                                schema,
+                                tableName,
+                                columns.getString( "COLUMN_NAME" ).toUpperCase(),
+                                columns.getInt( "ORDINAL_POSITION" ),
+                                primaryKeyColumns.contains( columns.getString( "COLUMN_NAME" ).toUpperCase() )
+                        ) );
                     }
 
-                    exportedColumns.add( new ExportedColumn(
-                            columns.getString( "COLUMN_NAME" ).toUpperCase(),
-                            type,
-                            null,
-                            length,
-                            scale,
-                            null,
-                            null,
-                            "YES".equalsIgnoreCase( columns.getString( "IS_NULLABLE" ) ),
-                            schema,
-                            tableName,
-                            columns.getString( "COLUMN_NAME" ).toUpperCase(),
-                            columns.getInt( "ORDINAL_POSITION" ),
-                            primaryKeyColumns.contains( columns.getString( "COLUMN_NAME" ).toUpperCase() )
-                    ) );
+                    map.put( tableName, exportedColumns );
                 }
-
-                map.put( tableName, exportedColumns );
             }
         } catch ( SQLException | ConnectionHandlerException e ) {
             throw new GenericRuntimeException( "Exception while collecting Oracle schema info", e );
