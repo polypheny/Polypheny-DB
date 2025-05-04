@@ -17,14 +17,21 @@
 package org.polypheny.db.adapter.postgres.source;
 
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
@@ -32,6 +39,7 @@ import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
 import org.polypheny.db.adapter.postgres.PostgresqlSqlDialect;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
@@ -72,53 +80,103 @@ import org.polypheny.db.transaction.PolyXid;
         description = "List of tables which should be imported. The names must to be separated by a comma.")
 public class PostgresqlSource extends AbstractJdbcSource implements MetadataProvider {
 
-    private AbstractNode metadataRoot;
+    public AbstractNode metadataRoot;
+
+
+    @Override
+    public void setRoot( AbstractNode root ) {
+        this.metadataRoot = root;
+    }
 
 
     @Override
     public AbstractNode fetchMetadataTree() {
+
         String dbName = settings.get( "database" );
         Node root = new Node( "relational", dbName );
 
-        Map<String, List<ExportedColumn>> exported = getExportedColumns();
+        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
 
-        Map<String, Map<String, List<ExportedColumn>>> grouped = new HashMap<>();
-        for ( Map.Entry<String, List<ExportedColumn>> entry : exported.entrySet() ) {
-            for ( ExportedColumn col : entry.getValue() ) {
-                grouped
-                        .computeIfAbsent( col.physicalSchemaName, k -> new HashMap<>() )
-                        .computeIfAbsent( col.physicalTableName, k -> new ArrayList<>() )
-                        .add( col );
-            }
-        }
+        try {
+            ConnectionHandler handler = connectionFactory.getOrCreateConnectionHandler( xid );
+            java.sql.Statement stmt = handler.getStatement();
+            Connection conn = stmt.getConnection();
+            DatabaseMetaData meta = conn.getMetaData();
 
-        for ( Map.Entry<String, Map<String, List<ExportedColumn>>> schemaEntry : grouped.entrySet() ) {
-            AbstractNode schemaNode = new Node( "schema", schemaEntry.getKey() );
+            try ( ResultSet schemas = requiresSchema()
+                    ? meta.getSchemas( dbName, "%" )
+                    : meta.getCatalogs() ) {
+                while ( schemas.next() ) {
 
-            for ( Map.Entry<String, List<ExportedColumn>> tableEntry : schemaEntry.getValue().entrySet() ) {
-                AbstractNode tableNode = new Node( "table", tableEntry.getKey() );
+                    String schemaName = requiresSchema()
+                            ? schemas.getString( "TABLE_SCHEM" )
+                            : schemas.getString( "TABLE_CAT" );
 
-                for ( ExportedColumn col : tableEntry.getValue() ) {
-                    AbstractNode colNode = new AttributeNode( "column", col.getName() );
-                    colNode.addProperty( "type", col.type.getName() );
-                    colNode.addProperty( "nullable", col.nullable );
-                    colNode.addProperty( "primaryKey", col.primary );
+                    AbstractNode schemaNode = new Node( "schema", schemaName );
 
-                    if ( col.length != null ) {
-                        colNode.addProperty( "length", col.length );
+                    try ( ResultSet tables = meta.getTables(
+                            dbName,
+                            requiresSchema() ? schemaName : null,
+                            "%",
+                            new String[]{ "TABLE" }
+                    ) ) {
+                        while ( tables.next() ) {
+
+                            String tableName = tables.getString( "TABLE_NAME" );
+                            AbstractNode tableNode = new Node( "table", tableName );
+
+                            Set<String> pkCols = new HashSet<>();
+                            try ( ResultSet pk = meta.getPrimaryKeys(
+                                    dbName,
+                                    requiresSchema() ? schemaName : null,
+                                    tableName ) ) {
+                                while ( pk.next() ) {
+                                    pkCols.add( pk.getString( "COLUMN_NAME" ) );
+                                }
+                            }
+
+                            try ( ResultSet cols = meta.getColumns(
+                                    dbName,
+                                    requiresSchema() ? schemaName : null,
+                                    tableName,
+                                    "%" ) ) {
+                                while ( cols.next() ) {
+
+                                    String colName = cols.getString( "COLUMN_NAME" );
+                                    String typeName = cols.getString( "TYPE_NAME" );
+                                    boolean nullable = cols.getInt( "NULLABLE" ) == DatabaseMetaData.columnNullable;
+                                    boolean primary = pkCols.contains( colName );
+
+                                    AbstractNode colNode = new AttributeNode( "column", colName );
+                                    colNode.addProperty( "type", typeName );
+                                    colNode.addProperty( "nullable", nullable );
+                                    colNode.addProperty( "primaryKey", primary );
+
+                                    Integer len = (Integer) cols.getObject( "COLUMN_SIZE" );
+                                    Integer scale = (Integer) cols.getObject( "DECIMAL_DIGITS" );
+                                    if ( len != null ) {
+                                        colNode.addProperty( "length", len );
+                                    }
+                                    if ( scale != null ) {
+                                        colNode.addProperty( "scale", scale );
+                                    }
+
+                                    tableNode.addChild( colNode );
+                                }
+                            }
+
+                            schemaNode.addChild( tableNode );
+                        }
                     }
-                    if ( col.scale != null ) {
-                        colNode.addProperty( "scale", col.scale );
-                    }
 
-                    tableNode.addChild( colNode );
+                    root.addChild( schemaNode );
                 }
-
-                schemaNode.addChild( tableNode );
             }
 
-            root.addChild( schemaNode );
+        } catch ( SQLException | ConnectionHandlerException ex ) {
+            throw new GenericRuntimeException( "Error while fetching metadata tree", ex );
         }
+
         this.metadataRoot = root;
         return this.metadataRoot;
     }
@@ -165,79 +223,128 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
     }
 
 
+    @Override
+    public void markSelectedAttributes( List<String> selectedPaths ) {
 
-private void printTree( AbstractNode node, int depth ) {
-    System.out.println( "  ".repeat( depth ) + node.getType() + ": " + node.getName() );
-    for ( Map.Entry<String, Object> entry : node.getProperties().entrySet() ) {
-        System.out.println( "  ".repeat( depth + 1 ) + "- " + entry.getKey() + ": " + entry.getValue() );
+        List<List<String>> attributePaths = new ArrayList<>();
+
+        for ( String path : selectedPaths ) {
+            String cleanPath = path.replaceFirst( " ?:.*$", "" ).trim();
+
+            List<String> segments = Arrays.asList( cleanPath.split( "\\." ) );
+            if ( !segments.isEmpty() && segments.get( 0 ).equals( metadataRoot.getName() ) ) {
+                segments = segments.subList( 1, segments.size() );
+            }
+
+            attributePaths.add( segments );
+        }
+
+        for ( List<String> pathSegments : attributePaths ) {
+            AbstractNode current = metadataRoot;
+
+            for ( int i = 0; i < pathSegments.size(); i++ ) {
+                String segment = pathSegments.get( i );
+
+                if ( i == pathSegments.size() - 1 ) {
+                    Optional<AbstractNode> attrNodeOpt = current.getChildren().stream()
+                            .filter( c -> c instanceof AttributeNode && segment.equals( c.getName() ) )
+                            .findFirst();
+
+                    if ( attrNodeOpt.isPresent() ) {
+                        ((AttributeNode) attrNodeOpt.get()).setSelected( true );
+                        log.info( "✅ Attribut gesetzt: " + String.join( ".", pathSegments ) );
+                    } else {
+                        log.warn( "❌ Attribut nicht gefunden: " + String.join( ".", pathSegments ) );
+                    }
+
+                } else {
+                    Optional<AbstractNode> childOpt = current.getChildren().stream()
+                            .filter( c -> segment.equals( c.getName() ) )
+                            .findFirst();
+
+                    if ( childOpt.isPresent() ) {
+                        current = childOpt.get();
+                    } else {
+                        log.warn( "❌ Segment nicht gefunden: " + segment + " im Pfad " + String.join( ".", pathSegments ) );
+                        break;
+                    }
+                }
+            }
+        }
+
     }
-    for ( AbstractNode child : node.getChildren() ) {
-        printTree( child, depth + 1 );
+
+
+    @Override
+    public void printTree( AbstractNode node, int depth ) {
+        if ( node == null ) {
+            node = this.metadataRoot;
+        }
+        System.out.println( "  ".repeat( depth ) + node.getType() + ": " + node.getName() );
+        for ( Map.Entry<String, Object> entry : node.getProperties().entrySet() ) {
+            System.out.println( "  ".repeat( depth + 1 ) + "- " + entry.getKey() + ": " + entry.getValue() );
+        }
+        for ( AbstractNode child : node.getChildren() ) {
+            printTree( child, depth + 1 );
+        }
     }
-}
 
 
-public PostgresqlSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
-    super(
-            storeId,
-            uniqueName,
-            settings,
-            mode,
-            "org.postgresql.Driver",
-            PostgresqlSqlDialect.DEFAULT,
-            false );
-    this.metadataRoot = null;
-}
-
-
-@Override
-public void shutdown() {
-    try {
-        removeInformationPage();
-        connectionFactory.close();
-    } catch ( SQLException e ) {
-        log.warn( "Exception while shutting down {}", getUniqueName(), e );
+    public PostgresqlSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
+        super(
+                storeId,
+                uniqueName,
+                settings,
+                mode,
+                "org.postgresql.Driver",
+                PostgresqlSqlDialect.DEFAULT,
+                false );
+        this.metadataRoot = null;
     }
-}
 
 
-@Override
-protected void reloadSettings( List<String> updatedSettings ) {
-    // TODO: Implement disconnect and reconnect to PostgreSQL instance.
-}
+    @Override
+    public void shutdown() {
+        try {
+            removeInformationPage();
+            connectionFactory.close();
+        } catch ( SQLException e ) {
+            log.warn( "Exception while shutting down {}", getUniqueName(), e );
+        }
+    }
 
 
-@Override
-protected String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
-    return String.format( "jdbc:postgresql://%s:%d/%s", dbHostname, dbPort, dbName );
-}
+    @Override
+    protected void reloadSettings( List<String> updatedSettings ) {
+        // TODO: Implement disconnect and reconnect to PostgreSQL instance.
+    }
 
 
-@Override
-protected boolean requiresSchema() {
-    return true;
-}
+    @Override
+    protected String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
+        return String.format( "jdbc:postgresql://%s:%d/%s", dbHostname, dbPort, dbName );
+    }
 
 
-@Override
-public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-    PhysicalTable table = adapterCatalog.createTable(
-            logical.table.getNamespaceName(),
-            logical.table.name,
-            logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
-            logical.table,
-            logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
-            logical.pkIds, allocation );
-
-    adapterCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( table ) );
-    AbstractNode node = fetchMetadataTree();
-    return List.of( table );
-}
+    @Override
+    protected boolean requiresSchema() {
+        return true;
+    }
 
 
-public static void getPreview() {
-    log.error( "Methodenaufruf für Postgresql-Preview funktioniert !!!" );
-}
+    @Override
+    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        PhysicalTable table = adapterCatalog.createTable(
+                logical.table.getNamespaceName(),
+                logical.table.name,
+                logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
+                logical.table,
+                logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
+                logical.pkIds, allocation );
 
+        adapterCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( table ) );
+        log.error( "Postgres Adapter ID ist: " + this.adapterId );
+        return List.of( table );
+    }
 
 }

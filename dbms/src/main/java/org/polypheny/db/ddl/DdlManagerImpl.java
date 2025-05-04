@@ -32,6 +32,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.Adapter;
@@ -108,6 +110,8 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty.Partit
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
+import org.polypheny.db.schemaDiscovery.AbstractNode;
+import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -214,6 +218,27 @@ public class DdlManagerImpl extends DdlManager {
         uniqueName = uniqueName.toLowerCase();
         DataSource<?> adapter = (DataSource<?>) AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
 
+        String attributes = config.get( "selectedAttributes" );
+        Set<String> selectedAttributeNames = new HashSet<>();
+        log.error( "Das ist das Attributes String: " + attributes );
+        if ( attributes != null ) {
+            List<String> selectedAttributes = new Gson().fromJson( attributes, new TypeToken<List<String>>() {
+            }.getType() );
+            selectedAttributeNames = selectedAttributes.stream()
+                    .map( s -> s.replaceFirst( " : .*", "" ) )
+                    .map( s -> s.substring( s.lastIndexOf( '.' ) + 1 ) )
+                    .collect( Collectors.toSet() );
+            log.error( "Das sind die Attribute die gefiltert werden müssen: " + selectedAttributeNames );
+            if ( adapter instanceof MetadataProvider mp ) {
+                AbstractNode node = mp.fetchMetadataTree();
+                mp.setRoot( node );
+                mp.markSelectedAttributes( selectedAttributes );
+                log.error( "SelectedAttributes ist gesetzt aus dem DdlManager und der Tree ist das hier: " );
+                mp.printTree( null, 0 );
+            }
+
+        }
+
         Map<String, List<ExportedColumn>> exportedColumns;
         try {
             exportedColumns = adapter.getExportedColumns();
@@ -232,7 +257,6 @@ public class DdlManagerImpl extends DdlManager {
                 }
                 tableName += i;
             }
-
             LogicalTable logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
             List<LogicalColumn> columns = new ArrayList<>();
 
@@ -244,29 +268,61 @@ public class DdlManagerImpl extends DdlManager {
             int colPos = 1;
 
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
-                LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
-                        exportedColumn.name,
-                        logical.id,
-                        colPos++,
-                        exportedColumn.type,
-                        exportedColumn.collectionsType,
-                        exportedColumn.length,
-                        exportedColumn.scale,
-                        exportedColumn.dimension,
-                        exportedColumn.cardinality,
-                        exportedColumn.nullable,
-                        Collation.getDefaultCollation() );
 
-                AllocationColumn allocationColumn = catalog.getAllocRel( namespace ).addColumn(
-                        placement.id,
-                        logical.id,
-                        column.id,
-                        adapter.adapterId,
-                        PlacementType.STATIC,
-                        exportedColumn.physicalPosition ); // Not a valid partitionGroupID --> placeholder
+                if ( adapter instanceof MetadataProvider mp && (attributes != null) ) {
+                    if ( !selectedAttributeNames.contains( exportedColumn.name ) ) {
+                        continue;
+                    }
+                    LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
+                            exportedColumn.name,
+                            logical.id,
+                            colPos++,
+                            exportedColumn.type,
+                            exportedColumn.collectionsType,
+                            exportedColumn.length,
+                            exportedColumn.scale,
+                            exportedColumn.dimension,
+                            exportedColumn.cardinality,
+                            exportedColumn.nullable,
+                            Collation.getDefaultCollation() );
 
-                columns.add( column );
-                aColumns.add( allocationColumn );
+                    AllocationColumn allocationColumn = catalog.getAllocRel( namespace ).addColumn(
+                            placement.id,
+                            logical.id,
+                            column.id,
+                            adapter.adapterId,
+                            PlacementType.STATIC,
+                            exportedColumn.physicalPosition );
+
+                    columns.add( column );
+                    aColumns.add( allocationColumn );
+
+                } else {
+                    LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
+                            exportedColumn.name,
+                            logical.id,
+                            colPos++,
+                            exportedColumn.type,
+                            exportedColumn.collectionsType,
+                            exportedColumn.length,
+                            exportedColumn.scale,
+                            exportedColumn.dimension,
+                            exportedColumn.cardinality,
+                            exportedColumn.nullable,
+                            Collation.getDefaultCollation() );
+
+                    AllocationColumn allocationColumn = catalog.getAllocRel( namespace ).addColumn(
+                            placement.id,
+                            logical.id,
+                            column.id,
+                            adapter.adapterId,
+                            PlacementType.STATIC,
+                            exportedColumn.physicalPosition );
+
+                    columns.add( column );
+                    aColumns.add( allocationColumn );
+                }
+
             }
 
             buildNamespace( Catalog.defaultNamespaceId, logical, adapter );

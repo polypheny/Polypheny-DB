@@ -17,7 +17,6 @@
 package org.polypheny.db.webui;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -27,7 +26,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
 import io.javalin.http.Context;
@@ -77,6 +75,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.websocket.api.Session;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter;
@@ -156,7 +155,6 @@ import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
-import org.polypheny.db.schemaDiscovery.Node;
 import org.polypheny.db.security.SecurityManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -880,6 +878,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         ctx.json( result );
     }
 
+
     void sendConfirmation( final Context ctx ) {
         log.info( "Sending confirmation" );
         // String result = "Angular confirmation message";
@@ -888,7 +887,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             List<DatabaseInfo> dbs = PostgreSqlConnection.getDatabasesSchemasAndTables();
             ctx.json( dbs );
         } catch ( SQLException e ) {
-            System.err.println("Fehler bei der Schema-Erkennung: " + e.getMessage());
+            System.err.println( "Fehler bei der Schema-Erkennung: " + e.getMessage() );
         }
     }
 
@@ -2141,6 +2140,26 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return;
         }
 
+        log.info( "AdapterModel empfangen:" );
+        log.info( "Name: " + a.name );
+        log.info( "Adapter: " + a.adapterName );
+        log.info( "Type: " + a.type );
+        log.info( "Mode: " + a.mode );
+
+        log.info( "Settings:" );
+        for ( Map.Entry<String, String> entry : a.settings.entrySet() ) {
+            log.info( entry.getKey() + " = " + entry.getValue() );
+        }
+
+        if ( a.metadata != null && !a.metadata.isEmpty() ) {
+            log.info( "Metadaten:" );
+            for ( String meta : a.metadata ) {
+                log.info( meta );
+            }
+        } else {
+            log.info( "Keine Metadaten enthalten." );
+        }
+
         Map<String, String> settings = new HashMap<>();
 
         ConnectionMethod method = ConnectionMethod.UPLOAD;
@@ -2175,6 +2194,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         settings.put( "mode", a.mode.toString() );
 
+        if ( a.metadata != null && !a.metadata.isEmpty() ) {
+            settings.put( "selectedAttributes", Crud.gson.toJson( a.metadata ) );
+        }
         String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' AS '%s' WITH '%s'", a.name, a.adapterName, a.type, Crud.gson.toJson( settings ) );
         QueryLanguage language = QueryLanguage.from( "sql" );
         Result<?, ?> res = LanguageCrud.anyQueryResult(
@@ -2184,6 +2206,17 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
                         .build(), UIRequest.builder().build() ).get( 0 );
+
+        //Setze selektierte Attribute auf der konkreten Adapterinstanz
+        /*if ( a.metadata != null && !a.metadata.isEmpty() ) {
+            @NotNull Optional<Adapter<?>> adapterInstance = AdapterManager.getInstance().getAdapter( a.name );
+            if ( adapterInstance.isPresent() && adapterInstance.get() instanceof MetadataProvider yourAdapter ) {
+                yourAdapter.markSelectedAttributes( a.metadata );
+                yourAdapter.printTree( null, 0 );
+            } else {
+                log.warn( "Adapter-Instanz für '" + a.name + "' nicht gefunden oder falscher Typ." );
+            }
+        }*/
         ctx.json( res );
     }
 
