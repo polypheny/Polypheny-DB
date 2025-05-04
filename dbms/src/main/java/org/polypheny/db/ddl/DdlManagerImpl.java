@@ -266,6 +266,10 @@ public class DdlManagerImpl extends DdlManager {
             // Make sure the table name is unique
             String tableName = getUniqueEntityName( namespace, entry.getKey(), ( ns, en ) -> catalog.getSnapshot().rel().getTable( ns, en ) );
 
+            String physicalSchema = entry.getValue().isEmpty()
+                    ? Catalog.DEFAULT_NAMESPACE_NAME
+                    : entry.getValue().get( 0 ).physicalSchemaName();
+
             LogicalTable logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
             List<LogicalColumn> columns = new ArrayList<>();
 
@@ -314,7 +318,8 @@ public class DdlManagerImpl extends DdlManager {
 
             transaction.attachCommitAction( () ->
                     // we can execute with initial logical and allocation data as this is a source and this will not change
-                    adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns ) ) );
+                    adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns ), physicalSchema )
+            );
             catalog.updateSnapshot();
         }
     }

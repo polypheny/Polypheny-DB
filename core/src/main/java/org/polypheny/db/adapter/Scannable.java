@@ -148,6 +148,9 @@ public interface Scannable {
     List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
 
+    List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation, String physicalSchema );
+
+
     void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context );
 
 
