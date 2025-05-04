@@ -118,6 +118,21 @@ public class PostgresqlSource extends AbstractJdbcSource {
 
 
     @Override
+    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation, String physicalSchema ) {
+        PhysicalTable table = adapterCatalog.createTable(
+                physicalSchema,
+                logical.table.name,
+                logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
+                logical.table,
+                logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
+                logical.pkIds, allocation );
+
+        adapterCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( table ) );
+        return List.of( table );
+    }
+
+
+    @Override
     public RelationalDataSource asRelationalDataSource() {
         return this;
     }
