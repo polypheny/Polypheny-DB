@@ -130,6 +130,8 @@ public interface AlgDataType extends Wrapper, Expressible {
      */
     boolean isNullable();
 
+    boolean isAutoIncrement();
+
     /**
      * Gets the component type if this type is a collection, otherwise null.
      *

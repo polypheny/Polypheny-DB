@@ -1951,6 +1951,7 @@ void TableElement(List<SqlNode> list) :
     SqlIdentifier refTable;
     SqlIdentifier refColumn;
     final boolean primary;
+    final boolean auto_increment;
 }
 {
     id = SimpleIdentifier()
@@ -1976,6 +1977,15 @@ void TableElement(List<SqlNode> list) :
             {
               nullable = true;
               primary = false;
+            }
+        )
+        (
+            <AUTO_INCREMENT> {
+                auto_increment = true;
+            }
+            |
+            {
+                auto_increment = false;
             }
         )
         (
@@ -2013,7 +2023,7 @@ void TableElement(List<SqlNode> list) :
                 }
         )
         {
-            list.add( SqlDdlNodes.column(s.add(id).end(this), id, type.withNullable(nullable), collation, e, strategy));
+            list.add( SqlDdlNodes.column(s.add(id).end(this), id, type.withNullable(nullable).withAutoIncrement(auto_increment), collation, e, strategy));
             if ( primary ) {
                 list.add( SqlDdlNodes.primary( s.add(id ).end( this ), id, new SqlNodeList( List.of( id ), s.end(this) ) ) );
             }
@@ -7508,6 +7518,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < ATTRIBUTE: "ATTRIBUTE" >
 |   < ATTRIBUTES: "ATTRIBUTES" >
 |   < AUTHORIZATION: "AUTHORIZATION" >
+|   < AUTO_INCREMENT: "AUTO_INCREMENT" >
 |   < AVG: "AVG" >
 |   < BEFORE: "BEFORE" >
 |   < BEGIN: "BEGIN" >
@@ -8222,6 +8233,7 @@ void NonReservedKeyWord0of3() :
     |    <ASSIGNMENT>
     |    <ATTRIBUTE>
     |    <ATTRIBUTES>
+    |   < AUTO_INCREMENT>
     |    <BEFORE>
     |    <BERNOULLI>
     |    <BREADTH>

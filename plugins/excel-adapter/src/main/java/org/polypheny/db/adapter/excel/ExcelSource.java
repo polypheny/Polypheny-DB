@@ -326,7 +326,8 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> {
                                     physicalTableName,
                                     name,
                                     position,
-                                    position == 1 ) ); // TODO
+                                    position == 1,
+                                    false) ); // TODO
 
                             position++;
                         } catch ( Exception e ) {

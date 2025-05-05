@@ -60,6 +60,7 @@ public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> im
         public final String physicalColumnName;
         public final int physicalPosition;
         public final boolean primary;
+        public final boolean autoIncrement;
 
 
         public String getDisplayType() {

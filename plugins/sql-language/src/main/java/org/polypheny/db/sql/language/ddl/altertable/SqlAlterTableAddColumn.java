@@ -148,7 +148,8 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 ColumnTypeInformation.fromDataTypeSpec( type ),
                 nullable,
                 defaultValue == null ? null : SqlLiteral.toPoly( defaultValue ),
-                statement );
+                statement,
+                false);
     }
 
 }

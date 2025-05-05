@@ -264,7 +264,8 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
                             physicalTableName,
                             name,
                             position,
-                            position == 1 ) );
+                            position == 1,
+                            false) );
                     position++;
                 }
             } catch ( IOException e ) {

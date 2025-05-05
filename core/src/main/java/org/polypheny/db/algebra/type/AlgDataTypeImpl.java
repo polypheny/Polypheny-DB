@@ -233,6 +233,11 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
         return false;
     }
 
+    @Override
+    public boolean isAutoIncrement() {
+        return false;
+    }
+
 
     @Override
     public Charset getCharset() {

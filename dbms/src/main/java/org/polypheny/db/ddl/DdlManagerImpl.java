@@ -255,7 +255,8 @@ public class DdlManagerImpl extends DdlManager {
                         exportedColumn.dimension,
                         exportedColumn.cardinality,
                         exportedColumn.nullable,
-                        Collation.getDefaultCollation() );
+                        Collation.getDefaultCollation(),
+                        exportedColumn.autoIncrement);
 
                 AllocationColumn allocationColumn = catalog.getAllocRel( namespace ).addColumn(
                         placement.id,
@@ -409,7 +410,8 @@ public class DdlManagerImpl extends DdlManager {
                 exportedColumn.dimension,
                 exportedColumn.cardinality,
                 exportedColumn.nullable,
-                Collation.getDefaultCollation()
+                Collation.getDefaultCollation(),
+                exportedColumn.autoIncrement
         );
 
         // Add default value
@@ -456,7 +458,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement ) {
+    public void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement, boolean autoIncrement ) {
         columnName = adjustNameIfNeeded( columnName, table.namespaceId );
         // Check if the column either allows null values or has a default value defined.
         if ( defaultValue == null && !nullable ) {
@@ -485,7 +487,8 @@ public class DdlManagerImpl extends DdlManager {
                 type.dimension(),
                 type.cardinality(),
                 nullable,
-                Collation.getDefaultCollation()
+                Collation.getDefaultCollation(),
+                autoIncrement
         );
 
         // Add default value
@@ -1689,7 +1692,8 @@ public class DdlManagerImpl extends DdlManager {
                     column.typeInformation().dimension(),
                     column.typeInformation().cardinality(),
                     column.typeInformation().nullable(),
-                    column.collation() );
+                    column.collation(),
+                    column.typeInformation().autoIncrement());
         }
 
         catalog.updateSnapshot();
@@ -1979,7 +1983,8 @@ public class DdlManagerImpl extends DdlManager {
                             type.getScale(),
                             alg.getType().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) alg.getType()).getDimension() : -1,
                             alg.getType().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) alg.getType()).getCardinality() : -1,
-                            alg.getType().isNullable() ),
+                            alg.getType().isNullable(),
+                            alg.getType().isAutoIncrement()),
                     Collation.getDefaultCollation(),
                     null,
                     position ) );
@@ -1998,7 +2003,8 @@ public class DdlManagerImpl extends DdlManager {
                             -1,
                             -1,
                             -1,
-                            false ),
+                            false,
+                            false),
                     Collation.getDefaultCollation(),
                     null,
                     position ) );
@@ -2768,7 +2774,8 @@ public class DdlManagerImpl extends DdlManager {
                 typeInformation.dimension(),
                 typeInformation.cardinality(),
                 typeInformation.nullable(),
-                collation
+                collation,
+                typeInformation.autoIncrement()
         );
 
         // Add default value

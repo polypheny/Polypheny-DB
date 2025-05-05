@@ -58,6 +58,7 @@ import org.polypheny.db.sql.language.SqlInsert;
 import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlNumericLiteral;
 import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
@@ -71,6 +72,8 @@ import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
@@ -280,6 +283,12 @@ public class SqlProcessor extends Processor {
                     SqlBasicCall call = (SqlBasicCall) sqlNode;
                     int position = getPositionInSqlNodeList( oldColumnList, column.name );
                     if ( position >= 0 ) {
+                        if ( column.autoIncrement && ( column.type == PolyType.BIGINT || column.type == PolyType.INTEGER ) ) {
+                            long valueToInsert = ((PolyBigDecimal) ((SqlNumericLiteral) call.getOperands()[position]).value).value.longValue();
+                            if ( valueToInsert >= column.currentValue.get() ) {
+                                column.currentValue.set( valueToInsert + 1 );
+                            }
+                        }
                         newValues[i][pos] = call.getOperands()[position];
                     } else {
                         // Add value
@@ -315,6 +324,8 @@ public class SqlProcessor extends Processor {
                             }
                         } else if ( column.nullable ) {
                             newValues[i][pos] = SqlLiteral.createNull( ParserPos.ZERO );
+                        } else if ( column.autoIncrement ) {
+                            newValues[i][pos] = SqlLiteral.createExactNumeric( String.valueOf( column.currentValue.getAndAdd( 1 ) ), ParserPos.ZERO );
                         } else {
                             throw new PolyphenyDbException( "The not nullable field '" + column.name + "' is missing in the insert statement and has no default value defined." );
                         }
@@ -359,6 +370,22 @@ public class SqlProcessor extends Processor {
                         call.getFunctionQuantifier(),
                         call.getPos(),
                         newValues[i] );
+            }
+        } else {
+            // update the auto increment values if needed
+            LogicalTable catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
+            for ( LogicalColumn column : catalogTable.getColumns() ) {
+                if ( column.autoIncrement && ( column.type == PolyType.BIGINT || column.type == PolyType.INTEGER ) ) {
+                    for ( SqlNode sqlNode : ((SqlBasicCall) insert.getSource()).getOperands() ) {
+                        SqlBasicCall call = (SqlBasicCall) sqlNode;
+                        int position = column.position - 1;
+                        assert position >= 0;
+                        long valueToInsert = ((PolyBigDecimal) ((SqlNumericLiteral) call.getOperands()[position]).value).value.longValue();
+                        if ( valueToInsert >= column.currentValue.get() ) {
+                            column.currentValue.set( valueToInsert + 1 );
+                        }
+                    }
+                }
             }
         }
     }

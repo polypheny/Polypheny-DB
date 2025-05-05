@@ -21,6 +21,7 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serial;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -93,6 +94,12 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
 
     @Serialize
     @JsonProperty
+    public boolean autoIncrement;
+
+    public AtomicLong currentValue = new AtomicLong(0l);
+
+    @Serialize
+    @JsonProperty
     public @SerializeNullable Collation collation;
 
     @Serialize
@@ -117,7 +124,8 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
             @Deserialize("cardinality") final Integer cardinality,
             @Deserialize("nullable") final boolean nullable,
             @Deserialize("collation") final Collation collation,
-            @Deserialize("defaultValue") final LogicalDefaultValue defaultValue ) {
+            @Deserialize("defaultValue") final LogicalDefaultValue defaultValue,
+            @Deserialize("autoIncrement") final boolean autoIncrement) {
         this.id = id;
         this.name = name;
         this.tableId = tableId;
@@ -132,6 +140,7 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
         this.nullable = nullable;
         this.collation = collation;
         this.defaultValue = defaultValue;
+        this.autoIncrement = autoIncrement;
     }
 
 
