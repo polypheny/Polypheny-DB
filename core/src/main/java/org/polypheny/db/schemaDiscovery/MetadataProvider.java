@@ -24,7 +24,7 @@ public interface MetadataProvider {
 
     Object fetchPreview( int limit );
 
-    void markSelectedAttributes( List<String> paths );
+    void markSelectedAttributes( List<String> selectedPaths );
 
     void printTree( AbstractNode node, int depth );
 
