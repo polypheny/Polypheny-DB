@@ -73,7 +73,7 @@ public interface Scannable {
             allocColumns.add( alloc );
         }
         // we use the provided first x columns from amountPk as pks (still requires them to be ordered and first first)
-        scannable.createTable( context, LogicalTableWrapper.of( table, columns, columns.subList( 0, amountPk ).stream().map( c -> c.id ).toList() ), AllocationTableWrapper.of( allocSubTable, allocColumns ) );
+        scannable.createTable( context, LogicalTableWrapper.of( table, columns, columns.subList( 0, amountPk ).stream().map( c -> c.id ).toList(), null ), AllocationTableWrapper.of( allocSubTable, allocColumns ) );
         return scannable.getCatalog().getPhysicalsFromAllocs( allocSubTable.id ).get( 0 );
     }
 
