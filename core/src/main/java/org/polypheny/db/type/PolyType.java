@@ -401,6 +401,9 @@ public enum PolyType {
                     .put( ExtraPolyTypes.NCHAR, CHAR )
                     .put( ExtraPolyTypes.NVARCHAR, VARCHAR )
 
+                    .put( Types.LONGVARCHAR, VARCHAR )
+                    .put( Types.LONGNVARCHAR, VARCHAR )
+
                     .put( Types.BINARY, BINARY )
                     .put( Types.VARBINARY, VARBINARY )
 
