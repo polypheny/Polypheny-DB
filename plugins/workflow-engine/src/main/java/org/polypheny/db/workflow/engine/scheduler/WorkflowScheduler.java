@@ -88,6 +88,7 @@ public class WorkflowScheduler {
     private final Set<UUID> remainingActivities = new HashSet<>(); // activities that have not finished execution
     private final Map<CommonType, Partition> partitions = new HashMap<>();
     private Partition activePartition;
+    private final UUID targetActivityId;
 
 
     public WorkflowScheduler( Workflow workflow, StorageManager sm, @Nullable NestedSessionManager nestedManager, ExecutionMonitor monitor, int globalWorkers, @Nullable UUID targetActivity ) throws Exception {
@@ -96,6 +97,7 @@ public class WorkflowScheduler {
         this.nestedManager = nestedManager;
         this.executionMonitor = monitor;
         this.maxWorkers = Math.min( workflow.getConfig().getMaxWorkers(), globalWorkers );
+        this.targetActivityId = targetActivity;
 
         if ( targetActivity != null && workflow.getActivity( targetActivity ).getState() == ActivityState.SAVED ) {
             throw new GenericRuntimeException( "A saved activity first needs to be reset before executing it" );
@@ -369,6 +371,9 @@ public class WorkflowScheduler {
 
         if ( workflow.getConfig().isDropUnusedCheckpoints() ) {
             for ( UUID n : dag.vertexSet() ) {
+                if ( n == targetActivityId ) {
+                    continue; // We assume the user wants to keep the checkpoints of the target activity
+                }
                 ActivityWrapper wrapper = workflow.getActivity( n );
                 if ( wrapper.getConfig().isEnforceCheckpoint() || wrapper.getState() != ActivityState.SAVED || wrapper.getActivity() instanceof NestedInputActivity ) {
                     continue;

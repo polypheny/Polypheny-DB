@@ -55,7 +55,7 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
         if ( isFusionEnabled ) {
             ColoredDag alternative = getColoredSubDag( commonType, false );
             if ( getSkippedCheckpointsCount( alternative ) > getSkippedCheckpointsCount( colored ) ) {
-                // while we do prefer fusion of pipelining, a higher number of skipped checkpoints is always better
+                // while we do prefer fusion over pipelining, a higher number of skipped checkpoints is always better
                 colored = alternative;
             }
         }
@@ -122,7 +122,7 @@ public class WorkflowOptimizerImpl extends WorkflowOptimizer {
 
 
     private void determineVariableWriters( AttributedDirectedGraph<UUID, ExecutionEdge> subDag, Map<UUID, NodeColor> nodeColors, Map<ExecutionEdge, EdgeColor> edgeColors ) {
-        subDag.vertexSet().stream().filter( this::requestsToWrite ).forEach( activityId -> {
+        subDag.vertexSet().stream().filter( n -> nodeColors.get( n ) == NodeColor.UNDEFINED && this.requestsToWrite( n ) ).forEach( activityId -> {
             nodeColors.put( activityId, NodeColor.WRITER );
             subDag.getOutwardEdges( activityId ).stream().filter( e -> edgeColors.get( e ) == EdgeColor.UNDEFINED ).forEach( edge -> {
                 edgeColors.put( edge, EdgeColor.CHECKPOINT );
