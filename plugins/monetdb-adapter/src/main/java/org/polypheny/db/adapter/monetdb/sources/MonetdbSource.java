@@ -22,9 +22,14 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
@@ -45,6 +50,10 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.schemaDiscovery.AbstractNode;
+import org.polypheny.db.schemaDiscovery.AttributeNode;
+import org.polypheny.db.schemaDiscovery.MetadataProvider;
+import org.polypheny.db.schemaDiscovery.Node;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PolyXid;
@@ -64,7 +73,10 @@ import org.polypheny.db.type.PolyType;
 @AdapterSettingString(name = "password", defaultValue = "monetdb", description = "Username to be used for authenticating at the remote instance.", position = 5)
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Password to be used for authenticating at the remote instance.")
 @AdapterSettingString(name = "tables", defaultValue = "sys.testtable", description = "Maximum number of concurrent JDBC connections.")
-public class MonetdbSource extends AbstractJdbcSource {
+public class MonetdbSource extends AbstractJdbcSource implements MetadataProvider {
+
+    private AbstractNode metadataRoot;
+
 
     public MonetdbSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
         super( storeId, uniqueName, settings, mode, "nl.cwi.monetdb.jdbc.MonetDriver", MonetdbSqlDialect.DEFAULT, false );
@@ -124,7 +136,7 @@ public class MonetdbSource extends AbstractJdbcSource {
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
         PhysicalTable table = adapterCatalog.createTable(
-                logical.table.getNamespaceName(),
+                "sys",
                 logical.table.name,
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                 logical.table,
@@ -242,6 +254,203 @@ public class MonetdbSource extends AbstractJdbcSource {
             throw new GenericRuntimeException( "Exception while collecting schema information!" + e );
         }
         return map;
+    }
+
+
+    @Override
+    public AbstractNode fetchMetadataTree() {
+        String dbName = settings.getOrDefault( "database", "monetdb" );
+        Node root = new Node( "relational", dbName );
+
+        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
+
+        try {
+            ConnectionHandler h = connectionFactory.getOrCreateConnectionHandler( xid );
+            DatabaseMetaData md = h.getStatement().getConnection().getMetaData();
+
+            try ( ResultSet schemas = md.getSchemas( null, "%" ) ) {
+
+                while ( schemas.next() ) {
+                    String schemaName = schemas.getString( "TABLE_SCHEM" );
+
+                    AbstractNode schemaNode = new Node( "schema", schemaName );
+
+                    try ( ResultSet tables = md.getTables(
+                            null,
+                            schemaName,
+                            "%",
+                            new String[]{ "TABLE" } ) ) {
+
+                        while ( tables.next() ) {
+                            String tableName = tables.getString( "TABLE_NAME" );
+                            AbstractNode tableNode = new Node( "table", tableName );
+
+                            Set<String> pkCols = new HashSet<>();
+                            try ( ResultSet pk = md.getPrimaryKeys(
+                                    null,
+                                    schemaName,
+                                    tableName ) ) {
+                                while ( pk.next() ) {
+                                    pkCols.add( pk.getString( "COLUMN_NAME" ) );
+                                }
+                            }
+
+                            try ( ResultSet cols = md.getColumns(
+                                    null,
+                                    schemaName,
+                                    tableName,
+                                    "%" ) ) {
+
+                                while ( cols.next() ) {
+                                    String colName = cols.getString( "COLUMN_NAME" );
+                                    String typeName = cols.getString( "TYPE_NAME" );
+                                    boolean nullable =
+                                            cols.getInt( "NULLABLE" ) == DatabaseMetaData.columnNullable;
+                                    boolean primary = pkCols.contains( colName );
+
+                                    AbstractNode colNode = new AttributeNode( "column", colName );
+                                    colNode.addProperty( "type", typeName );
+                                    colNode.addProperty( "nullable", nullable );
+                                    colNode.addProperty( "primaryKey", primary );
+
+                                    Integer len = (Integer) cols.getObject( "COLUMN_SIZE" );
+                                    Integer scale = (Integer) cols.getObject( "DECIMAL_DIGITS" );
+                                    if ( len != null ) {
+                                        colNode.addProperty( "length", len );
+                                    }
+                                    if ( scale != null ) {
+                                        colNode.addProperty( "scale", scale );
+                                    }
+
+                                    tableNode.addChild( colNode );
+                                }
+                            }
+                            schemaNode.addChild( tableNode );
+                        }
+                    }
+                    root.addChild( schemaNode );
+                }
+            }
+        } catch ( SQLException | ConnectionHandlerException ex ) {
+            throw new GenericRuntimeException( "Error while fetching metadata tree", ex );
+        }
+
+        this.metadataRoot = root;
+        return this.metadataRoot;
+    }
+
+
+    @Override
+    public Object fetchPreview( int limit ) {
+        Map<String, List<Map<String, Object>>> preview = new LinkedHashMap<>();
+
+        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
+        try {
+            ConnectionHandler ch = connectionFactory.getOrCreateConnectionHandler( xid );
+            java.sql.Connection conn = ch.getStatement().getConnection();
+
+            String[] tables = settings.get( "tables" ).split( "," );
+            for ( String str : tables ) {
+                String[] parts = str.split( "\\." );
+                String schema = parts.length == 2 ? parts[0] : null;
+                String table = parts.length == 2 ? parts[1] : parts[0];
+
+                String fqName = (schema != null ? schema + "." : "") + table;
+                List<Map<String, Object>> rows = new ArrayList<>();
+
+                try ( var stmt = conn.createStatement();
+                        var rs = stmt.executeQuery( "SELECT * FROM " + fqName + " LIMIT " + limit ) ) {
+
+                    var meta = rs.getMetaData();
+                    while ( rs.next() ) {
+                        Map<String, Object> row = new HashMap<>();
+                        for ( int i = 1; i <= meta.getColumnCount(); i++ ) {
+                            row.put( meta.getColumnName( i ), rs.getObject( i ) );
+                        }
+                        rows.add( row );
+                    }
+                }
+
+                preview.put( fqName, rows );
+            }
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( "Error fetching preview data", e );
+        }
+
+        return preview;
+    }
+
+
+    @Override
+    public void markSelectedAttributes( List<String> selectedPaths ) {
+
+        List<List<String>> attributePaths = new ArrayList<>();
+
+        for ( String path : selectedPaths ) {
+            String cleanPath = path.replaceFirst( " ?:.*$", "" ).trim();
+
+            List<String> segments = Arrays.asList( cleanPath.split( "\\." ) );
+            if ( !segments.isEmpty() && segments.get( 0 ).equals( metadataRoot.getName() ) ) {
+                segments = segments.subList( 1, segments.size() );
+            }
+
+            attributePaths.add( segments );
+        }
+
+        for ( List<String> pathSegments : attributePaths ) {
+            AbstractNode current = metadataRoot;
+
+            for ( int i = 0; i < pathSegments.size(); i++ ) {
+                String segment = pathSegments.get( i );
+
+                if ( i == pathSegments.size() - 1 ) {
+                    Optional<AbstractNode> attrNodeOpt = current.getChildren().stream()
+                            .filter( c -> c instanceof AttributeNode && segment.equals( c.getName() ) )
+                            .findFirst();
+
+                    if ( attrNodeOpt.isPresent() ) {
+                        ((AttributeNode) attrNodeOpt.get()).setSelected( true );
+                        log.info( "✅ Attribut gesetzt: " + String.join( ".", pathSegments ) );
+                    } else {
+                        log.warn( "❌ Attribut nicht gefunden: " + String.join( ".", pathSegments ) );
+                    }
+
+                } else {
+                    Optional<AbstractNode> childOpt = current.getChildren().stream()
+                            .filter( c -> segment.equals( c.getName() ) )
+                            .findFirst();
+
+                    if ( childOpt.isPresent() ) {
+                        current = childOpt.get();
+                    } else {
+                        log.warn( "❌ Segment nicht gefunden: " + segment + " im Pfad " + String.join( ".", pathSegments ) );
+                        break;
+                    }
+                }
+            }
+        }
+
+    }
+
+
+    @Override
+    public void printTree( AbstractNode node, int depth ) {
+        if ( node == null ) {
+            node = this.metadataRoot;
+        }
+        System.out.println( "  ".repeat( depth ) + node.getType() + ": " + node.getName() );
+        for ( Map.Entry<String, Object> entry : node.getProperties().entrySet() ) {
+            System.out.println( "  ".repeat( depth + 1 ) + "- " + entry.getKey() + ": " + entry.getValue() );
+        }
+        for ( AbstractNode child : node.getChildren() ) {
+            printTree( child, depth + 1 );
+        }
+    }
+
+
+    @Override
+    public void setRoot( AbstractNode root ) {
+        this.metadataRoot = root;
     }
 
 }
