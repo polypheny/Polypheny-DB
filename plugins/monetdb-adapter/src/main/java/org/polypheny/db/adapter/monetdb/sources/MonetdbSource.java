@@ -20,7 +20,9 @@ package org.polypheny.db.adapter.monetdb.sources;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -37,6 +39,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.adapter.java.SchemaFilter;
 import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
@@ -76,6 +79,7 @@ import org.polypheny.db.type.PolyType;
 public class MonetdbSource extends AbstractJdbcSource implements MetadataProvider {
 
     private AbstractNode metadataRoot;
+    private Map<String, List<Map<String, Object>>> previewByTable = new LinkedHashMap<>();
 
 
     public MonetdbSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
@@ -162,7 +166,24 @@ public class MonetdbSource extends AbstractJdbcSource implements MetadataProvide
             Connection connection = statement.getConnection();
             DatabaseMetaData dbmd = connection.getMetaData();
 
-            String[] tables = settings.get( "tables" ).split( "," );
+            String[] tables;
+            if (settings.get("selectedAttributes").equals("")){
+                tables = settings.get( "tables" ).split( "," );
+            } else {
+                String[] names2 = settings.get("selectedAttributes").split(",");
+                Set<String> tableNames = new HashSet<>();
+
+                for (String s : names2){
+                    String attr = s.split(" : ")[0];
+
+                    String[] parts = attr.split("\\.");
+                    if (parts.length >= 3) {
+                        String tableName = parts[1] + "." + parts[2];
+                        tableNames.add(tableName);
+                    }
+                }
+                tables = tableNames.toArray(new String[0]);
+            }
             for ( String str : tables ) {
                 String[] names = str.split( "\\." );
                 if ( names.length == 0 || names.length > 2 || (requiresSchema() && names.length == 1) ) {
@@ -262,50 +283,75 @@ public class MonetdbSource extends AbstractJdbcSource implements MetadataProvide
         String dbName = settings.getOrDefault( "database", "monetdb" );
         Node root = new Node( "relational", dbName );
 
+        SchemaFilter filter = SchemaFilter.forAdapter( adapterName );
+
         PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
 
         try {
-            ConnectionHandler h = connectionFactory.getOrCreateConnectionHandler( xid );
-            DatabaseMetaData md = h.getStatement().getConnection().getMetaData();
+            ConnectionHandler handler = connectionFactory.getOrCreateConnectionHandler( xid );
+            java.sql.Statement stmt = handler.getStatement();
+            Connection conn = stmt.getConnection();
+            DatabaseMetaData meta = conn.getMetaData();
 
-            try ( ResultSet schemas = md.getSchemas( null, "%" ) ) {
-
+            try ( ResultSet schemas = requiresSchema()
+                    ? meta.getSchemas( null, "%" )
+                    : meta.getCatalogs() ) {
                 while ( schemas.next() ) {
-                    String schemaName = schemas.getString( "TABLE_SCHEM" );
+
+                    String schemaName = requiresSchema()
+                            ? schemas.getString( "TABLE_SCHEM" )
+                            : schemas.getString( "TABLE_CAT" );
+
+                    if ( filter.ignoredSchemas.contains( schemaName.toLowerCase() ) ) {
+                        continue;
+                    }
 
                     AbstractNode schemaNode = new Node( "schema", schemaName );
 
-                    try ( ResultSet tables = md.getTables(
+                    try ( ResultSet tables = meta.getTables(
                             null,
-                            schemaName,
+                            requiresSchema() ? schemaName : null,
                             "%",
-                            new String[]{ "TABLE" } ) ) {
-
+                            new String[]{ "TABLE" }
+                    ) ) {
                         while ( tables.next() ) {
+
                             String tableName = tables.getString( "TABLE_NAME" );
+
+                            String fqName = (requiresSchema() ? "\"" + schemaName + "\"." : "") + "\"" + tableName + "\"";
+                            previewByTable.computeIfAbsent(
+                                    schemaName + "." + tableName,
+                                    k -> {
+                                        try {
+                                            return fetchPreview( conn, fqName, 10 );
+                                        } catch ( Exception e ) {
+                                            log.warn( "Preview failed for {}", fqName, e );
+                                            return List.of();
+                                        }
+                                    } );
+
                             AbstractNode tableNode = new Node( "table", tableName );
 
                             Set<String> pkCols = new HashSet<>();
-                            try ( ResultSet pk = md.getPrimaryKeys(
+                            try ( ResultSet pk = meta.getPrimaryKeys(
                                     null,
-                                    schemaName,
+                                    requiresSchema() ? schemaName : null,
                                     tableName ) ) {
                                 while ( pk.next() ) {
                                     pkCols.add( pk.getString( "COLUMN_NAME" ) );
                                 }
                             }
 
-                            try ( ResultSet cols = md.getColumns(
+                            try ( ResultSet cols = meta.getColumns(
                                     null,
-                                    schemaName,
+                                    requiresSchema() ? schemaName : null,
                                     tableName,
                                     "%" ) ) {
-
                                 while ( cols.next() ) {
+
                                     String colName = cols.getString( "COLUMN_NAME" );
                                     String typeName = cols.getString( "TYPE_NAME" );
-                                    boolean nullable =
-                                            cols.getInt( "NULLABLE" ) == DatabaseMetaData.columnNullable;
+                                    boolean nullable = cols.getInt( "NULLABLE" ) == DatabaseMetaData.columnNullable;
                                     boolean primary = pkCols.contains( colName );
 
                                     AbstractNode colNode = new AttributeNode( "column", colName );
@@ -325,59 +371,46 @@ public class MonetdbSource extends AbstractJdbcSource implements MetadataProvide
                                     tableNode.addChild( colNode );
                                 }
                             }
+
                             schemaNode.addChild( tableNode );
                         }
                     }
+
                     root.addChild( schemaNode );
                 }
             }
+
         } catch ( SQLException | ConnectionHandlerException ex ) {
             throw new GenericRuntimeException( "Error while fetching metadata tree", ex );
         }
 
         this.metadataRoot = root;
+        log.error( "Neue Preview ist geladen als: " + previewByTable.toString() );
         return this.metadataRoot;
     }
 
 
+
     @Override
-    public Object fetchPreview( int limit ) {
-        Map<String, List<Map<String, Object>>> preview = new LinkedHashMap<>();
+    public List<Map<String, Object>> fetchPreview( Connection conn, String fqName, int limit ) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        try ( Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(
+                        "SELECT * FROM " + fqName + " LIMIT " + limit ) ) {
 
-        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
-        try {
-            ConnectionHandler ch = connectionFactory.getOrCreateConnectionHandler( xid );
-            java.sql.Connection conn = ch.getStatement().getConnection();
-
-            String[] tables = settings.get( "tables" ).split( "," );
-            for ( String str : tables ) {
-                String[] parts = str.split( "\\." );
-                String schema = parts.length == 2 ? parts[0] : null;
-                String table = parts.length == 2 ? parts[1] : parts[0];
-
-                String fqName = (schema != null ? schema + "." : "") + table;
-                List<Map<String, Object>> rows = new ArrayList<>();
-
-                try ( var stmt = conn.createStatement();
-                        var rs = stmt.executeQuery( "SELECT * FROM " + fqName + " LIMIT " + limit ) ) {
-
-                    var meta = rs.getMetaData();
-                    while ( rs.next() ) {
-                        Map<String, Object> row = new HashMap<>();
-                        for ( int i = 1; i <= meta.getColumnCount(); i++ ) {
-                            row.put( meta.getColumnName( i ), rs.getObject( i ) );
-                        }
-                        rows.add( row );
-                    }
+            ResultSetMetaData meta = rs.getMetaData();
+            while ( rs.next() ) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                for ( int i = 1; i <= meta.getColumnCount(); i++ ) {
+                    row.put( meta.getColumnName( i ), rs.getObject( i ) );
                 }
-
-                preview.put( fqName, rows );
+                rows.add( row );
             }
-        } catch ( Exception e ) {
-            throw new GenericRuntimeException( "Error fetching preview data", e );
+        } catch ( SQLException e ) {
+            log.warn( "Preview failed for {}", fqName, e );
+            return List.of();
         }
-
-        return preview;
+        return rows;
     }
 
 
@@ -451,6 +484,12 @@ public class MonetdbSource extends AbstractJdbcSource implements MetadataProvide
     @Override
     public void setRoot( AbstractNode root ) {
         this.metadataRoot = root;
+    }
+
+
+    @Override
+    public Object getPreview() {
+        return this.previewByTable;
     }
 
 }

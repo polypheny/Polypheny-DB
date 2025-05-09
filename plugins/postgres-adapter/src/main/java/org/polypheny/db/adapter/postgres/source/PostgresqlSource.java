@@ -20,10 +20,11 @@ package org.polypheny.db.adapter.postgres.source;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,13 +32,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.adapter.java.SchemaFilter;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
@@ -76,11 +77,10 @@ import org.polypheny.db.transaction.PolyXid;
         description = "Maximum number of concurrent JDBC connections.")
 @AdapterSettingList(name = "transactionIsolation", options = { "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" }, defaultValue = "SERIALIZABLE",
         description = "Which level of transaction isolation should be used.")
-@AdapterSettingString(name = "tables", defaultValue = "foo,bar",
-        description = "List of tables which should be imported. The names must to be separated by a comma.")
 public class PostgresqlSource extends AbstractJdbcSource implements MetadataProvider {
 
     public AbstractNode metadataRoot;
+    private Map<String, List<Map<String, Object>>> previewByTable = new LinkedHashMap<>();
 
 
     @Override
@@ -94,6 +94,8 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
 
         String dbName = settings.get( "database" );
         Node root = new Node( "relational", dbName );
+
+        SchemaFilter filter = SchemaFilter.forAdapter( adapterName );
 
         PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
 
@@ -112,6 +114,10 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
                             ? schemas.getString( "TABLE_SCHEM" )
                             : schemas.getString( "TABLE_CAT" );
 
+                    if ( filter.ignoredSchemas.contains( schemaName.toLowerCase() ) ) {
+                        continue;
+                    }
+
                     AbstractNode schemaNode = new Node( "schema", schemaName );
 
                     try ( ResultSet tables = meta.getTables(
@@ -123,6 +129,19 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
                         while ( tables.next() ) {
 
                             String tableName = tables.getString( "TABLE_NAME" );
+
+                            String fqName = (requiresSchema() ? "\"" + schemaName + "\"." : "") + "\"" + tableName + "\"";
+                            previewByTable.computeIfAbsent(
+                                    schemaName + "." + tableName,
+                                    k -> {
+                                        try {
+                                            return fetchPreview( conn, fqName, 10 );
+                                        } catch ( Exception e ) {
+                                            log.warn( "Preview failed for {}", fqName, e );
+                                            return List.of();
+                                        }
+                                    } );
+
                             AbstractNode tableNode = new Node( "table", tableName );
 
                             Set<String> pkCols = new HashSet<>();
@@ -178,48 +197,36 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
         }
 
         this.metadataRoot = root;
+        log.error( "Neue Preview ist geladen als: " + previewByTable.toString() );
         return this.metadataRoot;
     }
 
 
     @Override
-    public Object fetchPreview( int limit ) {
-        Map<String, List<Map<String, Object>>> preview = new LinkedHashMap<>();
+    public List<Map<String, Object>> fetchPreview( Connection conn, String fqName, int limit ) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        try ( Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(
+                        "SELECT * FROM " + fqName + " LIMIT " + limit ) ) {
 
-        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
-        try {
-            ConnectionHandler ch = connectionFactory.getOrCreateConnectionHandler( xid );
-            java.sql.Connection conn = ch.getStatement().getConnection();
-
-            String[] tables = settings.get( "tables" ).split( "," );
-            for ( String str : tables ) {
-                String[] parts = str.split( "\\." );
-                String schema = parts.length == 2 ? parts[0] : null;
-                String table = parts.length == 2 ? parts[1] : parts[0];
-
-                String fqName = (schema != null ? schema + "." : "") + table;
-                List<Map<String, Object>> rows = new ArrayList<>();
-
-                try ( var stmt = conn.createStatement();
-                        var rs = stmt.executeQuery( "SELECT * FROM " + fqName + " LIMIT " + limit ) ) {
-
-                    var meta = rs.getMetaData();
-                    while ( rs.next() ) {
-                        Map<String, Object> row = new HashMap<>();
-                        for ( int i = 1; i <= meta.getColumnCount(); i++ ) {
-                            row.put( meta.getColumnName( i ), rs.getObject( i ) );
-                        }
-                        rows.add( row );
-                    }
+            ResultSetMetaData meta = rs.getMetaData();
+            while ( rs.next() ) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                for ( int i = 1; i <= meta.getColumnCount(); i++ ) {
+                    row.put( meta.getColumnName( i ), rs.getObject( i ) );
                 }
-
-                preview.put( fqName, rows );
+                rows.add( row );
             }
-        } catch ( Exception e ) {
-            throw new GenericRuntimeException( "Error fetching preview data", e );
+        } catch ( SQLException e ) {
+            log.warn( "Preview failed for {}", fqName, e );
+            return List.of();
         }
+        return rows;
+    }
 
-        return preview;
+
+    public Object getPreview() {
+        return this.previewByTable;
     }
 
 

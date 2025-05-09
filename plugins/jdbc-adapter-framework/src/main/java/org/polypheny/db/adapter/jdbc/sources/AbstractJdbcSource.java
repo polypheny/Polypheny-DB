@@ -23,8 +23,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
@@ -214,7 +216,24 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
             Connection connection = statement.getConnection();
             DatabaseMetaData dbmd = connection.getMetaData();
 
-            String[] tables = settings.get( "tables" ).split( "," );
+            String[] tables;
+            if (settings.get("selectedAttributes").equals("")){
+                tables = settings.get( "tables" ).split( "," );
+            } else {
+                String[] names2 = settings.get("selectedAttributes").split(",");
+                Set<String> tableNames = new HashSet<>();
+
+                for (String s : names2){
+                    String attr = s.split(" : ")[0];
+
+                    String[] parts = attr.split("\\.");
+                    if (parts.length >= 3) {
+                        String tableName = parts[1] + "." + parts[2];
+                        tableNames.add(tableName);
+                    }
+                }
+                tables = tableNames.toArray(new String[0]);
+            }
             for ( String str : tables ) {
                 String[] names = str.split( "\\." );
                 if ( names.length == 0 || names.length > 2 || (requiresSchema() && names.length == 1) ) {

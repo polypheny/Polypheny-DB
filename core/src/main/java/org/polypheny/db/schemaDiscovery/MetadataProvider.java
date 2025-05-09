@@ -16,19 +16,23 @@
 
 package org.polypheny.db.schemaDiscovery;
 
+import java.sql.Connection;
 import java.util.List;
+import java.util.Map;
 
 public interface MetadataProvider {
 
     AbstractNode fetchMetadataTree();
 
-    Object fetchPreview( int limit );
+    List<Map<String, Object>> fetchPreview( Connection conn, String fqName, int limit );
 
     void markSelectedAttributes( List<String> selectedPaths );
 
     void printTree( AbstractNode node, int depth );
 
     void setRoot( AbstractNode root );
+
+    Object getPreview();
 
 
 }
