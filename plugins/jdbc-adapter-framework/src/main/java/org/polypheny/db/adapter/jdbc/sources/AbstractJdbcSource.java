@@ -217,22 +217,32 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
             DatabaseMetaData dbmd = connection.getMetaData();
 
             String[] tables;
-            if (settings.get("selectedAttributes").equals("")){
+
+            for ( Map.Entry<String, String> entry : settings.entrySet() ) {
+                log.error( "Entry: {} = {}", entry.getKey(), entry.getValue() );
+            }
+
+            if ( !settings.containsKey( "selectedAttributes" ) || settings.get( "selectedAttributes" ).equals( "" ) || settings.get( "selectedAttributes" ).isEmpty() || settings.get( "selectedAttributes" ) == null ) {
                 tables = settings.get( "tables" ).split( "," );
             } else {
-                String[] names2 = settings.get("selectedAttributes").split(",");
+                String[] names2 = settings.get( "selectedAttributes" ).split( "," );
                 Set<String> tableNames = new HashSet<>();
 
-                for (String s : names2){
-                    String attr = s.split(" : ")[0];
+                for ( String s : names2 ) {
+                    String attr = s.split( " : " )[0];
 
-                    String[] parts = attr.split("\\.");
-                    if (parts.length >= 3) {
+                    String[] parts = attr.split( "\\." );
+                    if ( parts.length >= 3 ) {
                         String tableName = parts[1] + "." + parts[2];
-                        tableNames.add(tableName);
+
+                        if ( !requiresSchema() ) {
+                            tableNames.add( parts[2] );
+                        } else {
+                            tableNames.add( tableName );
+                        }
                     }
                 }
-                tables = tableNames.toArray(new String[0]);
+                tables = tableNames.toArray( new String[0] );
             }
             for ( String str : tables ) {
                 String[] names = str.split( "\\." );
