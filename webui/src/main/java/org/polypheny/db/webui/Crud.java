@@ -17,6 +17,7 @@
 package org.polypheny.db.webui;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -880,14 +881,69 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void sendConfirmation( final Context ctx ) {
-        log.info( "Sending confirmation" );
-        // String result = "Angular confirmation message";
-        //ctx.result( result );
         try {
-            List<DatabaseInfo> dbs = PostgreSqlConnection.getDatabasesSchemasAndTables();
-            ctx.json( dbs );
-        } catch ( SQLException e ) {
-            System.err.println( "Fehler bei der Schema-Erkennung: " + e.getMessage() );
+            initMultipart( ctx );
+            if ( !ctx.isMultipartFormData() ) {
+                ctx.status( HttpCode.BAD_REQUEST ).result( "Preview requires multipart/form-data" );
+                return;
+            }
+
+            String body = IOUtils.toString( ctx.req.getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 );
+            PreviewRequest a = HttpServer.mapper.readValue( body, PreviewRequest.class );
+
+            Map<String, InputStream> inputStreams = new HashMap<>();
+            for ( Part part : ctx.req.getParts() ) {
+                if ( !part.getName().equals( "body" ) ) {
+                    inputStreams.put( part.getName(), part.getInputStream() );
+                }
+            }
+
+            log.info( "🔧 AdapterModel empfangen:" );
+            log.info( "  🔹 Name     : {}", a.adapterName );
+            log.info( "  🔹 Adapter  : {}", a.adapterType );
+            log.info( "  🔹 Type     : {}", a.limit );
+
+            log.info( "📦 Settings:" );
+            for ( Map.Entry<String, String> entry : a.settings.entrySet() ) {
+                log.info( "  - {}: {}", entry.getKey(), entry.getValue() );
+            }
+
+            if ( inputStreams.isEmpty() ) {
+                log.info( "📁 Keine Dateien empfangen." );
+            } else {
+                log.info( "📁 Empfangene Dateien:" );
+                for ( String file : inputStreams.keySet() ) {
+                    log.info( "  - Datei: {}", file );
+                }
+            }
+
+            AdapterTemplate template = AdapterManager.getAdapterTemplate( a.adapterName, a.adapterType );
+            Map<String, AbstractAdapterSetting> allSettings = template.settings
+                    .stream()
+                    .collect( Collectors.toMap( e -> e.name, e -> e ) );
+
+            if ( a.settings.containsKey( "directory" ) ) {
+                List<String> fileNames;
+                try {
+                    fileNames = HttpServer.mapper.readValue( a.settings.get( "directory" ), new TypeReference<List<String>>() {
+                    } );
+                } catch ( JsonProcessingException ex ) {
+                    String raw = a.settings.get( "directory" );
+                    String cleaned = raw.replaceAll( "[\\[\\]\"]", "" ).trim();
+                    fileNames = Arrays.stream( cleaned.split( "," ) ).map( String::trim ).filter( s -> !s.isEmpty() ).toList();
+                }
+
+                String path = handleUploadFiles( inputStreams, fileNames, (AbstractAdapterSettingDirectory) allSettings.get( "directory" ), a );
+                a.settings.put( "directory", path );
+            }
+
+            PreviewResult result = template.preview( a.settings, 10 );
+            ctx.json( result );
+
+
+        } catch ( Exception e ) {
+            log.error( "Fehler beim Verarbeiten des Preview-Requests", e );
+            ctx.status( HttpCode.INTERNAL_SERVER_ERROR ).result( "Fehler beim Preview" );
         }
     }
 
@@ -2093,6 +2149,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
             AdapterTemplate template = AdapterTemplate.fromString( req.adapterName, req.adapterType );
             log.error( "Row limit: {}", req.limit );
+            Map<String, AbstractAdapterSetting> allSettings = template.settings.stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
+
+            for ( Map.Entry<String, AbstractAdapterSetting> entry : allSettings.entrySet() ) {
+                log.error( "Key: {} Value: {}", entry.getKey(), entry.getValue() );
+                if ( entry instanceof AbstractAdapterSettingDirectory ) {
+                    log.error( "Ist ein directory setting." );
+                }
+            }
+
             PreviewResult result = template.preview( req.settings, req.limit );
 
             ctx.json( result );
@@ -2100,17 +2165,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             log.error( "🔥 Error while handling preview request", e );
             ctx.status( 500 ).json( Map.of( "error", "Internal error: " + e.getMessage() ) );
         }
-    }
-
-
-    public void processAttributes( final Context ctx ) {
-        try {
-            String req = ctx.body();
-            log.error( "Attribut Daten" + req );
-        } catch ( Exception e ) {
-            log.error( "Attribute Daten sind nicht vorhanden." );
-        }
-
     }
 
 
@@ -2253,6 +2307,24 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         for ( Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
             try {
                 File file = new File( path, is.getKey() );
+                FileUtils.copyInputStreamToFile( is.getValue(), file );
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( e );
+            }
+        }
+        return path.getAbsolutePath();
+    }
+
+
+    private static String handleUploadFiles( Map<String, InputStream> inputStreams, List<String> fileNames, AbstractAdapterSettingDirectory setting, PreviewRequest a ) {
+        for ( String fileName : fileNames ) {
+            setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
+        }
+        File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + a.adapterName );
+        for ( Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
+            try {
+                File file = new File( path, is.getKey() );
+                log.info( "📁 Datei wird geschrieben: {}", file.getAbsolutePath() );
                 FileUtils.copyInputStreamToFile( is.getValue(), file );
             } catch ( IOException e ) {
                 throw new GenericRuntimeException( e );

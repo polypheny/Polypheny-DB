@@ -16,23 +16,34 @@
 
 package org.polypheny.db.webui.models.requests;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import java.util.Map;
 
+@Data
 public class PreviewRequest {
 
+    @JsonProperty
     public String adapterName;
+
+    @JsonProperty
     public AdapterType adapterType;
+
+    @JsonProperty
     public Map<String, String> settings;
+
+    @JsonProperty
     public int limit;
 
     public PreviewRequest() { }
 
     public PreviewRequest(
-            String adapterName,
-            AdapterType adapterType,
-            Map<String,String> settings,
-            int rowLimit ) {
+            @JsonProperty("adapterName") String adapterName,
+            @JsonProperty("adapterType") AdapterType adapterType,
+            @JsonProperty("settings") Map<String,String> settings,
+            @JsonProperty("limit") int rowLimit ) {
         this.adapterName = adapterName;
         this.adapterType = adapterType;
         this.settings = settings;

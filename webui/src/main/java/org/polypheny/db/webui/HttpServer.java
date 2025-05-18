@@ -353,14 +353,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );
 
-        /*
-        * Confirmation message sending to schema discovery UI
-         */
-        webuiServer.post( "/confirm", crud::sendConfirmation );
-
-        webuiServer.post( "/previewTable", crud::getMetadataAndPreview );
-
-        webuiServer.post( "/sendSelectedMetadata", crud::processAttributes );
+        webuiServer.post( "/previewTable", crud::sendConfirmation );
 
         webuiServer.get( "/getPolyAlgRegistry", crud::getPolyAlgRegistry );
 

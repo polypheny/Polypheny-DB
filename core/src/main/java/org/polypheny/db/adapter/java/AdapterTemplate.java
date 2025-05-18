@@ -131,9 +131,10 @@ public class AdapterTemplate {
                 log.info( "🎯 Adapter supports MetadataProvider. Fetching metadata and preview..." );
                 AbstractNode meta = mp.fetchMetadataTree();
                 String json = NodeSerializer.serializeNode( meta ).toString();
-                Object rows = mp.fetchPreview( limit );
+                // Object rows = mp.fetchPreview( limit );
+                Object rows = mp.getPreview();
                 log.error( json );
-                log.error( rows.toString() );
+                // log.error( rows.toString() );
                 return new PreviewResult( json, rows );
             }
             throw new GenericRuntimeException( "The adapter does not implement MetadataProvider." );
