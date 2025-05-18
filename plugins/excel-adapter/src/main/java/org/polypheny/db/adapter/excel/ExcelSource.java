@@ -21,19 +21,26 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Paths;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -59,6 +66,10 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.schemaDiscovery.AbstractNode;
+import org.polypheny.db.schemaDiscovery.AttributeNode;
+import org.polypheny.db.schemaDiscovery.MetadataProvider;
+import org.polypheny.db.schemaDiscovery.Node;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Source;
@@ -76,7 +87,10 @@ import org.polypheny.db.util.Sources;
 @AdapterSettingString(name = "sheetName", description = "default to read the first sheet", defaultValue = "", required = false)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
-public class ExcelSource extends DataSource<RelAdapterCatalog> {
+public class ExcelSource extends DataSource<RelAdapterCatalog> implements MetadataProvider {
+
+    public AbstractNode metadataRoot;
+    private Map<String, List<Map<String, Object>>> previewByTable = new LinkedHashMap<>();
 
     @Delegate(excludes = Excludes.class)
     private final RelationalScanDelegate delegate;
@@ -91,6 +105,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> {
 
     public ExcelSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
         super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ) );
+        log.error( settings.get( "directory" ) );
 
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ) ) : ConnectionMethod.UPLOAD;
         // Validate maxStringLength setting
@@ -111,8 +126,27 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> {
 
     private void setExcelDir( Map<String, String> settings ) {
         String dir = settings.get( "directory" );
+        log.error( "Directory kommt an als: " + settings.get( "directory" ) );
+
+        if ( dir != null && dir.trim().startsWith( "[" ) ) {
+            try {
+                List<String> list = new ObjectMapper()
+                        .readValue( dir, new TypeReference<List<String>>() {
+                        } );
+                dir = list.isEmpty() ? null : list.get( 0 );
+                log.error( "Directory nach Parsing: " + dir );
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( "Cannot parse directory JSON", e );
+            }
+        }
+
         if ( connectionMethod == ConnectionMethod.LINK ) {
             dir = settings.get( "directoryName" );
+            log.error( "DirectoryName kommt an als: " + settings.get( "directoryName" ) );
+        }
+
+        if ( dir == null ) {
+            throw new GenericRuntimeException( "Directory must not be null" );
         }
 
         if ( dir.startsWith( "classpath://" ) ) {
@@ -365,6 +399,246 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> {
             }
             informationElements.add( table );
         }
+    }
+
+
+    @Override
+    public AbstractNode fetchMetadataTree() {
+
+        String filePath = "C:/Users/roman/Desktop/Mappe1.xlsx";
+        String mappeName = "Workbook";
+
+        AbstractNode root = new Node( "excel", mappeName );
+        try ( Workbook wb = WorkbookFactory.create( new File( filePath ) ) ) {
+
+            for ( Sheet sheet : wb ) {
+
+                String sheetName = sheet.getSheetName();
+                AbstractNode sheetNode = new Node( "sheet", sheetName );
+
+                Row header = sheet.getRow( sheet.getFirstRowNum() );
+                if ( header == null ) {
+                    continue;
+                }
+                for ( int c = 0; c < header.getLastCellNum(); c++ ) {
+                    Cell cell = header.getCell( c );
+                    String colName = getCellValueAsString( cell, "COL_" + (c + 1) );
+
+                    AbstractNode colNode = new AttributeNode( "column", colName );
+                    colNode.addProperty( "type", inferType( sheet, c, header.getRowNum() + 1, 20 ) );
+                    colNode.addProperty( "nullable", true );
+
+                    sheetNode.addChild( colNode );
+                }
+
+                String fqName = mappeName + "." + sheetName;
+                List<Map<String, Object>> rows = fetchPreview( null, fqName, 10 );
+                this.previewByTable.put( fqName, rows );
+
+                root.addChild( sheetNode );
+            }
+
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Failed to read Excel metadata: " + filePath, e );
+        }
+
+        this.metadataRoot = root;
+        return metadataRoot;
+    }
+
+
+    private String inferType( Sheet sheet, int colIndex, int startRow, int maxRows ) {
+        int checked = 0;
+        for ( int r = startRow; r <= sheet.getLastRowNum() && checked < maxRows; r++ ) {
+            Row row = sheet.getRow( r );
+            if ( row == null ) {
+                continue;
+            }
+            Cell cell = row.getCell( colIndex );
+            if ( cell == null ) {
+                continue;
+            }
+
+            switch ( cell.getCellType() ) {
+                case NUMERIC:
+                    if ( DateUtil.isCellDateFormatted( cell ) ) {
+                        return "DATE";
+                    }
+                    return "DOUBLE";
+                case STRING:
+                    return "STRING";
+                case BOOLEAN:
+                    return "BOOLEAN";
+                default:
+                    continue;
+            }
+        }
+        return "STRING";
+    }
+
+
+    private String getCellValueAsString( Cell cell, String fallback ) {
+        if ( cell == null ) {
+            return fallback;
+        }
+        try {
+            return switch ( cell.getCellType() ) {
+                case STRING -> cell.getStringCellValue();
+                case NUMERIC -> String.valueOf( cell.getNumericCellValue() );
+                case BOOLEAN -> String.valueOf( cell.getBooleanCellValue() );
+                case FORMULA -> cell.getCellFormula();
+                default -> fallback;
+            };
+        } catch ( Exception e ) {
+            return fallback;
+        }
+    }
+
+
+    @Override
+    public List<Map<String, Object>> fetchPreview( Connection conn, String fqName, int limit ) {
+
+        String[] parts = fqName.split( "\\.", 2 );
+        String sheetName = parts.length == 2 ? parts[1] : parts[0];
+        String filePath = "C:/Users/roman/Desktop/Mappe1.xlsx";
+
+        List<Map<String, Object>> rows = new ArrayList<>();
+
+        try ( Workbook wb = WorkbookFactory.create( new File( filePath ) ) ) {
+
+            Sheet sheet = wb.getSheet( sheetName );
+            if ( sheet == null ) {
+                log.warn( "Sheet {} not found in {}", sheetName, filePath );
+                return List.of();
+            }
+
+            Row header = sheet.getRow( sheet.getFirstRowNum() );
+            if ( header == null ) {
+                return List.of();
+            }
+
+            List<String> colNames = new ArrayList<>();
+            for ( int c = 0; c < header.getLastCellNum(); c++ ) {
+                colNames.add( getCellValueAsString( header.getCell( c ), "COL_" + (c + 1) ) );
+            }
+
+            int first = header.getRowNum() + 1;
+            int last = Math.min( sheet.getLastRowNum(), first + limit - 1 );
+
+            for ( int r = first; r <= last; r++ ) {
+                Row dataRow = sheet.getRow( r );
+                if ( dataRow == null ) {
+                    continue;
+                }
+
+                Map<String, Object> map = new LinkedHashMap<>();
+                for ( int c = 0; c < colNames.size(); c++ ) {
+                    map.put( colNames.get( c ), extractCellValue( dataRow.getCell( c ) ) );
+                }
+                rows.add( map );
+            }
+
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Failed to read Excel preview: " + filePath, e );
+        }
+
+        return rows;
+    }
+
+
+    private Object extractCellValue( Cell cell ) {
+        if ( cell == null ) {
+            return null;
+        }
+        return switch ( cell.getCellType() ) {
+            case STRING -> cell.getStringCellValue();
+            case NUMERIC -> DateUtil.isCellDateFormatted( cell )
+                    ? cell.getDateCellValue()
+                    : cell.getNumericCellValue();
+            case BOOLEAN -> cell.getBooleanCellValue();
+            case FORMULA -> cell.getCellFormula();
+            case BLANK -> null;
+            default -> cell.toString();
+        };
+    }
+
+
+    @Override
+    public void markSelectedAttributes( List<String> selectedPaths ) {
+        List<List<String>> attributePaths = new ArrayList<>();
+
+        for ( String path : selectedPaths ) {
+            String cleanPath = path.replaceFirst( " ?:.*$", "" ).trim();
+
+            List<String> segments = Arrays.asList( cleanPath.split( "\\." ) );
+            if ( !segments.isEmpty() && segments.get( 0 ).equals( metadataRoot.getName() ) ) {
+                segments = segments.subList( 1, segments.size() );
+            }
+
+            attributePaths.add( segments );
+        }
+
+        for ( List<String> pathSegments : attributePaths ) {
+            AbstractNode current = metadataRoot;
+
+            for ( int i = 0; i < pathSegments.size(); i++ ) {
+                String segment = pathSegments.get( i );
+
+                if ( i == pathSegments.size() - 1 ) {
+                    Optional<AbstractNode> attrNodeOpt = current.getChildren().stream()
+                            .filter( c -> c instanceof AttributeNode && segment.equals( c.getName() ) )
+                            .findFirst();
+
+                    if ( attrNodeOpt.isPresent() ) {
+                        ((AttributeNode) attrNodeOpt.get()).setSelected( true );
+                        log.info( "✅ Attribut gesetzt: " + String.join( ".", pathSegments ) );
+                    } else {
+                        log.warn( "❌ Attribut nicht gefunden: " + String.join( ".", pathSegments ) );
+                    }
+
+                } else {
+                    Optional<AbstractNode> childOpt = current.getChildren().stream()
+                            .filter( c -> segment.equals( c.getName() ) )
+                            .findFirst();
+
+                    if ( childOpt.isPresent() ) {
+                        current = childOpt.get();
+                    } else {
+                        log.warn( "❌ Segment nicht gefunden: " + segment + " im Pfad " + String.join( ".", pathSegments ) );
+                        break;
+                    }
+                }
+            }
+        }
+
+    }
+
+
+    @Override
+    public void printTree( AbstractNode node, int depth ) {
+        if ( node == null ) {
+            node = this.metadataRoot;
+        }
+        System.out.println( "  ".repeat( depth ) + node.getType() + ": " + node.getName() );
+        for ( Map.Entry<String, Object> entry : node.getProperties().entrySet() ) {
+            System.out.println( "  ".repeat( depth + 1 ) + "- " + entry.getKey() + ": " + entry.getValue() );
+        }
+        for ( AbstractNode child : node.getChildren() ) {
+            printTree( child, depth + 1 );
+        }
+
+    }
+
+
+    @Override
+    public void setRoot( AbstractNode root ) {
+        this.metadataRoot = root;
+    }
+
+
+    @Override
+    public Object getPreview() {
+        return this.previewByTable;
     }
 
 

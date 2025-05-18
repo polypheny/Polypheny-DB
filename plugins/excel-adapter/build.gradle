@@ -6,6 +6,8 @@ dependencies {
     compileOnly project(":plugins:sql-language")
 
     implementation group: "org.apache.poi", name: "poi", version: poi_version
+    implementation "org.apache.poi:poi-ooxml:5.2.5"
+    implementation "org.apache.poi:poi-ooxml-full:5.2.5"
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

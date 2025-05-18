@@ -45,7 +45,7 @@ public class ExcelNamespace extends Namespace {
     private final URL directoryUrl;
     private final ExcelTable.Flavor flavor;
     private final Map<String, ExcelTable> tableMap = new HashMap<>();
-    private final String sheet;
+    private String sheet;
 
 
     /**
@@ -78,7 +78,14 @@ public class ExcelNamespace extends Namespace {
             fieldIds.add( column.position );
         }
 
-        String excelFileName = excelSource.sheetName;
+        // String excelFileName = excelSource.sheetName;
+        String[] parts = table.name.split("_", 2);
+        String filePart = parts[0];
+        String sheetPart = parts.length > 1 ? parts[1] : "";
+
+        String excelFileName = filePart + ".xlsx";
+        this.sheet = sheetPart;
+
 
         Source source;
         try {
