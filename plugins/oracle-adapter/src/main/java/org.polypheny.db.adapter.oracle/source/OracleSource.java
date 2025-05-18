@@ -107,7 +107,9 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
 
 
     @Override
-    protected boolean requiresSchema() { return true; }
+    protected boolean requiresSchema() {
+        return true;
+    }
 
 
     @Override
@@ -154,7 +156,33 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
             Connection connection = statement.getConnection();
             DatabaseMetaData dbmd = connection.getMetaData();
 
-            String[] tables = settings.get( "tables" ).split( "," );
+            String[] tables;
+            for ( Map.Entry<String, String> entry : settings.entrySet() ) {
+                log.error( "Entry: {} = {}", entry.getKey(), entry.getValue() );
+            }
+
+            if ( !settings.containsKey( "selectedAttributes" ) || settings.get( "selectedAttributes" ).equals( "" ) || settings.get( "selectedAttributes" ).isEmpty() || settings.get( "selectedAttributes" ) == null ) {
+                tables = settings.get( "tables" ).split( "," );
+            } else {
+                String[] names2 = settings.get( "selectedAttributes" ).split( "," );
+                Set<String> tableNames = new HashSet<>();
+
+                for ( String s : names2 ) {
+                    String attr = s.split( " : " )[0];
+
+                    String[] parts = attr.split( "\\." );
+                    if ( parts.length >= 3 ) {
+                        String tableName = parts[1] + "." + parts[2];
+
+                        if ( !requiresSchema() ) {
+                            tableNames.add( parts[2] );
+                        } else {
+                            tableNames.add( tableName );
+                        }
+                    }
+                }
+                tables = tableNames.toArray( new String[0] );
+            }
             for ( String str : tables ) {
                 String[] names = str.split( "\\." );
 
@@ -246,7 +274,7 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
             ConnectionHandler h = connectionFactory.getOrCreateConnectionHandler( xid );
             DatabaseMetaData m = h.getStatement().getConnection().getMetaData();
 
-            String currentUser = m.getUserName();                       // aktueller Owner (= Schema)
+            String currentUser = m.getUserName();
 
             try ( ResultSet schemas = m.getSchemas() ) {
                 while ( schemas.next() ) {
@@ -257,21 +285,19 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
                             m.getTables( null, schemaName, "%", new String[]{ "TABLE" } ) ) {
 
                         while ( tables.next() ) {
-                            String owner = tables.getString( "TABLE_SCHEM" ); // gleich schemaName
+                            String owner = tables.getString( "TABLE_SCHEM" );
                             String tableName = tables.getString( "TABLE_NAME" );
 
-                            /* (a) nur Objekte des eingeloggten Users                                       */
                             if ( !owner.equalsIgnoreCase( currentUser ) ) {
                                 continue;
                             }
-                            /* (b) interne Oracle‑Tabellen ausblenden                                        */
+
                             if ( tableName.contains( "$" ) || ORACLE_INTERNAL.matcher( tableName ).find() ) {
                                 continue;
                             }
 
                             Node tableNode = new Node( "table", tableName );
 
-                            /* Primärschlüsselspalten zwischenspeichern ---------------------------------- */
                             Set<String> pkCols = new HashSet<>();
                             try ( ResultSet pk = m.getPrimaryKeys( null, schemaName, tableName ) ) {
                                 while ( pk.next() ) {
@@ -279,7 +305,6 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
                                 }
                             }
 
-                            /* Spalten lesen ------------------------------------------------------------- */
                             try ( ResultSet cols =
                                     m.getColumns( null, schemaName, tableName, "%" ) ) {
 
@@ -307,13 +332,11 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
                                     tableNode.addChild( colNode );
                                 }
                             }
-                            /* nur Tabellen mit mindestens einer sichtbaren Spalte übernehmen */
                             if ( !tableNode.getChildren().isEmpty() ) {
                                 schemaNode.addChild( tableNode );
                             }
                         }
                     }
-                    /* Schema nur anhängen, wenn mindestens eine Tabelle behalten wurde */
                     if ( !schemaNode.getChildren().isEmpty() ) {
                         root.addChild( schemaNode );
                     }
@@ -329,46 +352,8 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
 
 
     @Override
-    public Object fetchPreview( int limit ) {
-        Map<String, List<Map<String, Object>>> preview = new LinkedHashMap<>();
-
-        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
-        try {
-            ConnectionHandler ch = connectionFactory.getOrCreateConnectionHandler( xid );
-            java.sql.Connection conn = ch.getStatement().getConnection();
-
-            String[] tables = settings.get( "tables" ).split( "," );
-            for ( String str : tables ) {
-                String[] parts = str.split( "\\." );
-                String schema = parts.length == 2 ? parts[0] : null;
-                String table = parts.length == 2 ? parts[1] : parts[0];
-
-                schema = schema.toUpperCase();
-                table = table.toUpperCase();
-
-                String fqName = (schema != null ? schema + "." : "") + table;
-                List<Map<String, Object>> rows = new ArrayList<>();
-
-                try ( var stmt = conn.createStatement();
-                        var rs = stmt.executeQuery( "SELECT * FROM " + fqName + " FETCH FIRST " + limit + " ROWS ONLY" ) ) {
-
-                    var meta = rs.getMetaData();
-                    while ( rs.next() ) {
-                        Map<String, Object> row = new HashMap<>();
-                        for ( int i = 1; i <= meta.getColumnCount(); i++ ) {
-                            row.put( meta.getColumnName( i ), rs.getObject( i ) );
-                        }
-                        rows.add( row );
-                    }
-                }
-
-                preview.put( fqName, rows );
-            }
-        } catch ( Exception e ) {
-            throw new GenericRuntimeException( "Error fetching preview data", e );
-        }
-
-        return preview;
+    public List<Map<String, Object>> fetchPreview( Connection conn, String fqName, int limit ) {
+        return List.of();
     }
 
 
@@ -441,6 +426,50 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
     @Override
     public void setRoot( AbstractNode root ) {
         this.metadataRoot = root;
+    }
+
+
+    @Override
+    public Object getPreview() {
+        Map<String, List<Map<String, Object>>> preview = new LinkedHashMap<>();
+
+        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
+        try {
+            ConnectionHandler ch = connectionFactory.getOrCreateConnectionHandler( xid );
+            java.sql.Connection conn = ch.getStatement().getConnection();
+
+            String[] tables = {"system.test"};
+            for ( String str : tables ) {
+                String[] parts = str.split( "\\." );
+                String schema = parts.length == 2 ? parts[0] : null;
+                String table = parts.length == 2 ? parts[1] : parts[0];
+
+                schema = schema.toUpperCase();
+                table = table.toUpperCase();
+
+                String fqName = (schema != null ? schema + "." : "") + table;
+                List<Map<String, Object>> rows = new ArrayList<>();
+
+                try ( var stmt = conn.createStatement();
+                        var rs = stmt.executeQuery( "SELECT * FROM " + fqName + " FETCH FIRST " + 10 + " ROWS ONLY" ) ) {
+
+                    var meta = rs.getMetaData();
+                    while ( rs.next() ) {
+                        Map<String, Object> row = new HashMap<>();
+                        for ( int i = 1; i <= meta.getColumnCount(); i++ ) {
+                            row.put( meta.getColumnName( i ), rs.getObject( i ) );
+                        }
+                        rows.add( row );
+                    }
+                }
+
+                preview.put( fqName, rows );
+            }
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( "Error fetching preview data", e );
+        }
+
+        return preview;
     }
 
 }

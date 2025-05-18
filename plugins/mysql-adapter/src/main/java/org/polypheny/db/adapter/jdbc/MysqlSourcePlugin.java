@@ -17,9 +17,19 @@
 package org.polypheny.db.adapter.jdbc;
 
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
@@ -28,15 +38,24 @@ import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.schemaDiscovery.AbstractNode;
+import org.polypheny.db.schemaDiscovery.AttributeNode;
+import org.polypheny.db.schemaDiscovery.MetadataProvider;
+import org.polypheny.db.schemaDiscovery.Node;
 import org.polypheny.db.sql.language.dialect.MysqlSqlDialect;
+import org.polypheny.db.transaction.PUID;
+import org.polypheny.db.transaction.PolyXid;
 
 @SuppressWarnings("unused")
 public class MysqlSourcePlugin extends PolyPlugin {
@@ -77,19 +96,23 @@ public class MysqlSourcePlugin extends PolyPlugin {
             description = "Hostname or IP address of the remote MariaDB / MySQL instance.")
     @AdapterSettingInteger(name = "port", defaultValue = 3306, position = 2,
             description = "JDBC port number on the remote MariaDB / MySQL instance.")
-    @AdapterSettingString(name = "database", defaultValue = "polypheny", position = 3,
+    @AdapterSettingString(name = "database", defaultValue = "test", position = 3,
             description = "Name of the database to connect to.")
-    @AdapterSettingString(name = "username", defaultValue = "polypheny", position = 4,
+    @AdapterSettingString(name = "username", defaultValue = "root", position = 4,
             description = "Username to be used for authenticating at the remote instance.")
-    @AdapterSettingString(name = "password", defaultValue = "polypheny", position = 5,
+    @AdapterSettingString(name = "password", defaultValue = "roman123", position = 5,
             description = "Password to be used for authenticating at the remote instance.")
     @AdapterSettingInteger(name = "maxConnections", defaultValue = 25,
             description = "Maximum number of concurrent JDBC connections.")
     @AdapterSettingList(name = "transactionIsolation", options = { "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" }, defaultValue = "SERIALIZABLE",
             description = "Which level of transaction isolation should be used.")
-    @AdapterSettingString(name = "tables", defaultValue = "foo,bar",
+    @AdapterSettingString(name = "tables", defaultValue = "test.testtable",
             description = "List of tables which should be imported. The names must to be separated by a comma.")
-    public static class MysqlSource extends AbstractJdbcSource {
+    public static class MysqlSource extends AbstractJdbcSource implements MetadataProvider {
+
+        public AbstractNode metadataRoot;
+        private Map<String, List<Map<String, Object>>> previewByTable = new LinkedHashMap<>();
+
 
         public MysqlSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
             super( storeId, uniqueName, settings, mode, "org.mariadb.jdbc.Driver", MysqlSqlDialect.DEFAULT, false );
@@ -99,7 +122,8 @@ public class MysqlSourcePlugin extends PolyPlugin {
         @Override
         public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
             PhysicalTable table = adapterCatalog.createTable(
-                    logical.table.getNamespaceName(),
+                    // logical.table.getNamespaceName(),
+                    "test",
                     logical.table.name,
                     logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                     logical.table,
@@ -140,6 +164,214 @@ public class MysqlSourcePlugin extends PolyPlugin {
         @Override
         protected boolean requiresSchema() {
             return false;
+        }
+
+
+        @Override
+        public AbstractNode fetchMetadataTree() {
+            String dbName = settings.get( "database" );
+            Node root = new Node( "relational", dbName );
+
+            PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
+
+            try {
+                ConnectionHandler handler = connectionFactory.getOrCreateConnectionHandler( xid );
+                java.sql.Statement stmt = handler.getStatement();
+                Connection conn = stmt.getConnection();
+                DatabaseMetaData meta = conn.getMetaData();
+
+                try ( ResultSet schemas = meta.getCatalogs() ) {
+                    while ( schemas.next() ) {
+
+                        String schemaName = requiresSchema()
+                                ? schemas.getString( "TABLE_SCHEM" )
+                                : schemas.getString( "TABLE_CAT" );
+
+                        AbstractNode schemaNode = new Node( "schema", schemaName );
+
+                        try ( ResultSet tables = meta.getTables(
+                                schemaName,
+                                null,
+                                "%",
+                                new String[]{ "TABLE" }
+                        ) ) {
+                            while ( tables.next() ) {
+
+                                String tableName = tables.getString( "TABLE_NAME" );
+                                AbstractNode tableNode = new Node( "table", tableName );
+
+                                Set<String> pkCols = new HashSet<>();
+                                try ( ResultSet pk = meta.getPrimaryKeys(
+                                        schemaName,
+                                        null,
+                                        tableName ) ) {
+                                    while ( pk.next() ) {
+                                        pkCols.add( pk.getString( "COLUMN_NAME" ) );
+                                    }
+                                }
+
+                                try ( ResultSet cols = meta.getColumns(
+                                        schemaName,
+                                        null,
+                                        tableName,
+                                        "%" ) ) {
+                                    while ( cols.next() ) {
+
+                                        String colName = cols.getString( "COLUMN_NAME" );
+                                        String typeName = cols.getString( "TYPE_NAME" );
+                                        boolean nullable = cols.getInt( "NULLABLE" ) == DatabaseMetaData.columnNullable;
+                                        boolean primary = pkCols.contains( colName );
+
+                                        AbstractNode colNode = new AttributeNode( "column", colName );
+                                        colNode.addProperty( "type", typeName );
+                                        colNode.addProperty( "nullable", nullable );
+                                        colNode.addProperty( "primaryKey", primary );
+
+                                        Integer len = (Integer) cols.getInt( "COLUMN_SIZE" );
+                                        Integer scale = (Integer) cols.getInt( "DECIMAL_DIGITS" );
+                                        if ( len != null ) {
+                                            colNode.addProperty( "length", len );
+                                        }
+                                        if ( scale != null ) {
+                                            colNode.addProperty( "scale", scale );
+                                        }
+
+                                        tableNode.addChild( colNode );
+                                    }
+                                }
+
+                                schemaNode.addChild( tableNode );
+                            }
+                        }
+
+                        root.addChild( schemaNode );
+                    }
+                }
+
+            } catch ( SQLException | ConnectionHandlerException ex ) {
+                throw new GenericRuntimeException( "Error while fetching metadata tree", ex );
+            }
+
+            this.metadataRoot = root;
+            return this.metadataRoot;
+        }
+
+
+        @Override
+        public List<Map<String, Object>> fetchPreview( Connection conn, String fqName, int limit ) {
+            return List.of();
+        }
+
+
+        @Override
+        public void markSelectedAttributes( List<String> selectedPaths ) {
+            List<List<String>> attributePaths = new ArrayList<>();
+
+            for ( String path : selectedPaths ) {
+                String cleanPath = path.replaceFirst( " ?:.*$", "" ).trim();
+
+                List<String> segments = Arrays.asList( cleanPath.split( "\\." ) );
+                if ( !segments.isEmpty() && segments.get( 0 ).equals( metadataRoot.getName() ) ) {
+                    segments = segments.subList( 1, segments.size() );
+                }
+
+                attributePaths.add( segments );
+            }
+
+            for ( List<String> pathSegments : attributePaths ) {
+                AbstractNode current = metadataRoot;
+
+                for ( int i = 0; i < pathSegments.size(); i++ ) {
+                    String segment = pathSegments.get( i );
+
+                    if ( i == pathSegments.size() - 1 ) {
+                        Optional<AbstractNode> attrNodeOpt = current.getChildren().stream()
+                                .filter( c -> c instanceof AttributeNode && segment.equals( c.getName() ) )
+                                .findFirst();
+
+                        if ( attrNodeOpt.isPresent() ) {
+                            ((AttributeNode) attrNodeOpt.get()).setSelected( true );
+                            log.info( "✅ Attribut gesetzt: " + String.join( ".", pathSegments ) );
+                        } else {
+                            log.warn( "❌ Attribut nicht gefunden: " + String.join( ".", pathSegments ) );
+                        }
+
+                    } else {
+                        Optional<AbstractNode> childOpt = current.getChildren().stream()
+                                .filter( c -> segment.equals( c.getName() ) )
+                                .findFirst();
+
+                        if ( childOpt.isPresent() ) {
+                            current = childOpt.get();
+                        } else {
+                            log.warn( "❌ Segment nicht gefunden: " + segment + " im Pfad " + String.join( ".", pathSegments ) );
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+
+        @Override
+        public void printTree( AbstractNode node, int depth ) {
+            if ( node == null ) {
+                node = this.metadataRoot;
+            }
+            System.out.println( "  ".repeat( depth ) + node.getType() + ": " + node.getName() );
+            for ( Map.Entry<String, Object> entry : node.getProperties().entrySet() ) {
+                System.out.println( "  ".repeat( depth + 1 ) + "- " + entry.getKey() + ": " + entry.getValue() );
+            }
+            for ( AbstractNode child : node.getChildren() ) {
+                printTree( child, depth + 1 );
+            }
+        }
+
+
+        @Override
+        public void setRoot( AbstractNode root ) {
+            this.metadataRoot = root;
+        }
+
+
+        @Override
+        public Object getPreview() {
+            Map<String, List<Map<String, Object>>> preview = new LinkedHashMap<>();
+
+            PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
+            try {
+                ConnectionHandler ch = connectionFactory.getOrCreateConnectionHandler( xid );
+                java.sql.Connection conn = ch.getStatement().getConnection();
+
+                String[] tables = {"testtable"};
+                for ( String str : tables ) {
+                    String[] parts = str.split( "\\." );
+                    String schema = parts.length == 2 ? parts[0] : null;
+                    String table = parts.length == 2 ? parts[1] : parts[0];
+
+                    String fqName = (schema != null ? schema + "." : "") + table;
+                    List<Map<String, Object>> rows = new ArrayList<>();
+
+                    try ( var stmt = conn.createStatement();
+                            var rs = stmt.executeQuery( "SELECT * FROM TESTTABLE " + " LIMIT " + 10 ) ) {
+
+                        var meta = rs.getMetaData();
+                        while ( rs.next() ) {
+                            Map<String, Object> row = new HashMap<>();
+                            for ( int i = 1; i <= meta.getColumnCount(); i++ ) {
+                                row.put( meta.getColumnName( i ), rs.getObject( i ) );
+                            }
+                            rows.add( row );
+                        }
+                    }
+
+                    preview.put( fqName, rows );
+                }
+            } catch ( Exception e ) {
+                throw new GenericRuntimeException( "Error fetching preview data", e );
+            }
+
+            return preview;
         }
 
     }
