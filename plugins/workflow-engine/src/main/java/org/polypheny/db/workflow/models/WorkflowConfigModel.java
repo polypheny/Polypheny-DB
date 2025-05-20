@@ -46,7 +46,7 @@ public class WorkflowConfigModel {
                 false,
                 0,
                 false,
-                1,
+                3,
                 1000,
                 100
         );
