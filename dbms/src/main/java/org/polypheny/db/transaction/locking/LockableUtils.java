@@ -31,7 +31,7 @@ import org.polypheny.db.transaction.locking.Lockable.LockType;
 public class LockableUtils {
 
     public static LockableObject getNamespaceAsLockableObject( Entity entity ) {
-        return Catalog.getInstance().getSnapshot().getNamespace( entity.getNamespaceId() ).orElseThrow();
+        return Catalog.snapshot().getNamespace( entity.getNamespaceId() ).orElseThrow();
     }
 
 
