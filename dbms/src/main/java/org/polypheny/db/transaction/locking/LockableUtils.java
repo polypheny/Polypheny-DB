@@ -30,63 +30,8 @@ import org.polypheny.db.transaction.locking.Lockable.LockType;
 
 public class LockableUtils {
 
-    public static class DebugTimer {
-
-        private final long startTime;
-        String name;
-
-
-        public DebugTimer( String name ) {
-            this.name = name;
-            this.startTime = System.nanoTime();
-        }
-
-
-        public void stop() {
-            long elapsedTime = System.nanoTime() - startTime;
-            System.out.println( "<TIMER: " + name + " - Elapsed time: " + elapsedTime + " ns" );
-        }
-
-    }
-
-
     public static LockableObject getNamespaceAsLockableObject( Entity entity ) {
         return Catalog.getInstance().getSnapshot().getNamespace( entity.getNamespaceId() ).orElseThrow();
-    }
-
-
-    /**
-     * This method converts a desired {@link LockType} to the one appropriate for the {@link S2plLockingLevel} set
-     * in the {@link RuntimeConfig}.
-     * <p>
-     * This is required to resolve mismatches between the requested and the supported lock types. An example:
-     * A lock of type MVCC is requested for en entity supporting MVCC. The locking level in the config however is set
-     * to GLOBAL. As the global schema lock can't be acquired in MVCC mode, the lock type has to be converted.
-     *
-     * @param lockType desired type of the lock to acquire
-     * @param isMvcc whether the entity to be locked supports mvcc
-     * @return the actual lock type supported
-     */
-    public static LockType convertLockType( LockType lockType, boolean isMvcc ) {
-        return lockType;
-        //TODO TH: remove this if shared vs separate lock type decision is made
-        /*
-        switch ( (S2plLockingLevel) RuntimeConfig.S2PL_LOCKING_LEVEL.getEnum() ) {
-            case GLOBAL, NAMESPACE -> {
-                return lockType == LockType.MVCC ? LockType.EXCLUSIVE : lockType;
-            }
-            case ENTITY -> {
-                if ( isMvcc ) {
-                    return lockType == LockType.EXCLUSIVE ? LockType.EXCLUSIVE : LockType.MVCC;
-                }
-                if ( lockType == LockType.MVCC ) {
-                    return LockType.EXCLUSIVE;
-                }
-                return lockType;
-            }
-            default -> throw new IllegalArgumentException( "Unknown S2plLockingLevel: " + RuntimeConfig.S2PL_LOCKING_LEVEL.getEnum() );
-        }
-        */
     }
 
 
