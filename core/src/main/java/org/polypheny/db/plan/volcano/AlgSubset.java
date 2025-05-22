@@ -225,6 +225,7 @@ public class AlgSubset extends AbstractAlgNode {
         return digest.toString();
     }
 
+
     @Override
     public boolean isDataModifying() {
         return false;

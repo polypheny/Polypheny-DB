@@ -116,6 +116,7 @@ public class HepAlgVertex extends AbstractAlgNode {
         currentAlg = newRel;
     }
 
+
     @Override
     public boolean isDataModifying() {
         return false;

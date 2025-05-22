@@ -16,7 +16,6 @@
 
 package org.polypheny.db.cypher.ddl;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -70,6 +69,7 @@ public class CypherDropPlacement extends CypherAdminCommand implements Executabl
 
         DdlManager.getInstance().dropGraphPlacement( graphs.get( 0 ).id, dataStore, statement );
     }
+
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {

@@ -16,7 +16,6 @@
 
 package org.polypheny.db.languages.mql;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,7 +24,6 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.ddl.DdlManager;
@@ -82,6 +80,7 @@ public class MqlAddPlacement extends MqlCollectionStatement implements Executabl
     public @Nullable String getEntity() {
         return getCollection();
     }
+
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {

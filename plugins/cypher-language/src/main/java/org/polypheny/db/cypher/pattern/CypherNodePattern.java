@@ -53,6 +53,7 @@ public class CypherNodePattern extends CypherPattern {
         this.predicate = predicate;
     }
 
+
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.NODE_PATTERN;
@@ -70,8 +71,9 @@ public class CypherNodePattern extends CypherPattern {
         return Pair.of( PolyString.of( name ), new PolyNode( properties, PolyList.copyOf( labels ), PolyString.of( name ) ) );
     }
 
+
     public void initializeProperties() {
-        properties = new CypherLiteral(ParserPos.ZERO, Literal.MAP, List.of(), List.of()  );
+        properties = new CypherLiteral( ParserPos.ZERO, Literal.MAP, List.of(), List.of() );
     }
 
 }

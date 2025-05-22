@@ -127,7 +127,6 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         this.partitionGroupNamesList = partitionGroupNamesList;
         this.partitionQualifierList = partitionQualifierList;
         this.rawPartitionInfo = rawPartitionInfo;
-
     }
 
 

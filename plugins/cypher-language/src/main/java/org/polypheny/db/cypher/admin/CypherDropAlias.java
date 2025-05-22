@@ -16,7 +16,6 @@
 
 package org.polypheny.db.cypher.admin;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -64,6 +63,7 @@ public class CypherDropAlias extends CypherAdminCommand implements ExecutableSta
     public boolean isDdl() {
         return true;
     }
+
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {

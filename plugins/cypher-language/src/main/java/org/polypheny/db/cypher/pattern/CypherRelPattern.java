@@ -89,8 +89,9 @@ public class CypherRelPattern extends CypherPattern {
         return Pair.of( PolyString.of( name ), edge );
     }
 
+
     public void initializeProperties() {
-        properties = new CypherLiteral(ParserPos.ZERO, Literal.MAP, List.of(), List.of()  );
+        properties = new CypherLiteral( ParserPos.ZERO, Literal.MAP, List.of(), List.of() );
     }
 
 }

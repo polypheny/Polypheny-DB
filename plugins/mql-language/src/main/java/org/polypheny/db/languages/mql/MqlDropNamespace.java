@@ -16,11 +16,8 @@
 
 package org.polypheny.db.languages.mql;
 
-import java.util.HashMap;
 import java.util.Map;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
@@ -52,6 +49,7 @@ public class MqlDropNamespace extends MqlNode implements ExecutableStatement {
     public Type getMqlKind() {
         return Type.DROP_DATABASE;
     }
+
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {

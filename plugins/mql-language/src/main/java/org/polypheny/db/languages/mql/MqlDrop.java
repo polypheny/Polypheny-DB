@@ -16,11 +16,9 @@
 
 package org.polypheny.db.languages.mql;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.locks.Lock;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -76,6 +74,7 @@ public class MqlDrop extends MqlCollectionStatement implements ExecutableStateme
         return getCollection();
     }
 
+
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
         long namespaceId = parsedQueryContext.getNamespaceId();
@@ -88,7 +87,7 @@ public class MqlDrop extends MqlCollectionStatement implements ExecutableStateme
         if ( collections.size() != 1 ) {
             return Map.of();
         }
-        return LockableUtils.getMapOfLockableFromObject( collections.get(0), LockType.EXCLUSIVE );
+        return LockableUtils.getMapOfLockableFromObject( collections.get( 0 ), LockType.EXCLUSIVE );
     }
 
 }

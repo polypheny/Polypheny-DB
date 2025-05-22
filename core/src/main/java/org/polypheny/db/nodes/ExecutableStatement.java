@@ -32,5 +32,6 @@ public interface ExecutableStatement {
 
     void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext );
 
-    Map<Lockable, LockType> deriveLockables(Context context, ParsedQueryContext parsedQueryContext);
+    Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext );
+
 }
