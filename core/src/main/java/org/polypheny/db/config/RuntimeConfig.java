@@ -28,7 +28,6 @@ import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.ddl.DdlManager.DefaultIndexPlacementStrategy;
 import org.polypheny.db.processing.ConstraintStrategy;
 import org.polypheny.db.transaction.DeadlockDetectorType;
-import org.polypheny.db.transaction.DeadlockResolverType;
 import org.polypheny.db.transaction.locking.S2plLockingLevel;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
@@ -48,13 +47,6 @@ public enum RuntimeConfig {
             "runtime/s2plDeadlockDetectorType",
             "Define the method used to detect deadlocks.",
             DeadlockDetectorType.GRAPH_DEADLOCK_DETECTOR,
-            ConfigType.ENUM
-    ),
-
-    S2PL_DEADLOCK_RESOLVER_TYPE(
-            "runtime/s2plDeadlockResolverType",
-            "Define the method used to resolve deadlocks.",
-            DeadlockResolverType.FIRST_TRANSACTION_DEADLOCK_RESOLVER,
             ConfigType.ENUM
     ),
 
