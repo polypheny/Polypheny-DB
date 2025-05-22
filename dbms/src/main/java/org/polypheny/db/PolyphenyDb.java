@@ -149,7 +149,6 @@ public class PolyphenyDb {
             if ( log.isDebugEnabled() ) {
                 log.debug( "PolyphenyDb.main( {} )", java.util.Arrays.toString( args ) );
             }
-            log.info( "Branch: {}, commit: {}", VersionCollector.INSTANCE.getBranch(), VersionCollector.INSTANCE.getHash() );
             final SingleCommand<PolyphenyDb> parser = SingleCommand.singleCommand( PolyphenyDb.class );
             final PolyphenyDb polyphenyDb = parser.parse( args );
 
