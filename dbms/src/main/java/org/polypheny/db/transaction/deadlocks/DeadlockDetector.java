@@ -16,6 +16,7 @@
 
 package org.polypheny.db.transaction.deadlocks;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.transaction.Transaction;
@@ -25,7 +26,7 @@ public interface DeadlockDetector {
 
     void add( Lockable lockable, Transaction newTransaction, Set<Transaction> owners );
 
-    List<Transaction> getConflictingTransactions();
+    ImmutableList<Transaction> getConflictingTransactions();
 
     void remove( Lockable lockable, Transaction transaction );
 
