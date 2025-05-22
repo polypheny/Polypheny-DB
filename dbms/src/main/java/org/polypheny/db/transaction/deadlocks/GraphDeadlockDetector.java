@@ -47,9 +47,7 @@ public class GraphDeadlockDetector implements DeadlockDetector {
     public void remove( Lockable lockable, Transaction transaction ) {
         adjacencyList.remove( transaction );
         adjacencyList.forEach( ( predecessor, successors ) -> {
-            if ( successors != null ) {
-                successors.remove( transaction );
-            }
+            successors.remove( transaction );
         } );
     }
 
