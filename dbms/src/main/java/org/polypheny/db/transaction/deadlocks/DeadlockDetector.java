@@ -17,7 +17,6 @@
 package org.polypheny.db.transaction.deadlocks;
 
 import com.google.common.collect.ImmutableList;
-import java.util.List;
 import java.util.Set;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.Lockable;
