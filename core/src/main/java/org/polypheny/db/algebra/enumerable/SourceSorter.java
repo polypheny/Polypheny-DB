@@ -72,5 +72,4 @@ public class SourceSorter<TAccumulate, TSource, TSortKey> {
         }
     }
 
-
 }
