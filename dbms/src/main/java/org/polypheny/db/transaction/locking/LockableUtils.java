@@ -48,25 +48,23 @@ public class LockableUtils {
      */
     public static Lockable deriveLockable( LockableObject lockableObject ) {
         S2plLockingLevel lockingLevel = (S2plLockingLevel) RuntimeConfig.S2PL_LOCKING_LEVEL.getEnum();
-        switch ( lockableObject.getLockableObjectType() ) {
+        return switch ( lockableObject.getLockableObjectType() ) {
             case NAMESPACE -> {
                 if ( lockingLevel == S2plLockingLevel.GLOBAL ) {
-                    return LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE;
+                    yield LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE;
+                } else {
+                    yield LockablesRegistry.INSTANCE.getOrCreateLockable( lockableObject );
                 }
-                return LockablesRegistry.INSTANCE.getOrCreateLockable( lockableObject );
             }
-            case ENTITY -> {
-                if ( lockingLevel == S2plLockingLevel.GLOBAL ) {
-                    return LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE;
-                }
-                if ( lockingLevel == S2plLockingLevel.NAMESPACE ) {
+            case ENTITY -> switch ( lockingLevel ) {
+                case GLOBAL -> LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE;
+                case NAMESPACE -> {
                     LockableObject namespaceLockableObject = LockableUtils.getNamespaceAsLockableObject( (Entity) lockableObject );
-                    return LockablesRegistry.INSTANCE.getOrCreateLockable( namespaceLockableObject );
+                    yield LockablesRegistry.INSTANCE.getOrCreateLockable( namespaceLockableObject );
                 }
-                return LockablesRegistry.INSTANCE.getOrCreateLockable( lockableObject );
-            }
-            default -> throw new IllegalArgumentException( "Unknown LockableObjectType: " + lockableObject.getLockableObjectType() );
-        }
+                case ENTITY -> LockablesRegistry.INSTANCE.getOrCreateLockable( lockableObject );
+            };
+        };
     }
 
 
