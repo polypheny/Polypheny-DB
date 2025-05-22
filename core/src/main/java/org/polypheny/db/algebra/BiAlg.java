@@ -102,6 +102,7 @@ public abstract class BiAlg extends AbstractAlgNode {
                 .input( "right", right );
     }
 
+
     @Override
     public boolean isDataModifying() {
         return false;

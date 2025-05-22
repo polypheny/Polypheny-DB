@@ -72,6 +72,7 @@ public abstract class DocumentSort extends SingleAlg {
                 (fetch != null ? fetch.toString() : "") + "&";
     }
 
+
     @Override
     public boolean isDataModifying() {
         return false;

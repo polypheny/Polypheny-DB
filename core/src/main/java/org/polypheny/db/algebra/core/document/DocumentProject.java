@@ -121,6 +121,7 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
         return doc;
     }
 
+
     @Override
     public boolean isDataModifying() {
         return false;

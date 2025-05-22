@@ -131,6 +131,7 @@ public class Collect extends SingleAlg {
         return typeFactory.createTypeWithNullability( ret, false );
     }
 
+
     @Override
     public boolean isDataModifying() {
         return false;

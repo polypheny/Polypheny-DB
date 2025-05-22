@@ -60,6 +60,7 @@ public class Chi extends SingleAlg {
                 + input.algCompareString() + "&";
     }
 
+
     @Override
     public boolean isDataModifying() {
         return false;
