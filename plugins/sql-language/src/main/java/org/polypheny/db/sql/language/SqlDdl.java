@@ -107,7 +107,7 @@ public abstract class SqlDdl extends SqlCall {
 
     protected Map<Lockable, LockType> getMapOfTableLockable( SqlIdentifier identifier, Context context, LockType lockType ) {
         Optional<? extends LogicalEntity> logicalTable = searchEntity( context, identifier );
-        HashMap<Lockable, LockType> lockableObjects = new HashMap<>();
+        Map<Lockable, LockType> lockableObjects = new HashMap<>();
         logicalTable.ifPresent( t -> LockableUtils.updateMapEntry( t, lockType, lockableObjects ) );
         return lockableObjects;
     }
