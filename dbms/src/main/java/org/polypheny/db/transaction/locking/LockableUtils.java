@@ -112,9 +112,7 @@ public class LockableUtils {
      * @return map containing the global lockable with the appropriate lock type
      */
     public static Map<Lockable, LockType> getMapOfGlobalLockable( LockType lockType ) {
-        HashMap<Lockable, LockType> lockables = new HashMap<>();
-        lockables.put( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE, lockType );
-        return lockables;
+        return Map.of( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE, lockType );
     }
 
 
@@ -128,7 +126,7 @@ public class LockableUtils {
      * @return map containing the lockable of the lockable object with the specified value
      */
     public static Map<Lockable, LockType> getMapOfLockableFromObject( LockableObject lockableObject, LockType lockType ) {
-        HashMap<Lockable, LockType> lockables = new HashMap<>();
+        Map<Lockable, LockType> lockables = new HashMap<>();
         Lockable lockable = deriveLockable( lockableObject );
         LockableUtils.updateMapEntry( lockable, lockType, lockables );
         return lockables;
@@ -147,7 +145,7 @@ public class LockableUtils {
      */
     public static Map<Lockable, LockType> getMapOfNamespaceLockableFromName( String namespaceName, Context context, LockType lockType ) {
         Optional<LogicalNamespace> namespace = context.getSnapshot().getNamespace( namespaceName );
-        return namespace.map( logicalNamespace -> getMapOfNamespaceLockable( logicalNamespace, lockType ) ).orElseGet( HashMap::new );
+        return namespace.map( logicalNamespace -> getMapOfNamespaceLockable( logicalNamespace, lockType ) ).orElseGet( Map::of );
     }
 
 
@@ -164,7 +162,7 @@ public class LockableUtils {
     public static Map<Lockable, LockType> getMapOfNamespaceLockableFromContext( Context context, ParsedQueryContext parsedQueryContext, LockType lockType ) {
         long namespaceId = parsedQueryContext.getNamespaceId();
         Optional<LogicalNamespace> namespace = context.getSnapshot().getNamespace( namespaceId );
-        return namespace.map( logicalNamespace -> getMapOfNamespaceLockable( logicalNamespace, lockType ) ).orElseGet( HashMap::new );
+        return namespace.map( logicalNamespace -> getMapOfNamespaceLockable( logicalNamespace, lockType ) ).orElseGet( Map::of );
     }
 
 
@@ -178,10 +176,8 @@ public class LockableUtils {
      * @return map containing the appropriate lockable and lock type for the specified namespace
      */
     public static Map<Lockable, LockType> getMapOfNamespaceLockable( LogicalNamespace namespace, LockType lockType ) {
-        HashMap<Lockable, LockType> lockables = new HashMap<>();
         Lockable lockable = deriveLockable( namespace );
-        updateMapEntry( lockable, lockType, lockables );
-        return lockables;
+        return Map.of( lockable, lockType );
     }
 
 
