@@ -33,13 +33,13 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
+import org.polypheny.db.adapter.MetadataObserver.MetadataHasher;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.schemaDiscovery.AbstractNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
-import org.polypheny.db.schemaDiscovery.Node;
 import org.polypheny.db.schemaDiscovery.NodeSerializer;
 
 @Slf4j
@@ -114,7 +114,7 @@ public class AdapterTemplate {
         log.info( "Creating ephemeral adapter {} with name {}", clazz.getName(), previewName );
         Adapter<?> adapter = deployer.get( -1L, previewName, settings, DeployMode.REMOTE );
 
-        if ( !(adapter instanceof DataSource<?> ds ) ) {
+        if ( !(adapter instanceof DataSource<?> ds) ) {
             throw new GenericRuntimeException( "The adapter does not implement DataSource." );
         }
 
@@ -124,13 +124,16 @@ public class AdapterTemplate {
 
     public PreviewResult preview( Map<String, String> settings, int limit ) {
         DataSource<?> tmp = createEphemeral( settings );
-        log.info("Adapter class: {}", tmp.getClass().getName());
-        log.info("Implements MetadataProvider: {}", tmp instanceof MetadataProvider);
+        log.info( "Adapter class: {}", tmp.getClass().getName() );
+        log.info( "Implements MetadataProvider: {}", tmp instanceof MetadataProvider );
         try {
             if ( tmp instanceof MetadataProvider mp ) {
                 log.info( "🎯 Adapter supports MetadataProvider. Fetching metadata and preview..." );
                 AbstractNode meta = mp.fetchMetadataTree();
                 String json = NodeSerializer.serializeNode( meta ).toString();
+                MetadataHasher hasher = new MetadataHasher();
+                String hash = hasher.hash( json );
+                log.info( "Metadata hash at preview: {}", hash );
                 // Object rows = mp.fetchPreview( limit );
                 Object rows = mp.getPreview();
                 log.error( json );
@@ -147,10 +150,12 @@ public class AdapterTemplate {
 
     @Value
     public static class PreviewResult {
+
         @JsonProperty
         String metadata;
         @JsonProperty
         Object preview;
+
     }
 
 }

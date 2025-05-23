@@ -54,6 +54,7 @@ import org.polypheny.db.schemaDiscovery.AttributeNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import org.polypheny.db.schemaDiscovery.Node;
 import org.polypheny.db.transaction.PUID;
+import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
 
 
@@ -97,12 +98,16 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
 
         SchemaFilter filter = SchemaFilter.forAdapter( adapterName );
 
-        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
+        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
+
+        java.sql.Statement stmt = null;
+        Connection conn = null;
+
 
         try {
             ConnectionHandler handler = connectionFactory.getOrCreateConnectionHandler( xid );
-            java.sql.Statement stmt = handler.getStatement();
-            Connection conn = stmt.getConnection();
+            stmt = handler.getStatement();
+            conn = stmt.getConnection();
             DatabaseMetaData meta = conn.getMetaData();
 
             try ( ResultSet schemas = requiresSchema()
@@ -131,11 +136,12 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
                             String tableName = tables.getString( "TABLE_NAME" );
 
                             String fqName = (requiresSchema() ? "\"" + schemaName + "\"." : "") + "\"" + tableName + "\"";
+                            Connection finalConn = conn;
                             previewByTable.computeIfAbsent(
                                     schemaName + "." + tableName,
                                     k -> {
                                         try {
-                                            return fetchPreview( conn, fqName, 10 );
+                                            return fetchPreview( finalConn, fqName, 10 );
                                         } catch ( Exception e ) {
                                             log.warn( "Preview failed for {}", fqName, e );
                                             return List.of();
@@ -194,6 +200,13 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
 
         } catch ( SQLException | ConnectionHandlerException ex ) {
             throw new GenericRuntimeException( "Error while fetching metadata tree", ex );
+        } finally {
+            try {
+                stmt.close();
+                conn.close();
+            } catch ( SQLException e ) {
+                throw new RuntimeException( e );
+            }
         }
 
         this.metadataRoot = root;

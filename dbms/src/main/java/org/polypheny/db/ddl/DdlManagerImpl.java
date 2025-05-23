@@ -43,6 +43,9 @@ import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.MetadataObserver.HashCache;
+import org.polypheny.db.adapter.MetadataObserver.MetadataHasher;
+import org.polypheny.db.adapter.MetadataObserver.PublisherManager;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -112,6 +115,7 @@ import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schemaDiscovery.AbstractNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
+import org.polypheny.db.schemaDiscovery.NodeSerializer;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -230,7 +234,18 @@ public class DdlManagerImpl extends DdlManager {
                     .collect( Collectors.toSet() );
             log.error( "Das sind die Attribute die gefiltert werden müssen: " + selectedAttributeNames );
             if ( adapter instanceof MetadataProvider mp ) {
+
+                PublisherManager pm = PublisherManager.getInstance();
+                MetadataHasher hasher = new MetadataHasher();
+
                 AbstractNode node = mp.fetchMetadataTree();
+                String hash = hasher.hash( NodeSerializer.serializeNode( node ).toString() );
+                log.info( "Metadata hash at deployment: {}", hash );
+
+                HashCache.getInstance().put( uniqueName, hash );
+                log.info( "Key used during deployment: {} ", uniqueName );
+                pm.onAdapterDeploy( (Adapter & MetadataProvider) mp );
+
                 mp.setRoot( node );
                 mp.markSelectedAttributes( selectedAttributes );
                 log.error( "SelectedAttributes ist gesetzt aus dem DdlManager und der Tree ist das hier: " );
