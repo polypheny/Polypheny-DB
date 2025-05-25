@@ -215,11 +215,6 @@ public abstract class Match extends SingleAlg {
                 (interval != null ? interval.hashCode() : "") + "&";
     }
 
-    @Override
-    public boolean isDataModifying() {
-        return false;
-    }
-
 
     @Override
     public boolean isDataModifying() {

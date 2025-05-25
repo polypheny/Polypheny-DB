@@ -81,7 +81,7 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ).toUpperCase() ) : ConnectionMethod.UPLOAD;
         this.xmlFiles = getXmlFilesUrl( settings );
         this.delegate = new DocumentScanDelegate( this, getAdapterCatalog() );
-        long namespaceId = Catalog.getInstance().createNamespace( uniqueName, DataModel.DOCUMENT, true );
+        long namespaceId = Catalog.getInstance().createNamespace( uniqueName, DataModel.DOCUMENT, true, false );
         this.namespace = new XmlNamespace( uniqueName, namespaceId, getAdapterId() );
     }
 
