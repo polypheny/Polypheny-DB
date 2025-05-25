@@ -262,7 +262,7 @@ public class PolyAlgRegistry {
         declarations.put( LogicalDocumentProject.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentProject::create ).model( DataModel.DOCUMENT )
                 .opName( "DOC_PROJECT" ).numInputs( 1 ).opTags( logAllTags )
-                .param( Parameter.builder().name( "includes" ).tag( ParamTag.ALIAS ).requiresAlias( true ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "includes" ).tag( ParamTag.ALIAS ).multiValued( 1 ).type( ParamType.REX ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "excludes" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalDocumentAggregate.class, PolyAlgDeclaration.builder()

@@ -29,7 +29,6 @@ import java.util.Optional;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
@@ -172,11 +171,10 @@ public class AdapterManager {
     public Adapter<?> addAdapter( String adapterName, String uniqueName, AdapterType adapterType, DeployMode mode, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
         if ( getAdapters().containsKey( uniqueName ) ) {
-            throw new GenericRuntimeException( "There is already an adapter with this unique name" );
+            throw new GenericRuntimeException( "There is already an adapter with this unique name: " + uniqueName );
         }
 
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
-
 
         for ( AbstractAdapterSetting setting : adapterTemplate.settings ) {
             if ( setting.appliesTo.stream().noneMatch( s -> s.appliesTo( mode ) ) ) {

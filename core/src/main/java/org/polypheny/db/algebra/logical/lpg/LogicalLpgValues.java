@@ -143,7 +143,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
         LogicalRelValues edgePropertyValues = new LogicalRelValues( cluster, out, entities.get( 3 ).getTupleType(), getEdgePropertyValues( edges ) );
 
         return Arrays.asList(
-                nodeValues,
+                nodeValues.tuples.isEmpty() ? null : nodeValues,
                 nodePropertyValues.tuples.isEmpty() ? null : nodePropertyValues,
                 edgeValues,
                 edgePropertyValues.tuples.isEmpty() ? null : edgePropertyValues );

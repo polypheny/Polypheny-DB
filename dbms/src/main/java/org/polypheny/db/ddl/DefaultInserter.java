@@ -44,7 +44,7 @@ public class DefaultInserter {
         // init schema
 
         if ( catalog.getSnapshot().getNamespace( DEFAULT_NAMESPACE ).isEmpty() ) {
-            catalog.createNamespace( "public", DataModel.getDefault(), false );
+            catalog.createNamespace( "public", DataModel.getDefault(), false, false );
         }
 
         //////////////

@@ -81,7 +81,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ).toUpperCase() ) : ConnectionMethod.UPLOAD;
         this.jsonFiles = getJsonFilesUrl( settings );
         this.delegate = new DocumentScanDelegate( this, getAdapterCatalog() );
-        long namespaceId = Catalog.getInstance().createNamespace( uniqueName, DataModel.DOCUMENT, true );
+        long namespaceId = Catalog.getInstance().createNamespace( uniqueName, DataModel.DOCUMENT, true, false );
         this.namespace = new JsonNamespace( uniqueName, namespaceId, getAdapterId() );
     }
 
@@ -273,5 +273,3 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
     }
 
 }
-
-

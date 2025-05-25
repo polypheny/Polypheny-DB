@@ -37,7 +37,8 @@ public class Mql {
             Type.SELECT,
             Type.FIND,
             Type.AGGREGATE,
-            Type.EXPLAIN
+            Type.EXPLAIN,
+            Type.COUNT
     );
     static List<Type> DML = Arrays.asList(
             Type.UPDATE,

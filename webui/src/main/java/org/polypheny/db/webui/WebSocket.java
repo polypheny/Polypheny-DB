@@ -120,7 +120,12 @@ public class WebSocket implements Consumer<WsConfig> {
         switch ( request.type ) {
             case "GraphRequest":
                 GraphRequest graphRequest = ctx.messageAsClass( GraphRequest.class );
-                Pair<PolyXid, PolyGraph> xidGraph = LanguageCrud.getGraph( Catalog.snapshot().getNamespace( graphRequest.namespace ).orElseThrow().name, crud.getTransactionManager(), ctx.session );
+                Pair<PolyXid, PolyGraph> xidGraph;
+                if ( graphRequest.nodeIds == null ) {
+                    xidGraph = LanguageCrud.getGraph( Catalog.snapshot().getNamespace( graphRequest.namespace ).orElseThrow().name, crud.getTransactionManager(), ctx.session );
+                } else {
+                    xidGraph = LanguageCrud.getSubGraph( Catalog.snapshot().getNamespace( graphRequest.namespace ).orElseThrow().name, graphRequest.nodeIds, crud.getTransactionManager(), ctx.session );
+                }
 
                 xIds.add( xidGraph.left.toString() );
 

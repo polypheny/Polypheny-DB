@@ -124,4 +124,3 @@ public class HepAlgVertex extends AbstractAlgNode {
 
 
 }
-

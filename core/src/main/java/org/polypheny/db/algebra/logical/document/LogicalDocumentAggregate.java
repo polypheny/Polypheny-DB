@@ -30,6 +30,7 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNameRef;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
 public class LogicalDocumentAggregate extends DocumentAggregate {
@@ -60,7 +61,7 @@ public class LogicalDocumentAggregate extends DocumentAggregate {
 
     private static LogicalDocumentAggregate create_( final AlgNode input, @Nullable RexNameRef group, List<LaxAggregateCall> aggCalls ) {
         final AlgCluster cluster = input.getCluster();
-        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
+        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE ).replace( ModelTrait.DOCUMENT );
         return new LogicalDocumentAggregate( cluster, traitSet, input, group, aggCalls );
     }
 

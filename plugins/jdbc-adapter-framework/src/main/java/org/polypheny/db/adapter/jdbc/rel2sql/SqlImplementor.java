@@ -517,9 +517,9 @@ public abstract class SqlImplementor {
                             return SqlLiteral.createCharString( literal.value.asString().value, POS );
                         case NUMERIC:
                         case EXACT_NUMERIC:
-                            return SqlLiteral.createExactNumeric( literal.value.asBigDecimal().value.toString(), POS );
+                            return SqlLiteral.createExactNumeric( literal.value.asNumber().bigDecimalValue().toString(), POS );
                         case APPROXIMATE_NUMERIC:
-                            return SqlLiteral.createApproxNumeric( literal.value.asBigDecimal().value.toString(), POS );
+                            return SqlLiteral.createApproxNumeric( literal.value.asNumber().bigDecimalValue().toString(), POS );
                         case BOOLEAN:
                             return SqlLiteral.createBoolean( literal.value.asBoolean().value, POS );
                         case INTERVAL_YEAR_MONTH:

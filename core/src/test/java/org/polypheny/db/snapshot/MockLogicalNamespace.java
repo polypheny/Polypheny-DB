@@ -22,7 +22,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 public class MockLogicalNamespace extends LogicalNamespace {
 
     public MockLogicalNamespace( String name, DataModel dataModel, boolean caseSensitive ) {
-        super( 0, name, dataModel, caseSensitive );
+        super( 0, name, dataModel, caseSensitive, false );
     }
 
 }

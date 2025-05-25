@@ -52,17 +52,22 @@ public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace
     @Serialize
     @JsonProperty
     public boolean caseSensitive;
+    @Serialize
+    @JsonProperty
+    public boolean hidden; // TODO: serialize hidden field?
 
 
     public LogicalNamespace(
             @Deserialize("id") final long id,
             @Deserialize("name") @NonNull final String name,
             @Deserialize("dataModel") @NonNull final DataModel dataModel,
-            @Deserialize("caseSensitive") boolean caseSensitive ) {
+            @Deserialize("caseSensitive") boolean caseSensitive,
+            @Deserialize("hidden") boolean hidden ) {
         this.id = id;
         this.name = name;
         this.dataModel = dataModel;
         this.caseSensitive = caseSensitive;
+        this.hidden = hidden;
     }
 
 

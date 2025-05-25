@@ -67,4 +67,3 @@ public class Chi extends SingleAlg {
     }
 
 }
-

@@ -309,4 +309,3 @@ public final class MultiJoin extends AbstractAlgNode {
     }
 
 }
-

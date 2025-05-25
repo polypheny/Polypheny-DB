@@ -28,7 +28,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -65,8 +67,11 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
@@ -238,6 +243,32 @@ public class LanguageCrud {
         }
 
         throw new GenericRuntimeException( "Error while retrieving graph." );
+    }
+
+
+    public static Pair<PolyXid, PolyGraph> getSubGraph( String name, List<String> nodeIds, TransactionManager transactionManager, Session session ) {
+        if ( nodeIds.isEmpty() ) {
+            return Pair.of( null, new PolyGraph( PolyMap.of( new HashMap<>() ), PolyMap.of( new HashMap<>() ) ) );
+        }
+        Pair<PolyXid, PolyGraph> graph = getGraph( name, transactionManager, session );
+        if ( graph.left == null ) {
+            return graph;
+        }
+        PolyMap<PolyString, PolyNode> nodes = PolyMap.of( new HashMap<>() );
+        PolyMap<PolyString, PolyEdge> edges = PolyMap.of( new HashMap<>() );
+        Set<PolyString> requestedNodeIds = nodeIds.stream().map( PolyString::of ).collect( Collectors.toSet() );
+        for ( Entry<PolyString, PolyNode> entry : graph.right.getNodes().entrySet() ) {
+            if ( requestedNodeIds.contains( entry.getKey() ) ) {
+                nodes.put( entry.getKey(), entry.getValue() );
+            }
+        }
+        for ( Entry<PolyString, PolyEdge> entry : graph.right.getEdges().entrySet() ) {
+            PolyEdge edge = entry.getValue();
+            if ( requestedNodeIds.contains( edge.left ) && requestedNodeIds.contains( edge.right ) ) {
+                edges.put( entry.getKey(), edge );
+            }
+        }
+        return Pair.of( graph.left, new PolyGraph( nodes, edges ) );
     }
 
 

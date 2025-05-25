@@ -108,5 +108,4 @@ public abstract class BiAlg extends AbstractAlgNode {
         return false;
     }
 
-
 }

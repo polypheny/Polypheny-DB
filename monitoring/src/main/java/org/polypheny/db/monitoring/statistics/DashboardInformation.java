@@ -79,7 +79,9 @@ public class DashboardInformation {
         this.numberOfPendingEvents = MonitoringServiceProvider.getInstance().getNumberOfElementsInQueue();
 
         this.availableAdapter = snapshot.getAdapters().stream().collect( Collectors.toMap( v -> v.uniqueName, v -> Pair.of( v.adapterTypeName, v.type ) ) );
-        this.availableNamespaces = snapshot.getNamespaces( null ).stream().collect( Collectors.toMap( v -> v.name, v -> v.dataModel ) );
+        this.availableNamespaces = snapshot.getNamespaces( null ).stream()
+                .filter( ns -> !ns.hidden )
+                .collect( Collectors.toMap( v -> v.name, v -> v.dataModel ) );
     }
 
 }

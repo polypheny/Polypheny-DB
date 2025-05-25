@@ -33,8 +33,9 @@ import lombok.extern.jackson.Jacksonized;
 @SuperBuilder
 public class GraphRequest extends QueryRequest {
 
+    @JsonProperty
     public List<String> nodeIds;
-
+    @JsonProperty
     public List<String> edgeIds;
 
 

@@ -18,7 +18,10 @@ package org.polypheny.db.cypher.clause;
 
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.cypher.expression.CypherLiteral;
+import org.polypheny.db.cypher.pattern.CypherNodePattern;
 import org.polypheny.db.cypher.pattern.CypherPattern;
+import org.polypheny.db.cypher.pattern.CypherRelPattern;
 import org.polypheny.db.languages.ParserPos;
 
 
@@ -32,7 +35,6 @@ public class CypherCreate extends CypherClause {
         super( pos );
         this.patterns = patterns;
     }
-
 
     @Override
     public CypherKind getCypherKind() {

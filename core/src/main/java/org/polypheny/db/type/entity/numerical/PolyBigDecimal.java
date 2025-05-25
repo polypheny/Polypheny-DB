@@ -99,6 +99,10 @@ public class PolyBigDecimal extends PolyNumber {
         return value == null ? null : of( value, value.precision(), value.scale() );
     }
 
+    public static PolyBigDecimal ofNullable( Number value ) {
+        return value == null ? null : of( value.longValue() );
+    }
+
 
     @Override
     public @Nullable String toJson() {

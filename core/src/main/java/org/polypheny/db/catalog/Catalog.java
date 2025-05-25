@@ -183,9 +183,10 @@ public abstract class Catalog implements ExtensionPoint {
      * @param name The name of the schema
      * @param dataModel The type of this schema
      * @param caseSensitive
+     * @param hidden Whether the namespace should only be visible internally and therefore be hidden in the UI
      * @return The id of the inserted schema
      */
-    public abstract long createNamespace( String name, DataModel dataModel, boolean caseSensitive );
+    public abstract long createNamespace( String name, DataModel dataModel, boolean caseSensitive, boolean hidden );
 
     /**
      * Add an adapter
