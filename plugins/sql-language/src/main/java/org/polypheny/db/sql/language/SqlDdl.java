@@ -105,20 +105,20 @@ public abstract class SqlDdl extends SqlCall {
     }
 
 
-    protected Map<Lockable, LockType> getMapOfTableLockable(SqlIdentifier identifier, Context context, LockType lockType) {
+    protected Map<Lockable, LockType> getMapOfTableLockable( SqlIdentifier identifier, Context context, LockType lockType ) {
         Optional<? extends LogicalEntity> logicalTable = searchEntity( context, identifier );
-        HashMap<Lockable, LockType> lockableObjects = new HashMap<>();
+        Map<Lockable, LockType> lockableObjects = new HashMap<>();
         logicalTable.ifPresent( t -> LockableUtils.updateMapEntry( t, lockType, lockableObjects ) );
         return lockableObjects;
     }
 
-    protected Map<Lockable, LockType> getMapOfNamespaceLockable(SqlIdentifier identifier, Context context, LockType lockType) {
+
+    protected Map<Lockable, LockType> getMapOfNamespaceLockable( SqlIdentifier identifier, Context context, LockType lockType ) {
         return LockableUtils.getMapOfNamespaceLockableFromName( identifier.getSimple(), context, lockType );
     }
 
 
-
-    protected Map<Lockable, LockType> getMapOfNamespaceLockableOrDefault(SqlIdentifier identifier, Context context, LockType lockType) {
+    protected Map<Lockable, LockType> getMapOfNamespaceLockableOrDefault( SqlIdentifier identifier, Context context, LockType lockType ) {
         if ( identifier.names.size() == 2 ) { // NamespaceName.ViewName
             return LockableUtils.getMapOfNamespaceLockableFromName( identifier.names.get( 0 ), context, lockType );
         }
@@ -127,7 +127,6 @@ public abstract class SqlDdl extends SqlCall {
         }
         return Map.of();
     }
-
 
 
     @Nullable

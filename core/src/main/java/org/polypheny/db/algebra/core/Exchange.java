@@ -121,10 +121,10 @@ public abstract class Exchange extends SingleAlg {
                 (distribution != null ? distribution.getKeys().stream().map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "&";
     }
 
+
     @Override
     public boolean isDataModifying() {
         return false;
     }
 
 }
-

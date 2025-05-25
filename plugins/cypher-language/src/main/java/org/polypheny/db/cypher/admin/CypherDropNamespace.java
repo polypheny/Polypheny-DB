@@ -16,7 +16,6 @@
 
 package org.polypheny.db.cypher.admin;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -93,6 +92,7 @@ public class CypherDropNamespace extends CypherAdminCommand implements Executabl
     public @Nullable String getEntity() {
         return databaseName;
     }
+
 
     @Override
     public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {

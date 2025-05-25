@@ -24,4 +24,5 @@ public interface LockableObject {
     }
 
     ObjectType getLockableObjectType();
+
 }

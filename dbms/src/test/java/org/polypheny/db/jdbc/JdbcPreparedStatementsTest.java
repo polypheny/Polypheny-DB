@@ -964,7 +964,6 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Tag("cottontailExcluded") // leads to BatchQuery is unimplemented
     public void batchUpdateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

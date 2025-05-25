@@ -221,6 +221,12 @@ public abstract class Match extends SingleAlg {
     }
 
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
+
     /**
      * Find aggregate functions in operands.
      */

@@ -103,4 +103,11 @@ public class SqlCreateNamespace extends SqlCreate implements ExecutableStatement
 
     }
 
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return LockableUtils.getMapOfGlobalLockable( LockType.EXCLUSIVE );
+
+    }
+
 }

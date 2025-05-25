@@ -122,5 +122,11 @@ public class HepAlgVertex extends AbstractAlgNode {
     }
 
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
+
 }
 

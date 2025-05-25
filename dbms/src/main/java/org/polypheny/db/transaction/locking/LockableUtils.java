@@ -30,63 +30,8 @@ import org.polypheny.db.transaction.locking.Lockable.LockType;
 
 public class LockableUtils {
 
-    public static class DebugTimer {
-
-        private final long startTime;
-        String name;
-
-
-        public DebugTimer( String name ) {
-            this.name = name;
-            this.startTime = System.nanoTime();
-        }
-
-
-        public void stop() {
-            long elapsedTime = System.nanoTime() - startTime;
-            System.out.println( "<TIMER: " + name + " - Elapsed time: " + elapsedTime + " ns" );
-        }
-
-    }
-
-
     public static LockableObject getNamespaceAsLockableObject( Entity entity ) {
-        return Catalog.getInstance().getSnapshot().getNamespace( entity.getNamespaceId() ).orElseThrow();
-    }
-
-
-    /**
-     * This method converts a desired {@link LockType} to the one appropriate for the {@link S2plLockingLevel} set
-     * in the {@link RuntimeConfig}.
-     * <p>
-     * This is required to resolve mismatches between the requested and the supported lock types. An example:
-     * A lock of type MVCC is requested for en entity supporting MVCC. The locking level in the config however is set
-     * to GLOBAL. As the global schema lock can't be acquired in MVCC mode, the lock type has to be converted.
-     *
-     * @param lockType desired type of the lock to acquire
-     * @param isMvcc whether the entity to be locked supports mvcc
-     * @return the actual lock type supported
-     */
-    public static LockType convertLockType( LockType lockType, boolean isMvcc ) {
-        return lockType;
-        //TODO TH: remove this if shared vs separate lock type decision is made
-        /*
-        switch ( (S2plLockingLevel) RuntimeConfig.S2PL_LOCKING_LEVEL.getEnum() ) {
-            case GLOBAL, NAMESPACE -> {
-                return lockType == LockType.MVCC ? LockType.EXCLUSIVE : lockType;
-            }
-            case ENTITY -> {
-                if ( isMvcc ) {
-                    return lockType == LockType.EXCLUSIVE ? LockType.EXCLUSIVE : LockType.MVCC;
-                }
-                if ( lockType == LockType.MVCC ) {
-                    return LockType.EXCLUSIVE;
-                }
-                return lockType;
-            }
-            default -> throw new IllegalArgumentException( "Unknown S2plLockingLevel: " + RuntimeConfig.S2PL_LOCKING_LEVEL.getEnum() );
-        }
-        */
+        return Catalog.snapshot().getNamespace( entity.getNamespaceId() ).orElseThrow();
     }
 
 
@@ -103,25 +48,23 @@ public class LockableUtils {
      */
     public static Lockable deriveLockable( LockableObject lockableObject ) {
         S2plLockingLevel lockingLevel = (S2plLockingLevel) RuntimeConfig.S2PL_LOCKING_LEVEL.getEnum();
-        switch ( lockableObject.getLockableObjectType() ) {
+        return switch ( lockableObject.getLockableObjectType() ) {
             case NAMESPACE -> {
                 if ( lockingLevel == S2plLockingLevel.GLOBAL ) {
-                    return LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE;
+                    yield LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE;
+                } else {
+                    yield LockablesRegistry.INSTANCE.getOrCreateLockable( lockableObject );
                 }
-                return LockablesRegistry.INSTANCE.getOrCreateLockable( lockableObject );
             }
-            case ENTITY -> {
-                if ( lockingLevel == S2plLockingLevel.GLOBAL ) {
-                    return LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE;
-                }
-                if ( lockingLevel == S2plLockingLevel.NAMESPACE ) {
+            case ENTITY -> switch ( lockingLevel ) {
+                case GLOBAL -> LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE;
+                case NAMESPACE -> {
                     LockableObject namespaceLockableObject = LockableUtils.getNamespaceAsLockableObject( (Entity) lockableObject );
-                    return LockablesRegistry.INSTANCE.getOrCreateLockable( namespaceLockableObject );
+                    yield LockablesRegistry.INSTANCE.getOrCreateLockable( namespaceLockableObject );
                 }
-                return LockablesRegistry.INSTANCE.getOrCreateLockable( lockableObject );
-            }
-            default -> throw new IllegalArgumentException( "Unknown LockableObjectType: " + lockableObject.getLockableObjectType() );
-        }
+                case ENTITY -> LockablesRegistry.INSTANCE.getOrCreateLockable( lockableObject );
+            };
+        };
     }
 
 
@@ -169,9 +112,7 @@ public class LockableUtils {
      * @return map containing the global lockable with the appropriate lock type
      */
     public static Map<Lockable, LockType> getMapOfGlobalLockable( LockType lockType ) {
-        HashMap<Lockable, LockType> lockables = new HashMap<>();
-        lockables.put( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE, lockType );
-        return lockables;
+        return Map.of( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE, lockType );
     }
 
 
@@ -185,7 +126,7 @@ public class LockableUtils {
      * @return map containing the lockable of the lockable object with the specified value
      */
     public static Map<Lockable, LockType> getMapOfLockableFromObject( LockableObject lockableObject, LockType lockType ) {
-        HashMap<Lockable, LockType> lockables = new HashMap<>();
+        Map<Lockable, LockType> lockables = new HashMap<>();
         Lockable lockable = deriveLockable( lockableObject );
         LockableUtils.updateMapEntry( lockable, lockType, lockables );
         return lockables;
@@ -204,7 +145,7 @@ public class LockableUtils {
      */
     public static Map<Lockable, LockType> getMapOfNamespaceLockableFromName( String namespaceName, Context context, LockType lockType ) {
         Optional<LogicalNamespace> namespace = context.getSnapshot().getNamespace( namespaceName );
-        return namespace.map( logicalNamespace -> getMapOfNamespaceLockable( logicalNamespace, lockType ) ).orElseGet( HashMap::new );
+        return namespace.map( logicalNamespace -> getMapOfNamespaceLockable( logicalNamespace, lockType ) ).orElseGet( Map::of );
     }
 
 
@@ -221,7 +162,7 @@ public class LockableUtils {
     public static Map<Lockable, LockType> getMapOfNamespaceLockableFromContext( Context context, ParsedQueryContext parsedQueryContext, LockType lockType ) {
         long namespaceId = parsedQueryContext.getNamespaceId();
         Optional<LogicalNamespace> namespace = context.getSnapshot().getNamespace( namespaceId );
-        return namespace.map( logicalNamespace -> getMapOfNamespaceLockable( logicalNamespace, lockType ) ).orElseGet( HashMap::new );
+        return namespace.map( logicalNamespace -> getMapOfNamespaceLockable( logicalNamespace, lockType ) ).orElseGet( Map::of );
     }
 
 
@@ -235,10 +176,8 @@ public class LockableUtils {
      * @return map containing the appropriate lockable and lock type for the specified namespace
      */
     public static Map<Lockable, LockType> getMapOfNamespaceLockable( LogicalNamespace namespace, LockType lockType ) {
-        HashMap<Lockable, LockType> lockables = new HashMap<>();
         Lockable lockable = deriveLockable( namespace );
-        updateMapEntry( lockable, lockType, lockables );
-        return lockables;
+        return Map.of( lockable, lockType );
     }
 
 

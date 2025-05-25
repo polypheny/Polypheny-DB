@@ -40,9 +40,12 @@ public class LockablesRegistry {
         Lockable l = lockables.get( lockableObject );
         if ( l == null ) {
             synchronized ( lockableObject ) {
-                l = convertToLockable( lockableObject );
-                if ( lockables.put( lockableObject, l ) != null ) {
-                    throw new IllegalStateException( "Lockable already exists: " + lockableObject );
+                l = lockables.get( lockableObject );
+                if ( l == null ) {
+                    l = convertToLockable( lockableObject );
+                    if ( lockables.put( lockableObject, l ) != null ) {
+                        throw new IllegalStateException( "Lockable already exists: " + lockableObject );
+                    }
                 }
             }
         }

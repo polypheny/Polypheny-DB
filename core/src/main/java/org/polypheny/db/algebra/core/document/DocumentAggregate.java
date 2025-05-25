@@ -88,6 +88,7 @@ public class DocumentAggregate extends SingleAlg implements DocumentAlg {
         return DocType.AGGREGATE;
     }
 
+
     @Override
     public boolean isDataModifying() {
         return false;

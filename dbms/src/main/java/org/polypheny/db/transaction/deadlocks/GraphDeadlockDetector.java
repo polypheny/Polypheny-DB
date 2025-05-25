@@ -16,10 +16,9 @@
 
 package org.polypheny.db.transaction.deadlocks;
 
-import java.util.ArrayList;
+import com.google.common.collect.ImmutableList;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -48,33 +47,31 @@ public class GraphDeadlockDetector implements DeadlockDetector {
     public void remove( Lockable lockable, Transaction transaction ) {
         adjacencyList.remove( transaction );
         adjacencyList.forEach( ( predecessor, successors ) -> {
-            if ( successors != null ) {
-                successors.remove( transaction );
-            }
+            successors.remove( transaction );
         } );
     }
 
 
     @Override
-    public List<Transaction> getConflictingTransactions() {
+    public ImmutableList<Transaction> getConflictingTransactions() {
         Set<Transaction> visited = new HashSet<>();
         for ( Transaction startingNode : adjacencyList.keySet() ) {
             if ( visited.contains( startingNode ) ) {
                 continue;
             }
             Set<Transaction> path = new HashSet<>();
-            List<Transaction> cycle = detectCycle( startingNode, visited, path );
+            ImmutableList<Transaction> cycle = detectCycle( startingNode, visited, path );
             if ( cycle != null ) {
                 return cycle;
             }
         }
-        return new ArrayList<>();
+        return ImmutableList.of();
     }
 
 
-    private List<Transaction> detectCycle( Transaction currentTransaction, Set<Transaction> visited, Set<Transaction> path ) {
+    private ImmutableList<Transaction> detectCycle( Transaction currentTransaction, Set<Transaction> visited, Set<Transaction> path ) {
         if ( path.contains( currentTransaction ) ) {
-            return new ArrayList<>( path );
+            return ImmutableList.copyOf( path );
         }
         if ( visited.contains( currentTransaction ) ) {
             return null;
@@ -86,7 +83,7 @@ public class GraphDeadlockDetector implements DeadlockDetector {
             return null;
         }
         for ( Transaction neighbor : adjacencyList.get( currentTransaction ) ) {
-            List<Transaction> cycle = detectCycle( neighbor, visited, path );
+            ImmutableList<Transaction> cycle = detectCycle( neighbor, visited, path );
             if ( cycle != null ) {
                 return cycle;
             }

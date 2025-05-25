@@ -95,7 +95,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode routeDml( LogicalRelModify modify, Statement statement ) {
+    public AlgNode routeRelationalDml( LogicalRelModify modify, Statement statement ) {
         AlgCluster cluster = modify.getCluster();
 
         if ( modify.entity == null ) {
@@ -595,7 +595,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         if ( lce.getRight() instanceof LogicalConditionalExecute logicalConditionalExecute ) {
             action = handleConditionalExecute( logicalConditionalExecute, context );
         } else if ( lce.getRight() instanceof LogicalRelModify ) {
-            action = routeDml( (LogicalRelModify) lce.getRight(), context.getStatement() );
+            action = routeRelationalDml( (LogicalRelModify) lce.getRight(), context.getStatement() );
         } else {
             throw new IllegalArgumentException();
         }
@@ -611,7 +611,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         if ( constraint.getLeft() instanceof LogicalRelModify logicalRelModify ) {
             return LogicalConstraintEnforcer.create(
-                    routeDml( logicalRelModify, context.getStatement() ),
+                    routeRelationalDml( logicalRelModify, context.getStatement() ),
                     builder.build(),
                     constraint.getExceptionClasses(),
                     constraint.getExceptionMessages() );
@@ -630,8 +630,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     @Override
     public LogicalBatchIterator handleBatchIterator( LogicalBatchIterator iterator, RoutingContext context ) {
         AlgNode input;
-        if ( iterator.getInput() instanceof RelModify ) {
-            input = routeDml( (LogicalRelModify) iterator.getInput(), context.getStatement() );
+        if ( iterator.getInput() instanceof LogicalRelModify logicalRelModify ) {
+            input = routeRelationalDml( logicalRelModify, context.getStatement() );
         } else if ( iterator.getInput() instanceof LogicalConditionalExecute logicalConditionalExecute ) {
             input = handleConditionalExecute( logicalConditionalExecute, context );
         } else if ( iterator.getInput() instanceof LogicalConstraintEnforcer logicalConstraintEnforcer ) {
@@ -649,6 +649,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class ).orElseThrow( () -> new GenericRuntimeException( String.format( "%s is not a collection", alg.entity.name ) ) );
+
+        if ( !collection.modifiable ) {
+            throw switch ( collection.entityType ) {
+                case ENTITY -> new GenericRuntimeException( "Unable to modify a collection marked as read-only!" );
+                case SOURCE -> new GenericRuntimeException( "The collection '%s' is provided by a data source which does not support data modification.", collection.name );
+                case VIEW, MATERIALIZED_VIEW -> new GenericRuntimeException( "Polypheny-DB does not support modifying views." );
+            };
+        }
 
         List<AlgNode> modifies = new ArrayList<>();
 

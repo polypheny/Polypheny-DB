@@ -59,6 +59,7 @@ public abstract class Modify<E extends Entity> extends SingleAlg {
         INSERT, UPDATE, DELETE, MERGE
     }
 
+
     public boolean isDataModifying() {
         return true;
     }

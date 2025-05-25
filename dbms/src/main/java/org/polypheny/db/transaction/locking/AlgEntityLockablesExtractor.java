@@ -57,7 +57,7 @@ public class AlgEntityLockablesExtractor extends AlgVisitor {
     private void visitRelationalNode( AlgNode currentNode ) {
         LockType lockType = currentNode.isDataModifying() ? LockType.EXCLUSIVE : LockType.SHARED;
         if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-            extractWriteConstraints( currentNode.getEntity().unwrap( LogicalTable.class ).orElseThrow() );
+            extractWriteConstraints( currentNode.getEntity().unwrapOrThrow( LogicalTable.class ) );
         }
         LockableUtils.updateMapEntry( currentNode.getEntity(), lockType, result );
     }
