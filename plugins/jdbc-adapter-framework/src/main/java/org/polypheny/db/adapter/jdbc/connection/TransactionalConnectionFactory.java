@@ -47,12 +47,13 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
 
 
     public TransactionalConnectionFactory( BasicDataSource dataSource, int maxConnections, SqlDialect dialect ) {
-        super();
         this.maxConnections = maxConnections;
         this.dataSource = dataSource;
         this.activeInstances = new ConcurrentHashMap<>();
         this.freeInstances = new ConcurrentLinkedQueue<>();
         this.dialect = dialect;
+        dataSource.setMaxTotal( -1 ); // No limit for number of connections (limited by connection handler; see settings maxConnections)
+        dataSource.setDefaultAutoCommit( false );
     }
 
 
@@ -162,9 +163,10 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
         public void commit() throws ConnectionHandlerException {
             try {
                 connection.commit();
-                close();
             } catch ( SQLException e ) {
                 throw new ConnectionHandlerException( "Error while committing transaction", e );
+            } finally {
+                close();
             }
         }
 

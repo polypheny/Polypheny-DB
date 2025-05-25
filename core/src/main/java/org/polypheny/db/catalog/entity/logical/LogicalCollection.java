@@ -26,6 +26,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.transaction.locking.Lockable;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -48,6 +49,12 @@ public class LogicalCollection extends LogicalEntity implements PolyObject {
     @Override
     public Expression asExpression() {
         return Expressions.call( Catalog.CATALOG_EXPRESSION, "getCollection", Expressions.constant( id ) );
+    }
+
+
+    @Override
+    public ObjectType getLockableObjectType() {
+        return ObjectType.ENTITY;
     }
 
 

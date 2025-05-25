@@ -138,5 +138,11 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
         return args;
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 

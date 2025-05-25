@@ -103,4 +103,10 @@ public abstract class BiAlg extends AbstractAlgNode {
     }
 
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
+
 }

@@ -99,5 +99,11 @@ public abstract class ConverterImpl extends SingleAlg implements Converter {
                 + input.algCompareString() + "&";
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 

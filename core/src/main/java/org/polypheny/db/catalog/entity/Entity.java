@@ -38,13 +38,14 @@ import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.schema.types.Typed;
+import org.polypheny.db.transaction.locking.LockableObject;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Wrapper;
 
 @SuperBuilder(toBuilder = true)
 @Value
 @NonFinal
-public abstract class Entity implements PolyObject, Wrapper, Serializable, CatalogType, Expressible, Typed, Comparable<Entity> {
+public abstract class Entity implements PolyObject, Wrapper, Serializable, CatalogType, Expressible, Typed, Comparable<Entity>, LockableObject {
 
     @Serialize
     @JsonProperty
@@ -159,6 +160,11 @@ public abstract class Entity implements PolyObject, Wrapper, Serializable, Catal
             return -1;
         }
         return Long.compare( this.id, o.id );
+    }
+
+
+    public ObjectType getLockableObjectType() {
+        throw new UnsupportedOperationException( "Should be overwritten by child" );
     }
 
 }

@@ -63,6 +63,12 @@ public class LogicalGraph extends LogicalEntity {
     }
 
 
+    @Override
+    public ObjectType getLockableObjectType() {
+        return ObjectType.ENTITY;
+    }
+
+
     public static class SubstitutionGraph extends LogicalGraph {
 
         @Serial

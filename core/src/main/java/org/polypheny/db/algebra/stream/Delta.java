@@ -64,5 +64,11 @@ public abstract class Delta extends SingleAlg {
         this( input.getCluster(), input.getTraitSet(), input.getInput() );
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 

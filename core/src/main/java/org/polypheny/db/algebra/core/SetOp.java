@@ -145,5 +145,11 @@ public abstract class SetOp extends AbstractAlgNode {
         return true;
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 

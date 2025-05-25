@@ -213,5 +213,11 @@ public abstract class RelTableFunctionScan extends AbstractAlgNode {
                 rowType.toString() + "&";
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 
