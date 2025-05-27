@@ -330,25 +330,13 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
 
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-        PhysicalTable table = adapterCatalog.createTable(
-                logical.table.getNamespaceName(),
-                logical.table.name,
-                logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
-                logical.table,
-                logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
-                logical.pkIds,
-                allocation );
+        String physicalSchema;
+        if ( logical.physicalSchema == null ) {
+            physicalSchema = logical.table.getNamespaceName();
+        } else {
+            physicalSchema = logical.physicalSchema;
+        }
 
-        JdbcTable physical = currentJdbcSchema.createJdbcTable( table );
-
-        adapterCatalog.replacePhysical( physical );
-
-        return List.of( physical );
-    }
-
-
-    @Override
-    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation, String physicalSchema ) {
         PhysicalTable table = adapterCatalog.createTable(
                 physicalSchema,
                 logical.table.name,
