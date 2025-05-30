@@ -20,7 +20,10 @@ import java.util.List;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prisminterface.statements.PIPreparedStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.DocumentFrame;
 import org.polypheny.prism.Frame;
@@ -98,6 +101,14 @@ public class PrismUtils {
 
 
     public static Frame buildDocumentFrame( boolean isLast, List<PolyValue> data ) {
+        // ToDo: fix me: update counts are sometimes returned as normal results instead of scalar ones.
+        if (data.size() == 1 && data.get(0).isLong()) {
+            data = List.of(new PolyDocument(
+                    new PolyString( "updateCount" ),
+                    data.get(0)
+            ));
+        }
+
         List<ProtoDocument> documents = data.stream()
                 .map( PolyValue::asDocument )
                 .map( PolyValueSerializer::buildProtoDocument )
