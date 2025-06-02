@@ -18,15 +18,19 @@ package org.polypheny.db.adapter.csv;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -54,6 +58,10 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.schemaDiscovery.AbstractNode;
+import org.polypheny.db.schemaDiscovery.AttributeNode;
+import org.polypheny.db.schemaDiscovery.MetadataProvider;
+import org.polypheny.db.schemaDiscovery.Node;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Source;
@@ -72,7 +80,7 @@ import org.slf4j.LoggerFactory;
 @AdapterSettingString(subOf = "method_link", defaultValue = "classpath://hr", name = "directoryName", description = "You can select a path to a folder or specific .csv or .csv.gz files.", position = 2)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 3,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
-public class CsvSource extends DataSource<RelAdapterCatalog> {
+public class CsvSource extends DataSource<RelAdapterCatalog> implements MetadataProvider {
 
     private static final Logger log = LoggerFactory.getLogger( CsvSource.class );
     @Delegate(excludes = Excludes.class)
@@ -84,6 +92,9 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
     private CsvSchema currentNamespace;
     private final int maxStringLength;
     private Map<String, List<ExportedColumn>> exportedColumnCache;
+
+    private AbstractNode metadataRoot;
+    private Map<String, List<Map<String, Object>>> previewByTable = new LinkedHashMap<>();
 
 
     public CsvSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
@@ -369,6 +380,173 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
     public void renameLogicalColumn( long id, String newColumnName ) {
         adapterCatalog.renameLogicalColumn( id, newColumnName );
         adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
+    }
+
+
+    @Override
+    public AbstractNode fetchMetadataTree() {
+        File csvFile = new File( "C:/Users/roman/Desktop/Dateieins.csv" );
+        String tableName = csvFile.getName();
+        AbstractNode rootNode = new Node( "csv", tableName );
+
+        try ( BufferedReader reader = new BufferedReader( new FileReader( csvFile ) ) ) {
+            String headerLine = reader.readLine();
+            if ( headerLine == null ) {
+                throw new RuntimeException( "No header line found" );
+            }
+
+            String[] rawColumns = headerLine.split( "," );
+            for ( String colRaw : rawColumns ) {
+                String[] split = colRaw.split( ":" );
+                String name = split[0].trim().replaceAll( "[^a-zA-Z0-9_]", "" );
+                String type = split.length > 1 ? split[1].trim() : "string";
+
+                AbstractNode columnNode = new AttributeNode( "column", name );
+                columnNode.addProperty( "type", mapCsvType( type ) );
+                columnNode.addProperty( "nullable", true );
+
+                rootNode.addChild( columnNode );
+            }
+            String fqName = csvFile.getName();
+            List<Map<String, Object>> preview = fetchPreview( null, fqName, 10 );
+            this.previewByTable.put( fqName, preview );
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Failed to parse metadata of CSV source: " + e );
+        }
+        this.metadataRoot = rootNode;
+        return this.metadataRoot;
+
+    }
+
+
+    private String mapCsvType( String rawType ) {
+        switch ( rawType ) {
+            case "int":
+            case "integer":
+                return "INTEGER";
+            case "bool":
+            case "boolean":
+                return "BOOLEAN";
+            case "long":
+                return "BIGINT";
+            case "float":
+                return "REAL";
+            case "double":
+                return "DOUBLE";
+            case "date":
+                return "DATE";
+            case "time":
+                return "TIME";
+            case "timestamp":
+                return "TIMESTAMP";
+            case "string":
+            default:
+                return "VARCHAR";
+        }
+    }
+
+
+    @Override
+    public List<Map<String, Object>> fetchPreview( Connection conn, String fqName, int limit ) {
+        File csvFile = new File( "C:/Users/roman/Desktop/Dateieins.csv" );
+        List<Map<String, Object>> rows = new ArrayList<>();
+
+        try ( BufferedReader reader = new BufferedReader( new FileReader( csvFile ) ) ) {
+            String headerLine = reader.readLine();
+            if ( headerLine == null ) {
+                return List.of();
+            }
+
+            String[] headerParts = headerLine.split( "," );
+            List<String> colNames = new ArrayList<>();
+
+            for ( String raw : headerParts ) {
+                String[] split = raw.split( ":" );
+                String colName = split[0].trim();
+                colNames.add( colName );
+            }
+
+            String line;
+            int count = 0;
+            while ( (line = reader.readLine()) != null && count < limit ) {
+                String[] values = line.split( ",", -1 );
+                Map<String, Object> row = new LinkedHashMap<>();
+
+                for ( int i = 0; i < colNames.size(); i++ ) {
+                    String value = i < values.length ? values[i].trim() : null;
+                    row.put( colNames.get( i ), value );
+                }
+
+                rows.add( row );
+                count++;
+            }
+
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Failed to read CSV preview: " + fqName, e );
+        }
+
+        return rows;
+    }
+
+
+    @Override
+    public void markSelectedAttributes(List<String> selectedPaths) {
+        if (this.metadataRoot == null) {
+            log.warn("⚠️ Kein Metadatenbaum vorhanden – kann Attribute nicht markieren.");
+            return;
+        }
+
+        for (String path : selectedPaths) {
+            int lastDot = path.lastIndexOf('.');
+            if (lastDot == -1 || lastDot == path.length() - 1) {
+                log.warn("⚠️ Kein gültiger Attribut-Pfad: " + path);
+                continue;
+            }
+
+            String columnName = path.substring(lastDot + 1);
+            String normalizedColumnName = columnName.replaceAll("[^a-zA-Z0-9_]", "");
+
+            Optional<AbstractNode> attrOpt = metadataRoot.getChildren().stream()
+                    .filter(child -> child instanceof AttributeNode
+                            && child.getName().equals(normalizedColumnName))
+                    .findFirst();
+
+            if (attrOpt.isPresent()) {
+                ((AttributeNode) attrOpt.get()).setSelected(true);
+                log.info("✅ Attribut gesetzt: " + path);
+            } else {
+                log.warn("❌ Attribut nicht gefunden: " + normalizedColumnName + " im Pfad: " + path);
+            }
+        }
+    }
+
+
+
+    @Override
+    public void printTree( AbstractNode node, int depth ) {
+        if ( node == null ) {
+            node = this.metadataRoot;
+        }
+        System.out.println( "  ".repeat( depth ) + node.getType() + ": " + node.getName() );
+        for ( Map.Entry<String, Object> entry : node.getProperties().entrySet() ) {
+            System.out.println( "  ".repeat( depth + 1 ) + "- " + entry.getKey() + ": " + entry.getValue() );
+        }
+        for ( AbstractNode child : node.getChildren() ) {
+            printTree( child, depth + 1 );
+        }
+
+    }
+
+
+    @Override
+    public void setRoot( AbstractNode root ) {
+        this.metadataRoot = root;
+    }
+
+
+    @Override
+    public Object getPreview() {
+        return this.previewByTable;
     }
 
 

@@ -37,17 +37,22 @@ public class PreviewRequest {
     @JsonProperty
     public int limit;
 
+    @JsonProperty
+    public String uniqueName;
+
     public PreviewRequest() { }
 
     public PreviewRequest(
             @JsonProperty("adapterName") String adapterName,
             @JsonProperty("adapterType") AdapterType adapterType,
             @JsonProperty("settings") Map<String,String> settings,
-            @JsonProperty("limit") int rowLimit ) {
+            @JsonProperty("limit") int rowLimit,
+            @JsonProperty("uniqueName") String uniqueName ) {
         this.adapterName = adapterName;
         this.adapterType = adapterType;
         this.settings = settings;
         this.limit = rowLimit;
+        this.uniqueName = uniqueName;
     }
 
 }

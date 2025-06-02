@@ -40,7 +40,7 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
     @Override
     public void onMetadataChange( P adapter, AbstractNode node, String hash ) {
         available ^= true;
-        node = this.currentNode;
+        this.currentNode = node;
         this.adapter = adapter;
         log.info( "Listener saved credentials of adapter and sends now Request to UI and applies changes on adapter metadata and metadata the listener is holding." );
         applyChange();

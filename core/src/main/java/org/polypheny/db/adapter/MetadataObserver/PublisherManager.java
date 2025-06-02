@@ -51,6 +51,7 @@ public class PublisherManager {
         if ( publishers.containsKey( uniqueName ) ) {
             publishers.get( uniqueName ).stop();
             publishers.remove( uniqueName );
+            log.error( "Adapter {} is going to be unregistered for metadata publish.", uniqueName );
         }
     }
 

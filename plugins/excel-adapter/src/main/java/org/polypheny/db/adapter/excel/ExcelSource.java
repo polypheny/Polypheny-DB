@@ -409,7 +409,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Metada
         String mappeName = "Workbook";
 
         AbstractNode root = new Node( "excel", mappeName );
-        try ( Workbook wb = WorkbookFactory.create( new File( filePath ) ) ) {
+        try ( FileInputStream fis = new FileInputStream( filePath ); Workbook wb = WorkbookFactory.create( fis) ) {
 
             for ( Sheet sheet : wb ) {
 
@@ -504,7 +504,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Metada
 
         List<Map<String, Object>> rows = new ArrayList<>();
 
-        try ( Workbook wb = WorkbookFactory.create( new File( filePath ) ) ) {
+        try ( FileInputStream fis = new FileInputStream( filePath ); Workbook wb = WorkbookFactory.create( fis) ) {
 
             Sheet sheet = wb.getSheet( sheetName );
             if ( sheet == null ) {
@@ -565,10 +565,14 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Metada
 
     @Override
     public void markSelectedAttributes( List<String> selectedPaths ) {
+        List<String> shortNames = selectedPaths.stream()
+                .map( p -> p.substring( p.lastIndexOf( '.' ) + 1 ).toLowerCase() )
+                .collect( Collectors.toList() );
+
         List<List<String>> attributePaths = new ArrayList<>();
 
         for ( String path : selectedPaths ) {
-            String cleanPath = path.replaceFirst( " ?:.*$", "" ).trim();
+            String cleanPath = path.trim();
 
             List<String> segments = Arrays.asList( cleanPath.split( "\\." ) );
             if ( !segments.isEmpty() && segments.get( 0 ).equals( metadataRoot.getName() ) ) {

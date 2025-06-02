@@ -286,7 +286,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         String fullTableName = getFullEntityName( request.entityId );
-        // String fullTableName = "\"TEST\"";
         query.append( "SELECT * FROM " )
                 .append( fullTableName )
                 .append( where )
@@ -902,6 +901,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             log.info( "  🔹 Name     : {}", a.adapterName );
             log.info( "  🔹 Adapter  : {}", a.adapterType );
             log.info( "  🔹 Type     : {}", a.limit );
+            log.info( "  🔹 UniqueName     : {}", a.uniqueName );
 
             log.info( "📦 Settings:" );
             for ( Map.Entry<String, String> entry : a.settings.entrySet() ) {
@@ -935,6 +935,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
                 String path = handleUploadFiles( inputStreams, fileNames, (AbstractAdapterSettingDirectory) allSettings.get( "directory" ), a );
                 a.settings.put( "directory", path );
+                log.error( "Full path: {}", path );
             }
 
             PreviewResult result = template.preview( a.settings, 10 );
@@ -2166,6 +2167,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             ctx.status( 500 ).json( Map.of( "error", "Internal error: " + e.getMessage() ) );
         }
     }
+
+    /**
+     * Deploy a new adapter without collecting files out of InputStream
+     * Files from previews are cached in UploadDepot
+     */
 
 
     /**

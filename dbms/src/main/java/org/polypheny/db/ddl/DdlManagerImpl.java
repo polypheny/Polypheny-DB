@@ -223,15 +223,14 @@ public class DdlManagerImpl extends DdlManager {
         DataSource<?> adapter = (DataSource<?>) AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
 
         String attributes = config.get( "selectedAttributes" );
-        Set<String> selectedAttributeNames = new HashSet<>();
+        List<String> selectedAttributeNames = new ArrayList<>();
         log.error( "Das ist das Attributes String: " + attributes );
         if ( attributes != null ) {
             List<String> selectedAttributes = new Gson().fromJson( attributes, new TypeToken<List<String>>() {
             }.getType() );
             selectedAttributeNames = selectedAttributes.stream()
-                    .map( s -> s.replaceFirst( " : .*", "" ) )
                     .map( s -> s.substring( s.lastIndexOf( '.' ) + 1 ) )
-                    .collect( Collectors.toSet() );
+                    .collect( Collectors.toList() );
             log.error( "Das sind die Attribute die gefiltert werden müssen: " + selectedAttributeNames );
             if ( adapter instanceof MetadataProvider mp ) {
 
@@ -281,6 +280,10 @@ public class DdlManagerImpl extends DdlManager {
             AllocationEntity allocation = catalog.getAllocRel( namespace ).addAllocation( adapter.getAdapterId(), placement.id, partitionProperty.left.id, logical.id );
             List<AllocationColumn> aColumns = new ArrayList<>();
             int colPos = 1;
+
+            selectedAttributeNames = selectedAttributeNames.stream()
+                    .map( attr -> attr.split( ":" )[0].toLowerCase() )
+                    .collect( Collectors.toList() );
 
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
 
@@ -410,6 +413,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
         AdapterManager.getInstance().removeAdapter( adapter.id );
+        PublisherManager.getInstance().onAdapterUndeploy( adapter.uniqueName );
     }
 
 
