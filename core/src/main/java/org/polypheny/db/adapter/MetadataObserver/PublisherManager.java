@@ -18,20 +18,28 @@ package org.polypheny.db.adapter.MetadataObserver;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.MetadataObserver.ChangeBuffer.ChangeDTO;
+import org.polypheny.db.schemaDiscovery.AbstractNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Slf4j
 public class PublisherManager {
 
     private final Map<String, MetadataPublisher> publishers = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ChangeBuffer> buffers = new ConcurrentHashMap<>();
+
 
     private static final PublisherManager INSTANCE = new PublisherManager();
+
 
     public static PublisherManager getInstance() {
         return INSTANCE;
     }
+
 
     private PublisherManager() {
     }
@@ -39,7 +47,9 @@ public class PublisherManager {
 
     public <P extends Adapter & MetadataProvider> void onAdapterDeploy( P adapter ) {
         log.info( "Adapter {} is going to be registered for metadata publish.", adapter.getUniqueName() );
-        if ( publishers.containsKey( adapter.getUniqueName() ) ) return;
+        if ( publishers.containsKey( adapter.getUniqueName() ) ) {
+            return;
+        }
         MetadataListener listener = new AbstractListener();
         MetadataPublisher publisher = new AbstractPublisher<>( adapter, listener );
         publishers.put( adapter.getUniqueName(), publisher );
@@ -55,5 +65,15 @@ public class PublisherManager {
         }
     }
 
+
+    public <P extends Adapter & MetadataProvider> void onMetadataChange( P adapter, AbstractNode node, String hash ) {
+        buffers.computeIfAbsent( hash, h -> new ChangeBuffer( adapter, h ) )
+                .push( node );
+    }
+
+    public Optional<ChangeDTO> consumeChanges(String adapterHash) {
+        ChangeBuffer buffer = buffers.get(adapterHash);
+        return buffer == null ? Optional.empty() : buffer.consume();
+    }
 
 }

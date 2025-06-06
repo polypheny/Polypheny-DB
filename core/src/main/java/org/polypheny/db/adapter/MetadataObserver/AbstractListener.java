@@ -16,11 +16,17 @@
 
 package org.polypheny.db.adapter.MetadataObserver;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.MetadataObserver.Utils.SimpleDiff;
+import org.polypheny.db.adapter.MetadataObserver.Utils.SimpleDiffUtils;
 import org.polypheny.db.schemaDiscovery.AbstractNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 public class AbstractListener<P extends Adapter & MetadataProvider> implements MetadataListener<P> {
@@ -28,6 +34,8 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
     private boolean available;
     private AbstractNode currentNode;
     private P adapter;
+
+    private static final Gson GSON = new Gson();
 
 
     public AbstractListener() {
@@ -37,13 +45,35 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
     }
 
 
+    public void sendMetadataChangeEvent( Adapter adapter, List<SimpleDiff> diffs ) {
+        JsonObject root = new JsonObject();
+        root.addProperty( "type", "adapterMetadataChanged" );
+
+        JsonObject ad = new JsonObject();
+        ad.addProperty( "uniqueName", adapter.getUniqueName() );
+        ad.addProperty( "adapterName", adapter.getAdapterName() );
+        ad.add( "settings", GSON.toJsonTree( adapter.getSettings() ) );
+        ad.addProperty( "mode", adapter.getDeployMode().name() );
+        root.add( "adapter", ad );
+
+        root.add( "diff", GSON.toJsonTree( diffs ) );
+
+    }
+
+
     @Override
     public void onMetadataChange( P adapter, AbstractNode node, String hash ) {
         available ^= true;
         this.currentNode = node;
         this.adapter = adapter;
         log.info( "Listener saved credentials of adapter and sends now Request to UI and applies changes on adapter metadata and metadata the listener is holding." );
-        applyChange();
+
+        List<SimpleDiff> diffs;
+        diffs = SimpleDiffUtils.findAddedNodes( this.adapter.getRoot(), node );
+
+        sendMetadataChangeEvent( adapter, diffs );
+
+
     }
 
 

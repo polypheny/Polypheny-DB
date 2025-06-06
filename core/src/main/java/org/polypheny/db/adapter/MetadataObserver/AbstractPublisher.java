@@ -64,7 +64,9 @@ public class AbstractPublisher<P extends Adapter & MetadataProvider> implements 
 
     @Override
     public void runCheck() {
-        if ( !listener.isAvailable() ) return;
+        if ( !listener.isAvailable() ) {
+            return;
+        }
         try {
             AbstractNode node = provider.fetchMetadataTree();
             String fresh = NodeSerializer.serializeNode( node ).toString();
@@ -72,12 +74,10 @@ public class AbstractPublisher<P extends Adapter & MetadataProvider> implements 
             String hash = hasher.hash( fresh );
             String lastHash = cache.getHash( provider.getUniqueName() );
 
-            log.info("Fresh JSON: {}", fresh);
+            log.info( "Fresh JSON: {}", fresh );
             log.info( "Metadata hash at Observer-Check (Current adapter hash) : {}", lastHash );
             log.info( "Metadata hash at Observer-Check (Newest hash) : {}", hash );
-            log.info("Key used during observer-check: {}", provider.getUniqueName());
-
-
+            log.info( "Key used during observer-check: {}", provider.getUniqueName() );
 
             if ( lastHash != null && !lastHash.equals( hash ) ) {
                 log.info( "Metadata of adapter {} changed. Sending new snapshot to UI.", provider.getUniqueName() );
