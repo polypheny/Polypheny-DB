@@ -460,7 +460,7 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
         public PolyValue[] convertNormalRow(Row row) {
             final PolyValue[] objects = new PolyValue[fields.length];
             for (int i = 0; i < fields.length; i++) {
-                Cell cell = row.getCell(i);
+                Cell cell = row.getCell(fields[i] - 1);
                 objects[i] = convert(fieldTypes[i], cell);
             }
             return objects;
@@ -470,7 +470,7 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
             final PolyValue[] objects = new PolyValue[fields.length + 1];
             objects[0] = PolyLong.of(System.currentTimeMillis());
             for (int i = 0; i < fields.length; i++) {
-                Cell cell = row.getCell(i);
+                Cell cell = row.getCell(fields[i]);
                 objects[i + 1] = convert(fieldTypes[i], cell);
             }
             return objects;

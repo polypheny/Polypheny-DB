@@ -130,6 +130,7 @@ public class AdapterTemplate {
             if ( tmp instanceof MetadataProvider mp ) {
                 log.info( "🎯 Adapter supports MetadataProvider. Fetching metadata and preview..." );
                 AbstractNode meta = mp.fetchMetadataTree();
+                mp.setRoot( meta );
                 String json = NodeSerializer.serializeNode( meta ).toString();
                 MetadataHasher hasher = new MetadataHasher();
                 String hash = hasher.hash( json );

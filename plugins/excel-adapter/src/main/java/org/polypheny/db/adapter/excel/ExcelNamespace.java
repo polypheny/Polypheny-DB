@@ -66,17 +66,16 @@ public class ExcelNamespace extends Namespace {
     }
 
 
-    public ExcelTable createExcelTable( PhysicalTable table, ExcelSource excelSource ) {
+    public ExcelTable createExcelTable( PhysicalTable table, ExcelSource excelSource, List<Integer> physicalIds ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<ExcelFieldType> fieldTypes = new LinkedList<>();
-        List<Integer> fieldIds = new ArrayList<>( table.columns.size() );
         for ( PhysicalColumn column : table.columns ) {
             AlgDataType sqlType = sqlType( typeFactory, column.type, column.length, column.scale, null );
             fieldInfo.add( column.id, column.name, column.name, sqlType ).nullable( column.nullable );
             fieldTypes.add( ExcelFieldType.getExcelFieldType( column.type ) );
-            fieldIds.add( column.position );
         }
+
 
         // String excelFileName = excelSource.sheetName;
         String[] parts = table.name.split("_", 2);
@@ -93,7 +92,7 @@ public class ExcelNamespace extends Namespace {
         } catch ( MalformedURLException e ) {
             throw new GenericRuntimeException( e );
         }
-        int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
+        int[] fields = physicalIds.stream().mapToInt( i -> i ).toArray();
         ExcelTable physical = createTable( table, source, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, excelSource );
         tableMap.put( physical.name + "_" + physical.allocationId, physical );
         return physical;

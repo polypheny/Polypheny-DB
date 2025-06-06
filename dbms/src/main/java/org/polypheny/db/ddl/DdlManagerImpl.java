@@ -232,12 +232,14 @@ public class DdlManagerImpl extends DdlManager {
                     .map( s -> s.substring( s.lastIndexOf( '.' ) + 1 ) )
                     .collect( Collectors.toList() );
             log.error( "Das sind die Attribute die gefiltert werden müssen: " + selectedAttributeNames );
+
             if ( adapter instanceof MetadataProvider mp ) {
 
                 PublisherManager pm = PublisherManager.getInstance();
                 MetadataHasher hasher = new MetadataHasher();
 
                 AbstractNode node = mp.fetchMetadataTree();
+                mp.setRoot( node );
                 String hash = hasher.hash( NodeSerializer.serializeNode( node ).toString() );
                 log.info( "Metadata hash at deployment: {}", hash );
 
@@ -245,7 +247,7 @@ public class DdlManagerImpl extends DdlManager {
                 log.info( "Key used during deployment: {} ", uniqueName );
                 pm.onAdapterDeploy( (Adapter & MetadataProvider) mp );
 
-                mp.setRoot( node );
+
                 mp.markSelectedAttributes( selectedAttributes );
                 log.error( "SelectedAttributes ist gesetzt aus dem DdlManager und der Tree ist das hier: " );
                 mp.printTree( null, 0 );
@@ -294,7 +296,7 @@ public class DdlManagerImpl extends DdlManager {
                     LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
                             exportedColumn.name,
                             logical.id,
-                            colPos++,
+                            exportedColumn.physicalPosition,
                             exportedColumn.type,
                             exportedColumn.collectionsType,
                             exportedColumn.length,
@@ -319,7 +321,7 @@ public class DdlManagerImpl extends DdlManager {
                     LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
                             exportedColumn.name,
                             logical.id,
-                            colPos++,
+                            exportedColumn.physicalPosition,
                             exportedColumn.type,
                             exportedColumn.collectionsType,
                             exportedColumn.length,
