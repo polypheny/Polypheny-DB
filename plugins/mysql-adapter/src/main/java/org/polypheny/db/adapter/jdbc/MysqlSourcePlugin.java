@@ -374,6 +374,12 @@ public class MysqlSourcePlugin extends PolyPlugin {
             return preview;
         }
 
+
+        @Override
+        public AbstractNode getRoot() {
+            return this.metadataRoot;
+        }
+
     }
 
 }

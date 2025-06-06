@@ -34,5 +34,7 @@ public interface MetadataProvider {
 
     Object getPreview();
 
+    AbstractNode getRoot();
+
 
 }

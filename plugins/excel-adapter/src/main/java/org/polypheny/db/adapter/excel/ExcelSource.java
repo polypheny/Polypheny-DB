@@ -59,6 +59,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -177,7 +178,12 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Metada
                 logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
                 logical.pkIds, allocation );
 
-        ExcelTable physical = currentNamespace.createExcelTable( table, this );
+        List<Integer> physicalIds = new ArrayList<>();
+        for ( LogicalColumn column : logical.columns ) {
+            physicalIds.add( column.position );
+        }
+
+        ExcelTable physical = currentNamespace.createExcelTable( table, this, physicalIds );
 
         adapterCatalog.replacePhysical( physical );
 
@@ -409,7 +415,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Metada
         String mappeName = "Workbook";
 
         AbstractNode root = new Node( "excel", mappeName );
-        try ( FileInputStream fis = new FileInputStream( filePath ); Workbook wb = WorkbookFactory.create( fis) ) {
+        try ( FileInputStream fis = new FileInputStream( filePath ); Workbook wb = WorkbookFactory.create( fis ) ) {
 
             for ( Sheet sheet : wb ) {
 
@@ -504,7 +510,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Metada
 
         List<Map<String, Object>> rows = new ArrayList<>();
 
-        try ( FileInputStream fis = new FileInputStream( filePath ); Workbook wb = WorkbookFactory.create( fis) ) {
+        try ( FileInputStream fis = new FileInputStream( filePath ); Workbook wb = WorkbookFactory.create( fis ) ) {
 
             Sheet sheet = wb.getSheet( sheetName );
             if ( sheet == null ) {
@@ -643,6 +649,12 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Metada
     @Override
     public Object getPreview() {
         return this.previewByTable;
+    }
+
+
+    @Override
+    public AbstractNode getRoot() {
+        return this.metadataRoot;
     }
 
 

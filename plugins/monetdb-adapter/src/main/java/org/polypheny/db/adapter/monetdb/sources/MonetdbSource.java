@@ -492,4 +492,10 @@ public class MonetdbSource extends AbstractJdbcSource implements MetadataProvide
         return this.previewByTable;
     }
 
+
+    @Override
+    public AbstractNode getRoot() {
+        return this.metadataRoot;
+    }
+
 }

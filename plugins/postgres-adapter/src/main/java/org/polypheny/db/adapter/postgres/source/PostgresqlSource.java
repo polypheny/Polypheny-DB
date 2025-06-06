@@ -208,10 +208,8 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
                 throw new RuntimeException( e );
             }
         }
-
-        this.metadataRoot = root;
         log.error( "Neue Preview ist geladen als: " + previewByTable.toString() );
-        return this.metadataRoot;
+        return root;
     }
 
 
@@ -240,6 +238,12 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
 
     public Object getPreview() {
         return this.previewByTable;
+    }
+
+
+    @Override
+    public AbstractNode getRoot() {
+        return this.metadataRoot;
     }
 
 

@@ -472,4 +472,10 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
         return preview;
     }
 
+
+    @Override
+    public AbstractNode getRoot() {
+        return this.metadataRoot;
+    }
+
 }

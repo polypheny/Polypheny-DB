@@ -550,6 +550,12 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Metadata
     }
 
 
+    @Override
+    public AbstractNode getRoot() {
+        return this.metadataRoot;
+    }
+
+
     @SuppressWarnings("unused")
     private interface Excludes {
 
