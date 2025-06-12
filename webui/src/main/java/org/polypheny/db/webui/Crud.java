@@ -87,6 +87,7 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
+import org.polypheny.db.adapter.MetadataObserver.PublisherManager;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResult;
@@ -946,6 +947,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             log.error( "Fehler beim Verarbeiten des Preview-Requests", e );
             ctx.status( HttpCode.INTERNAL_SERVER_ERROR ).result( "Fehler beim Preview" );
         }
+    }
+
+
+    /**
+     * If any metadataChange is requested, they are sent here with the help of publisher manager.
+     */
+    void metadataStatus( final Context ctx ) {
+        String uniqueName = ctx.pathParam( "uniqueName" );
+        ctx.json( Map.of( "changed", true ) );
     }
 
 
