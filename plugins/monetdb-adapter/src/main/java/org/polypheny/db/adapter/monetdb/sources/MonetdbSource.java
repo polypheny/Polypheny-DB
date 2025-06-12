@@ -139,9 +139,15 @@ public class MonetdbSource extends AbstractJdbcSource implements MetadataProvide
 
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        String physicalSchema;
+        if ( logical.physicalSchemaFinal == null ) {
+            physicalSchema = logical.table.getNamespaceName();
+        } else {
+            physicalSchema = logical.physicalSchemaFinal;
+        }
         PhysicalTable table = adapterCatalog.createTable(
-                "sys",
-                logical.table.name,
+                physicalSchema,
+                logical.physicalTable,
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                 logical.table,
                 logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),

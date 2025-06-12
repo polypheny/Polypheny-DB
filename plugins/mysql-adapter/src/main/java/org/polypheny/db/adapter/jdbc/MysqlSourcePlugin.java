@@ -38,6 +38,8 @@ import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.adapter.java.SchemaFilter;
+import org.polypheny.db.adapter.java.TableFilter;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
@@ -121,10 +123,15 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
         @Override
         public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+            String physicalSchema;
+            if ( logical.physicalSchemaFinal == null ) {
+                physicalSchema = logical.table.getNamespaceName();
+            } else {
+                physicalSchema = logical.physicalSchemaFinal;
+            }
             PhysicalTable table = adapterCatalog.createTable(
-                    // logical.table.getNamespaceName(),
-                    "test",
-                    logical.table.name,
+                    physicalSchema,
+                    logical.physicalTable.toLowerCase(),
                     logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                     logical.table,
                     logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
@@ -172,6 +179,9 @@ public class MysqlSourcePlugin extends PolyPlugin {
             String dbName = settings.get( "database" );
             Node root = new Node( "relational", dbName );
 
+            SchemaFilter filter = SchemaFilter.forAdapter( adapterName );
+            TableFilter tableFilter = TableFilter.forAdapter( adapterName );
+
             PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
 
             try {
@@ -187,6 +197,10 @@ public class MysqlSourcePlugin extends PolyPlugin {
                                 ? schemas.getString( "TABLE_SCHEM" )
                                 : schemas.getString( "TABLE_CAT" );
 
+                        if ( filter.ignoredSchemas.contains( schemaName ) ) {
+                            continue;
+                        }
+
                         AbstractNode schemaNode = new Node( "schema", schemaName );
 
                         try ( ResultSet tables = meta.getTables(
@@ -198,6 +212,11 @@ public class MysqlSourcePlugin extends PolyPlugin {
                             while ( tables.next() ) {
 
                                 String tableName = tables.getString( "TABLE_NAME" );
+
+                                if ( tableFilter.shouldIgnore( tableName ) ) {
+                                    continue;
+                                }
+
                                 AbstractNode tableNode = new Node( "table", tableName );
 
                                 Set<String> pkCols = new HashSet<>();

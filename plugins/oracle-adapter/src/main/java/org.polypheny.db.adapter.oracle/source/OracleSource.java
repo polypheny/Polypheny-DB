@@ -23,6 +23,7 @@ import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.adapter.java.TableFilter;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
@@ -83,11 +84,6 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
 
     public AbstractNode metadataRoot;
 
-    private static final Pattern ORACLE_INTERNAL =
-            Pattern.compile( "^(AQ\\$|AQS\\$|SYS_|WRI\\$|MDSYS_|XDB_|CTXSYS_|OLAP\\$|LOG\\$|DBMS_|ORDDATA|ORDSYS)",
-                    Pattern.CASE_INSENSITIVE );
-
-
     public OracleSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
         super(
                 storeId,
@@ -131,10 +127,15 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
 
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        String physicalSchema;
+        if ( logical.physicalSchemaFinal == null ) {
+            physicalSchema = logical.table.getNamespaceName();
+        } else {
+            physicalSchema = logical.physicalSchemaFinal;
+        }
         PhysicalTable table = adapterCatalog.createTable(
-                // logical.table.getNamespaceName(),
-                "SYSTEM",
-                logical.table.name,
+                physicalSchema.toUpperCase(),
+                logical.physicalTable.toUpperCase(),
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                 logical.table,
                 logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
@@ -268,6 +269,8 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
     public AbstractNode fetchMetadataTree() {
         Node root = new Node( "relational", settings.get( "database" ) );
 
+        TableFilter filter = TableFilter.forAdapter( adapterName );
+
         PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
 
         try {
@@ -292,9 +295,10 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
                                 continue;
                             }
 
-                            if ( tableName.contains( "$" ) || ORACLE_INTERNAL.matcher( tableName ).find() ) {
+                            if ( filter.shouldIgnore( tableName ) ) {
                                 continue;
                             }
+
 
                             Node tableNode = new Node( "table", tableName );
 
