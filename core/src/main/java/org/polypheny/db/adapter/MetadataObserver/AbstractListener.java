@@ -21,10 +21,13 @@ import com.google.gson.JsonObject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
-import org.polypheny.db.adapter.MetadataObserver.Utils.SimpleDiff;
-import org.polypheny.db.adapter.MetadataObserver.Utils.SimpleDiffUtils;
+import org.polypheny.db.adapter.MetadataObserver.Utils.MetaAnnotator;
+import org.polypheny.db.adapter.MetadataObserver.Utils.MetaDiffUtil;
+import org.polypheny.db.adapter.MetadataObserver.Utils.MetaDiffUtil.DiffResult;
+import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResult;
 import org.polypheny.db.schemaDiscovery.AbstractNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
+import org.polypheny.db.schemaDiscovery.NodeSerializer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +37,7 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
     private boolean available;
     private AbstractNode currentNode;
     private P adapter;
+    private String hash;
 
     private static final Gson GSON = new Gson();
 
@@ -42,22 +46,7 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
         available = true;
         currentNode = null;
         this.adapter = null;
-    }
-
-
-    public void sendMetadataChangeEvent( Adapter adapter, List<SimpleDiff> diffs ) {
-        JsonObject root = new JsonObject();
-        root.addProperty( "type", "adapterMetadataChanged" );
-
-        JsonObject ad = new JsonObject();
-        ad.addProperty( "uniqueName", adapter.getUniqueName() );
-        ad.addProperty( "adapterName", adapter.getAdapterName() );
-        ad.add( "settings", GSON.toJsonTree( adapter.getSettings() ) );
-        ad.addProperty( "mode", adapter.getDeployMode().name() );
-        root.add( "adapter", ad );
-
-        root.add( "diff", GSON.toJsonTree( diffs ) );
-
+        this.hash = null;
     }
 
 
@@ -66,12 +55,20 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
         available ^= true;
         this.currentNode = node;
         this.adapter = adapter;
+        this.hash = hash;
+
+        Object preview = adapter.getPreview();
+
         log.info( "Listener saved credentials of adapter and sends now Request to UI and applies changes on adapter metadata and metadata the listener is holding." );
 
-        List<SimpleDiff> diffs;
-        diffs = SimpleDiffUtils.findAddedNodes( this.adapter.getRoot(), node );
+        DiffResult result = MetaDiffUtil.diff( adapter.getRoot(), node );
+        log.info( "Diffresult: {}", result );
 
-        sendMetadataChangeEvent( adapter, diffs );
+        AbstractNode annotatedCopy = MetaAnnotator.annotateTree( adapter.getRoot(), node, result );
+        String json = NodeSerializer.serializeNode( annotatedCopy ).toString();
+        log.info( "JSON: {}", json );
+
+        PublisherManager.getInstance().onMetadataChange( adapter.getUniqueName(), new PreviewResult( json, preview ) );
 
 
     }

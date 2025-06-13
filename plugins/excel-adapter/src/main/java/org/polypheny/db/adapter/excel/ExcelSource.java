@@ -280,7 +280,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Metada
             int position = 1;
             try {
                 Source source = Sources.of( new URL( excelDir, fileName ) );
-                File file = new File( source.path() );   //creating a new file instance
+                File file = new File( source.path() );   // creating a new file instance
                 FileInputStream fs = new FileInputStream( file );
 
                 Workbook workbook = WorkbookFactory.create( fs );
@@ -385,6 +385,25 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Metada
     }
 
 
+    private Set<String> resolveFileNames() {
+        Set<String> names = new HashSet<>();
+
+        if ( Sources.of( excelDir ).file().isFile() ) {
+            names.add( Sources.of( excelDir ).file().getName() );
+            return names;
+        }
+
+        File[] files = Sources.of( excelDir ).file()
+                .listFiles( f -> f.getName().matches( ".*\\.(xlsx?|xlsx\\.gz|xls\\.gz)$" ) );
+        if ( files != null ) {
+            Arrays.stream( files )
+                    .map( File::getName )
+                    .forEach( names::add );
+        }
+        return names;
+    }
+
+
     private void addInformationExportedColumns() {
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
             InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName );
@@ -411,11 +430,19 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Metada
     @Override
     public AbstractNode fetchMetadataTree() {
 
-        String filePath = "C:/Users/roman/Desktop/Mappe1.xlsx";
+        Source filePath;
+        // String filePath = "C:/Users/roman/Desktop/Mappe1.xlsx";
+        String firstFile = resolveFileNames().stream().findFirst()
+                .orElseThrow(() -> new GenericRuntimeException("No file found"));
+        try {
+            filePath = Sources.of(new URL(excelDir, firstFile));
+        } catch ( MalformedURLException e ) {
+            throw new RuntimeException( e );
+        }
         String mappeName = "Workbook";
 
         AbstractNode root = new Node( "excel", mappeName );
-        try ( FileInputStream fis = new FileInputStream( filePath ); Workbook wb = WorkbookFactory.create( fis ) ) {
+        try ( FileInputStream fis = new FileInputStream( filePath.path() ); Workbook wb = WorkbookFactory.create( fis ) ) {
 
             for ( Sheet sheet : wb ) {
 

@@ -34,6 +34,7 @@ import io.javalin.http.HttpCode;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -934,7 +935,16 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                     fileNames = Arrays.stream( cleaned.split( "," ) ).map( String::trim ).filter( s -> !s.isEmpty() ).toList();
                 }
 
-                String path = handleUploadFiles( inputStreams, fileNames, (AbstractAdapterSettingDirectory) allSettings.get( "directory" ), a );
+                Map<String, byte[]> fileBytes = new HashMap<>();
+
+                for (Map.Entry<String, InputStream> e : inputStreams.entrySet()) {
+                    try (InputStream in = e.getValue()) {
+                        byte[] data = IOUtils.toByteArray(in);
+                        fileBytes.put(e.getKey(), data);
+                    }
+                }
+
+                String path = handleUploadFiles( fileBytes, fileNames, (AbstractAdapterSettingDirectory) allSettings.get( "directory" ), a );
                 a.settings.put( "directory", path );
                 log.error( "Full path: {}", path );
             }
@@ -955,7 +965,20 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void metadataStatus( final Context ctx ) {
         String uniqueName = ctx.pathParam( "uniqueName" );
-        ctx.json( Map.of( "changed", true ) );
+
+        boolean changed = PublisherManager.getInstance().hasChange( uniqueName );
+        ctx.json( Map.of( "changed", changed ) );
+    }
+
+    void metadataChange( final Context ctx ) {
+        String uniqueName = ctx.pathParam( "uniqueName" );
+        Optional<PreviewResult> data = PublisherManager.getInstance().fetchChange( uniqueName );
+        ctx.json( data );
+
+    }
+
+    void metadataAck( final Context ctx ) {
+
     }
 
 
@@ -2332,16 +2355,35 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static String handleUploadFiles( Map<String, InputStream> inputStreams, List<String> fileNames, AbstractAdapterSettingDirectory setting, PreviewRequest a ) {
+    /* private static String handleUploadFiles( Map<String, InputStream> inputStreams, List<String> fileNames, AbstractAdapterSettingDirectory setting, PreviewRequest a ) {
         for ( String fileName : fileNames ) {
             setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
         }
         File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + a.adapterName );
         for ( Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
-            try {
+            try ( InputStream in = is.getValue() ) {
                 File file = new File( path, is.getKey() );
                 log.info( "📁 Datei wird geschrieben: {}", file.getAbsolutePath() );
-                FileUtils.copyInputStreamToFile( is.getValue(), file );
+                FileUtils.copyInputStreamToFile( in, file );
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( e );
+            }
+        }
+        return path.getAbsolutePath();
+    }*/
+
+
+    // Map<String, byte[]> statt Map<String, InputStream>
+    private static String handleUploadFiles( Map<String, byte[]> files, List<String> fileNames, AbstractAdapterSettingDirectory setting, PreviewRequest previewRequest ) {
+        File path = PolyphenyHomeDirManager.getInstance()
+                .registerNewFolder("data/csv/" + previewRequest.adapterName);
+        for ( String name : fileNames ) {
+            byte[] data = files.get( name );
+            if ( data == null ) continue;
+            try ( InputStream in = new ByteArrayInputStream( data ) ) {
+                File target = new File( path, name );
+                log.info( "📂 Datei wird geschrieben: {}", target.getAbsolutePath() );
+                FileUtils.copyInputStreamToFile( in, target );
             } catch ( IOException e ) {
                 throw new GenericRuntimeException( e );
             }

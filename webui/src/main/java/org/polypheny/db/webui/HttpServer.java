@@ -357,6 +357,10 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/metadataStatus/{uniqueName}", crud::metadataStatus );
 
+        webuiServer.get( "/metadataChange/{uniqueName}", crud::metadataChange );
+
+        webuiServer.post( "/metadataAck/{uniqueName}", crud::metadataAck );
+
         webuiServer.get( "/getPolyAlgRegistry", crud::getPolyAlgRegistry );
 
         webuiServer.post( "/buildPolyPlan", crud::buildPlanFromPolyAlg );

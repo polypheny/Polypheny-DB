@@ -70,8 +70,8 @@ public class AbstractPublisher<P extends Adapter & MetadataProvider> implements 
         try {
             AbstractNode node = provider.fetchMetadataTree();
             String fresh = NodeSerializer.serializeNode( node ).toString();
-
             String hash = hasher.hash( fresh );
+
             String lastHash = cache.getHash( provider.getUniqueName() );
 
             log.info( "Fresh JSON: {}", fresh );

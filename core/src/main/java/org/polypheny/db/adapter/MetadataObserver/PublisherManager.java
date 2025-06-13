@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.MetadataObserver;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResult;
 import org.polypheny.db.schemaDiscovery.AbstractNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import java.util.Map;
@@ -29,6 +30,7 @@ import java.util.concurrent.ConcurrentMap;
 public class PublisherManager {
 
     private final Map<String, MetadataPublisher> publishers = new ConcurrentHashMap<>();
+    private final Map<String, PreviewResult> changeCache = new ConcurrentHashMap<>();
 
     private static final PublisherManager INSTANCE = new PublisherManager();
 
@@ -60,6 +62,26 @@ public class PublisherManager {
             publishers.remove( uniqueName );
             log.error( "Adapter {} is going to be unregistered for metadata publish.", uniqueName );
         }
+    }
+
+
+    public boolean hasChange( String uniqueName ) {
+        return changeCache.containsKey( uniqueName );
+    }
+
+
+    public void onMetadataChange( String uniqueName, PreviewResult data ) {
+        changeCache.put( uniqueName, data );
+    }
+
+
+    public Optional<PreviewResult> fetchChange( String uniqueName ) {
+        return Optional.ofNullable( changeCache.get( uniqueName ) );
+    }
+
+
+    void ack( String uniqueName ) {
+        changeCache.remove( uniqueName );
     }
 
 }
