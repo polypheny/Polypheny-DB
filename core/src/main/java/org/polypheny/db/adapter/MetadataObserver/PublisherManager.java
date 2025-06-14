@@ -75,8 +75,8 @@ public class PublisherManager {
     }
 
 
-    public Optional<PreviewResult> fetchChange( String uniqueName ) {
-        return Optional.ofNullable( changeCache.get( uniqueName ) );
+    public PreviewResult fetchChange( String uniqueName ) {
+        return changeCache.get( uniqueName );
     }
 
 

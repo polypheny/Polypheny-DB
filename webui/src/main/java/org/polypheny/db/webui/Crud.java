@@ -972,7 +972,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void metadataChange( final Context ctx ) {
         String uniqueName = ctx.pathParam( "uniqueName" );
-        Optional<PreviewResult> data = PublisherManager.getInstance().fetchChange( uniqueName );
+        PreviewResult data = PublisherManager.getInstance().fetchChange( uniqueName );
         ctx.json( data );
 
     }
