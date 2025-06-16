@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -194,6 +194,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         }
     }
 
+
     @Override
     public void truncate( Context context, long allocId ) {
         log.debug( "NOT SUPPORTED: JSON source does not support method truncate()." );
@@ -205,6 +206,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         log.debug( "NOT SUPPORTED: JSON source does not support method prepare()." );
         return true;
     }
+
 
     @Override
     public void commit( PolyXid xid ) {

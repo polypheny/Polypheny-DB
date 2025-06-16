@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,7 @@ package org.polypheny.db.cypher.clause;
 
 import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.cypher.expression.CypherLiteral;
-import org.polypheny.db.cypher.pattern.CypherNodePattern;
 import org.polypheny.db.cypher.pattern.CypherPattern;
-import org.polypheny.db.cypher.pattern.CypherRelPattern;
 import org.polypheny.db.languages.ParserPos;
 
 
@@ -35,6 +32,7 @@ public class CypherCreate extends CypherClause {
         super( pos );
         this.patterns = patterns;
     }
+
 
     @Override
     public CypherKind getCypherKind() {
