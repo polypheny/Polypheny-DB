@@ -57,6 +57,9 @@ public class AdapterModel extends IdEntity {
     @JsonProperty
     public List<String> metadata;
 
+    @JsonProperty
+    public Map<String, String> columnAliases;
+
 
     public AdapterModel(
             @JsonProperty("id") @Nullable Long id,
@@ -66,7 +69,8 @@ public class AdapterModel extends IdEntity {
             @JsonProperty("settings") Map<String, String> settings,
             @JsonProperty("mode") DeployMode mode,
             @JsonProperty("indexMethods") List<IndexMethodModel> indexMethods,
-            @JsonProperty("metadata") List<String> metadata ) {
+            @JsonProperty("metadata") List<String> metadata,
+            @JsonProperty("columnAliases") Map<String, String> columnAliases) {
         super( id, name );
         this.adapterName = adapterName;
         this.type = type;
@@ -74,6 +78,7 @@ public class AdapterModel extends IdEntity {
         this.mode = mode;
         this.indexMethods = indexMethods;
         this.metadata = metadata;
+        this.columnAliases = columnAliases;
     }
 
 
@@ -90,7 +95,7 @@ public class AdapterModel extends IdEntity {
                 settings,
                 adapter.mode,
                 adapter.type == AdapterType.STORE ? ((DataStore<?>) dataStore).getAvailableIndexMethods() : List.of(),
-                null) ).orElse( null );
+                null, null) ).orElse( null );
 
     }
 

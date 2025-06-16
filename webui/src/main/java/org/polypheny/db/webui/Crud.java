@@ -2262,6 +2262,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         log.info( "Adapter: " + a.adapterName );
         log.info( "Type: " + a.type );
         log.info( "Mode: " + a.mode );
+        log.info( "Aliases: " + a.columnAliases.toString() );
 
         log.info( "Settings:" );
         for ( Map.Entry<String, String> entry : a.settings.entrySet() ) {
