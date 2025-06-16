@@ -107,6 +107,7 @@ public class LpgStringCleanActivity implements Activity, Pipeable {
     private String casing;
     private Pattern pattern;
 
+
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
         return inTypes.get( 0 ).asOutTypes();

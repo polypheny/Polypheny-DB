@@ -61,6 +61,7 @@ import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
 
 @SuppressWarnings("unused")
 public class VariableValidateActivity implements Activity {
+
     private static final ObjectMapper mapper = new ObjectMapper();
 
 
@@ -91,7 +92,7 @@ public class VariableValidateActivity implements Activity {
 
         ReadableVariableStore variables = ctx.getVariableStore();
 
-        String json = mapper.writeValueAsString( variables.getPublicVariables(true, false) );
+        String json = mapper.writeValueAsString( variables.getPublicVariables( true, false ) );
         PolyDocument varDoc = PolyValue.fromJson( json ).asDocument();
 
         if ( !predicate.test( varDoc ) ) {

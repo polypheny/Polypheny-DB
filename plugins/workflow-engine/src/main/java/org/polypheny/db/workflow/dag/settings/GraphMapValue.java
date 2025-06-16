@@ -349,7 +349,7 @@ public class GraphMapValue implements SettingValue {
             if ( dynamicEdgeLabels && edgeLabels.size() != 1 ) {
                 throw new IllegalArgumentException( "A single edgeLabels field must be specified if dynamicEdgeLabels is true" );
             }
-            if (edgeLabels.isEmpty() || (edgeLabels.size() == 1 && edgeLabels.get( 0 ).isBlank())) {
+            if ( edgeLabels.isEmpty() || (edgeLabels.size() == 1 && edgeLabels.get( 0 ).isBlank()) ) {
                 throw new IllegalArgumentException( "At least one edgeLabel must be specified" );
             }
 

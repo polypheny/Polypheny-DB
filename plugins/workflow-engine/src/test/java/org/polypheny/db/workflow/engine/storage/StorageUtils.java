@@ -48,7 +48,7 @@ public class StorageUtils {
 
 
     public static void addHsqldbStore( String name, String trxControlMode ) throws SQLException {
-        if (AdapterManager.getInstance().getAdapter( name ).isEmpty()) {
+        if ( AdapterManager.getInstance().getAdapter( name ).isEmpty() ) {
             TestHelper.executeSQL( "ALTER ADAPTERS ADD \"%s\" USING 'Hsqldb' AS 'Store'".formatted( name )
                     + " WITH '{maxConnections:\"25\",trxControlMode:%s,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'".formatted( trxControlMode )
             );

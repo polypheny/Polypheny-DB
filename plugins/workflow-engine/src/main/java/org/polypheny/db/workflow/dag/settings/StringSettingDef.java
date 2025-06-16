@@ -17,12 +17,12 @@
 package org.polypheny.db.workflow.dag.settings;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
 import org.polypheny.db.workflow.dag.annotations.StringSetting;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 @EqualsAndHashCode(callSuper = true)
 @Value

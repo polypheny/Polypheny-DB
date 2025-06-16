@@ -221,7 +221,7 @@ public class ActivityRegistry {
                     cls.getAnnotations(),
                     interfaces.contains( Fusable.class ),
                     interfaces.contains( Pipeable.class ),
-                    interfaces.contains( VariableWriter.class ));
+                    interfaces.contains( VariableWriter.class ) );
             registry.put( key, def );
         }
         return Collections.unmodifiableMap( registry );

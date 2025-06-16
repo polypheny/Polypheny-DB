@@ -45,20 +45,22 @@ public class CollationValue implements SettingValue {
 
     List<FieldCollation> fields;
 
+
     @JsonCreator
-    public CollationValue(List<FieldCollation> fields) {
+    public CollationValue( List<FieldCollation> fields ) {
         this.fields = fields;
     }
 
 
     @Override
     public JsonNode toJson() {
-        return MAPPER.valueToTree(fields);
+        return MAPPER.valueToTree( fields );
     }
 
 
     @Value
     public static class FieldCollation {
+
         String name;
         Direction direction;
         boolean regex;
@@ -67,16 +69,19 @@ public class CollationValue implements SettingValue {
         @NonFinal
         Pattern compiledPattern;
 
+
         public Pattern getCompiledPattern() throws PatternSyntaxException {
-            if (!regex ) {
+            if ( !regex ) {
                 return null;
             }
-            if (compiledPattern == null) {
+            if ( compiledPattern == null ) {
                 compiledPattern = Pattern.compile( name );
             }
             return compiledPattern;
         }
+
     }
+
 
     /**
      * For relational entities
@@ -85,42 +90,45 @@ public class CollationValue implements SettingValue {
         List<String> names = type.getFieldNames();
         List<AlgFieldCollation> collations = new ArrayList<>();
         Set<Integer> included = new HashSet<>();
-        for (FieldCollation field : fields) {
-            if (field.regex ) {
-                for (int idx : ActivityUtils.getRegexMatchPositions(field.getCompiledPattern(), names) ) {
-                    if (!included.contains(idx)) {
-                        included.add(idx);
+        for ( FieldCollation field : fields ) {
+            if ( field.regex ) {
+                for ( int idx : ActivityUtils.getRegexMatchPositions( field.getCompiledPattern(), names ) ) {
+                    if ( !included.contains( idx ) ) {
+                        included.add( idx );
                         collations.add( new AlgFieldCollation( idx, field.direction ) );
                     }
                 }
             } else {
-                int idx = names.indexOf(field.name);
-                if (idx == -1 || included.contains(idx)) {
+                int idx = names.indexOf( field.name );
+                if ( idx == -1 || included.contains( idx ) ) {
                     continue;
                 }
-                included.add(idx);
+                included.add( idx );
                 collations.add( new AlgFieldCollation( idx, field.direction ) );
             }
         }
-        return AlgCollations.of(collations);
-    };
+        return AlgCollations.of( collations );
+    }
+
+
+    ;
 
 
     /**
      * For collections
      */
-    public Pair<AlgCollation, List<RexNode>> toAlgCollation(int inputIndex) {
+    public Pair<AlgCollation, List<RexNode>> toAlgCollation( int inputIndex ) {
         //List<String> names = new ArrayList<>();
         List<RexNode> nodes = new ArrayList<>();
         List<AlgFieldCollation> collations = new ArrayList<>();
         int pos = 0;
-        for (FieldCollation field : fields) {
+        for ( FieldCollation field : fields ) {
             //names.add(field.name);
-            nodes.add(new RexNameRef( Arrays.asList( field.name.split( "\\." ) ), inputIndex, DocumentType.ofDoc() ) );
-            collations.add( new AlgFieldCollation(pos , field.direction ) );
+            nodes.add( new RexNameRef( Arrays.asList( field.name.split( "\\." ) ), inputIndex, DocumentType.ofDoc() ) );
+            collations.add( new AlgFieldCollation( pos, field.direction ) );
             pos++;
         }
-        return Pair.of(AlgCollations.of( collations ), nodes);
+        return Pair.of( AlgCollations.of( collations ), nodes );
     }
 
 }
