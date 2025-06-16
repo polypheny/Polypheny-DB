@@ -17,6 +17,7 @@
 package org.polypheny.db.webui;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -158,6 +159,7 @@ import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
+import org.polypheny.db.schemaDiscovery.NodeSerializer;
 import org.polypheny.db.security.SecurityManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -937,10 +939,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
                 Map<String, byte[]> fileBytes = new HashMap<>();
 
-                for (Map.Entry<String, InputStream> e : inputStreams.entrySet()) {
-                    try (InputStream in = e.getValue()) {
-                        byte[] data = IOUtils.toByteArray(in);
-                        fileBytes.put(e.getKey(), data);
+                for ( Map.Entry<String, InputStream> e : inputStreams.entrySet() ) {
+                    try ( InputStream in = e.getValue() ) {
+                        byte[] data = IOUtils.toByteArray( in );
+                        fileBytes.put( e.getKey(), data );
                     }
                 }
 
@@ -970,6 +972,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         ctx.json( Map.of( "changed", changed ) );
     }
 
+
     void metadataChange( final Context ctx ) {
         String uniqueName = ctx.pathParam( "uniqueName" );
         PreviewResult data = PublisherManager.getInstance().fetchChange( uniqueName );
@@ -977,7 +980,28 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     }
 
+
     void metadataAck( final Context ctx ) {
+        AckPayload payload = ctx.bodyAsClass( AckPayload.class );
+        log.info( "Acknowledgement incoming: " + payload.toString() );
+        PublisherManager.getInstance().ack( payload.uniqueName, payload.selectedPaths );
+    }
+
+
+    void getMetaConfiguration( final Context ctx ) {
+        String uniqueName = ctx.pathParam( "uniqueName" );
+        MetadataProvider provider = AdapterManager.getInstance()
+                .getMetadataProvider( uniqueName )
+                .orElseThrow( () -> new IllegalStateException(
+                        "Adapter %s doesn't support inteface metadata provider !".formatted( uniqueName ) ) );
+
+        PreviewResult data = new PreviewResult( NodeSerializer.serializeNode( provider.getRoot() ).toString(), provider.getPreview() );
+        ctx.json( data );
+    }
+
+
+    void setMetaConfiguration( final Context ctx ) {
+        AckPayload config = ctx.bodyAsClass( AckPayload.class );
 
     }
 
@@ -2376,10 +2400,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     // Map<String, byte[]> statt Map<String, InputStream>
     private static String handleUploadFiles( Map<String, byte[]> files, List<String> fileNames, AbstractAdapterSettingDirectory setting, PreviewRequest previewRequest ) {
         File path = PolyphenyHomeDirManager.getInstance()
-                .registerNewFolder("data/csv/" + previewRequest.adapterName);
+                .registerNewFolder( "data/csv/" + previewRequest.adapterName );
         for ( String name : fileNames ) {
             byte[] data = files.get( name );
-            if ( data == null ) continue;
+            if ( data == null ) {
+                continue;
+            }
             try ( InputStream in = new ByteArrayInputStream( data ) ) {
                 File target = new File( path, name );
                 log.info( "📂 Datei wird geschrieben: {}", target.getAbsolutePath() );
@@ -3205,5 +3231,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         authCrud.broadcast( SnapshotModel.from( Catalog.snapshot() ) );
     }
 
+
+    public record AckPayload( @JsonProperty String uniqueName, @JsonProperty String[] selectedPaths ) {
+
+    }
 
 }

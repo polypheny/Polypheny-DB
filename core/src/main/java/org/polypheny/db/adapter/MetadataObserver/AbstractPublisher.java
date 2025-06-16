@@ -90,4 +90,10 @@ public class AbstractPublisher<P extends Adapter & MetadataProvider> implements 
         }
     }
 
+
+    @Override
+    public MetadataListener getListener() {
+        return this.listener;
+    }
+
 }

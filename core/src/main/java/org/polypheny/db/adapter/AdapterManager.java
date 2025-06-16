@@ -37,6 +37,7 @@ import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.schemaDiscovery.MetadataProvider;
 
 
 public class AdapterManager {
@@ -236,6 +237,14 @@ public class AdapterManager {
             adapterById.put( instance.getAdapterId(), instance );
         }
     }
+
+
+    public Optional<MetadataProvider> getMetadataProvider(String uniqueName) {
+        return getSource(uniqueName)
+                .filter(mp -> mp instanceof MetadataProvider)
+                .map(mp -> (MetadataProvider) mp);
+    }
+
 
 
     public record AdapterInformation( String name, String description, AdapterType type, List<AbstractAdapterSetting> settings, List<DeployMode> modes ) {

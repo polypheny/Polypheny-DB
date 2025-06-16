@@ -29,6 +29,7 @@ import org.polypheny.db.schemaDiscovery.AbstractNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import org.polypheny.db.schemaDiscovery.NodeSerializer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
@@ -75,9 +76,19 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
 
 
     @Override
-    public void applyChange() {
-        available ^= true;
+    public void applyChange( String[] metadata ) {
         log.info( "Changes are going to be applied" );
+
+        this.adapter.setRoot( this.currentNode );
+        this.adapter.markSelectedAttributes( Arrays.stream( metadata ).toList() );
+        HashCache.getInstance().put( this.adapter.getUniqueName(), this.hash );
+
+        this.currentNode = null;
+        this.adapter = null;
+        this.hash = null;
+
+        available ^= true;
+
     }
 
 

@@ -22,6 +22,7 @@ public interface MetadataPublisher {
     void start();
     void stop();
     void runCheck();
+    MetadataListener getListener();
 
 
 }

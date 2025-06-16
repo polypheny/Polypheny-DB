@@ -420,7 +420,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
         AdapterManager.getInstance().removeAdapter( adapter.id );
-        // PublisherManager.getInstance().onAdapterUndeploy( adapter.uniqueName );
+        PublisherManager.getInstance().onAdapterUndeploy( adapter.uniqueName );
     }
 
 

@@ -24,6 +24,6 @@ public interface MetadataListener<P extends Adapter & MetadataProvider> {
 
     void onMetadataChange( P adapter, AbstractNode node, String hash );
     boolean isAvailable();
-    void applyChange();
+    void applyChange( String[] metadata );
 
 }

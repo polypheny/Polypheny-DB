@@ -80,7 +80,9 @@ public class PublisherManager {
     }
 
 
-    void ack( String uniqueName ) {
+    public void ack( String uniqueName, String[] metadata ) {
+        MetadataPublisher publisher = publishers.get( uniqueName );
+        publisher.getListener().applyChange( metadata );
         changeCache.remove( uniqueName );
     }
 
