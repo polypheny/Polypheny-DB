@@ -175,6 +175,8 @@ public final class JdbcUtils {
                             return PolyBigDecimal.ofNullable( (BigDecimal) o );
                         case Types.BIGINT:
                             return PolyBigDecimal.ofNullable( (Number) o );
+                        case Types.BINARY:
+                            return PolyBinary.ofNullable( (byte[]) o );
                     }
                 default:
                     throw new GenericRuntimeException( "not implemented " + reps[i] + " " + types[i] );
