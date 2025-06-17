@@ -21,7 +21,7 @@ import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.parser.errors.ParseException;
-import java.awt.*;
+import java.awt.SystemTray;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
