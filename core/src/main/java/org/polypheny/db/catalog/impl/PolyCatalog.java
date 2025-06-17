@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -357,10 +357,10 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     }
 
 
-    public long createNamespace( String name, DataModel dataModel, boolean caseSensitive ) {
+    public long createNamespace( String name, DataModel dataModel, boolean caseSensitive, boolean hidden ) {
         // cannot separate namespace and entity ids, as there are models which have their entity on the namespace level
         long id = idBuilder.getNewLogicalId();
-        LogicalNamespace namespace = new LogicalNamespace( id, name, dataModel, caseSensitive );
+        LogicalNamespace namespace = new LogicalNamespace( id, name, dataModel, caseSensitive, hidden );
 
         Pair<LogicalCatalog, AllocationCatalog> catalogs = switch ( dataModel ) {
             case RELATIONAL -> Pair.of( new RelationalCatalog( namespace ), new PolyAllocRelCatalog( namespace ) );

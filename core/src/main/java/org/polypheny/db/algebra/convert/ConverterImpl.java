@@ -106,4 +106,3 @@ public abstract class ConverterImpl extends SingleAlg implements Converter {
     }
 
 }
-

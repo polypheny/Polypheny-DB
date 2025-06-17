@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public class DefaultInserter {
         // init schema
 
         if ( catalog.getSnapshot().getNamespace( DEFAULT_NAMESPACE ).isEmpty() ) {
-            catalog.createNamespace( "public", DataModel.getDefault(), false );
+            catalog.createNamespace( "public", DataModel.getDefault(), false, false );
         }
 
         //////////////

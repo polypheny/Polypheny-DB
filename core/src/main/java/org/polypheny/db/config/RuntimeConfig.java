@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -494,6 +494,22 @@ public enum RuntimeConfig {
             "pluginsGroup"
     ),
 
+    WORKFLOWS_WORKERS(
+            "workflows/globalWorkers",
+            "The maximum number of worker threads over all workflows. Changes apply as soon as all currently executing workflows have finished.",
+            40,
+            ConfigType.INTEGER,
+            "workflowsSettingsGroup"
+    ),
+
+    WORKFLOWS_ENABLE_UNSAFE(
+            "workflows/enableUnsafe",
+            "Enable execution of possibly harmful activities. For instance, this includes activities that execute user-define Java code.",
+            false,
+            ConfigType.BOOLEAN,
+            "workflowsSettingsGroup"
+    ),
+
     BLOCKED_PLUGINS(
             "runtime/blockedPlugins",
             "All plugins, which are blocked by default.",
@@ -529,7 +545,7 @@ public enum RuntimeConfig {
     SERIALIZATION_BUFFER_SIZE(
             "runtime/serialization",
             "How big the buffersize for catalog objects should be.",
-            200000,
+            2_000_000,
             ConfigType.INTEGER ),
 
     LOCKING_MAX_TIMEOUT_SECONDS(
@@ -619,6 +635,15 @@ public enum RuntimeConfig {
         final WebUiGroup pluginGroup = new WebUiGroup( "pluginsGroup", pluginPage.getId() );
         configManager.registerWebUiPage( pluginPage );
         configManager.registerWebUiGroup( pluginGroup );
+
+        // Workflows Plugin
+        final WebUiPage workflowsPage = new WebUiPage(
+                "workflowsPage",
+                "Workflows",
+                "Settings related to the Workflows plugin." );
+        configManager.registerWebUiGroup(
+                new WebUiGroup( "workflowsSettingsGroup", workflowsPage.getId() ).withTitle( "Execution" ) );
+        configManager.registerWebUiPage( workflowsPage );
 
         // UI specific setting
         final WebUiPage uiSettingsPage = new WebUiPage(

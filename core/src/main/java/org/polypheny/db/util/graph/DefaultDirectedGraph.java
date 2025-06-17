@@ -43,6 +43,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.Getter;
 
 
 /**
@@ -55,6 +56,7 @@ public class DefaultDirectedGraph<V, E extends DefaultEdge> implements DirectedG
 
     final Set<E> edges = new LinkedHashSet<>();
     final Map<V, VertexInfo<V, E>> vertexMap = new LinkedHashMap<>();
+    @Getter
     final EdgeFactory<V, E> edgeFactory;
 
 

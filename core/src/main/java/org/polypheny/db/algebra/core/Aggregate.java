@@ -572,4 +572,3 @@ public abstract class Aggregate extends SingleAlg {
     }
 
 }
-

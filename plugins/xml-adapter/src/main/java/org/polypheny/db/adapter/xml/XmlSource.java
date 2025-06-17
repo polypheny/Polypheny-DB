@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ public class XmlSource extends DataSource<DocAdapterCatalog> implements Document
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ).toUpperCase() ) : ConnectionMethod.UPLOAD;
         this.xmlFiles = getXmlFilesUrl( settings );
         this.delegate = new DocumentScanDelegate( this, getAdapterCatalog() );
-        long namespaceId = Catalog.getInstance().createNamespace( uniqueName, DataModel.DOCUMENT, true );
+        long namespaceId = Catalog.getInstance().createNamespace( uniqueName, DataModel.DOCUMENT, true, false );
         this.namespace = new XmlNamespace( uniqueName, namespaceId, getAdapterId() );
     }
 

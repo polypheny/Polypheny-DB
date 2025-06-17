@@ -499,4 +499,3 @@ public class AlgSubset extends AbstractAlgNode {
     }
 
 }
-

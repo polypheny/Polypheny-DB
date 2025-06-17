@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -466,6 +467,26 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case JSON -> PolyString.class;
             case TEXT -> PolyString.class;
             default -> throw new NotImplementedException( "value" );
+        };
+    }
+
+
+    public static Function<PolyValue, PolyValue> getConverter( PolyType targetType ) {
+        return switch ( targetType ) {
+            case BOOLEAN -> PolyBoolean::convert;
+            case TINYINT, INTEGER, SMALLINT -> PolyInteger::convert;
+            case BIGINT -> PolyLong::convert;
+            case DECIMAL -> PolyBigDecimal::convert;
+            case FLOAT, REAL -> PolyFloat::convert;
+            case DOUBLE -> PolyDouble::convert;
+            case DATE -> PolyDate::convert;
+            case TIME -> PolyTime::convert;
+            case TIMESTAMP -> PolyTimestamp::convert;
+            case CHAR, VARCHAR, JSON, TEXT -> PolyString::convert;
+            case ANY -> Function.identity();
+            case MULTISET, ARRAY, ROW, COLUMN_LIST -> PolyList::convert;
+            case DOCUMENT -> PolyDocument::convert;
+            default -> throw new NotImplementedException( "Converter to " + targetType + " is not implemented" );
         };
     }
 

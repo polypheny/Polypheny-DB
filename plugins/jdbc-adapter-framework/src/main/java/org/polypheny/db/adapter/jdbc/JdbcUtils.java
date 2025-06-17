@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,10 +169,12 @@ public final class JdbcUtils {
                             return PolyBoolean.ofNullable( (Boolean) o );
                         case Types.DOUBLE:
                             return PolyDouble.ofNullable( (Number) o );
-                        case Types.FLOAT:
+                        case Types.FLOAT, Types.REAL:
                             return PolyFloat.ofNullable( (Number) o );
                         case Types.DECIMAL:
                             return PolyBigDecimal.ofNullable( (BigDecimal) o );
+                        case Types.BIGINT:
+                            return PolyBigDecimal.ofNullable( (Number) o );
                     }
                 default:
                     throw new GenericRuntimeException( "not implemented " + reps[i] + " " + types[i] );

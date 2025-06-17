@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,7 +93,7 @@ public class SqlCreateNamespace extends SqlCreate implements ExecutableStatement
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        DdlManager.getInstance().createNamespace( name.getSimple(), type, ifNotExists, replace, statement );
+        DdlManager.getInstance().createNamespace( name.getSimple(), type, ifNotExists, replace, false, statement );
     }
 
 

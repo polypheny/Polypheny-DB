@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,17 +52,22 @@ public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace
     @Serialize
     @JsonProperty
     public boolean caseSensitive;
+    @Serialize
+    @JsonProperty
+    public boolean hidden; // TODO: serialize hidden field?
 
 
     public LogicalNamespace(
             @Deserialize("id") final long id,
             @Deserialize("name") @NonNull final String name,
             @Deserialize("dataModel") @NonNull final DataModel dataModel,
-            @Deserialize("caseSensitive") boolean caseSensitive ) {
+            @Deserialize("caseSensitive") boolean caseSensitive,
+            @Deserialize("hidden") boolean hidden ) {
         this.id = id;
         this.name = name;
         this.dataModel = dataModel;
         this.caseSensitive = caseSensitive;
+        this.hidden = hidden;
     }
 
 

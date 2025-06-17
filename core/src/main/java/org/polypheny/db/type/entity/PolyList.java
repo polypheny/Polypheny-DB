@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -194,7 +194,17 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
     @Override
     public @Nullable String toJson() {
-        return value == null ? JsonToken.VALUE_NULL.asString() : "[" + value.stream().map( e -> e == null ? JsonToken.VALUE_NULL.asString() : e.isString() ? e.asString().toQuotedJson() : e.toJson() ).collect( Collectors.joining( "," ) ) + "]";
+        return value == null ? JsonToken.VALUE_NULL.asString() : "[" + value.stream().map( e -> {
+            if ( e == null ) {
+                return JsonToken.VALUE_NULL.asString();
+            } else if ( e.isString() ) {
+                return e.asString().toQuotedJson();
+            } else if ( e.isDate() || e.isTime() || e.isTimestamp() ) {
+                return "\"" + e.toJson() + "\"";
+            } else {
+                return e.toJson();
+            }
+        } ).collect( Collectors.joining( "," ) ) + "]";
     }
 
 

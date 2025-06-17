@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -174,7 +174,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public long createNamespace( String initialName, DataModel type, boolean ifNotExists, boolean replace, Statement statement ) {
+    public long createNamespace( String initialName, DataModel type, boolean ifNotExists, boolean replace, boolean hidden, Statement statement ) {
         String name = initialName.toLowerCase();
         // Check that name is not blocked
         if ( blockedNamespaceNames.contains( name ) ) {
@@ -197,10 +197,10 @@ public class DdlManagerImpl extends DdlManager {
                 type == DataModel.GRAPH && RuntimeConfig.GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE.getBoolean();
 
         if ( type == DataModel.GRAPH ) {
-            return createGraph( name, true, null, false, false, caseSensitive, statement );
+            return createGraph( name, true, null, false, false, hidden, caseSensitive, statement );
         }
 
-        return catalog.createNamespace( name, type, caseSensitive );
+        return catalog.createNamespace( name, type, caseSensitive, hidden );
     }
 
 
@@ -1841,7 +1841,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public long createGraph( String name, boolean modifiable, @Nullable List<DataStore<?>> stores, boolean ifNotExists, boolean replace, boolean caseSensitive, Statement statement ) {
+    public long createGraph( String name, boolean modifiable, @Nullable List<DataStore<?>> stores, boolean ifNotExists, boolean replace, boolean caseSensitive, boolean hidden, Statement statement ) {
         assert !replace : "Graphs cannot be replaced yet.";
         String adjustedName = caseSensitive ? name : name.toLowerCase();
 
@@ -1851,7 +1851,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // add general graph
-        long graphId = catalog.createNamespace( adjustedName, DataModel.GRAPH, caseSensitive );
+        long graphId = catalog.createNamespace( adjustedName, DataModel.GRAPH, caseSensitive, hidden );
 
         // add specialized graph
         LogicalGraph logical = catalog.getLogicalGraph( graphId ).addGraph( graphId, adjustedName, modifiable );

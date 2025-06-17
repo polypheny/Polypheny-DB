@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -162,7 +162,7 @@ public class SqlLanguageDependent {
         manager.createTable( Catalog.defaultNamespaceId, "emp", columns, constraints, true, null, null, transaction.createStatement() );
 
         // "CREATE TABLE contact.customer(fname VARCHAR(50) NOT NULL, PRIMARY KEY (fname))"
-        long id = manager.createNamespace( "customer", DataModel.RELATIONAL, true, false, transaction.createStatement() );
+        long id = manager.createNamespace( "customer", DataModel.RELATIONAL, true, false, false, transaction.createStatement() );
 
         columns = List.of(
                 new FieldInformation( "fname", new ColumnTypeInformation( PolyType.VARCHAR, null, 50, null, null, null, false ), null, null, 0 )

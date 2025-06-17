@@ -220,4 +220,3 @@ public abstract class RelTableFunctionScan extends AbstractAlgNode {
     }
 
 }
-

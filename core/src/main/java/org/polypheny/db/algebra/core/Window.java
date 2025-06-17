@@ -436,4 +436,3 @@ public abstract class Window extends SingleAlg {
     }
 
 }
-
