@@ -557,6 +557,7 @@ public abstract class DdlManager {
 
     public abstract void dropGraphPlacement( long graphId, DataStore<?> dataStores, Statement statement );
 
+    public abstract void addSelectedMetadata( Transaction tsx, String uniqueName, long namespace, List<String> selectedPaths );
 
     public abstract void dropCollection( LogicalCollection catalogCollection, Statement statement );
 

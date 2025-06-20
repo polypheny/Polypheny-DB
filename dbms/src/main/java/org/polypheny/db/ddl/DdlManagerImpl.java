@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -359,6 +360,111 @@ public class DdlManagerImpl extends DdlManager {
 
         }
         catalog.updateSnapshot();
+
+    }
+
+
+    public void addSelectedMetadata( Transaction tsx, String uniqueName, long namespace, List<String> selectedPaths ) {
+        Optional<DataSource<?>> adapter = AdapterManager.getInstance().getSource( uniqueName );
+        extendMetaSettings( adapter, selectedPaths );
+        if ( adapter == null ) {
+            throw new GenericRuntimeException( "No adapter found for unique name " + uniqueName );
+        }
+        Map<String, List<ExportedColumn>> exported = adapter.get().getExportedColumns();
+        Map<String, List<String>> additions =
+                selectedPaths.stream()
+                        .map( DdlManagerImpl::splitPath )
+                        .collect( Collectors.groupingBy(
+                                ParsedPath::table,
+                                Collectors.mapping( ParsedPath::column,
+                                        Collectors.toList() ) ) );
+
+        for ( Map.Entry<String, List<String>> entry : additions.entrySet() ) {
+            String tableName = entry.getKey();
+            String physicalTable = entry.getKey();
+            List<String> newCols = entry.getValue();
+
+            Optional<LogicalTable> logicalOpt = catalog.getSnapshot().rel().getTable( namespace, physicalTable );
+            LogicalTable logical;
+            AllocationPlacement placement;
+            List<LogicalColumn> logicalCols = new ArrayList<>();
+            List<AllocationColumn> allocCols = new ArrayList<>();
+            AllocationEntity allocation;
+
+            if ( logicalOpt.isEmpty() ) {
+                logical = catalog.getLogicalRel( namespace )
+                        .addTable( tableName, EntityType.SOURCE, !adapter.get().isDataReadOnly() );
+                Pair<AllocationPartition, PartitionProperty> part =
+                        createSinglePartition( logical.namespaceId, logical );
+                placement = catalog.getAllocRel( namespace )
+                        .addPlacement( logical.id, namespace, adapter.get().getAdapterId() );
+                allocation = catalog.getAllocRel( namespace )
+                        .addAllocation( adapter.get().getAdapterId(),
+                                placement.id,
+                                part.left.id,
+                                logical.id );
+                catalog.getAllocRel( namespace )
+                        .addAllocation( adapter.get().getAdapterId(), placement.id, part.left.id, logical.id );
+            } else {
+                allocation = null;
+                logical = logicalOpt.get();
+                Optional<AllocationPlacement> placementOpt =
+                        catalog.getSnapshot().alloc()
+                                .getPlacement( adapter.get().getAdapterId(), logical.id );
+                if ( placementOpt.isPresent() ) {
+                    placement = placementOpt.get();
+                } else {
+                    placement = catalog.getAllocRel( namespace )
+                            .addPlacement( logical.id, namespace, adapter.get().getAdapterId() );
+
+                    catalog.getAllocRel( namespace )
+                            .addAllocation( adapter.get().getAdapterId(),
+                                    placement.id,
+                                    createSinglePartition( logical.namespaceId, logical ).left.id,
+                                    logical.id );
+                }
+
+            }
+            List<ExportedColumn> exportedCols = exported.getOrDefault( physicalTable, List.of() );
+
+            String physicalSchema =
+                    exportedCols.isEmpty()
+                            ? Catalog.DEFAULT_NAMESPACE_NAME
+                            : exportedCols.get( 0 ).physicalSchemaName;
+            for ( ExportedColumn ec : exportedCols ) {
+                if ( !newCols.contains( ec.name ) ) {
+                    continue;
+                }
+                boolean exists = catalog.getSnapshot().rel()
+                        .getColumn( logical.id, ec.name ).isPresent();
+                if ( exists ) {
+                    continue;
+                }
+
+                LogicalColumn lc = catalog.getLogicalRel( namespace ).addColumn(
+                        ec.name, logical.id, ec.physicalPosition, ec.type,
+                        ec.collectionsType, ec.length, ec.scale, ec.dimension,
+                        ec.cardinality, ec.nullable, Collation.getDefaultCollation() );
+                AllocationColumn ac = catalog.getAllocRel( namespace ).addColumn(
+                        placement.id, logical.id, lc.id,
+                        adapter.get().getAdapterId(), PlacementType.STATIC, ec.physicalPosition );
+
+                logicalCols.add( lc );
+                allocCols.add( ac );
+            }
+            if ( !logicalCols.isEmpty() ) {
+                buildNamespace( Catalog.defaultNamespaceId, logical, adapter.get() );
+                if ( logicalOpt.isEmpty() ) {
+                    tsx.attachCommitAction( () ->
+                            adapter.get().createTable( null,
+                                    LogicalTableWrapper.of( logical, logicalCols, List.of(),
+                                            physicalSchema, tableName ),
+                                    AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ),
+                                            allocCols ) ) );
+                }
+                catalog.updateSnapshot();
+            }
+        }
 
     }
 
@@ -3115,6 +3221,41 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropType() {
         throw new GenericRuntimeException( "Not supported yet" );
+    }
+
+
+    public static ParsedPath splitPath( String fullPath ) {
+        String noType = fullPath.split( ":" )[0];
+        int lastDot = noType.lastIndexOf( '.' );
+        String column = noType.substring( lastDot + 1 );
+        String tableKey = noType.substring( 0, lastDot );
+
+        String[] parts = tableKey.split( "\\." );
+        String table = parts[parts.length - 1];
+        String schema = parts.length >= 2
+                ? parts[parts.length - 2]
+                : Catalog.DEFAULT_NAMESPACE_NAME;
+
+        return new ParsedPath( schema, table, column );
+    }
+
+
+    private void extendMetaSettings( Optional<DataSource<?>> adapter, List<String> newData ) {
+        Map<String, String> settings = adapter.get().getSettings();
+        String json = settings.getOrDefault( "selectedAttributes", "[]" );
+        List<String> current = new Gson().fromJson( json, new TypeToken<List<String>>() {
+        }.getType() );
+        Set<String> merged = new LinkedHashSet<>( current );
+        merged.addAll( newData );
+
+        settings.put( "selectedAttributes", new Gson().toJson( merged ) );
+
+
+    }
+
+
+    record ParsedPath( String schema, String table, String column ) {
+
     }
 
 }

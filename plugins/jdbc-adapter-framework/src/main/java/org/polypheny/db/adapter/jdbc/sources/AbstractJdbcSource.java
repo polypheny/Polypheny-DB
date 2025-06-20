@@ -50,6 +50,7 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.transaction.PUID;
+import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 
@@ -209,7 +210,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         Map<String, List<ExportedColumn>> map = new HashMap<>();
-        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
+        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
         try {
             ConnectionHandler connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
             java.sql.Statement statement = connectionHandler.getStatement();

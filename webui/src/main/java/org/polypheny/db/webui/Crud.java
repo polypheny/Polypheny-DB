@@ -122,6 +122,7 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
@@ -985,6 +986,18 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         AckPayload payload = ctx.bodyAsClass( AckPayload.class );
         log.info( "Acknowledgement incoming: " + payload.toString() );
         PublisherManager.getInstance().ack( payload.uniqueName, payload.selectedPaths );
+
+        Optional<DataSource<?>> adapter = AdapterManager.getInstance().getSource( payload.uniqueName );
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "metadata-ack-" + payload.uniqueName );
+        try {
+            DdlManager.getInstance().addSelectedMetadata( transaction, payload.uniqueName, Catalog.defaultNamespaceId, List.of( payload.selectedPaths ) );
+            transaction.commit();
+            ctx.status( 200 ).result( "ACK processed" );
+        } catch ( Exception e ) {
+            log.error( "metadataAck failed", e );
+            ctx.status(200).json(Map.of("message", "ACK was processed"));
+
+        }
     }
 
 
