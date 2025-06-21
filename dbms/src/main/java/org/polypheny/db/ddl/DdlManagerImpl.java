@@ -19,6 +19,7 @@ package org.polypheny.db.ddl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -527,6 +528,189 @@ public class DdlManagerImpl extends DdlManager {
         }
         AdapterManager.getInstance().removeAdapter( adapter.id );
         PublisherManager.getInstance().onAdapterUndeploy( adapter.uniqueName );
+    }
+
+
+    @Override
+    public void dropSourceEntities( List<String> paths, Statement statement ) {
+
+        /*
+         * 1) Vorverarbeiten: pro Tabelle sammeln wir, was wirklich gekillt werden soll.
+         *    Enthält das Set einen Stern („*“) bedeutet das: ganze Tabelle weg,
+         *    andernfalls nur die aufgezählten Spalten.
+         */
+        Map<LogicalTable, Set<String>> worklist = new HashMap<>();
+
+        for ( String rawPath : paths ) {
+            String path = rawPath.replace( "'", "" ).trim();
+            if ( path.isBlank() ) {
+                continue;
+            }
+
+            String[] seg = path.replace( '/', '.' )
+                    .replace( '\\', '.' )
+                    .split( "\\." );
+            if ( seg.length < 2 ) {
+                throw new GenericRuntimeException( "Ungültiger Pfad: " + path );
+            }
+
+            String normalized = path.replace( '/', '.' ).replace( "\\", "." );
+
+            String columnName = (seg.length >= 4) ? seg[seg.length - 1] : null;
+            String tableName = seg[seg.length - (columnName == null ? 1 : 2)];
+            String schemaName = seg[seg.length - (columnName == null ? 2 : 3)];
+
+            /* --- Namespace & Tabelle ermitteln --------------------------------- */
+            LogicalNamespace ns = catalog.getSnapshot()
+                    .getNamespace( schemaName )
+                    .orElseThrow( () -> new GenericRuntimeException(
+                            "Schema-Pfad nicht gefunden: " + schemaName ) );
+
+            LogicalTable table = catalog.getSnapshot()
+                    .rel()
+                    .getTable( ns.id, tableName )
+                    .orElseThrow( () -> new GenericRuntimeException(
+                            "Tabelle nicht gefunden: " + tableName + " im Schema " + schemaName ) );
+
+            /* Nur SOURCE-Tabellen dürfen wir hier anfassen                           */
+            if ( table.entityType != EntityType.SOURCE ) {
+                throw new GenericRuntimeException( "Tabelle " + path + " ist kein SOURCE-Objekt." );
+            }
+
+            /* Arbeits-Set befüllen                                                 */
+            worklist.computeIfAbsent( table, t -> new HashSet<>() );
+            worklist.get( table ).add( columnName == null ? "*" : columnName );
+        }
+
+        /*
+         * 2) Jetzt wirklich löschen.
+         *    – Ist „*“ im Set ⇒ komplette Tabelle droppen
+         *    – sonst jede angegebene Spalte droppen
+         */
+        for ( Map.Entry<LogicalTable, Set<String>> entry : worklist.entrySet() ) {
+            LogicalTable table = entry.getKey();
+            Set<String> cols = entry.getValue();
+
+            for ( String col : cols ) {
+                dropSourceColumn( table, col, statement );
+            }
+
+            boolean tableHasColumnsLeft =
+                    catalog.getLogicalRel( table.namespaceId )
+                            .getColumns()                      // Map<Long, LogicalColumn>
+                            .values().stream()                // → Stream<LogicalColumn>
+                            .anyMatch( c -> c.tableId == table.id );
+
+            if ( cols.contains( "*" ) || !tableHasColumnsLeft )
+                dropWholeSourceTable( table, statement );
+        }
+
+
+        /* 4) Prüfen, ob nach dem Löschen noch Spalten übrig sind */
+
+
+
+        /* Einmaliges Cache-Reset reicht. */
+        statement.getQueryProcessor().resetCaches();
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                      Hilfsmethoden                                         */
+    /* -------------------------------------------------------------------------- */
+
+
+    private void dropWholeSourceTable( LogicalTable table, Statement statement ) {
+
+        /* ------------------------------------------------------------------
+         * 0) Placement & Partition (READ) – brauchen wir für deleteAllocation
+         * ------------------------------------------------------------------ */
+        List<AllocationPlacement> placements =
+                catalog.getSnapshot().alloc().getPlacementsFromLogical( table.id );
+
+        if ( placements.size() != 1 ) {
+            throw new GenericRuntimeException(
+                    "SOURCE-Tabelle " + table.name + " hat mehr als ein Placement." );
+        }
+        AllocationPlacement placement = placements.get( 0 );
+
+        /* ------------------------------------------------------------------
+         * 1) Spalten & Fremdschlüssel zum Löschen heraussuchen (READ)
+         * ------------------------------------------------------------------ */
+        List<LogicalColumn>        columns =
+                catalog.getSnapshot().rel().getColumns( table.id );
+        List<LogicalForeignKey>    fks     =
+                catalog.getSnapshot().rel().getForeignKeys( table.id );
+
+        /* ------------------------------------------------------------------
+         * 2) Fremdschlüssel löschen (WRITE)
+         * ------------------------------------------------------------------ */
+        for ( LogicalForeignKey fk : fks ) {
+            catalog.getLogicalRel( table.namespaceId )
+                    .deleteForeignKey( fk.id );
+        }
+
+        /* ------------------------------------------------------------------
+         * 3) Column-Placements + Spalten löschen (WRITE)
+         * ------------------------------------------------------------------ */
+        for ( LogicalColumn col : columns ) {
+
+            // alle Placements der Spalte entfernen
+            for ( AllocationPlacement p :
+                    catalog.getSnapshot().alloc().getPlacementsOfColumn( col.id ) ) {
+                catalog.getAllocRel( table.namespaceId )
+                        .deleteColumn( p.id, col.id );
+            }
+
+            // Spalte im logischen Modell entfernen
+            catalog.getLogicalRel( table.namespaceId )
+                    .deleteColumn( col.id );
+        }
+
+        /* ------------------------------------------------------------------
+         * 4) Allocation des gesamten Tables löschen (WRITE)
+         * ------------------------------------------------------------------ */
+        catalog.getAllocRel( table.namespaceId )
+                .deleteAllocation( placement.id );
+
+        /* ------------------------------------------------------------------
+         * 5) Primärschlüssel + Tabelle löschen (WRITE)
+         * ------------------------------------------------------------------ */
+        catalog.getLogicalRel( table.namespaceId )
+                .deletePrimaryKey( table.id );
+
+        catalog.getLogicalRel( table.namespaceId )
+                .deleteTable( table.id );
+    }
+
+
+
+    private void dropSourceColumn( LogicalTable table, String columnName, Statement statement ) {
+
+        LogicalColumn column = catalog.getSnapshot()
+                .rel()
+                .getColumn( table.id, columnName )
+                .orElseThrow( () -> new GenericRuntimeException(
+                        "Spalte " + columnName + " existiert nicht in Tabelle " + table.name ) );
+
+        /* 1) FKs, die diese Spalte benutzen, entfernen */
+        for ( LogicalForeignKey fk : catalog.getSnapshot().rel().getForeignKeys( table.id ) ) {
+            boolean usesColumn = fk.getFieldIds().contains( column.id )
+                    || fk.getReferencedKeyFieldIds()
+                    .contains( column.id );
+
+            if ( usesColumn ) {
+                catalog.getLogicalRel( table.namespaceId )
+                        .deleteForeignKey( fk.id );
+            }
+        }
+
+        /* 2) Alle Placements der Spalte entfernen */
+        for ( AllocationPlacement placement : catalog.getSnapshot().alloc().getPlacementsOfColumn( column.id ) ) {
+            catalog.getAllocRel( table.namespaceId ).deleteColumn( placement.id, column.id );
+        }
+
+        /* 3) Spalte im Logischen Modell löschen */
+        catalog.getLogicalRel( table.namespaceId ).deleteColumn( column.id );
     }
 
 

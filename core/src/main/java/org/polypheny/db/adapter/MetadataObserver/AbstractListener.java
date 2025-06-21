@@ -80,7 +80,8 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
         log.info( "Changes are going to be applied" );
 
         this.adapter.setRoot( this.currentNode );
-        this.adapter.markSelectedAttributes( Arrays.stream( metadata ).toList() );
+        if ( metadata != null && metadata.length > 0 )
+            this.adapter.markSelectedAttributes( Arrays.stream( metadata ).toList() );
         HashCache.getInstance().put( this.adapter.getUniqueName(), this.hash );
 
         this.currentNode = null;

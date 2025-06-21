@@ -985,18 +985,27 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void metadataAck( final Context ctx ) {
         AckPayload payload = ctx.bodyAsClass( AckPayload.class );
         log.info( "Acknowledgement incoming: " + payload.toString() );
-        PublisherManager.getInstance().ack( payload.uniqueName, payload.selectedPaths );
+        PublisherManager.getInstance().ack( payload.uniqueName, payload.addedPaths );
 
         Optional<DataSource<?>> adapter = AdapterManager.getInstance().getSource( payload.uniqueName );
         Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "metadata-ack-" + payload.uniqueName );
         try {
-            DdlManager.getInstance().addSelectedMetadata( transaction, payload.uniqueName, Catalog.defaultNamespaceId, List.of( payload.selectedPaths ) );
+            if ( payload.addedPaths != null )
+                DdlManager.getInstance().addSelectedMetadata( transaction, payload.uniqueName, Catalog.defaultNamespaceId, List.of( payload.addedPaths ) );
+
+            if ( payload.removedPaths != null ) {
+                Statement stmt = transaction.createStatement();
+                DdlManager.getInstance().dropSourceEntities( List.of(payload.removedPaths), stmt );
+                stmt = null;
+            }
             transaction.commit();
             ctx.status( 200 ).result( "ACK processed" );
         } catch ( Exception e ) {
             log.error( "metadataAck failed", e );
             ctx.status(200).json(Map.of("message", "ACK was processed"));
 
+        } finally {
+            transaction = null;
         }
     }
 
@@ -3246,7 +3255,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    public record AckPayload( @JsonProperty String uniqueName, @JsonProperty String[] selectedPaths ) {
+    public record AckPayload( @JsonProperty String uniqueName, @JsonProperty String[] addedPaths, @JsonProperty String[] removedPaths ) {
 
     }
 

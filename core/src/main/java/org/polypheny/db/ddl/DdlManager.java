@@ -559,6 +559,8 @@ public abstract class DdlManager {
 
     public abstract void addSelectedMetadata( Transaction tsx, String uniqueName, long namespace, List<String> selectedPaths );
 
+    public abstract void dropSourceEntities( List<String> paths, Statement statement );
+
     public abstract void dropCollection( LogicalCollection catalogCollection, Statement statement );
 
     public abstract void dropCollectionPlacement( long namespaceId, LogicalCollection collection, List<DataStore<?>> dataStores, Statement statement );
