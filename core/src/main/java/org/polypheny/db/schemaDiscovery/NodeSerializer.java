@@ -29,6 +29,9 @@ public class NodeSerializer {
         json.put( "type", node.getType() );
         json.put( "name", node.getName() );
 
+        if ( node instanceof AttributeNode attr )
+            json.put( "isSelected", attr.isSelected() );
+
         ObjectNode props = objectMapper.createObjectNode();
         node.getProperties().forEach((key, value) -> {
             props.putPOJO(key, value);

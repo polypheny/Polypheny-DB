@@ -1023,8 +1023,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void setMetaConfiguration( final Context ctx ) {
-        AckPayload config = ctx.bodyAsClass( AckPayload.class );
-
+        ConfigPayload config = ctx.bodyAsClass( ConfigPayload.class );
+        log.error( config.toString() );
     }
 
 
@@ -3256,6 +3256,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     public record AckPayload( @JsonProperty String uniqueName, @JsonProperty String[] addedPaths, @JsonProperty String[] removedPaths ) {
+
+    }
+
+    public record ConfigPayload ( @JsonProperty String uniqueName, @JsonProperty String[] selected ) {
 
     }
 
