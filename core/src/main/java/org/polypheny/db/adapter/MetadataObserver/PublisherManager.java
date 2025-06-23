@@ -31,6 +31,7 @@ public class PublisherManager {
 
     private final Map<String, MetadataPublisher> publishers = new ConcurrentHashMap<>();
     private final Map<String, PreviewResult> changeCache = new ConcurrentHashMap<>();
+    private final Map<String, ChangeStatus > statusCache = new ConcurrentHashMap<>();
 
     private static final PublisherManager INSTANCE = new PublisherManager();
 
@@ -65,18 +66,23 @@ public class PublisherManager {
     }
 
 
-    public boolean hasChange( String uniqueName ) {
-        return changeCache.containsKey( uniqueName );
+    public ChangeStatus hasChange( String uniqueName ) {
+        if ( changeCache.containsKey( uniqueName ) ) {
+            return statusCache.get( uniqueName );
+        } else {
+            return null;
+        }
     }
 
 
-    public void onMetadataChange( String uniqueName, PreviewResult data ) {
+    public void onMetadataChange( String uniqueName, PreviewResult data, ChangeStatus status ) {
         changeCache.put( uniqueName, data );
+        statusCache.put( uniqueName, status );
     }
 
 
     public PreviewResult fetchChange( String uniqueName ) {
-        return changeCache.get( uniqueName );
+        return changeCache.get( uniqueName ) ;
     }
 
 
@@ -84,6 +90,13 @@ public class PublisherManager {
         MetadataPublisher publisher = publishers.get( uniqueName );
         publisher.getListener().applyChange( metadata );
         changeCache.remove( uniqueName );
+        statusCache.remove( uniqueName );
+    }
+
+    public enum ChangeStatus {
+        CRITICAL,
+        WARNING,
+        OK
     }
 
 }

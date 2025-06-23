@@ -17,6 +17,8 @@
 package org.polypheny.db.schemaDiscovery;
 
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.MetadataObserver.PublisherManager.ChangeStatus;
+import org.polypheny.db.adapter.MetadataObserver.Utils.MetaDiffUtil.DiffResult;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,6 +31,14 @@ import java.util.Set;
 
 @Slf4j
 public final class NodeUtil {
+
+    private static final String NORMALIZED_SEPARATOR = ".";
+
+    private static String normalizePath(String rawPath) {
+        return rawPath.replace("/", NORMALIZED_SEPARATOR)
+                .replace("\\", NORMALIZED_SEPARATOR);
+    }
+
 
     private NodeUtil() {
     }
@@ -108,6 +118,29 @@ public final class NodeUtil {
                 }
             }
         }
+    }
+
+
+    public static ChangeStatus evaluateStatus( DiffResult diff, AbstractNode oldRoot ) {
+        if ( (diff.getAdded().isEmpty()) && (diff.getRemoved().isEmpty()) ) {
+            return ChangeStatus.OK;
+        }
+
+        Set<String> selected = collectSelecedAttributePaths( oldRoot );
+        for ( String path : selected ) log.info( path );
+        for (String removedRaw : diff.getRemoved()) {
+            String removed = normalizePath(removedRaw);
+            for (String selectedRaw : selected) {
+                String selectedNorm = normalizePath(selectedRaw);
+                if (removed.equals(selectedNorm) ||
+                        selectedNorm.startsWith(removed + NORMALIZED_SEPARATOR) ||
+                        removed.startsWith(selectedNorm + NORMALIZED_SEPARATOR)) {
+                    return ChangeStatus.CRITICAL;
+                }
+            }
+        }
+        return ChangeStatus.WARNING;
+
     }
 
 

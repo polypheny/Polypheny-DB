@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.MetadataObserver.PublisherManager.ChangeStatus;
 import org.polypheny.db.adapter.MetadataObserver.Utils.MetaAnnotator;
 import org.polypheny.db.adapter.MetadataObserver.Utils.MetaDiffUtil;
 import org.polypheny.db.adapter.MetadataObserver.Utils.MetaDiffUtil.DiffResult;
@@ -28,6 +29,7 @@ import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResult;
 import org.polypheny.db.schemaDiscovery.AbstractNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import org.polypheny.db.schemaDiscovery.NodeSerializer;
+import org.polypheny.db.schemaDiscovery.NodeUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -65,13 +67,13 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
         DiffResult result = MetaDiffUtil.diff( adapter.getRoot(), node );
         log.info( "Diffresult: {}", result );
 
+        ChangeStatus status = NodeUtil.evaluateStatus( result, adapter.getRoot() );
+
         AbstractNode annotatedCopy = MetaAnnotator.annotateTree( adapter.getRoot(), node, result );
         String json = NodeSerializer.serializeNode( annotatedCopy ).toString();
         log.info( "JSON: {}", json );
 
-        PublisherManager.getInstance().onMetadataChange( adapter.getUniqueName(), new PreviewResult( json, preview ) );
-
-
+        PublisherManager.getInstance().onMetadataChange( adapter.getUniqueName(), new PreviewResult( json, preview ), status );
     }
 
 

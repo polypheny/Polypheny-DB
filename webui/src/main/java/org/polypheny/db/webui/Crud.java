@@ -91,6 +91,7 @@ import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
 import org.polypheny.db.adapter.MetadataObserver.PublisherManager;
+import org.polypheny.db.adapter.MetadataObserver.PublisherManager.ChangeStatus;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResult;
@@ -973,7 +974,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void metadataStatus( final Context ctx ) {
         String uniqueName = ctx.pathParam( "uniqueName" );
 
-        boolean changed = PublisherManager.getInstance().hasChange( uniqueName );
+        ChangeStatus changed = PublisherManager.getInstance().hasChange( uniqueName );
         ctx.json( Map.of( "changed", changed ) );
     }
 
