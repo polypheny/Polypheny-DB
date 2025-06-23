@@ -54,6 +54,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -159,8 +160,10 @@ import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.schemaDiscovery.AbstractNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import org.polypheny.db.schemaDiscovery.NodeSerializer;
+import org.polypheny.db.schemaDiscovery.NodeUtil;
 import org.polypheny.db.security.SecurityManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -193,6 +196,7 @@ import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
 import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
 import org.polypheny.db.webui.models.PathAccessRequest;
 import org.polypheny.db.webui.models.PlacementFieldsModel;
+import org.polypheny.db.webui.models.PlacementFieldsModel.Method;
 import org.polypheny.db.webui.models.PlacementModel;
 import org.polypheny.db.webui.models.PlacementModel.RelationalStore;
 import org.polypheny.db.webui.models.QueryInterfaceModel;
@@ -909,7 +913,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             log.info( "  🔹 UniqueName     : {}", a.uniqueName );
 
             log.info( "📦 Settings:" );
-            for ( Map.Entry<String, String> entry : a.settings.entrySet() ) {
+            for ( Entry<String, String> entry : a.settings.entrySet() ) {
                 log.info( "  - {}: {}", entry.getKey(), entry.getValue() );
             }
 
@@ -940,7 +944,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
                 Map<String, byte[]> fileBytes = new HashMap<>();
 
-                for ( Map.Entry<String, InputStream> e : inputStreams.entrySet() ) {
+                for ( Entry<String, InputStream> e : inputStreams.entrySet() ) {
                     try ( InputStream in = e.getValue() ) {
                         byte[] data = IOUtils.toByteArray( in );
                         fileBytes.put( e.getKey(), data );
@@ -989,23 +993,27 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         Optional<DataSource<?>> adapter = AdapterManager.getInstance().getSource( payload.uniqueName );
         Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "metadata-ack-" + payload.uniqueName );
+        Statement stmt = null;
         try {
-            if ( payload.addedPaths != null )
-                DdlManager.getInstance().addSelectedMetadata( transaction, payload.uniqueName, Catalog.defaultNamespaceId, List.of( payload.addedPaths ) );
+            if ( payload.addedPaths != null ) {
+                DdlManager.getInstance().addSelectedMetadata( transaction, null, payload.uniqueName, Catalog.defaultNamespaceId, List.of( payload.addedPaths ) );
+            }
 
             if ( payload.removedPaths != null ) {
-                Statement stmt = transaction.createStatement();
-                DdlManager.getInstance().dropSourceEntities( List.of(payload.removedPaths), stmt );
+                stmt = transaction.createStatement();
+                DdlManager.getInstance().dropSourceEntities( List.of( payload.removedPaths ), stmt );
                 stmt = null;
             }
             transaction.commit();
             ctx.status( 200 ).result( "ACK processed" );
         } catch ( Exception e ) {
             log.error( "metadataAck failed", e );
-            ctx.status(200).json(Map.of("message", "ACK was processed"));
+            ctx.status( 200 ).json( Map.of( "message", "ACK was processed" ) );
 
         } finally {
-            transaction = null;
+            if ( stmt != null ) {
+                stmt.close();
+            }
         }
     }
 
@@ -1024,7 +1032,65 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void setMetaConfiguration( final Context ctx ) {
         ConfigPayload config = ctx.bodyAsClass( ConfigPayload.class );
+        Set<String> userSelection = Set.of( config.selected );
+        Set<String> markedPaths;
         log.error( config.toString() );
+        Optional<DataSource<?>> adapter = AdapterManager.getInstance().getSource( config.uniqueName );
+
+        if ( adapter.get() instanceof MetadataProvider mp ) {
+            AbstractNode root = mp.getRoot();
+            markedPaths = NodeUtil.collectSelecedAttributePaths( root );
+            for ( String p : markedPaths ) {
+                log.info( "Selected path: " + p );
+            }
+        } else {
+            ctx.status( 500 ).json( Map.of( "message", "Configuration can not be applied." ) );
+            return;
+        }
+
+        Set<String> toUnselect = new HashSet<>( markedPaths );
+        toUnselect.removeAll( userSelection );
+
+        Set<String> toAdd = new HashSet<>( userSelection );
+        toAdd.removeAll( markedPaths );
+
+        Transaction tx = transactionManager.startTransaction( Catalog.defaultUserId, false, "setMetaConfiguration" + config.uniqueName );
+        Statement stmt = null;
+        try {
+            if ( !toAdd.isEmpty() ) {
+                stmt = tx.createStatement();
+                DdlManager.getInstance().addSelectedMetadata( tx, stmt, config.uniqueName, Catalog.defaultNamespaceId, List.copyOf( toAdd ) );
+                ((MetadataProvider) adapter.get()).markSelectedAttributes( List.copyOf( toAdd ) );
+            }
+
+            if ( !toUnselect.isEmpty() ) {
+                try {
+                    stmt = tx.createStatement();
+                    DdlManager.getInstance().dropSourceEntities( List.copyOf( toUnselect ), stmt );
+                    NodeUtil.unmarkSelectedAttributes( ((MetadataProvider) adapter.get()).getRoot(), List.copyOf( toUnselect ) );
+                    tx.commit();
+                    stmt.close();
+                    ctx.json( Map.of( "message", "Configuration applied." ) );
+                } catch ( Exception ex ) {
+                    tx.rollback( "Error while dropping source entities" + ex.getMessage() );
+                    ctx.status( 500 ).json( Map.of( "message", ex.getMessage() ) );
+                } finally {
+                    if ( stmt != null ) {
+                        stmt.close();
+                    }
+                }
+            }
+
+        } catch ( Exception ex ) {
+            tx.rollback( "Changing adapter configuration was not successful !" );
+            ctx.status( 500 ).json( Map.of( "message", ex.getMessage() ) );
+        } finally {
+            if ( stmt != null ) {
+                stmt.close();
+            }
+        }
+
+
     }
 
 
@@ -1578,7 +1644,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 }
                 temp.get( "" ).add( columnName );
             }
-            for ( Map.Entry<String, List<String>> entry : temp.entrySet() ) {
+            for ( Entry<String, List<String>> entry : temp.entrySet() ) {
                 resultList.add( new TableConstraint( entry.getKey(), "PRIMARY KEY", entry.getValue() ) );
             }
         }
@@ -1591,7 +1657,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 temp.put( logicalConstraint.name, new ArrayList<>( logicalConstraint.key.getFieldNames() ) );
             }
         }
-        for ( Map.Entry<String, List<String>> entry : temp.entrySet() ) {
+        for ( Entry<String, List<String>> entry : temp.entrySet() ) {
             resultList.add( new TableConstraint( entry.getKey(), "UNIQUE", entry.getValue() ) );
         }
 
@@ -1888,7 +1954,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
         StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
         int counter = 0;
-        if ( placementFields.method() != PlacementFieldsModel.Method.DROP ) {
+        if ( placementFields.method() != Method.DROP ) {
             for ( String name : placementFields.fieldNames() ) {
                 columnJoiner.add( "\"" + name + "\"" );
                 counter++;
@@ -2231,7 +2297,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             log.error( "Row limit: {}", req.limit );
             Map<String, AbstractAdapterSetting> allSettings = template.settings.stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
 
-            for ( Map.Entry<String, AbstractAdapterSetting> entry : allSettings.entrySet() ) {
+            for ( Entry<String, AbstractAdapterSetting> entry : allSettings.entrySet() ) {
                 log.error( "Key: {} Value: {}", entry.getKey(), entry.getValue() );
                 if ( entry instanceof AbstractAdapterSettingDirectory ) {
                     log.error( "Ist ein directory setting." );
@@ -2287,7 +2353,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         log.info( "Aliases: " + a.columnAliases.toString() );
 
         log.info( "Settings:" );
-        for ( Map.Entry<String, String> entry : a.settings.entrySet() ) {
+        for ( Entry<String, String> entry : a.settings.entrySet() ) {
             log.info( entry.getKey() + " = " + entry.getValue() );
         }
 
@@ -2308,7 +2374,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
         AdapterTemplate adapter = AdapterManager.getAdapterTemplate( a.adapterName, a.type );
         Map<String, AbstractAdapterSetting> allSettings = adapter.settings.stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
-        for ( Map.Entry<String, String> entry : a.settings.entrySet() ) {
+        for ( Entry<String, String> entry : a.settings.entrySet() ) {
             AbstractAdapterSetting set = allSettings.get( entry.getKey() );
             if ( set == null ) {
                 continue;
@@ -2927,7 +2993,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     private String filterTable( final Map<String, String> filter ) {
         StringJoiner joiner = new StringJoiner( " AND ", " WHERE ", "" );
         int counter = 0;
-        for ( Map.Entry<String, String> entry : filter.entrySet() ) {
+        for ( Entry<String, String> entry : filter.entrySet() ) {
             //special treatment for arrays
             if ( entry.getValue().startsWith( "[" ) ) {
                 joiner.add( "\"" + entry.getKey() + "\"" + " = ARRAY" + entry.getValue() );
@@ -2953,7 +3019,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     private String sortTable( final Map<String, SortState> sorting ) {
         StringJoiner joiner = new StringJoiner( ",", " ORDER BY ", "" );
         int counter = 0;
-        for ( Map.Entry<String, SortState> entry : sorting.entrySet() ) {
+        for ( Entry<String, SortState> entry : sorting.entrySet() ) {
             if ( entry.getValue().sorting ) {
                 joiner.add( "\"" + entry.getKey() + "\" " + entry.getValue().direction );
                 counter++;
@@ -3259,7 +3325,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     }
 
-    public record ConfigPayload ( @JsonProperty String uniqueName, @JsonProperty String[] selected ) {
+
+    public record ConfigPayload( @JsonProperty String uniqueName, @JsonProperty String[] selected ) {
 
     }
 

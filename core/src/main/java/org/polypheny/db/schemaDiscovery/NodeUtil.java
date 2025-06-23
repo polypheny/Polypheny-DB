@@ -16,6 +16,99 @@
 
 package org.polypheny.db.schemaDiscovery;
 
-public class NodeUtil {
+import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+@Slf4j
+public final class NodeUtil {
+
+    private NodeUtil() {
+    }
+
+
+    public static Set<String> collectSelecedAttributePaths( AbstractNode root ) {
+        Set<String> selected = new HashSet<>();
+        if ( root == null ) {
+            return selected;
+        }
+        Deque<String> path = new ArrayDeque<>();
+        traverse( root, path, selected );
+        return selected;
+    }
+
+
+    private static void traverse( AbstractNode node, Deque<String> path, Set<String> acc ) {
+        path.addLast( node.getName() );
+        if ( node instanceof AttributeNode attr && attr.isSelected() ) {
+            log.debug( ">> visiting {}", String.join( "/", path ) + "  selected=" + attr.isSelected() );
+            acc.add( String.join( ".", path ) );
+        }
+
+        for ( AbstractNode child : node.getChildren() ) {
+            traverse( child, path, acc );
+        }
+
+        path.removeLast();
+    }
+
+
+    public static void unmarkSelectedAttributes( AbstractNode metadataRoot, List<String> pathsToUnmark ) {
+
+        List<List<String>> attributePaths = new ArrayList<>();
+
+        for ( String path : pathsToUnmark ) {
+            String cleanPath = path.replaceFirst( "^.*/", "" ).trim();
+
+            List<String> segments = Arrays.asList( cleanPath.split( "\\." ) );
+
+            if ( !segments.isEmpty() && segments.get( 0 ).equals( metadataRoot.getName() ) ) {
+                segments = segments.subList( 1, segments.size() );
+            }
+
+            attributePaths.add( segments );
+        }
+
+        for ( List<String> pathSegments : attributePaths ) {
+            AbstractNode current = metadataRoot;
+
+            for ( int i = 0; i < pathSegments.size(); i++ ) {
+                String segment = pathSegments.get( i );
+
+                if ( i == pathSegments.size() - 1 ) {
+                    Optional<AbstractNode> attrNodeOpt = current.getChildren().stream()
+                            .filter( c -> c instanceof AttributeNode && segment.equals( c.getName() ) )
+                            .findFirst();
+
+                    if ( attrNodeOpt.isPresent() ) {
+                        ((AttributeNode) attrNodeOpt.get()).setSelected( false );
+                        log.info( "✔️  Attribut demarkiert: {}", String.join( ".", pathSegments ) );
+                    } else {
+                        log.warn( "✘  Attribut nicht gefunden: {}", String.join( ".", pathSegments ) );
+                    }
+                } else {
+                    Optional<AbstractNode> childOpt = current.getChildren().stream()
+                            .filter( c -> segment.equals( c.getName() ) )
+                            .findFirst();
+
+                    if ( childOpt.isPresent() ) {
+                        current = childOpt.get();
+                    } else {
+                        log.warn( "✘  Segment nicht gefunden: {} in Pfad {}",
+                                segment, String.join( ".", pathSegments ) );
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
 
 }

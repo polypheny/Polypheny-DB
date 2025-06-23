@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import com.google.common.collect.Streams;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +62,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
@@ -87,6 +89,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
@@ -220,6 +223,241 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
+    public void addSelectedMetadata( Transaction tsx, Statement statement, String uniqueName, long namespace, List<String> selectedPaths ) {
+        List<String> selectedAttributeNames = new ArrayList<>();
+        selectedAttributeNames = selectedPaths.stream().map( s -> s.substring( s.lastIndexOf( '.' ) + 1 ) ).collect( Collectors.toList() );
+
+        Optional<DataSource<?>> adapter = AdapterManager.getInstance().getSource( uniqueName );
+        RelAdapterCatalog rel1 = (RelAdapterCatalog) adapter.get().getCatalog();
+
+        Map<String, List<ExportedColumn>> exportedColumns;
+        try {
+            exportedColumns = adapter.get().getExportedColumns();
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( "Somethign went wrong while getting data source", e );
+        }
+
+        for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
+            String tableName = entry.getKey();
+            LogicalTable logical = null;
+
+            boolean isNewTable = !catalog.getSnapshot().rel().getTable( namespace, tableName ).isPresent();
+            if ( isNewTable ) {
+                logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !adapter.get().isDataReadOnly() );
+            } else {
+                logical = catalog.getSnapshot().rel().getTable( namespace, tableName ).orElseThrow();
+            }
+
+            List<LogicalColumn> columns = new ArrayList<>();
+
+            Pair<AllocationPartition, PartitionProperty> partitionProperty = createSinglePartition( logical.namespaceId, logical );
+
+            Optional<AllocationPlacement> existingPlacements = catalog.getSnapshot().alloc().getPlacement( adapter.get().adapterId, logical.id );
+            AllocationPlacement placement = existingPlacements.isEmpty() ? catalog.getAllocRel( namespace ).addPlacement( logical.id, namespace, adapter.get().adapterId ) : existingPlacements.get();
+
+            Optional<AllocationEntity> existingAlloc = catalog.getSnapshot().alloc().getFromLogical( logical.id ).stream().filter( a -> a.adapterId == adapter.get().adapterId ).findFirst();
+            long tempId = logical.id;
+            AllocationEntity allocation = existingAlloc.orElseGet( () -> catalog.getAllocRel( namespace ).addAllocation( adapter.get().getAdapterId(), placement.id, partitionProperty.left.id, tempId ) );
+
+            List<AllocationColumn> aColumns = new ArrayList<>();
+
+            String physicalSchema = entry.getValue().isEmpty() ? Catalog.DEFAULT_NAMESPACE_NAME : entry.getValue().get( 0 ).physicalSchemaName;
+
+            for ( ExportedColumn exportedColumn : entry.getValue() ) {
+                if ( selectedAttributeNames.stream().noneMatch( name -> name.equalsIgnoreCase( exportedColumn.name ) ) ) {
+                    continue;
+                }
+                if ( !catalog.getSnapshot().rel().getColumn( logical.id, exportedColumn.name ).isEmpty() ) {
+                    continue;
+                }
+                LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
+                        exportedColumn.name,
+                        logical.id,
+                        exportedColumn.physicalPosition,
+                        exportedColumn.type,
+                        exportedColumn.collectionsType,
+                        exportedColumn.length,
+                        exportedColumn.scale,
+                        exportedColumn.dimension,
+                        exportedColumn.cardinality,
+                        exportedColumn.nullable,
+                        Collation.getDefaultCollation() );
+
+                AllocationColumn allocationColumn = catalog.getAllocRel( namespace ).addColumn(
+                        placement.id,
+                        logical.id,
+                        column.id,
+                        adapter.get().adapterId,
+                        PlacementType.STATIC,
+                        exportedColumn.physicalPosition );
+
+                columns.add( column );
+                aColumns.add( allocationColumn );
+
+            }
+
+            if ( isNewTable ) {
+                buildNamespace( Catalog.defaultNamespaceId, logical, adapter.get() );
+            }
+
+            if ( isNewTable || !columns.isEmpty() ) {
+                LogicalTable t = logical;
+                List<LogicalColumn> lCols = columns;
+                List<AllocationColumn> aCols = aColumns;
+
+                tsx.attachCommitAction( () ->
+                        adapter.get().createTable(
+                                null,
+                                LogicalTableWrapper.of( t,
+                                        lCols,
+                                        List.of(),
+                                        physicalSchema,
+                                        t.name ),
+                                AllocationTableWrapper.of(
+                                        allocation.unwrapOrThrow( AllocationTable.class ),
+                                        aCols ) ) );
+            }
+
+            catalog.updateSnapshot();
+
+        }
+        catalog.updateSnapshot();
+        tsx.commit();
+        statement.close();
+
+    }
+
+
+    @Override
+    public void dropSourceEntities( List<String> paths, Statement statement ) {
+        Map<LogicalTable, Set<String>> worklist = new HashMap<>();
+
+        for ( String raw : paths ) {
+            String path = raw.replace( "'", "" ).trim();
+            if ( path.isBlank() ) {
+                continue;
+            }
+
+            String[] seg = path.split( "\\." );
+            if ( seg.length < 2 ) {
+                throw new GenericRuntimeException( "Ungültiger Pfad: " + path );
+            }
+
+            String columnName = (seg.length >= 3) ? seg[seg.length - 1] : "*";
+            String tableName = seg[seg.length - 2];
+
+            String schemaPath = String.join( ".",
+                    Arrays.copyOf( seg, seg.length - (columnName.equals( "*" ) ? 1 : 2) ) );
+
+            LogicalNamespace ns = catalog.getSnapshot()
+                    .getNamespace( Catalog.DEFAULT_NAMESPACE_NAME )
+                    .orElseThrow( () -> new GenericRuntimeException(
+                            "Logisches Namespace 'public' nicht gefunden." ) );
+
+            LogicalTable table = catalog.getSnapshot().rel()
+                    .getTable( ns.id, tableName )
+                    .orElseThrow( () -> new GenericRuntimeException(
+                            "Tabelle nicht gefunden: " + schemaPath + "." + tableName ) );
+
+            if ( table.entityType != EntityType.SOURCE ) {
+                throw new GenericRuntimeException( "Tabelle " + table.name +
+                        " ist kein SOURCE-Objekt." );
+            }
+
+            worklist.computeIfAbsent( table, t -> new HashSet<>() )
+                    .add( columnName );
+        }
+
+        for ( Map.Entry<LogicalTable, Set<String>> entry : worklist.entrySet() ) {
+            LogicalTable table = entry.getKey();
+            Set<String> toDrop = entry.getValue();
+
+            if ( toDrop.contains( "*" ) ) {
+                dropWholeSourceTable( table, statement );
+                continue;
+            }
+
+            for ( String col : toDrop ) {
+                dropSourceColumn( table, col, statement );
+                catalog.updateSnapshot();
+            }
+
+            if ( catalog.getSnapshot().rel().getColumns( table.id ).isEmpty() ) {
+                dropWholeSourceTable( table, statement );
+                catalog.updateSnapshot();
+            }
+        }
+
+        statement.getQueryProcessor().resetCaches();
+    }
+
+
+    private void dropWholeSourceTable( LogicalTable table, Statement statement ) {
+
+        List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( table.id );
+
+        if ( allocs.size() != 1 ) {
+            throw new GenericRuntimeException( "SOURCE-Tabelle " + table.name +
+                    " hat mehr als ein Placement." );
+        }
+
+        AllocationTable placement = allocs.get( 0 )
+                .unwrapOrThrow( AllocationTable.class );
+
+        for ( LogicalForeignKey fk : catalog.getSnapshot().rel().getForeignKeys( table.id ) ) {
+            catalog.getLogicalRel( table.namespaceId ).deleteForeignKey( fk.id );
+        }
+
+        for ( AllocationColumn c : placement.getColumns() ) {
+            catalog.getAllocRel( table.namespaceId ).deleteColumn( placement.id, c.columnId );
+        }
+
+        catalog.getAllocRel( table.namespaceId ).deleteAllocation( placement.id );
+
+        catalog.getLogicalRel( table.namespaceId ).deletePrimaryKey( table.id );
+        for ( LogicalColumn c : catalog.getSnapshot().rel().getColumns( table.id ) ) {
+            catalog.getLogicalRel( table.namespaceId ).deleteColumn( c.id );
+        }
+        catalog.getLogicalRel( table.namespaceId ).deleteTable( table.id );
+    }
+
+
+    private void dropSourceColumn( LogicalTable table, String columnName, Statement statement ) {
+
+        LogicalColumn column = catalog.getSnapshot()
+                .rel()
+                .getColumn( table.id, columnName )
+                .orElse( null );
+        if ( column == null ) {
+            log.info( "Spalte {}.{} bereits weg → nichts zu tun.", table.name, columnName );
+            return;
+        }
+
+        // 1) FKs weg
+        for ( LogicalForeignKey fk : catalog.getSnapshot().rel().getForeignKeys( table.id ) ) {
+            if ( fk.getFieldIds().contains( column.id ) ) {
+                catalog.getLogicalRel( table.namespaceId ).deleteForeignKey( fk.id );
+            }
+        }
+
+        for ( AllocationEntity alloc : catalog.getSnapshot().alloc().getFromLogical( table.id ) ) {
+
+            AllocationTable at = alloc.unwrapOrThrow( AllocationTable.class );
+
+            for ( AllocationColumn p : at.getColumns() ) {
+                if ( p.columnId == column.id ) {
+                    catalog.getAllocRel( table.namespaceId ).deleteColumn( alloc.id, column.id );
+                }
+
+                catalog.getLogicalRel( table.namespaceId ).deleteColumn( column.id );
+
+                statement.getQueryProcessor().resetCaches();
+            }
+        }
+    }
+
+
+    @Override
     public void createSource( Transaction transaction, String uniqueName, String adapterName, long namespace, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
         uniqueName = uniqueName.toLowerCase();
         DataSource<?> adapter = (DataSource<?>) AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
@@ -247,7 +485,7 @@ public class DdlManagerImpl extends DdlManager {
 
                 HashCache.getInstance().put( uniqueName, hash );
                 log.info( "Key used during deployment: {} ", uniqueName );
-                pm.onAdapterDeploy( (Adapter & MetadataProvider) mp );
+                // pm.onAdapterDeploy( (Adapter & MetadataProvider) mp );
 
                 mp.markSelectedAttributes( selectedAttributes );
                 log.error( "SelectedAttributes ist gesetzt aus dem DdlManager und der Tree ist das hier: " );
@@ -365,111 +603,6 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    public void addSelectedMetadata( Transaction tsx, String uniqueName, long namespace, List<String> selectedPaths ) {
-        Optional<DataSource<?>> adapter = AdapterManager.getInstance().getSource( uniqueName );
-        extendMetaSettings( adapter, selectedPaths );
-        if ( adapter == null ) {
-            throw new GenericRuntimeException( "No adapter found for unique name " + uniqueName );
-        }
-        Map<String, List<ExportedColumn>> exported = adapter.get().getExportedColumns();
-        Map<String, List<String>> additions =
-                selectedPaths.stream()
-                        .map( DdlManagerImpl::splitPath )
-                        .collect( Collectors.groupingBy(
-                                ParsedPath::table,
-                                Collectors.mapping( ParsedPath::column,
-                                        Collectors.toList() ) ) );
-
-        for ( Map.Entry<String, List<String>> entry : additions.entrySet() ) {
-            String tableName = entry.getKey();
-            String physicalTable = entry.getKey();
-            List<String> newCols = entry.getValue();
-
-            Optional<LogicalTable> logicalOpt = catalog.getSnapshot().rel().getTable( namespace, physicalTable );
-            LogicalTable logical;
-            AllocationPlacement placement;
-            List<LogicalColumn> logicalCols = new ArrayList<>();
-            List<AllocationColumn> allocCols = new ArrayList<>();
-            AllocationEntity allocation;
-
-            if ( logicalOpt.isEmpty() ) {
-                logical = catalog.getLogicalRel( namespace )
-                        .addTable( tableName, EntityType.SOURCE, !adapter.get().isDataReadOnly() );
-                Pair<AllocationPartition, PartitionProperty> part =
-                        createSinglePartition( logical.namespaceId, logical );
-                placement = catalog.getAllocRel( namespace )
-                        .addPlacement( logical.id, namespace, adapter.get().getAdapterId() );
-                allocation = catalog.getAllocRel( namespace )
-                        .addAllocation( adapter.get().getAdapterId(),
-                                placement.id,
-                                part.left.id,
-                                logical.id );
-                catalog.getAllocRel( namespace )
-                        .addAllocation( adapter.get().getAdapterId(), placement.id, part.left.id, logical.id );
-            } else {
-                allocation = null;
-                logical = logicalOpt.get();
-                Optional<AllocationPlacement> placementOpt =
-                        catalog.getSnapshot().alloc()
-                                .getPlacement( adapter.get().getAdapterId(), logical.id );
-                if ( placementOpt.isPresent() ) {
-                    placement = placementOpt.get();
-                } else {
-                    placement = catalog.getAllocRel( namespace )
-                            .addPlacement( logical.id, namespace, adapter.get().getAdapterId() );
-
-                    catalog.getAllocRel( namespace )
-                            .addAllocation( adapter.get().getAdapterId(),
-                                    placement.id,
-                                    createSinglePartition( logical.namespaceId, logical ).left.id,
-                                    logical.id );
-                }
-
-            }
-            List<ExportedColumn> exportedCols = exported.getOrDefault( physicalTable, List.of() );
-
-            String physicalSchema =
-                    exportedCols.isEmpty()
-                            ? Catalog.DEFAULT_NAMESPACE_NAME
-                            : exportedCols.get( 0 ).physicalSchemaName;
-            for ( ExportedColumn ec : exportedCols ) {
-                if ( !newCols.contains( ec.name ) ) {
-                    continue;
-                }
-                boolean exists = catalog.getSnapshot().rel()
-                        .getColumn( logical.id, ec.name ).isPresent();
-                if ( exists ) {
-                    continue;
-                }
-
-                LogicalColumn lc = catalog.getLogicalRel( namespace ).addColumn(
-                        ec.name, logical.id, ec.physicalPosition, ec.type,
-                        ec.collectionsType, ec.length, ec.scale, ec.dimension,
-                        ec.cardinality, ec.nullable, Collation.getDefaultCollation() );
-                AllocationColumn ac = catalog.getAllocRel( namespace ).addColumn(
-                        placement.id, logical.id, lc.id,
-                        adapter.get().getAdapterId(), PlacementType.STATIC, ec.physicalPosition );
-
-                logicalCols.add( lc );
-                allocCols.add( ac );
-            }
-            if ( !logicalCols.isEmpty() ) {
-                buildNamespace( Catalog.defaultNamespaceId, logical, adapter.get() );
-                if ( logicalOpt.isEmpty() ) {
-                    tsx.attachCommitAction( () ->
-                            adapter.get().createTable( null,
-                                    LogicalTableWrapper.of( logical, logicalCols, List.of(),
-                                            physicalSchema, tableName ),
-                                    AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ),
-                                            allocCols ) ) );
-                }
-                catalog.updateSnapshot();
-            }
-        }
-
-    }
-
-
     @Override
     public void dropAdapter( String name, Statement statement ) {
         name = name.replace( "'", "" );
@@ -527,190 +660,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
         AdapterManager.getInstance().removeAdapter( adapter.id );
-        PublisherManager.getInstance().onAdapterUndeploy( adapter.uniqueName );
-    }
-
-
-    @Override
-    public void dropSourceEntities( List<String> paths, Statement statement ) {
-
-        /*
-         * 1) Vorverarbeiten: pro Tabelle sammeln wir, was wirklich gekillt werden soll.
-         *    Enthält das Set einen Stern („*“) bedeutet das: ganze Tabelle weg,
-         *    andernfalls nur die aufgezählten Spalten.
-         */
-        Map<LogicalTable, Set<String>> worklist = new HashMap<>();
-
-        for ( String rawPath : paths ) {
-            String path = rawPath.replace( "'", "" ).trim();
-            if ( path.isBlank() ) {
-                continue;
-            }
-
-            String[] seg = path.replace( '/', '.' )
-                    .replace( '\\', '.' )
-                    .split( "\\." );
-            if ( seg.length < 2 ) {
-                throw new GenericRuntimeException( "Ungültiger Pfad: " + path );
-            }
-
-            String normalized = path.replace( '/', '.' ).replace( "\\", "." );
-
-            String columnName = (seg.length >= 4) ? seg[seg.length - 1] : null;
-            String tableName = seg[seg.length - (columnName == null ? 1 : 2)];
-            String schemaName = seg[seg.length - (columnName == null ? 2 : 3)];
-
-            /* --- Namespace & Tabelle ermitteln --------------------------------- */
-            LogicalNamespace ns = catalog.getSnapshot()
-                    .getNamespace( schemaName )
-                    .orElseThrow( () -> new GenericRuntimeException(
-                            "Schema-Pfad nicht gefunden: " + schemaName ) );
-
-            LogicalTable table = catalog.getSnapshot()
-                    .rel()
-                    .getTable( ns.id, tableName )
-                    .orElseThrow( () -> new GenericRuntimeException(
-                            "Tabelle nicht gefunden: " + tableName + " im Schema " + schemaName ) );
-
-            /* Nur SOURCE-Tabellen dürfen wir hier anfassen                           */
-            if ( table.entityType != EntityType.SOURCE ) {
-                throw new GenericRuntimeException( "Tabelle " + path + " ist kein SOURCE-Objekt." );
-            }
-
-            /* Arbeits-Set befüllen                                                 */
-            worklist.computeIfAbsent( table, t -> new HashSet<>() );
-            worklist.get( table ).add( columnName == null ? "*" : columnName );
-        }
-
-        /*
-         * 2) Jetzt wirklich löschen.
-         *    – Ist „*“ im Set ⇒ komplette Tabelle droppen
-         *    – sonst jede angegebene Spalte droppen
-         */
-        for ( Map.Entry<LogicalTable, Set<String>> entry : worklist.entrySet() ) {
-            LogicalTable table = entry.getKey();
-            Set<String> cols = entry.getValue();
-
-            for ( String col : cols ) {
-                dropSourceColumn( table, col, statement );
-            }
-
-            boolean tableHasColumnsLeft =
-                    catalog.getLogicalRel( table.namespaceId )
-                            .getColumns()                      // Map<Long, LogicalColumn>
-                            .values().stream()                // → Stream<LogicalColumn>
-                            .anyMatch( c -> c.tableId == table.id );
-
-            if ( cols.contains( "*" ) || !tableHasColumnsLeft )
-                dropWholeSourceTable( table, statement );
-        }
-
-
-        /* 4) Prüfen, ob nach dem Löschen noch Spalten übrig sind */
-
-
-
-        /* Einmaliges Cache-Reset reicht. */
-        statement.getQueryProcessor().resetCaches();
-    }
-
-    /* -------------------------------------------------------------------------- */
-    /*                      Hilfsmethoden                                         */
-    /* -------------------------------------------------------------------------- */
-
-
-    private void dropWholeSourceTable( LogicalTable table, Statement statement ) {
-
-        /* ------------------------------------------------------------------
-         * 0) Placement & Partition (READ) – brauchen wir für deleteAllocation
-         * ------------------------------------------------------------------ */
-        List<AllocationPlacement> placements =
-                catalog.getSnapshot().alloc().getPlacementsFromLogical( table.id );
-
-        if ( placements.size() != 1 ) {
-            throw new GenericRuntimeException(
-                    "SOURCE-Tabelle " + table.name + " hat mehr als ein Placement." );
-        }
-        AllocationPlacement placement = placements.get( 0 );
-
-        /* ------------------------------------------------------------------
-         * 1) Spalten & Fremdschlüssel zum Löschen heraussuchen (READ)
-         * ------------------------------------------------------------------ */
-        List<LogicalColumn>        columns =
-                catalog.getSnapshot().rel().getColumns( table.id );
-        List<LogicalForeignKey>    fks     =
-                catalog.getSnapshot().rel().getForeignKeys( table.id );
-
-        /* ------------------------------------------------------------------
-         * 2) Fremdschlüssel löschen (WRITE)
-         * ------------------------------------------------------------------ */
-        for ( LogicalForeignKey fk : fks ) {
-            catalog.getLogicalRel( table.namespaceId )
-                    .deleteForeignKey( fk.id );
-        }
-
-        /* ------------------------------------------------------------------
-         * 3) Column-Placements + Spalten löschen (WRITE)
-         * ------------------------------------------------------------------ */
-        for ( LogicalColumn col : columns ) {
-
-            // alle Placements der Spalte entfernen
-            for ( AllocationPlacement p :
-                    catalog.getSnapshot().alloc().getPlacementsOfColumn( col.id ) ) {
-                catalog.getAllocRel( table.namespaceId )
-                        .deleteColumn( p.id, col.id );
-            }
-
-            // Spalte im logischen Modell entfernen
-            catalog.getLogicalRel( table.namespaceId )
-                    .deleteColumn( col.id );
-        }
-
-        /* ------------------------------------------------------------------
-         * 4) Allocation des gesamten Tables löschen (WRITE)
-         * ------------------------------------------------------------------ */
-        catalog.getAllocRel( table.namespaceId )
-                .deleteAllocation( placement.id );
-
-        /* ------------------------------------------------------------------
-         * 5) Primärschlüssel + Tabelle löschen (WRITE)
-         * ------------------------------------------------------------------ */
-        catalog.getLogicalRel( table.namespaceId )
-                .deletePrimaryKey( table.id );
-
-        catalog.getLogicalRel( table.namespaceId )
-                .deleteTable( table.id );
-    }
-
-
-
-    private void dropSourceColumn( LogicalTable table, String columnName, Statement statement ) {
-
-        LogicalColumn column = catalog.getSnapshot()
-                .rel()
-                .getColumn( table.id, columnName )
-                .orElseThrow( () -> new GenericRuntimeException(
-                        "Spalte " + columnName + " existiert nicht in Tabelle " + table.name ) );
-
-        /* 1) FKs, die diese Spalte benutzen, entfernen */
-        for ( LogicalForeignKey fk : catalog.getSnapshot().rel().getForeignKeys( table.id ) ) {
-            boolean usesColumn = fk.getFieldIds().contains( column.id )
-                    || fk.getReferencedKeyFieldIds()
-                    .contains( column.id );
-
-            if ( usesColumn ) {
-                catalog.getLogicalRel( table.namespaceId )
-                        .deleteForeignKey( fk.id );
-            }
-        }
-
-        /* 2) Alle Placements der Spalte entfernen */
-        for ( AllocationPlacement placement : catalog.getSnapshot().alloc().getPlacementsOfColumn( column.id ) ) {
-            catalog.getAllocRel( table.namespaceId ).deleteColumn( placement.id, column.id );
-        }
-
-        /* 3) Spalte im Logischen Modell löschen */
-        catalog.getLogicalRel( table.namespaceId ).deleteColumn( column.id );
+        // PublisherManager.getInstance().onAdapterUndeploy( adapter.uniqueName );
     }
 
 
@@ -3405,41 +3355,6 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropType() {
         throw new GenericRuntimeException( "Not supported yet" );
-    }
-
-
-    public static ParsedPath splitPath( String fullPath ) {
-        String noType = fullPath.split( ":" )[0];
-        int lastDot = noType.lastIndexOf( '.' );
-        String column = noType.substring( lastDot + 1 );
-        String tableKey = noType.substring( 0, lastDot );
-
-        String[] parts = tableKey.split( "\\." );
-        String table = parts[parts.length - 1];
-        String schema = parts.length >= 2
-                ? parts[parts.length - 2]
-                : Catalog.DEFAULT_NAMESPACE_NAME;
-
-        return new ParsedPath( schema, table, column );
-    }
-
-
-    private void extendMetaSettings( Optional<DataSource<?>> adapter, List<String> newData ) {
-        Map<String, String> settings = adapter.get().getSettings();
-        String json = settings.getOrDefault( "selectedAttributes", "[]" );
-        List<String> current = new Gson().fromJson( json, new TypeToken<List<String>>() {
-        }.getType() );
-        Set<String> merged = new LinkedHashSet<>( current );
-        merged.addAll( newData );
-
-        settings.put( "selectedAttributes", new Gson().toJson( merged ) );
-
-
-    }
-
-
-    record ParsedPath( String schema, String table, String column ) {
-
     }
 
 }
