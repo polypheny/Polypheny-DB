@@ -96,4 +96,10 @@ public abstract class LpgProject extends SingleAlg implements LpgAlg {
         return copy( traitSet, List.of( input ) );
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

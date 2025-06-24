@@ -17,6 +17,7 @@
 package org.polypheny.db.languages.mql;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.jetbrains.annotations.Nullable;
@@ -30,6 +31,9 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
 
 
 public class MqlCreateCollection extends MqlNode implements ExecutableStatement {
@@ -84,6 +88,12 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
                 dataStores.isEmpty() ? null : dataStores,
                 placementType,
                 statement );
+    }
+
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return LockableUtils.getMapOfNamespaceLockableFromContext( context, parsedQueryContext, LockType.EXCLUSIVE );
     }
 
 }

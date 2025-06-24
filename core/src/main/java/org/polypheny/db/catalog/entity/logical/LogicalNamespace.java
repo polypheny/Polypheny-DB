@@ -28,12 +28,13 @@ import lombok.With;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.transaction.locking.LockableObject;
 
 
 @With
 @Value
 @NonFinal // for testing
-public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace> {
+public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace>, LockableObject {
 
     @Serial
     private static final long serialVersionUID = 3090632164988970558L;
@@ -75,8 +76,9 @@ public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace
     }
 
 
-    public record PrimitiveCatalogSchema( String tableSchem, String tableCatalog, String owner, String schemaType ) {
-
+    @Override
+    public ObjectType getLockableObjectType() {
+        return ObjectType.NAMESPACE;
     }
 
 }

@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
@@ -375,6 +376,12 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
         adapterCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( table ) );
         log.error( "Postgres Adapter ID ist: " + this.adapterId );
         return List.of( table );
+    }
+
+
+    @Override
+    public RelationalDataSource asRelationalDataSource() {
+        return this;
     }
 
 }

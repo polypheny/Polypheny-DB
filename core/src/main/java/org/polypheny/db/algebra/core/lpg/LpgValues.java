@@ -163,4 +163,10 @@ public abstract class LpgValues extends AbstractAlgNode implements LpgAlg {
         return args;
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

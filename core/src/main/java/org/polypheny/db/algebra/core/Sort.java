@@ -228,5 +228,11 @@ public abstract class Sort extends SingleAlg {
         return args;
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 

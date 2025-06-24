@@ -302,5 +302,11 @@ public final class MultiJoin extends AbstractAlgNode {
         return false;
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 

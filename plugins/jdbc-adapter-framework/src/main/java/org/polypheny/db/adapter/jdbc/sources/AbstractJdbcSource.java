@@ -33,6 +33,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
@@ -45,6 +46,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
@@ -56,7 +58,7 @@ import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
-public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> implements ExtensionPoint {
+public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource, ExtensionPoint {
 
     @Delegate(excludes = Exclude.class)
     protected final RelationalScanDelegate delegate;
@@ -75,7 +77,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
             final String diverClass,
             final SqlDialect dialect,
             final boolean readOnly ) {
-        super( storeId, uniqueName, settings, mode, readOnly, new RelAdapterCatalog( storeId ) );
+        super( storeId, uniqueName, settings, mode, readOnly, new RelAdapterCatalog( storeId ), Set.of( DataModel.RELATIONAL ) );
         this.connectionFactory = createConnectionFactory( settings, dialect, diverClass );
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager and enable it
@@ -103,7 +105,6 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
         }
         dataSource.setUsername( settings.get( "username" ) );
         dataSource.setPassword( settings.get( "password" ) );
-        dataSource.setDefaultAutoCommit( false );
         dataSource.setDriverClassLoader( PolyPluginManager.getMainClassLoader() );
         switch ( settings.get( "transactionIsolation" ) ) {
             case "SERIALIZABLE":

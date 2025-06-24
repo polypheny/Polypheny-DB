@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
@@ -103,7 +104,6 @@ public class MonetdbSource extends AbstractJdbcSource implements MetadataProvide
         if ( log.isDebugEnabled() ) {
             log.debug( "JDBC Connection URL: {}", connectionUrl );
         }
-        dataSource.setDefaultAutoCommit( false );
         return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
     }
 
@@ -502,6 +502,12 @@ public class MonetdbSource extends AbstractJdbcSource implements MetadataProvide
     @Override
     public AbstractNode getRoot() {
         return this.metadataRoot;
+    }
+
+
+    @Override
+    public RelationalDataSource asRelationalDataSource() {
+        return this;
     }
 
 }
