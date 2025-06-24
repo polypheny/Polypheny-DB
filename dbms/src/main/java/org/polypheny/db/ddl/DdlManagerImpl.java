@@ -311,7 +311,20 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropSourceEntities( List<String> paths, Statement statement ) {
+    public void dropSourceEntities( List<String> paths, Statement statement, String uniqueName ) {
+
+        DataSource<?> adapter = AdapterManager.getInstance().getSource( uniqueName ).orElseThrow();
+        Map<String, String> settings = adapter.getSettings();
+
+        String selectedAttributes = settings.get( "selectedAttributes" );
+        selectedAttributes = selectedAttributes.replace("[", "").replace("]", "");
+        List<String> currentPaths = new ArrayList<>( List.of( selectedAttributes.split( "," ) ) );
+        currentPaths.removeIf( path -> paths.contains( path.trim() ) );
+
+        String newPaths = String.join( ",", currentPaths );
+        settings.put( "selectedAttributes", newPaths );
+        adapter.updateSettings( settings );
+
         Map<LogicalTable, Set<String>> worklist = new HashMap<>();
 
         for ( String raw : paths ) {

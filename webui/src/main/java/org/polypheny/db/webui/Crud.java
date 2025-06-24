@@ -1002,7 +1002,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
             if ( payload.removedPaths != null ) {
                 stmt = transaction.createStatement();
-                DdlManager.getInstance().dropSourceEntities( List.of( payload.removedPaths ), stmt );
+                DdlManager.getInstance().dropSourceEntities( List.of( payload.removedPaths ), stmt, payload.uniqueName );
                 stmt = null;
             }
             transaction.commit();
@@ -1067,7 +1067,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             if ( !toUnselect.isEmpty() ) {
                 try {
                     stmt = tx.createStatement();
-                    DdlManager.getInstance().dropSourceEntities( List.copyOf( toUnselect ), stmt );
+                    DdlManager.getInstance().dropSourceEntities( List.copyOf( toUnselect ), stmt, config.uniqueName );
                     NodeUtil.unmarkSelectedAttributes( ((MetadataProvider) adapter.get()).getRoot(), List.copyOf( toUnselect ) );
                     tx.commit();
                     stmt.close();
