@@ -131,6 +131,26 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
     }
 
 
+    @Override
+    public void releaseConnectionHandler( Xid xid, boolean commit ) throws ConnectionHandlerException {
+        TransactionalConnectionHandler handler = activeInstances.remove( xid );
+        if ( handler == null ) {
+            log.warn( "No active handler for XID {} to release", xid );
+            return;
+        }
+        try {
+            if ( commit ) {
+                handler.commit();
+            } else {
+                handler.rollback();
+            }
+        } finally {
+            handler.xid = null;
+            freeInstances.offer( handler );
+        }
+    }
+
+
     public class TransactionalConnectionHandler extends ConnectionHandler {
 
         private Xid xid;

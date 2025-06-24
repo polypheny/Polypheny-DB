@@ -37,4 +37,6 @@ public interface ConnectionFactory {
 
     int getNumIdle();
 
+    void releaseConnectionHandler( Xid xid, boolean commit ) throws ConnectionHandlerException;
+
 }

@@ -332,9 +332,17 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                     map.put( tableName, list );
                 }
             }
+            connectionFactory.releaseConnectionHandler( xid, true );
         } catch ( SQLException | ConnectionHandlerException e ) {
+            try {
+                connectionFactory.releaseConnectionHandler( xid, false );
+            } catch ( ConnectionHandlerException ex ) {
+                throw new RuntimeException( ex );
+            }
             throw new GenericRuntimeException( "Exception while collecting schema information!" + e );
+
         }
+
         return map;
     }
 

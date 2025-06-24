@@ -134,6 +134,12 @@ public class XaConnectionFactory implements ConnectionFactory {
     }
 
 
+    @Override
+    public void releaseConnectionHandler( Xid xid, boolean commit ) throws ConnectionHandlerException {
+        log.warn( "Not implemented!" );
+    }
+
+
     public class XaConnectionHandler extends ConnectionHandler {
 
         private final XAResource xaResource;
