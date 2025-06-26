@@ -457,21 +457,22 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
         }
 
 
-        public PolyValue[] convertNormalRow(Row row) {
+        public PolyValue[] convertNormalRow( Row row ) {
             final PolyValue[] objects = new PolyValue[fields.length];
-            for (int i = 0; i < fields.length; i++) {
-                Cell cell = row.getCell(fields[i] - 1);
-                objects[i] = convert(fieldTypes[i], cell);
+            for ( int i = 0; i < fields.length; i++ ) {
+                Cell cell = row.getCell( fields[i]);
+                objects[i] = convert( fieldTypes[i], cell );
             }
             return objects;
         }
 
-        public PolyValue[] convertStreamRow(Row row) {
+
+        public PolyValue[] convertStreamRow( Row row ) {
             final PolyValue[] objects = new PolyValue[fields.length + 1];
-            objects[0] = PolyLong.of(System.currentTimeMillis());
-            for (int i = 0; i < fields.length; i++) {
-                Cell cell = row.getCell(fields[i]);
-                objects[i + 1] = convert(fieldTypes[i], cell);
+            objects[0] = PolyLong.of( System.currentTimeMillis() );
+            for ( int i = 0; i < fields.length; i++ ) {
+                Cell cell = row.getCell( fields[i] );
+                objects[i + 1] = convert( fieldTypes[i], cell );
             }
             return objects;
         }

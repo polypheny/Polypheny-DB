@@ -100,7 +100,18 @@ public class RelAdapterCatalog extends AdapterCatalog {
     public PhysicalTable createTable( String namespaceName, String tableName, Map<Long, String> columnNames, LogicalTable logical, Map<Long, LogicalColumn> lColumns, List<Long> pkIds, AllocationTableWrapper wrapper ) {
         AllocationTable allocation = wrapper.table;
         List<AllocationColumn> columns = wrapper.columns;
-        List<PhysicalColumn> pColumns = Streams.mapWithIndex( columns.stream(), ( c, i ) -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, (int) i, lColumns.get( c.columnId ) ) ).toList();
+        List<PhysicalColumn> pColumns = columns.stream().map(ac -> {LogicalColumn lc = lColumns.get(ac.columnId);
+                    int sheetPos0 = lc.position - 1;      // 0-basierte XLSX-Pos
+                    return new PhysicalColumn(
+                            columnNames.get(ac.columnId),
+                            logical.id,
+                            allocation.id,
+                            allocation.adapterId,
+                            sheetPos0,                    // ← **kein** i++
+                            lc);
+                })
+                .toList();
+
         PhysicalTable table = new PhysicalTable( IdBuilder.getInstance().getNewPhysicalId(), allocation.id, allocation.logicalId, tableName, pColumns, logical.namespaceId, namespaceName, pkIds, allocation.adapterId );
         pColumns.forEach( this::addColumn );
         addPhysical( allocation, table );

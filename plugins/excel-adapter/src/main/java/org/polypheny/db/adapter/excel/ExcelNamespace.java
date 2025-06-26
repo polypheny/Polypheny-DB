@@ -20,9 +20,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -66,37 +68,70 @@ public class ExcelNamespace extends Namespace {
     }
 
 
-    public ExcelTable createExcelTable( PhysicalTable table, ExcelSource excelSource, List<Integer> physicalIds ) {
+    public ExcelTable createExcelTable( PhysicalTable table,
+            ExcelSource  excelSource,
+            List<Integer> physicalIds ) {
+
+        /* -------- Basis -------- */
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+
+        // physicalIds SO wie sie ankommen (0-basierte Excel-Positionen)
+        int[] fields = physicalIds.stream()
+                .mapToInt( i -> i - 1 )
+                .toArray();
+
+        /* -------- Column-Lookup (global) -------- */
+        Map<Integer, PhysicalColumn> byPosition = new HashMap<>();
+        for ( PhysicalColumn c : table.columns ) {
+            byPosition.put( c.position, c );          // 0-basierte Sheet-Position
+        }
+
+        /* -------- Metadaten der ausgewählten Spalten aufbauen -------- */
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-        List<ExcelFieldType> fieldTypes = new LinkedList<>();
-        for ( PhysicalColumn column : table.columns ) {
-            AlgDataType sqlType = sqlType( typeFactory, column.type, column.length, column.scale, null );
-            fieldInfo.add( column.id, column.name, column.name, sqlType ).nullable( column.nullable );
+        List<ExcelFieldType> fieldTypes = new ArrayList<>();
+
+        for ( int pos : fields ) {
+            PhysicalColumn column = byPosition.get( pos );
+            if ( column == null ) {
+                throw new GenericRuntimeException( "No column for position " + pos );
+            }
+
+            AlgDataType sqlType = sqlType( typeFactory,
+                    column.type,
+                    column.length,
+                    column.scale,
+                    null );
+
+            fieldInfo.add( column.id, column.name, column.name, sqlType )
+                    .nullable( column.nullable );
+
             fieldTypes.add( ExcelFieldType.getExcelFieldType( column.type ) );
         }
 
-
-        // String excelFileName = excelSource.sheetName;
-        String[] parts = table.name.split("_", 2);
-        String filePart = parts[0];
-        String sheetPart = parts.length > 1 ? parts[1] : "";
-
-        String excelFileName = filePart + ".xlsx";
+        /* -------- Datei- und Sheet-Namen ableiten -------- */
+        String[] parts     = table.name.split( "_", 2 );
+        String   filePart  = parts[0];
+        String   sheetPart = parts.length > 1 ? parts[1] : "";
+        String   excelName = filePart + ".xlsx";
         this.sheet = sheetPart;
-
 
         Source source;
         try {
-            source = Sources.of( new URL( directoryUrl, excelFileName ) );
+            source = Sources.of( new URL( directoryUrl, excelName ) );
         } catch ( MalformedURLException e ) {
             throw new GenericRuntimeException( e );
         }
-        int[] fields = physicalIds.stream().mapToInt( i -> i ).toArray();
-        ExcelTable physical = createTable( table, source, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, excelSource );
+
+        /* -------- Physische Tabelle registrieren -------- */
+        ExcelTable physical = createTable( table,
+                source,
+                AlgDataTypeImpl.proto( fieldInfo.build() ),
+                fieldTypes,
+                fields,
+                excelSource );
+
         tableMap.put( physical.name + "_" + physical.allocationId, physical );
         return physical;
-
     }
 
 

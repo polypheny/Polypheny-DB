@@ -605,7 +605,7 @@ public class DdlManagerImpl extends DdlManager {
                     LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
                             exportedColumn.name(),
                             logical.id,
-                            colPos++,
+                            exportedColumn.physicalPosition(),
                             exportedColumn.type(),
                             exportedColumn.collectionsType(),
                             exportedColumn.length(),
