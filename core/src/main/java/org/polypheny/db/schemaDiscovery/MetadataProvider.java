@@ -24,7 +24,7 @@ public interface MetadataProvider {
 
     AbstractNode fetchMetadataTree();
 
-    List<Map<String, Object>> fetchPreview( Connection conn, String fqName, int limit );
+    Object fetchPreview( Connection conn, String fqName, int limit );
 
     void markSelectedAttributes( List<String> selectedPaths );
 

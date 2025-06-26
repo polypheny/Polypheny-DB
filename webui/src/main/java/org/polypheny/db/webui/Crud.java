@@ -87,9 +87,11 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
-import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
+import org.polypheny.db.adapter.MetadataObserver.PublisherManager;
+import org.polypheny.db.adapter.MetadataObserver.PublisherManager.ChangeStatus;
+import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResult;
@@ -1053,17 +1055,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         toAdd.removeAll( markedPaths );
 
         Transaction tx = transactionManager.startTransaction( Catalog.defaultUserId, false, "setMetaConfiguration" + config.uniqueName );
-        Statement stmt = null;
+        Statement stmt = tx.createStatement();
         try {
             if ( !toAdd.isEmpty() ) {
-                stmt = tx.createStatement();
                 DdlManager.getInstance().addSelectedMetadata( tx, stmt, config.uniqueName, Catalog.defaultNamespaceId, List.copyOf( toAdd ) );
                 ((MetadataProvider) adapter.get()).markSelectedAttributes( List.copyOf( toAdd ) );
             }
 
             if ( !toUnselect.isEmpty() ) {
                 try {
-                    stmt = tx.createStatement();
                     DdlManager.getInstance().dropSourceEntities( List.copyOf( toUnselect ), stmt, config.uniqueName );
                     NodeUtil.unmarkSelectedAttributes( ((MetadataProvider) adapter.get()).getRoot(), List.copyOf( toUnselect ) );
                     tx.commit();
@@ -1085,6 +1085,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         } finally {
             if ( stmt != null ) {
                 stmt.close();
+                transactionManager.removeTransaction( tx.getXid() );
             }
         }
 
@@ -2427,7 +2428,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     private Exception handleLinkFiles( AbstractAdapterSettingString setting ) {
-        Path path = Path.of( setting.getValue() );
+        Path path = Path.of( "C:\\Users\\roman\\Desktop\\data.json" );
         SecurityManager.getInstance().requestPathAccess( "webui", "webui", path );
         if ( !SecurityManager.getInstance().checkPathAccess( path ) ) {
             return new GenericRuntimeException( "Security check for access was not successful; not enough permissions." );

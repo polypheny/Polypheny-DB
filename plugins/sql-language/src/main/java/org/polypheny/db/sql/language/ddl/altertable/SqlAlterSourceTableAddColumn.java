@@ -132,7 +132,7 @@ public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
                 beforeColumnName == null ? null : beforeColumnName.getSimple(),
                 afterColumnName == null ? null : afterColumnName.getSimple(),
                 SqlLiteral.toPoly( defaultValue ),
-                statement );
+                statement, null );
 
     }
 

@@ -65,6 +65,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
@@ -93,6 +94,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
@@ -251,7 +254,7 @@ public class DdlManagerImpl extends DdlManager {
 
         Map<String, List<ExportedColumn>> exportedColumns;
         try {
-            exportedColumns = adapter.get().getExportedColumns();
+            exportedColumns = adapter.get().asRelationalDataSource().getExportedColumns();
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Something went wrong when trying to get exported columns", e );
         }
@@ -261,11 +264,15 @@ public class DdlManagerImpl extends DdlManager {
             Set<String> wishedColumnNames = entry.getValue();
             List<ExportedColumn> exportedColumnList = exportedColumns.getOrDefault( tableName, List.of() );
 
-            LogicalTable logical;
+            String physicalSchema = exportedColumnList.isEmpty()
+                    ? Catalog.DEFAULT_NAMESPACE_NAME
+                    : exportedColumnList.get( 0 ).physicalSchemaName();
+
+            LogicalTable logical = findLogicalTableByPhysical( namespace, adapter.get(), physicalSchema, tableName );
             AllocationPlacement placement;
             AllocationEntity allocation;
 
-            if ( catalog.getSnapshot().rel().getTable( namespace, tableName ).isEmpty() ) {
+            if ( logical == null ) {
                 logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !adapter.get().isDataReadOnly() );
                 Pair<AllocationPartition, PartitionProperty> pp = createSinglePartition( namespace, logical );
                 placement = catalog.getAllocRel( namespace ).addPlacement( logical.id, namespace, adapter.get().getAdapterId() );
@@ -273,30 +280,29 @@ public class DdlManagerImpl extends DdlManager {
                 catalog.updateSnapshot();
 
             } else {
-                logical = catalog.getSnapshot().rel().getTable( namespace, tableName ).orElseThrow();
                 placement = catalog.getSnapshot().alloc().getPlacement( adapter.get().getAdapterId(), logical.id ).orElseThrow();
                 allocation = catalog.getSnapshot().alloc().getFromLogical( logical.id ).stream().filter( a -> a.adapterId == adapter.get().getAdapterId() ).findFirst().orElseThrow();
             }
 
             for ( ExportedColumn exportedColumn : exportedColumnList ) {
-                if ( !wishedColumnNames.contains( exportedColumn.name ) || catalog.getSnapshot().rel().getColumn( logical.id, exportedColumn.name ).isPresent() ) {
+                if ( !wishedColumnNames.contains( exportedColumn.name() ) || catalog.getSnapshot().rel().getColumn( logical.id, exportedColumn.name() ).isPresent() ) {
                     continue;
                 }
-                addColumnToSourceTable( logical, exportedColumn.physicalColumnName, exportedColumn.name, null, null, null, statement );
+                addColumnToSourceTable( logical, exportedColumn.physicalColumnName(), exportedColumn.name(), null, null, null, statement, exportedColumn.physicalTableName() );
             }
 
             List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( logical.id );
             List<AllocationColumn> aCols = catalog.getSnapshot().alloc().getColumns( allocation.id ).stream().toList();
 
             adapter.get().createTable(
-                    /* context   */ null,
-                    /* logical   */ LogicalTableWrapper.of(
+                    null,
+                    LogicalTableWrapper.of(
                             logical,
                             columns,
-                            List.of(),          // Keys / Constraints
-                            "public",
+                            List.of(),
+                            physicalSchema,
                             tableName ),
-                    /* allocation*/ AllocationTableWrapper.of(
+                    AllocationTableWrapper.of(
                             allocation.unwrapOrThrow( AllocationTable.class ),
                             aCols ) );
 
@@ -312,6 +318,26 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    private LogicalTable findLogicalTableByPhysical( long namespace, DataSource<?> adapter, String physicalSchema, String physicalTable ) {
+        RelAdapterCatalog ac = (RelAdapterCatalog) adapter.getCatalog();
+        for ( PhysicalEntity pe : ac.getPhysicals().values() ) {
+            if ( !( pe instanceof PhysicalTable pt ) ) {
+                continue;
+            }
+            if ( physicalSchema.equals( pt.getNamespaceName() ) && physicalTable.equals( pt.getName() ) ) {
+
+                long logicalId = pt.getLogicalId();
+                return catalog.getSnapshot()
+                        .rel()
+                        .getTable( logicalId )
+                        .orElse( null );
+            }
+        }
+
+        return null;
+    }
+
+
     @Override
     public void dropSourceEntities( List<String> paths, Statement statement, String uniqueName ) {
 
@@ -319,7 +345,7 @@ public class DdlManagerImpl extends DdlManager {
         Map<String, String> settings = adapter.getSettings();
 
         String selectedAttributes = settings.get( "selectedAttributes" );
-        selectedAttributes = selectedAttributes.replace("[", "").replace("]", "");
+        selectedAttributes = selectedAttributes.replace( "[", "" ).replace( "]", "" );
         List<String> currentPaths = new ArrayList<>( List.of( selectedAttributes.split( "," ) ) );
         currentPaths.removeIf( path -> paths.contains( path.trim() ) );
 
@@ -385,7 +411,9 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
+        catalog.updateSnapshot();
         statement.getQueryProcessor().resetCaches();
+        statement.getTransaction().commit();
     }
 
 
@@ -416,6 +444,7 @@ public class DdlManagerImpl extends DdlManager {
             catalog.getLogicalRel( table.namespaceId ).deleteColumn( c.id );
         }
         catalog.getLogicalRel( table.namespaceId ).deleteTable( table.id );
+        catalog.updateSnapshot();
     }
 
 
@@ -451,6 +480,7 @@ public class DdlManagerImpl extends DdlManager {
                 statement.getQueryProcessor().resetCaches();
             }
         }
+        catalog.updateSnapshot();
     }
 
 
@@ -541,11 +571,10 @@ public class DdlManagerImpl extends DdlManager {
             // Make sure the table name is uniqueString tableName = entry.getKey();
             String physicalSchema = entry.getValue().isEmpty()
                     ? Catalog.DEFAULT_NAMESPACE_NAME
-                    : entry.getValue().get( 0 ).physicalSchemaName;
+                    : entry.getValue().get( 0 ).physicalSchemaName();
 
             String baseName = entry.getKey();
             String tableName = baseName;
-
             String physicalTable = baseName;
 
             int suffix = 0;
@@ -570,29 +599,33 @@ public class DdlManagerImpl extends DdlManager {
                     .collect( Collectors.toList() );
 
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
-                LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
-                        exportedColumn.name(),
-                        logical.id,
-                        colPos++,
-                        exportedColumn.type(),
-                        exportedColumn.collectionsType(),
-                        exportedColumn.length(),
-                        exportedColumn.scale(),
-                        exportedColumn.dimension(),
-                        exportedColumn.cardinality(),
-                        exportedColumn.nullable(),
-                        Collation.getDefaultCollation() );
+                if ( adapter instanceof MetadataProvider mp && (attributes != null) && selectedAttributeNames.stream().noneMatch( name -> name.equalsIgnoreCase( exportedColumn.name() ) ) ) {
+                    continue;
+                } else {
+                    LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
+                            exportedColumn.name(),
+                            logical.id,
+                            colPos++,
+                            exportedColumn.type(),
+                            exportedColumn.collectionsType(),
+                            exportedColumn.length(),
+                            exportedColumn.scale(),
+                            exportedColumn.dimension(),
+                            exportedColumn.cardinality(),
+                            exportedColumn.nullable(),
+                            Collation.getDefaultCollation() );
 
-                AllocationColumn allocationColumn = catalog.getAllocRel( namespace ).addColumn(
-                        placement.id,
-                        logical.id,
-                        column.id,
-                        adapter.adapterId,
-                        PlacementType.STATIC,
-                        exportedColumn.physicalPosition() ); // Not a valid partitionGroupID --> placeholder
+                    AllocationColumn allocationColumn = catalog.getAllocRel( namespace ).addColumn(
+                            placement.id,
+                            logical.id,
+                            column.id,
+                            adapter.adapterId,
+                            PlacementType.STATIC,
+                            exportedColumn.physicalPosition() );
 
-                columns.add( column );
-                aColumns.add( allocationColumn );
+                    columns.add( column );
+                    aColumns.add( allocationColumn );
+                }
             }
 
             buildRelationalNamespace( namespace, logical, adapter );
@@ -692,7 +725,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addColumnToSourceTable( LogicalTable table, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, PolyValue defaultValue, Statement statement ) {
+    public void addColumnToSourceTable( LogicalTable table, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, PolyValue defaultValue, Statement statement, String tablePhysicalName ) {
 
         if ( !catalog.getSnapshot().rel().getColumn( table.id, columnLogicalName ).isEmpty() ) {
             throw new GenericRuntimeException( "There exist already a column with name %s on table %s", columnLogicalName, table.name );
@@ -719,7 +752,7 @@ public class DdlManagerImpl extends DdlManager {
         long adapterId = allocation.adapterId;
         DataSource<?> dataSource = AdapterManager.getInstance().getSource( adapterId ).orElseThrow();
         //String physicalTableName = catalog.getSnapshot().alloc().getPhysicalTable( catalogTable.id, adapterId ).name;
-        List<ExportedColumn> exportedColumns = dataSource.asRelationalDataSource().getExportedColumns().get( table.name );
+        List<ExportedColumn> exportedColumns = dataSource.asRelationalDataSource().getExportedColumns().get( tablePhysicalName != null ? tablePhysicalName : table.name );
 
         // Check if physicalColumnName is valid
         ExportedColumn exportedColumn = exportedColumns.stream()
@@ -746,7 +779,7 @@ public class DdlManagerImpl extends DdlManager {
         // Add default value
         addDefaultValue( table.namespaceId, defaultValue, addedColumn );
 
-        int physPos = exportedColumn.physicalPosition;
+        int physPos = exportedColumn.physicalPosition();
         // Add column placement
         catalog.getAllocRel( table.namespaceId ).addColumn(
                 allocation.partitionId,
@@ -2458,7 +2491,7 @@ public class DdlManagerImpl extends DdlManager {
             columns.add( catalog.getAllocRel( namespaceId ).addColumn( placementId, logical.id, column.id, adapter.adapterId, PlacementType.AUTOMATIC, i++ ) );
         }
 
-        buildNamespace( namespaceId, logical, adapter );
+        buildRelationalNamespace( namespaceId, logical, adapter );
         List<AllocationTable> tables = new ArrayList<>();
         for ( Long partitionId : partitionIds ) {
             tables.add( addAllocationTable( namespaceId, statement, logical, placementId, partitionId, adapter, true ) );

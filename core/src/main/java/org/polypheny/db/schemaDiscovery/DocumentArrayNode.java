@@ -16,20 +16,22 @@
 
 package org.polypheny.db.schemaDiscovery;
 
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
-public class AttributeNode extends Node implements AbstractNode {
+public class DocumentArrayNode extends Node implements AbstractNode {
 
     @Getter
     @Setter
     @JsonProperty
-    private boolean isSelected;
+    private String jsonPath;
 
-    public AttributeNode( String type, String name ) {
-        super( type, name );
-        this.isSelected = false;
+
+    public DocumentArrayNode( String name, String jsonPath ) {
+        super( "array", name );
+        this.jsonPath = jsonPath;
     }
 
 }

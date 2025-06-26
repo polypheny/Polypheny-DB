@@ -16,14 +16,19 @@
 
 package org.polypheny.db.schemaDiscovery;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map;
 
 public interface AbstractNode {
 
+    @JsonProperty
     String type = "";
+    @JsonProperty
     String name = "";
+    @JsonProperty
     List<AbstractNode> children = null;
+    @JsonProperty
     Map<String, Object> properties = null;
 
     void addChild(AbstractNode node);

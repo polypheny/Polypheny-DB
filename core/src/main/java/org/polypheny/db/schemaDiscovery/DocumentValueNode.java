@@ -20,16 +20,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
-public class AttributeNode extends Node implements AbstractNode {
+public class DocumentValueNode extends Node implements AbstractNode {
 
     @Getter
     @Setter
     @JsonProperty
-    private boolean isSelected;
+    private String jsonPath;
+    @Getter
+    @Setter
+    @JsonProperty
+    private String valueType;
 
-    public AttributeNode( String type, String name ) {
-        super( type, name );
-        this.isSelected = false;
+
+    public DocumentValueNode( String name, String jsonPath, String valueType, Object sample ) {
+        super( "value", name );
+        this.jsonPath = jsonPath;
+        this.valueType = valueType;
+        addProperty( "sample", sample );
     }
 
 }

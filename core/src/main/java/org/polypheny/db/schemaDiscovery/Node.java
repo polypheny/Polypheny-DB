@@ -16,6 +16,7 @@
 
 package org.polypheny.db.schemaDiscovery;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.ArrayList;
@@ -23,37 +24,43 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Setter
+@Getter
 public class Node implements AbstractNode {
 
-    @Setter
-    @Getter
+    @JsonProperty
     protected String type;
-    @Setter
-    @Getter
+    @JsonProperty
     protected String name;
-    @Setter
-    @Getter
+    @JsonProperty
     protected List<AbstractNode> children;
-    @Setter
-    @Getter
+    @JsonProperty
     protected Map<String, Object> properties;
 
-    public Node(String type, String name) {
+
+    public Node( String type, String name ) {
         this.type = type;
         this.name = name;
         this.children = new ArrayList<>();
         this.properties = new HashMap<>();
     }
 
-
-    public void addChild(AbstractNode node) {
-        children.add(node);
+    @JsonProperty
+    public void addChild( AbstractNode node ) {
+        children.add( node );
     }
 
-
-    public void addProperty(String key, Object value) {
-        properties.put(key, value);
+    @JsonProperty
+    public void addProperty( String key, Object value ) {
+        properties.put( key, value );
     }
-
 
 }
+
+
+
+
+
+
+
+

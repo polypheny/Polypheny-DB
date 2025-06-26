@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.NoSuchFileException;
+import java.sql.Connection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,6 +53,16 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.schemaDiscovery.AbstractNode;
+import org.polypheny.db.schemaDiscovery.AttributeNode;
+import org.polypheny.db.schemaDiscovery.DocumentArrayNode;
+import org.polypheny.db.schemaDiscovery.DocumentObjectNode;
+import org.polypheny.db.schemaDiscovery.DocumentValueNode;
+import org.polypheny.db.schemaDiscovery.Node;
+import org.polypheny.db.schemaDiscovery.MetadataProvider;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.polypheny.db.schemaDiscovery.NodeSerializer;
 import org.polypheny.db.transaction.PolyXid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +78,7 @@ import org.slf4j.LoggerFactory;
 @AdapterSettingString(subOf = "method_link", defaultValue = "classpath://articles.json", name = "directoryName", description = "Path to the JSON file(s) to be integrated as this source.", position = 2)
 @AdapterSettingString(subOf = "method_url", defaultValue = "http://localhost/articles.json", name = "url", description = "URL to the JSON file(s) to be integrated as this source.", position = 2)
 
-public class JsonSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Scannable {
+public class JsonSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Scannable, MetadataProvider {
 
     private static final Logger log = LoggerFactory.getLogger( JsonSource.class );
     @Delegate(excludes = Excludes.class)
@@ -74,6 +86,11 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
     private JsonNamespace namespace;
     private final ConnectionMethod connectionMethod;
     private URL jsonFiles;
+    public AbstractNode metadataRoot;
+    private Map<String, List<Map<String, Object>>> preview = new LinkedHashMap<>();
+
+    private static final String TEST_JSON_PATH = "C:\\Users\\roman\\Desktop\\data.json";
+    private final ObjectMapper mapper = new ObjectMapper();
 
 
     public JsonSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
@@ -194,6 +211,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         }
     }
 
+
     @Override
     public void truncate( Context context, long allocId ) {
         log.debug( "NOT SUPPORTED: JSON source does not support method truncate()." );
@@ -205,6 +223,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         log.debug( "NOT SUPPORTED: JSON source does not support method prepare()." );
         return true;
     }
+
 
     @Override
     public void commit( PolyXid xid ) {
@@ -259,6 +278,154 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
     @Override
     public DocumentDataSource asDocumentDataSource() {
         return this;
+    }
+
+
+    @Override
+    public AbstractNode fetchMetadataTree() {
+        AbstractNode root = new Node( "document", new File( TEST_JSON_PATH ).getName() );
+
+        try {
+            JsonNode jsonRoot = mapper.readTree( new File( TEST_JSON_PATH ) );
+            buildTreeRecursively( jsonRoot, root, "$", "root" );
+        } catch ( Exception ex ) {
+            throw new RuntimeException( "Failed to build metadata tree for JSON", ex );
+        }
+
+        preview.put( "jsonPreview", List.of( Map.of( "metadata", "rootNode", "preview", root ) ) );
+
+        return root;
+    }
+
+
+    @Override
+    public List<Map<String, Object>> fetchPreview( Connection ignored, String fqName, int limit ) {
+        return null;
+    }
+
+
+    private void buildTreeRecursively( JsonNode current, AbstractNode parent, String jsonPath, String nodeName ) {
+        if ( current.isObject() ) {
+            boolean isCard = parent != null && "array".equals( parent.getType() );
+
+            AbstractNode obj = new DocumentObjectNode(
+                    nodeName,          // Anzeigename
+                    jsonPath,          // vollständiger Pfad
+                    isCard             // cardCandidate-Flag
+            );
+            parent.addChild( obj );
+
+            current.fields().forEachRemaining( e ->
+                    buildTreeRecursively(
+                            e.getValue(),                 // Kind-JsonNode
+                            obj,                          // neues Parent
+                            jsonPath + "." + e.getKey(),  // Pfad erweitern
+                            e.getKey()                    // Kind-Name
+                    )
+            );
+            return;
+        }
+
+        /* ───────────── JSON-ARRAY ────────────── */
+        if ( current.isArray() ) {
+            AbstractNode arr = new DocumentArrayNode( nodeName, jsonPath );
+            parent.addChild( arr );
+
+            int idx = 0;
+            for ( JsonNode element : current ) {
+
+                /* sprechender Name für Array-Element */
+                String childName = "idx" + idx;
+                if ( element.isObject() ) {
+                    if ( element.has( "id" ) ) {
+                        childName = "id=" + element.get( "id" ).asText();
+                    } else if ( element.has( "title" ) ) {
+                        childName = "\"" + element.get( "title" ).asText() + "\"";
+                    } else if ( element.has( "name" ) ) {
+                        childName = element.get( "name" ).asText();
+                    }
+                }
+
+                buildTreeRecursively(
+                        element,
+                        arr,
+                        jsonPath + "[" + idx + "]",
+                        childName
+                );
+                idx++;
+            }
+            return;
+        }
+
+        /* ───────────── PRIMITIVER WERT ───────── */
+        String valueType = detectType( current );            // string | number | …
+        Object sample = current.isNull() ? null : current.asText();
+
+        AbstractNode val = new DocumentValueNode(
+                nodeName,
+                jsonPath,
+                valueType,
+                sample
+        );
+        parent.addChild( val );
+
+    }
+
+
+    private static String detectType( JsonNode n ) {
+        if ( n.isTextual() ) {
+            return "string";
+        }
+        if ( n.isNumber() ) {
+            return "number";
+        }
+        if ( n.isBoolean() ) {
+            return "boolean";
+        }
+        if ( n.isNull() ) {
+            return "null";
+        }
+        return "unknown";
+    }
+
+
+    @Override
+    public void markSelectedAttributes( List<String> selectedPaths ) {
+
+    }
+
+
+    @Override
+    public void printTree( AbstractNode node, int depth ) {
+        if ( node == null ) {
+            node = this.metadataRoot;
+        }
+        System.out.println("Node type:" + node.toString());
+        System.out.println( "  ".repeat( depth ) + node.getType() + ": " + node.getName() );
+        for ( Map.Entry<String, Object> entry : node.getProperties().entrySet() ) {
+            System.out.println( "  ".repeat( depth + 1 ) + "- " + entry.getKey() + ": " + entry.getValue() );
+        }
+        for ( AbstractNode child : node.getChildren() ) {
+            printTree( child, depth + 1 );
+        }
+    }
+
+
+    @Override
+    public void setRoot( AbstractNode root ) {
+        this.metadataRoot = root;
+    }
+
+
+    @Override
+    public Object getPreview() {
+        return NodeSerializer.serializeNode( this.metadataRoot );
+    }
+
+
+    @Override
+    public AbstractNode getRoot() {
+        return this.metadataRoot;
     }
 
 

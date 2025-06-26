@@ -261,12 +261,12 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                     tableName = names[0];
                 }
                 List<String> primaryKeyColumns = new ArrayList<>();
-                try ( ResultSet row = dbmd.getPrimaryKeys( settings.get( "database" ), schemaPattern, tableName ) ) {
+                try ( ResultSet row = dbmd.getPrimaryKeys( schemaPattern, null, tableName ) ) {
                     while ( row.next() ) {
                         primaryKeyColumns.add( row.getString( "COLUMN_NAME" ) );
                     }
                 }
-                try ( ResultSet row = dbmd.getColumns( settings.get( "database" ), schemaPattern, tableName, "%" ) ) {
+                try ( ResultSet row = dbmd.getColumns( schemaPattern, null, tableName, "%" ) ) {
                     List<ExportedColumn> list = new ArrayList<>();
                     while ( row.next() ) {
                         PolyType type = PolyType.getNameForJdbcType( row.getInt( "DATA_TYPE" ) );

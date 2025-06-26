@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.oracle.source;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
@@ -44,7 +45,9 @@ import org.polypheny.db.type.PolyType;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -83,6 +86,8 @@ import java.util.stream.Collectors;
 public class OracleSource extends AbstractJdbcSource implements MetadataProvider {
 
     public AbstractNode metadataRoot;
+    private Map<String, List<Map<String, Object>>> previewByTable = new LinkedHashMap<>();
+
 
     public OracleSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
         super(
@@ -267,7 +272,7 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
 
     @Override
     public AbstractNode fetchMetadataTree() {
-        Node root = new Node( "relational", settings.get( "database" ) );
+        AbstractNode root = new Node( "relational", settings.get( "database" ) );
 
         TableFilter filter = TableFilter.forAdapter( adapterName );
 
@@ -282,10 +287,9 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
             try ( ResultSet schemas = m.getSchemas() ) {
                 while ( schemas.next() ) {
                     String schemaName = schemas.getString( "TABLE_SCHEM" );
-                    Node schemaNode = new Node( "schema", schemaName );
+                    AbstractNode schemaNode = new Node( "schema", schemaName );
 
-                    try ( ResultSet tables =
-                            m.getTables( null, schemaName, "%", new String[]{ "TABLE" } ) ) {
+                    try ( ResultSet tables = m.getTables( null, schemaName, "%", new String[]{ "TABLE" } ) ) {
 
                         while ( tables.next() ) {
                             String owner = tables.getString( "TABLE_SCHEM" );
@@ -299,8 +303,19 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
                                 continue;
                             }
 
+                            String fqName = "\"" + owner + "\".\"" + tableName + "\"";
+                            List<Map<String, Object>> preview = previewByTable.computeIfAbsent(
+                                    owner + "." + tableName,
+                                    k -> {
+                                        try {
+                                            return fetchPreview( h.getStatement().getConnection(), fqName, 10 );
+                                        } catch ( Exception e ) {
+                                            log.warn( "Preview failed for {}", fqName, e );
+                                            return List.of();
+                                        }
+                                    } );
 
-                            Node tableNode = new Node( "table", tableName );
+                            AbstractNode tableNode = new Node( "table", tableName );
 
                             Set<String> pkCols = new HashSet<>();
                             try ( ResultSet pk = m.getPrimaryKeys( null, schemaName, tableName ) ) {
@@ -357,7 +372,24 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
 
     @Override
     public List<Map<String, Object>> fetchPreview( Connection conn, String fqName, int limit ) {
-        return List.of();
+        List<Map<String, Object>> rows = new ArrayList<>();
+        try ( Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(
+                        "SELECT * FROM " + fqName + " FETCH FIRST " + limit + " ROWS ONLY" ) ) {
+
+            ResultSetMetaData meta = rs.getMetaData();
+            while ( rs.next() ) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                for ( int i = 1; i <= meta.getColumnCount(); i++ ) {
+                    row.put( meta.getColumnName( i ), rs.getObject( i ) );
+                }
+                rows.add( row );
+            }
+        } catch ( SQLException e ) {
+            log.warn( "Preview failed for {}", fqName, e );
+            return List.of();
+        }
+        return rows;
     }
 
 
@@ -435,51 +467,19 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
 
     @Override
     public Object getPreview() {
-        Map<String, List<Map<String, Object>>> preview = new LinkedHashMap<>();
-
-        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
-        try {
-            ConnectionHandler ch = connectionFactory.getOrCreateConnectionHandler( xid );
-            java.sql.Connection conn = ch.getStatement().getConnection();
-
-            String[] tables = {"system.test"};
-            for ( String str : tables ) {
-                String[] parts = str.split( "\\." );
-                String schema = parts.length == 2 ? parts[0] : null;
-                String table = parts.length == 2 ? parts[1] : parts[0];
-
-                schema = schema.toUpperCase();
-                table = table.toUpperCase();
-
-                String fqName = (schema != null ? schema + "." : "") + table;
-                List<Map<String, Object>> rows = new ArrayList<>();
-
-                try ( var stmt = conn.createStatement();
-                        var rs = stmt.executeQuery( "SELECT * FROM " + fqName + " FETCH FIRST " + 10 + " ROWS ONLY" ) ) {
-
-                    var meta = rs.getMetaData();
-                    while ( rs.next() ) {
-                        Map<String, Object> row = new HashMap<>();
-                        for ( int i = 1; i <= meta.getColumnCount(); i++ ) {
-                            row.put( meta.getColumnName( i ), rs.getObject( i ) );
-                        }
-                        rows.add( row );
-                    }
-                }
-
-                preview.put( fqName, rows );
-            }
-        } catch ( Exception e ) {
-            throw new GenericRuntimeException( "Error fetching preview data", e );
-        }
-
-        return preview;
+        return this.previewByTable;
     }
 
 
     @Override
     public AbstractNode getRoot() {
         return this.metadataRoot;
+    }
+
+
+    @Override
+    public RelationalDataSource asRelationalDataSource() {
+        return this;
     }
 
 }

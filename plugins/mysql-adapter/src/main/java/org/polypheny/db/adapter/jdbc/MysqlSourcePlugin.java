@@ -20,7 +20,9 @@ package org.polypheny.db.adapter.jdbc;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -58,7 +60,9 @@ import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import org.polypheny.db.schemaDiscovery.Node;
 import org.polypheny.db.sql.language.dialect.MysqlSqlDialect;
 import org.polypheny.db.transaction.PUID;
+import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.type.PolyType;
 
 @SuppressWarnings("unused")
 public class MysqlSourcePlugin extends PolyPlugin {
@@ -171,7 +175,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
         @Override
         protected boolean requiresSchema() {
-            return false;
+            return true;
         }
 
 
@@ -194,9 +198,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
                 try ( ResultSet schemas = meta.getCatalogs() ) {
                     while ( schemas.next() ) {
 
-                        String schemaName = requiresSchema()
-                                ? schemas.getString( "TABLE_SCHEM" )
-                                : schemas.getString( "TABLE_CAT" );
+                        String schemaName = schemas.getString( "TABLE_CAT" );
 
                         if ( filter.ignoredSchemas.contains( schemaName ) ) {
                             continue;
@@ -217,6 +219,19 @@ public class MysqlSourcePlugin extends PolyPlugin {
                                 if ( tableFilter.shouldIgnore( tableName ) ) {
                                     continue;
                                 }
+
+                                String fqName = "`" + schemaName + "`.`" + tableName + "`";
+
+                                List<Map<String, Object>> preview = previewByTable.computeIfAbsent(
+                                        schemaName + "." + tableName,
+                                        k -> {
+                                            try {
+                                                return fetchPreview(conn, fqName, 10);
+                                            } catch (Exception e) {
+                                                log.warn("Preview failed for {}", fqName, e);
+                                                return List.of();
+                                            }
+                                        });
 
                                 AbstractNode tableNode = new Node( "table", tableName );
 
@@ -279,7 +294,163 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
         @Override
         public List<Map<String, Object>> fetchPreview( Connection conn, String fqName, int limit ) {
-            return List.of();
+            List<Map<String, Object>> rows = new ArrayList<>();
+            try ( Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery( "SELECT * FROM " + fqName + " LIMIT " + limit ) ) {
+
+                ResultSetMetaData meta = rs.getMetaData();
+                while ( rs.next() ) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    for ( int i = 1; i <= meta.getColumnCount(); i++ ) {
+                        row.put( meta.getColumnName( i ), rs.getObject( i ) );
+                    }
+                    rows.add( row );
+                }
+            } catch ( SQLException e ) {
+                log.warn( "Preview failed for {}", fqName, e );
+                return List.of();
+            }
+            return rows;
+        }
+
+
+        @Override
+        public Map<String, List<ExportedColumn>> getExportedColumns() {
+            Map<String, List<ExportedColumn>> map = new HashMap<>();
+            PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
+            try {
+                ConnectionHandler connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
+                java.sql.Statement statement = connectionHandler.getStatement();
+                Connection connection = statement.getConnection();
+                DatabaseMetaData dbmd = connection.getMetaData();
+
+                String[] tables;
+
+                for ( Map.Entry<String, String> entry : settings.entrySet() ) {
+                    log.error( "Entry: {} = {}", entry.getKey(), entry.getValue() );
+                }
+
+                if ( !settings.containsKey( "selectedAttributes" ) || settings.get( "selectedAttributes" ).equals( "" ) || settings.get( "selectedAttributes" ).isEmpty() || settings.get( "selectedAttributes" ) == null ) {
+                    tables = settings.get( "tables" ).split( "," );
+                } else {
+                    String[] names2 = settings.get( "selectedAttributes" ).split( "," );
+                    Set<String> tableNames = new HashSet<>();
+
+                    for ( String s : names2 ) {
+                        String attr = s.split( " : " )[0];
+
+                        String[] parts = attr.split( "\\." );
+                        if ( parts.length >= 3 ) {
+                            String tableName = parts[1] + "." + parts[2];
+
+                            if ( !requiresSchema() ) {
+                                tableNames.add( parts[2] );
+                            } else {
+                                tableNames.add( tableName );
+                            }
+                        }
+                    }
+                    tables = tableNames.toArray( new String[0] );
+                }
+                for ( String str : tables ) {
+                    String[] names = str.split( "\\." );
+                    if ( names.length == 0 || names.length > 2 || (requiresSchema() && names.length == 1) ) {
+                        throw new GenericRuntimeException( "Invalid table name: " + str );
+                    }
+                    String tableName;
+                    String schemaPattern;
+                    if ( requiresSchema() ) {
+                        schemaPattern = names[0];
+                        tableName = names[1];
+                    } else {
+                        schemaPattern = null;
+                        tableName = names[0];
+                    }
+                    List<String> primaryKeyColumns = new ArrayList<>();
+                    try ( ResultSet row = dbmd.getPrimaryKeys( schemaPattern, null, tableName ) ) {
+                        while ( row.next() ) {
+                            primaryKeyColumns.add( row.getString( "COLUMN_NAME" ) );
+                        }
+                    }
+                    try ( ResultSet row = dbmd.getColumns( schemaPattern, null, tableName, "%" ) ) {
+                        List<ExportedColumn> list = new ArrayList<>();
+                        while ( row.next() ) {
+                            PolyType type = PolyType.getNameForJdbcType( row.getInt( "DATA_TYPE" ) );
+                            Integer length = null;
+                            Integer scale = null;
+                            Integer dimension = null;
+                            Integer cardinality = null;
+                            switch ( type ) {
+                                case BOOLEAN:
+                                case TINYINT:
+                                case SMALLINT:
+                                case INTEGER:
+                                case BIGINT:
+                                case FLOAT:
+                                case REAL:
+                                case DOUBLE:
+                                case DATE:
+                                    break;
+                                case DECIMAL:
+                                    length = row.getInt( "COLUMN_SIZE" );
+                                    scale = row.getInt( "DECIMAL_DIGITS" );
+                                    break;
+                                case TIME:
+                                    length = row.getInt( "DECIMAL_DIGITS" );
+                                    if ( length > 3 ) {
+                                        throw new GenericRuntimeException( "Unsupported precision for data type time: " + length );
+                                    }
+                                    break;
+                                case TIMESTAMP:
+                                    length = row.getInt( "DECIMAL_DIGITS" );
+                                    if ( length > 3 ) {
+                                        throw new GenericRuntimeException( "Unsupported precision for data type timestamp: " + length );
+                                    }
+                                    break;
+                                case CHAR:
+                                case VARCHAR:
+                                    type = PolyType.VARCHAR;
+                                    length = row.getInt( "COLUMN_SIZE" );
+                                    break;
+                                case BINARY:
+                                case VARBINARY:
+                                    type = PolyType.VARBINARY;
+                                    length = row.getInt( "COLUMN_SIZE" );
+                                    break;
+                                default:
+                                    throw new GenericRuntimeException( "Unsupported data type: " + type.getName() );
+                            }
+                            list.add( new ExportedColumn(
+                                    row.getString( "COLUMN_NAME" ).toLowerCase(),
+                                    type,
+                                    null,
+                                    length,
+                                    scale,
+                                    dimension,
+                                    cardinality,
+                                    row.getString( "IS_NULLABLE" ).equalsIgnoreCase( "YES" ),
+                                    row.getString( "TABLE_CAT" ),
+                                    row.getString( "TABLE_NAME" ),
+                                    row.getString( "COLUMN_NAME" ),
+                                    row.getInt( "ORDINAL_POSITION" ),
+                                    primaryKeyColumns.contains( row.getString( "COLUMN_NAME" ) )
+                            ) );
+                        }
+                        map.put( tableName, list );
+                    }
+                }
+                connectionFactory.releaseConnectionHandler( xid, true );
+            } catch ( SQLException | ConnectionHandlerException e ) {
+                try {
+                    connectionFactory.releaseConnectionHandler( xid, false );
+                } catch ( ConnectionHandlerException ex ) {
+                    throw new RuntimeException( ex );
+                }
+                throw new GenericRuntimeException( "Exception while collecting schema information!" + e );
+
+            }
+
+            return map;
         }
 
 
@@ -356,42 +527,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
         @Override
         public Object getPreview() {
-            Map<String, List<Map<String, Object>>> preview = new LinkedHashMap<>();
-
-            PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
-            try {
-                ConnectionHandler ch = connectionFactory.getOrCreateConnectionHandler( xid );
-                java.sql.Connection conn = ch.getStatement().getConnection();
-
-                String[] tables = {"testtable"};
-                for ( String str : tables ) {
-                    String[] parts = str.split( "\\." );
-                    String schema = parts.length == 2 ? parts[0] : null;
-                    String table = parts.length == 2 ? parts[1] : parts[0];
-
-                    String fqName = (schema != null ? schema + "." : "") + table;
-                    List<Map<String, Object>> rows = new ArrayList<>();
-
-                    try ( var stmt = conn.createStatement();
-                            var rs = stmt.executeQuery( "SELECT * FROM TESTTABLE " + " LIMIT " + 10 ) ) {
-
-                        var meta = rs.getMetaData();
-                        while ( rs.next() ) {
-                            Map<String, Object> row = new HashMap<>();
-                            for ( int i = 1; i <= meta.getColumnCount(); i++ ) {
-                                row.put( meta.getColumnName( i ), rs.getObject( i ) );
-                            }
-                            rows.add( row );
-                        }
-                    }
-
-                    preview.put( fqName, rows );
-                }
-            } catch ( Exception e ) {
-                throw new GenericRuntimeException( "Error fetching preview data", e );
-            }
-
-            return preview;
+            return this.previewByTable;
         }
 
 

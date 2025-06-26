@@ -31,6 +31,17 @@ public class NodeSerializer {
 
         if ( node instanceof AttributeNode attr )
             json.put( "isSelected", attr.isSelected() );
+        if (node instanceof DocumentObjectNode obj) {
+            json.put("jsonPath",      obj.getJsonPath());
+            json.put("cardCandidate", obj.isCardCandidate());
+        }
+        else if (node instanceof DocumentArrayNode arr) {
+            json.put("jsonPath", arr.getJsonPath());
+        }
+        else if (node instanceof DocumentValueNode val) {
+            json.put("jsonPath",  val.getJsonPath());
+            json.put("valueType", val.getValueType());
+        }
 
         ObjectNode props = objectMapper.createObjectNode();
         node.getProperties().forEach((key, value) -> {
