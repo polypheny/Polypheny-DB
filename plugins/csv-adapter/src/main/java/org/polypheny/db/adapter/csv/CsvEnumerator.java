@@ -228,16 +228,16 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
                     reader.close();
                     return false;
                 }
-                if ( filterValues != null ) {
-                    for ( int i = 0; i < strings.length; i++ ) {
+                if (filterValues != null) {
+                    int limit = Math.min(strings.length, filterValues.length);
+                    for (int i = 0; i < limit; i++) {
                         String filterValue = filterValues[i];
-                        if ( filterValue != null ) {
-                            if ( !filterValue.equals( strings[i] ) ) {
-                                continue outer;
-                            }
+                        if (filterValue != null && !filterValue.equals(strings[i])) {
+                            continue outer;
                         }
                     }
                 }
+
                 current = rowConverter.convertRow( strings );
                 return true;
             }
