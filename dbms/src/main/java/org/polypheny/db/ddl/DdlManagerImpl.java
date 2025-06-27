@@ -903,6 +903,7 @@ public class DdlManagerImpl extends DdlManager {
         LogicalRelSnapshot snapshot = catalog.getSnapshot().rel();
 
         // Check if column is part of a key
+        List<LogicalKey> keys = snapshot.getTableKeys( table.id );
         for ( LogicalKey key : snapshot.getTableKeys( table.id ) ) {
             if ( key.fieldIds.contains( column.id ) ) {
                 if ( snapshot.isPrimaryKey( key.id ) ) {
@@ -912,6 +913,15 @@ public class DdlManagerImpl extends DdlManager {
                 } else if ( snapshot.isForeignKey( key.id ) ) {
                     throw new GenericRuntimeException( "Cannot drop column '" + column.name + "' because it is part of the foreign key with the name: '" + snapshot.getForeignKeys( key ).get( 0 ).name + "'." );
                 } else if ( snapshot.isConstraint( key.id ) ) {
+                    List<LogicalConstraint> constraints = snapshot.getConstraints(key).stream()
+                            .filter(k -> k.keyId == key.id)
+                            .toList();
+                    if (!constraints.isEmpty() && constraints.stream().allMatch(k -> k.type == ConstraintType.UNIQUE)) {
+                        for (LogicalConstraint c : constraints) {
+                            dropConstraint(statement.getTransaction(), table, c.name);
+                        }
+                        continue;
+                    }
                     throw new GenericRuntimeException( "Cannot drop column '" + column.name + "' because it is part of the constraint with the name: '" + snapshot.getConstraints( key ).get( 0 ).name + "'." );
                 }
                 throw new GenericRuntimeException( "Ok, strange... Something is going wrong here!" );
