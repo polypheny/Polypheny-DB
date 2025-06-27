@@ -425,6 +425,11 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         return constraints.containsKey( keyId );
     }
 
+    @Override
+    public Optional<LogicalConstraint> getConstraint( long keyId ) {
+        return Optional.ofNullable(constraints.get( keyId ));
+    }
+
 
     @Override
     public @NotNull List<LogicalForeignKey> getForeignKeys( long tableId ) {

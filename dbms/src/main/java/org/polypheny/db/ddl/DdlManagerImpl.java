@@ -50,6 +50,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -912,6 +913,11 @@ public class DdlManagerImpl extends DdlManager {
                 } else if ( snapshot.isForeignKey( key.id ) ) {
                     throw new GenericRuntimeException( "Cannot drop column '" + column.name + "' because it is part of the foreign key with the name: '" + snapshot.getForeignKeys( key ).get( 0 ).name + "'." );
                 } else if ( snapshot.isConstraint( key.id ) ) {
+                    LogicalConstraint constraint = snapshot.getConstraint( key.id ).orElseThrow();
+                    if (constraint.type == ConstraintType.UNIQUE) {
+                        dropConstraint( statement.getTransaction(), table, constraint.name);
+                        continue;
+                    }
                     throw new GenericRuntimeException( "Cannot drop column '" + column.name + "' because it is part of the constraint with the name: '" + snapshot.getConstraints( key ).get( 0 ).name + "'." );
                 }
                 throw new GenericRuntimeException( "Ok, strange... Something is going wrong here!" );

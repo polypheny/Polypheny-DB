@@ -178,6 +178,8 @@ public interface LogicalRelSnapshot {
      */
     boolean isConstraint( long keyId );
 
+    Optional<LogicalConstraint> getConstraint( long keyId );
+
     /**
      * Returns all (imported) foreign keys of a specified table
      *
