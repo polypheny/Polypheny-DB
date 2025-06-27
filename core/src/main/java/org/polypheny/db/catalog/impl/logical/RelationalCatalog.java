@@ -520,7 +520,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         long id = idBuilder.getNewConstraintId();
         LogicalConstraint constraint = new LogicalConstraint( id, keyId, type, constraintName, Objects.requireNonNull( keys.get( keyId ) ) );
         synchronized ( this ) {
-            constraints.put( keyId, constraint );
+            constraints.put( id, constraint );
             change( CatalogEvent.CONSTRAINT_CREATED, null, id );
         }
         statement.getTransaction().addNewConstraint( tableId, constraint );
