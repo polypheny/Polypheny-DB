@@ -234,8 +234,6 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
 
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
-        String currentSheetName;
-
         if ( connectionMethod == ConnectionMethod.UPLOAD && exportedColumnCache != null ) {
             // If we upload, file will not be changed, and we can cache the columns information, if "link" is used this is not advised
             return exportedColumnCache;
@@ -278,109 +276,73 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
                         .replaceAll( "[^a-z0-9_]+", "" );
             }
 
-            List<ExportedColumn> list = new ArrayList<>();
-            int position = 1;
             try {
                 Source source = Sources.of( new URL( excelDir, fileName ) );
-                File file = new File( source.path() );   // creating a new file instance
-                FileInputStream fs = new FileInputStream( file );
+                Workbook workbook = WorkbookFactory.create( source.file() );
 
-                Workbook workbook = WorkbookFactory.create( fs );
-                Sheet sheet;
+                for ( int s = 0; s < workbook.getNumberOfSheets(); s++ ) {
 
-                if ( this.sheetName.equals( "" ) ) {
-                    sheet = workbook.getSheetAt( 0 );
-                    currentSheetName = workbook.getSheetName( 0 );
+                    Sheet sheet = workbook.getSheetAt( s );
+                    String currentSheetName = workbook.getSheetName( s );
 
-                } else {
-                    sheet = workbook.getSheet( this.sheetName );
-                    currentSheetName = this.sheetName;
-                }
+                    List<ExportedColumn> list = new ArrayList<>();
+                    int position = 1;
 
-                // Read first row to extract column attribute name and datatype
-                for ( Row row : sheet ) {
-                    // For each row, iterate through all the columns
-                    Iterator<Cell> cellIterator = row.cellIterator();
-
-                    while ( cellIterator.hasNext() ) {
-                        Cell cell = cellIterator.next();
-                        try {
-                            String[] colSplit = cell.getStringCellValue().split( ":" );
-                            String name = colSplit[0]
-                                    .toLowerCase()
-                                    .trim()
-                                    .replaceAll( "[^a-z0-9_]+", "" );
-                            String typeStr = "string";
-                            if ( colSplit.length > 1 ) {
-                                typeStr = colSplit[1].toLowerCase().trim();
-                            }
-                            PolyType collectionsType = null;
-                            PolyType type;
-                            Integer length = null;
-                            Integer scale = null;
-                            Integer dimension = null;
-                            Integer cardinality = null;
-                            switch ( typeStr.toLowerCase() ) {
-                                case "int":
-                                    type = PolyType.INTEGER;
-                                    break;
-                                case "string":
-                                    type = PolyType.VARCHAR;
-                                    length = maxStringLength;
-                                    break;
-                                case "boolean":
-                                    type = PolyType.BOOLEAN;
-                                    break;
-                                case "long":
-                                    type = PolyType.BIGINT;
-                                    break;
-                                case "float":
-                                    type = PolyType.REAL;
-                                    break;
-                                case "double":
-                                    type = PolyType.DOUBLE;
-                                    break;
-                                case "date":
-                                    type = PolyType.DATE;
-                                    break;
-                                case "time":
-                                    type = PolyType.TIME;
-                                    length = 0;
-                                    break;
-                                case "timestamp":
-                                    type = PolyType.TIMESTAMP;
-                                    length = 0;
-                                    break;
-                                default:
-                                    throw new GenericRuntimeException( "Unknown type: " + typeStr.toLowerCase() );
-                            }
-
-                            list.add( new ExportedColumn(
-                                    name,
-                                    type,
-                                    collectionsType,
-                                    length,
-                                    scale,
-                                    dimension,
-                                    cardinality,
-                                    false,
-                                    fileName,
-                                    physicalTableName,
-                                    name,
-                                    position,
-                                    position == 1 ) ); // TODO
-
-                            position++;
-                        } catch ( Exception e ) {
-                            throw new GenericRuntimeException( e );
-                        }
+                    Row header = sheet.getRow( 0 );
+                    if ( header == null ) {
+                        continue;
                     }
-                    break;
+
+                    for ( Cell cell : header ) {
+                        String[] colSplit = cell.getStringCellValue().split( ":" );
+                        String name = colSplit[0].toLowerCase()
+                                .trim()
+                                .replaceAll( "[^a-z0-9_]+", "" );
+                        String typeStr = (colSplit.length > 1 ? colSplit[1] : "string")
+                                .toLowerCase().trim();
+
+                        PolyType type;
+                        Integer length = null, scale = null;
+                        switch ( typeStr ) {
+                            case "int" -> type = PolyType.INTEGER;
+                            case "boolean" -> type = PolyType.BOOLEAN;
+                            case "long" -> type = PolyType.BIGINT;
+                            case "float" -> type = PolyType.REAL;
+                            case "double" -> type = PolyType.DOUBLE;
+                            case "date" -> type = PolyType.DATE;
+                            case "time" -> {
+                                type = PolyType.TIME;
+                                length = 0;
+                            }
+                            case "timestamp" -> {
+                                type = PolyType.TIMESTAMP;
+                                length = 0;
+                            }
+                            default -> {
+                                type = PolyType.VARCHAR;
+                                length = maxStringLength;
+                            }
+                        }
+
+                        list.add( new ExportedColumn(
+                                name, type,
+                                null, length, scale,
+                                null, null,
+                                false,
+                                fileName,
+                                physicalTableName,
+                                name,
+                                position,
+                                position == 1 ) );
+                        position++;
+                    }
+
+                    exportedColumnCache.put( physicalTableName + "_" + currentSheetName, list );
                 }
             } catch ( IOException e ) {
                 throw new GenericRuntimeException( e );
             }
-            exportedColumnCache.put( physicalTableName + "_" + currentSheetName, list );
+
         }
         this.exportedColumnCache = exportedColumnCache;
         return exportedColumnCache;
@@ -435,13 +397,13 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
         Source filePath;
         // String filePath = "C:/Users/roman/Desktop/Mappe1.xlsx";
         String firstFile = resolveFileNames().stream().findFirst()
-                .orElseThrow(() -> new GenericRuntimeException("No file found"));
+                .orElseThrow( () -> new GenericRuntimeException( "No file found" ) );
         try {
-            filePath = Sources.of(new URL(excelDir, firstFile));
+            filePath = Sources.of( new URL( excelDir, firstFile ) );
         } catch ( MalformedURLException e ) {
             throw new RuntimeException( e );
         }
-        String mappeName = "Workbook";
+        String mappeName = firstFile.split( "\\." )[0];
 
         AbstractNode root = new Node( "excel", mappeName );
         try ( FileInputStream fis = new FileInputStream( filePath.path() ); Workbook wb = WorkbookFactory.create( fis ) ) {

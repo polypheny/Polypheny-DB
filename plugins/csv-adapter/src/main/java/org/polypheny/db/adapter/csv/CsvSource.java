@@ -389,7 +389,7 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
     public AbstractNode fetchMetadataTree() {
         File csvFile = new File( "C:/Users/roman/Desktop/Dateieins.csv" );
         String tableName = csvFile.getName();
-        AbstractNode rootNode = new Node( "csv", tableName );
+        AbstractNode rootNode = new Node( "csv", tableName.split( "\\." )[0] );
 
         try ( BufferedReader reader = new BufferedReader( new FileReader( csvFile ) ) ) {
             String headerLine = reader.readLine();

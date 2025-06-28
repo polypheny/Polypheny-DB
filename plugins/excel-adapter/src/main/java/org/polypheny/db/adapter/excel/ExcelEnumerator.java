@@ -412,6 +412,9 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
                         }
                     case STRING:
                     default:
+                        if ( cell.getCellType() == CellType.NUMERIC ) {
+                            return PolyString.of( cell.toString() );
+                        }
                         return PolyString.of( cell.getStringCellValue() );
                 }
             } catch ( Exception e ) {
