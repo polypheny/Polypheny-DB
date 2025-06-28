@@ -273,7 +273,9 @@ public class DdlManagerImpl extends DdlManager {
             AllocationEntity allocation;
 
             if ( logical == null ) {
-                logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !adapter.get().isDataReadOnly() );
+                String logicalTable = getUniqueEntityName( namespace, entry.getKey(), ( ns, en ) -> catalog.getSnapshot().rel().getTable( ns, en ) );
+
+                logical = catalog.getLogicalRel( namespace ).addTable( logicalTable, EntityType.SOURCE, !adapter.get().isDataReadOnly() );
                 Pair<AllocationPartition, PartitionProperty> pp = createSinglePartition( namespace, logical );
                 placement = catalog.getAllocRel( namespace ).addPlacement( logical.id, namespace, adapter.get().getAdapterId() );
                 allocation = catalog.getAllocRel( namespace ).addAllocation( adapter.get().getAdapterId(), placement.id, pp.left.id, logical.id );
@@ -321,7 +323,7 @@ public class DdlManagerImpl extends DdlManager {
     private LogicalTable findLogicalTableByPhysical( long namespace, DataSource<?> adapter, String physicalSchema, String physicalTable ) {
         RelAdapterCatalog ac = (RelAdapterCatalog) adapter.getCatalog();
         for ( PhysicalEntity pe : ac.getPhysicals().values() ) {
-            if ( !( pe instanceof PhysicalTable pt ) ) {
+            if ( !(pe instanceof PhysicalTable pt) ) {
                 continue;
             }
             if ( physicalSchema.equals( pt.getNamespaceName() ) && physicalTable.equals( pt.getName() ) ) {
@@ -368,6 +370,7 @@ public class DdlManagerImpl extends DdlManager {
 
             String columnName = (seg.length >= 3) ? seg[seg.length - 1] : "*";
             String tableName = seg[seg.length - 2];
+            String schemaName = seg[seg.length - 3];
 
             String schemaPath = String.join( ".",
                     Arrays.copyOf( seg, seg.length - (columnName.equals( "*" ) ? 1 : 2) ) );
@@ -377,10 +380,7 @@ public class DdlManagerImpl extends DdlManager {
                     .orElseThrow( () -> new GenericRuntimeException(
                             "Logisches Namespace 'public' nicht gefunden." ) );
 
-            LogicalTable table = catalog.getSnapshot().rel()
-                    .getTable( ns.id, tableName )
-                    .orElseThrow( () -> new GenericRuntimeException(
-                            "Tabelle nicht gefunden: " + schemaPath + "." + tableName ) );
+            LogicalTable table = findLogicalTableByPhysical( Catalog.defaultNamespaceId, adapter, schemaName, tableName );
 
             if ( table.entityType != EntityType.SOURCE ) {
                 throw new GenericRuntimeException( "Tabelle " + table.name +
@@ -574,15 +574,10 @@ public class DdlManagerImpl extends DdlManager {
                     : entry.getValue().get( 0 ).physicalSchemaName();
 
             String baseName = entry.getKey();
-            String tableName = baseName;
             String physicalTable = baseName;
 
-            int suffix = 0;
-            while ( catalog.getSnapshot().rel().getTable( namespace, tableName ).isPresent() ) {
-                tableName = baseName + suffix++;
-            }
             // Make sure the table name is unique
-            tableName = getUniqueEntityName( namespace, entry.getKey(), ( ns, en ) -> catalog.getSnapshot().rel().getTable( ns, en ) );
+            String tableName = getUniqueEntityName( namespace, entry.getKey(), ( ns, en ) -> catalog.getSnapshot().rel().getTable( ns, en ) );
 
             LogicalTable logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
             List<LogicalColumn> columns = new ArrayList<>();
