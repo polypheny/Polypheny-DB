@@ -33,6 +33,7 @@ import org.polypheny.db.schemaDiscovery.NodeUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 public class AbstractListener<P extends Adapter & MetadataProvider> implements MetadataListener<P> {
@@ -81,9 +82,13 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
     public void applyChange( String[] metadata ) {
         log.info( "Changes are going to be applied" );
 
+        Set<String> prevSelected = NodeUtil.collectSelecedAttributePaths( this.adapter.getRoot() );
+
         this.adapter.setRoot( this.currentNode );
-        if ( metadata != null && metadata.length > 0 )
-            this.adapter.markSelectedAttributes( Arrays.stream( metadata ).toList() );
+        if ( metadata != null && metadata.length > 0 ) {
+            prevSelected.addAll( Arrays.asList( metadata ) );
+        }
+        this.adapter.markSelectedAttributes( List.copyOf( prevSelected ) );
         HashCache.getInstance().put( this.adapter.getUniqueName(), this.hash );
 
         this.currentNode = null;
