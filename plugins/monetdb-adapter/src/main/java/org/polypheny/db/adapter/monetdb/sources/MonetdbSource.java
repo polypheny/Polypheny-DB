@@ -60,6 +60,7 @@ import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import org.polypheny.db.schemaDiscovery.Node;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.transaction.PUID;
+import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 
@@ -165,30 +166,34 @@ public class MonetdbSource extends AbstractJdbcSource implements MetadataProvide
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         Map<String, List<ExportedColumn>> map = new HashMap<>();
-        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
+
+        java.sql.Statement statement = null;
+        Connection connection = null;
+
+        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
         try {
             ConnectionHandler connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
-            java.sql.Statement statement = connectionHandler.getStatement();
-            Connection connection = statement.getConnection();
+            statement = connectionHandler.getStatement();
+            connection = statement.getConnection();
             DatabaseMetaData dbmd = connection.getMetaData();
 
             String[] tables;
-            if (settings.get("selectedAttributes").equals("")){
+            if ( settings.get( "selectedAttributes" ).equals( "" ) ) {
                 tables = settings.get( "tables" ).split( "," );
             } else {
-                String[] names2 = settings.get("selectedAttributes").split(",");
+                String[] names2 = settings.get( "selectedAttributes" ).split( "," );
                 Set<String> tableNames = new HashSet<>();
 
-                for (String s : names2){
-                    String attr = s.split(" : ")[0];
+                for ( String s : names2 ) {
+                    String attr = s.split( " : " )[0];
 
-                    String[] parts = attr.split("\\.");
-                    if (parts.length >= 3) {
+                    String[] parts = attr.split( "\\." );
+                    if ( parts.length >= 3 ) {
                         String tableName = parts[1] + "." + parts[2];
-                        tableNames.add(tableName);
+                        tableNames.add( tableName );
                     }
                 }
-                tables = tableNames.toArray(new String[0]);
+                tables = tableNames.toArray( new String[0] );
             }
             for ( String str : tables ) {
                 String[] names = str.split( "\\." );
@@ -291,12 +296,15 @@ public class MonetdbSource extends AbstractJdbcSource implements MetadataProvide
 
         SchemaFilter filter = SchemaFilter.forAdapter( adapterName );
 
-        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
+        java.sql.Statement stmt = null;
+        Connection conn = null;
+
+        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
 
         try {
             ConnectionHandler handler = connectionFactory.getOrCreateConnectionHandler( xid );
-            java.sql.Statement stmt = handler.getStatement();
-            Connection conn = stmt.getConnection();
+            stmt = handler.getStatement();
+            conn = stmt.getConnection();
             DatabaseMetaData meta = conn.getMetaData();
 
             try ( ResultSet schemas = requiresSchema()
@@ -325,11 +333,12 @@ public class MonetdbSource extends AbstractJdbcSource implements MetadataProvide
                             String tableName = tables.getString( "TABLE_NAME" );
 
                             String fqName = (requiresSchema() ? "\"" + schemaName + "\"." : "") + "\"" + tableName + "\"";
+                            Connection finalConn = conn;
                             previewByTable.computeIfAbsent(
                                     schemaName + "." + tableName,
                                     k -> {
                                         try {
-                                            return fetchPreview( conn, fqName, 10 );
+                                            return fetchPreview( finalConn, fqName, 10 );
                                         } catch ( Exception e ) {
                                             log.warn( "Preview failed for {}", fqName, e );
                                             return List.of();
@@ -388,13 +397,16 @@ public class MonetdbSource extends AbstractJdbcSource implements MetadataProvide
 
         } catch ( SQLException | ConnectionHandlerException ex ) {
             throw new GenericRuntimeException( "Error while fetching metadata tree", ex );
+        } finally {
+            try {
+                stmt.close();
+                conn.close();
+            } catch ( SQLException e ) {
+                throw new RuntimeException( e );
+            }
         }
-
-        this.metadataRoot = root;
-        log.error( "Neue Preview ist geladen als: " + previewByTable.toString() );
-        return this.metadataRoot;
+        return root;
     }
-
 
 
     @Override

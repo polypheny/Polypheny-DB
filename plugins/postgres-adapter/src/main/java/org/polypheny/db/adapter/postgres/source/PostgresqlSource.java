@@ -106,7 +106,6 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
         java.sql.Statement stmt = null;
         Connection conn = null;
 
-
         try {
             ConnectionHandler handler = connectionFactory.getOrCreateConnectionHandler( xid );
             stmt = handler.getStatement();
@@ -211,7 +210,6 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
                 throw new RuntimeException( e );
             }
         }
-        log.error( "Neue Preview ist geladen als: " + previewByTable.toString() );
         return root;
     }
 

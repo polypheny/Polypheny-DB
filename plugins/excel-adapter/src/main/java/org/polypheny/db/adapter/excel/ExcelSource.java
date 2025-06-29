@@ -411,7 +411,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
             for ( Sheet sheet : wb ) {
 
                 String sheetName = sheet.getSheetName();
-                AbstractNode sheetNode = new Node( "sheet", sheetName );
+                AbstractNode sheetNode = new Node( "sheet", mappeName.toLowerCase() + "_" + sheetName );
 
                 Row header = sheet.getRow( sheet.getFirstRowNum() );
                 if ( header == null ) {
@@ -439,8 +439,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
             throw new RuntimeException( "Failed to read Excel metadata: " + filePath, e );
         }
 
-        this.metadataRoot = root;
-        return metadataRoot;
+        return root;
     }
 
 

@@ -49,6 +49,8 @@ import java.nio.file.Path;
 import java.text.DateFormat;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -993,16 +995,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         Optional<DataSource<?>> adapter = AdapterManager.getInstance().getSource( payload.uniqueName );
         Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "metadata-ack-" + payload.uniqueName );
-        Statement stmt = null;
+        Statement stmt = transaction.createStatement();
         try {
-            if ( payload.addedPaths != null ) {
-                DdlManager.getInstance().addSelectedMetadata( transaction, null, payload.uniqueName, Catalog.defaultNamespaceId, List.of( payload.addedPaths ) );
+            if ( payload.addedPaths != null || payload.addedPaths.length > 0 ) {
+                DdlManager.getInstance().addSelectedMetadata( transaction, stmt, payload.uniqueName, Catalog.defaultNamespaceId, List.of( payload.addedPaths ) );
             }
 
-            if ( payload.removedPaths != null ) {
-                stmt = transaction.createStatement();
-                DdlManager.getInstance().dropSourceEntities( List.of( payload.removedPaths ), stmt, payload.uniqueName );
-                stmt = null;
+            if ( payload.removedPaths != null || payload.removedPaths.length > 0 ) {
+                String[] filtered = filterPrefixes( payload.removedPaths );
+                DdlManager.getInstance().dropSourceEntities( List.of( filtered ), stmt, payload.uniqueName );
             }
             transaction.commit();
             ctx.status( 200 ).result( "ACK processed" );
@@ -1013,6 +1014,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         } finally {
             if ( stmt != null ) {
                 stmt.close();
+                transactionManager.removeTransaction( transaction.getXid() );
             }
         }
     }
@@ -1080,7 +1082,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
 
         } catch ( Exception ex ) {
-            tx.rollback( "Changing adapter configuration was not successful !" );
+            tx.rollback( "Changing adapter configuration was not successful !" + ex );
             ctx.status( 500 ).json( Map.of( "message", ex.getMessage() ) );
         } finally {
             if ( stmt != null ) {
@@ -3288,6 +3290,24 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 fin.close();
             }
         }
+    }
+
+
+    private String[] filterPrefixes( String[] paths ) {
+        String[] sorted = Arrays.copyOf( paths, paths.length );
+        Arrays.sort( sorted, Comparator.comparingInt( String::length ) );
+        List<String> keep = new ArrayList<>();
+        outer:
+        for ( int i = 0; i < sorted.length; i++ ) {
+            String p = sorted[i];
+            for ( int j = i + 1; j < sorted.length; j++ ) {
+                if ( sorted[j].startsWith( p + "." ) ) {
+                    continue outer;
+                }
+            }
+            keep.add( p );
+        }
+        return keep.toArray( new String[0] );
     }
 
 

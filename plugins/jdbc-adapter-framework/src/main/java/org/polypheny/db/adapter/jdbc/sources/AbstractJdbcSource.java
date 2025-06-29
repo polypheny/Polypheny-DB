@@ -211,11 +211,15 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         Map<String, List<ExportedColumn>> map = new HashMap<>();
+
+        java.sql.Statement statement = null;
+        Connection connection = null;
+
         PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
         try {
             ConnectionHandler connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
-            java.sql.Statement statement = connectionHandler.getStatement();
-            Connection connection = statement.getConnection();
+            statement = connectionHandler.getStatement();
+            connection = statement.getConnection();
             DatabaseMetaData dbmd = connection.getMetaData();
 
             String[] tables;
@@ -333,15 +337,8 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                     map.put( tableName, list );
                 }
             }
-            connectionFactory.releaseConnectionHandler( xid, true );
         } catch ( SQLException | ConnectionHandlerException e ) {
-            try {
-                connectionFactory.releaseConnectionHandler( xid, false );
-            } catch ( ConnectionHandlerException ex ) {
-                throw new RuntimeException( ex );
-            }
             throw new GenericRuntimeException( "Exception while collecting schema information!" + e );
-
         }
 
         return map;

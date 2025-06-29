@@ -415,8 +415,7 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
         } catch ( IOException e ) {
             throw new RuntimeException( "Failed to parse metadata of CSV source: " + e );
         }
-        this.metadataRoot = rootNode;
-        return this.metadataRoot;
+        return rootNode;
 
     }
 

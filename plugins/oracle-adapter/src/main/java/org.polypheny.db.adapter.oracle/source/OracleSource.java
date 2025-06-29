@@ -40,6 +40,7 @@ import org.polypheny.db.schemaDiscovery.AttributeNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import org.polypheny.db.schemaDiscovery.Node;
 import org.polypheny.db.transaction.PUID;
+import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import java.sql.Connection;
@@ -155,11 +156,14 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         Map<String, List<ExportedColumn>> map = new HashMap<>();
 
-        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
+        java.sql.Statement statement = null;
+        Connection connection = null;
+
+        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
         try {
             ConnectionHandler connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
-            java.sql.Statement statement = connectionHandler.getStatement();
-            Connection connection = statement.getConnection();
+            statement = connectionHandler.getStatement();
+            connection = statement.getConnection();
             DatabaseMetaData dbmd = connection.getMetaData();
 
             String[] tables;
@@ -276,11 +280,16 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
 
         TableFilter filter = TableFilter.forAdapter( adapterName );
 
-        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
+        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
+
+        java.sql.Statement stmt = null;
+        Connection conn = null;
 
         try {
             ConnectionHandler h = connectionFactory.getOrCreateConnectionHandler( xid );
-            DatabaseMetaData m = h.getStatement().getConnection().getMetaData();
+            stmt = h.getStatement();
+            conn = stmt.getConnection();
+            DatabaseMetaData m = conn.getMetaData();
 
             String currentUser = m.getUserName();
 
@@ -304,11 +313,12 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
                             }
 
                             String fqName = "\"" + owner + "\".\"" + tableName + "\"";
+                            ConnectionHandler finalH = h;
                             List<Map<String, Object>> preview = previewByTable.computeIfAbsent(
                                     owner + "." + tableName,
                                     k -> {
                                         try {
-                                            return fetchPreview( h.getStatement().getConnection(), fqName, 10 );
+                                            return fetchPreview( finalH.getStatement().getConnection(), fqName, 10 );
                                         } catch ( Exception e ) {
                                             log.warn( "Preview failed for {}", fqName, e );
                                             return List.of();
@@ -363,9 +373,15 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
             }
         } catch ( SQLException | ConnectionHandlerException e ) {
             throw new GenericRuntimeException( "Error while fetching Oracle metadata", e );
+        } finally {
+            try {
+                stmt.close();
+                conn.close();
+            } catch ( SQLException e ) {
+                throw new RuntimeException( e );
+            }
         }
 
-        this.metadataRoot = root;
         return root;
     }
 

@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -236,11 +237,37 @@ public class DdlManagerImpl extends DdlManager {
         List<PathParts> parsedPaths = selectedPaths.stream()
                 .map( p -> {
                     String[] parts = p.split( "\\." );
-                    if ( parts.length != 4 ) {
-                        throw new IllegalArgumentException( "Pfad muss 4 Teile haben: <ns>.<schema>.<table>.<column>  -> " + p );
+
+                    String physNs;
+                    String physSchema;
+                    String table;
+                    String column;
+
+                    if ( parts.length == 4 ) {
+                        physNs = parts[0];
+                        physSchema = parts[1];
+                        table = parts[2];
+                        column = parts[3];
+
+                    } else if ( parts.length == 3 ) {
+                        physNs = parts[0];
+                        physSchema = "Mappe1.xlsx";
+                        table = parts[1];
+                        column = parts[2].split( "\\:" )[0].toLowerCase();
+
+                    } else if ( parts.length == 2 ) {
+                        physNs = parts[0];
+                        physSchema = "Dateieins.csv";
+                        table = parts[0].toLowerCase();
+                        column = parts[1].toLowerCase();
+
+                    } else {
+                        throw new IllegalArgumentException( "Unknown path format for adapter with unique name: " + uniqueName );
                     }
-                    return new PathParts( parts[0], parts[1], parts[2], parts[3], p );
-                } ).toList();
+
+                    return new PathParts( physNs, physSchema, table, column, p );
+                } )
+                .toList();
 
         Optional<DataSource<?>> adapter = AdapterManager.getInstance().getSource( uniqueName );
 
@@ -269,6 +296,9 @@ public class DdlManagerImpl extends DdlManager {
                     : exportedColumnList.get( 0 ).physicalSchemaName();
 
             LogicalTable logical = findLogicalTableByPhysical( namespace, adapter.get(), physicalSchema, tableName );
+            if ( logical == null ) {
+                logical = catalog.getSnapshot().rel().getTable( namespace, tableName ).orElse( null );
+            }
             AllocationPlacement placement;
             AllocationEntity allocation;
 
@@ -290,7 +320,7 @@ public class DdlManagerImpl extends DdlManager {
                 if ( !wishedColumnNames.contains( exportedColumn.name() ) || catalog.getSnapshot().rel().getColumn( logical.id, exportedColumn.name() ).isPresent() ) {
                     continue;
                 }
-                addColumnToSourceTable( logical, exportedColumn.physicalColumnName(), exportedColumn.name(), null, null, null, statement, exportedColumn.physicalTableName() );
+                addColumnToSourceTable( logical, exportedColumn.physicalColumnName(), exportedColumn.name(), null, null, null, statement, tableName );
             }
 
             List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( logical.id );
@@ -340,7 +370,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    @Override
+    /* @Override
     public void dropSourceEntities( List<String> paths, Statement statement, String uniqueName ) {
 
         DataSource<?> adapter = AdapterManager.getInstance().getSource( uniqueName ).orElseThrow();
@@ -414,6 +444,106 @@ public class DdlManagerImpl extends DdlManager {
         catalog.updateSnapshot();
         statement.getQueryProcessor().resetCaches();
         statement.getTransaction().commit();
+    }*/
+
+
+    @Override
+    public void dropSourceEntities( List<String> paths, Statement stmt, String uniqueName ) {
+
+        DataSource<?> adapter = AdapterManager.getInstance()
+                .getSource( uniqueName )
+                .orElseThrow();
+        Map<String, String> settings = adapter.getSettings();
+
+        String selectedAttributes = settings.getOrDefault( "selectedAttributes", "" )
+                .replace( "[", "" )
+                .replace( "]", "" );
+        List<String> currentPaths = new ArrayList<>( List.of( selectedAttributes.split( "," ) ) );
+        currentPaths.removeIf( p -> Arrays.asList( paths ).contains( p.trim() ) );
+        settings.put( "selectedAttributes", String.join( ",", currentPaths ) );
+        adapter.updateSettings( settings );
+
+        record PathParts( String physNs, String physSchema, String table, String column, String original ) {
+
+        }
+
+        Function<String, PathParts> parse = ( raw ) -> {
+            String p = raw.replace( "'", "" ).trim();
+            String[] parts = p.split( "\\." );
+
+            String physNs, physSchema, table, column;
+
+            if ( parts.length == 4 ) {
+                physNs = parts[0];
+                physSchema = parts[1];
+                table = parts[2];
+                column = parts[3];
+
+            } else if ( parts.length == 3 ) {
+                physNs = parts[0];
+                physSchema = "Mappe1.xslx";
+                table = parts[1];
+                column = parts[2].split( "\\:" )[0].toLowerCase();
+
+            } else if ( parts.length == 2 ) {
+                physNs = parts[0];
+                physSchema = "Dateieins.csv";
+                table = parts[0].toLowerCase();
+                column = parts[1].toLowerCase();
+
+            } else {
+                throw new GenericRuntimeException( "Ungültiger Pfad '" + p + "' für Adapter " + adapter.getAdapterName() );
+            }
+            return new PathParts( physNs, physSchema, table, column, p );
+        };
+
+        Map<LogicalTable, Set<String>> work = new HashMap<>();
+
+        for ( String raw : paths ) {
+            if ( raw == null || raw.isBlank() ) {
+                continue;
+            }
+
+            PathParts pp = parse.apply( raw );
+            String physSchema = pp.physSchema();
+            String tableName = pp.table();
+            String columnName = pp.column();
+
+            LogicalTable table = findLogicalTableByPhysical( Catalog.defaultNamespaceId, adapter, physSchema, tableName );
+            if ( table == null ) {
+                table = catalog.getSnapshot().rel().getTable( Catalog.defaultNamespaceId, tableName ).orElse( null );
+            }
+
+            if ( table.entityType != EntityType.SOURCE ) {
+                throw new GenericRuntimeException( "Tabelle " + table.name + " ist kein SOURCE-Objekt." );
+            }
+
+            work.computeIfAbsent( table, t -> new HashSet<>() ).add( columnName );
+        }
+
+        for ( Map.Entry<LogicalTable, Set<String>> e : work.entrySet() ) {
+            LogicalTable table = e.getKey();
+            Set<String> cols = e.getValue();
+
+            if ( cols.contains( "*" ) ) {
+                dropWholeSourceTable( table, stmt );
+                continue;
+            }
+
+            for ( String col : cols ) {
+                dropSourceColumn( table, col, stmt );
+                catalog.updateSnapshot();
+            }
+
+            if ( catalog.getSnapshot().rel().getColumns( table.id ).isEmpty() ) {
+                dropWholeSourceTable( table, stmt );
+                catalog.updateSnapshot();
+            }
+        }
+
+        catalog.updateSnapshot();
+        stmt.getQueryProcessor().resetCaches();
+        stmt.getTransaction().commit();
     }
 
 
@@ -551,7 +681,7 @@ public class DdlManagerImpl extends DdlManager {
 
                 HashCache.getInstance().put( uniqueName, hash );
                 log.info( "Key used during deployment: {} ", uniqueName );
-                // pm.onAdapterDeploy( (Adapter & MetadataProvider) mp );
+                pm.onAdapterDeploy( (Adapter & MetadataProvider) mp );
 
                 mp.markSelectedAttributes( selectedAttributes );
                 log.error( "SelectedAttributes ist gesetzt aus dem DdlManager und der Tree ist das hier: " );
@@ -703,7 +833,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
         AdapterManager.getInstance().removeAdapter( adapter.id );
-        // PublisherManager.getInstance().onAdapterUndeploy( adapter.uniqueName );
+        PublisherManager.getInstance().onAdapterUndeploy( adapter.uniqueName );
     }
 
 

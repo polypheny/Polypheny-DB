@@ -169,7 +169,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
         @Override
         protected String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
-            return String.format( "jdbc:mysql://%s:%d/%s", dbHostname, dbPort, dbName );
+            return String.format( "jdbc:mysql://%s:%d/%s?allowPublicKeyRetrieval=true&useSSL=false", dbHostname, dbPort, dbName );
         }
 
 
@@ -187,12 +187,15 @@ public class MysqlSourcePlugin extends PolyPlugin {
             SchemaFilter filter = SchemaFilter.forAdapter( adapterName );
             TableFilter tableFilter = TableFilter.forAdapter( adapterName );
 
-            PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
+            PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
+
+            java.sql.Statement stmt = null;
+            Connection conn = null;
 
             try {
                 ConnectionHandler handler = connectionFactory.getOrCreateConnectionHandler( xid );
-                java.sql.Statement stmt = handler.getStatement();
-                Connection conn = stmt.getConnection();
+                stmt = handler.getStatement();
+                conn = stmt.getConnection();
                 DatabaseMetaData meta = conn.getMetaData();
 
                 try ( ResultSet schemas = meta.getCatalogs() ) {
@@ -222,16 +225,17 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
                                 String fqName = "`" + schemaName + "`.`" + tableName + "`";
 
+                                Connection finalConn = conn;
                                 List<Map<String, Object>> preview = previewByTable.computeIfAbsent(
                                         schemaName + "." + tableName,
                                         k -> {
                                             try {
-                                                return fetchPreview(conn, fqName, 10);
-                                            } catch (Exception e) {
-                                                log.warn("Preview failed for {}", fqName, e);
+                                                return fetchPreview( finalConn, fqName, 10 );
+                                            } catch ( Exception e ) {
+                                                log.warn( "Preview failed for {}", fqName, e );
                                                 return List.of();
                                             }
-                                        });
+                                        } );
 
                                 AbstractNode tableNode = new Node( "table", tableName );
 
@@ -285,10 +289,16 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
             } catch ( SQLException | ConnectionHandlerException ex ) {
                 throw new GenericRuntimeException( "Error while fetching metadata tree", ex );
+            } finally {
+                try {
+                    stmt.close();
+                    conn.close();
+                } catch ( SQLException e ) {
+                    throw new RuntimeException( e );
+                }
             }
 
-            this.metadataRoot = root;
-            return this.metadataRoot;
+            return root;
         }
 
 
@@ -317,11 +327,16 @@ public class MysqlSourcePlugin extends PolyPlugin {
         @Override
         public Map<String, List<ExportedColumn>> getExportedColumns() {
             Map<String, List<ExportedColumn>> map = new HashMap<>();
+            java.sql.Statement statement = null;
+            Connection connection = null;
+
             PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
+
+
             try {
                 ConnectionHandler connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
-                java.sql.Statement statement = connectionHandler.getStatement();
-                Connection connection = statement.getConnection();
+                statement = connectionHandler.getStatement();
+                connection = statement.getConnection();
                 DatabaseMetaData dbmd = connection.getMetaData();
 
                 String[] tables;
@@ -439,13 +454,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
                         map.put( tableName, list );
                     }
                 }
-                connectionFactory.releaseConnectionHandler( xid, true );
             } catch ( SQLException | ConnectionHandlerException e ) {
-                try {
-                    connectionFactory.releaseConnectionHandler( xid, false );
-                } catch ( ConnectionHandlerException ex ) {
-                    throw new RuntimeException( ex );
-                }
                 throw new GenericRuntimeException( "Exception while collecting schema information!" + e );
 
             }
