@@ -58,6 +58,7 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.sql.language.util.SqlTypeRepresentation;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
@@ -175,6 +176,8 @@ public final class JdbcUtils {
                             return PolyBigDecimal.ofNullable( (BigDecimal) o );
                         case Types.BIGINT:
                             return PolyBigDecimal.ofNullable( (Number) o );
+                        case Types.BINARY:
+                            return PolyBinary.ofNullable( (byte[]) o );
                     }
                 default:
                     throw new GenericRuntimeException( "not implemented " + reps[i] + " " + types[i] );
