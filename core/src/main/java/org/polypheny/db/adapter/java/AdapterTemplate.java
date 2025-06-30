@@ -33,6 +33,7 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
+import org.polypheny.db.adapter.MetadataObserver.ChangeLogEntry;
 import org.polypheny.db.adapter.MetadataObserver.MetadataHasher;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
@@ -140,7 +141,7 @@ public class AdapterTemplate {
                 Object rows = mp.getPreview();
                 log.error( json );
                 // log.error( rows.toString() );
-                return new PreviewResult( json, rows );
+                return new PreviewResult( json, rows, null );
             }
             throw new GenericRuntimeException( "The adapter does not implement MetadataProvider." );
         } finally {
@@ -157,6 +158,8 @@ public class AdapterTemplate {
         String metadata;
         @JsonProperty
         Object preview;
+        @JsonProperty
+        List<ChangeLogEntry> history;
 
     }
 

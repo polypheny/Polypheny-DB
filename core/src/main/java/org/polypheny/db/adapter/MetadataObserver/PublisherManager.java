@@ -16,22 +16,33 @@
 
 package org.polypheny.db.adapter.MetadataObserver;
 
+import lombok.AllArgsConstructor;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.MetadataObserver.Utils.MetaDiffUtil.DiffResult;
 import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResult;
 import org.polypheny.db.schemaDiscovery.AbstractNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
+import java.time.Instant;
+import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 
 @Slf4j
 public class PublisherManager {
 
+    private static final int MAX_ENTRIES_PER_ADAPTER = 100;
+
     private final Map<String, MetadataPublisher> publishers = new ConcurrentHashMap<>();
     private final Map<String, PreviewResult> changeCache = new ConcurrentHashMap<>();
-    private final Map<String, ChangeStatus > statusCache = new ConcurrentHashMap<>();
+    private final Map<String, ChangeStatus> statusCache = new ConcurrentHashMap<>();
+
+    private final ConcurrentHashMap<String, Deque<ChangeLogEntry>> changeCatalog = new ConcurrentHashMap<>();
 
     private static final PublisherManager INSTANCE = new PublisherManager();
 
@@ -82,7 +93,7 @@ public class PublisherManager {
 
 
     public PreviewResult fetchChange( String uniqueName ) {
-        return changeCache.get( uniqueName ) ;
+        return changeCache.get( uniqueName );
     }
 
 
@@ -93,10 +104,31 @@ public class PublisherManager {
         statusCache.remove( uniqueName );
     }
 
+
     public enum ChangeStatus {
         CRITICAL,
         WARNING,
         OK
+    }
+
+
+    public void addChange( ChangeLogEntry entry ) {
+        changeCatalog.computeIfAbsent( entry.getAdapterName(), k -> new ConcurrentLinkedDeque<>() ).addFirst( entry );
+    }
+
+
+    public List<ChangeLogEntry> getHistory( String adapterName ) {
+        return changeCatalog.getOrDefault( adapterName, new ConcurrentLinkedDeque<>() )
+                .stream()
+                .toList();
+    }
+
+
+    private void prune( String adapterName ) {
+        Deque<ChangeLogEntry> deque = changeCatalog.get( adapterName );
+        while ( deque != null && deque.size() > MAX_ENTRIES_PER_ADAPTER ) {
+            deque.removeLast();
+        }
     }
 
 }

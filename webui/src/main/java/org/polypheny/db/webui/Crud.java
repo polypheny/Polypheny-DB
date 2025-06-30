@@ -91,6 +91,7 @@ import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
+import org.polypheny.db.adapter.MetadataObserver.ChangeLogEntry;
 import org.polypheny.db.adapter.MetadataObserver.PublisherManager;
 import org.polypheny.db.adapter.MetadataObserver.PublisherManager.ChangeStatus;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
@@ -1027,7 +1028,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .orElseThrow( () -> new IllegalStateException(
                         "Adapter %s doesn't support inteface metadata provider !".formatted( uniqueName ) ) );
 
-        PreviewResult data = new PreviewResult( NodeSerializer.serializeNode( provider.getRoot() ).toString(), provider.getPreview() );
+        List<ChangeLogEntry> history = PublisherManager.getInstance().getHistory(uniqueName);
+
+        PreviewResult data = new PreviewResult( NodeSerializer.serializeNode( provider.getRoot() ).toString(), provider.getPreview(), history );
         ctx.json( data );
     }
 

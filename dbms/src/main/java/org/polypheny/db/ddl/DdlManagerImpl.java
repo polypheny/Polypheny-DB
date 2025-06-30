@@ -681,7 +681,11 @@ public class DdlManagerImpl extends DdlManager {
 
                 HashCache.getInstance().put( uniqueName, hash );
                 log.info( "Key used during deployment: {} ", uniqueName );
-                pm.onAdapterDeploy( (Adapter & MetadataProvider) mp );
+
+                if ( !( adapter.getAdapterName().equals( "Excel" ) || adapter.getAdapterName().equals( "CSV" ) ) ) {
+                    pm.onAdapterDeploy( (Adapter & MetadataProvider) mp );
+                }
+
 
                 mp.markSelectedAttributes( selectedAttributes );
                 log.error( "SelectedAttributes ist gesetzt aus dem DdlManager und der Tree ist das hier: " );
