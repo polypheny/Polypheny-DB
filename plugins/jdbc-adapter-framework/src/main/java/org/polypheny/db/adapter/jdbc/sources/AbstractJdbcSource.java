@@ -270,7 +270,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                         primaryKeyColumns.add( row.getString( "COLUMN_NAME" ) );
                     }
                 }
-                try ( ResultSet row = dbmd.getColumns( schemaPattern, null, tableName, "%" ) ) {
+                try ( ResultSet row = dbmd.getColumns( schemaPattern, schemaPattern, tableName, "%" ) ) {
                     List<ExportedColumn> list = new ArrayList<>();
                     while ( row.next() ) {
                         PolyType type = PolyType.getNameForJdbcType( row.getInt( "DATA_TYPE" ) );
