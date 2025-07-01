@@ -296,9 +296,9 @@ public class DdlManagerImpl extends DdlManager {
                     : exportedColumnList.get( 0 ).physicalSchemaName();
 
             LogicalTable logical = findLogicalTableByPhysical( namespace, adapter.get(), physicalSchema, tableName );
-            if ( logical == null ) {
+            /*if ( logical == null ) {
                 logical = catalog.getSnapshot().rel().getTable( namespace, tableName ).orElse( null );
-            }
+            }*/
             AllocationPlacement placement;
             AllocationEntity allocation;
 
@@ -710,6 +710,24 @@ public class DdlManagerImpl extends DdlManager {
             String baseName = entry.getKey();
             String physicalTable = baseName;
 
+
+            Map<String, Set<String>> filter = new HashMap<>();
+
+            if (attributes != null && !attributes.isBlank()) {
+                List<String> paths = new Gson().fromJson(
+                        attributes, new com.google.gson.reflect.TypeToken<List<String>>() {}.getType());
+
+                for (String p : paths) {
+                    String[] tok = p.split("\\.");
+                    if (tok.length < 3) continue;
+
+                    String table  = tok[tok.length - 2].toLowerCase();
+                    String column = tok[tok.length - 1].split(":")[0].toLowerCase();
+
+                    filter.computeIfAbsent(table, k -> new HashSet<>()).add(column);
+                }
+            }
+
             // Make sure the table name is unique
             String tableName = getUniqueEntityName( namespace, entry.getKey(), ( ns, en ) -> catalog.getSnapshot().rel().getTable( ns, en ) );
 
@@ -727,8 +745,11 @@ public class DdlManagerImpl extends DdlManager {
                     .map( attr -> attr.split( ":" )[0].toLowerCase() )
                     .collect( Collectors.toList() );
 
+            String currentTable = physicalTable.toLowerCase();
+            Set<String> allowed = filter.getOrDefault(currentTable, Collections.emptySet());
+
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
-                if ( adapter instanceof MetadataProvider mp && (attributes != null) && selectedAttributeNames.stream().noneMatch( name -> name.equalsIgnoreCase( exportedColumn.name() ) ) ) {
+                if ( adapter instanceof MetadataProvider mp && (attributes != null) && !allowed.isEmpty() && !allowed.contains(exportedColumn.name().toLowerCase())) {
                     continue;
                 } else {
                     LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
@@ -839,7 +860,6 @@ public class DdlManagerImpl extends DdlManager {
         AdapterManager.getInstance().removeAdapter( adapter.id );
         PublisherManager.getInstance().onAdapterUndeploy( adapter.uniqueName );
     }
-
 
     @Override
     public void renameNamespace( String newName, String currentName ) {
