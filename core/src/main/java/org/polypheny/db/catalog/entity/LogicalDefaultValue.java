@@ -53,7 +53,7 @@ public class LogicalDefaultValue implements Serializable {
             @Deserialize("functionName") final String functionName ) {
         this.fieldId = fieldId;
         this.type = type;
-        this.value = PolyValue.deserialize( typedJson );
+        this.value = PolyValue.fromJson( typedJson );
         this.typedJson = typedJson;
         this.functionName = functionName;
     }
