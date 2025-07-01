@@ -214,10 +214,11 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
 
         java.sql.Statement statement = null;
         Connection connection = null;
+        ConnectionHandler connectionHandler = null;
 
         PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
         try {
-            ConnectionHandler connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
+            connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
             statement = connectionHandler.getStatement();
             connection = statement.getConnection();
             DatabaseMetaData dbmd = connection.getMetaData();
@@ -339,6 +340,14 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
             }
         } catch ( SQLException | ConnectionHandlerException e ) {
             throw new GenericRuntimeException( "Exception while collecting schema information!" + e );
+        } finally {
+            try {
+                // stmt.close();
+                // conn.close();
+                connectionHandler.commit();
+            } catch ( ConnectionHandlerException e ) {
+                throw new RuntimeException( e );
+            }
         }
 
         return map;

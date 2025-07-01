@@ -158,10 +158,11 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
 
         java.sql.Statement statement = null;
         Connection connection = null;
+        ConnectionHandler connectionHandler = null;
 
         PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
         try {
-            ConnectionHandler connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
+            connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
             statement = connectionHandler.getStatement();
             connection = statement.getConnection();
             DatabaseMetaData dbmd = connection.getMetaData();
@@ -268,6 +269,14 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
             }
         } catch ( SQLException | ConnectionHandlerException e ) {
             throw new GenericRuntimeException( "Exception while collecting Oracle schema info", e );
+        } finally {
+            try {
+                // stmt.close();
+                // conn.close();
+                connectionHandler.commit();
+            } catch ( ConnectionHandlerException e ) {
+                throw new RuntimeException( e );
+            }
         }
 
         return map;
@@ -284,9 +293,10 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
 
         java.sql.Statement stmt = null;
         Connection conn = null;
+        ConnectionHandler h = null;
 
         try {
-            ConnectionHandler h = connectionFactory.getOrCreateConnectionHandler( xid );
+            h = connectionFactory.getOrCreateConnectionHandler( xid );
             stmt = h.getStatement();
             conn = stmt.getConnection();
             DatabaseMetaData m = conn.getMetaData();
@@ -375,9 +385,10 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
             throw new GenericRuntimeException( "Error while fetching Oracle metadata", e );
         } finally {
             try {
-                stmt.close();
-                conn.close();
-            } catch ( SQLException e ) {
+                // stmt.close();
+                // conn.close();
+                h.commit();
+            } catch ( ConnectionHandlerException e ) {
                 throw new RuntimeException( e );
             }
         }

@@ -191,9 +191,10 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
             java.sql.Statement stmt = null;
             Connection conn = null;
+            ConnectionHandler handler = null;
 
             try {
-                ConnectionHandler handler = connectionFactory.getOrCreateConnectionHandler( xid );
+                handler = connectionFactory.getOrCreateConnectionHandler( xid );
                 stmt = handler.getStatement();
                 conn = stmt.getConnection();
                 DatabaseMetaData meta = conn.getMetaData();
@@ -291,9 +292,10 @@ public class MysqlSourcePlugin extends PolyPlugin {
                 throw new GenericRuntimeException( "Error while fetching metadata tree", ex );
             } finally {
                 try {
-                    stmt.close();
-                    conn.close();
-                } catch ( SQLException e ) {
+                    //stmt.close();
+                    //conn.close();
+                    handler.commit();
+                } catch ( ConnectionHandlerException e ) {
                     throw new RuntimeException( e );
                 }
             }
@@ -331,10 +333,10 @@ public class MysqlSourcePlugin extends PolyPlugin {
             Connection connection = null;
 
             PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
-
+            ConnectionHandler connectionHandler = null;
 
             try {
-                ConnectionHandler connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
+                connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
                 statement = connectionHandler.getStatement();
                 connection = statement.getConnection();
                 DatabaseMetaData dbmd = connection.getMetaData();
@@ -387,7 +389,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
                             primaryKeyColumns.add( row.getString( "COLUMN_NAME" ) );
                         }
                     }
-                    try ( ResultSet row = dbmd.getColumns( schemaPattern, null, tableName, "%" ) ) {
+                    try ( ResultSet row = dbmd.getColumns( schemaPattern, schemaPattern, tableName, "%" ) ) {
                         List<ExportedColumn> list = new ArrayList<>();
                         while ( row.next() ) {
                             PolyType type = PolyType.getNameForJdbcType( row.getInt( "DATA_TYPE" ) );
@@ -457,6 +459,14 @@ public class MysqlSourcePlugin extends PolyPlugin {
             } catch ( SQLException | ConnectionHandlerException e ) {
                 throw new GenericRuntimeException( "Exception while collecting schema information!" + e );
 
+            } finally {
+                try {
+                    // stmt.close();
+                    // conn.close();
+                    connectionHandler.commit();
+                } catch ( ConnectionHandlerException e ) {
+                    throw new RuntimeException( e );
+                }
             }
 
             return map;

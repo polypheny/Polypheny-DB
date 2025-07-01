@@ -105,9 +105,10 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
 
         java.sql.Statement stmt = null;
         Connection conn = null;
+        ConnectionHandler handler = null;
 
         try {
-            ConnectionHandler handler = connectionFactory.getOrCreateConnectionHandler( xid );
+            handler = connectionFactory.getOrCreateConnectionHandler( xid );
             stmt = handler.getStatement();
             conn = stmt.getConnection();
             DatabaseMetaData meta = conn.getMetaData();
@@ -204,9 +205,12 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
             throw new GenericRuntimeException( "Error while fetching metadata tree", ex );
         } finally {
             try {
-                stmt.close();
-                conn.close();
-            } catch ( SQLException e ) {
+                // stmt.close();
+                // conn.close();
+                handler.commit();
+            } /*catch ( SQLException e ) {
+                throw new RuntimeException( e );
+            }*/ catch ( ConnectionHandlerException e ) {
                 throw new RuntimeException( e );
             }
         }
