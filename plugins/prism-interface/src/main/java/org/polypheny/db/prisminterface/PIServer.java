@@ -85,7 +85,7 @@ class PIServer {
 
     private static ServerSocketChannel createInetServer( int port ) throws IOException {
         return ServerSocketChannel.open( StandardProtocolFamily.INET )
-                .bind( new InetSocketAddress( Inet4Address.getLoopbackAddress(), port ) );
+                .bind( new InetSocketAddress( port ) );
     }
 
 
