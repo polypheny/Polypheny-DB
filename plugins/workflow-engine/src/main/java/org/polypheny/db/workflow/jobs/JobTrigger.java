@@ -126,7 +126,6 @@ public abstract class JobTrigger {
     public static JobTrigger fromModel( JobModel model ) throws WorkflowJobException {
         return switch ( model.getType() ) {
             case SCHEDULED -> new ScheduledJob( model );
-            default -> throw new NotImplementedException( "Unsupported job type: " + model.getType() );
         };
     }
 
