@@ -22,7 +22,7 @@ import org.polypheny.db.workflow.models.JobModel;
 public class ScheduledJob extends JobTrigger {
 
     private final CronScheduler scheduler = CronScheduler.getInstance();
-    String schedule;
+    private final String schedule;
 
 
     public ScheduledJob( JobModel model ) throws WorkflowJobException {
