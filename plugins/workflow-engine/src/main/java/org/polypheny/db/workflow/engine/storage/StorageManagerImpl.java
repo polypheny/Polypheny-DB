@@ -576,7 +576,7 @@ public class StorageManagerImpl implements StorageManager {
 
 
     private static void acquireSchemaLock( Transaction transaction, long namespaceId ) throws DeadlockException {
-        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElse( null );
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceId ).orElse( null );
         if ( namespace == null ) {
             return; // for graphs, the namespace is already removed when the checkpoint is dropped
         }
@@ -637,7 +637,7 @@ public class StorageManagerImpl implements StorageManager {
      */
     public static void clearAll() {
         DdlManager ddlManager = DdlManager.getInstance();
-        for ( LogicalNamespace ns : Catalog.getInstance().getSnapshot().getNamespaces( null ) ) {
+        for ( LogicalNamespace ns : Catalog.snapshot().getNamespaces( null ) ) {
             Transaction transaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId, "ClearAllCheckpoints" );
             try {
                 acquireSchemaLock( transaction, ns.id );

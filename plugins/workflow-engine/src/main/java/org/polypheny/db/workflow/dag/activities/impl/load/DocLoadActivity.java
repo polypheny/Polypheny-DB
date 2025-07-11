@@ -148,7 +148,7 @@ public class DocLoadActivity implements Activity, Pipeable {
                 logInfo.accept( "Creating namespace '" + setting.getNamespace() + "'" );
                 try {
                     long namespaceId = ddlManager.createNamespace( setting.getNamespace(), DataModel.DOCUMENT, false, false, false, null );
-                    namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElse( null );
+                    namespace = Catalog.snapshot().getNamespace( namespaceId ).orElse( null );
                 } catch ( Exception e ) {
                     throw new InvalidSettingException( "Specified namespace cannot be created: " + e.getMessage(), COLL_KEY );
                 }
