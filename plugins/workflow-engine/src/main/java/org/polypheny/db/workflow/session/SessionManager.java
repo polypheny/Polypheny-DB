@@ -38,7 +38,7 @@ import org.polypheny.db.workflow.repo.WorkflowRepoImpl;
 @Slf4j
 public class SessionManager {
 
-    private static SessionManager INSTANCE = null;
+    private static final SessionManager INSTANCE = new SessionManager();
 
     private final Map<UUID, UserSession> userSessions = new ConcurrentHashMap<>();
     private final Map<UUID, ApiSession> apiSessions = new ConcurrentHashMap<>();
@@ -52,9 +52,6 @@ public class SessionManager {
 
 
     public static SessionManager getInstance() {
-        if ( INSTANCE == null ) {
-            INSTANCE = new SessionManager();
-        }
         return INSTANCE;
     }
 

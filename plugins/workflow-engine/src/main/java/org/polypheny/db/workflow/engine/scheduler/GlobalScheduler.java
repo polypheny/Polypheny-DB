@@ -48,7 +48,7 @@ import org.polypheny.db.workflow.session.NestedSessionManager;
 @Slf4j
 public class GlobalScheduler {
 
-    private static GlobalScheduler INSTANCE;
+    private static final GlobalScheduler INSTANCE = new GlobalScheduler();
     private int globalWorkerCount = Math.max( 1, RuntimeConfig.WORKFLOWS_WORKERS.getInteger() );
 
     private final Map<UUID, WorkflowScheduler> schedulers = new HashMap<>();
@@ -71,9 +71,6 @@ public class GlobalScheduler {
 
 
     public static GlobalScheduler getInstance() {
-        if ( INSTANCE == null ) {
-            INSTANCE = new GlobalScheduler();
-        }
         return INSTANCE;
     }
 

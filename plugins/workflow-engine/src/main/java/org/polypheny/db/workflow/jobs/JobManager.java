@@ -38,7 +38,7 @@ import org.polypheny.db.workflow.session.SessionManager;
 @Slf4j
 public class JobManager {
 
-    private static JobManager INSTANCE = null;
+    private static final JobManager INSTANCE = new JobManager();
     private final WorkflowRepo repo = WorkflowRepoImpl.getInstance();
     private final SessionManager sessionManager = SessionManager.getInstance();
     private final Map<UUID, UUID> jobToSession = new ConcurrentHashMap<>(); // to be more consistent with the session model, we differ between jobId and sessionId
@@ -49,9 +49,6 @@ public class JobManager {
 
 
     public static JobManager getInstance() {
-        if ( INSTANCE == null ) {
-            INSTANCE = new JobManager();
-        }
         return INSTANCE;
     }
 
