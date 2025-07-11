@@ -27,6 +27,7 @@ import java.net.URL;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyphenyDb;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.util.Sources;
@@ -59,7 +60,7 @@ public class WorkflowManager {
     private static final ObjectMapper mapper = new ObjectMapper();
 
 
-    public WorkflowManager() {
+    public WorkflowManager( TransactionManager tm ) {
         repo = WorkflowRepoImpl.getInstance();
         sessionManager = SessionManager.getInstance();
         registerEndpoints();
@@ -75,7 +76,7 @@ public class WorkflowManager {
                 new java.util.TimerTask() {
                     @Override
                     public void run() {
-                        while ( TransactionManagerImpl.getInstance().getNumberOfActiveTransactions() > 0 ) {
+                        while ( tm.getNumberOfActiveTransactions() > 0 ) {
                             try {
                                 Thread.sleep( 100 ); // wait for Statistic Manager to finish to avoid deadlock
                             } catch ( InterruptedException e ) {
