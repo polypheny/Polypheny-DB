@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Value;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.workflow.dag.activities.ActivityRegistry;
 import org.polypheny.db.workflow.dag.activities.ActivityWrapper.ActivityState;
 
@@ -102,7 +103,7 @@ public class ActivityModel {
                     trueCopy.config,
                     new RenderModel( posX, posY, trueCopy.rendering.getName(), trueCopy.rendering.getNotes() ) );
         } catch ( JsonProcessingException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

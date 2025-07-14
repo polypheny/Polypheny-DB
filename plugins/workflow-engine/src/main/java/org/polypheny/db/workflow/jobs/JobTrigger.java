@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.workflow.jobs.JobManager.WorkflowJobException;
 import org.polypheny.db.workflow.models.JobModel;
 
@@ -84,7 +85,7 @@ public abstract class JobTrigger {
                 try {
                     Thread.sleep( RETRY_DELAY_MILLIS );
                 } catch ( InterruptedException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 }
                 try {
                     Map<String, JsonNode> vars = new HashMap<>( lastVariables );

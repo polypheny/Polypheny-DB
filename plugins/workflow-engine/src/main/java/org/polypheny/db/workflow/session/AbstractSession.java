@@ -208,7 +208,7 @@ public abstract class AbstractSession {
                 }
             }
         } catch ( JsonProcessingException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -360,7 +360,7 @@ public abstract class AbstractSession {
         try {
             return WorkflowRepoImpl.getInstance().getWorkflowDef( workflowId );
         } catch ( WorkflowRepoException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

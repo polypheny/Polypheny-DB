@@ -27,6 +27,7 @@ import java.net.URL;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyphenyDb;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.util.Sources;
@@ -79,7 +80,7 @@ public class WorkflowManager {
                             try {
                                 Thread.sleep( 100 ); // wait for Statistic Manager to finish to avoid deadlock
                             } catch ( InterruptedException e ) {
-                                throw new RuntimeException( e );
+                                throw new GenericRuntimeException( e );
                             }
                         }
                         StorageManagerImpl.clearAll( tm ); // remove old namespaces and checkpoints
@@ -121,7 +122,7 @@ public class WorkflowManager {
                 }
                 repo.importWorkflow( fileName, group, workflow );
             } catch ( IOException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         }
     }
@@ -380,7 +381,7 @@ public class WorkflowManager {
         try {
             ctx.result( mapper.writeValueAsString( model ) );
         } catch ( JsonProcessingException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

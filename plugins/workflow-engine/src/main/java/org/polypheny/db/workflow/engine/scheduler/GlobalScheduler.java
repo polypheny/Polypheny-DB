@@ -154,7 +154,7 @@ public class GlobalScheduler {
         try {
             resultProcessor.join( 5000 );
         } catch ( InterruptedException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
         executor.shutdownNow();
 
@@ -239,7 +239,7 @@ public class GlobalScheduler {
                     break; // interrupted by shutdownNow
                 } catch ( ExecutionException e ) {
                     log.warn( "Scheduler result processor has encountered an unhandled exception: ", e );
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 } finally {
                     if ( info != null ) {
                         info.setState( ExecutionState.DONE );
