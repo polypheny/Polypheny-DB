@@ -100,14 +100,14 @@ public abstract class AbstractSession {
         this.type = type;
         this.workflow = workflow;
         this.sessionId = sessionId;
-        this.sm = new StorageManagerImpl( sessionId, workflow.getConfig().getPreferredStores() );
+        this.sm = new StorageManagerImpl( sessionManager.getTransactionManager(), sessionId, workflow.getConfig().getPreferredStores() );
         this.scheduler = GlobalScheduler.getInstance();
 
         Set<Pair<UUID, Integer>> workflowIds = parentWorkflowIds == null ? new HashSet<>() : new HashSet<>( parentWorkflowIds );
         if ( workflowId != null ) {
             workflowIds.add( Pair.of( workflowId, version ) );
         }
-        this.nestedManager = new NestedSessionManager( sessionManager, workflowIds, this.type == SessionModelType.NESTED_SESSION );
+        this.nestedManager = new NestedSessionManager( sessionManager.getTransactionManager(), sessionManager, workflowIds, this.type == SessionModelType.NESTED_SESSION );
     }
 
 

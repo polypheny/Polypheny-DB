@@ -26,6 +26,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.WorkflowImpl;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
@@ -38,6 +39,7 @@ public class NestedSessionManager {
 
     private final WorkflowRepo repo = WorkflowRepoImpl.getInstance();
     private final SessionManager sessionManager;
+    private final TransactionManager transactionManager;
 
     private final Map<UUID, NestedSession> sessions = new ConcurrentHashMap<>(); // map activityIds to NestedSession
     private final Set<Pair<UUID, Integer>> parentIds; // workflowId, workflowVersion
@@ -57,10 +59,11 @@ public class NestedSessionManager {
     private Map<String, JsonNode> outDynamicVars;
 
 
-    public NestedSessionManager( SessionManager sessionManager, Set<Pair<UUID, Integer>> parentWorkflowIds, boolean isNested ) {
+    public NestedSessionManager( TransactionManager transactionManager, SessionManager sessionManager, Set<Pair<UUID, Integer>> parentWorkflowIds, boolean isNested ) {
         this.sessionManager = sessionManager;
         this.parentIds = Set.copyOf( parentWorkflowIds );
         this.isNested = isNested;
+        this.transactionManager = transactionManager;
     }
 
 

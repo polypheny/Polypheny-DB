@@ -23,8 +23,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.workflow.WorkflowApi.WorkflowApiException;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.WorkflowImpl;
@@ -44,8 +46,12 @@ public class SessionManager {
     private final Map<UUID, JobSession> jobSessions = new ConcurrentHashMap<>(); // note that sessionId != jobId
     private final WorkflowRepo repo = WorkflowRepoImpl.getInstance();
 
+    @Getter
+    private final TransactionManager transactionManager;
 
-    public SessionManager() {
+
+    public SessionManager( TransactionManager transactionManager ) {
+        this.transactionManager = transactionManager;
     }
 
 

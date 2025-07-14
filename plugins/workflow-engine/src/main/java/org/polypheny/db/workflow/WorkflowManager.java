@@ -61,7 +61,7 @@ public class WorkflowManager {
 
     public WorkflowManager( TransactionManager tm ) {
         repo = WorkflowRepoImpl.getInstance();
-        sessionManager = new SessionManager();
+        sessionManager = new SessionManager( tm );
         registerEndpoints( sessionManager );
         apiManager = new WorkflowApi( sessionManager );
         apiManager.registerEndpoints( HttpServer.getInstance() );
@@ -82,7 +82,7 @@ public class WorkflowManager {
                                 throw new RuntimeException( e );
                             }
                         }
-                        StorageManagerImpl.clearAll(); // remove old namespaces and checkpoints
+                        StorageManagerImpl.clearAll( tm ); // remove old namespaces and checkpoints
                         addSampleWorkflows();
                         try {
                             jobManager.onStartup();

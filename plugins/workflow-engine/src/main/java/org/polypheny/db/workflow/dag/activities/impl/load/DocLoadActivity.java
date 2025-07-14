@@ -156,7 +156,7 @@ public class DocLoadActivity implements Activity, Pipeable {
             logInfo.accept( "Creating collection '" + setting.getName() + "'" );
             assert namespace != null;
             // Unfortunately, we have to create the table outside our activity transaction context.
-            Transaction transaction = QueryUtils.startTransaction( namespace.id, "DocLoadCreate" );
+            Transaction transaction = QueryUtils.startTransaction( txSupplier.get().getTransactionManager(), namespace.id, "DocLoadCreate" );
             try {
                 transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.SHARED ); // SHARED lock is workaround to be able to create entity while other txs are reading
                 ddlManager.createCollection(
