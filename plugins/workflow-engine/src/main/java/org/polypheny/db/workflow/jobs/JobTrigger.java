@@ -92,7 +92,7 @@ public abstract class JobTrigger {
                     vars.put( "job_retry", IntNode.valueOf( retries ) );
                     jobManager.trigger( jobId, "Retry " + retries, vars, this::onExecutionFinished );
                 } catch ( Exception e ) {
-                    log.warn( "Unable to trigger job " + jobId, e );
+                    log.warn( "Unable to trigger job {}", jobId, e );
                 }
             } else {
                 retries = 0;
@@ -108,7 +108,7 @@ public abstract class JobTrigger {
 
     boolean trigger( String message ) {
         if ( retries > 0 ) {
-            log.warn( "Execution skipped as a retry is in progress for job " + jobId );
+            log.warn( "Execution skipped as a retry is in progress for job {}", jobId );
             return false;
         }
         Map<String, JsonNode> vars = new HashMap<>( variables == null ? Map.of() : variables );
@@ -117,7 +117,7 @@ public abstract class JobTrigger {
             jobManager.trigger( jobId, message, vars, this::onExecutionFinished );
             this.lastVariables = vars;
         } catch ( Exception e ) {
-            log.warn( "Unable to trigger job " + jobId, e );
+            log.warn( "Unable to trigger job {}", jobId, e );
             return false;
         }
         return true;
