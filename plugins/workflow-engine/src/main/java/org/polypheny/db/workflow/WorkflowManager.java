@@ -28,7 +28,6 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.webui.ConfigService.HandlerType;
@@ -62,11 +61,11 @@ public class WorkflowManager {
 
     public WorkflowManager( TransactionManager tm ) {
         repo = WorkflowRepoImpl.getInstance();
-        sessionManager = SessionManager.getInstance();
-        registerEndpoints();
+        sessionManager = new SessionManager();
+        registerEndpoints( sessionManager );
         apiManager = new WorkflowApi( sessionManager );
         apiManager.registerEndpoints( HttpServer.getInstance() );
-        jobManager = JobManager.getInstance();
+        jobManager = new JobManager( sessionManager );
 
         if ( PolyphenyDb.mode == RunMode.TEST ) {
             return;
@@ -128,10 +127,10 @@ public class WorkflowManager {
     }
 
 
-    private void registerEndpoints() {
+    private void registerEndpoints( SessionManager sessionManager ) {
         HttpServer server = HttpServer.getInstance();
 
-        server.addWebsocketRoute( PATH + "/webSocket/{sessionId}", new WorkflowWebSocket() );
+        server.addWebsocketRoute( PATH + "/webSocket/{sessionId}", new WorkflowWebSocket( sessionManager ) );
 
         server.addSerializedRoute( PATH + "/sessions", this::getSessions, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}", this::getSession, HandlerType.GET );

@@ -25,8 +25,8 @@ public class ScheduledJob extends JobTrigger {
     private final String schedule;
 
 
-    public ScheduledJob( JobModel model ) throws WorkflowJobException {
-        super( model.getJobId(), TriggerType.SCHEDULED, model.getWorkflowId(), model.getVersion(),
+    public ScheduledJob( JobManager jobManager, JobModel model ) throws WorkflowJobException {
+        super( jobManager, model.getJobId(), TriggerType.SCHEDULED, model.getWorkflowId(), model.getVersion(),
                 model.isEnableOnStartup(), model.getName(), model.getMaxRetries(), model.isPerformance(), model.getVariables() );
         if ( model.getType() != TriggerType.SCHEDULED ) {
             throw new IllegalArgumentException( "JobModel must be of type SCHEDULED" );

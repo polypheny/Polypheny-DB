@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.workflow.jobs.JobManager.WorkflowJobException;
 import org.polypheny.db.workflow.models.JobModel;
 
@@ -34,7 +33,7 @@ import org.polypheny.db.workflow.models.JobModel;
 @Getter
 public abstract class JobTrigger {
 
-    private static final JobManager jobManager = JobManager.getInstance();
+    private final JobManager jobManager;
     final UUID jobId;
     final TriggerType type;
     final UUID workfowId;
@@ -52,8 +51,9 @@ public abstract class JobTrigger {
 
 
     public JobTrigger(
-            UUID jobId, TriggerType type, UUID workfowId, int version, boolean enableOnStartup, String name,
+            JobManager jobManager, UUID jobId, TriggerType type, UUID workfowId, int version, boolean enableOnStartup, String name,
             int maxRetries, boolean performance, Map<String, JsonNode> variables ) {
+        this.jobManager = jobManager;
         this.jobId = jobId;
         this.type = type;
         this.workfowId = workfowId;
@@ -123,9 +123,9 @@ public abstract class JobTrigger {
     }
 
 
-    public static JobTrigger fromModel( JobModel model ) throws WorkflowJobException {
+    public static JobTrigger fromModel( JobManager jobManager, JobModel model ) throws WorkflowJobException {
         return switch ( model.getType() ) {
-            case SCHEDULED -> new ScheduledJob( model );
+            case SCHEDULED -> new ScheduledJob( jobManager, model );
         };
     }
 

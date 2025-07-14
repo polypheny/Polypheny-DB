@@ -38,8 +38,6 @@ import org.polypheny.db.workflow.repo.WorkflowRepoImpl;
 @Slf4j
 public class SessionManager {
 
-    private static final SessionManager INSTANCE = new SessionManager();
-
     private final Map<UUID, UserSession> userSessions = new ConcurrentHashMap<>();
     private final Map<UUID, ApiSession> apiSessions = new ConcurrentHashMap<>();
     private final Map<UUID, NestedSession> nestedSessions = new ConcurrentHashMap<>(); // unlike the map in the nestedSessionManager, the key is a sessionId
@@ -47,12 +45,7 @@ public class SessionManager {
     private final WorkflowRepo repo = WorkflowRepoImpl.getInstance();
 
 
-    private SessionManager() {
-    }
-
-
-    public static SessionManager getInstance() {
-        return INSTANCE;
+    public SessionManager() {
     }
 
 
@@ -242,7 +235,7 @@ public class SessionManager {
 
     private UUID registerUserSession( Workflow wf, UUID wId, int version ) {
         UUID sId = UUID.randomUUID();
-        UserSession session = new UserSession( sId, wf, wId, version );
+        UserSession session = new UserSession( this, sId, wf, wId, version );
         userSessions.put( sId, session );
         return sId;
     }
@@ -250,7 +243,7 @@ public class SessionManager {
 
     private UUID registerApiSession( Workflow wf ) {
         UUID sId = UUID.randomUUID();
-        ApiSession session = new ApiSession( sId, wf );
+        ApiSession session = new ApiSession( this, sId, wf );
         apiSessions.put( sId, session );
         return sId;
     }
@@ -258,7 +251,7 @@ public class SessionManager {
 
     public UUID registerJobSession( Workflow wf, JobTrigger trigger ) {
         UUID sId = UUID.randomUUID();
-        JobSession session = new JobSession( sId, wf, trigger );
+        JobSession session = new JobSession( this, sId, wf, trigger );
         jobSessions.put( sId, session );
         return sId;
     }

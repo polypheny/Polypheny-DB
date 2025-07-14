@@ -91,12 +91,12 @@ public abstract class AbstractSession {
     private boolean terminationFailed;
 
 
-    protected AbstractSession( SessionModelType type, Workflow workflow, UUID sessionId ) {
-        this( type, workflow, sessionId, null, 0, null );
+    protected AbstractSession( SessionManager sessionManager, SessionModelType type, Workflow workflow, UUID sessionId ) {
+        this( sessionManager, type, workflow, sessionId, null, 0, null );
     }
 
 
-    protected AbstractSession( SessionModelType type, Workflow workflow, UUID sessionId, @Nullable UUID workflowId, int version, @Nullable Set<Pair<UUID, Integer>> parentWorkflowIds ) {
+    protected AbstractSession( SessionManager sessionManager, SessionModelType type, Workflow workflow, UUID sessionId, @Nullable UUID workflowId, int version, @Nullable Set<Pair<UUID, Integer>> parentWorkflowIds ) {
         this.type = type;
         this.workflow = workflow;
         this.sessionId = sessionId;
@@ -107,7 +107,7 @@ public abstract class AbstractSession {
         if ( workflowId != null ) {
             workflowIds.add( Pair.of( workflowId, version ) );
         }
-        this.nestedManager = new NestedSessionManager( workflowIds, this.type == SessionModelType.NESTED_SESSION );
+        this.nestedManager = new NestedSessionManager( sessionManager, workflowIds, this.type == SessionModelType.NESTED_SESSION );
     }
 
 

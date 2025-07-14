@@ -58,8 +58,8 @@ public class NestedSession extends AbstractSession {
     private final Map<String, JsonNode> initialWorkflowVars;
 
 
-    public NestedSession( UUID sessionId, Workflow wf, UUID workflowId, int openedVersion, Set<Pair<UUID, Integer>> parentWorkflowIds ) {
-        super( NESTED_SESSION, wf, sessionId, workflowId, openedVersion, parentWorkflowIds );
+    public NestedSession( SessionManager sessionManager, UUID sessionId, Workflow wf, UUID workflowId, int openedVersion, Set<Pair<UUID, Integer>> parentWorkflowIds ) {
+        super( sessionManager, NESTED_SESSION, wf, sessionId, workflowId, openedVersion, parentWorkflowIds );
         assert !parentWorkflowIds.contains( Pair.of( workflowId, openedVersion ) ) : "Detected cycle in nested workflows.";
         this.wId = workflowId;
         this.openedVersion = openedVersion;
