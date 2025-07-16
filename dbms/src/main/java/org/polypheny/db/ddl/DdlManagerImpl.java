@@ -296,9 +296,9 @@ public class DdlManagerImpl extends DdlManager {
                     : exportedColumnList.get( 0 ).physicalSchemaName();
 
             LogicalTable logical = findLogicalTableByPhysical( namespace, adapter.get(), physicalSchema, tableName );
-            /*if ( logical == null ) {
+            if ( logical == null ) {
                 logical = catalog.getSnapshot().rel().getTable( namespace, tableName ).orElse( null );
-            }*/
+            }
             AllocationPlacement placement;
             AllocationEntity allocation;
 

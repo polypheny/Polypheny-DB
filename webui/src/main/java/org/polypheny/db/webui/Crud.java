@@ -994,7 +994,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         log.info( "Acknowledgement incoming: " + payload.toString() );
         PublisherManager.getInstance().ack( payload.uniqueName, payload.addedPaths );
 
-        Optional<DataSource<?>> adapter = AdapterManager.getInstance().getSource( payload.uniqueName );
+        // Optional<DataSource<?>> adapter = AdapterManager.getInstance().getSource( payload.uniqueName );
         Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "metadata-ack-" + payload.uniqueName );
         Statement stmt = transaction.createStatement();
         try {
