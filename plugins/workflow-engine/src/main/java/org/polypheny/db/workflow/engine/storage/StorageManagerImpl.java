@@ -55,6 +55,7 @@ import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.type.ArrayType;
@@ -98,6 +99,7 @@ public class StorageManagerImpl implements StorageManager {
     private final Map<Long, String> registeredNamespaces = new ConcurrentHashMap<>();
     private final AdapterManager adapterManager;
     private final DdlManager ddlManager;
+    private final TransactionManager transactionManager;
 
     private final Map<UUID, Transaction> localTransactions = new ConcurrentHashMap<>();
     private Transaction extractTransaction;
@@ -107,9 +109,10 @@ public class StorageManagerImpl implements StorageManager {
     private final long docNamespace;
 
 
-    public StorageManagerImpl( UUID sessionId, Map<DataModel, String> defaultStores ) {
+    public StorageManagerImpl( TransactionManager transactionManager, UUID sessionId, Map<DataModel, String> defaultStores ) {
         adapterManager = AdapterManager.getInstance();
         ddlManager = DdlManager.getInstance();
+        this.transactionManager = transactionManager;
 
         this.sessionId = sessionId;
         this.defaultStores = new ConcurrentHashMap<>( defaultStores );
@@ -156,9 +159,9 @@ public class StorageManagerImpl implements StorageManager {
         Pair<LogicalEntity, CheckpointMetadata> checkpoint = Objects.requireNonNull( checkpoints.get( activityId ).get( outputIdx ), "Checkpoint does not exist for output " + outputIdx + " of activity " + activityId );
         LogicalEntity entity = checkpoint.left;
         return switch ( entity.dataModel ) {
-            case RELATIONAL -> new RelReader( (LogicalTable) entity, QueryUtils.startTransaction( entity.namespaceId, "RelRead" ), checkpoint.right.asRel() );
-            case DOCUMENT -> new DocReader( (LogicalCollection) entity, QueryUtils.startTransaction( entity.namespaceId, "DocRead" ), checkpoint.right.asDoc() );
-            case GRAPH -> new LpgReader( (LogicalGraph) entity, QueryUtils.startTransaction( entity.namespaceId, "LpgRead" ), checkpoint.right.asLpg() );
+            case RELATIONAL -> new RelReader( (LogicalTable) entity, QueryUtils.startTransaction( transactionManager, entity.namespaceId, "RelRead" ), checkpoint.right.asRel() );
+            case DOCUMENT -> new DocReader( (LogicalCollection) entity, QueryUtils.startTransaction( transactionManager, entity.namespaceId, "DocRead" ), checkpoint.right.asDoc() );
+            case GRAPH -> new LpgReader( (LogicalGraph) entity, QueryUtils.startTransaction( transactionManager, entity.namespaceId, "LpgRead" ), checkpoint.right.asLpg() );
         };
     }
 
@@ -221,7 +224,7 @@ public class StorageManagerImpl implements StorageManager {
         }
 
         String tableName = getTableName( activityId, outputIdx );
-        Transaction transaction = QueryUtils.startTransaction( relNamespace, "RelCreate" );
+        Transaction transaction = QueryUtils.startTransaction( transactionManager, relNamespace, "RelCreate" );
 
         try {
             acquireSchemaLock( transaction, relNamespace );
@@ -244,7 +247,7 @@ public class StorageManagerImpl implements StorageManager {
         LogicalTable table = Catalog.snapshot().rel().getTable( relNamespace, tableName ).orElseThrow();
         RelMetadata meta = new RelMetadata( table.getTupleType() );
         register( activityId, outputIdx, table, meta );
-        return new RelWriter( table, QueryUtils.startTransaction( relNamespace, "RelWrite" ), resetPk, meta );
+        return new RelWriter( table, QueryUtils.startTransaction( transactionManager, relNamespace, "RelWrite" ), resetPk, meta );
     }
 
 
@@ -256,7 +259,7 @@ public class StorageManagerImpl implements StorageManager {
 
         String collectionName = getCollectionName( activityId, outputIdx );
 
-        Transaction transaction = QueryUtils.startTransaction( docNamespace, "DocCreate" );
+        Transaction transaction = QueryUtils.startTransaction( transactionManager, docNamespace, "DocCreate" );
         try {
             acquireSchemaLock( transaction, docNamespace );
             ddlManager.createCollection(
@@ -277,7 +280,7 @@ public class StorageManagerImpl implements StorageManager {
         LogicalCollection collection = Catalog.snapshot().doc().getCollection( docNamespace, collectionName ).orElseThrow();
         DocMetadata meta = new DocMetadata();
         register( activityId, outputIdx, collection, meta );
-        return new DocWriter( collection, QueryUtils.startTransaction( docNamespace, "DocWrite" ), meta );
+        return new DocWriter( collection, QueryUtils.startTransaction( transactionManager, docNamespace, "DocWrite" ), meta );
     }
 
 
@@ -287,7 +290,7 @@ public class StorageManagerImpl implements StorageManager {
             storeName = getDefaultStore( DataModel.GRAPH );
         }
         String graphName = getGraphName( activityId, outputIdx );
-        Transaction transaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId, "LpgCreate" );
+        Transaction transaction = QueryUtils.startTransaction( transactionManager, Catalog.defaultNamespaceId, "LpgCreate" );
         // no lock required since we create a new namespace
         DataStore<?> store = getStore( storeName );
         long graphId;
@@ -313,7 +316,7 @@ public class StorageManagerImpl implements StorageManager {
         LpgMetadata meta = new LpgMetadata();
         register( activityId, outputIdx, graph, meta );
         registeredNamespaces.put( graphId, graphName );
-        return new LpgWriter( graph, QueryUtils.startTransaction( graphId, "LpgWrite" ), meta, !BATCHABLE_LPG_ADAPTERS.contains( store.adapterName ) );
+        return new LpgWriter( graph, QueryUtils.startTransaction( transactionManager, graphId, "LpgWrite" ), meta, !BATCHABLE_LPG_ADAPTERS.contains( store.adapterName ) );
     }
 
 
@@ -400,7 +403,7 @@ public class StorageManagerImpl implements StorageManager {
     @Override
     public Transaction getTransaction( UUID activityId, CommonType commonType ) {
         return switch ( commonType ) {
-            case NONE -> localTransactions.computeIfAbsent( activityId, id -> QueryUtils.startTransaction( Catalog.defaultNamespaceId, "LocalTx" ) );
+            case NONE -> localTransactions.computeIfAbsent( activityId, id -> QueryUtils.startTransaction( transactionManager, Catalog.defaultNamespaceId, "LocalTx" ) );
             case EXTRACT -> extractTransaction;
             case LOAD -> loadTransaction;
         };
@@ -427,9 +430,9 @@ public class StorageManagerImpl implements StorageManager {
     public void startCommonTransaction( @NonNull ActivityConfigModel.CommonType commonType ) {
         assert commonType != CommonType.NONE;
         if ( commonType == CommonType.EXTRACT ) {
-            extractTransaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId );
+            extractTransaction = QueryUtils.startTransaction( transactionManager, Catalog.defaultNamespaceId );
         } else if ( commonType == CommonType.LOAD ) {
-            loadTransaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId );
+            loadTransaction = QueryUtils.startTransaction( transactionManager, Catalog.defaultNamespaceId );
         }
     }
 
@@ -478,7 +481,7 @@ public class StorageManagerImpl implements StorageManager {
 
 
     private void dropEntity( LogicalEntity entity ) {
-        Transaction transaction = QueryUtils.startTransaction( entity.getNamespaceId(), "DropCheckpoint" );
+        Transaction transaction = QueryUtils.startTransaction( transactionManager, entity.getNamespaceId(), "DropCheckpoint" );
         Statement statement = transaction.createStatement();
         acquireSchemaLock( transaction, entity.getNamespaceId() );
         switch ( entity.dataModel ) {
@@ -491,7 +494,7 @@ public class StorageManagerImpl implements StorageManager {
 
 
     private void dropNamespaces() {
-        Transaction transaction = QueryUtils.startTransaction( relNamespace, "DropNamespaces" );
+        Transaction transaction = QueryUtils.startTransaction( transactionManager, relNamespace, "DropNamespaces" );
         for ( Entry<Long, String> entry : registeredNamespaces.entrySet() ) {
             acquireSchemaLock( transaction, entry.getKey() );
             ddlManager.dropNamespace( entry.getValue(), true, transaction.createStatement() );
@@ -576,7 +579,7 @@ public class StorageManagerImpl implements StorageManager {
 
 
     private static void acquireSchemaLock( Transaction transaction, long namespaceId ) throws DeadlockException {
-        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElse( null );
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceId ).orElse( null );
         if ( namespace == null ) {
             return; // for graphs, the namespace is already removed when the checkpoint is dropped
         }
@@ -635,10 +638,10 @@ public class StorageManagerImpl implements StorageManager {
      * Removes all namespaces and associated checkpoints that currently exist.
      * This should only be called on startup to clean up anything that was not removed.
      */
-    public static void clearAll() {
+    public static void clearAll( TransactionManager transactionManager ) {
         DdlManager ddlManager = DdlManager.getInstance();
-        for ( LogicalNamespace ns : Catalog.getInstance().getSnapshot().getNamespaces( null ) ) {
-            Transaction transaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId, "ClearAllCheckpoints" );
+        for ( LogicalNamespace ns : Catalog.snapshot().getNamespaces( null ) ) {
+            Transaction transaction = QueryUtils.startTransaction( transactionManager, Catalog.defaultNamespaceId, "ClearAllCheckpoints" );
             try {
                 acquireSchemaLock( transaction, ns.id );
                 String name = ns.getName();

@@ -41,8 +41,8 @@ import org.polypheny.db.workflow.models.responses.WsResponse.StateUpdateResponse
 public class ApiSession extends AbstractSession {
 
 
-    public ApiSession( UUID sessionId, Workflow wf ) {
-        super( API_SESSION, wf, sessionId );
+    public ApiSession( SessionManager sessionManager, UUID sessionId, Workflow wf ) {
+        super( sessionManager, API_SESSION, wf, sessionId );
     }
 
 

@@ -50,8 +50,13 @@ import org.polypheny.db.workflow.models.responses.WsResponse.ErrorResponse;
 public class WorkflowWebSocket implements Consumer<WsConfig> {
 
     // maps websocket session to workflow session
-    private final SessionManager sm = SessionManager.getInstance();
+    private final SessionManager sm;
     private static final Map<Session, AbstractSession> sessions = new ConcurrentHashMap<>();
+
+
+    public WorkflowWebSocket( SessionManager sm ) {
+        this.sm = sm;
+    }
 
 
     public void connected( final WsConnectContext ctx ) {

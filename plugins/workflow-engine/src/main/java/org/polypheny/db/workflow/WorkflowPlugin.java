@@ -37,7 +37,7 @@ public class WorkflowPlugin extends PolyPlugin {
 
     @Override
     public void afterTransactionInit( TransactionManager tm ) {
-        manager = new WorkflowManager();
+        manager = new WorkflowManager( tm );
     }
 
 

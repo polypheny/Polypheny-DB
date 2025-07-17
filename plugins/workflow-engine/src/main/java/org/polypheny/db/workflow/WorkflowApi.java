@@ -267,11 +267,6 @@ public class WorkflowApi {
             this.errorCode = errorCode;
         }
 
-
-        public WorkflowApiException( String message ) {
-            this( message, HttpCode.INTERNAL_SERVER_ERROR );
-        }
-
     }
 
 }

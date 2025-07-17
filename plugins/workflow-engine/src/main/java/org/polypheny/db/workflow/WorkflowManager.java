@@ -27,7 +27,8 @@ import java.net.URL;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyphenyDb;
-import org.polypheny.db.transaction.TransactionManagerImpl;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.webui.ConfigService.HandlerType;
@@ -59,13 +60,13 @@ public class WorkflowManager {
     private static final ObjectMapper mapper = new ObjectMapper();
 
 
-    public WorkflowManager() {
+    public WorkflowManager( TransactionManager tm ) {
         repo = WorkflowRepoImpl.getInstance();
-        sessionManager = SessionManager.getInstance();
-        registerEndpoints();
+        sessionManager = new SessionManager( tm );
+        registerEndpoints( sessionManager );
         apiManager = new WorkflowApi( sessionManager );
         apiManager.registerEndpoints( HttpServer.getInstance() );
-        jobManager = JobManager.getInstance();
+        jobManager = new JobManager( sessionManager );
 
         if ( PolyphenyDb.mode == RunMode.TEST ) {
             return;
@@ -75,14 +76,14 @@ public class WorkflowManager {
                 new java.util.TimerTask() {
                     @Override
                     public void run() {
-                        while ( TransactionManagerImpl.getInstance().getNumberOfActiveTransactions() > 0 ) {
+                        while ( tm.getNumberOfActiveTransactions() > 0 ) {
                             try {
                                 Thread.sleep( 100 ); // wait for Statistic Manager to finish to avoid deadlock
                             } catch ( InterruptedException e ) {
-                                throw new RuntimeException( e );
+                                throw new GenericRuntimeException( e );
                             }
                         }
-                        StorageManagerImpl.clearAll(); // remove old namespaces and checkpoints
+                        StorageManagerImpl.clearAll( tm ); // remove old namespaces and checkpoints
                         addSampleWorkflows();
                         try {
                             jobManager.onStartup();
@@ -121,16 +122,16 @@ public class WorkflowManager {
                 }
                 repo.importWorkflow( fileName, group, workflow );
             } catch ( IOException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         }
     }
 
 
-    private void registerEndpoints() {
+    private void registerEndpoints( SessionManager sessionManager ) {
         HttpServer server = HttpServer.getInstance();
 
-        server.addWebsocketRoute( PATH + "/webSocket/{sessionId}", new WorkflowWebSocket() );
+        server.addWebsocketRoute( PATH + "/webSocket/{sessionId}", new WorkflowWebSocket( sessionManager ) );
 
         server.addSerializedRoute( PATH + "/sessions", this::getSessions, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}", this::getSession, HandlerType.GET );
@@ -380,7 +381,7 @@ public class WorkflowManager {
         try {
             ctx.result( mapper.writeValueAsString( model ) );
         } catch ( JsonProcessingException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

@@ -60,7 +60,7 @@ class StorageManagerTest {
 
     @Test
     void hasValidDefaultStoresTest() throws Exception {
-        try ( StorageManager sm = new StorageManagerImpl( sessionId, Map.of() ) ) {
+        try ( StorageManager sm = new StorageManagerImpl( testHelper.getTransactionManager(), sessionId, Map.of() ) ) {
             AdapterManager.getInstance().getStore( sm.getDefaultStore( DataModel.RELATIONAL ) ).orElseThrow();
             AdapterManager.getInstance().getStore( sm.getDefaultStore( DataModel.DOCUMENT ) ).orElseThrow();
             AdapterManager.getInstance().getStore( sm.getDefaultStore( DataModel.GRAPH ) ).orElseThrow();
@@ -70,7 +70,7 @@ class StorageManagerTest {
 
     @Test
     void createRelCheckpointTest() throws Exception {
-        try ( StorageManager sm = new StorageManagerImpl( sessionId, Map.of() ) ) {
+        try ( StorageManager sm = new StorageManagerImpl( testHelper.getTransactionManager(), sessionId, Map.of() ) ) {
             UUID activityId = UUID.randomUUID();
             AlgDataType type = getSampleType();
             sm.createRelCheckpoint( activityId, 0, type, false, null ).close();
@@ -91,7 +91,7 @@ class StorageManagerTest {
 
     @Test
     void writeAndReadRelCheckpointTest() throws Exception {
-        try ( StorageManager sm = new StorageManagerImpl( sessionId, Map.of() ) ) {
+        try ( StorageManager sm = new StorageManagerImpl( testHelper.getTransactionManager(), sessionId, Map.of() ) ) {
             UUID activityId = UUID.randomUUID();
             AlgDataType type = getSampleType();
             List<List<PolyValue>> sampleData = getSampleData();
@@ -124,7 +124,7 @@ class StorageManagerTest {
 
     @Test
     void writeWhileReadingRelCheckpointTest() throws Exception {
-        try ( StorageManager sm = new StorageManagerImpl( sessionId, Map.of() ) ) {
+        try ( StorageManager sm = new StorageManagerImpl( testHelper.getTransactionManager(), sessionId, Map.of() ) ) {
             UUID activityId1 = UUID.randomUUID();
             UUID activityId2 = UUID.randomUUID();
             AlgDataType type = getSampleType();
@@ -151,7 +151,7 @@ class StorageManagerTest {
 
     @Test
     void readQueryResultFromRelCheckpointTest() throws Exception {
-        try ( StorageManager sm = new StorageManagerImpl( sessionId, Map.of() ) ) {
+        try ( StorageManager sm = new StorageManagerImpl( testHelper.getTransactionManager(), sessionId, Map.of() ) ) {
             UUID activityId = UUID.randomUUID();
             AlgDataType type = getSampleType();
             List<List<PolyValue>> sampleData = getSampleData();
@@ -186,7 +186,7 @@ class StorageManagerTest {
     @Timeout(value = 10, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     void createCheckpointWhileReadingTest() throws Exception {
         for ( String store : List.of( StorageUtils.HSQLDB_LOCKS, StorageUtils.HSQLDB_MVLOCKS ) ) {
-            try ( StorageManager sm = new StorageManagerImpl( sessionId, StorageUtils.getDefaultStoreMap( store ) ) ) {
+            try ( StorageManager sm = new StorageManagerImpl( testHelper.getTransactionManager(), sessionId, StorageUtils.getDefaultStoreMap( store ) ) ) {
                 UUID activityId1 = UUID.randomUUID();
                 UUID activityId2 = UUID.randomUUID();
                 AlgDataType type = getSampleType();
@@ -227,7 +227,7 @@ class StorageManagerTest {
         UUID activityId1 = UUID.randomUUID();
         UUID activityId2 = UUID.randomUUID();
 
-        try ( StorageManager sm = new StorageManagerImpl( sessionId, Map.of() ) ) {
+        try ( StorageManager sm = new StorageManagerImpl( testHelper.getTransactionManager(), sessionId, Map.of() ) ) {
             sm.createRelCheckpoint( activityId1, 0, type, false, null ).close();
             sm.createRelCheckpoint( activityId1, 1, type, false, null ).close();
 

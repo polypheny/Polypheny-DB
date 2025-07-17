@@ -51,7 +51,7 @@ class WorkflowSchedulerTest {
 
     @BeforeEach
     public void init() {
-        sm = new StorageManagerImpl( sessionId, StorageUtils.getDefaultStoreMap( "locks" ) );
+        sm = new StorageManagerImpl( testHelper.getTransactionManager(), sessionId, StorageUtils.getDefaultStoreMap( "locks" ) );
     }
 
 

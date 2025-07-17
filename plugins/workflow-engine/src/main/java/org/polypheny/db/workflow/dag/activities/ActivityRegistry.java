@@ -33,6 +33,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.dag.activities.ActivityException.InvalidSettingException;
@@ -83,7 +84,7 @@ public class ActivityRegistry {
             Constructor<? extends Activity> constructor = def.getActivityClass().getConstructor();
             return constructor.newInstance();
         } catch ( InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e ) {
-            throw new RuntimeException( "Encountered problem during activity instantiation for type: " + activityType );
+            throw new GenericRuntimeException( "Encountered problem during activity instantiation for type: " + activityType );
         }
     }
 
@@ -193,7 +194,7 @@ public class ActivityRegistry {
         try {
             return mapper.writeValueAsString( registry );
         } catch ( JsonProcessingException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

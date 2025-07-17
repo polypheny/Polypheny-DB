@@ -57,8 +57,8 @@ public class JobSession extends AbstractSession {
     private final Map<String, JsonNode> initialVariables;
 
 
-    public JobSession( UUID sessionId, Workflow wf, JobTrigger trigger ) {
-        super( JOB_SESSION, wf, sessionId, trigger.getWorkfowId(), trigger.getVersion(), null );
+    public JobSession( SessionManager sessionManager, UUID sessionId, Workflow wf, JobTrigger trigger ) {
+        super( sessionManager, JOB_SESSION, wf, sessionId, trigger.getWorkfowId(), trigger.getVersion(), null );
         this.trigger = trigger;
         if ( trigger.isPerformance() ) {
             WorkflowConfigModel config = wf.getConfig().withOptimizationsEnabled();

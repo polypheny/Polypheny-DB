@@ -53,7 +53,7 @@ import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionManagerImpl;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
@@ -201,14 +201,14 @@ public class QueryUtils {
     }
 
 
-    public static Transaction startTransaction( long namespace ) {
-        return startTransaction( namespace, null );
+    public static Transaction startTransaction( TransactionManager transactionManager, long namespace ) {
+        return startTransaction( transactionManager, namespace, null );
     }
 
 
-    public static Transaction startTransaction( long namespace, String originSuffix ) {
+    public static Transaction startTransaction( TransactionManager transactionManager, long namespace, String originSuffix ) {
         String origin = (originSuffix == null || originSuffix.isEmpty()) ? StorageManager.ORIGIN : StorageManager.ORIGIN + "-" + originSuffix;
-        return TransactionManagerImpl.getInstance().startTransaction( Catalog.defaultUserId, namespace, false, origin );
+        return transactionManager.startTransaction( Catalog.defaultUserId, namespace, false, origin );
     }
 
 

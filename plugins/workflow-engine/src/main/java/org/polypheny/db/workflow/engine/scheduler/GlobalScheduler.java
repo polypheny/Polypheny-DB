@@ -48,7 +48,7 @@ import org.polypheny.db.workflow.session.NestedSessionManager;
 @Slf4j
 public class GlobalScheduler {
 
-    private static GlobalScheduler INSTANCE;
+    private static final GlobalScheduler INSTANCE = new GlobalScheduler();
     private int globalWorkerCount = Math.max( 1, RuntimeConfig.WORKFLOWS_WORKERS.getInteger() );
 
     private final Map<UUID, WorkflowScheduler> schedulers = new HashMap<>();
@@ -71,9 +71,6 @@ public class GlobalScheduler {
 
 
     public static GlobalScheduler getInstance() {
-        if ( INSTANCE == null ) {
-            INSTANCE = new GlobalScheduler();
-        }
         return INSTANCE;
     }
 
@@ -157,7 +154,7 @@ public class GlobalScheduler {
         try {
             resultProcessor.join( 5000 );
         } catch ( InterruptedException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
         executor.shutdownNow();
 
@@ -242,7 +239,7 @@ public class GlobalScheduler {
                     break; // interrupted by shutdownNow
                 } catch ( ExecutionException e ) {
                     log.warn( "Scheduler result processor has encountered an unhandled exception: ", e );
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 } finally {
                     if ( info != null ) {
                         info.setState( ExecutionState.DONE );

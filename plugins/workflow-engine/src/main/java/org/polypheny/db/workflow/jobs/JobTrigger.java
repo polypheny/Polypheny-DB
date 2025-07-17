@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.workflow.jobs.JobManager.WorkflowJobException;
 import org.polypheny.db.workflow.models.JobModel;
 
@@ -34,7 +34,7 @@ import org.polypheny.db.workflow.models.JobModel;
 @Getter
 public abstract class JobTrigger {
 
-    private static final JobManager jobManager = JobManager.getInstance();
+    private final JobManager jobManager;
     final UUID jobId;
     final TriggerType type;
     final UUID workfowId;
@@ -52,8 +52,9 @@ public abstract class JobTrigger {
 
 
     public JobTrigger(
-            UUID jobId, TriggerType type, UUID workfowId, int version, boolean enableOnStartup, String name,
+            JobManager jobManager, UUID jobId, TriggerType type, UUID workfowId, int version, boolean enableOnStartup, String name,
             int maxRetries, boolean performance, Map<String, JsonNode> variables ) {
+        this.jobManager = jobManager;
         this.jobId = jobId;
         this.type = type;
         this.workfowId = workfowId;
@@ -84,14 +85,14 @@ public abstract class JobTrigger {
                 try {
                     Thread.sleep( RETRY_DELAY_MILLIS );
                 } catch ( InterruptedException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 }
                 try {
                     Map<String, JsonNode> vars = new HashMap<>( lastVariables );
                     vars.put( "job_retry", IntNode.valueOf( retries ) );
                     jobManager.trigger( jobId, "Retry " + retries, vars, this::onExecutionFinished );
                 } catch ( Exception e ) {
-                    log.warn( "Unable to trigger job " + jobId, e );
+                    log.warn( "Unable to trigger job {}", jobId, e );
                 }
             } else {
                 retries = 0;
@@ -107,7 +108,7 @@ public abstract class JobTrigger {
 
     boolean trigger( String message ) {
         if ( retries > 0 ) {
-            log.warn( "Execution skipped as a retry is in progress for job " + jobId );
+            log.warn( "Execution skipped as a retry is in progress for job {}", jobId );
             return false;
         }
         Map<String, JsonNode> vars = new HashMap<>( variables == null ? Map.of() : variables );
@@ -116,17 +117,16 @@ public abstract class JobTrigger {
             jobManager.trigger( jobId, message, vars, this::onExecutionFinished );
             this.lastVariables = vars;
         } catch ( Exception e ) {
-            log.warn( "Unable to trigger job " + jobId, e );
+            log.warn( "Unable to trigger job {}", jobId, e );
             return false;
         }
         return true;
     }
 
 
-    public static JobTrigger fromModel( JobModel model ) throws WorkflowJobException {
+    public static JobTrigger fromModel( JobManager jobManager, JobModel model ) throws WorkflowJobException {
         return switch ( model.getType() ) {
-            case SCHEDULED -> new ScheduledJob( model );
-            default -> throw new NotImplementedException( "Unsupported job type: " + model.getType() );
+            case SCHEDULED -> new ScheduledJob( jobManager, model );
         };
     }
 

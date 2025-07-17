@@ -36,16 +36,13 @@ import org.polypheny.db.workflow.jobs.JobManager.WorkflowJobException;
 @Slf4j
 public class CronScheduler {
 
-    private static CronScheduler INSTANCE = null;
+    private static final CronScheduler INSTANCE = new CronScheduler();
     private final Map<UUID, Pair<Cron, Runnable>> jobMap = new ConcurrentHashMap<>();
     private ScheduledExecutorService scheduler = null;
     private final CronParser parser = new CronParser( CronDefinitionBuilder.instanceDefinitionFor( CronType.UNIX ) );
 
 
     public static CronScheduler getInstance() {
-        if ( INSTANCE == null ) {
-            INSTANCE = new CronScheduler();
-        }
         return INSTANCE;
     }
 

@@ -55,8 +55,8 @@ public class UserSession extends AbstractSession {
     private int openedVersion;
 
 
-    public UserSession( UUID sessionId, Workflow wf, UUID workflowId, int openedVersion ) {
-        super( USER_SESSION, wf, sessionId, workflowId, openedVersion, null );
+    public UserSession( SessionManager sessionManager, UUID sessionId, Workflow wf, UUID workflowId, int openedVersion ) {
+        super( sessionManager, USER_SESSION, wf, sessionId, workflowId, openedVersion, null );
         this.wId = workflowId;
         this.openedVersion = openedVersion;
     }
