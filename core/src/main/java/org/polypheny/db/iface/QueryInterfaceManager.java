@@ -19,10 +19,14 @@ package org.polypheny.db.iface;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableMap;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
@@ -43,6 +47,9 @@ public class QueryInterfaceManager {
 
     private final TransactionManager transactionManager;
     private final Authenticator authenticator;
+
+    @Getter
+    public final Map<String, QueryInterfaceTemplate> interfaceTemplates = new ConcurrentHashMap<>();
 
 
     public static QueryInterfaceManager getInstance() {
@@ -72,7 +79,7 @@ public class QueryInterfaceManager {
     public static void addInterfaceTemplate(
             String interfaceName, String description,
             List<QueryInterfaceSetting> availableSettings, Function5<TransactionManager, Authenticator, String, Map<String, String>, QueryInterface> deployer ) {
-        Catalog.getInstance().createInterfaceTemplate( interfaceName, new QueryInterfaceTemplate( interfaceName, description,
+        QueryInterfaceManager.getInstance().interfaceTemplates.put( interfaceName, new QueryInterfaceTemplate( interfaceName, description,
                 deployer, availableSettings ) );
     }
 
@@ -81,12 +88,7 @@ public class QueryInterfaceManager {
         if ( Catalog.snapshot().getQueryInterfaces().values().stream().anyMatch( i -> i.getInterfaceType().equals( interfaceName ) ) ) {
             throw new GenericRuntimeException( "Cannot remove the interface type, there is still a interface active." );
         }
-        Catalog.getInstance().dropInterfaceTemplate( interfaceName );
-    }
-
-
-    public QueryInterface getQueryInterface( int id ) {
-        return interfaceById.get( id );
+        QueryInterfaceManager.getInstance().interfaceTemplates.remove( interfaceName );
     }
 
 
@@ -95,8 +97,8 @@ public class QueryInterfaceManager {
     }
 
 
-    public List<QueryInterfaceTemplate> getAvailableQueryInterfaceTemplates() {
-        return Catalog.snapshot().getInterfaceTemplates();
+    public Collection<QueryInterfaceTemplate> getAvailableQueryInterfaceTemplates() {
+        return QueryInterfaceManager.getInstance().getInterfaceTemplates().values();
     }
 
 
@@ -130,7 +132,7 @@ public class QueryInterfaceManager {
     public void restoreInterfaces( Snapshot snapshot ) {
         Map<Long, LogicalQueryInterface> interfaces = snapshot.getQueryInterfaces();
         interfaces.forEach( ( id, l ) -> {
-                    QueryInterface q = Catalog.snapshot().getInterfaceTemplate( l.interfaceType )
+                    QueryInterface q = Optional.of( interfaceTemplates.get( l.interfaceType ) )
                             .map( t -> t.deployer.get( transactionManager, authenticator, l.name, l.settings ) )
                             .orElseThrow();
                     startInterface( q, l.interfaceType, id );
@@ -145,7 +147,10 @@ public class QueryInterfaceManager {
             throw new GenericRuntimeException( "There is already a query interface with this unique name" );
         }
         QueryInterface instance;
-        QueryInterfaceTemplate template = Catalog.snapshot().getInterfaceTemplate( interfaceType ).orElseThrow();
+        QueryInterfaceTemplate template = interfaceTemplates.get( interfaceType );
+        if ( template == null ) {
+            throw new GenericRuntimeException( "No interface of type " + interfaceType );
+        }
         try {
             instance = template.deployer().get( transactionManager, authenticator, uniqueName, settings );
         } catch ( GenericRuntimeException e ) {

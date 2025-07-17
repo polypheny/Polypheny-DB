@@ -508,7 +508,7 @@ public class StorageManagerImpl implements StorageManager {
         }
         if ( STARTED_ADAPTER.compareAndSet( false, true ) ) {
             log.info( "Adding default workflow checkpoint adapter: " + DEFAULT_CHECKPOINT_ADAPTER );
-            AdapterTemplate storeTemplate = Catalog.snapshot().getAdapterTemplate( "HSQLDB", AdapterType.STORE ).orElseThrow();
+            AdapterTemplate storeTemplate = AdapterManager.getAdapterTemplate( "HSQLDB", AdapterType.STORE );
             Map<String, String> settings = new HashMap<>( storeTemplate.getDefaultSettings() );
             settings.put( "trxControlMode", "locks" );
             settings.put( "type", "File" );

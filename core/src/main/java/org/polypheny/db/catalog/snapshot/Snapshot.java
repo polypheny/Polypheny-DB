@@ -21,19 +21,16 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
-import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
 
@@ -129,10 +126,6 @@ public interface Snapshot extends OperatorTable {
     @NotNull
     Optional<LogicalQueryInterface> getQueryInterface( String uniqueName );
 
-    @NotNull
-    Optional<QueryInterfaceTemplate> getInterfaceTemplate( String name );
-
-
     List<LogicalTable> getTablesForPeriodicProcessing();
 
     //// OTHERS
@@ -147,22 +140,8 @@ public interface Snapshot extends OperatorTable {
         return List.of();
     }
 
-
-    Optional<AdapterTemplate> getAdapterTemplate( long templateId );
-
-    @NotNull
-    List<AdapterTemplate> getAdapterTemplates();
-
     @NotNull
     Optional<? extends LogicalEntity> getLogicalEntity( long id );
-
-    @NotNull
-    Optional<AdapterTemplate> getAdapterTemplate( String name, AdapterType adapterType );
-
-    List<AdapterTemplate> getAdapterTemplates( AdapterType adapterType );
-
-    List<QueryInterfaceTemplate> getInterfaceTemplates();
-
 
     LogicalRelSnapshot rel();
 

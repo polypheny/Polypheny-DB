@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.webui.models.AdapterTemplateModel;
@@ -118,7 +119,7 @@ public record SnapshotModel(
 
         List<AdapterModel> adapters = snapshot.getAdapters().stream().map( AdapterModel::from ).filter( Objects::nonNull ).toList();
 
-        List<AdapterTemplateModel> adapterTemplates = snapshot.getAdapterTemplates().stream().map( AdapterTemplateModel::from ).toList();
+        List<AdapterTemplateModel> adapterTemplates = AdapterManager.getInstance().getAdapterTemplates().values().stream().map( AdapterTemplateModel::from ).toList();
 
         return new SnapshotModel( snapshot.id(), namespaces, entities, fields, keys, constraints, allocations, placements, partitions, allocationColumns, adapters, adapterTemplates );
     }

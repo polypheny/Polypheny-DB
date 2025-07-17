@@ -207,14 +207,14 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void createStore( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
         uniqueName = uniqueName.toLowerCase();
-        AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
+        AdapterManager.getInstance().addAdapter( catalog, adapterName, uniqueName, adapterType, mode, config );
     }
 
 
     @Override
     public void createSource( Transaction transaction, String uniqueName, String adapterName, long namespace, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
         uniqueName = uniqueName.toLowerCase();
-        DataSource<?> adapter = (DataSource<?>) AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
+        DataSource<?> adapter = (DataSource<?>) AdapterManager.getInstance().addAdapter( catalog, adapterName, uniqueName, adapterType, mode, config );
         namespace = adapter.getCurrentNamespace() == null ? namespace : adapter.getCurrentNamespace().getId(); // TODO: clean implementation. Sources should either create their own namespace or there should be default namespaces for different models.
         if ( adapter.supportsRelational() ) {
             createRelationalSource( transaction, adapter, namespace );
@@ -235,7 +235,7 @@ public class DdlManagerImpl extends DdlManager {
         try {
             exportedCollections = adapter.asDocumentDataSource().getExportedCollections();
         } catch ( Exception e ) {
-            AdapterManager.getInstance().removeAdapter( adapter.getAdapterId() );
+            AdapterManager.getInstance().removeAdapter( catalog, adapter.getAdapterId() );
             throw new GenericRuntimeException( "Could not deploy adapter", e );
         }
 
@@ -258,7 +258,7 @@ public class DdlManagerImpl extends DdlManager {
         try {
             exportedColumns = adapter.asRelationalDataSource().getExportedColumns();
         } catch ( Exception e ) {
-            AdapterManager.getInstance().removeAdapter( adapter.getAdapterId() );
+            AdapterManager.getInstance().removeAdapter( catalog, adapter.getAdapterId() );
             throw new GenericRuntimeException( "Could not deploy adapter", e );
         }
         // Create table, columns etc.
@@ -381,7 +381,7 @@ public class DdlManagerImpl extends DdlManager {
 
             }
         }
-        AdapterManager.getInstance().removeAdapter( adapter.id );
+        AdapterManager.getInstance().removeAdapter( catalog, adapter.id );
     }
 
 
@@ -913,12 +913,12 @@ public class DdlManagerImpl extends DdlManager {
                 } else if ( snapshot.isForeignKey( key.id ) ) {
                     throw new GenericRuntimeException( "Cannot drop column '" + column.name + "' because it is part of the foreign key with the name: '" + snapshot.getForeignKeys( key ).get( 0 ).name + "'." );
                 } else if ( snapshot.isConstraint( key.id ) ) {
-                    List<LogicalConstraint> constraints = snapshot.getConstraints(key).stream()
-                            .filter(k -> k.keyId == key.id)
+                    List<LogicalConstraint> constraints = snapshot.getConstraints( key ).stream()
+                            .filter( k -> k.keyId == key.id )
                             .toList();
-                    if (!constraints.isEmpty() && constraints.stream().allMatch(k -> k.type == ConstraintType.UNIQUE)) {
-                        for (LogicalConstraint c : constraints) {
-                            dropConstraint(statement.getTransaction(), table, c.name);
+                    if ( !constraints.isEmpty() && constraints.stream().allMatch( k -> k.type == ConstraintType.UNIQUE ) ) {
+                        for ( LogicalConstraint c : constraints ) {
+                            dropConstraint( statement.getTransaction(), table, c.name );
                         }
                         continue;
                     }
