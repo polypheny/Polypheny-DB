@@ -99,8 +99,14 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
         @Override
         public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+            String physicalSchema;
+            if ( logical.physicalSchema == null ) {
+                physicalSchema = logical.table.getNamespaceName();
+            } else {
+                physicalSchema = logical.physicalSchema;
+            }
             PhysicalTable table = adapterCatalog.createTable(
-                    logical.table.getNamespaceName(),
+                    physicalSchema,
                     logical.table.name,
                     logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                     logical.table,
