@@ -91,23 +91,23 @@ public abstract class AbstractSession {
     private boolean terminationFailed;
 
 
-    protected AbstractSession( SessionModelType type, Workflow workflow, UUID sessionId ) {
-        this( type, workflow, sessionId, null, 0, null );
+    protected AbstractSession( SessionManager sessionManager, SessionModelType type, Workflow workflow, UUID sessionId ) {
+        this( sessionManager, type, workflow, sessionId, null, 0, null );
     }
 
 
-    protected AbstractSession( SessionModelType type, Workflow workflow, UUID sessionId, @Nullable UUID workflowId, int version, @Nullable Set<Pair<UUID, Integer>> parentWorkflowIds ) {
+    protected AbstractSession( SessionManager sessionManager, SessionModelType type, Workflow workflow, UUID sessionId, @Nullable UUID workflowId, int version, @Nullable Set<Pair<UUID, Integer>> parentWorkflowIds ) {
         this.type = type;
         this.workflow = workflow;
         this.sessionId = sessionId;
-        this.sm = new StorageManagerImpl( sessionId, workflow.getConfig().getPreferredStores() );
+        this.sm = new StorageManagerImpl( sessionManager.getTransactionManager(), sessionId, workflow.getConfig().getPreferredStores() );
         this.scheduler = GlobalScheduler.getInstance();
 
         Set<Pair<UUID, Integer>> workflowIds = parentWorkflowIds == null ? new HashSet<>() : new HashSet<>( parentWorkflowIds );
         if ( workflowId != null ) {
             workflowIds.add( Pair.of( workflowId, version ) );
         }
-        this.nestedManager = new NestedSessionManager( workflowIds, this.type == SessionModelType.NESTED_SESSION );
+        this.nestedManager = new NestedSessionManager( sessionManager.getTransactionManager(), sessionManager, workflowIds, this.type == SessionModelType.NESTED_SESSION );
     }
 
 
@@ -208,7 +208,7 @@ public abstract class AbstractSession {
                 }
             }
         } catch ( JsonProcessingException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -360,7 +360,7 @@ public abstract class AbstractSession {
         try {
             return WorkflowRepoImpl.getInstance().getWorkflowDef( workflowId );
         } catch ( WorkflowRepoException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

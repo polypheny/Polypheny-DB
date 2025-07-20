@@ -38,21 +38,13 @@ import org.polypheny.db.workflow.session.SessionManager;
 @Slf4j
 public class JobManager {
 
-    private static JobManager INSTANCE = null;
     private final WorkflowRepo repo = WorkflowRepoImpl.getInstance();
-    private final SessionManager sessionManager = SessionManager.getInstance();
+    private final SessionManager sessionManager;
     private final Map<UUID, UUID> jobToSession = new ConcurrentHashMap<>(); // to be more consistent with the session model, we differ between jobId and sessionId
 
 
-    private JobManager() {
-    }
-
-
-    public static JobManager getInstance() {
-        if ( INSTANCE == null ) {
-            INSTANCE = new JobManager();
-        }
-        return INSTANCE;
+    public JobManager( SessionManager sessionManager ) {
+        this.sessionManager = sessionManager;
     }
 
 
@@ -87,7 +79,7 @@ public class JobManager {
         if ( !repo.doesExist( model.getWorkflowId(), model.getVersion() ) ) {
             throw new WorkflowJobException( "The specified workflow version does not exist: " + model.getWorkflowId() + " v" + model.getVersion(), HttpCode.NOT_FOUND );
         }
-        repo.setJob( JobTrigger.fromModel( model ).toModel() ); // this also validates the JobTrigger
+        repo.setJob( JobTrigger.fromModel( this, model ).toModel() ); // this also validates the JobTrigger
         return jobId;
     }
 
@@ -106,7 +98,7 @@ public class JobManager {
         }
 
         try {
-            JobTrigger trigger = JobTrigger.fromModel( repo.getJob( jobId ) );
+            JobTrigger trigger = JobTrigger.fromModel( this, repo.getJob( jobId ) );
             WorkflowModel model = repo.readVersion( trigger.getWorkfowId(), trigger.getVersion() );
             UUID sessionId = sessionManager.registerJobSession( WorkflowImpl.fromModel( model ), trigger );
             jobToSession.put( jobId, sessionId );

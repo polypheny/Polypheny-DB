@@ -142,7 +142,7 @@ public class LpgLoadActivity implements Activity, Pipeable {
             logInfo.accept( "Creating graph '" + entitySetting.getNamespace() + "'" );
 
             // Unfortunately, we have to create the table outside our activity transaction context.
-            Transaction transaction = QueryUtils.startTransaction( Catalog.defaultNamespaceId, "LpgLoadCreate" );
+            Transaction transaction = QueryUtils.startTransaction( txSupplier.get().getTransactionManager(), Catalog.defaultNamespaceId, "LpgLoadCreate" );
             try {
                 createdStore = adapterManager.getStore( adapter ).orElseThrow( () ->
                         new InvalidSettingException( "Adapter does not exist: " + adapter, "adapter" ) );
@@ -210,7 +210,7 @@ public class LpgLoadActivity implements Activity, Pipeable {
         if ( createdStore != null ) {
             return !BATCHABLE_LPG_ADAPTERS.contains( createdStore.adapterName );
         }
-        List<AllocationPlacement> placements = Catalog.getInstance().getSnapshot().alloc().getPlacementsFromLogical( graph.id );
+        List<AllocationPlacement> placements = Catalog.snapshot().alloc().getPlacementsFromLogical( graph.id );
         for ( AllocationPlacement placement : placements ) {
             String name = adapterManager.getStore( placement.adapterId ).orElseThrow().adapterName;
             if ( !BATCHABLE_LPG_ADAPTERS.contains( name ) ) {

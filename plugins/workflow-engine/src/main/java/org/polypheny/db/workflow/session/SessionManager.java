@@ -23,8 +23,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.workflow.WorkflowApi.WorkflowApiException;
 import org.polypheny.db.workflow.dag.Workflow;
 import org.polypheny.db.workflow.dag.WorkflowImpl;
@@ -38,24 +40,18 @@ import org.polypheny.db.workflow.repo.WorkflowRepoImpl;
 @Slf4j
 public class SessionManager {
 
-    private static SessionManager INSTANCE = null;
-
     private final Map<UUID, UserSession> userSessions = new ConcurrentHashMap<>();
     private final Map<UUID, ApiSession> apiSessions = new ConcurrentHashMap<>();
     private final Map<UUID, NestedSession> nestedSessions = new ConcurrentHashMap<>(); // unlike the map in the nestedSessionManager, the key is a sessionId
     private final Map<UUID, JobSession> jobSessions = new ConcurrentHashMap<>(); // note that sessionId != jobId
     private final WorkflowRepo repo = WorkflowRepoImpl.getInstance();
 
+    @Getter
+    private final TransactionManager transactionManager;
 
-    private SessionManager() {
-    }
 
-
-    public static SessionManager getInstance() {
-        if ( INSTANCE == null ) {
-            INSTANCE = new SessionManager();
-        }
-        return INSTANCE;
+    public SessionManager( TransactionManager transactionManager ) {
+        this.transactionManager = transactionManager;
     }
 
 
@@ -245,7 +241,7 @@ public class SessionManager {
 
     private UUID registerUserSession( Workflow wf, UUID wId, int version ) {
         UUID sId = UUID.randomUUID();
-        UserSession session = new UserSession( sId, wf, wId, version );
+        UserSession session = new UserSession( this, sId, wf, wId, version );
         userSessions.put( sId, session );
         return sId;
     }
@@ -253,7 +249,7 @@ public class SessionManager {
 
     private UUID registerApiSession( Workflow wf ) {
         UUID sId = UUID.randomUUID();
-        ApiSession session = new ApiSession( sId, wf );
+        ApiSession session = new ApiSession( this, sId, wf );
         apiSessions.put( sId, session );
         return sId;
     }
@@ -261,7 +257,7 @@ public class SessionManager {
 
     public UUID registerJobSession( Workflow wf, JobTrigger trigger ) {
         UUID sId = UUID.randomUUID();
-        JobSession session = new JobSession( sId, wf, trigger );
+        JobSession session = new JobSession( this, sId, wf, trigger );
         jobSessions.put( sId, session );
         return sId;
     }

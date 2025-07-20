@@ -64,7 +64,7 @@ class GlobalSchedulerTest {
     @BeforeEach
     public void init() {
         sessionId = UUID.randomUUID();
-        sm = new StorageManagerImpl( sessionId, StorageUtils.getDefaultStoreMap( "locks" ) );
+        sm = new StorageManagerImpl( testHelper.getTransactionManager(), sessionId, StorageUtils.getDefaultStoreMap( "locks" ) );
     }
 
 
@@ -346,7 +346,7 @@ class GlobalSchedulerTest {
         List<Workflow> workflows = new ArrayList<>();
         List<StorageManager> storageManagers = new ArrayList<>();
         for ( int i = 0; i < nWorkflows; i++ ) {
-            StorageManager storageManager = new StorageManagerImpl( UUID.randomUUID(), StorageUtils.getDefaultStoreMap( "locks" ) );
+            StorageManager storageManager = new StorageManagerImpl( testHelper.getTransactionManager(), UUID.randomUUID(), StorageUtils.getDefaultStoreMap( "locks" ) );
             Workflow workflow = WorkflowUtils.getLongRunningPipe( delay );
             workflows.add( workflow );
             storageManagers.add( storageManager );
