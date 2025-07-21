@@ -29,10 +29,12 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
+import org.polypheny.db.schema.document.FieldDefinition;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.util.CatalogEvent;
+import org.polypheny.db.schema.document.CatalogDocumentCollectionSchema;
 import org.polypheny.db.type.PolySerializable;
 
 @Value
@@ -50,6 +52,10 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
     @Serialize
     @JsonProperty
     public Map<Long, LogicalCollection> collections;
+
+    @Serialize
+    @JsonProperty
+    public Map<Long, CatalogDocumentCollectionSchema> collectionSchemas = new ConcurrentHashMap<>();
 
     PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
@@ -109,5 +115,69 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
     public LogicalCatalog withLogicalNamespace( LogicalNamespace namespace ) {
         return toBuilder().logicalNamespace( namespace ).build();
     }
+
+    // Overloaded method to create a document collection along with an associated schema.
+    public LogicalCollection addCollection(String name, EntityType entity, boolean modifiable, CatalogDocumentCollectionSchema schema) {
+        // Delegate to existing method to create the collection
+        LogicalCollection collection = addCollection(name, entity, modifiable);
+
+        // Store the schema for the newly created collection using its ID
+        collectionSchemas.put(collection.id, schema);
+
+        return collection;
+    }
+
+    // Validates a document against the schema defined for the specified collection.
+    // If no schema is associated (schemaless), the document is accepted as-is.
+    public void validateDocument(long collectionId, Map<String, Object> document) {
+        CatalogDocumentCollectionSchema schema = collectionSchemas.get(collectionId);
+
+        // If the collection is schemaless, no validation is performed
+        if (schema == null) return;
+
+        for (FieldDefinition field : schema.fields.values()) {
+            Object value = document.get(field.name);
+
+            // Check not-null constraint
+            if (field.notNull && value == null) {
+                throw new IllegalArgumentException("Field '" + field.name + "' cannot be null.");
+            }
+
+            // Check type if value is present
+            if (value != null && !validateType(field.type, value)) {
+                throw new IllegalArgumentException("Field '" + field.name + "' has incorrect type.");
+            }
+        }
+    }
+
+    // Internal helper method to verify that a value matches the expected field type.
+    // Returns true if the value is of the correct Java type based on declared schema type.
+    private boolean validateType(String type, Object value) {
+        return switch (type.toUpperCase()) {
+            case "STRING" -> value instanceof String;
+            case "INT" -> value instanceof Integer;
+            case "BOOLEAN" -> value instanceof Boolean;
+            default -> false; // Unrecognized types fail validation
+        };
+    }
+
+    // Updates or replaces the schema for an existing collection.
+    // Emits a change event to inform listeners (optional use of event type).
+    public void alterSchema(long collectionId, CatalogDocumentCollectionSchema newSchema) {
+        collectionSchemas.put(collectionId, newSchema);
+
+        // Emits an event to indicate that the schema was added or modified
+        change(CatalogEvent.LOGICAL_DOC_ENTITY_CREATED, null, newSchema); // Consider using LOGICAL_DOC_ENTITY_MODIFIED
+    }
+
+    // Removes the schema associated with a given collection ID.
+        // This effectively makes the collection schemaless again.
+    public void dropSchema(long collectionId) {
+        collectionSchemas.remove(collectionId);
+
+        // Emits a change event to notify listeners (optional usage)
+        change(CatalogEvent.LOGICAL_DOC_ENTITY_CREATED, null, null); // Consider using LOGICAL_DOC_ENTITY_MODIFIED
+    }
+
 
 }
