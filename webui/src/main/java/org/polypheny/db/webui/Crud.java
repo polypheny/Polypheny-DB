@@ -1028,7 +1028,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .orElseThrow( () -> new IllegalStateException(
                         "Adapter %s doesn't support inteface metadata provider !".formatted( uniqueName ) ) );
 
-        List<ChangeLogEntry> history = PublisherManager.getInstance().getHistory(uniqueName);
+        List<ChangeLogEntry> history = PublisherManager.getInstance().getHistory( uniqueName );
 
         PreviewResult data = new PreviewResult( NodeSerializer.serializeNode( provider.getRoot() ).toString(), provider.getPreview(), history );
         ctx.json( data );
@@ -2217,6 +2217,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void updateAdapterSettings( final Context ctx ) {
         //see https://stackoverflow.com/questions/16872492/gson-and-abstract-superclasses-deserialization-issue
+        log.error( "▶ Payload:\n" + ctx.body() );
         JsonDeserializer<Adapter<?>> storeDeserializer = ( json, typeOfT, context ) -> {
             JsonObject jsonObject = json.getAsJsonObject();
             String type = jsonObject.get( "type" ).getAsString();
@@ -2258,6 +2259,40 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         ctx.json( RelationalResult.builder().affectedTuples( 1 ).build() );
+    }
+
+
+    void updateSettings( final Context ctx ) {
+        log.error( ctx.body() );
+        AdapterModel upd = ctx.bodyAsClass( AdapterModel.class );
+
+        if ( upd.getName() == null || upd.getSettings() == null ) {
+            ctx.status( HttpCode.BAD_REQUEST ).result( "uniqueName und settings required!" );
+            return;
+        }
+
+        Optional<? extends Adapter<?>> store = AdapterManager.getInstance().getStore( upd.getName() );
+        Optional<? extends Adapter<?>> opt = store.isPresent() ? store : AdapterManager.getInstance().getSource( upd.getName() );
+
+        if ( opt.isEmpty() ) {
+            ctx.json( RelationalResult.builder().error( "Adapter not found!" ).build() );
+            return;
+        }
+
+        Adapter<?> adapter = opt.get();
+
+        try {
+            adapter.updateSettings( upd.getSettings() );
+            Catalog.getInstance().commit();
+
+            Transaction tx = getTransaction();
+            tx.createStatement().getQueryProcessor().resetCaches();
+            tx.commit();
+
+            ctx.json( RelationalResult.builder().affectedTuples( 1 ).build() );
+        } catch ( Throwable t ) {
+            ctx.json( RelationalResult.builder().error( "Update canceled: " + t.getMessage() ).build() );
+        }
     }
 
 
@@ -3338,5 +3373,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     public record ConfigPayload( @JsonProperty String uniqueName, @JsonProperty String[] selected ) {
 
     }
+
+
+    public record AdapterSettingsUpdate( String uniqueName, Map<String, String> settings ) {
+
+    }
+
 
 }

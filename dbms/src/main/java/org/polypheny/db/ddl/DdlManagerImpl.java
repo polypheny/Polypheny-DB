@@ -682,10 +682,9 @@ public class DdlManagerImpl extends DdlManager {
                 HashCache.getInstance().put( uniqueName, hash );
                 log.info( "Key used during deployment: {} ", uniqueName );
 
-                if ( !( adapter.getAdapterName().equals( "Excel" ) || adapter.getAdapterName().equals( "CSV" ) ) ) {
-                    pm.onAdapterDeploy( (Adapter & MetadataProvider) mp );
+                if ( !(adapter.getAdapterName().equals( "Excel" ) || adapter.getAdapterName().equals( "CSV" )) ) {
+                    // pm.onAdapterDeploy( (Adapter & MetadataProvider) mp );
                 }
-
 
                 mp.markSelectedAttributes( selectedAttributes );
                 log.error( "SelectedAttributes ist gesetzt aus dem DdlManager und der Tree ist das hier: " );
@@ -702,7 +701,6 @@ public class DdlManagerImpl extends DdlManager {
         }
         // Create table, columns etc.
         for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
-            // Make sure the table name is uniqueString tableName = entry.getKey();
             String physicalSchema = entry.getValue().isEmpty()
                     ? Catalog.DEFAULT_NAMESPACE_NAME
                     : entry.getValue().get( 0 ).physicalSchemaName();
@@ -710,25 +708,36 @@ public class DdlManagerImpl extends DdlManager {
             String baseName = entry.getKey();
             String physicalTable = baseName;
 
-
             Map<String, Set<String>> filter = new HashMap<>();
 
-            if (attributes != null && !attributes.isBlank()) {
-                List<String> paths = new Gson().fromJson(
-                        attributes, new com.google.gson.reflect.TypeToken<List<String>>() {}.getType());
+            if ( attributes != null && !attributes.isBlank() ) {
+                List<String> paths = new Gson().fromJson( attributes, new com.google.gson.reflect.TypeToken<List<String>>() {
+                }.getType() );
 
-                for (String p : paths) {
-                    String[] tok = p.split("\\.");
-                    if (tok.length < 3) continue;
+                for ( String p : paths ) {
+                    String[] tok = p.split( "\\." );
+                    if ( tok.length < 3 ) {
+                        continue;
+                    }
 
-                    String table  = tok[tok.length - 2].toLowerCase();
-                    String column = tok[tok.length - 1].split(":")[0].toLowerCase();
+                    String table = tok[tok.length - 2].toLowerCase();
+                    String column = tok[tok.length - 1].split( ":" )[0].toLowerCase();
 
-                    filter.computeIfAbsent(table, k -> new HashSet<>()).add(column);
+                    filter.computeIfAbsent( table, k -> new HashSet<>() ).add( column );
                 }
             }
 
-            // Make sure the table name is unique
+            selectedAttributeNames = selectedAttributeNames.stream()
+                    .map( attr -> attr.split( ":" )[0].toLowerCase() )
+                    .collect( Collectors.toList() );
+
+            String currentTable = physicalTable.toLowerCase();
+            Set<String> allowed = filter.getOrDefault( currentTable, Collections.emptySet() );
+
+            if ( attributes != null && allowed.isEmpty() ) {
+                continue;
+            }
+
             String tableName = getUniqueEntityName( namespace, entry.getKey(), ( ns, en ) -> catalog.getSnapshot().rel().getTable( ns, en ) );
 
             LogicalTable logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
@@ -741,15 +750,8 @@ public class DdlManagerImpl extends DdlManager {
             List<AllocationColumn> aColumns = new ArrayList<>();
             int colPos = 1;
 
-            selectedAttributeNames = selectedAttributeNames.stream()
-                    .map( attr -> attr.split( ":" )[0].toLowerCase() )
-                    .collect( Collectors.toList() );
-
-            String currentTable = physicalTable.toLowerCase();
-            Set<String> allowed = filter.getOrDefault(currentTable, Collections.emptySet());
-
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
-                if ( adapter instanceof MetadataProvider mp && (attributes != null) && !allowed.isEmpty() && !allowed.contains(exportedColumn.name().toLowerCase())) {
+                if ( adapter instanceof MetadataProvider mp && attributes != null && (allowed.isEmpty() || !allowed.contains( exportedColumn.name().toLowerCase() )) ) {
                     continue;
                 } else {
                     LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
@@ -781,10 +783,10 @@ public class DdlManagerImpl extends DdlManager {
             buildRelationalNamespace( namespace, logical, adapter );
 
             transaction.attachCommitAction( () ->
-                    // we can execute with initial logical and allocation data as this is a source and this will not change
                     adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of(), physicalSchema, physicalTable ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns ) ) );
             catalog.updateSnapshot();
         }
+
     }
 
 
@@ -858,8 +860,9 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
         AdapterManager.getInstance().removeAdapter( adapter.id );
-        PublisherManager.getInstance().onAdapterUndeploy( adapter.uniqueName );
+        // PublisherManager.getInstance().onAdapterUndeploy( adapter.uniqueName );
     }
+
 
     @Override
     public void renameNamespace( String newName, String currentName ) {
