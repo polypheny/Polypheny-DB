@@ -2296,6 +2296,86 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    void updateSettingsForm( final Context ctx ) throws IOException, ServletException {
+
+        initMultipart( ctx );
+        if ( !ctx.isMultipartFormData() ) {
+            ctx.status( HttpCode.BAD_REQUEST )
+                    .result( "Multipart-FormData required" );
+            return;
+        }
+
+        String bodyJson = IOUtils.toString(
+                ctx.req.getPart( "body" ).getInputStream(),
+                StandardCharsets.UTF_8 );
+        PreviewRequest am = HttpServer.mapper.readValue( bodyJson, PreviewRequest.class );
+
+        // … PreviewRequest am = …
+
+        List<String> fileNames;
+        String rawDir = am.getSettings().get("directory");
+
+        try {
+            /* Fall 1: richtiges JSON-Array */
+            fileNames = HttpServer.mapper.readValue(
+                    rawDir,
+                    new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {});
+        } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+            /* Fall 2: einzelner String oder komma­getrennte Liste */
+            String cleaned = rawDir
+                    .replaceAll("[\\[\\]\"]", "")   // eckige/Anführungszeichen weg
+                    .trim();
+            fileNames = Arrays.stream(cleaned.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+        }
+
+
+        Map<String, byte[]> fileBytes = new HashMap<>();
+        for ( Part p : ctx.req.getParts() ) {
+            if ( !"body".equals( p.getName() ) ) {
+                try ( InputStream in = p.getInputStream() ) {
+                    fileBytes.put( p.getName(), IOUtils.toByteArray( in ) );
+                }
+            }
+        }
+
+        /* AbstractAdapterSettingDirectory dirSetting =
+                (AbstractAdapterSettingDirectory) AdapterManager
+                        .getAdapterTemplate( am.getAdapterName(), am.getAdapterType() )
+                        .settings.stream()
+                        .filter( s -> s instanceof AbstractAdapterSettingDirectory )
+                        .findFirst().orElseThrow();*/
+
+        String fullPath = handleUploadFiles( fileBytes, fileNames, null, am );
+        createFormDiffs( am, fullPath );
+        log.error( fullPath );
+        ctx.result( "File(s) stored at: " + fullPath );
+    }
+
+
+    private void createFormDiffs( PreviewRequest previewRequest, String path ) {
+        DataSource<?> currentSource = AdapterManager.getInstance().getSource( previewRequest.uniqueName ).orElseThrow(  );
+
+        MetadataProvider currentProvider = (MetadataProvider) currentSource;
+        AbstractNode currentNode = currentProvider.getRoot();
+
+        previewRequest.settings.put( "directory", path );
+
+        DataSource<?> tempSource = AdapterManager.getAdapterTemplate( previewRequest.adapterName, AdapterType.SOURCE ).createEphemeral( previewRequest.settings );
+
+        MetadataProvider tempProvider = (MetadataProvider) currentSource;
+        AbstractNode tempNode = currentProvider.getRoot();
+
+        currentProvider.printTree( currentNode, 0 );
+        tempProvider.printTree( tempNode, 0 );
+
+        try { tempSource.shutdown(); } catch (Exception ignore) {}
+
+    }
+
+
     /**
      * Get available adapters
      */
@@ -2518,7 +2598,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     // Map<String, byte[]> statt Map<String, InputStream>
     private static String handleUploadFiles( Map<String, byte[]> files, List<String> fileNames, AbstractAdapterSettingDirectory setting, PreviewRequest previewRequest ) {
         File path = PolyphenyHomeDirManager.getInstance()
-                .registerNewFolder( "data/csv/" + previewRequest.adapterName );
+                .registerNewFolder( "data/csv/" + previewRequest.uniqueName );
         for ( String name : fileNames ) {
             byte[] data = files.get( name );
             if ( data == null ) {
