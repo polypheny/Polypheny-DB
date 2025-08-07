@@ -91,6 +91,7 @@ import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
+import org.polypheny.db.adapter.MetadataObserver.AbstractListener;
 import org.polypheny.db.adapter.MetadataObserver.ChangeLogEntry;
 import org.polypheny.db.adapter.MetadataObserver.PublisherManager;
 import org.polypheny.db.adapter.MetadataObserver.PublisherManager.ChangeStatus;
@@ -2367,6 +2368,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         MetadataProvider tempProvider = (MetadataProvider) currentSource;
         AbstractNode tempNode = currentProvider.getRoot();
+        Object newPreview = tempProvider.getPreview();
+
+        PreviewResult result = AbstractListener.buildFormChange( previewRequest.uniqueName, currentNode, tempNode, newPreview );
 
         currentProvider.printTree( currentNode, 0 );
         tempProvider.printTree( tempNode, 0 );
@@ -2561,11 +2565,17 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         if ( fileNames.isEmpty() ) {
             throw new GenericRuntimeException( "No file or directory specified for upload!" );
         }
+
+        setting.inputStreams.clear();
         for ( String fileName : fileNames ) {
-            setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
+            InputStream in = inputStreams.get( fileName );
+            if ( in != null ) {
+                setting.inputStreams.put( fileName, in );
+            }
         }
+
         File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + a.name );
-        for ( Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
+        for ( Map.Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
             try {
                 File file = new File( path, is.getKey() );
                 FileUtils.copyInputStreamToFile( is.getValue(), file );
@@ -2575,6 +2585,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
         return path.getAbsolutePath();
     }
+
 
 
     /* private static String handleUploadFiles( Map<String, InputStream> inputStreams, List<String> fileNames, AbstractAdapterSettingDirectory setting, PreviewRequest a ) {

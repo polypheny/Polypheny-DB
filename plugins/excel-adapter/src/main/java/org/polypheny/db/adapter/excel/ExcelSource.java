@@ -145,7 +145,6 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
 
         if ( connectionMethod == ConnectionMethod.LINK ) {
             dir = settings.get( "directoryName" );
-            log.error( "DirectoryName kommt an als: " + settings.get( "directoryName" ) );
         }
 
         if ( dir == null ) {
@@ -395,9 +394,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
     public AbstractNode fetchMetadataTree() {
 
         Source filePath;
-        // String filePath = "C:/Users/roman/Desktop/Mappe1.xlsx";
-        String firstFile = resolveFileNames().stream().findFirst()
-                .orElseThrow( () -> new GenericRuntimeException( "No file found" ) );
+        String firstFile = resolveFileNames().stream().findFirst().orElseThrow( () -> new GenericRuntimeException( "No file found" ) );
         try {
             filePath = Sources.of( new URL( excelDir, firstFile ) );
         } catch ( MalformedURLException e ) {
@@ -496,11 +493,17 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
 
         String[] parts = fqName.split( "\\.", 2 );
         String sheetName = parts.length == 2 ? parts[1] : parts[0];
-        String filePath = "C:/Users/roman/Desktop/Mappe1.xlsx";
+        Source filePath;
+        String firstFile = resolveFileNames().stream().findFirst().orElseThrow( () -> new GenericRuntimeException( "No file found" ) );
+        try {
+            filePath = Sources.of( new URL( excelDir, firstFile ) );
+        } catch ( MalformedURLException e ) {
+            throw new RuntimeException( e );
+        }
 
         List<Map<String, Object>> rows = new ArrayList<>();
 
-        try ( FileInputStream fis = new FileInputStream( filePath ); Workbook wb = WorkbookFactory.create( fis ) ) {
+        try ( FileInputStream fis = new FileInputStream( filePath.path() ); Workbook wb = WorkbookFactory.create( fis ) ) {
 
             Sheet sheet = wb.getSheet( sheetName );
             if ( sheet == null ) {

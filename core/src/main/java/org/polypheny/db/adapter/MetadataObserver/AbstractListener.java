@@ -21,6 +21,8 @@ import com.google.gson.JsonObject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.MetadataObserver.ChangeLogEntry;
 import org.polypheny.db.adapter.MetadataObserver.ChangeLogEntry.DiffMessageUtil;
 import org.polypheny.db.adapter.MetadataObserver.PublisherManager.ChangeStatus;
@@ -81,6 +83,44 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
         log.info( "JSON: {}", json );
 
         PublisherManager.getInstance().onMetadataChange( adapter.getUniqueName(), new PreviewResult( json, preview, List.of( entry ) ), status );
+    }
+
+
+    public static PreviewResult buildFormChange( String uniqueName, AbstractNode oldRoot, AbstractNode newRoot, Object preview ) {
+        DiffResult diff = MetaDiffUtil.diff( oldRoot, newRoot );
+        ChangeStatus status = NodeUtil.evaluateStatus( diff, oldRoot );
+
+        ChangeLogEntry entry = new ChangeLogEntry( uniqueName, Instant.now().toString(), DiffMessageUtil.toMessages( diff ), status );
+
+        AbstractNode annotated = MetaAnnotator.annotateTree( oldRoot, newRoot, diff );
+        String json = NodeSerializer.serializeNode( annotated ).toString();
+
+        PublisherManager pm = PublisherManager.getInstance();
+        pm.addChange( entry );
+        PreviewResult result = new PreviewResult( json, preview, List.of( entry ) );
+        pm.onMetadataChange( uniqueName, result, status );
+
+        return result;
+
+    }
+
+
+    public static void applyAnnotatedTree( Adapter<?> adapter, AbstractNode newRoot, String newHash, String[] additionallySelectedMetadata ) {
+
+        if ( !( adapter instanceof DataSource ) ) {
+            throw new IllegalArgumentException( "Adapter must be of type DataSource" );
+        }
+
+        MetadataProvider metadataProvider = ( MetadataProvider ) adapter;
+
+        Set<String> selected = NodeUtil.collectSelecedAttributePaths( metadataProvider.getRoot() );
+        if ( additionallySelectedMetadata != null ) {
+            selected.addAll( Arrays.asList( additionallySelectedMetadata ) );
+        }
+
+        metadataProvider.setRoot( newRoot );
+        metadataProvider.markSelectedAttributes( List.copyOf( selected ) );
+        HashCache.getInstance().put( adapter.getUniqueName(), newHash );
     }
 
 
