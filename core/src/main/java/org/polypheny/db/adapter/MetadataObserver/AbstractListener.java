@@ -34,6 +34,10 @@ import org.polypheny.db.schemaDiscovery.AbstractNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import org.polypheny.db.schemaDiscovery.NodeSerializer;
 import org.polypheny.db.schemaDiscovery.NodeUtil;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,6 +51,8 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
     private AbstractNode currentNode;
     private P adapter;
     private String hash;
+
+    private static AbstractNode formRootNode = null;
 
     private static final Gson GSON = new Gson();
 
@@ -86,7 +92,7 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
     }
 
 
-    public static PreviewResult buildFormChange( String uniqueName, AbstractNode oldRoot, AbstractNode newRoot, Object preview ) {
+    public static PreviewResult buildFormChange( String uniqueName, AbstractNode oldRoot, AbstractNode newRoot, Object preview, String path ) {
         DiffResult diff = MetaDiffUtil.diff( oldRoot, newRoot );
         ChangeStatus status = NodeUtil.evaluateStatus( diff, oldRoot );
 
@@ -99,19 +105,21 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
         pm.addChange( entry );
         PreviewResult result = new PreviewResult( json, preview, List.of( entry ) );
         pm.onMetadataChange( uniqueName, result, status );
+        pm.saveTempPath( uniqueName, path );
+
+        formRootNode = newRoot;
 
         return result;
-
     }
 
 
     public static void applyAnnotatedTree( Adapter<?> adapter, AbstractNode newRoot, String newHash, String[] additionallySelectedMetadata ) {
 
-        if ( !( adapter instanceof DataSource ) ) {
+        if ( !(adapter instanceof DataSource) ) {
             throw new IllegalArgumentException( "Adapter must be of type DataSource" );
         }
 
-        MetadataProvider metadataProvider = ( MetadataProvider ) adapter;
+        MetadataProvider metadataProvider = (MetadataProvider) adapter;
 
         Set<String> selected = NodeUtil.collectSelecedAttributePaths( metadataProvider.getRoot() );
         if ( additionallySelectedMetadata != null ) {
@@ -146,10 +154,73 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
     }
 
 
+    public static void applyFormChange( String[] metadata, String uniqueName, String newPath ) {
+        log.info( "Form changes are going to be applied." );
+        AbstractNode newRoot = formRootNode;
+
+        DataSource<?> adapter = AdapterManager.getInstance().getSource( uniqueName ).orElseThrow();
+        MetadataProvider metadataprovider = (MetadataProvider) adapter;
+
+        deleteTempPath( newPath, adapter.getSettings().get( "directory" ) );
+
+        newRoot = metadataprovider.fetchMetadataTree();
+
+        AbstractNode oldRoot = metadataprovider.getRoot();
+        metadataprovider.setRoot( newRoot );
+
+        Set<String> prevSelected = NodeUtil.collectSelecedAttributePaths( oldRoot );
+        // metadataprovider.setRoot( newRoot );
+        if ( metadata != null && metadata.length > 0 ) {
+            prevSelected.addAll( Arrays.asList( metadata ) );
+        }
+
+        metadataprovider.markSelectedAttributes( List.copyOf( prevSelected ) );
+
+        formRootNode = null;
+        PublisherManager.getInstance().deleteTempPath( uniqueName );
+
+    }
+
+
+    private static void deleteTempPath(String tmpPath, String directory) {
+        File tmpDir = new File(tmpPath);
+        File targetDir = new File(directory);
+
+        if (!tmpDir.exists() || !tmpDir.isDirectory()) {
+            throw new IllegalArgumentException("tmpPath is not a valid directory: " + tmpPath);
+        }
+        if (!targetDir.exists() || !targetDir.isDirectory()) {
+            throw new IllegalArgumentException("directory is not a valid directory: " + directory);
+        }
+
+        for (File file : targetDir.listFiles()) {
+            if (!file.delete()) {
+                throw new RuntimeException("Failed to delete file: " + file.getAbsolutePath());
+            }
+        }
+
+        for (File file : tmpDir.listFiles()) {
+            try {
+                Files.copy(file.toPath(), new File(targetDir, file.getName()).toPath(),
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch ( IOException e) {
+                throw new RuntimeException("Failed to copy file: " + file.getAbsolutePath(), e);
+            }
+        }
+
+        for ( File file : tmpDir.listFiles()) {
+            file.delete();
+        }
+        if (!tmpDir.delete()) {
+            throw new RuntimeException("Failed to delete tmpPath directory: " + tmpDir.getAbsolutePath());
+        }
+    }
+
+
+
     @Override
     public boolean isAvailable() {
         return this.available;
     }
 
 }
-

@@ -2306,25 +2306,19 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return;
         }
 
-        String bodyJson = IOUtils.toString(
-                ctx.req.getPart( "body" ).getInputStream(),
-                StandardCharsets.UTF_8 );
+        String bodyJson = IOUtils.toString( ctx.req.getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 );
         PreviewRequest am = HttpServer.mapper.readValue( bodyJson, PreviewRequest.class );
-
-        // … PreviewRequest am = …
 
         List<String> fileNames;
         String rawDir = am.getSettings().get("directory");
 
         try {
-            /* Fall 1: richtiges JSON-Array */
             fileNames = HttpServer.mapper.readValue(
                     rawDir,
                     new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {});
         } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
-            /* Fall 2: einzelner String oder komma­getrennte Liste */
             String cleaned = rawDir
-                    .replaceAll("[\\[\\]\"]", "")   // eckige/Anführungszeichen weg
+                    .replaceAll("[\\[\\]\"]", "")
                     .trim();
             fileNames = Arrays.stream(cleaned.split(","))
                     .map(String::trim)
@@ -2342,14 +2336,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
         }
 
-        /* AbstractAdapterSettingDirectory dirSetting =
-                (AbstractAdapterSettingDirectory) AdapterManager
-                        .getAdapterTemplate( am.getAdapterName(), am.getAdapterType() )
-                        .settings.stream()
-                        .filter( s -> s instanceof AbstractAdapterSettingDirectory )
-                        .findFirst().orElseThrow();*/
-
+        String uniqueName = am.getUniqueName();
+        String tmpName = "tmp_" + System.nanoTime();
+        am.uniqueName = tmpName;
         String fullPath = handleUploadFiles( fileBytes, fileNames, null, am );
+        am.uniqueName = uniqueName;
         createFormDiffs( am, fullPath );
         log.error( fullPath );
         ctx.result( "File(s) stored at: " + fullPath );
@@ -2366,17 +2357,16 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         DataSource<?> tempSource = AdapterManager.getAdapterTemplate( previewRequest.adapterName, AdapterType.SOURCE ).createEphemeral( previewRequest.settings );
 
-        MetadataProvider tempProvider = (MetadataProvider) currentSource;
-        AbstractNode tempNode = currentProvider.getRoot();
+        MetadataProvider tempProvider = (MetadataProvider) tempSource;
+        AbstractNode tempNode = tempProvider.fetchMetadataTree();
         Object newPreview = tempProvider.getPreview();
 
-        PreviewResult result = AbstractListener.buildFormChange( previewRequest.uniqueName, currentNode, tempNode, newPreview );
+        PreviewResult result = AbstractListener.buildFormChange( previewRequest.uniqueName, currentNode, tempNode, newPreview, path );
 
         currentProvider.printTree( currentNode, 0 );
         tempProvider.printTree( tempNode, 0 );
 
         try { tempSource.shutdown(); } catch (Exception ignore) {}
-
     }
 
 

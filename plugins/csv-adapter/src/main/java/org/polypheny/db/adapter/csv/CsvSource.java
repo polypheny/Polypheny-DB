@@ -70,6 +70,7 @@ import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import javax.annotation.Nullable;
 
 @Extension
 @AdapterProperties(
@@ -387,37 +388,43 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
 
     @Override
     public AbstractNode fetchMetadataTree() {
-        File csvFile = new File( "C:/Users/roman/Desktop/Dateieins.csv" );
-        String tableName = csvFile.getName();
-        AbstractNode rootNode = new Node( "csv", tableName.split( "\\." )[0] );
+        this.previewByTable = new HashMap<>();
 
-        try ( BufferedReader reader = new BufferedReader( new FileReader( csvFile ) ) ) {
-            String headerLine = reader.readLine();
-            if ( headerLine == null ) {
-                throw new RuntimeException( "No header line found" );
+        try {
+            Source src = openCsvSource(null);
+            String fileName = src.file().getName();
+            String baseName = fileName.replaceFirst("\\.csv(\\.gz)?$", "");
+            AbstractNode rootNode = new Node("csv", baseName);
+
+            try (BufferedReader reader = new BufferedReader(src.reader())) {
+                String headerLine = reader.readLine();
+                if (headerLine == null) {
+                    throw new RuntimeException("No header line found in " + fileName);
+                }
+
+                String[] rawColumns = headerLine.split(",");
+                for (String colRaw : rawColumns) {
+                    String[] split = colRaw.split(":");
+                    String name = split[0].trim().replaceAll("[^a-zA-Z0-9_]", "");
+                    String type = split.length > 1 ? split[1].trim() : "string";
+
+                    AbstractNode columnNode = new AttributeNode("column", name);
+                    columnNode.addProperty("type", mapCsvType(type));
+                    columnNode.addProperty("nullable", true);
+                    rootNode.addChild(columnNode);
+                }
             }
 
-            String[] rawColumns = headerLine.split( "," );
-            for ( String colRaw : rawColumns ) {
-                String[] split = colRaw.split( ":" );
-                String name = split[0].trim().replaceAll( "[^a-zA-Z0-9_]", "" );
-                String type = split.length > 1 ? split[1].trim() : "string";
+            List<Map<String, Object>> preview = fetchPreview(null, fileName, 10);
+            this.previewByTable.put(fileName, preview);
 
-                AbstractNode columnNode = new AttributeNode( "column", name );
-                columnNode.addProperty( "type", mapCsvType( type ) );
-                columnNode.addProperty( "nullable", true );
+            return rootNode;
 
-                rootNode.addChild( columnNode );
-            }
-            String fqName = csvFile.getName();
-            List<Map<String, Object>> preview = fetchPreview( null, fqName, 10 );
-            this.previewByTable.put( fqName, preview );
-        } catch ( IOException e ) {
-            throw new RuntimeException( "Failed to parse metadata of CSV source: " + e );
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to parse CSV metadata", e);
         }
-        return rootNode;
-
     }
+
 
 
     private String mapCsvType( String rawType ) {
@@ -448,46 +455,79 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
 
 
     @Override
-    public List<Map<String, Object>> fetchPreview( Connection conn, String fqName, int limit ) {
-        File csvFile = new File( "C:/Users/roman/Desktop/Dateieins.csv" );
-        List<Map<String, Object>> rows = new ArrayList<>();
+    public List<Map<String, Object>> fetchPreview(Connection conn, String fqName, int limit) {
+        try {
+            Source src = openCsvSource(fqName);
+            List<Map<String, Object>> rows = new ArrayList<>();
 
-        try ( BufferedReader reader = new BufferedReader( new FileReader( csvFile ) ) ) {
-            String headerLine = reader.readLine();
-            if ( headerLine == null ) {
-                return List.of();
-            }
-
-            String[] headerParts = headerLine.split( "," );
-            List<String> colNames = new ArrayList<>();
-
-            for ( String raw : headerParts ) {
-                String[] split = raw.split( ":" );
-                String colName = split[0].trim();
-                colNames.add( colName );
-            }
-
-            String line;
-            int count = 0;
-            while ( (line = reader.readLine()) != null && count < limit ) {
-                String[] values = line.split( ",", -1 );
-                Map<String, Object> row = new LinkedHashMap<>();
-
-                for ( int i = 0; i < colNames.size(); i++ ) {
-                    String value = i < values.length ? values[i].trim() : null;
-                    row.put( colNames.get( i ), value );
+            try (BufferedReader reader = new BufferedReader(src.reader())) {
+                String headerLine = reader.readLine();
+                if (headerLine == null) {
+                    return List.of();
                 }
 
-                rows.add( row );
-                count++;
+                String[] headerParts = headerLine.split(",");
+                List<String> colNames = new ArrayList<>(headerParts.length);
+                for (String raw : headerParts) {
+                    String[] split = raw.split(":");
+                    colNames.add(split[0].trim());
+                }
+
+                String line;
+                int count = 0;
+                while ((line = reader.readLine()) != null && count < limit) {
+                    String[] values = line.split(",", -1);
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    for (int i = 0; i < colNames.size(); i++) {
+                        String value = i < values.length ? values[i].trim() : null;
+                        row.put(colNames.get(i), value);
+                    }
+                    rows.add(row);
+                    count++;
+                }
             }
 
-        } catch ( IOException e ) {
-            throw new RuntimeException( "Failed to read CSV preview: " + fqName, e );
+            return rows;
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read CSV preview: " + fqName, e);
+        }
+    }
+
+
+    private Source openCsvSource(@Nullable String fqName) throws IOException {
+        if (csvDir.getProtocol().equals("jar")) {
+            if (fqName == null || fqName.isBlank()) {
+                throw new GenericRuntimeException("fqName required when using jar protocol for CSV.");
+            }
+            return Sources.of(new URL(csvDir, fqName));
         }
 
-        return rows;
+        if (Sources.of(csvDir).file().isFile()) {
+            return Sources.of(csvDir);
+        }
+
+        File[] files = Sources.of(csvDir)
+                .file()
+                .listFiles((d, name) -> name.endsWith(".csv") || name.endsWith(".csv.gz"));
+        if (files == null || files.length == 0) {
+            throw new GenericRuntimeException("No .csv files were found in: " + Sources.of(csvDir).file());
+        }
+
+        File chosen;
+        if (fqName != null && !fqName.isBlank()) {
+            chosen = Arrays.stream(files)
+                    .filter(f -> f.getName().equals(fqName))
+                    .findFirst()
+                    .orElseThrow(() -> new GenericRuntimeException("Requested CSV not found: " + fqName));
+        } else {
+            chosen = files[0];
+        }
+
+        return Sources.of(new URL(csvDir, chosen.getName()));
     }
+
+
 
 
     @Override

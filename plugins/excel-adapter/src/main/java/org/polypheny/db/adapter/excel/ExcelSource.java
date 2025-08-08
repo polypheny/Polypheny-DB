@@ -393,6 +393,8 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
     @Override
     public AbstractNode fetchMetadataTree() {
 
+        this.previewByTable = new LinkedHashMap<>();
+
         Source filePath;
         String firstFile = resolveFileNames().stream().findFirst().orElseThrow( () -> new GenericRuntimeException( "No file found" ) );
         try {

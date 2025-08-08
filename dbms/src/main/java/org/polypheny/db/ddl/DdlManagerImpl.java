@@ -683,7 +683,7 @@ public class DdlManagerImpl extends DdlManager {
                 log.info( "Key used during deployment: {} ", uniqueName );
 
                 if ( !(adapter.getAdapterName().equals( "Excel" ) || adapter.getAdapterName().equals( "CSV" )) ) {
-                    // pm.onAdapterDeploy( (Adapter & MetadataProvider) mp );
+                    pm.onAdapterDeploy( (Adapter & MetadataProvider) mp );
                 }
 
                 mp.markSelectedAttributes( selectedAttributes );
@@ -716,7 +716,7 @@ public class DdlManagerImpl extends DdlManager {
 
                 for ( String p : paths ) {
                     String[] tok = p.split( "\\." );
-                    if ( tok.length < 3 ) {
+                    if ( tok.length < 2 ) {
                         continue;
                     }
 
@@ -860,7 +860,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
         AdapterManager.getInstance().removeAdapter( adapter.id );
-        // PublisherManager.getInstance().onAdapterUndeploy( adapter.uniqueName );
+        PublisherManager.getInstance().onAdapterUndeploy( adapter.uniqueName );
     }
 
 

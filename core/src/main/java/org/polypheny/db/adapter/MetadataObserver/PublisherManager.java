@@ -20,6 +20,8 @@ import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.MetadataObserver.Utils.MetaDiffUtil.DiffResult;
 import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResult;
 import org.polypheny.db.schemaDiscovery.AbstractNode;
@@ -41,6 +43,10 @@ public class PublisherManager {
     private final Map<String, MetadataPublisher> publishers = new ConcurrentHashMap<>();
     private final Map<String, PreviewResult> changeCache = new ConcurrentHashMap<>();
     private final Map<String, ChangeStatus> statusCache = new ConcurrentHashMap<>();
+
+
+    // Cache for file metadata changes. Reuploaded Excel- or CSV file paths are temporarily saved.
+    private final Map<String, String> tempFileCache = new ConcurrentHashMap<>();
 
     private final ConcurrentHashMap<String, Deque<ChangeLogEntry>> changeCatalog = new ConcurrentHashMap<>();
 
@@ -72,9 +78,13 @@ public class PublisherManager {
         if ( publishers.containsKey( uniqueName ) ) {
             publishers.get( uniqueName ).stop();
             publishers.remove( uniqueName );
-            this.changeCatalog.remove( uniqueName );
-            log.error( "Adapter {} is going to be unregistered for metadata publish.", uniqueName );
         }
+        this.changeCatalog.remove( uniqueName );
+        this.tempFileCache.remove( uniqueName );
+        this.changeCache.remove( uniqueName );
+        this.statusCache.remove( uniqueName );
+
+        log.error( "Adapter {} is going to be unregistered for metadata publish.", uniqueName );
     }
 
 
@@ -100,7 +110,13 @@ public class PublisherManager {
 
     public void ack( String uniqueName, String[] metadata ) {
         MetadataPublisher publisher = publishers.get( uniqueName );
-        publisher.getListener().applyChange( metadata );
+
+        if ( publishers.isEmpty() ) {
+            AbstractListener.applyFormChange( metadata, uniqueName, tempFileCache.get( uniqueName ) );
+        } else {
+            publisher.getListener().applyChange( metadata );
+        }
+
         changeCache.remove( uniqueName );
         statusCache.remove( uniqueName );
     }
@@ -132,4 +148,18 @@ public class PublisherManager {
         }
     }
 
+
+    public void saveTempPath( String uniqueName, String path ) {
+        tempFileCache.put( uniqueName, path );
+    }
+
+
+    public String getTempPath( String uniqueName ) {
+        return tempFileCache.get( uniqueName );
+    }
+
+
+    public void deleteTempPath( String uniqueName ) {
+        tempFileCache.remove( uniqueName );
+    }
 }
