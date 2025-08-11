@@ -270,7 +270,7 @@ public class DdlManagerImpl extends DdlManager {
                     ? Catalog.DEFAULT_NAMESPACE_NAME
                     : entry.getValue().get( 0 ).physicalSchemaName();
 
-            LogicalTable logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
+            LogicalTable logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !adapter.isDataReadOnly() );
             List<LogicalColumn> columns = new ArrayList<>();
 
             Pair<AllocationPartition, PartitionProperty> partitionProperty = createSinglePartition( logical.namespaceId, logical );
