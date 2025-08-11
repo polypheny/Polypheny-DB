@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
@@ -35,6 +36,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
+import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
@@ -43,6 +45,7 @@ import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -321,6 +324,25 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     public void renameLogicalColumn( long id, String newColumnName ) {
         adapterCatalog.renameLogicalColumn( id, newColumnName );
         adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
+    }
+
+
+    @Override
+    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        PhysicalTable table = adapterCatalog.createTable(
+                logical.table.getNamespaceName(),
+                logical.table.name,
+                logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
+                logical.table,
+                logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
+                logical.pkIds,
+                allocation );
+
+        JdbcTable physical = currentJdbcSchema.createJdbcTable( table );
+
+        adapterCatalog.replacePhysical( physical );
+
+        return List.of( physical );
     }
 
 

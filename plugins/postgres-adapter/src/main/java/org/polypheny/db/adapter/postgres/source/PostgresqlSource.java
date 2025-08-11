@@ -20,7 +20,6 @@ package org.polypheny.db.adapter.postgres.source;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalDataSource;
@@ -30,8 +29,6 @@ import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
 import org.polypheny.db.adapter.postgres.PostgresqlSqlDialect;
-import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
-import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -100,21 +97,6 @@ public class PostgresqlSource extends AbstractJdbcSource {
     @Override
     protected boolean requiresSchema() {
         return true;
-    }
-
-
-    @Override
-    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-        PhysicalTable table = adapterCatalog.createTable(
-                logical.table.getNamespaceName(),
-                logical.table.name,
-                logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
-                logical.table,
-                logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
-                logical.pkIds, allocation );
-
-        adapterCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( table ) );
-        return List.of( table );
     }
 
 
