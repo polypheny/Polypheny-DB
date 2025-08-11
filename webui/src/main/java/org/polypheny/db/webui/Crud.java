@@ -97,6 +97,7 @@ import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
@@ -203,6 +204,7 @@ import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
 import org.polypheny.db.webui.models.requests.PolyAlgRequest;
+import org.polypheny.db.webui.models.requests.RenameEntityRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.RelationalResult.RelationalResultBuilder;
@@ -379,13 +381,31 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void renameTable( final Context ctx ) {
-        IndexModel table = ctx.bodyAsClass( IndexModel.class );
-        String query = String.format( "ALTER TABLE \"%s\".\"%s\" RENAME TO \"%s\"", table.getNamespaceId(), table.getEntityId(), table.getName() );
+        RenameEntityRequest table = ctx.bodyAsClass( RenameEntityRequest.class );
+        String query = String.format( "ALTER TABLE %s RENAME TO \"%s\"", getFullEntityName( table.getEntityId() ), table.getEntityName() );
         QueryLanguage language = QueryLanguage.from( "sql" );
         Result<?, ?> result = LanguageCrud.anyQueryResult(
                 QueryContext.builder()
                         .query( query )
                         .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), UIRequest.builder().build() ).get( 0 );
+
+        ctx.json( result );
+    }
+
+
+    void renameCollection( final Context ctx ) {
+        RenameEntityRequest request = ctx.bodyAsClass( RenameEntityRequest.class );
+        LogicalCollection collection = Catalog.snapshot().doc().getCollection( request.getEntityId() ).orElseThrow();
+        String query = String.format( "db.\"%s\".renameCollection(\"%s\")", collection.name, request.getEntityName() );
+        QueryLanguage language = QueryLanguage.from( "mql" );
+        Result<?, ?> result = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .namespaceId( request.namespaceId )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
                         .build(), UIRequest.builder().build() ).get( 0 );
