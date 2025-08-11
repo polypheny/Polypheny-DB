@@ -24,31 +24,36 @@ import java.util.HashMap;
 import java.util.List;
 
 public class NodeCloner {
-    private NodeCloner() {}
 
-    public static AbstractNode deepCopy(AbstractNode node) {
-        return copyNode(node);
+    private NodeCloner() {
     }
 
-    private static AbstractNode copyNode(AbstractNode n) {
+
+    public static AbstractNode deepCopy( AbstractNode node ) {
+        return copyNode( node );
+    }
+
+
+    private static AbstractNode copyNode( AbstractNode n ) {
         AbstractNode clone;
 
-        if (n instanceof AttributeNode a) {
-            AttributeNode c = new AttributeNode(a.getType(), a.getName());
-            c.setSelected(a.isSelected());
+        if ( n instanceof AttributeNode a ) {
+            AttributeNode c = new AttributeNode( a.getType(), a.getName() );
+            c.setSelected( a.isSelected() );
             clone = c;
         } else {
-            clone = new Node(n.getType(), n.getName());
+            clone = new Node( n.getType(), n.getName() );
         }
 
-        clone.setProperties(new HashMap<>(n.getProperties()));
+        clone.setProperties( new HashMap<>( n.getProperties() ) );
 
         List<AbstractNode> clonedChildren = new ArrayList<>();
-        for (AbstractNode child : n.getChildren()) {
-            clonedChildren.add(copyNode(child));
+        for ( AbstractNode child : n.getChildren() ) {
+            clonedChildren.add( copyNode( child ) );
         }
-        clone.setChildren(clonedChildren);
+        clone.setChildren( clonedChildren );
 
         return clone;
     }
+
 }

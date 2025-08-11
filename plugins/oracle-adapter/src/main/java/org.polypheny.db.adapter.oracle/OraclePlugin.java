@@ -37,7 +37,7 @@ public class OraclePlugin extends PolyPlugin {
 
     @Override
     public void afterCatalogInit() {
-        // SqlDialectRegistry.registerDialect( "Oracle", OracleSqlDialect.DEFAULT ); // TODO: Dialect might not be necessary.
+        // SqlDialectRegistry.registerDialect( "Oracle", OracleSqlDialect.DEFAULT );
         this.sourceId = AdapterManager.addAdapterTemplate( OracleSource.class, ADAPTER_NAME, OracleSource::new );
         // this.storeId = AdapterManager.addAdapterTemplate( OracleStore.class, ADAPTER_NAME, OracleStore::new );
     }
@@ -45,7 +45,7 @@ public class OraclePlugin extends PolyPlugin {
 
     @Override
     public void stop() {
-        SqlDialectRegistry.unregisterDialect( "Oracle" ); // TODO: if dialect is not necessary, unregistering dialect is redundant.
+        SqlDialectRegistry.unregisterDialect( "Oracle" );
         AdapterManager.removeAdapterTemplate( this.sourceId );
         // AdapterManager.removeAdapterTemplate( this.storeId );
     }

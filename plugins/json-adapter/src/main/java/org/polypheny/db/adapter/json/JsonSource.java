@@ -291,13 +291,13 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         } catch ( Exception ex ) {
             throw new RuntimeException( "Failed to build metadata tree for JSON", ex );
         }
-
         preview.put( "jsonPreview", List.of( Map.of( "metadata", "rootNode", "preview", root ) ) );
 
         return root;
     }
 
 
+    // Preview itself is build in the metadata tree. Preview not necessary.
     @Override
     public List<Map<String, Object>> fetchPreview( Connection ignored, String fqName, int limit ) {
         return null;
@@ -305,36 +305,26 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
 
 
     private void buildTreeRecursively( JsonNode current, AbstractNode parent, String jsonPath, String nodeName ) {
+
+        /* ───────────── Json-Object ────────────── */
         if ( current.isObject() ) {
             boolean isCard = parent != null && "array".equals( parent.getType() );
 
-            AbstractNode obj = new DocumentObjectNode(
-                    nodeName,          // Anzeigename
-                    jsonPath,          // vollständiger Pfad
-                    isCard             // cardCandidate-Flag
-            );
+            AbstractNode obj = new DocumentObjectNode( nodeName, jsonPath, isCard );
             parent.addChild( obj );
 
             current.fields().forEachRemaining( e ->
-                    buildTreeRecursively(
-                            e.getValue(),                 // Kind-JsonNode
-                            obj,                          // neues Parent
-                            jsonPath + "." + e.getKey(),  // Pfad erweitern
-                            e.getKey()                    // Kind-Name
-                    )
-            );
+                    buildTreeRecursively( e.getValue(), obj, jsonPath + "." + e.getKey(), e.getKey() ) );
             return;
         }
 
-        /* ───────────── JSON-ARRAY ────────────── */
+        /* ───────────── Json-Array ────────────── */
         if ( current.isArray() ) {
             AbstractNode arr = new DocumentArrayNode( nodeName, jsonPath );
             parent.addChild( arr );
 
             int idx = 0;
             for ( JsonNode element : current ) {
-
-                /* sprechender Name für Array-Element */
                 String childName = "idx" + idx;
                 if ( element.isObject() ) {
                     if ( element.has( "id" ) ) {
@@ -346,29 +336,18 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
                     }
                 }
 
-                buildTreeRecursively(
-                        element,
-                        arr,
-                        jsonPath + "[" + idx + "]",
-                        childName
-                );
+                buildTreeRecursively( element, arr, jsonPath + "[" + idx + "]", childName );
                 idx++;
             }
             return;
         }
 
-        /* ───────────── PRIMITIVER WERT ───────── */
-        String valueType = detectType( current );            // string | number | …
+        /* ───────────── Primitive-Value ───────── */
+        String valueType = detectType( current );
         Object sample = current.isNull() ? null : current.asText();
 
-        AbstractNode val = new DocumentValueNode(
-                nodeName,
-                jsonPath,
-                valueType,
-                sample
-        );
+        AbstractNode val = new DocumentValueNode( nodeName, jsonPath, valueType, sample );
         parent.addChild( val );
-
     }
 
 
@@ -389,6 +368,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
     }
 
 
+    // TODO Implement when preview and deploy works.
     @Override
     public void markSelectedAttributes( List<String> selectedPaths ) {
 
@@ -400,7 +380,7 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         if ( node == null ) {
             node = this.metadataRoot;
         }
-        System.out.println("Node type:" + node.toString());
+        System.out.println( "Node type:" + node.toString() );
         System.out.println( "  ".repeat( depth ) + node.getType() + ": " + node.getName() );
         for ( Map.Entry<String, Object> entry : node.getProperties().entrySet() ) {
             System.out.println( "  ".repeat( depth + 1 ) + "- " + entry.getKey() + ": " + entry.getValue() );

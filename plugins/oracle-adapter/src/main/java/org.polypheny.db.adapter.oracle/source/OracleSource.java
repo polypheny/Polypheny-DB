@@ -55,11 +55,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -82,8 +80,6 @@ import java.util.stream.Collectors;
         description = "Maximum number of concurrent connections.")
 @AdapterSettingList(name = "transactionIsolation", options = { "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" }, defaultValue = "SERIALIZABLE",
         description = "Which level of transaction isolation should be used.")
-@AdapterSettingString(name = "tables", defaultValue = "foo,bar",
-        description = "List of tables which should be imported. The names must be separated by a comma.")
 public class OracleSource extends AbstractJdbcSource implements MetadataProvider {
 
     public AbstractNode metadataRoot;
@@ -160,6 +156,7 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
         Connection connection = null;
         ConnectionHandler connectionHandler = null;
 
+        // Use random PUID to prevent usage of an expired snapshot of the transaction identifier.
         PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
         try {
             connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
@@ -172,6 +169,7 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
                 log.error( "Entry: {} = {}", entry.getKey(), entry.getValue() );
             }
 
+            // TODO If-else usage for possibly allow the usage of the old table-setting or selecting metadata. Not implemented yet.
             if ( !settings.containsKey( "selectedAttributes" ) || settings.get( "selectedAttributes" ).equals( "" ) || settings.get( "selectedAttributes" ).isEmpty() || settings.get( "selectedAttributes" ) == null ) {
                 tables = settings.get( "tables" ).split( "," );
             } else {
@@ -345,14 +343,11 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
                                 }
                             }
 
-                            try ( ResultSet cols =
-                                    m.getColumns( null, schemaName, tableName, "%" ) ) {
-
+                            try ( ResultSet cols = m.getColumns( null, schemaName, tableName, "%" ) ) {
                                 while ( cols.next() ) {
                                     String colName = cols.getString( "COLUMN_NAME" );
                                     String typeName = cols.getString( "TYPE_NAME" );
-                                    boolean nullable =
-                                            cols.getInt( "NULLABLE" ) == DatabaseMetaData.columnNullable;
+                                    boolean nullable = cols.getInt( "NULLABLE" ) == DatabaseMetaData.columnNullable;
                                     boolean primary = pkCols.contains( colName );
 
                                     AbstractNode colNode = new AttributeNode( "column", colName );
@@ -388,6 +383,8 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
             try {
                 // stmt.close();
                 // conn.close();
+
+                // Manually commit to prevent an overflow of open transactions.
                 h.commit();
             } catch ( ConnectionHandlerException e ) {
                 throw new RuntimeException( e );
@@ -404,7 +401,6 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
         try ( Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery(
                         "SELECT * FROM " + fqName + " FETCH FIRST " + limit + " ROWS ONLY" ) ) {
-
             ResultSetMetaData meta = rs.getMetaData();
             while ( rs.next() ) {
                 Map<String, Object> row = new LinkedHashMap<>();

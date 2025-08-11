@@ -37,7 +37,7 @@ public class MetadataHasher {
 
     public String hash( String text ) {
         byte[] bytes = text.getBytes( StandardCharsets.UTF_8 );
-        byte[] hash = digest.digest(bytes);
+        byte[] hash = digest.digest( bytes );
 
         StringBuilder sb = new StringBuilder();
         for ( byte b : hash ) {

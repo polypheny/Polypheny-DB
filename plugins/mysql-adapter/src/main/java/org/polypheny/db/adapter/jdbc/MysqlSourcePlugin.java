@@ -113,8 +113,6 @@ public class MysqlSourcePlugin extends PolyPlugin {
             description = "Maximum number of concurrent JDBC connections.")
     @AdapterSettingList(name = "transactionIsolation", options = { "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" }, defaultValue = "SERIALIZABLE",
             description = "Which level of transaction isolation should be used.")
-    @AdapterSettingString(name = "tables", defaultValue = "test.testtable",
-            description = "List of tables which should be imported. The names must to be separated by a comma.")
     public static class MysqlSource extends AbstractJdbcSource implements MetadataProvider {
 
         public AbstractNode metadataRoot;
@@ -202,7 +200,6 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
                 try ( ResultSet schemas = meta.getCatalogs() ) {
                     while ( schemas.next() ) {
-
                         String schemaName = schemas.getString( "TABLE_CAT" );
 
                         if ( filter.ignoredSchemas.contains( schemaName ) ) {
@@ -218,7 +215,6 @@ public class MysqlSourcePlugin extends PolyPlugin {
                                 new String[]{ "TABLE" }
                         ) ) {
                             while ( tables.next() ) {
-
                                 String tableName = tables.getString( "TABLE_NAME" );
 
                                 if ( tableFilter.shouldIgnore( tableName ) ) {
@@ -257,7 +253,6 @@ public class MysqlSourcePlugin extends PolyPlugin {
                                         tableName,
                                         "%" ) ) {
                                     while ( cols.next() ) {
-
                                         String colName = cols.getString( "COLUMN_NAME" );
                                         String typeName = cols.getString( "TYPE_NAME" );
                                         boolean nullable = cols.getInt( "NULLABLE" ) == DatabaseMetaData.columnNullable;
@@ -310,7 +305,6 @@ public class MysqlSourcePlugin extends PolyPlugin {
             List<Map<String, Object>> rows = new ArrayList<>();
             try ( Statement stmt = conn.createStatement();
                     ResultSet rs = stmt.executeQuery( "SELECT * FROM " + fqName + " LIMIT " + limit ) ) {
-
                 ResultSetMetaData meta = rs.getMetaData();
                 while ( rs.next() ) {
                     Map<String, Object> row = new LinkedHashMap<>();

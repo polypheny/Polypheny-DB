@@ -354,7 +354,6 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
                 return PolyNull.NULL;
             }
             try {
-
                 switch ( fieldType ) {
                     case BOOLEAN:
                         return PolyBoolean.of( cell.getBooleanCellValue() );
@@ -392,7 +391,6 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
                             throw new GenericRuntimeException( "Could not read the date field from the document." );
                         }
                     case TIME:
-
                         try {
                             Date date = TIME_FORMAT_TIME.parse( cell
                                     .getStringCellValue() );

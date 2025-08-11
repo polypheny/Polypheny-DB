@@ -24,6 +24,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.MetadataObserver.Utils.MetaDiffUtil.DiffResult;
 import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResult;
+import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResultEntry;
 import org.polypheny.db.schemaDiscovery.AbstractNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import java.time.Instant;
@@ -41,13 +42,18 @@ public class PublisherManager {
     private static final int MAX_ENTRIES_PER_ADAPTER = 100;
 
     private final Map<String, MetadataPublisher> publishers = new ConcurrentHashMap<>();
-    private final Map<String, PreviewResult> changeCache = new ConcurrentHashMap<>();
+
+    // Temporarily save the changes computed by a listener.
+    private final Map<String, PreviewResultEntry> changeCache = new ConcurrentHashMap<>();
+
+    // Deliverd with the change from the listener. Saves either a status WARNING or CRITICAL.
     private final Map<String, ChangeStatus> statusCache = new ConcurrentHashMap<>();
 
 
     // Cache for file metadata changes. Reuploaded Excel- or CSV file paths are temporarily saved.
     private final Map<String, String> tempFileCache = new ConcurrentHashMap<>();
 
+    // History of all changes occurred for every adapter during deploy-time.
     private final ConcurrentHashMap<String, Deque<ChangeLogEntry>> changeCatalog = new ConcurrentHashMap<>();
 
     private static final PublisherManager INSTANCE = new PublisherManager();
@@ -97,13 +103,13 @@ public class PublisherManager {
     }
 
 
-    public void onMetadataChange( String uniqueName, PreviewResult data, ChangeStatus status ) {
+    public void onMetadataChange( String uniqueName, PreviewResultEntry data, ChangeStatus status ) {
         changeCache.put( uniqueName, data );
         statusCache.put( uniqueName, status );
     }
 
 
-    public PreviewResult fetchChange( String uniqueName ) {
+    public PreviewResultEntry fetchChange( String uniqueName ) {
         return changeCache.get( uniqueName );
     }
 
@@ -141,6 +147,7 @@ public class PublisherManager {
     }
 
 
+    // Not used but serves the purpose that the number of logs does not become excessively high.
     private void prune( String adapterName ) {
         Deque<ChangeLogEntry> deque = changeCatalog.get( adapterName );
         while ( deque != null && deque.size() > MAX_ENTRIES_PER_ADAPTER ) {
@@ -162,4 +169,5 @@ public class PublisherManager {
     public void deleteTempPath( String uniqueName ) {
         tempFileCache.remove( uniqueName );
     }
+
 }

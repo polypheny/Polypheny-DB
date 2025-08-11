@@ -371,85 +371,8 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    /* @Override
-    public void dropSourceEntities( List<String> paths, Statement statement, String uniqueName ) {
-
-        DataSource<?> adapter = AdapterManager.getInstance().getSource( uniqueName ).orElseThrow();
-        Map<String, String> settings = adapter.getSettings();
-
-        String selectedAttributes = settings.get( "selectedAttributes" );
-        selectedAttributes = selectedAttributes.replace( "[", "" ).replace( "]", "" );
-        List<String> currentPaths = new ArrayList<>( List.of( selectedAttributes.split( "," ) ) );
-        currentPaths.removeIf( path -> paths.contains( path.trim() ) );
-
-        String newPaths = String.join( ",", currentPaths );
-        settings.put( "selectedAttributes", newPaths );
-        adapter.updateSettings( settings );
-
-        Map<LogicalTable, Set<String>> worklist = new HashMap<>();
-
-        for ( String raw : paths ) {
-            String path = raw.replace( "'", "" ).trim();
-            if ( path.isBlank() ) {
-                continue;
-            }
-
-            String[] seg = path.split( "\\." );
-            if ( seg.length < 2 ) {
-                throw new GenericRuntimeException( "Ungültiger Pfad: " + path );
-            }
-
-            String columnName = (seg.length >= 3) ? seg[seg.length - 1] : "*";
-            String tableName = seg[seg.length - 2];
-            String schemaName = seg[seg.length - 3];
-
-            String schemaPath = String.join( ".",
-                    Arrays.copyOf( seg, seg.length - (columnName.equals( "*" ) ? 1 : 2) ) );
-
-            LogicalNamespace ns = catalog.getSnapshot()
-                    .getNamespace( Catalog.DEFAULT_NAMESPACE_NAME )
-                    .orElseThrow( () -> new GenericRuntimeException(
-                            "Logisches Namespace 'public' nicht gefunden." ) );
-
-            LogicalTable table = findLogicalTableByPhysical( Catalog.defaultNamespaceId, adapter, schemaName, tableName );
-
-            if ( table.entityType != EntityType.SOURCE ) {
-                throw new GenericRuntimeException( "Tabelle " + table.name +
-                        " ist kein SOURCE-Objekt." );
-            }
-
-            worklist.computeIfAbsent( table, t -> new HashSet<>() )
-                    .add( columnName );
-        }
-
-        for ( Map.Entry<LogicalTable, Set<String>> entry : worklist.entrySet() ) {
-            LogicalTable table = entry.getKey();
-            Set<String> toDrop = entry.getValue();
-
-            if ( toDrop.contains( "*" ) ) {
-                dropWholeSourceTable( table, statement );
-                continue;
-            }
-
-            for ( String col : toDrop ) {
-                dropSourceColumn( table, col, statement );
-                catalog.updateSnapshot();
-            }
-
-            if ( catalog.getSnapshot().rel().getColumns( table.id ).isEmpty() ) {
-                dropWholeSourceTable( table, statement );
-                catalog.updateSnapshot();
-            }
-        }
-
-        catalog.updateSnapshot();
-        statement.getQueryProcessor().resetCaches();
-        statement.getTransaction().commit();
-    }*/
-
-
     @Override
-    public void dropSourceEntities( List<String> paths, Statement stmt, String uniqueName ) {
+    public void removeSelectedMetadata( List<String> paths, Statement stmt, String uniqueName ) {
         DataSource<?> adapter = AdapterManager.getInstance()
                 .getSource( uniqueName )
                 .orElseThrow();

@@ -34,6 +34,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.MetadataObserver.ChangeLogEntry;
+import org.polypheny.db.adapter.MetadataObserver.ChangeLogView;
 import org.polypheny.db.adapter.MetadataObserver.MetadataHasher;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
@@ -153,6 +154,19 @@ public class AdapterTemplate {
 
     @Value
     public static class PreviewResult {
+
+        @JsonProperty
+        String metadata;
+        @JsonProperty
+        Object preview;
+        @JsonProperty
+        List<ChangeLogView> history;
+
+    }
+
+
+    @Value
+    public static class PreviewResultEntry {
 
         @JsonProperty
         String metadata;

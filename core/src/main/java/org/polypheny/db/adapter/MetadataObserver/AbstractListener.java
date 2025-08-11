@@ -30,6 +30,7 @@ import org.polypheny.db.adapter.MetadataObserver.Utils.MetaAnnotator;
 import org.polypheny.db.adapter.MetadataObserver.Utils.MetaDiffUtil;
 import org.polypheny.db.adapter.MetadataObserver.Utils.MetaDiffUtil.DiffResult;
 import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResult;
+import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResultEntry;
 import org.polypheny.db.schemaDiscovery.AbstractNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
 import org.polypheny.db.schemaDiscovery.NodeSerializer;
@@ -81,29 +82,29 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
 
         ChangeStatus status = NodeUtil.evaluateStatus( result, adapter.getRoot() );
 
-        ChangeLogEntry entry = new ChangeLogEntry( adapter.getUniqueName(), Instant.now().toString(), DiffMessageUtil.toMessages( result ), status );
+        ChangeLogEntry entry = new ChangeLogEntry( adapter.getUniqueName(), Instant.now(), DiffMessageUtil.toMessages( result ), status );
         PublisherManager.getInstance().addChange( entry );
 
         AbstractNode annotatedCopy = MetaAnnotator.annotateTree( adapter.getRoot(), node, result );
         String json = NodeSerializer.serializeNode( annotatedCopy ).toString();
         log.info( "JSON: {}", json );
 
-        PublisherManager.getInstance().onMetadataChange( adapter.getUniqueName(), new PreviewResult( json, preview, List.of( entry ) ), status );
+        PublisherManager.getInstance().onMetadataChange( adapter.getUniqueName(), new PreviewResultEntry( json, preview, List.of( entry ) ), status );
     }
 
 
-    public static PreviewResult buildFormChange( String uniqueName, AbstractNode oldRoot, AbstractNode newRoot, Object preview, String path ) {
+    public static PreviewResultEntry buildFormChange( String uniqueName, AbstractNode oldRoot, AbstractNode newRoot, Object preview, String path ) {
         DiffResult diff = MetaDiffUtil.diff( oldRoot, newRoot );
         ChangeStatus status = NodeUtil.evaluateStatus( diff, oldRoot );
 
-        ChangeLogEntry entry = new ChangeLogEntry( uniqueName, Instant.now().toString(), DiffMessageUtil.toMessages( diff ), status );
+        ChangeLogEntry entry = new ChangeLogEntry( uniqueName, Instant.now(), DiffMessageUtil.toMessages( diff ), status );
 
         AbstractNode annotated = MetaAnnotator.annotateTree( oldRoot, newRoot, diff );
         String json = NodeSerializer.serializeNode( annotated ).toString();
 
         PublisherManager pm = PublisherManager.getInstance();
         pm.addChange( entry );
-        PreviewResult result = new PreviewResult( json, preview, List.of( entry ) );
+        PreviewResultEntry result = new PreviewResultEntry( json, preview, List.of( entry ) );
         pm.onMetadataChange( uniqueName, result, status );
         pm.saveTempPath( uniqueName, path );
 
@@ -182,40 +183,39 @@ public class AbstractListener<P extends Adapter & MetadataProvider> implements M
     }
 
 
-    private static void deleteTempPath(String tmpPath, String directory) {
-        File tmpDir = new File(tmpPath);
-        File targetDir = new File(directory);
+    private static void deleteTempPath( String tmpPath, String directory ) {
+        File tmpDir = new File( tmpPath );
+        File targetDir = new File( directory );
 
-        if (!tmpDir.exists() || !tmpDir.isDirectory()) {
-            throw new IllegalArgumentException("tmpPath is not a valid directory: " + tmpPath);
+        if ( !tmpDir.exists() || !tmpDir.isDirectory() ) {
+            throw new IllegalArgumentException( "tmpPath is not a valid directory: " + tmpPath );
         }
-        if (!targetDir.exists() || !targetDir.isDirectory()) {
-            throw new IllegalArgumentException("directory is not a valid directory: " + directory);
+        if ( !targetDir.exists() || !targetDir.isDirectory() ) {
+            throw new IllegalArgumentException( "directory is not a valid directory: " + directory );
         }
 
-        for (File file : targetDir.listFiles()) {
-            if (!file.delete()) {
-                throw new RuntimeException("Failed to delete file: " + file.getAbsolutePath());
+        for ( File file : targetDir.listFiles() ) {
+            if ( !file.delete() ) {
+                throw new RuntimeException( "Failed to delete file: " + file.getAbsolutePath() );
             }
         }
 
-        for (File file : tmpDir.listFiles()) {
+        for ( File file : tmpDir.listFiles() ) {
             try {
-                Files.copy(file.toPath(), new File(targetDir, file.getName()).toPath(),
-                        StandardCopyOption.REPLACE_EXISTING);
-            } catch ( IOException e) {
-                throw new RuntimeException("Failed to copy file: " + file.getAbsolutePath(), e);
+                Files.copy( file.toPath(), new File( targetDir, file.getName() ).toPath(),
+                        StandardCopyOption.REPLACE_EXISTING );
+            } catch ( IOException e ) {
+                throw new RuntimeException( "Failed to copy file: " + file.getAbsolutePath(), e );
             }
         }
 
-        for ( File file : tmpDir.listFiles()) {
+        for ( File file : tmpDir.listFiles() ) {
             file.delete();
         }
-        if (!tmpDir.delete()) {
-            throw new RuntimeException("Failed to delete tmpPath directory: " + tmpDir.getAbsolutePath());
+        if ( !tmpDir.delete() ) {
+            throw new RuntimeException( "Failed to delete tmpPath directory: " + tmpDir.getAbsolutePath() );
         }
     }
-
 
 
     @Override

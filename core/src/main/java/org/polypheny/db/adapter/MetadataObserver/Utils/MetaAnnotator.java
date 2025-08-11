@@ -35,9 +35,7 @@ public final class MetaAnnotator {
         }
 
 
-        private static void traverse(
-                AbstractNode n, String path,
-                Map<String, AbstractNode> sink ) {
+        private static void traverse( AbstractNode n, String path, Map<String, AbstractNode> sink ) {
             sink.put( path, n );
             for ( AbstractNode c : n.getChildren() ) {
                 traverse( c, path + "/" + c.getName(), sink );
@@ -83,6 +81,9 @@ public final class MetaAnnotator {
                 .getNode( copyNew, p )
                 .ifPresent( n -> n.addProperty( "diff", DiffType.ADDED ) ) );
 
+        // TODO By now, it is not recognized if some metadata has just changed in their name or not.
+        // TODO A change is recognized as something was removed and something new was added. In future,
+        // TODO that can be used of course.
         /*diff.getChanged().forEach( p -> PathHelper
                 .getNode( copyNew, p )
                 .ifPresent( n -> n.addProperty( "diff", DiffType.CHANGED ) ) );*/
@@ -99,6 +100,7 @@ public final class MetaAnnotator {
     }
 
 
+    // Removed metadata / nodes are marked as type "ghost". That can be recognized at the UI.
     private static void createGhostNode( AbstractNode root, String fullPath ) {
         String[] parts = fullPath.split( "/" );
         AbstractNode current = root;

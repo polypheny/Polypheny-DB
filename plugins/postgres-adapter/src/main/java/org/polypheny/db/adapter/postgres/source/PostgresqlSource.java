@@ -101,6 +101,7 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
 
         SchemaFilter filter = SchemaFilter.forAdapter( adapterName );
 
+        // Use random PUID to prevent usage of an expired snapshot of the transaction identifier.
         PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
 
         java.sql.Statement stmt = null;
@@ -117,7 +118,6 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
                     ? meta.getSchemas( dbName, "%" )
                     : meta.getCatalogs() ) {
                 while ( schemas.next() ) {
-
                     String schemaName = requiresSchema()
                             ? schemas.getString( "TABLE_SCHEM" )
                             : schemas.getString( "TABLE_CAT" );
@@ -135,9 +135,7 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
                             new String[]{ "TABLE" }
                     ) ) {
                         while ( tables.next() ) {
-
                             String tableName = tables.getString( "TABLE_NAME" );
-
                             String fqName = (requiresSchema() ? "\"" + schemaName + "\"." : "") + "\"" + tableName + "\"";
                             Connection finalConn = conn;
                             previewByTable.computeIfAbsent(
@@ -152,7 +150,6 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
                                     } );
 
                             AbstractNode tableNode = new Node( "table", tableName );
-
                             Set<String> pkCols = new HashSet<>();
                             try ( ResultSet pk = meta.getPrimaryKeys(
                                     dbName,
@@ -169,7 +166,6 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
                                     tableName,
                                     "%" ) ) {
                                 while ( cols.next() ) {
-
                                     String colName = cols.getString( "COLUMN_NAME" );
                                     String typeName = cols.getString( "TYPE_NAME" );
                                     boolean nullable = cols.getInt( "NULLABLE" ) == DatabaseMetaData.columnNullable;
@@ -208,9 +204,7 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
                 // stmt.close();
                 // conn.close();
                 handler.commit();
-            } /*catch ( SQLException e ) {
-                throw new RuntimeException( e );
-            }*/ catch ( ConnectionHandlerException e ) {
+            } catch ( ConnectionHandlerException e ) {
                 throw new RuntimeException( e );
             }
         }

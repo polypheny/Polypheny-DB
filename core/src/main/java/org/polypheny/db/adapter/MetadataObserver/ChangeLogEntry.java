@@ -32,30 +32,34 @@ public class ChangeLogEntry {
     @JsonProperty
     String adapterName;
     @JsonProperty
-    String timestamp;
+    Instant timestamp;
     @JsonProperty
     List<String> messages;
     @JsonProperty
     ChangeStatus severity;
 
+
     public class DiffMessageUtil {
 
-        private DiffMessageUtil() {}
+        private DiffMessageUtil() {
+        }
 
-        public static List<String> toMessages(DiffResult diff) {
+
+        public static List<String> toMessages( DiffResult diff ) {
             List<String> msgs = new ArrayList<>();
 
             diff.getAdded()
-                    .forEach(p -> msgs.add("Added metadata " + p));
+                    .forEach( p -> msgs.add( "Added metadata " + p ) );
 
             diff.getRemoved()
-                    .forEach(p -> msgs.add("Removed metadata " + p));
+                    .forEach( p -> msgs.add( "Removed metadata " + p ) );
 
             diff.getChanged()
-                    .forEach(p -> msgs.add("Changed metadata " + p));
+                    .forEach( p -> msgs.add( "Changed metadata " + p ) );
 
             return msgs;
         }
+
     }
 
 

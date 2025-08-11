@@ -19,9 +19,13 @@ package org.polypheny.db.adapter.MetadataObserver;
 public interface MetadataPublisher {
 
     String getAdapterUniqueName();
+
     void start();
+
     void stop();
+
     void runCheck();
+
     MetadataListener getListener();
 
 

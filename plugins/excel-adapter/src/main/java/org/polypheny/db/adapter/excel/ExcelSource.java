@@ -395,6 +395,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
 
         this.previewByTable = new LinkedHashMap<>();
 
+        // Assuming that one file was uploaded only.
         Source filePath;
         String firstFile = resolveFileNames().stream().findFirst().orElseThrow( () -> new GenericRuntimeException( "No file found" ) );
         try {
@@ -408,7 +409,6 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
         try ( FileInputStream fis = new FileInputStream( filePath.path() ); Workbook wb = WorkbookFactory.create( fis ) ) {
 
             for ( Sheet sheet : wb ) {
-
                 String sheetName = sheet.getSheetName();
                 AbstractNode sheetNode = new Node( "sheet", mappeName.toLowerCase() + "_" + sheetName );
 
@@ -490,6 +490,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
     }
 
 
+
     @Override
     public List<Map<String, Object>> fetchPreview( Connection conn, String fqName, int limit ) {
 
@@ -518,6 +519,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
                 return List.of();
             }
 
+            // All columns in the Excel have to start at the most left. Blank columns are marked as COL_i .
             List<String> colNames = new ArrayList<>();
             for ( int c = 0; c < header.getLastCellNum(); c++ ) {
                 colNames.add( getCellValueAsString( header.getCell( c ), "COL_" + (c + 1) ) );

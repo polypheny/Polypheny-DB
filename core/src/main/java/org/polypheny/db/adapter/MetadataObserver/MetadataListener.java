@@ -23,7 +23,9 @@ import org.polypheny.db.schemaDiscovery.MetadataProvider;
 public interface MetadataListener<P extends Adapter & MetadataProvider> {
 
     void onMetadataChange( P adapter, AbstractNode node, String hash );
+
     boolean isAvailable();
+
     void applyChange( String[] metadata );
 
 }

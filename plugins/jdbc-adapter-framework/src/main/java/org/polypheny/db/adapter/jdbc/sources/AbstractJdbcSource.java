@@ -216,6 +216,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
         Connection connection = null;
         ConnectionHandler connectionHandler = null;
 
+        // Use random PUID to prevent usage of an expired snapshot of the transaction identifier.
         PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.RANDOM ), PUID.randomPUID( Type.RANDOM ) );
         try {
             connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
@@ -229,6 +230,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                 log.error( "Entry: {} = {}", entry.getKey(), entry.getValue() );
             }
 
+            // TODO If-else usage for possibly allow the usage of the old table-setting or selecting metadata. Not implemented yet.
             if ( !settings.containsKey( "selectedAttributes" ) || settings.get( "selectedAttributes" ).equals( "" ) || settings.get( "selectedAttributes" ).isEmpty() || settings.get( "selectedAttributes" ) == null ) {
                 tables = settings.get( "tables" ).split( "," );
             } else {

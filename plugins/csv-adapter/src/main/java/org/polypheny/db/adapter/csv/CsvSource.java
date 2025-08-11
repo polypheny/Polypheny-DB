@@ -389,42 +389,40 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
     @Override
     public AbstractNode fetchMetadataTree() {
         this.previewByTable = new HashMap<>();
-
         try {
-            Source src = openCsvSource(null);
+            Source src = openCsvSource( null );
             String fileName = src.file().getName();
-            String baseName = fileName.replaceFirst("\\.csv(\\.gz)?$", "");
-            AbstractNode rootNode = new Node("csv", baseName);
+            String baseName = fileName.replaceFirst( "\\.csv(\\.gz)?$", "" );
+            AbstractNode rootNode = new Node( "csv", baseName );
 
-            try (BufferedReader reader = new BufferedReader(src.reader())) {
+            try ( BufferedReader reader = new BufferedReader( src.reader() ) ) {
                 String headerLine = reader.readLine();
-                if (headerLine == null) {
-                    throw new RuntimeException("No header line found in " + fileName);
+                if ( headerLine == null ) {
+                    throw new RuntimeException( "No header line found in " + fileName );
                 }
 
-                String[] rawColumns = headerLine.split(",");
-                for (String colRaw : rawColumns) {
-                    String[] split = colRaw.split(":");
-                    String name = split[0].trim().replaceAll("[^a-zA-Z0-9_]", "");
+                String[] rawColumns = headerLine.split( "," );
+                for ( String colRaw : rawColumns ) {
+                    String[] split = colRaw.split( ":" );
+                    String name = split[0].trim().replaceAll( "[^a-zA-Z0-9_]", "" );
                     String type = split.length > 1 ? split[1].trim() : "string";
 
-                    AbstractNode columnNode = new AttributeNode("column", name);
-                    columnNode.addProperty("type", mapCsvType(type));
-                    columnNode.addProperty("nullable", true);
-                    rootNode.addChild(columnNode);
+                    AbstractNode columnNode = new AttributeNode( "column", name );
+                    columnNode.addProperty( "type", mapCsvType( type ) );
+                    columnNode.addProperty( "nullable", true );
+                    rootNode.addChild( columnNode );
                 }
             }
 
-            List<Map<String, Object>> preview = fetchPreview(null, fileName, 10);
-            this.previewByTable.put(fileName, preview);
+            List<Map<String, Object>> preview = fetchPreview( null, fileName, 10 );
+            this.previewByTable.put( fileName, preview );
 
             return rootNode;
 
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to parse CSV metadata", e);
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Failed to parse CSV metadata", e );
         }
     }
-
 
 
     private String mapCsvType( String rawType ) {
@@ -455,112 +453,109 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
 
 
     @Override
-    public List<Map<String, Object>> fetchPreview(Connection conn, String fqName, int limit) {
+    public List<Map<String, Object>> fetchPreview( Connection conn, String fqName, int limit ) {
         try {
-            Source src = openCsvSource(fqName);
+            Source src = openCsvSource( fqName );
             List<Map<String, Object>> rows = new ArrayList<>();
 
-            try (BufferedReader reader = new BufferedReader(src.reader())) {
+            try ( BufferedReader reader = new BufferedReader( src.reader() ) ) {
                 String headerLine = reader.readLine();
-                if (headerLine == null) {
+                if ( headerLine == null ) {
                     return List.of();
                 }
 
-                String[] headerParts = headerLine.split(",");
-                List<String> colNames = new ArrayList<>(headerParts.length);
-                for (String raw : headerParts) {
-                    String[] split = raw.split(":");
-                    colNames.add(split[0].trim());
+                String[] headerParts = headerLine.split( "," );
+                List<String> colNames = new ArrayList<>( headerParts.length );
+                for ( String raw : headerParts ) {
+                    String[] split = raw.split( ":" );
+                    colNames.add( split[0].trim() );
                 }
 
                 String line;
                 int count = 0;
-                while ((line = reader.readLine()) != null && count < limit) {
-                    String[] values = line.split(",", -1);
+                while ( (line = reader.readLine()) != null && count < limit ) {
+                    String[] values = line.split( ",", -1 );
                     Map<String, Object> row = new LinkedHashMap<>();
-                    for (int i = 0; i < colNames.size(); i++) {
+                    for ( int i = 0; i < colNames.size(); i++ ) {
                         String value = i < values.length ? values[i].trim() : null;
-                        row.put(colNames.get(i), value);
+                        row.put( colNames.get( i ), value );
                     }
-                    rows.add(row);
+                    rows.add( row );
                     count++;
                 }
             }
 
             return rows;
 
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read CSV preview: " + fqName, e);
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Failed to read CSV preview: " + fqName, e );
         }
     }
 
 
-    private Source openCsvSource(@Nullable String fqName) throws IOException {
-        if (csvDir.getProtocol().equals("jar")) {
-            if (fqName == null || fqName.isBlank()) {
-                throw new GenericRuntimeException("fqName required when using jar protocol for CSV.");
+    private Source openCsvSource( @Nullable String fqName ) throws IOException {
+        if ( csvDir.getProtocol().equals( "jar" ) ) {
+            if ( fqName == null || fqName.isBlank() ) {
+                throw new GenericRuntimeException( "fqName required when using jar protocol for CSV." );
             }
-            return Sources.of(new URL(csvDir, fqName));
+            return Sources.of( new URL( csvDir, fqName ) );
         }
 
-        if (Sources.of(csvDir).file().isFile()) {
-            return Sources.of(csvDir);
+        if ( Sources.of( csvDir ).file().isFile() ) {
+            return Sources.of( csvDir );
         }
 
-        File[] files = Sources.of(csvDir)
+        File[] files = Sources.of( csvDir )
                 .file()
-                .listFiles((d, name) -> name.endsWith(".csv") || name.endsWith(".csv.gz"));
-        if (files == null || files.length == 0) {
-            throw new GenericRuntimeException("No .csv files were found in: " + Sources.of(csvDir).file());
+                .listFiles( ( d, name ) -> name.endsWith( ".csv" ) || name.endsWith( ".csv.gz" ) );
+        if ( files == null || files.length == 0 ) {
+            throw new GenericRuntimeException( "No .csv files were found in: " + Sources.of( csvDir ).file() );
         }
 
         File chosen;
-        if (fqName != null && !fqName.isBlank()) {
-            chosen = Arrays.stream(files)
-                    .filter(f -> f.getName().equals(fqName))
+        if ( fqName != null && !fqName.isBlank() ) {
+            chosen = Arrays.stream( files )
+                    .filter( f -> f.getName().equals( fqName ) )
                     .findFirst()
-                    .orElseThrow(() -> new GenericRuntimeException("Requested CSV not found: " + fqName));
+                    .orElseThrow( () -> new GenericRuntimeException( "Requested CSV not found: " + fqName ) );
         } else {
             chosen = files[0];
         }
 
-        return Sources.of(new URL(csvDir, chosen.getName()));
+        return Sources.of( new URL( csvDir, chosen.getName() ) );
     }
-
-
 
 
     @Override
-    public void markSelectedAttributes(List<String> selectedPaths) {
-        if (this.metadataRoot == null) {
-            log.warn("⚠️ Kein Metadatenbaum vorhanden – kann Attribute nicht markieren.");
+    public void markSelectedAttributes( List<String> selectedPaths ) {
+        if ( this.metadataRoot == null ) {
+            log.warn( "⚠️ Kein Metadatenbaum vorhanden – kann Attribute nicht markieren." );
             return;
         }
 
-        for (String path : selectedPaths) {
-            int lastDot = path.lastIndexOf('.');
-            if (lastDot == -1 || lastDot == path.length() - 1) {
-                log.warn("⚠️ Kein gültiger Attribut-Pfad: " + path);
+        for ( String path : selectedPaths ) {
+            int lastDot = path.lastIndexOf( '.' );
+            if ( lastDot == -1 || lastDot == path.length() - 1 ) {
+                log.warn( "⚠️ Kein gültiger Attribut-Pfad: " + path );
                 continue;
             }
 
-            String columnName = path.substring(lastDot + 1);
-            String normalizedColumnName = columnName.replaceAll("[^a-zA-Z0-9_]", "");
+            String columnName = path.substring( lastDot + 1 );
+            String normalizedColumnName = columnName.replaceAll( "[^a-zA-Z0-9_]", "" );
 
             Optional<AbstractNode> attrOpt = metadataRoot.getChildren().stream()
-                    .filter(child -> child instanceof AttributeNode
-                            && child.getName().equals(normalizedColumnName))
+                    .filter( child -> child instanceof AttributeNode
+                            && child.getName().equals( normalizedColumnName ) )
                     .findFirst();
 
-            if (attrOpt.isPresent()) {
-                ((AttributeNode) attrOpt.get()).setSelected(true);
-                log.info("✅ Attribut gesetzt: " + path);
+            if ( attrOpt.isPresent() ) {
+                ((AttributeNode) attrOpt.get()).setSelected( true );
+                log.info( "✅ Attribut gesetzt: " + path );
             } else {
-                log.warn("❌ Attribut nicht gefunden: " + normalizedColumnName + " im Pfad: " + path);
+                log.warn( "❌ Attribut nicht gefunden: " + normalizedColumnName + " im Pfad: " + path );
             }
         }
     }
-
 
 
     @Override

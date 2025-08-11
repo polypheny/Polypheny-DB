@@ -50,13 +50,12 @@ public enum TableFilter {
     }
 
 
-    public boolean shouldIgnore(String tableName) {
+    public boolean shouldIgnore( String tableName ) {
         String upper = tableName.toUpperCase();
         return ignoredTables.stream()
-                .map(String::toUpperCase)
-                .anyMatch(upper::startsWith);
+                .map( String::toUpperCase )
+                .anyMatch( upper::startsWith );
     }
-
 
 
 }

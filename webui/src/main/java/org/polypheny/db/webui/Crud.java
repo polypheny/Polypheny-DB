@@ -93,12 +93,14 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
 import org.polypheny.db.adapter.MetadataObserver.AbstractListener;
 import org.polypheny.db.adapter.MetadataObserver.ChangeLogEntry;
+import org.polypheny.db.adapter.MetadataObserver.ChangeLogView;
 import org.polypheny.db.adapter.MetadataObserver.PublisherManager;
 import org.polypheny.db.adapter.MetadataObserver.PublisherManager.ChangeStatus;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResult;
+import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResultEntry;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
 import org.polypheny.db.catalog.Catalog;
@@ -892,7 +894,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    void sendConfirmation( final Context ctx ) {
+    void buildPreview( final Context ctx ) {
         try {
             initMultipart( ctx );
             if ( !ctx.isMultipartFormData() ) {
@@ -976,7 +978,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void metadataStatus( final Context ctx ) {
         String uniqueName = ctx.pathParam( "uniqueName" );
-
         ChangeStatus changed = PublisherManager.getInstance().hasChange( uniqueName );
         ctx.json( Map.of( "changed", changed ) );
     }
@@ -984,9 +985,19 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void metadataChange( final Context ctx ) {
         String uniqueName = ctx.pathParam( "uniqueName" );
-        PreviewResult data = PublisherManager.getInstance().fetchChange( uniqueName );
-        ctx.json( data );
+        PreviewResultEntry data = PublisherManager.getInstance().fetchChange( uniqueName );
 
+        List<ChangeLogView> convertedHistory = data.getHistory().stream()
+                .map( ChangeLogView::from )
+                .toList();
+
+        PreviewResult result = new PreviewResult(
+                data.getMetadata(),
+                data.getPreview(),
+                convertedHistory
+        );
+
+        ctx.json( result );
     }
 
 
@@ -995,7 +1006,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         log.info( "Acknowledgement incoming: " + payload.toString() );
         PublisherManager.getInstance().ack( payload.uniqueName, payload.addedPaths );
 
-        // Optional<DataSource<?>> adapter = AdapterManager.getInstance().getSource( payload.uniqueName );
         Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "metadata-ack-" + payload.uniqueName );
         Statement stmt = transaction.createStatement();
         try {
@@ -1005,7 +1015,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
             if ( payload.removedPaths != null || payload.removedPaths.length > 0 ) {
                 String[] filtered = filterPrefixes( payload.removedPaths );
-                DdlManager.getInstance().dropSourceEntities( List.of( filtered ), stmt, payload.uniqueName );
+                DdlManager.getInstance().removeSelectedMetadata( List.of( filtered ), stmt, payload.uniqueName );
             }
             transaction.commit();
             ctx.status( 200 ).result( "ACK processed" );
@@ -1029,9 +1039,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .orElseThrow( () -> new IllegalStateException(
                         "Adapter %s doesn't support inteface metadata provider !".formatted( uniqueName ) ) );
 
-        List<ChangeLogEntry> history = PublisherManager.getInstance().getHistory( uniqueName );
+        List<ChangeLogEntry> historyBeforeParsing = PublisherManager.getInstance().getHistory( uniqueName );
 
-        PreviewResult data = new PreviewResult( NodeSerializer.serializeNode( provider.getRoot() ).toString(), provider.getPreview(), history );
+        List<ChangeLogView> response = historyBeforeParsing.stream()
+                .map( ChangeLogView::from )
+                .toList();
+
+        PreviewResult data = new PreviewResult( NodeSerializer.serializeNode( provider.getRoot() ).toString(), provider.getPreview(), response );
         ctx.json( data );
     }
 
@@ -1070,7 +1084,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
             if ( !toUnselect.isEmpty() ) {
                 try {
-                    DdlManager.getInstance().dropSourceEntities( List.copyOf( toUnselect ), stmt, config.uniqueName );
+                    DdlManager.getInstance().removeSelectedMetadata( List.copyOf( toUnselect ), stmt, config.uniqueName );
                     NodeUtil.unmarkSelectedAttributes( ((MetadataProvider) adapter.get()).getRoot(), List.copyOf( toUnselect ) );
                     tx.commit();
                     stmt.close();
@@ -2310,22 +2324,22 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         PreviewRequest am = HttpServer.mapper.readValue( bodyJson, PreviewRequest.class );
 
         List<String> fileNames;
-        String rawDir = am.getSettings().get("directory");
+        String rawDir = am.getSettings().get( "directory" );
 
         try {
             fileNames = HttpServer.mapper.readValue(
                     rawDir,
-                    new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {});
-        } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+                    new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {
+                    } );
+        } catch ( com.fasterxml.jackson.core.JsonProcessingException ex ) {
             String cleaned = rawDir
-                    .replaceAll("[\\[\\]\"]", "")
+                    .replaceAll( "[\\[\\]\"]", "" )
                     .trim();
-            fileNames = Arrays.stream(cleaned.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
+            fileNames = Arrays.stream( cleaned.split( "," ) )
+                    .map( String::trim )
+                    .filter( s -> !s.isEmpty() )
                     .toList();
         }
-
 
         Map<String, byte[]> fileBytes = new HashMap<>();
         for ( Part p : ctx.req.getParts() ) {
@@ -2348,7 +2362,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     private void createFormDiffs( PreviewRequest previewRequest, String path ) {
-        DataSource<?> currentSource = AdapterManager.getInstance().getSource( previewRequest.uniqueName ).orElseThrow(  );
+        DataSource<?> currentSource = AdapterManager.getInstance().getSource( previewRequest.uniqueName ).orElseThrow();
 
         MetadataProvider currentProvider = (MetadataProvider) currentSource;
         AbstractNode currentNode = currentProvider.getRoot();
@@ -2361,12 +2375,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         AbstractNode tempNode = tempProvider.fetchMetadataTree();
         Object newPreview = tempProvider.getPreview();
 
-        PreviewResult result = AbstractListener.buildFormChange( previewRequest.uniqueName, currentNode, tempNode, newPreview, path );
+        PreviewResultEntry result = AbstractListener.buildFormChange( previewRequest.uniqueName, currentNode, tempNode, newPreview, path );
 
         currentProvider.printTree( currentNode, 0 );
         tempProvider.printTree( tempNode, 0 );
 
-        try { tempSource.shutdown(); } catch (Exception ignore) {}
+        try {
+            tempSource.shutdown();
+        } catch ( Exception ignore ) {
+        }
     }
 
 

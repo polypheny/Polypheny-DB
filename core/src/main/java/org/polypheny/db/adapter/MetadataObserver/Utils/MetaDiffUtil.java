@@ -55,6 +55,8 @@ public class MetaDiffUtil {
 
     @EqualsAndHashCode
     @RequiredArgsConstructor(staticName = "of")
+    // Instead of comparing every variable in a node, a hash (fingerprint) is created for every node.
+    // Used for comparison.
     public static class Fingerprint {
 
         private final String type;
@@ -100,11 +102,7 @@ public class MetaDiffUtil {
     }
 
 
-    private static void collect(
-            AbstractNode node,
-            String parentPath,
-            Map<String, Fingerprint> sink ) {
-
+    private static void collect( AbstractNode node, String parentPath, Map<String, Fingerprint> sink ) {
         String path = parentPath.isEmpty() ?
                 node.getName() :
                 parentPath + "/" + node.getName();
