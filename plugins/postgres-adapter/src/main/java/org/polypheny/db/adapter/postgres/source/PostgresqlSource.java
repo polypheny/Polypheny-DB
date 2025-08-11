@@ -32,6 +32,7 @@ import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
 import org.polypheny.db.adapter.postgres.PostgresqlSqlDialect;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.prepare.Context;
@@ -120,6 +121,14 @@ public class PostgresqlSource extends AbstractJdbcSource {
     @Override
     public RelationalDataSource asRelationalDataSource() {
         return this;
+    }
+
+
+    @Override
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
+        PhysicalEntity table = entities.get( 0 );
+        updateNamespace( table.namespaceName, table.namespaceId );
+        adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrapOrThrow( PhysicalTable.class ) ) );
     }
 
 }
