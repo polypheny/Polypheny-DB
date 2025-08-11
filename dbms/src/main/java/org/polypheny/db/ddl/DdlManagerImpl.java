@@ -266,9 +266,7 @@ public class DdlManagerImpl extends DdlManager {
             // Make sure the table name is unique
             String tableName = getUniqueEntityName( namespace, entry.getKey(), ( ns, en ) -> catalog.getSnapshot().rel().getTable( ns, en ) );
 
-            String physicalSchema = entry.getValue().isEmpty()
-                    ? Catalog.DEFAULT_NAMESPACE_NAME
-                    : entry.getValue().get( 0 ).physicalSchemaName();
+            String physicalSchema = entry.getValue().get( 0 ).physicalSchemaName();
 
             LogicalTable logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !adapter.isDataReadOnly() );
             List<LogicalColumn> columns = new ArrayList<>();
