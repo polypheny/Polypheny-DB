@@ -28,6 +28,4 @@ public class LogicalTableWrapper {
 
     public List<Long> pkIds;
 
-    public String physicalSchema;
-
 }
