@@ -94,6 +94,8 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
     @Override
     public AbstractNode fetchMetadataTree() {
 
+        this.previewByTable = new LinkedHashMap<>();
+
         String dbName = settings.get( "database" );
         Node root = new Node( "relational", dbName );
 

@@ -285,6 +285,7 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
 
     @Override
     public AbstractNode fetchMetadataTree() {
+        this.previewByTable = new LinkedHashMap<>();
         AbstractNode root = new Node( "relational", settings.get( "database" ) );
 
         TableFilter filter = TableFilter.forAdapter( adapterName );

@@ -181,6 +181,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
         @Override
         public AbstractNode fetchMetadataTree() {
+            this.previewByTable = new LinkedHashMap<>();
             String dbName = settings.get( "database" );
             Node root = new Node( "relational", dbName );
 

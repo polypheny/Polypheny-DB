@@ -30,6 +30,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -251,13 +252,13 @@ public class DdlManagerImpl extends DdlManager {
 
                     } else if ( parts.length == 3 ) {
                         physNs = parts[0];
-                        physSchema = "Mappe1.xlsx";
+                        physSchema = parts[0] + ".xlsx";
                         table = parts[1];
                         column = parts[2].split( "\\:" )[0].toLowerCase();
 
                     } else if ( parts.length == 2 ) {
                         physNs = parts[0];
-                        physSchema = "Dateieins.csv";
+                        physSchema = parts[0] + ".csv";
                         table = parts[0].toLowerCase();
                         column = parts[1].toLowerCase();
 
@@ -449,99 +450,55 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropSourceEntities( List<String> paths, Statement stmt, String uniqueName ) {
-
         DataSource<?> adapter = AdapterManager.getInstance()
                 .getSource( uniqueName )
                 .orElseThrow();
-        Map<String, String> settings = adapter.getSettings();
 
-        String selectedAttributes = settings.getOrDefault( "selectedAttributes", "" )
-                .replace( "[", "" )
-                .replace( "]", "" );
-        List<String> currentPaths = new ArrayList<>( List.of( selectedAttributes.split( "," ) ) );
-        currentPaths.removeIf( p -> Arrays.asList( paths ).contains( p.trim() ) );
-        settings.put( "selectedAttributes", String.join( ",", currentPaths ) );
+        List<String> current = new ArrayList<>( List.of( adapter.getSettings().getOrDefault( "selectedAttributes", "" )
+                .replace( "[", "" ).replace( "]", "" ).split( "," ) ) );
+        current.removeIf( s -> s == null || s.isBlank() || paths.contains( s.trim() ) );
+        Map<String, String> settings = new HashMap<>( adapter.getSettings() );
+        settings.put( "selectedAttributes", String.join( ",", current ) );
         adapter.updateSettings( settings );
 
-        record PathParts( String physNs, String physSchema, String table, String column, String original ) {
-
-        }
-
-        Function<String, PathParts> parse = ( raw ) -> {
-            String p = raw.replace( "'", "" ).trim();
-            String[] parts = p.split( "\\." );
-
-            String physNs, physSchema, table, column;
-
-            if ( parts.length == 4 ) {
-                physNs = parts[0];
-                physSchema = parts[1];
-                table = parts[2];
-                column = parts[3];
-
-            } else if ( parts.length == 3 ) {
-                physNs = parts[0];
-                physSchema = "Mappe1.xslx";
-                table = parts[1];
-                column = parts[2].split( "\\:" )[0].toLowerCase();
-
-            } else if ( parts.length == 2 ) {
-                physNs = parts[0];
-                physSchema = "Dateieins.csv";
-                table = parts[0].toLowerCase();
-                column = parts[1].toLowerCase();
-
-            } else {
-                throw new GenericRuntimeException( "Ungültiger Pfad '" + p + "' für Adapter " + adapter.getAdapterName() );
-            }
-            return new PathParts( physNs, physSchema, table, column, p );
-        };
-
-        Map<LogicalTable, Set<String>> work = new HashMap<>();
-
+        Map<TableKey, Set<String>> work = new HashMap<>();
         for ( String raw : paths ) {
             if ( raw == null || raw.isBlank() ) {
                 continue;
             }
+            PathParts pp = parsePathUniversal( raw );
+            work.computeIfAbsent( new TableKey( pp.physSchema(), pp.table() ), k -> new HashSet<>() ).add( pp.column() );
+        }
 
-            PathParts pp = parse.apply( raw );
-            String physSchema = pp.physSchema();
-            String tableName = pp.table();
-            String columnName = pp.column();
+        for ( Map.Entry<TableKey, Set<String>> e : work.entrySet() ) {
+            TableKey k = e.getKey();
+            Set<String> cols = e.getValue();
 
-            LogicalTable table = findLogicalTableByPhysical( Catalog.defaultNamespaceId, adapter, physSchema, tableName );
+            LogicalTable table = findLogicalTableByPhysical( Catalog.defaultNamespaceId, adapter, k.physSchema(), k.table() );
             if ( table == null ) {
-                table = catalog.getSnapshot().rel().getTable( Catalog.defaultNamespaceId, tableName ).orElse( null );
+                table = catalog.getSnapshot().rel().getTable( Catalog.defaultNamespaceId, k.table() ).orElse( null );
             }
-
+            if ( table == null ) {
+                throw new GenericRuntimeException( "Tabelle " + k + " nicht gefunden." );
+            }
             if ( table.entityType != EntityType.SOURCE ) {
                 throw new GenericRuntimeException( "Tabelle " + table.name + " ist kein SOURCE-Objekt." );
             }
-
-            work.computeIfAbsent( table, t -> new HashSet<>() ).add( columnName );
-        }
-
-        for ( Map.Entry<LogicalTable, Set<String>> e : work.entrySet() ) {
-            LogicalTable table = e.getKey();
-            Set<String> cols = e.getValue();
 
             if ( cols.contains( "*" ) ) {
                 dropWholeSourceTable( table, stmt );
                 continue;
             }
-
             for ( String col : cols ) {
                 dropSourceColumn( table, col, stmt );
-                catalog.updateSnapshot();
             }
 
             if ( catalog.getSnapshot().rel().getColumns( table.id ).isEmpty() ) {
                 dropWholeSourceTable( table, stmt );
-                catalog.updateSnapshot();
             }
+            catalog.updateSnapshot();
         }
 
-        catalog.updateSnapshot();
         stmt.getQueryProcessor().resetCaches();
         stmt.getTransaction().commit();
     }
@@ -3530,6 +3487,43 @@ public class DdlManagerImpl extends DdlManager {
         }
         statement.setMonitoringEvent( event );
 
+    }
+
+
+    record PathParts( String physSchema, String table, String column, String original ) {
+
+    }
+
+
+    record TableKey( String physSchema, String table ) {
+
+    }
+
+
+    static String norm( String s ) {
+        return s == null ? "" : s.replace( "'", "" ).trim();
+    }
+
+
+    static PathParts parsePathUniversal( String raw ) {
+        String p = norm( raw );
+        if ( p.isBlank() ) {
+            throw new IllegalArgumentException( "Empty path !" );
+        }
+
+        String[] parts = p.split( "\\." );
+        switch ( parts.length ) {
+            case 4 -> {
+                return new PathParts( parts[1], parts[2], parts[3], p );
+            }
+            case 3 -> {
+                return new PathParts( parts[0], parts[1], parts[2], p );
+            }
+            case 2 -> {
+                return new PathParts( parts[0], parts[0], parts[1], p );
+            }
+            default -> throw new IllegalArgumentException( "Unknown path format:" + p );
+        }
     }
 
 

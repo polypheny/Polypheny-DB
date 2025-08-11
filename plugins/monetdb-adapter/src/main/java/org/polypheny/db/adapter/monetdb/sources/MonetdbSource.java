@@ -300,6 +300,7 @@ public class MonetdbSource extends AbstractJdbcSource implements MetadataProvide
 
     @Override
     public AbstractNode fetchMetadataTree() {
+        this.previewByTable = new LinkedHashMap<>();
         String dbName = settings.getOrDefault( "database", "monetdb" );
         Node root = new Node( "relational", dbName );
 
