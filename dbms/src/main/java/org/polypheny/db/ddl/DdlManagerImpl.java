@@ -402,10 +402,10 @@ public class DdlManagerImpl extends DdlManager {
                 table = catalog.getSnapshot().rel().getTable( Catalog.defaultNamespaceId, k.table() ).orElse( null );
             }
             if ( table == null ) {
-                throw new GenericRuntimeException( "Tabelle " + k + " nicht gefunden." );
+                log.info( "Table: " + k.physSchema() + "." + k.table() + " not found" );
             }
             if ( table.entityType != EntityType.SOURCE ) {
-                throw new GenericRuntimeException( "Tabelle " + table.name + " ist kein SOURCE-Objekt." );
+                throw new GenericRuntimeException( "Table " + table.name + " is not a source object!" );
             }
 
             if ( cols.contains( "*" ) ) {

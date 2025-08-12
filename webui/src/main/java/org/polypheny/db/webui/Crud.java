@@ -983,6 +983,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    /**
+     * Exact changes are send here. The publisher manager gets the changes from the listener.
+     */
     void metadataChange( final Context ctx ) {
         String uniqueName = ctx.pathParam( "uniqueName" );
         PreviewResultEntry data = PublisherManager.getInstance().fetchChange( uniqueName );
@@ -1001,6 +1004,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    /**
+     * Add / Delete new metadata and update adapter.
+     */
     void metadataAck( final Context ctx ) {
         AckPayload payload = ctx.bodyAsClass( AckPayload.class );
         log.info( "Acknowledgement incoming: " + payload.toString() );
@@ -1009,20 +1015,24 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "metadata-ack-" + payload.uniqueName );
         Statement stmt = transaction.createStatement();
         try {
-            if ( payload.addedPaths != null || payload.addedPaths.length > 0 ) {
+            if ( payload.addedPaths != null && payload.addedPaths.length > 0 ) {
                 DdlManager.getInstance().addSelectedMetadata( transaction, stmt, payload.uniqueName, Catalog.defaultNamespaceId, List.of( payload.addedPaths ) );
             }
 
-            if ( payload.removedPaths != null || payload.removedPaths.length > 0 ) {
+            if ( payload.removedPaths != null && payload.removedPaths.length > 0 ) {
                 String[] filtered = filterPrefixes( payload.removedPaths );
                 DdlManager.getInstance().removeSelectedMetadata( List.of( filtered ), stmt, payload.uniqueName );
             }
             transaction.commit();
-            ctx.status( 200 ).result( "ACK processed" );
+            ctx.status( 200 ).json( Map.of( "message", "ACK processed" ) );
         } catch ( Exception e ) {
             log.error( "metadataAck failed", e );
-            ctx.status( 200 ).json( Map.of( "message", "ACK was processed" ) );
-
+            try {
+                transaction.rollback( "Error occurred during metadata acknowledgement!" );
+            } catch ( Exception ignore ) {
+            }
+            ctx.status( 500 ).json( Map.of( "message", "ACK failed", "error", e.getClass().getSimpleName()
+            ) );
         } finally {
             if ( stmt != null ) {
                 stmt.close();
@@ -1036,8 +1046,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         String uniqueName = ctx.pathParam( "uniqueName" );
         MetadataProvider provider = AdapterManager.getInstance()
                 .getMetadataProvider( uniqueName )
-                .orElseThrow( () -> new IllegalStateException(
-                        "Adapter %s doesn't support inteface metadata provider !".formatted( uniqueName ) ) );
+                .orElseThrow( () -> new IllegalStateException( "Adapter %s doesn't support inteface metadata provider !".formatted( uniqueName ) ) );
 
         List<ChangeLogEntry> historyBeforeParsing = PublisherManager.getInstance().getHistory( uniqueName );
 
