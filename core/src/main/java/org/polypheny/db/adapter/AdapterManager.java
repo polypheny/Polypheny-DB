@@ -19,13 +19,18 @@ package org.polypheny.db.adapter;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
+import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -40,6 +45,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
 
 
+@Slf4j
 public class AdapterManager {
 
     public static Expression ADAPTER_MANAGER_EXPRESSION = Expressions.call( AdapterManager.class, "getInstance" );
@@ -178,7 +184,6 @@ public class AdapterManager {
 
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
 
-
         for ( AbstractAdapterSetting setting : adapterTemplate.settings ) {
             if ( setting.appliesTo.stream().noneMatch( s -> s.appliesTo( mode ) ) ) {
                 settings.remove( setting.name );
@@ -218,6 +223,30 @@ public class AdapterManager {
         // Shutdown store
         adapterInstance.shutdownAndRemoveListeners();
 
+        // Delete directory if exist
+        try {
+            var s = adapterInstance.getCurrentSettings();
+            if ( s != null && s.containsKey( "directory" ) ) {
+                String dirStr = s.get( "directory" );
+                if ( dirStr != null && !dirStr.isBlank() ) {
+                    Path dir = Paths.get( dirStr ).normalize();
+                    if ( Files.isDirectory( dir ) ) {
+                        Files.walk( dir )
+                                .sorted( java.util.Comparator.reverseOrder() )
+                                .forEach( p -> {
+                                    try {
+                                        Files.deleteIfExists( p );
+                                    } catch ( IOException ignored ) {
+                                    }
+                                } );
+                        log.info( "Deleted adapter directory: {}", dir.toAbsolutePath().toString() );
+                    }
+                }
+            }
+        } catch ( Exception e ) {
+            log.warn( "Could not delete adapter directory: {}", e.toString() );
+        }
+
         // Remove store from maps
         adapterById.remove( adapterInstance.getAdapterId() );
         adapterByName.remove( adapterInstance.getUniqueName() );
@@ -239,12 +268,11 @@ public class AdapterManager {
     }
 
 
-    public Optional<MetadataProvider> getMetadataProvider(String uniqueName) {
-        return getSource(uniqueName)
-                .filter(mp -> mp instanceof MetadataProvider)
-                .map(mp -> (MetadataProvider) mp);
+    public Optional<MetadataProvider> getMetadataProvider( String uniqueName ) {
+        return getSource( uniqueName )
+                .filter( mp -> mp instanceof MetadataProvider )
+                .map( mp -> (MetadataProvider) mp );
     }
-
 
 
     public record AdapterInformation( String name, String description, AdapterType type, List<AbstractAdapterSetting> settings, List<DeployMode> modes ) {
