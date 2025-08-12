@@ -20,7 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.http.ContentType;
 import io.javalin.http.Context;
-import io.javalin.http.HttpCode;
+import io.javalin.http.HttpStatus;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -336,7 +336,7 @@ public class WorkflowManager {
         UUID workflowId = UUID.fromString( ctx.pathParam( "workflowId" ) );
         process( ctx, () -> {
             if ( sessionManager.isWorkflowOpened( workflowId ) ) {
-                throw new WorkflowRepoException( "Cannot delete workflow while it is opened in a session", HttpCode.FORBIDDEN );
+                throw new WorkflowRepoException( "Cannot delete workflow while it is opened in a session", HttpStatus.FORBIDDEN );
             }
             repo.deleteWorkflow( workflowId );
             return "success";
@@ -369,7 +369,7 @@ public class WorkflowManager {
             ctx.status( e.getErrorCode() );
             ctx.json( e.getMessage() );
         } catch ( Exception e ) {
-            ctx.status( HttpCode.INTERNAL_SERVER_ERROR );
+            ctx.status( HttpStatus.INTERNAL_SERVER_ERROR );
             ctx.json( e.getMessage() );
             e.printStackTrace();
         }

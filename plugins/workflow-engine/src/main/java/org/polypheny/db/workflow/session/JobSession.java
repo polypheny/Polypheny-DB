@@ -19,7 +19,7 @@ package org.polypheny.db.workflow.session;
 import static org.polypheny.db.workflow.models.SessionModel.SessionModelType.JOB_SESSION;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.javalin.http.HttpCode;
+import io.javalin.http.HttpStatus;
 import io.javalin.websocket.WsMessageContext;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -94,7 +94,7 @@ public class JobSession extends AbstractSession {
         updateLastInteraction();
         if ( workflow.getState() != WorkflowState.IDLE ) {
             executionHistory.add( new JobExecutionModel( message, "previous execution did not yet finish" ) );
-            throw new WorkflowJobException( "Workflow is currently not idle: " + workflow.getState(), HttpCode.CONFLICT );
+            throw new WorkflowJobException( "Workflow is currently not idle: " + workflow.getState(), HttpStatus.CONFLICT );
         }
         reset( null );
         if ( variables != null ) {
@@ -120,7 +120,7 @@ public class JobSession extends AbstractSession {
     public void interrupt() throws WorkflowJobException {
         updateLastInteraction();
         if ( workflow.getState() != WorkflowState.EXECUTING ) {
-            throw new WorkflowJobException( "Workflow is currently not being executed: " + workflow.getState(), HttpCode.CONFLICT );
+            throw new WorkflowJobException( "Workflow is currently not being executed: " + workflow.getState(), HttpStatus.CONFLICT );
         }
         interruptExecution();
     }
@@ -128,7 +128,7 @@ public class JobSession extends AbstractSession {
 
     public void reset( @Nullable UUID targetId ) throws WorkflowJobException {
         if ( workflow.getState() != WorkflowState.IDLE ) {
-            throw new WorkflowJobException( "Workflow is currently not idle: " + workflow.getState(), HttpCode.CONFLICT );
+            throw new WorkflowJobException( "Workflow is currently not idle: " + workflow.getState(), HttpStatus.CONFLICT );
         }
         workflow.reset( targetId, sm );
         broadcastMessage( new StateUpdateResponse( null, workflow ) );

@@ -18,7 +18,7 @@ package org.polypheny.db.workflow.repo;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.javalin.http.HttpCode;
+import io.javalin.http.HttpStatus;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -92,7 +92,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
         File dir = getWorkflowDir( id );
         File defFile = new File( dir, DEF_FILE );
         if ( !defFile.exists() ) {
-            throw new WorkflowRepoException( DEF_FILE + " not found for workflow ID: " + id, HttpCode.NOT_FOUND );
+            throw new WorkflowRepoException( DEF_FILE + " not found for workflow ID: " + id, HttpStatus.NOT_FOUND );
         }
         try {
             return mapper.readValue( defFile, WorkflowDefModel.class );
@@ -105,13 +105,13 @@ public class WorkflowRepoImpl implements WorkflowRepo {
     @Override
     public UUID createWorkflow( String name, @Nullable String group ) throws WorkflowRepoException {
         if ( name.length() > MAX_NAME_LENGTH ) {
-            throw new WorkflowRepoException( "Name must not exceed " + MAX_NAME_LENGTH + " characters", HttpCode.BAD_REQUEST );
+            throw new WorkflowRepoException( "Name must not exceed " + MAX_NAME_LENGTH + " characters", HttpStatus.BAD_REQUEST );
         }
         if ( group != null && group.length() > MAX_NAME_LENGTH ) {
-            throw new WorkflowRepoException( "Group must not exceed " + MAX_NAME_LENGTH + " characters", HttpCode.BAD_REQUEST );
+            throw new WorkflowRepoException( "Group must not exceed " + MAX_NAME_LENGTH + " characters", HttpStatus.BAD_REQUEST );
         }
         if ( doesNameExist( name ) ) {
-            throw new WorkflowRepoException( "Name already exists: " + name, HttpCode.CONFLICT );
+            throw new WorkflowRepoException( "Name already exists: " + name, HttpStatus.CONFLICT );
         }
 
         UUID id = UUID.randomUUID();
@@ -136,7 +136,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
         File file = new File( dir, version + ".json" );
 
         if ( !doesExist( id, version ) || !file.exists() ) {
-            throw new WorkflowRepoException( "Workflow " + id + ", v" + version + " does not exist.", HttpCode.NOT_FOUND );
+            throw new WorkflowRepoException( "Workflow " + id + ", v" + version + " does not exist.", HttpStatus.NOT_FOUND );
         }
 
         try {
@@ -150,7 +150,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
     @Override
     public int writeVersion( UUID id, String description, WorkflowModel wf ) throws WorkflowRepoException {
         if ( description.length() > MAX_VERSION_DESCRIPTION_LENGTH ) {
-            throw new WorkflowRepoException( "Description must not exceed " + MAX_VERSION_DESCRIPTION_LENGTH + " characters", HttpCode.BAD_REQUEST );
+            throw new WorkflowRepoException( "Description must not exceed " + MAX_VERSION_DESCRIPTION_LENGTH + " characters", HttpStatus.BAD_REQUEST );
         }
         WorkflowDefModel def = getWorkflowDef( id );
         int version = def.addVersion( description );
@@ -166,7 +166,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
     @Override
     public void deleteWorkflow( UUID id ) throws WorkflowRepoException {
         if ( !doesExist( id ) ) {
-            throw new WorkflowRepoException( "Unable to delete non-existent workflow " + id, HttpCode.NOT_FOUND );
+            throw new WorkflowRepoException( "Unable to delete non-existent workflow " + id, HttpStatus.NOT_FOUND );
         }
         if ( !phm.recursiveDeleteFolder( WORKFLOWS_PATH + "/" + id.toString() ) ) {
             throw new WorkflowRepoException( "Failed to delete workflow " + id );
@@ -178,17 +178,17 @@ public class WorkflowRepoImpl implements WorkflowRepo {
     public void deleteVersion( UUID id, int version ) throws WorkflowRepoException {
         WorkflowDefModel def = getWorkflowDef( id );
         if ( def.getVersions().size() <= 1 ) {
-            throw new WorkflowRepoException( "Cannot delete the only remaining version of workflow " + def.getName(), HttpCode.FORBIDDEN );
+            throw new WorkflowRepoException( "Cannot delete the only remaining version of workflow " + def.getName(), HttpStatus.FORBIDDEN );
         }
 
         if ( !doesExist( id, version ) ) {
-            throw new WorkflowRepoException( "Unable to delete non-existent workflow version " + def.getName() + " v" + version, HttpCode.NOT_FOUND );
+            throw new WorkflowRepoException( "Unable to delete non-existent workflow version " + def.getName() + " v" + version, HttpStatus.NOT_FOUND );
         }
 
         File dir = getWorkflowDir( id );
         File versionFile = new File( dir, version + ".json" );
         if ( !versionFile.exists() ) {
-            throw new WorkflowRepoException( "Version file " + versionFile.getName() + " not found for workflow " + def.getName(), HttpCode.NOT_FOUND );
+            throw new WorkflowRepoException( "Version file " + versionFile.getName() + " not found for workflow " + def.getName(), HttpStatus.NOT_FOUND );
         }
         if ( !versionFile.delete() ) {
             throw new WorkflowRepoException( "Failed to delete version file: " + versionFile.getAbsolutePath() );
@@ -206,10 +206,10 @@ public class WorkflowRepoImpl implements WorkflowRepo {
             return; // same name as before
         }
         if ( name.length() > MAX_NAME_LENGTH ) {
-            throw new WorkflowRepoException( "Name must not exceed " + MAX_NAME_LENGTH + " characters", HttpCode.BAD_REQUEST );
+            throw new WorkflowRepoException( "Name must not exceed " + MAX_NAME_LENGTH + " characters", HttpStatus.BAD_REQUEST );
         }
         if ( doesNameExist( name ) ) {
-            throw new WorkflowRepoException( "A workflow with name " + name + " already exists", HttpCode.CONFLICT );
+            throw new WorkflowRepoException( "A workflow with name " + name + " already exists", HttpStatus.CONFLICT );
         }
         def.setName( name );
         serializeToFile( new File( getWorkflowDir( id ), DEF_FILE ), def );  // updated definition
@@ -223,7 +223,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
             return;
         }
         if ( group.length() > MAX_NAME_LENGTH ) {
-            throw new WorkflowRepoException( "Group must not exceed " + MAX_NAME_LENGTH + " characters", HttpCode.BAD_REQUEST );
+            throw new WorkflowRepoException( "Group must not exceed " + MAX_NAME_LENGTH + " characters", HttpStatus.BAD_REQUEST );
         }
         def.setGroup( group );
         serializeToFile( new File( getWorkflowDir( id ), DEF_FILE ), def );  // updated definition
@@ -237,7 +237,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
             return;
         }
         if ( description.length() > MAX_WORKFLOW_DESCRIPTION_LENGTH ) {
-            throw new WorkflowRepoException( "Description must not exceed " + MAX_WORKFLOW_DESCRIPTION_LENGTH + " characters", HttpCode.BAD_REQUEST );
+            throw new WorkflowRepoException( "Description must not exceed " + MAX_WORKFLOW_DESCRIPTION_LENGTH + " characters", HttpStatus.BAD_REQUEST );
         }
         def.setDescription( description );
         serializeToFile( new File( getWorkflowDir( id ), DEF_FILE ), def );
@@ -266,7 +266,7 @@ public class WorkflowRepoImpl implements WorkflowRepo {
     @Override
     public void setJob( JobModel model ) throws WorkflowRepoException {
         if ( model.getName().length() > MAX_NAME_LENGTH ) {
-            throw new WorkflowRepoException( "Name must not exceed " + MAX_NAME_LENGTH + " characters", HttpCode.BAD_REQUEST );
+            throw new WorkflowRepoException( "Name must not exceed " + MAX_NAME_LENGTH + " characters", HttpStatus.BAD_REQUEST );
         }
         Map<UUID, JobModel> models = new HashMap<>( getJobs() );
         models.put( model.getJobId(), model );

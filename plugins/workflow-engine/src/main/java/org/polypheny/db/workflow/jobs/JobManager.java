@@ -17,7 +17,7 @@
 package org.polypheny.db.workflow.jobs;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.javalin.http.HttpCode;
+import io.javalin.http.HttpStatus;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -74,10 +74,10 @@ public class JobManager {
     public UUID setJob( JobModel model ) throws WorkflowJobException, WorkflowRepoException {
         UUID jobId = model.getJobId();
         if ( isEnabled( jobId ) ) {
-            throw new WorkflowJobException( "Cannot modify an active job", HttpCode.CONFLICT );
+            throw new WorkflowJobException( "Cannot modify an active job", HttpStatus.CONFLICT );
         }
         if ( !repo.doesExist( model.getWorkflowId(), model.getVersion() ) ) {
-            throw new WorkflowJobException( "The specified workflow version does not exist: " + model.getWorkflowId() + " v" + model.getVersion(), HttpCode.NOT_FOUND );
+            throw new WorkflowJobException( "The specified workflow version does not exist: " + model.getWorkflowId() + " v" + model.getVersion(), HttpStatus.NOT_FOUND );
         }
         repo.setJob( JobTrigger.fromModel( this, model ).toModel() ); // this also validates the JobTrigger
         return jobId;
@@ -94,7 +94,7 @@ public class JobManager {
 
     public UUID enable( UUID jobId ) throws WorkflowJobException {
         if ( isEnabled( jobId ) ) {
-            throw new WorkflowJobException( "Cannot enable already active job", HttpCode.CONFLICT );
+            throw new WorkflowJobException( "Cannot enable already active job", HttpStatus.CONFLICT );
         }
 
         try {
@@ -115,7 +115,7 @@ public class JobManager {
 
     public void disable( UUID jobId ) throws WorkflowJobException {
         if ( !isEnabled( jobId ) ) {
-            throw new WorkflowJobException( "Cannot disable inactive job", HttpCode.CONFLICT );
+            throw new WorkflowJobException( "Cannot disable inactive job", HttpStatus.CONFLICT );
         }
         sessionManager.terminateSession( jobToSession.get( jobId ) );
         jobToSession.remove( jobId );
@@ -126,7 +126,7 @@ public class JobManager {
             UUID jobId, String message, @Nullable Map<String, JsonNode> variables,
             @Nullable Consumer<Boolean> onExecutionFinished ) throws Exception {
         if ( !isEnabled( jobId ) ) {
-            throw new WorkflowJobException( "Only active jobs can be triggered", HttpCode.CONFLICT );
+            throw new WorkflowJobException( "Only active jobs can be triggered", HttpStatus.CONFLICT );
         }
         JobSession session = getSession( jobId );
         session.triggerExecution( message, variables, onExecutionFinished );
@@ -153,7 +153,7 @@ public class JobManager {
     private JobSession getSession( UUID jobId ) throws WorkflowJobException {
         UUID sessionId = jobToSession.get( jobId );
         if ( sessionId == null ) {
-            throw new WorkflowJobException( "Session does not exist for job: " + jobId, HttpCode.CONFLICT );
+            throw new WorkflowJobException( "Session does not exist for job: " + jobId, HttpStatus.CONFLICT );
         }
         return sessionManager.getJobSessionOrThrow( sessionId );
     }
@@ -162,17 +162,17 @@ public class JobManager {
     @Getter
     public static class WorkflowJobException extends Exception {
 
-        private final HttpCode errorCode;
+        private final HttpStatus errorCode;
 
 
-        public WorkflowJobException( String message, HttpCode errorCode ) {
+        public WorkflowJobException( String message, HttpStatus errorCode ) {
             super( message );
             this.errorCode = errorCode;
         }
 
 
         public WorkflowJobException( String message ) {
-            this( message, HttpCode.INTERNAL_SERVER_ERROR );
+            this( message, HttpStatus.INTERNAL_SERVER_ERROR );
         }
 
 
