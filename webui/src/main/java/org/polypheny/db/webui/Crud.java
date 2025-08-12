@@ -47,9 +47,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DateFormat;
-import java.sql.SQLException;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.ArrayList;
@@ -80,7 +78,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.websocket.api.Session;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.AbstractAdapterSettingString;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSettingDirectory;
@@ -91,7 +88,7 @@ import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
-import org.polypheny.db.adapter.MetadataObserver.AbstractListener;
+import org.polypheny.db.adapter.MetadataObserver.ListenerImpl;
 import org.polypheny.db.adapter.MetadataObserver.ChangeLogEntry;
 import org.polypheny.db.adapter.MetadataObserver.ChangeLogView;
 import org.polypheny.db.adapter.MetadataObserver.PublisherManager;
@@ -203,7 +200,6 @@ import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
 import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
 import org.polypheny.db.webui.models.PathAccessRequest;
 import org.polypheny.db.webui.models.PlacementFieldsModel;
-import org.polypheny.db.webui.models.PlacementFieldsModel.Method;
 import org.polypheny.db.webui.models.PlacementModel;
 import org.polypheny.db.webui.models.PlacementModel.RelationalStore;
 import org.polypheny.db.webui.models.QueryInterfaceModel;
@@ -912,26 +908,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 }
             }
 
-            log.info( "🔧 AdapterModel empfangen:" );
-            log.info( "  🔹 Name     : {}", a.adapterName );
-            log.info( "  🔹 Adapter  : {}", a.adapterType );
-            log.info( "  🔹 Type     : {}", a.limit );
-            log.info( "  🔹 UniqueName     : {}", a.uniqueName );
-
-            log.info( "📦 Settings:" );
-            for ( Entry<String, String> entry : a.settings.entrySet() ) {
-                log.info( "  - {}: {}", entry.getKey(), entry.getValue() );
-            }
-
-            if ( inputStreams.isEmpty() ) {
-                log.info( "📁 Keine Dateien empfangen." );
-            } else {
-                log.info( "📁 Empfangene Dateien:" );
-                for ( String file : inputStreams.keySet() ) {
-                    log.info( "  - Datei: {}", file );
-                }
-            }
-
             AdapterTemplate template = AdapterManager.getAdapterTemplate( a.adapterName, a.adapterType );
             Map<String, AbstractAdapterSetting> allSettings = template.settings
                     .stream()
@@ -959,7 +935,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
                 String path = handleUploadFiles( fileBytes, fileNames, (AbstractAdapterSettingDirectory) allSettings.get( "directory" ), a );
                 a.settings.put( "directory", path );
-                log.error( "Full path: {}", path );
             }
 
             PreviewResult result = template.preview( a.settings, 10 );
@@ -967,8 +942,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
         } catch ( Exception e ) {
-            log.error( "Fehler beim Verarbeiten des Preview-Requests", e );
-            ctx.status( HttpCode.INTERNAL_SERVER_ERROR ).result( "Fehler beim Preview" );
+            log.error( "Error during the preview-request.", e );
+            ctx.status( HttpCode.INTERNAL_SERVER_ERROR ).result( "Error while building preview !" );
         }
     }
 
@@ -1009,7 +984,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void metadataAck( final Context ctx ) {
         AckPayload payload = ctx.bodyAsClass( AckPayload.class );
-        log.info( "Acknowledgement incoming: " + payload.toString() );
         PublisherManager.getInstance().ack( payload.uniqueName, payload.addedPaths );
 
         Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "metadata-ack-" + payload.uniqueName );
@@ -1036,7 +1010,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         } finally {
             if ( stmt != null ) {
                 stmt.close();
-                transactionManager.removeTransaction( transaction.getXid() );
+                if ( transaction.isActive() ) {
+                    transactionManager.removeTransaction( transaction.getXid() );
+                }
+
             }
         }
     }
@@ -1063,15 +1040,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         ConfigPayload config = ctx.bodyAsClass( ConfigPayload.class );
         Set<String> userSelection = Set.of( config.selected );
         Set<String> markedPaths;
-        log.error( config.toString() );
         Optional<DataSource<?>> adapter = AdapterManager.getInstance().getSource( config.uniqueName );
 
         if ( adapter.get() instanceof MetadataProvider mp ) {
             AbstractNode root = mp.getRoot();
             markedPaths = NodeUtil.collectSelecedAttributePaths( root );
-            for ( String p : markedPaths ) {
-                log.info( "Selected path: " + p );
-            }
         } else {
             ctx.status( 500 ).json( Map.of( "message", "Configuration can not be applied." ) );
             return;
@@ -1114,7 +1087,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         } finally {
             if ( stmt != null ) {
                 stmt.close();
-                transactionManager.removeTransaction( tx.getXid() );
+                if ( tx.isActive() ) {
+                    transactionManager.removeTransaction( tx.getXid() );
+                }
+
             }
         }
 
@@ -2365,7 +2341,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         String fullPath = handleUploadFiles( fileBytes, fileNames, null, am );
         am.uniqueName = uniqueName;
         createFormDiffs( am, fullPath );
-        log.error( fullPath );
         ctx.result( "File(s) stored at: " + fullPath );
     }
 
@@ -2384,10 +2359,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         AbstractNode tempNode = tempProvider.fetchMetadataTree();
         Object newPreview = tempProvider.getPreview();
 
-        PreviewResultEntry result = AbstractListener.buildFormChange( previewRequest.uniqueName, currentNode, tempNode, newPreview, path );
-
-        currentProvider.printTree( currentNode, 0 );
-        tempProvider.printTree( tempNode, 0 );
+        PreviewResultEntry result = ListenerImpl.buildFormChange( previewRequest.uniqueName, currentNode, tempNode, newPreview, path );
 
         try {
             tempSource.shutdown();
@@ -2603,29 +2575,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-
-    /* private static String handleUploadFiles( Map<String, InputStream> inputStreams, List<String> fileNames, AbstractAdapterSettingDirectory setting, PreviewRequest a ) {
-        for ( String fileName : fileNames ) {
-            setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
-        }
-        File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + a.adapterName );
-        for ( Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
-            try ( InputStream in = is.getValue() ) {
-                File file = new File( path, is.getKey() );
-                log.info( "📁 Datei wird geschrieben: {}", file.getAbsolutePath() );
-                FileUtils.copyInputStreamToFile( in, file );
-            } catch ( IOException e ) {
-                throw new GenericRuntimeException( e );
-            }
-        }
-        return path.getAbsolutePath();
-    }*/
-
-
-    // Map<String, byte[]> statt Map<String, InputStream>
     private static String handleUploadFiles( Map<String, byte[]> files, List<String> fileNames, AbstractAdapterSettingDirectory setting, PreviewRequest previewRequest ) {
-        File path = PolyphenyHomeDirManager.getInstance()
-                .registerNewFolder( "data/csv/" + previewRequest.uniqueName );
+        File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + previewRequest.uniqueName );
         for ( String name : fileNames ) {
             byte[] data = files.get( name );
             if ( data == null ) {
@@ -2633,7 +2584,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
             try ( InputStream in = new ByteArrayInputStream( data ) ) {
                 File target = new File( path, name );
-                log.info( "📂 Datei wird geschrieben: {}", target.getAbsolutePath() );
                 FileUtils.copyInputStreamToFile( in, target );
             } catch ( IOException e ) {
                 throw new GenericRuntimeException( e );

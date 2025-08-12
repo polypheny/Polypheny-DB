@@ -275,9 +275,6 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
 
                     if ( attrNodeOpt.isPresent() ) {
                         ((AttributeNode) attrNodeOpt.get()).setSelected( true );
-                        log.info( "✅ Attribut gesetzt: " + String.join( ".", pathSegments ) );
-                    } else {
-                        log.warn( "❌ Attribut nicht gefunden: " + String.join( ".", pathSegments ) );
                     }
 
                 } else {
@@ -288,28 +285,12 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
                     if ( childOpt.isPresent() ) {
                         current = childOpt.get();
                     } else {
-                        log.warn( "❌ Segment nicht gefunden: " + segment + " im Pfad " + String.join( ".", pathSegments ) );
                         break;
                     }
                 }
             }
         }
 
-    }
-
-
-    @Override
-    public void printTree( AbstractNode node, int depth ) {
-        if ( node == null ) {
-            node = this.metadataRoot;
-        }
-        System.out.println( "  ".repeat( depth ) + node.getType() + ": " + node.getName() );
-        for ( Map.Entry<String, Object> entry : node.getProperties().entrySet() ) {
-            System.out.println( "  ".repeat( depth + 1 ) + "- " + entry.getKey() + ": " + entry.getValue() );
-        }
-        for ( AbstractNode child : node.getChildren() ) {
-            printTree( child, depth + 1 );
-        }
     }
 
 
@@ -372,7 +353,6 @@ public class PostgresqlSource extends AbstractJdbcSource implements MetadataProv
                 logical.pkIds, allocation );
 
         adapterCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( table ) );
-        log.error( "Postgres Adapter ID ist: " + this.adapterId );
         return List.of( table );
     }
 

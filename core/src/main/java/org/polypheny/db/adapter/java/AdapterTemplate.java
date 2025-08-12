@@ -113,7 +113,6 @@ public class AdapterTemplate {
 
     public DataSource<?> createEphemeral( Map<String, String> settings ) {
         String previewName = "_preview" + System.nanoTime();
-        log.info( "Creating ephemeral adapter {} with name {}", clazz.getName(), previewName );
         Adapter<?> adapter = deployer.get( -1L, previewName, settings, DeployMode.REMOTE );
 
         if ( !(adapter instanceof DataSource<?> ds) ) {
@@ -126,27 +125,18 @@ public class AdapterTemplate {
 
     public PreviewResult preview( Map<String, String> settings, int limit ) {
         DataSource<?> tmp = createEphemeral( settings );
-        log.info( "Adapter class: {}", tmp.getClass().getName() );
-        log.info( "Implements MetadataProvider: {}", tmp instanceof MetadataProvider );
         try {
             if ( tmp instanceof MetadataProvider mp ) {
-                log.info( "🎯 Adapter supports MetadataProvider. Fetching metadata and preview..." );
                 AbstractNode meta = mp.fetchMetadataTree();
                 mp.setRoot( meta );
-                mp.printTree( meta, 0 );
                 String json = NodeSerializer.serializeNode( meta ).toString();
                 MetadataHasher hasher = new MetadataHasher();
                 String hash = hasher.hash( json );
-                log.info( "Metadata hash at preview: {}", hash );
-                // Object rows = mp.fetchPreview( limit );
                 Object rows = mp.getPreview();
-                log.error( json );
-                // log.error( rows.toString() );
                 return new PreviewResult( json, rows, null );
             }
             throw new GenericRuntimeException( "The adapter does not implement MetadataProvider." );
         } finally {
-            log.info( "🔻 Shutting down preview adapter." );
             tmp.shutdown();
         }
     }

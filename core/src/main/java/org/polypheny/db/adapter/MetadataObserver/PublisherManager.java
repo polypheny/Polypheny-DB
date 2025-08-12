@@ -16,32 +16,22 @@
 
 package org.polypheny.db.adapter.MetadataObserver;
 
-import lombok.AllArgsConstructor;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
-import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.DataSource;
-import org.polypheny.db.adapter.MetadataObserver.Utils.MetaDiffUtil.DiffResult;
-import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResult;
 import org.polypheny.db.adapter.java.AdapterTemplate.PreviewResultEntry;
-import org.polypheny.db.schemaDiscovery.AbstractNode;
 import org.polypheny.db.schemaDiscovery.MetadataProvider;
-import java.time.Instant;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentMap;
 
 @Slf4j
 public class PublisherManager {
 
     private static final int MAX_ENTRIES_PER_ADAPTER = 100;
 
-    private final Map<String, MetadataPublisher> publishers = new ConcurrentHashMap<>();
+    private final Map<String, AbstractPublisher> publishers = new ConcurrentHashMap<>();
 
     // Temporarily save the changes computed by a listener.
     private final Map<String, PreviewResultEntry> changeCache = new ConcurrentHashMap<>();
@@ -69,12 +59,11 @@ public class PublisherManager {
 
 
     public <P extends Adapter & MetadataProvider> void onAdapterDeploy( P adapter ) {
-        log.info( "Adapter {} is going to be registered for metadata publish.", adapter.getUniqueName() );
         if ( publishers.containsKey( adapter.getUniqueName() ) ) {
             return;
         }
-        MetadataListener listener = new AbstractListener();
-        MetadataPublisher publisher = new AbstractPublisher<>( adapter, listener );
+        AbstractListener listener = new ListenerImpl();
+        AbstractPublisher publisher = new PublisherImpl<>( adapter, listener );
         publishers.put( adapter.getUniqueName(), publisher );
         publisher.start();
     }
@@ -90,7 +79,6 @@ public class PublisherManager {
         this.changeCache.remove( uniqueName );
         this.statusCache.remove( uniqueName );
 
-        log.error( "Adapter {} is going to be unregistered for metadata publish.", uniqueName );
     }
 
 
@@ -115,10 +103,10 @@ public class PublisherManager {
 
 
     public void ack( String uniqueName, String[] metadata ) {
-        MetadataPublisher publisher = publishers.get( uniqueName );
+        AbstractPublisher publisher = publishers.get( uniqueName );
 
         if ( publishers.isEmpty() ) {
-            AbstractListener.applyFormChange( metadata, uniqueName, tempFileCache.get( uniqueName ) );
+            ListenerImpl.applyFormChange( metadata, uniqueName, tempFileCache.get( uniqueName ) );
         } else {
             publisher.getListener().applyChange( metadata );
         }

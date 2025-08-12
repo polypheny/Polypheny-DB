@@ -34,9 +34,10 @@ public final class NodeUtil {
 
     private static final String NORMALIZED_SEPARATOR = ".";
 
-    private static String normalizePath(String rawPath) {
-        return rawPath.replace("/", NORMALIZED_SEPARATOR)
-                .replace("\\", NORMALIZED_SEPARATOR);
+
+    private static String normalizePath( String rawPath ) {
+        return rawPath.replace( "/", NORMALIZED_SEPARATOR )
+                .replace( "\\", NORMALIZED_SEPARATOR );
     }
 
 
@@ -58,7 +59,6 @@ public final class NodeUtil {
     private static void traverse( AbstractNode node, Deque<String> path, Set<String> acc ) {
         path.addLast( node.getName() );
         if ( node instanceof AttributeNode attr && attr.isSelected() ) {
-            log.debug( ">> visiting {}", String.join( "/", path ) + "  selected=" + attr.isSelected() );
             acc.add( String.join( ".", path ) );
         }
 
@@ -99,9 +99,6 @@ public final class NodeUtil {
 
                     if ( attrNodeOpt.isPresent() ) {
                         ((AttributeNode) attrNodeOpt.get()).setSelected( false );
-                        log.info( "✔️  Attribut demarkiert: {}", String.join( ".", pathSegments ) );
-                    } else {
-                        log.warn( "✘  Attribut nicht gefunden: {}", String.join( ".", pathSegments ) );
                     }
                 } else {
                     Optional<AbstractNode> childOpt = current.getChildren().stream()
@@ -111,8 +108,6 @@ public final class NodeUtil {
                     if ( childOpt.isPresent() ) {
                         current = childOpt.get();
                     } else {
-                        log.warn( "✘  Segment nicht gefunden: {} in Pfad {}",
-                                segment, String.join( ".", pathSegments ) );
                         break;
                     }
                 }
@@ -127,14 +122,13 @@ public final class NodeUtil {
         }
 
         Set<String> selected = collectSelecedAttributePaths( oldRoot );
-        for ( String path : selected ) log.info( path );
-        for (String removedRaw : diff.getRemoved()) {
-            String removed = normalizePath(removedRaw);
-            for (String selectedRaw : selected) {
-                String selectedNorm = normalizePath(selectedRaw);
-                if (removed.equals(selectedNorm) ||
-                        selectedNorm.startsWith(removed + NORMALIZED_SEPARATOR) ||
-                        removed.startsWith(selectedNorm + NORMALIZED_SEPARATOR)) {
+        for ( String removedRaw : diff.getRemoved() ) {
+            String removed = normalizePath( removedRaw );
+            for ( String selectedRaw : selected ) {
+                String selectedNorm = normalizePath( selectedRaw );
+                if ( removed.equals( selectedNorm ) ||
+                        selectedNorm.startsWith( removed + NORMALIZED_SEPARATOR ) ||
+                        removed.startsWith( selectedNorm + NORMALIZED_SEPARATOR ) ) {
                     return ChangeStatus.CRITICAL;
                 }
             }

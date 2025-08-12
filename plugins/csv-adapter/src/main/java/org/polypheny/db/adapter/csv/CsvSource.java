@@ -529,14 +529,12 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
     @Override
     public void markSelectedAttributes( List<String> selectedPaths ) {
         if ( this.metadataRoot == null ) {
-            log.warn( "⚠️ Kein Metadatenbaum vorhanden – kann Attribute nicht markieren." );
-            return;
+            throw new GenericRuntimeException( "No metadata tree available." );
         }
 
         for ( String path : selectedPaths ) {
             int lastDot = path.lastIndexOf( '.' );
             if ( lastDot == -1 || lastDot == path.length() - 1 ) {
-                log.warn( "⚠️ Kein gültiger Attribut-Pfad: " + path );
                 continue;
             }
 
@@ -550,27 +548,8 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
 
             if ( attrOpt.isPresent() ) {
                 ((AttributeNode) attrOpt.get()).setSelected( true );
-                log.info( "✅ Attribut gesetzt: " + path );
-            } else {
-                log.warn( "❌ Attribut nicht gefunden: " + normalizedColumnName + " im Pfad: " + path );
             }
         }
-    }
-
-
-    @Override
-    public void printTree( AbstractNode node, int depth ) {
-        if ( node == null ) {
-            node = this.metadataRoot;
-        }
-        System.out.println( "  ".repeat( depth ) + node.getType() + ": " + node.getName() );
-        for ( Map.Entry<String, Object> entry : node.getProperties().entrySet() ) {
-            System.out.println( "  ".repeat( depth + 1 ) + "- " + entry.getKey() + ": " + entry.getValue() );
-        }
-        for ( AbstractNode child : node.getChildren() ) {
-            printTree( child, depth + 1 );
-        }
-
     }
 
 

@@ -238,7 +238,6 @@ public class DdlManagerImpl extends DdlManager {
         List<PathParts> parsedPaths = selectedPaths.stream()
                 .map( p -> {
                     String[] parts = p.split( "\\." );
-
                     String physNs;
                     String physSchema;
                     String table;
@@ -277,7 +276,8 @@ public class DdlManagerImpl extends DdlManager {
         settings.merge( "selectedAttributes", merged, ( oldVal, newVal ) -> oldVal.isBlank() ? newVal : oldVal + "," + newVal );
         adapter.get().updateSettings( settings );
 
-        Map<String, Set<String>> wishedColsPerTable = parsedPaths.stream()
+        Map<String, Set<String>> wishedColsPerTable = parsedPaths
+                .stream()
                 .collect( Collectors.groupingBy( PathParts::table, Collectors.mapping( PathParts::column, Collectors.toSet() ) ) );
 
         Map<String, List<ExportedColumn>> exportedColumns;
@@ -390,7 +390,13 @@ public class DdlManagerImpl extends DdlManager {
                 continue;
             }
             PathParts pp = parsePathUniversal( raw );
-            work.computeIfAbsent( new TableKey( pp.physSchema(), pp.table() ), k -> new HashSet<>() ).add( pp.column() );
+
+            String colName = pp.column();
+            if ( colName.contains( ":" ) ) {
+                colName = colName.split( ":" )[0];
+            }
+
+            work.computeIfAbsent( new TableKey( pp.physSchema(), pp.table() ), k -> new HashSet<>() ).add( colName );
         }
 
         for ( Map.Entry<TableKey, Set<String>> e : work.entrySet() ) {
@@ -432,12 +438,10 @@ public class DdlManagerImpl extends DdlManager {
         List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( table.id );
 
         if ( allocs.size() != 1 ) {
-            throw new GenericRuntimeException( "SOURCE-Tabelle " + table.name +
-                    " hat mehr als ein Placement." );
+            throw new GenericRuntimeException( "Source-Table " + table.name + " has more than one placement." );
         }
 
-        AllocationTable placement = allocs.get( 0 )
-                .unwrapOrThrow( AllocationTable.class );
+        AllocationTable placement = allocs.get( 0 ).unwrapOrThrow( AllocationTable.class );
 
         for ( LogicalForeignKey fk : catalog.getSnapshot().rel().getForeignKeys( table.id ) ) {
             catalog.getLogicalRel( table.namespaceId ).deleteForeignKey( fk.id );
@@ -465,11 +469,9 @@ public class DdlManagerImpl extends DdlManager {
                 .getColumn( table.id, columnName )
                 .orElse( null );
         if ( column == null ) {
-            log.info( "Spalte {}.{} bereits weg → nichts zu tun.", table.name, columnName );
             return;
         }
 
-        // 1) FKs weg
         for ( LogicalForeignKey fk : catalog.getSnapshot().rel().getForeignKeys( table.id ) ) {
             if ( fk.getFieldIds().contains( column.id ) ) {
                 catalog.getLogicalRel( table.namespaceId ).deleteForeignKey( fk.id );
@@ -540,14 +542,12 @@ public class DdlManagerImpl extends DdlManager {
         String attributes = adapter.getSettings().get( "selectedAttributes" );
         String uniqueName = adapter.getUniqueName();
         List<String> selectedAttributeNames = new ArrayList<>();
-        log.error( "Das ist das Attributes String: " + attributes );
         if ( attributes != null ) {
             List<String> selectedAttributes = new Gson().fromJson( attributes, new TypeToken<List<String>>() {
             }.getType() );
             selectedAttributeNames = selectedAttributes.stream()
                     .map( s -> s.substring( s.lastIndexOf( '.' ) + 1 ) )
                     .collect( Collectors.toList() );
-            log.error( "Das sind die Attribute die gefiltert werden müssen: " + selectedAttributeNames );
 
             if ( adapter instanceof MetadataProvider mp ) {
 
@@ -557,18 +557,14 @@ public class DdlManagerImpl extends DdlManager {
                 AbstractNode node = mp.fetchMetadataTree();
                 mp.setRoot( node );
                 String hash = hasher.hash( NodeSerializer.serializeNode( node ).toString() );
-                log.info( "Metadata hash at deployment: {}", hash );
 
                 HashCache.getInstance().put( uniqueName, hash );
-                log.info( "Key used during deployment: {} ", uniqueName );
 
                 if ( !(adapter.getAdapterName().equals( "Excel" ) || adapter.getAdapterName().equals( "CSV" )) ) {
                     pm.onAdapterDeploy( (Adapter & MetadataProvider) mp );
                 }
 
                 mp.markSelectedAttributes( selectedAttributes );
-                log.error( "SelectedAttributes ist gesetzt aus dem DdlManager und der Tree ist das hier: " );
-                mp.printTree( null, 0 );
             }
 
         }

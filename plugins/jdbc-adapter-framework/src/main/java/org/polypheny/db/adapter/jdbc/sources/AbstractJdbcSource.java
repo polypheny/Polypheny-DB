@@ -226,10 +226,6 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
 
             String[] tables;
 
-            for ( Map.Entry<String, String> entry : settings.entrySet() ) {
-                log.error( "Entry: {} = {}", entry.getKey(), entry.getValue() );
-            }
-
             // TODO If-else usage for possibly allow the usage of the old table-setting or selecting metadata. Not implemented yet.
             if ( !settings.containsKey( "selectedAttributes" ) || settings.get( "selectedAttributes" ).equals( "" ) || settings.get( "selectedAttributes" ).isEmpty() || settings.get( "selectedAttributes" ) == null ) {
                 tables = settings.get( "tables" ).split( "," );

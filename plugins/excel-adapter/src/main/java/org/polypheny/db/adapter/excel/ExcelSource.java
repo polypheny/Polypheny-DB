@@ -108,7 +108,6 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
 
     public ExcelSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
         super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), Set.of( DataModel.RELATIONAL ) );
-        log.error( settings.get( "directory" ) );
 
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ) ) : ConnectionMethod.UPLOAD;
         // Validate maxStringLength setting
@@ -129,15 +128,12 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
 
     private void setExcelDir( Map<String, String> settings ) {
         String dir = settings.get( "directory" );
-        log.error( "Directory kommt an als: " + settings.get( "directory" ) );
-
         if ( dir != null && dir.trim().startsWith( "[" ) ) {
             try {
                 List<String> list = new ObjectMapper()
                         .readValue( dir, new TypeReference<List<String>>() {
                         } );
                 dir = list.isEmpty() ? null : list.get( 0 );
-                log.error( "Directory nach Parsing: " + dir );
             } catch ( IOException e ) {
                 throw new GenericRuntimeException( "Cannot parse directory JSON", e );
             }
@@ -490,7 +486,6 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
     }
 
 
-
     @Override
     public List<Map<String, Object>> fetchPreview( Connection conn, String fqName, int limit ) {
 
@@ -510,7 +505,6 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
 
             Sheet sheet = wb.getSheet( sheetName );
             if ( sheet == null ) {
-                log.warn( "Sheet {} not found in {}", sheetName, filePath );
                 return List.of();
             }
 
@@ -598,11 +592,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
 
                     if ( attrNodeOpt.isPresent() ) {
                         ((AttributeNode) attrNodeOpt.get()).setSelected( true );
-                        log.info( "✅ Attribut gesetzt: " + String.join( ".", pathSegments ) );
-                    } else {
-                        log.warn( "❌ Attribut nicht gefunden: " + String.join( ".", pathSegments ) );
                     }
-
                 } else {
                     Optional<AbstractNode> childOpt = current.getChildren().stream()
                             .filter( c -> segment.equals( c.getName() ) )
@@ -611,27 +601,10 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
                     if ( childOpt.isPresent() ) {
                         current = childOpt.get();
                     } else {
-                        log.warn( "❌ Segment nicht gefunden: " + segment + " im Pfad " + String.join( ".", pathSegments ) );
                         break;
                     }
                 }
             }
-        }
-
-    }
-
-
-    @Override
-    public void printTree( AbstractNode node, int depth ) {
-        if ( node == null ) {
-            node = this.metadataRoot;
-        }
-        System.out.println( "  ".repeat( depth ) + node.getType() + ": " + node.getName() );
-        for ( Map.Entry<String, Object> entry : node.getProperties().entrySet() ) {
-            System.out.println( "  ".repeat( depth + 1 ) + "- " + entry.getKey() + ": " + entry.getValue() );
-        }
-        for ( AbstractNode child : node.getChildren() ) {
-            printTree( child, depth + 1 );
         }
 
     }

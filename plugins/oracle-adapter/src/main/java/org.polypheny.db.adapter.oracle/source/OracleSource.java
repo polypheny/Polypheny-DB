@@ -165,9 +165,6 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
             DatabaseMetaData dbmd = connection.getMetaData();
 
             String[] tables;
-            for ( Map.Entry<String, String> entry : settings.entrySet() ) {
-                log.error( "Entry: {} = {}", entry.getKey(), entry.getValue() );
-            }
 
             // TODO If-else usage for possibly allow the usage of the old table-setting or selecting metadata. Not implemented yet.
             if ( !settings.containsKey( "selectedAttributes" ) || settings.get( "selectedAttributes" ).equals( "" ) || settings.get( "selectedAttributes" ).isEmpty() || settings.get( "selectedAttributes" ) == null ) {
@@ -399,8 +396,7 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
     public List<Map<String, Object>> fetchPreview( Connection conn, String fqName, int limit ) {
         List<Map<String, Object>> rows = new ArrayList<>();
         try ( Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(
-                        "SELECT * FROM " + fqName + " FETCH FIRST " + limit + " ROWS ONLY" ) ) {
+                ResultSet rs = stmt.executeQuery( "SELECT * FROM " + fqName + " FETCH FIRST " + limit + " ROWS ONLY" ) ) {
             ResultSetMetaData meta = rs.getMetaData();
             while ( rs.next() ) {
                 Map<String, Object> row = new LinkedHashMap<>();
@@ -445,9 +441,6 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
 
                     if ( attrNodeOpt.isPresent() ) {
                         ((AttributeNode) attrNodeOpt.get()).setSelected( true );
-                        log.info( "✅ Attribut gesetzt: " + String.join( ".", pathSegments ) );
-                    } else {
-                        log.warn( "❌ Attribut nicht gefunden: " + String.join( ".", pathSegments ) );
                     }
 
                 } else {
@@ -458,28 +451,11 @@ public class OracleSource extends AbstractJdbcSource implements MetadataProvider
                     if ( childOpt.isPresent() ) {
                         current = childOpt.get();
                     } else {
-                        log.warn( "❌ Segment nicht gefunden: " + segment + " im Pfad " + String.join( ".", pathSegments ) );
                         break;
                     }
                 }
             }
         }
-    }
-
-
-    @Override
-    public void printTree( AbstractNode node, int depth ) {
-        if ( node == null ) {
-            node = this.metadataRoot;
-        }
-        System.out.println( "  ".repeat( depth ) + node.getType() + ": " + node.getName() );
-        for ( Map.Entry<String, Object> entry : node.getProperties().entrySet() ) {
-            System.out.println( "  ".repeat( depth + 1 ) + "- " + entry.getKey() + ": " + entry.getValue() );
-        }
-        for ( AbstractNode child : node.getChildren() ) {
-            printTree( child, depth + 1 );
-        }
-
     }
 
 

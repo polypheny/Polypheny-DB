@@ -376,22 +376,6 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
 
 
     @Override
-    public void printTree( AbstractNode node, int depth ) {
-        if ( node == null ) {
-            node = this.metadataRoot;
-        }
-        System.out.println( "Node type:" + node.toString() );
-        System.out.println( "  ".repeat( depth ) + node.getType() + ": " + node.getName() );
-        for ( Map.Entry<String, Object> entry : node.getProperties().entrySet() ) {
-            System.out.println( "  ".repeat( depth + 1 ) + "- " + entry.getKey() + ": " + entry.getValue() );
-        }
-        for ( AbstractNode child : node.getChildren() ) {
-            printTree( child, depth + 1 );
-        }
-    }
-
-
-    @Override
     public void setRoot( AbstractNode root ) {
         this.metadataRoot = root;
     }

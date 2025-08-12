@@ -28,15 +28,11 @@ public interface MetadataProvider {
 
     void markSelectedAttributes( List<String> selectedPaths );
 
-    void printTree( AbstractNode node, int depth );
-
     void setRoot( AbstractNode root );
 
     Object getPreview();
 
     AbstractNode getRoot();
 
-
-    
 
 }
