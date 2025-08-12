@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,9 @@ public class DashboardInformation {
         this.numberOfPendingEvents = MonitoringServiceProvider.getInstance().getNumberOfElementsInQueue();
 
         this.availableAdapter = snapshot.getAdapters().stream().collect( Collectors.toMap( v -> v.uniqueName, v -> Pair.of( v.adapterTypeName, v.type ) ) );
-        this.availableNamespaces = snapshot.getNamespaces( null ).stream().collect( Collectors.toMap( v -> v.name, v -> v.dataModel ) );
+        this.availableNamespaces = snapshot.getNamespaces( null ).stream()
+                .filter( ns -> !ns.hidden )
+                .collect( Collectors.toMap( v -> v.name, v -> v.dataModel ) );
     }
 
 }

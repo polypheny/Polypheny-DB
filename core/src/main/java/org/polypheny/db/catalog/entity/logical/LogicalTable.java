@@ -122,6 +122,12 @@ public class LogicalTable extends LogicalEntity {
 
 
     @Override
+    public ObjectType getLockableObjectType() {
+        return ObjectType.ENTITY;
+    }
+
+
+    @Override
     public String toString() {
         return "LogicalTable{" +
                 "primaryKey=" + primaryKey +

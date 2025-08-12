@@ -43,4 +43,10 @@ public class ContextSwitcher extends SingleAlg {
                 + input.algCompareString() + "&";
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

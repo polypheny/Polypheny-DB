@@ -43,7 +43,6 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
-import java.util.Optional;
 
 
 /**
@@ -100,5 +99,10 @@ public abstract class ConverterImpl extends SingleAlg implements Converter {
                 + input.algCompareString() + "&";
     }
 
-}
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
+}

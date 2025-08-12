@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Objects;
+import lombok.Getter;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -212,6 +213,7 @@ public abstract class Prepare<T> {
      */
     public abstract static class PreparedResultImpl<T> implements PreparedResult<T>, Typed {
 
+        @Getter
         protected final AlgNode rootAlg;
         protected final AlgDataType parameterRowType;
         protected final AlgDataType rowType;

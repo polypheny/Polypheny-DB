@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -517,9 +517,9 @@ public abstract class SqlImplementor {
                             return SqlLiteral.createCharString( literal.value.asString().value, POS );
                         case NUMERIC:
                         case EXACT_NUMERIC:
-                            return SqlLiteral.createExactNumeric( literal.value.asBigDecimal().value.toString(), POS );
+                            return SqlLiteral.createExactNumeric( literal.value.asNumber().bigDecimalValue().toString(), POS );
                         case APPROXIMATE_NUMERIC:
-                            return SqlLiteral.createApproxNumeric( literal.value.asBigDecimal().value.toString(), POS );
+                            return SqlLiteral.createApproxNumeric( literal.value.asNumber().bigDecimalValue().toString(), POS );
                         case BOOLEAN:
                             return SqlLiteral.createBoolean( literal.value.asBoolean().value, POS );
                         case INTERVAL_YEAR_MONTH:

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.jetbrains.annotations.NotNull;
 import org.pf4j.ExtensionPoint;
-import org.polypheny.db.adapter.AbstractAdapterSetting;
-import org.polypheny.db.adapter.Adapter;
-import org.polypheny.db.adapter.AdapterManager.Function5;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
@@ -47,7 +43,6 @@ import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.RunMode;
 
@@ -183,9 +178,10 @@ public abstract class Catalog implements ExtensionPoint {
      * @param name The name of the schema
      * @param dataModel The type of this schema
      * @param caseSensitive
+     * @param hidden Whether the namespace should only be visible internally and therefore be hidden in the UI
      * @return The id of the inserted schema
      */
-    public abstract long createNamespace( String name, DataModel dataModel, boolean caseSensitive );
+    public abstract long createNamespace( String name, DataModel dataModel, boolean caseSensitive, boolean hidden );
 
     /**
      * Add an adapter
@@ -232,17 +228,6 @@ public abstract class Catalog implements ExtensionPoint {
      */
     public abstract void dropQueryInterface( long id );
 
-    public abstract long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer );
-
-
-    public abstract void createInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate );
-
-    public abstract void dropInterfaceTemplate( String name );
-
-    @NotNull
-    public abstract Map<String, QueryInterfaceTemplate> getInterfaceTemplates();
-
-
     public abstract void close();
 
     public abstract void clear();
@@ -261,12 +246,6 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract Map<Long, LogicalAdapter> getAdapters();
 
     public abstract Map<Long, LogicalQueryInterface> getInterfaces();
-
-    public abstract Map<Long, AdapterTemplate> getAdapterTemplates();
-
-
-    public abstract void dropAdapterTemplate( long templateId );
-
 
     public abstract PropertyChangeListener getChangeListener();
 

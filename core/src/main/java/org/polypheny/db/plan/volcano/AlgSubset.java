@@ -227,6 +227,12 @@ public class AlgSubset extends AbstractAlgNode {
 
 
     @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
+
+    @Override
     protected AlgDataType deriveRowType() {
         return set.alg.getTupleType();
     }
@@ -493,4 +499,3 @@ public class AlgSubset extends AbstractAlgNode {
     }
 
 }
-

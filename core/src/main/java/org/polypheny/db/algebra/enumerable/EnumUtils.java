@@ -390,7 +390,7 @@ public class EnumUtils {
 
     public static Expression unwrapPoly( Expression expression ) {
         return expression.type == PolyBoolean.class
-                ? Expressions.makeTernary( ExpressionType.Conditional, Expressions.call( expression, "isNull"), Expressions.constant( false ),  Expressions.convert_( Expressions.field( expression, "value" ), boolean.class ) )
+                ? Expressions.makeTernary( ExpressionType.Conditional, Expressions.call( expression, "isNull" ), Expressions.constant( false ), Expressions.convert_( Expressions.field( expression, "value" ), boolean.class ) )
                 : expression;
     }
 

@@ -426,7 +426,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 pw.print( value.asBoolean().value );
                 break;
             case DECIMAL:
-                assert value.isBigDecimal();
+                assert value.isNumber();
                 pw.print( value.asBigDecimal().value );
                 break;
             case DOUBLE:
@@ -434,7 +434,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 pw.print( Util.toScientificNotation( value.asNumber().BigDecimalValue() ) );
                 break;
             case BIGINT:
-                assert value.isBigDecimal();
+                assert value.isNumber();
                 pw.print( value.asNumber().bigDecimalValue() );
                 pw.print( 'L' );
                 break;

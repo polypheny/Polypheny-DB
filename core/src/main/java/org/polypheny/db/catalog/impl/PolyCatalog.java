@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,12 +35,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.AdapterManager.Function5;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
@@ -75,7 +72,6 @@ import org.polypheny.db.catalog.persistance.Persister;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
@@ -130,12 +126,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public final Map<Long, LogicalQueryInterface> interfaces;
 
     @Getter
-    public final Map<Long, AdapterTemplate> adapterTemplates;
-
-    @Getter
-    public final Map<String, QueryInterfaceTemplate> interfaceTemplates;
-
-    @Getter
     public final Map<Long, AdapterCatalog> adapterCatalogs;
 
     @Serialize
@@ -188,9 +178,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         this.adapterRestore = new ConcurrentHashMap<>( adapterRestore );
 
         // temporary data
-        this.adapterTemplates = new ConcurrentHashMap<>();
         this.adapterCatalogs = new ConcurrentHashMap<>();
-        this.interfaceTemplates = new ConcurrentHashMap<>();
 
         this.persister = memoryCatalog ? new InMemoryPersister() : new FilePersister();
 
@@ -357,10 +345,10 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     }
 
 
-    public long createNamespace( String name, DataModel dataModel, boolean caseSensitive ) {
+    public long createNamespace( String name, DataModel dataModel, boolean caseSensitive, boolean hidden ) {
         // cannot separate namespace and entity ids, as there are models which have their entity on the namespace level
         long id = idBuilder.getNewLogicalId();
-        LogicalNamespace namespace = new LogicalNamespace( id, name, dataModel, caseSensitive );
+        LogicalNamespace namespace = new LogicalNamespace( id, name, dataModel, caseSensitive, hidden );
 
         Pair<LogicalCatalog, AllocationCatalog> catalogs = switch ( dataModel ) {
             case RELATIONAL -> Pair.of( new RelationalCatalog( namespace ), new PolyAllocRelCatalog( namespace ) );
@@ -443,36 +431,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Override
     public void dropQueryInterface( long id ) {
         interfaces.remove( id );
-        change();
-    }
-
-
-    @Override
-    public long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer ) {
-        long id = idBuilder.getNewAdapterTemplateId();
-        adapterTemplates.put( id, new AdapterTemplate( id, clazz, adapterName, settings, modes, description, deployer ) );
-        change();
-        return id;
-    }
-
-
-    @Override
-    public void createInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate ) {
-        interfaceTemplates.put( name, queryInterfaceTemplate );
-        change();
-    }
-
-
-    @Override
-    public void dropInterfaceTemplate( String name ) {
-        interfaceTemplates.remove( name );
-        change();
-    }
-
-
-    @Override
-    public void dropAdapterTemplate( long templateId ) {
-        adapterTemplates.remove( templateId );
         change();
     }
 

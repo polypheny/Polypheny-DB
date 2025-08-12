@@ -24,12 +24,10 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
-import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
@@ -42,7 +40,6 @@ import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.type.PolyType;
 
 public class MockSnapshot implements Snapshot {
@@ -120,49 +117,13 @@ public class MockSnapshot implements Snapshot {
 
 
     @Override
-    public @NotNull Optional<QueryInterfaceTemplate> getInterfaceTemplate( String name ) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
     public List<LogicalTable> getTablesForPeriodicProcessing() {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    public Optional<AdapterTemplate> getAdapterTemplate( long templateId ) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public @NotNull List<AdapterTemplate> getAdapterTemplates() {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
     public @NotNull Optional<? extends LogicalEntity> getLogicalEntity( long id ) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public @NotNull Optional<AdapterTemplate> getAdapterTemplate( String name, AdapterType adapterType ) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public List<AdapterTemplate> getAdapterTemplates( AdapterType adapterType ) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public List<QueryInterfaceTemplate> getInterfaceTemplates() {
         throw new UnsupportedOperationException();
     }
 

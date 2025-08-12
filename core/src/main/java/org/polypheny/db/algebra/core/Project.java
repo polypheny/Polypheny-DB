@@ -340,5 +340,11 @@ public abstract class Project extends SingleAlg {
         return args;
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }
 

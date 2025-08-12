@@ -22,6 +22,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cql.parser.CqlParser;
 import org.polypheny.db.cql.parser.ParseException;
@@ -31,10 +32,10 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.transaction.Lock.LockMode;
-import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
@@ -69,14 +70,10 @@ public class CqlProcessor extends Processor {
 
 
     @Override
-    public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( statement.getTransaction() );
-    }
-
-
-    @Override
-    protected void lock( Statement statement ) throws DeadlockException {
-        LockManager.INSTANCE.lock( LockMode.EXCLUSIVE, statement.getTransaction() );
+    protected void lock( Transaction transaction, ParsedQueryContext context ) throws DeadlockException {
+        // exclusive lock
+        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( context.getNamespaceId() ).orElseThrow();
+        transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.EXCLUSIVE );
     }
 
 

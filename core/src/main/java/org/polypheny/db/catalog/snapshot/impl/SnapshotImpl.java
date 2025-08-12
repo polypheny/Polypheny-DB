@@ -26,10 +26,8 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
-import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -43,7 +41,6 @@ import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 
 @Value
 @Accessors(fluent = true)
@@ -66,11 +63,9 @@ public class SnapshotImpl implements Snapshot {
     ImmutableMap<String, LogicalUser> userNames;
 
     ImmutableMap<Long, LogicalQueryInterface> interfaces;
-    ImmutableMap<String, QueryInterfaceTemplate> interfaceTemplates;
     ImmutableMap<String, LogicalQueryInterface> interfaceNames;
 
     ImmutableMap<Long, LogicalAdapter> adapters;
-    ImmutableMap<Long, AdapterTemplate> adapterTemplates;
     ImmutableMap<String, LogicalAdapter> adapterNames;
 
     ImmutableMap<Long, LogicalNamespace> namespaces;
@@ -93,10 +88,8 @@ public class SnapshotImpl implements Snapshot {
         this.userNames = ImmutableMap.copyOf( users.values().stream().collect( Collectors.toMap( u -> u.name.toLowerCase(), u -> u ) ) );
         this.interfaces = ImmutableMap.copyOf( catalog.getInterfaces() );
         this.interfaceNames = ImmutableMap.copyOf( interfaces.values().stream().collect( Collectors.toMap( i -> i.name.toLowerCase(), i -> i ) ) );
-        this.interfaceTemplates = ImmutableMap.copyOf( catalog.getInterfaceTemplates() );
         this.adapters = ImmutableMap.copyOf( catalog.getAdapters() );
         this.adapterNames = ImmutableMap.copyOf( adapters.values().stream().collect( Collectors.toMap( a -> a.uniqueName.toLowerCase(), a -> a ) ) );
-        this.adapterTemplates = ImmutableMap.copyOf( catalog.getAdapterTemplates().values().stream().collect( Collectors.toMap( t -> t.id, t -> t ) ) );
     }
 
 
@@ -175,26 +168,8 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public @NotNull Optional<QueryInterfaceTemplate> getInterfaceTemplate( String name ) {
-        return Optional.ofNullable( interfaceTemplates.get( name ) );
-    }
-
-
-    @Override
     public List<LogicalTable> getTablesForPeriodicProcessing() {
         return null;
-    }
-
-
-    @Override
-    public Optional<AdapterTemplate> getAdapterTemplate( long templateId ) {
-        return Optional.ofNullable( adapterTemplates.get( templateId ) );
-    }
-
-
-    @Override
-    public @NotNull List<AdapterTemplate> getAdapterTemplates() {
-        return List.copyOf( adapterTemplates.values() );
     }
 
 
@@ -209,24 +184,6 @@ public class SnapshotImpl implements Snapshot {
         }
 
         return graph.getGraph( id );
-    }
-
-
-    @Override
-    public @NotNull Optional<AdapterTemplate> getAdapterTemplate( String name, AdapterType adapterType ) {
-        return adapterTemplates.values().stream().filter( t -> t.adapterName.equalsIgnoreCase( name ) && t.adapterType == adapterType ).findAny();
-    }
-
-
-    @Override
-    public List<AdapterTemplate> getAdapterTemplates( AdapterType adapterType ) {
-        return adapterTemplates.values().stream().filter( t -> t.adapterType == adapterType ).collect( Collectors.toList() );
-    }
-
-
-    @Override
-    public List<QueryInterfaceTemplate> getInterfaceTemplates() {
-        return List.copyOf( interfaceTemplates.values() );
     }
 
 

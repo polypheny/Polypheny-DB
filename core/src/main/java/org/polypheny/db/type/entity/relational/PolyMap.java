@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,11 +110,20 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
     public @Nullable String toJson() {
         return map == null ? JsonToken.VALUE_NULL.asString() : "{" +
                 map.entrySet().stream()
-                        .map( e -> (e.getKey().isString() ? e.getKey().asString().toQuotedJson() : e.getKey().toJson()) + ":" +
-                                (e.getValue() == null ? JsonToken.VALUE_NULL.asString() :
-                                        (e.getValue().isString()
-                                                ? e.getValue().asString().toQuotedJson()
-                                                : e.getValue().toJson())) ).collect( Collectors.joining( "," ) )
+                        .map( e -> {
+                            String key = (e.getKey().isString() ? e.getKey().asString().toQuotedJson() : e.getKey().toJson());
+                            String value;
+                            if ( e.getValue() == null ) {
+                                value = JsonToken.VALUE_NULL.asString();
+                            } else if ( e.getValue().isString() ) {
+                                value = e.getValue().asString().toQuotedJson();
+                            } else if ( e.getValue().isDate() || e.getValue().isTime() || e.getValue().isTimestamp() ) {
+                                value = "\"" + e.getValue().toJson() + "\"";
+                            } else {
+                                value = e.getValue().toJson();
+                            }
+                            return key + ":" + value;
+                        } ).collect( Collectors.joining( "," ) )
                 + "}";
     }
 

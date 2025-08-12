@@ -144,4 +144,10 @@ public class Transformer extends AbstractAlgNode {
         return args;
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

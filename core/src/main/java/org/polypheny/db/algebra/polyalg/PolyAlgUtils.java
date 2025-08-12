@@ -542,7 +542,9 @@ public class PolyAlgUtils {
 
 
         private String visitPolyValue( PolyValue value ) {
-            if ( value.isNode() ) {
+            if ( value == null ) {
+                return null;
+            } else if ( value.isNode() ) {
                 return visitPolyNode( value.asNode(), true );
             } else if ( value.isPath() ) {
                 return visitPolyPath( value.asPath(), true );

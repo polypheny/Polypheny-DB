@@ -65,6 +65,7 @@ dependencies {
     implementation group: "org.bouncycastle", name: "bcpkix-jdk18on", version: bouncycastle_version // MIT
     implementation group: "com.google.protobuf", name: "protobuf-java", version: protobuf_version // BSD 3-clause
     implementation group: "com.github.docker-java", name: "docker-java", version: java_docker_version // Apache 2.0
+
     implementation group: "com.github.docker-java", name: "docker-java-transport-httpclient5", version: java_docker_version // TODO: should probably be independent version in future
 
     api group: "io.activej", name: "activej-serializer", version: activej_serializer_version

@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Value;
@@ -254,11 +255,16 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     private long getOrAddKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) {
+        return getKey( tableId, columnIds, enforcementTime )
+                .orElse( addKey( tableId, columnIds, enforcementTime ) );
+    }
+
+
+    private Optional<Long> getKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) {
         return Catalog.snapshot()
                 .rel()
                 .getKeys( columnIds.stream().mapToLong( Long::longValue ).toArray() )
-                .map( k -> k.id )
-                .orElse( addKey( tableId, columnIds, enforcementTime ) );
+                .map( k -> k.id );
     }
 
 
@@ -493,13 +499,15 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Override
     public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds, Statement statement ) {
-        long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
-        // Check if there is already a unique constraint
-        List<LogicalConstraint> logicalConstraints = constraints.values().stream()
-                .filter( c -> c.keyId == keyId && c.type == ConstraintType.UNIQUE )
+        Optional<Long> keyId = getKey( tableId, columnIds, EnforcementTime.ON_QUERY );
+        if ( keyId.isPresent() ) {
+            // Check if there is already a unique constraint
+            List<LogicalConstraint> logicalConstraints = constraints.values().stream()
+                    .filter( c -> c.keyId == keyId.get() && c.type == ConstraintType.UNIQUE )
                 .toList();
-        if ( !logicalConstraints.isEmpty() ) {
-            throw new GenericRuntimeException( "There is already a unique constraint!" );
+            if ( !logicalConstraints.isEmpty() ) {
+                throw new GenericRuntimeException( "There is already a unique constraint!" );
+            }
         }
         long id = addConstraint( tableId, constraintName, columnIds, ConstraintType.UNIQUE, statement );
         statement.getTransaction().addNewConstraint( tableId, constraints.get( id ) );

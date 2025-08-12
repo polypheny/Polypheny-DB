@@ -19,6 +19,7 @@ package org.polypheny.db.sql.language.ddl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
@@ -48,6 +49,8 @@ import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -182,6 +185,12 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
         writer.keyword( "AS" );
         writer.newlineAndIndent();
         query.unparse( writer, 0, 0 );
+    }
+
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return getMapOfNamespaceLockableOrDefault( name, context, LockType.EXCLUSIVE );
     }
 
 

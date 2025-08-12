@@ -19,7 +19,6 @@ package org.polypheny.db.prisminterface;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
-import java.net.Inet4Address;
 import java.net.InetSocketAddress;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
@@ -85,7 +84,7 @@ class PIServer {
 
     private static ServerSocketChannel createInetServer( int port ) throws IOException {
         return ServerSocketChannel.open( StandardProtocolFamily.INET )
-                .bind( new InetSocketAddress( Inet4Address.getLoopbackAddress(), port ) );
+                .bind( new InetSocketAddress( port ) );
     }
 
 

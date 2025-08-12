@@ -100,7 +100,7 @@ public abstract class Sources implements Serializable {
     }
 
 
-    private static boolean isFile( Source source ) {
+    private static boolean protocolIsFile( Source source ) {
         return source.protocol().equals( "file" );
     }
 
@@ -191,6 +191,12 @@ public abstract class Sources implements Serializable {
 
 
         @Override
+        public boolean isFile() {
+            return file != null;
+        }
+
+
+        @Override
         public Reader reader() throws IOException {
             final InputStream is;
             if ( path().endsWith( ".gz" ) ) {
@@ -234,7 +240,7 @@ public abstract class Sources implements Serializable {
 
         @Override
         public Source append( Source child ) {
-            if ( isFile( child ) ) {
+            if ( protocolIsFile( child ) ) {
                 if ( child.file().isAbsolute() ) {
                     return child;
                 }
@@ -261,8 +267,8 @@ public abstract class Sources implements Serializable {
 
         @Override
         public Source relative( Source parent ) {
-            if ( isFile( parent ) ) {
-                if ( isFile( this ) && file.getPath().startsWith( parent.file().getPath() ) ) {
+            if ( protocolIsFile( parent ) ) {
+                if ( protocolIsFile( this ) && file.getPath().startsWith( parent.file().getPath() ) ) {
                     String rest = file.getPath().substring( parent.file().getPath().length() );
                     if ( rest.startsWith( File.separator ) ) {
                         return Sources.file( null, rest.substring( File.separator.length() ) );
@@ -270,7 +276,7 @@ public abstract class Sources implements Serializable {
                 }
                 return this;
             } else {
-                if ( !isFile( this ) ) {
+                if ( !protocolIsFile( this ) ) {
                     String rest = Sources.trimOrNull( url.toExternalForm(), parent.url().toExternalForm() );
                     if ( rest != null && rest.startsWith( "/" ) ) {
                         return Sources.file( null, rest.substring( 1 ) );

@@ -260,7 +260,6 @@ public class TestHelper {
                     new AtomicLong( catalog.idBuilder.getIndexId().longValue() + offset.get() ),
                     new AtomicLong( catalog.idBuilder.getKeyId().longValue() + offset.get() ),
                     new AtomicLong( catalog.idBuilder.getAdapterId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getAdapterTemplateId().longValue() + offset.get() ),
                     new AtomicLong( catalog.idBuilder.getInterfaceId().longValue() + offset.get() ),
                     new AtomicLong( catalog.idBuilder.getConstraintId().longValue() + offset.get() ),
                     new AtomicLong( catalog.idBuilder.getGroupId().longValue() + offset.get() ),

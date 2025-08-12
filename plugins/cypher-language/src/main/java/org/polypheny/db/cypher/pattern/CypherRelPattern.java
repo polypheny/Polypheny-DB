@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.cypher.CypherPathLength;
 import org.polypheny.db.cypher.expression.CypherExpression;
+import org.polypheny.db.cypher.expression.CypherLiteral;
+import org.polypheny.db.cypher.expression.CypherLiteral.Literal;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
@@ -40,7 +42,7 @@ public class CypherRelPattern extends CypherPattern {
     private final List<StringPos> relTypes;
     private final CypherPathLength pathLength;
     @Nullable
-    private final CypherExpression properties;
+    private CypherExpression properties;
     private final CypherExpression predicate;
     private final boolean legacyTypeSeparator;
 
@@ -85,6 +87,11 @@ public class CypherRelPattern extends CypherPattern {
         }
 
         return Pair.of( PolyString.of( name ), edge );
+    }
+
+
+    public void initializeProperties() {
+        properties = new CypherLiteral( ParserPos.ZERO, Literal.MAP, List.of(), List.of() );
     }
 
 }

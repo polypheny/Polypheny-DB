@@ -68,6 +68,8 @@ import org.polypheny.db.plan.volcano.VolcanoPlannerPhase;
 import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 
 
 @Getter
@@ -230,6 +232,12 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
 
         final DataContext dataContext = statement.getPrepareContext().getDataContext();
         planner.setExecutor( new RexExecutorImpl( dataContext ) );
+    }
+
+
+    @Override
+    public void lock( Statement statement ) {
+        statement.getTransaction().acquireLockable( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE, LockType.EXCLUSIVE );
     }
 
 }
