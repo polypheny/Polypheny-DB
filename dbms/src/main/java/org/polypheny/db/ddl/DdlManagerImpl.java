@@ -276,6 +276,7 @@ public class DdlManagerImpl extends DdlManager {
             List<AllocationColumn> aColumns = new ArrayList<>();
             int colPos = 1;
 
+            List<Long> pkIds = new ArrayList<>();
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
                 LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
                         exportedColumn.name(),
@@ -300,6 +301,13 @@ public class DdlManagerImpl extends DdlManager {
 
                 columns.add( column );
                 aColumns.add( allocationColumn );
+                if ( exportedColumn.primary() ) {
+                    pkIds.add( column.id );
+                }
+            }
+
+            if ( !pkIds.isEmpty() ) {
+                catalog.getLogicalRel( namespace ).addPrimaryKey( logical.id, pkIds, transaction.createStatement() );
             }
 
             buildRelationalNamespace( namespace, logical, adapter );
