@@ -43,6 +43,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -343,6 +344,14 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
         adapterCatalog.replacePhysical( physical );
 
         return List.of( physical );
+    }
+
+
+    @Override
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
+        PhysicalEntity table = entities.get( 0 );
+        updateNamespace( table.namespaceName, table.namespaceId );
+        adapterCatalog.addPhysical( alloc, currentJdbcSchema.createJdbcTable( table.unwrapOrThrow( PhysicalTable.class ) ) );
     }
 
 
