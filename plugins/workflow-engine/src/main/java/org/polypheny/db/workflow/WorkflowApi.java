@@ -17,7 +17,7 @@
 package org.polypheny.db.workflow;
 
 import io.javalin.http.Context;
-import io.javalin.http.HttpCode;
+import io.javalin.http.HttpStatus;
 import java.util.UUID;
 import lombok.Getter;
 import org.polypheny.db.webui.ConfigService.HandlerType;
@@ -150,7 +150,7 @@ public class WorkflowApi {
             try {
                 return ActivityRegistry.get( activityType );
             } catch ( Exception e ) {
-                throw new WorkflowApiException( "Specified activityType does not exist: " + activityType, HttpCode.NOT_FOUND );
+                throw new WorkflowApiException( "Specified activityType does not exist: " + activityType, HttpStatus.NOT_FOUND );
             }
         } );
     }
@@ -232,7 +232,7 @@ public class WorkflowApi {
             ctx.status( e.getErrorCode() );
             ctx.json( e.getMessage() );
         } catch ( Exception e ) {
-            ctx.status( HttpCode.INTERNAL_SERVER_ERROR );
+            ctx.status( HttpStatus.INTERNAL_SERVER_ERROR );
             ctx.json( e.getMessage() );
             e.printStackTrace();
         }
@@ -259,10 +259,10 @@ public class WorkflowApi {
     @Getter
     public static class WorkflowApiException extends Exception {
 
-        private final HttpCode errorCode;
+        private final HttpStatus errorCode;
 
 
-        public WorkflowApiException( String message, HttpCode errorCode ) {
+        public WorkflowApiException( String message, HttpStatus errorCode ) {
             super( message );
             this.errorCode = errorCode;
         }

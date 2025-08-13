@@ -16,7 +16,7 @@
 
 package org.polypheny.db.workflow.session;
 
-import io.javalin.http.HttpCode;
+import io.javalin.http.HttpStatus;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -77,7 +77,7 @@ public class SessionManager {
         try {
             return registerApiSession( WorkflowImpl.fromModel( model ) );
         } catch ( Exception e ) {
-            throw new WorkflowApiException( "Unable to instantiate workflow: " + e.getMessage(), HttpCode.BAD_REQUEST );
+            throw new WorkflowApiException( "Unable to instantiate workflow: " + e.getMessage(), HttpStatus.BAD_REQUEST );
         }
     }
 
@@ -196,7 +196,7 @@ public class SessionManager {
     public ApiSession getApiSessionOrThrow( UUID sId ) throws WorkflowApiException {
         ApiSession session = apiSessions.get( sId );
         if ( session == null ) {
-            throw new WorkflowApiException( "Unknown api session with id: " + sId, HttpCode.NOT_FOUND );
+            throw new WorkflowApiException( "Unknown api session with id: " + sId, HttpStatus.NOT_FOUND );
         }
         return session;
     }
