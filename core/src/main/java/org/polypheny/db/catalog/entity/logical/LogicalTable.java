@@ -40,7 +40,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.schema.ColumnStrategy;
 
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = true)
 @SuperBuilder(toBuilder = true)
 @Value
 @NonFinal

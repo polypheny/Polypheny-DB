@@ -292,7 +292,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .batch( request.noLimit ? -1 : getPageSize() )
                         .transactionManager( transactionManager )
                         .build(), transaction ).get( 0 );
-        resultBuilder = (RelationalResultBuilder<?, ?>) builder.apply( implementationContext.execute( implementationContext.getStatement() ), request, implementationContext.getStatement() );
+        ExecutedContext ec = implementationContext.execute( implementationContext.getStatement() );
+
+        if ( ec.getException().isPresent() ) {
+            // TODO: Create a dedicated error result class
+            return RelationalResult.builder().exception( ec.getException().get() ).error( ec.getException().get().toString() ).build();
+        }
+
+        resultBuilder = (RelationalResultBuilder<?, ?>) builder.apply( ec, request, implementationContext.getStatement() );
 
         // determine if it is a view or a table
         LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
