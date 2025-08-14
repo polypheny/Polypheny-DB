@@ -17,8 +17,6 @@
 package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializer;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -251,17 +249,6 @@ public class AdapterManager {
 
 
     public record AdapterInformation( String name, String description, AdapterType type, List<AbstractAdapterSetting> settings, List<DeployMode> modes ) {
-
-        public static JsonSerializer<AdapterInformation> getSerializer() {
-            return ( src, typeOfSrc, context ) -> {
-                JsonObject jsonStore = new JsonObject();
-                jsonStore.addProperty( "name", src.name );
-                jsonStore.addProperty( "description", src.description );
-                jsonStore.addProperty( "type", src.type.name() );
-                jsonStore.add( "adapterSettings", context.serialize( src.settings ) );
-                return jsonStore;
-            };
-        }
 
     }
 
