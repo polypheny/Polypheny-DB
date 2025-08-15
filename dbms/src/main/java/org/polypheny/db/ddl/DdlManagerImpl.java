@@ -266,7 +266,9 @@ public class DdlManagerImpl extends DdlManager {
             // Make sure the table name is unique
             String tableName = getUniqueEntityName( namespace, entry.getKey(), ( ns, en ) -> catalog.getSnapshot().rel().getTable( ns, en ) );
 
-            LogicalTable logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
+            String physicalSchema = entry.getValue().get( 0 ).physicalSchemaName();
+
+            LogicalTable logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !adapter.isDataReadOnly() );
             List<LogicalColumn> columns = new ArrayList<>();
 
             Pair<AllocationPartition, PartitionProperty> partitionProperty = createSinglePartition( logical.namespaceId, logical );
@@ -314,7 +316,8 @@ public class DdlManagerImpl extends DdlManager {
 
             transaction.attachCommitAction( () ->
                     // we can execute with initial logical and allocation data as this is a source and this will not change
-                    adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns ) ) );
+                    adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns, physicalSchema ) )
+            );
             catalog.updateSnapshot();
         }
     }
@@ -2216,7 +2219,7 @@ public class DdlManagerImpl extends DdlManager {
             List<Long> refreshedPks = catalog.getSnapshot().rel().getKey( refreshedLogical.primaryKey ).orElseThrow().fieldIds;
             AllocationTable refreshedAlloc = catalog.getSnapshot().alloc().getAlloc( alloc.placementId, alloc.partitionId ).flatMap( e -> e.unwrap( AllocationTable.class ) ).orElseThrow();
 
-            adapter.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( refreshedLogical, sortByPosition( refreshedLColumns ), refreshedPks ), AllocationTableWrapper.of( refreshedAlloc, refreshedAColumns ) );
+            adapter.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( refreshedLogical, sortByPosition( refreshedLColumns ), refreshedPks ), AllocationTableWrapper.of( refreshedAlloc, refreshedAColumns, null ) );
         };
 
         if ( postpone ) {

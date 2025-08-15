@@ -26,5 +26,6 @@ public class AllocationTableWrapper {
 
     public List<AllocationColumn> columns;
 
+    public String physicalSchema;
 
 }

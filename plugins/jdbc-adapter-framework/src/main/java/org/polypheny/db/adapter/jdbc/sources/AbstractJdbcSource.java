@@ -331,7 +331,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
         PhysicalTable table = adapterCatalog.createTable(
-                logical.table.getNamespaceName(),
+                allocation.physicalSchema,
                 logical.table.name,
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                 logical.table,
