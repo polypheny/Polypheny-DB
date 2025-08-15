@@ -79,6 +79,8 @@ public interface Transaction {
 
     InformationManager getQueryAnalyzer();
 
+    void setShadowQueryAnalyzer( InformationManager shadowQueryAnalyzer );
+
     AtomicBoolean getCancelFlag();
 
     LogicalNamespace getDefaultNamespace();

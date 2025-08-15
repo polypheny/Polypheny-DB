@@ -104,6 +104,10 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Setter
     private boolean analyze;
 
+    // This allows to set another query analyzer instead of using the XID of this trx to request one from information manager. This allows to monitor multiple transaction from the UI (eg. scripts containing auto-committing statements).
+    @Setter
+    private InformationManager shadowQueryAnalyzer;
+
     private final List<Statement> statements = new ArrayList<>();
 
 
@@ -164,6 +168,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public InformationManager getQueryAnalyzer() {
+        if ( shadowQueryAnalyzer != null ) {
+            return shadowQueryAnalyzer;
+        }
         return InformationManager.getInstance( xid.toString() );
     }
 
