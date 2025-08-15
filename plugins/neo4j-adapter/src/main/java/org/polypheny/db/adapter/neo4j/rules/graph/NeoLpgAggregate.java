@@ -96,7 +96,8 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
                     i = currentNames.indexOf( agg.function.getOperatorName().name() );
                 }
 
-                finalRow.set( i, Objects.requireNonNull( NeoUtil.getOpAsNeo( agg.function.getOperatorName(), List.of(), null ) ).apply( refs ) );
+                // TODO: beforeFields?
+                finalRow.set( i, Objects.requireNonNull( NeoUtil.getOpAsNeo( agg.function.getOperatorName(), List.of(), null, List.of() ) ).apply( refs ) );
             }
 
             implementor.add( with_( list_( finalRow.stream().map( e -> literal_( PolyString.of( e ) ) ).toList() ) ) );
