@@ -153,6 +153,12 @@ public class MockTransaction implements Transaction {
 
 
     @Override
+    public void setShadowQueryAnalyzer( InformationManager shadowQueryAnalyzer ) {
+
+    }
+
+
+    @Override
     public AtomicBoolean getCancelFlag() {
         return null;
     }

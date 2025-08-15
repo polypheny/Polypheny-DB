@@ -30,6 +30,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.ImplementationContext;
@@ -145,7 +146,11 @@ public class LanguageManager {
             if ( i != 0 ) {
                 // as long as we directly commit the transaction, we cannot reuse the same transaction
                 if ( previousDdl && !transaction.isActive() ) {
+                    // Get the query analyzer of the old transaction
+                    InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
                     transaction = parsed.getTransactionManager().startTransaction( transaction.getUser().id, transaction.getDefaultNamespace().id, transaction.isAnalyze(), transaction.getOrigin() );
+                    // Assign query analyzer of the previous trx (this allows monitoring scripts containing commits in the UI)
+                    transaction.setShadowQueryAnalyzer( queryAnalyzer );
                     parsed.addTransaction( transaction );
                 }
                 statement = transaction.createStatement();

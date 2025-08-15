@@ -202,8 +202,7 @@ public class LanguageCrud {
 
 
     public static void attachAnalyzerIfSpecified( QueryContext context, InformationObserver observer, Transaction transaction ) {
-        // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
-        // and in case of auto commit of, the information is overwritten
+        // A hack is applied in to make this work also for scripts containing statements that auto-commit. When creating a new transaction due to a commit in LanguageManager, the query analyzer of the initial transaction is assigned as shadow-query-analyzer to the newly created transaction. Thus, scripts containing auto commits will only use one query analyzer.
         if ( context.isAnalysed() ) {
             transaction.getQueryAnalyzer().observe( observer );
         }
