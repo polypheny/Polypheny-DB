@@ -62,7 +62,7 @@ public class AdapterManager {
     }
 
 
-    public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer ) {
+    public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, DeployFn deployer ) {
         List<AbstractAdapterSetting> settings = AdapterTemplate.getAllSettings( clazz );
         AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
         long id = AdapterManager.getInstance().idBuilder.getAndIncrement();
@@ -254,9 +254,9 @@ public class AdapterManager {
 
 
     @FunctionalInterface
-    public interface Function5<P1, P2, P3, P4, R> {
+    public interface DeployFn {
 
-        R get( P1 p1, P2 p2, P3 p3, P4 p4 );
+        Adapter<?> get( Long adapterId, String uniqueName, Map<String, String> settings, DeployMode deployMode );
 
     }
 
