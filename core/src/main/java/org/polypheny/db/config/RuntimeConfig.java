@@ -190,8 +190,9 @@ public enum RuntimeConfig {
     STATISTIC_RATE(
             "statistics/passiveTrackingRate",
             "Rate of passive tracking of statistics.",
-            BackgroundTask.TaskSchedulingType.EVERY_THIRTY_SECONDS_FIXED,
-            ConfigType.ENUM ),
+            TaskSchedulingType.EVERY_THIRTY_SECONDS,
+            ConfigType.ENUM,
+            "statisticSettingsGroup" ),
 
     MATERIALIZED_VIEW_LOOP(
             "materializedView/freshnessLoopRate",
@@ -453,7 +454,7 @@ public enum RuntimeConfig {
 
     DOCKER_TIMEOUT(
             "runtime/dockerTimeout",
-            "Connection and respones timeout for autodocker.",
+            "Connection and response timeout for auto-docker.",
             45,
             ConfigType.INTEGER
     ),
@@ -467,7 +468,7 @@ public enum RuntimeConfig {
 
     SERIALIZATION_BUFFER_SIZE(
             "runtime/serialization",
-            "How big the buffersize for catalog objects should be.",
+            "How big the buffer size for catalog objects should be.",
             2_000_000,
             ConfigType.INTEGER );
 
