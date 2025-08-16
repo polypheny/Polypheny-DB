@@ -22,10 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
 import io.javalin.http.Context;
@@ -206,6 +203,7 @@ import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitio
 import org.polypheny.db.webui.models.requests.PolyAlgRequest;
 import org.polypheny.db.webui.models.requests.RenameEntityRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
+import org.polypheny.db.webui.models.requests.UpdateAdapterRequest;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.RelationalResult.RelationalResultBuilder;
 import org.polypheny.db.webui.models.results.Result;
@@ -2014,24 +2012,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      * Update the settings of an adapter
      */
     void updateAdapterSettings( final Context ctx ) {
-        //see https://stackoverflow.com/questions/16872492/gson-and-abstract-superclasses-deserialization-issue
-        JsonDeserializer<Adapter<?>> storeDeserializer = ( json, typeOfT, context ) -> {
-            JsonObject jsonObject = json.getAsJsonObject();
-            String type = jsonObject.get( "type" ).getAsString();
-            try {
-                return context.deserialize( jsonObject, Class.forName( type ) );
-            } catch ( ClassNotFoundException cnfe ) {
-                throw new JsonParseException( "Unknown element type: " + type, cnfe );
-            }
-        };
-        Gson adapterGson = new GsonBuilder().registerTypeAdapter( Adapter.class, storeDeserializer ).create();
-        Adapter<?> adapter = adapterGson.fromJson( ctx.body(), Adapter.class );
+        UpdateAdapterRequest request = ctx.bodyAsClass( UpdateAdapterRequest.class );
         try {
-            if ( adapter instanceof DataStore ) {
-                AdapterManager.getInstance().getStore( adapter.getAdapterId() ).orElseThrow().updateSettings( adapter.getCurrentSettings() );
-            } else if ( adapter instanceof DataSource ) {
-                AdapterManager.getInstance().getSource( adapter.getAdapterId() ).orElseThrow().updateSettings( adapter.getCurrentSettings() );
-            }
+            AdapterManager.getInstance().getAdapter( request.getUniqueName() ).orElseThrow().updateSettings( request.getSettings() );
             Catalog.getInstance().commit();
         } catch ( Throwable t ) {
             ctx.json( RelationalResult.builder().error( "Could not update AdapterSettings: " + t.getMessage() ).build() );
