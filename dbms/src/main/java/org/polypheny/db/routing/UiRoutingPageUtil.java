@@ -36,7 +36,6 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationPolyAlg;
 import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.plan.AlgOptCost;
@@ -44,6 +43,7 @@ import org.polypheny.db.processing.util.Plan;
 import org.polypheny.db.routing.ColumnDistribution.FullPartition;
 import org.polypheny.db.routing.ColumnDistribution.PartialPartition;
 import org.polypheny.db.routing.ColumnDistribution.RoutedDistribution;
+import org.polypheny.db.transaction.QueryAnalyzer.StatementAnalyzer;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -63,24 +63,25 @@ public class UiRoutingPageUtil {
     }
 
 
-    public static void outputSingleResult( Plan plan, InformationManager queryAnalyzer, long stmtIdx, boolean attachTextualPlan ) {
-        addPhysicalPlanPage( plan.optimalNode(), queryAnalyzer, stmtIdx, attachTextualPlan );
+    public static void outputSingleResult( Plan plan, StatementAnalyzer analyzer, boolean attachTextualPlan ) {
+        addPhysicalPlanPage( plan.optimalNode(), analyzer, attachTextualPlan );
 
+        InformationManager queryAnalyzer = analyzer.getInformationManager(); // TODO: move logic into QueryAnalyzer
         InformationPage page = queryAnalyzer.getPage( "routing" );
         if ( page == null ) {
             page = setBaseOutput( "Routing", 1, plan.proposedRoutingPlan(), queryAnalyzer );
         }
         addSelectedAdapterTable( queryAnalyzer, plan.proposedRoutingPlan(), page );
         final AlgRoot root = plan.proposedRoutingPlan().getRoutedRoot();
-        addRoutedPolyPlanPage( root.alg, queryAnalyzer, stmtIdx, false, attachTextualPlan );
+        addRoutedPolyPlanPage( root.alg, analyzer, false, attachTextualPlan );
     }
 
 
-    public static void addPhysicalPlanPage( AlgNode optimalNode, InformationManager queryAnalyzer, long stmtIdx, boolean attachTextualPlan ) {
+    public static void addPhysicalPlanPage( AlgNode optimalNode, StatementAnalyzer analyzer, boolean attachTextualPlan ) {
         counter.incrementAndGet();
         executorService.submit( () -> {
             try {
-                addRoutedPolyPlanPage( optimalNode, queryAnalyzer, stmtIdx, true, attachTextualPlan );
+                addRoutedPolyPlanPage( optimalNode, analyzer, true, attachTextualPlan );
             } catch ( Throwable t ) {
                 log.error( "Error adding routing plan", t );
             }
@@ -90,10 +91,9 @@ public class UiRoutingPageUtil {
     }
 
 
-    private static void addRoutedPolyPlanPage( AlgNode routedNode, InformationManager queryAnalyzer, long stmtIdx, boolean isPhysical, boolean attachTextualPlan ) {
+    private static void addRoutedPolyPlanPage( AlgNode routedNode, StatementAnalyzer analyzer, boolean isPhysical, boolean attachTextualPlan ) {
         ObjectMapper objectMapper = new ObjectMapper();
         GlobalStats gs = GlobalStats.computeGlobalStats( routedNode );
-        String prefix = isPhysical ? "Physical" : "Routed";
 
         ObjectNode objectNode = routedNode.serializePolyAlgebra( objectMapper, gs );
         String jsonString;
@@ -103,20 +103,14 @@ public class UiRoutingPageUtil {
             throw new GenericRuntimeException( e );
         }
 
-        InformationPage page = new InformationPage( prefix + " Query Plan" ).setStmtLabel( stmtIdx );
-        page.fullWidth();
-        InformationGroup group = new InformationGroup( page, prefix + " Query Plan" );
-        queryAnalyzer.addPage( page );
-        queryAnalyzer.addGroup( group );
-        InformationPolyAlg infoPolyAlg = new InformationPolyAlg( group, jsonString, isPhysical ? PlanType.PHYSICAL : PlanType.ALLOCATION );
+        String serialized = null;
         if ( attachTextualPlan ) {
-            String serialized = routedNode.buildPolyAlgebra( (String) null );
+            serialized = routedNode.buildPolyAlgebra( (String) null );
             if ( serialized == null ) {
                 throw new GenericRuntimeException( "Unable to serialize routing plan" );
             }
-            infoPolyAlg.setTextualPolyAlg( serialized );
         }
-        queryAnalyzer.registerInformation( infoPolyAlg );
+        analyzer.registerQueryPlan( isPhysical ? PlanType.PHYSICAL : PlanType.ALLOCATION, jsonString, serialized );
     }
 
 
@@ -193,7 +187,7 @@ public class UiRoutingPageUtil {
             List<Double> percentageCosts,
             Statement statement ) {
 
-        InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
+        InformationManager queryAnalyzer = statement.getAnalyzer().getInformationManager(); // TODO: move logic into QueryAnalyzer
         InformationPage page = queryAnalyzer.getPage( "routing" );
         if ( page == null ) {
             page = setBaseOutput( "Routing", routingPlans.size(), selectedPlan, queryAnalyzer );
@@ -224,7 +218,7 @@ public class UiRoutingPageUtil {
         if ( selectedPlan instanceof ProposedRoutingPlan plan ) {
             addSelectedAdapterTable( queryAnalyzer, plan, page );
             AlgRoot root = plan.getRoutedRoot();
-            addRoutedPolyPlanPage( root.alg, queryAnalyzer, statement.getIndex(), false, statement.getTransaction().getOrigin().equals( "PolyAlgParsingTest" ) );
+            addRoutedPolyPlanPage( root.alg, statement.getAnalyzer(), false, statement.getTransaction().getOrigin().equals( "PolyAlgParsingTest" ) );
         }
 
     }

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -29,10 +30,10 @@ import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.transaction.QueryAnalyzer.TransactionAnalyzer;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 
@@ -43,6 +44,9 @@ public class MockTransaction implements Transaction {
     private Set<Lockable> locks;
 
     private boolean committed = false;
+
+    @Getter
+    private boolean isRolledBack = false;
 
 
     public MockTransaction( long id ) {
@@ -95,6 +99,7 @@ public class MockTransaction implements Transaction {
     @Override
     public void rollback( @Nullable String reason ) throws TransactionException {
         releaseAllLocks();
+        isRolledBack = true;
     }
 
 
@@ -141,20 +146,14 @@ public class MockTransaction implements Transaction {
 
 
     @Override
-    public void setAnalyze( boolean analyze ) {
-
-    }
-
-
-    @Override
-    public InformationManager getQueryAnalyzer() {
+    public TransactionAnalyzer getAnalyzer() {
         return null;
     }
 
 
     @Override
-    public void setShadowQueryAnalyzer( InformationManager shadowQueryAnalyzer ) {
-
+    public QueryAnalyzer getQueryAnalyzer() {
+        return null;
     }
 
 

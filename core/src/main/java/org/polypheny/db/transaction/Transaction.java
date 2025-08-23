@@ -29,10 +29,10 @@ import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.transaction.QueryAnalyzer.TransactionAnalyzer;
 import org.polypheny.db.transaction.locking.Lockable;
 
 
@@ -69,17 +69,17 @@ public interface Transaction {
 
     boolean isActive();
 
+    boolean isRolledBack();
+
     JavaTypeFactory getTypeFactory();
 
     Processor getProcessor( QueryLanguage language );
 
     boolean isAnalyze();
 
-    void setAnalyze( boolean analyze );
+    TransactionAnalyzer getAnalyzer();
 
-    InformationManager getQueryAnalyzer();
-
-    void setShadowQueryAnalyzer( InformationManager shadowQueryAnalyzer );
+    QueryAnalyzer getQueryAnalyzer();
 
     AtomicBoolean getCancelFlag();
 

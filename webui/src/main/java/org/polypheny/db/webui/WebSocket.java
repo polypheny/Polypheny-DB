@@ -44,6 +44,7 @@ import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.PhysicalQueryContext;
 import org.polypheny.db.processing.QueryContext.TranslatedQueryContext;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.transaction.QueryAnalyzer;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
@@ -158,7 +159,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 break;
             case "PolyAlgRequest":
                 PolyAlgRequest polyAlgRequest = ctx.messageAsClass( PolyAlgRequest.class );
-                Transaction transaction = crud.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, true, POLYPHENY_UI );
+                Transaction transaction = crud.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, new QueryAnalyzer(), POLYPHENY_UI );
                 AlgRoot root;
                 Statement statement;
                 try {

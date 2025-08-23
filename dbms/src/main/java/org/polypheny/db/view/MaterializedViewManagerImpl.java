@@ -68,7 +68,6 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
-import org.polypheny.db.transaction.locking.LockableObject;
 import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
@@ -282,7 +281,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         Transaction transaction = getTransactionManager().startTransaction(
                 Catalog.defaultUserId,
-                false,
+                null,
                 "Materialized View" );
 
         try {
@@ -294,7 +293,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             }
 
             Lockable lmvLockable = LockablesRegistry.INSTANCE.getOrCreateLockable( optionalEntity.get() );
-            transaction.acquireLockable(lmvLockable , LockType.EXCLUSIVE );
+            transaction.acquireLockable( lmvLockable, LockType.EXCLUSIVE );
 
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "DeadLock while locking for materialized view update", e );

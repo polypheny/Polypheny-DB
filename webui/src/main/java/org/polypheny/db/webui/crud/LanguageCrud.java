@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -54,7 +55,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
@@ -62,6 +62,7 @@ import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.transaction.QueryAnalyzer;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -149,9 +150,19 @@ public class LanguageCrud {
 
     public static List<? extends Result<?, ?>> anyQueryResult( QueryContext context, UIRequest request ) {
         context = context.getLanguage().limitRemover().apply( context );
-        Transaction transaction = !context.getTransactions().isEmpty() ? context.getTransactions().get( 0 ) : context.getTransactionManager().startTransaction( context.getUserId(), Catalog.defaultNamespaceId, context.isAnalysed(), context.getOrigin() );
+        Transaction transaction;
+        QueryAnalyzer queryAnalyzer = null;
+        if ( context.getTransactions().isEmpty() ) {
+            if ( context.isAnalysed() ) {
+                queryAnalyzer = new QueryAnalyzer();
+            }
+            transaction = context.getTransactionManager().startTransaction( context.getUserId(), Catalog.defaultNamespaceId, queryAnalyzer, context.getOrigin() );
+        } else {
+            transaction = context.getTransactions().get( 0 );
+            queryAnalyzer = transaction.getQueryAnalyzer();
+        }
         transaction.setUseCache( context.isUsesCache() );
-        attachAnalyzerIfSpecified( context, crud, transaction );
+        attachAnalyzerIfSpecified( queryAnalyzer, crud );
 
         if ( context.getTransactions().isEmpty() ) {
             context.addTransaction( transaction );
@@ -164,54 +175,61 @@ public class LanguageCrud {
         for ( ExecutedContext executedContext : executedContexts ) {
             if ( executedContext.getException().isPresent() ) {
                 log.warn( "Caught exception", executedContext.getException().get() );
-                return List.of( buildErrorResult( transaction, executedContext, executedContext.getException().get() ).build() );
+                results.add( buildErrorResult( transaction, executedContext, executedContext.getException().get() ).build() );
+                break;
             }
 
             results.add( builder.apply( executedContext, request, executedContext.getStatement() ).build() );
         }
 
-        commitAndFinish( executedContexts, transaction.getQueryAnalyzer(), results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElse( -1L ) );
+        commitAndFinish( executedContexts, queryAnalyzer, results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElse( -1L ) );
 
         return results;
     }
 
 
-    public static void commitAndFinish( List<ExecutedContext> executedContexts, InformationManager queryAnalyzer, List<Result<?, ?>> results, long executionTime ) {
-        String commitStatus = "Error on starting committing";
+    public static void commitAndFinish( List<ExecutedContext> executedContexts, QueryAnalyzer queryAnalyzer, List<Result<?, ?>> results, long executionTime ) {
         for ( Transaction transaction : executedContexts.stream().flatMap( c -> c.getQuery().getTransactions().stream() ).toList() ) {
             // this has a lot of unnecessary no-op commits atm
-            try {
-                transaction.commit();
-                commitStatus = "Committed";
-            } catch ( TransactionException e ) {
-                results.add( RelationalResult.builder().error( e.getMessage() ).build() );
+            String commitStatus;
+            if ( transaction.isRolledBack() ) {
+                commitStatus = "Rolled back";
+            } else {
                 try {
-                    transaction.rollback( e.getMessage() );
-                    commitStatus = "Rolled back";
-                } catch ( TransactionException ex ) {
-                    log.error( "Caught exception while rollback", e );
-                    commitStatus = "Error while rolling back";
+                    transaction.commit();
+                    commitStatus = "Committed";
+                } catch ( TransactionException e ) {
+                    results.add( RelationalResult.builder().error( e.getMessage() ).build() );
+                    try {
+                        transaction.rollback( e.getMessage() );
+                        commitStatus = "Rolled back";
+                    } catch ( TransactionException ex ) {
+                        log.error( "Caught exception while rollback", e );
+                        commitStatus = "Error while rolling back";
+                    }
                 }
+            }
+            if ( transaction.isAnalyze() ) {
+                transaction.getAnalyzer().registerFinished( commitStatus );
             }
         }
 
         if ( queryAnalyzer != null ) {
-            Crud.attachQueryAnalyzer( queryAnalyzer, executionTime, commitStatus, results.size() );
+            queryAnalyzer.registerOverview( executionTime, results.size() );
         }
     }
 
 
-    public static void attachAnalyzerIfSpecified( QueryContext context, InformationObserver observer, Transaction transaction ) {
-        // A hack is applied in to make this work also for scripts containing statements that auto-commit. When creating a new transaction due to a commit in LanguageManager, the query analyzer of the initial transaction is assigned as shadow-query-analyzer to the newly created transaction. Thus, scripts containing auto commits will only use one query analyzer.
-        if ( context.isAnalysed() ) {
-            transaction.getQueryAnalyzer().observe( observer );
+    public static void attachAnalyzerIfSpecified( QueryAnalyzer queryAnalyzer, InformationObserver observer ) {
+        if ( queryAnalyzer != null ) {
+            queryAnalyzer.observe( observer );
         }
     }
 
 
     public static Pair<@Nullable PolyXid, @NotNull PolyGraph> getGraph( String namespace, TransactionManager manager, Session session ) {
         QueryLanguage language = QueryLanguage.from( "cypher" );
-        Transaction transaction = Crud.getTransaction( false, false, manager, Catalog.defaultUserId, Catalog.defaultNamespaceId, "getGraph" );
+        Transaction transaction = Crud.getTransaction( false, manager, Catalog.defaultUserId, Catalog.defaultNamespaceId, "getGraph" );
         ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
                 QueryContext.builder()
                         .query( "MATCH (*) RETURN *" )
@@ -272,14 +290,15 @@ public class LanguageCrud {
 
 
     public static ResultBuilder<?, ?, ?, ?> buildErrorResult( Transaction transaction, ExecutedContext context, Throwable t ) {
+        String message = t == null ? "" : Objects.requireNonNullElse( t.getMessage(), t.getClass().getName() );
         ResultBuilder<?, ?, ?, ?> result = switch ( context.getQuery().getLanguage().dataModel() ) {
-            case RELATIONAL -> RelationalResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
-            case DOCUMENT -> DocResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
-            case GRAPH -> GraphResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
+            case RELATIONAL -> RelationalResult.builder().error( message ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
+            case DOCUMENT -> DocResult.builder().error( message ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
+            case GRAPH -> GraphResult.builder().error( message ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
         };
 
         if ( transaction.isActive() ) {
-            transaction.rollback( t != null ? t.getMessage() : "Unknown reason during error building." );
+            transaction.rollback( t != null ? message : "Unknown reason during error building." );
         }
 
         return result;

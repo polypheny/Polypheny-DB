@@ -141,7 +141,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     private Transaction getTransaction() {
         Transaction transaction;
-        transaction = statisticQueryInterface.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, false, "Statistic Manager" );
+        transaction = statisticQueryInterface.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, null, "Statistic Manager" );
         return transaction;
     }
 

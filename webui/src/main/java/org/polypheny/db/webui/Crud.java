@@ -45,11 +45,8 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +57,6 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -130,11 +126,9 @@ import org.polypheny.db.docker.models.UpdateDockerRequest;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceCreateRequest;
-import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationText;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.QueryLanguage;
@@ -637,7 +631,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     }
 
-
     /**
      * Run any query coming from the SQL console
      */
@@ -784,35 +777,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         return results;
     }*/
-    public static void attachQueryAnalyzer( InformationManager queryAnalyzer, long executionTime, String commitStatus, int numberOfQueries ) {
-        InformationPage p1 = new InformationPage( "Transaction", "Analysis of the transaction." );
-        queryAnalyzer.addPage( p1 );
-        InformationGroup g1 = new InformationGroup( p1, "Execution time" );
-        queryAnalyzer.addGroup( g1 );
-        InformationText text1;
-        if ( executionTime < 1e4 ) {
-            text1 = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
-        } else {
-            long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
-            // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
-            DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
-            String durationText = df.format( new Date( millis ) );
-            text1 = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
-        }
-        queryAnalyzer.registerInformation( text1 );
-
-        // Number of queries
-        InformationGroup g2 = new InformationGroup( p1, "Number of queries" );
-        queryAnalyzer.addGroup( g2 );
-        InformationText text2 = new InformationText( g2, String.format( "Number of queries in this transaction: %d", numberOfQueries ) );
-        queryAnalyzer.registerInformation( text2 );
-
-        // Commit Status
-        InformationGroup g3 = new InformationGroup( p1, "Status" );
-        queryAnalyzer.addGroup( g3 );
-        InformationText text3 = new InformationText( g3, commitStatus );
-        queryAnalyzer.registerInformation( text3 );
-    }
 
 
     /**
@@ -2714,20 +2678,20 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     public Transaction getTransaction() {
-        return getTransaction( false, true, this );
+        return getTransaction( true, this );
     }
 
 
-    public static Transaction getTransaction( boolean analyze, boolean useCache, TransactionManager transactionManager, long userId, long databaseId ) {
-        return getTransaction( analyze, useCache, transactionManager, userId, databaseId, ORIGIN );
+    public static Transaction getTransaction( boolean useCache, TransactionManager transactionManager, long userId, long databaseId ) {
+        return getTransaction( useCache, transactionManager, userId, databaseId, ORIGIN );
     }
 
 
-    public static Transaction getTransaction( boolean analyze, boolean useCache, TransactionManager transactionManager, long userId, long namespaceId, String origin ) {
+    public static Transaction getTransaction( boolean useCache, TransactionManager transactionManager, long userId, long namespaceId, String origin ) {
         Transaction transaction = transactionManager.startTransaction(
                 userId,
                 namespaceId,
-                analyze,
+                null,
                 origin,
                 MultimediaFlavor.FILE );
         transaction.setUseCache( useCache );
@@ -2735,8 +2699,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    public static Transaction getTransaction( boolean analyze, boolean useCache, Crud crud ) {
-        return getTransaction( analyze, useCache, crud.transactionManager, Catalog.defaultUserId, Catalog.defaultNamespaceId );
+    public static Transaction getTransaction( boolean useCache, Crud crud ) {
+        return getTransaction( useCache, crud.transactionManager, Catalog.defaultUserId, Catalog.defaultNamespaceId );
     }
 
 
