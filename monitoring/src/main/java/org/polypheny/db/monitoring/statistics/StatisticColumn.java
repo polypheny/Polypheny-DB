@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.statistics;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ import org.polypheny.db.type.entity.numerical.PolyInteger;
  * Stores the available statistic data of a specific column
  */
 
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public abstract class StatisticColumn {
 
 

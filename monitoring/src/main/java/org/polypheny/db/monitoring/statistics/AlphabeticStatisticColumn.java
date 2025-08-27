@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.statistics;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -31,6 +32,7 @@ import org.polypheny.db.type.entity.PolyValue;
  * Responsible to validate if data should be changed
  */
 @Slf4j
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class AlphabeticStatisticColumn extends StatisticColumn {
 
     @Getter
