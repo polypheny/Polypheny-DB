@@ -26,6 +26,7 @@ import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -175,7 +176,7 @@ public class LanguageCrud {
         for ( ExecutedContext executedContext : executedContexts ) {
             if ( executedContext.getException().isPresent() ) {
                 log.warn( "Caught exception", executedContext.getException().get() );
-                results.add( buildErrorResult( transaction, executedContext, executedContext.getException().get() ).build() );
+                results.add( buildErrorResult( executedContext.getStatement().getTransaction(), executedContext, executedContext.getException().get() ).build() );
                 break;
             }
 
@@ -189,9 +190,12 @@ public class LanguageCrud {
 
 
     public static void commitAndFinish( List<ExecutedContext> executedContexts, QueryAnalyzer queryAnalyzer, List<Result<?, ?>> results, long executionTime ) {
+        int txIdx = -1;
+        Set<String> abortedXids = new HashSet<>();
         for ( Transaction transaction : executedContexts.stream().flatMap( c -> c.getQuery().getTransactions().stream() ).toList() ) {
             // this has a lot of unnecessary no-op commits atm
             String commitStatus;
+            String xid = transaction.getXid().toString();
             if ( transaction.isRolledBack() ) {
                 commitStatus = "Rolled back";
             } else {
@@ -199,7 +203,7 @@ public class LanguageCrud {
                     transaction.commit();
                     commitStatus = "Committed";
                 } catch ( TransactionException e ) {
-                    results.add( RelationalResult.builder().error( e.getMessage() ).build() );
+                    results.add( RelationalResult.builder().error( e.getMessage() ).xid( xid ).build() );
                     try {
                         transaction.rollback( e.getMessage() );
                         commitStatus = "Rolled back";
@@ -212,6 +216,18 @@ public class LanguageCrud {
             if ( transaction.isAnalyze() ) {
                 transaction.getAnalyzer().registerFinished( commitStatus );
             }
+
+            if ( transaction.isRolledBack() ) {
+                abortedXids.add( xid );
+            }
+        }
+
+        boolean lastRolledBack = false;
+        for ( Result<?, ?> result : results ) {
+            if (result.xid != null ) {
+                lastRolledBack = abortedXids.contains( result.xid );
+            }
+            result.isRolledBack = lastRolledBack;
         }
 
         if ( queryAnalyzer != null ) {

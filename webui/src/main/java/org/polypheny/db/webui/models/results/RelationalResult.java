@@ -78,7 +78,8 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
             @JsonProperty("int") int affectedTuples,
             @JsonProperty("ResultType") ResultType type,
             @JsonProperty("hasMoreRows") boolean hasMore,
-            @JsonProperty("language") QueryLanguage language ) {
+            @JsonProperty("language") QueryLanguage language,
+            @JsonProperty("isRolledBack") boolean isRolledBack ) {
         super(
                 dataModel,
                 namespace,
@@ -93,7 +94,8 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
                 highestPage,
                 hasMore,
                 language,
-                affectedTuples );
+                affectedTuples,
+                isRolledBack);
         this.table = table;
         this.tables = tables;
         this.request = request;
