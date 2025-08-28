@@ -39,12 +39,15 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationPolyAlg;
 import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.information.InformationStacktrace;
+import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 
 public class QueryAnalyzer {
 
     private final InformationManager manager;
     private final List<Transaction> transactions = new ArrayList<>();
+    private InformationPage transactionsPage;
+    private InformationTable transactionsTable;
 
 
     public QueryAnalyzer() {
@@ -68,29 +71,27 @@ public class QueryAnalyzer {
 
 
     /**
-     * Registers top-level information that was previously part of the "Transaction" page
+     * Adds top-level information to the transactions page
      */
     public void registerOverview( long executionTime, int numberOfQueries ) {
-        InformationPage p1 = new InformationPage( "Overview", "Analysis overview of the submitted query." );
-        InformationGroup g1 = new InformationGroup( p1, "Execution time" );
+        initTransactionsPage();
+
+        InformationGroup g = new InformationGroup( transactionsPage, "Overview" ).setOrder( 1 );
         InformationText text1;
         if ( executionTime < 1e4 ) {
-            text1 = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
+            text1 = new InformationText( g, String.format( "Execution time: %d nanoseconds", executionTime ) );
         } else {
             long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
             // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
             DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
             String durationText = df.format( new Date( millis ) );
-            text1 = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
+            text1 = new InformationText( g, String.format( "Execution time: %s", durationText ) );
         }
 
         // Number of queries
-        InformationGroup g2 = new InformationGroup( p1, "Number of statements" );
-        InformationText text2 = new InformationText( g2, String.format( "Total number of statements: %d", numberOfQueries ) );
-        manager.addPage( p1 );
-        manager.addGroup( g1 );
+        InformationText text2 = new InformationText( g, String.format( "Total number of statements: %d", numberOfQueries ) );
+        manager.addGroup( g );
         manager.registerInformation( text1 );
-        manager.addGroup( g2 );
         manager.registerInformation( text2 );
     }
 
@@ -101,20 +102,14 @@ public class QueryAnalyzer {
         }
         transactions.add( transaction );
 
-        InformationPage p1 = new InformationPage( "Transaction " + (transactions.indexOf( transaction ) + 1), "Analysis of the transaction." );
-        // Commit Status
-        InformationGroup g3 = new InformationGroup( p1, "Status" ).setOrder( 1 );
-        InformationText text3 = new InformationText( g3, commitStatus );
-
-        // Number of statements in this transaction
-        InformationGroup g2 = new InformationGroup( p1, "Number of statements" ).setOrder( 2 );
-        InformationText text2 = new InformationText( g2, String.format( "Number of statements in this transaction: %d", transaction.getNumberOfStatements() ) );
-
-        manager.addPage( p1 );
-        manager.addGroup( g2 );
-        manager.registerInformation( text2 );
-        manager.addGroup( g3 );
-        manager.registerInformation( text3 );
+        if ( transactionsTable == null ) {
+            initTransactionsPage();
+            InformationGroup g = new InformationGroup( transactionsPage, "Transactions" ).setOrder( 2 );
+            transactionsTable = new InformationTable( g, List.of( "Transaction", "Status", "# of Statements" ) );
+            manager.addGroup( g );
+            manager.registerInformation( transactionsTable );
+        }
+        transactionsTable.addRow( transactions.indexOf( transaction ) + 1, commitStatus, transaction.getNumberOfStatements() );
     }
 
 
@@ -202,6 +197,15 @@ public class QueryAnalyzer {
         manager.addGroup( group );
         manager.registerInformation( duration );
         return duration;
+    }
+
+
+    private void initTransactionsPage() {
+        if ( transactionsPage == null ) {
+            transactionsPage = new InformationPage( "Transactions", "Analysis of all transactions." )
+                    .fullWidth();
+            manager.addPage( transactionsPage );
+        }
     }
 
 
