@@ -16,6 +16,7 @@
 
 package org.polypheny.db.transaction;
 
+import com.google.common.collect.ImmutableList;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -28,7 +29,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationCode;
 import org.polypheny.db.information.InformationDuration;
@@ -41,7 +46,13 @@ import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.routing.ColumnDistribution.FullPartition;
+import org.polypheny.db.routing.ColumnDistribution.PartialPartition;
+import org.polypheny.db.routing.ColumnDistribution.RoutedDistribution;
+import org.polypheny.db.routing.RoutingPlan;
 
+@Slf4j
 public class QueryAnalyzer {
 
     private final InformationManager manager;
@@ -182,6 +193,93 @@ public class QueryAnalyzer {
     }
 
 
+    private InformationPage registerRoutingBaseOutput( Statement statement, Integer numberOfPlans, RoutingPlan selectedPlan, double ratioPre, double ratioPost, Enum strategy ) {
+        InformationPage page = new InformationPage( "routing" + statement.getIndex(), "Routing", null )
+                .setStmtLabel( statement.getIndex() )
+                .fullWidth();
+        InformationGroup overview = new InformationGroup( page, "Overview" ).setOrder( 1 );
+        InformationTable overviewTable = new InformationTable( overview, ImmutableList.of( "Query Class", selectedPlan.getQueryClass() ) );
+        overviewTable.addRow( "# of Proposed Plans", numberOfPlans == 0 ? "-" : numberOfPlans );
+        overviewTable.addRow( "Pre Cost Factor", ratioPre );
+        overviewTable.addRow( "Post Cost Factor", ratioPost );
+        overviewTable.addRow( "Selection Strategy", strategy );
+        if ( selectedPlan.getRoutedDistribution() != null ) {
+            overviewTable.addRow( "Selected Plan", selectedPlan.getRoutedDistribution().toString() );
+        }
+        if ( selectedPlan.getRouter() != null ) {
+            overviewTable.addRow( "Proposed By", selectedPlan.getRouter().getSimpleName() );
+        }
+
+        manager.addPage( page );
+        manager.addGroup( overview );
+        manager.registerInformation( overviewTable );
+
+        return page;
+    }
+
+
+    private void registerSelectedAdapterTable( @Nullable RoutedDistribution distribution, InformationPage page ) {
+        InformationGroup group = new InformationGroup( page, "Selected Placements" );
+        InformationTable table = new InformationTable(
+                group,
+                ImmutableList.of( "Entity", "Placement Id", "Adapter", "Allocation Id" ) );
+        if ( distribution != null ) {
+            LogicalEntity entity = distribution.entity();
+            for ( FullPartition partition : distribution.partitions() ) {
+                if ( entity.unwrap( LogicalTable.class ).isPresent() ) {
+                    for ( PartialPartition partial : partition.partials() ) {
+                        table.addRow(
+                                entity.getNamespaceName() + "." + entity.name,
+                                partial.entity().placementId,
+                                partial.entity().adapterId,
+                                partial.entity().id );
+                    }
+                } else if ( entity.unwrap( LogicalCollection.class ).isPresent() ) {
+                    log.warn( "Collection not supported for routing page ui." );
+                } else if ( entity.unwrap( LogicalGraph.class ).isPresent() ) {
+                    log.warn( "Graph not supported for routing page ui." );
+                } else {
+                    log.warn( "Error when adding to UI of proposed planner." );
+                }
+            }
+        }
+        manager.addGroup( group );
+        manager.registerInformation( table );
+    }
+
+
+    private void registerProposedPlans(
+            List<AlgOptCost> approximatedCosts,
+            List<Double> preCosts,
+            List<Double> postCosts,
+            List<Double> icarusCosts,
+            List<? extends RoutingPlan> routingPlans,
+            List<Double> effectiveCosts,
+            List<Double> percentageCosts,
+            InformationPage page ) {
+        final boolean isIcarus = icarusCosts != null;
+        InformationGroup group = new InformationGroup( page, "Proposed Plans" ).setOrder( 2 );
+        InformationTable proposedPlansTable = new InformationTable(
+                group,
+                ImmutableList.of( "Physical", "Router", "Pre. Costs", "Norm. Pre Costs", "Post Costs", "Norm. Post Costs", "Total Costs", "Percentage" ) ); //"Physical (Partition --> <Adapter, ColumnPlacement>)"
+
+        for ( int i = 0; i < routingPlans.size(); i++ ) {
+            final RoutingPlan routingPlan = routingPlans.get( i );
+            proposedPlansTable.addRow(
+                    routingPlan.getRoutedDistribution().toString(),
+                    routingPlan.getRouter() != null ? routingPlan.getRouter().getSimpleName() : "",
+                    approximatedCosts.get( i ),
+                    Math.round( preCosts.get( i ) * 100.0 ) / 100.0,
+                    isIcarus ? Math.round( icarusCosts.get( i ) * 100.0 ) / 100.0 : "-",
+                    isIcarus ? Math.round( postCosts.get( i ) * 100.0 ) / 100.0 : "-",
+                    Math.round( effectiveCosts.get( i ) * 100.0 ) / 100.0,
+                    percentageCosts != null ? Math.round( percentageCosts.get( i ) * 100.0 ) / 100.0 + " %" : "-" );
+        }
+        manager.addGroup( group );
+        manager.registerInformation( proposedPlansTable );
+    }
+
+
     private InformationPage initPage( Statement statement, String title, String description ) {
         InformationPage page = new InformationPage( title, description );
         page.setStmtLabel( statement.getIndex() );
@@ -243,8 +341,6 @@ public class QueryAnalyzer {
         private InformationPage executionTimePage;
         private final Map<String, InformationDuration> durations = new HashMap<>();
 
-        @Getter
-        @Setter
         private InformationPage routingPage;
 
 
@@ -279,21 +375,35 @@ public class QueryAnalyzer {
         }
 
 
+        public void registerRoutingBaseOutput( Integer numberOfPlans, RoutingPlan selectedPlan, double ratioPre, double ratioPost, Enum strategy ) {
+            if ( routingPage == null ) {
+                routingPage = analyzer.registerRoutingBaseOutput( statement, numberOfPlans, selectedPlan, ratioPre, ratioPost, strategy );
+            }
+        }
+
+
+        public void registerSelectedAdapterTable( @Nullable RoutedDistribution distribution ) {
+            analyzer.registerSelectedAdapterTable( distribution, routingPage );
+        }
+
+
+        public void registerProposedPlans(
+                List<AlgOptCost> approximatedCosts,
+                List<Double> preCosts,
+                List<Double> postCosts,
+                List<Double> icarusCosts,
+                List<? extends RoutingPlan> routingPlans,
+                List<Double> effectiveCosts,
+                List<Double> percentageCosts ) {
+            analyzer.registerProposedPlans( approximatedCosts, preCosts, postCosts, icarusCosts, routingPlans, effectiveCosts, percentageCosts, routingPage );
+        }
+
+
         public InformationDuration getDuration( String title, int order ) {
             if ( executionTimePage == null ) {
                 executionTimePage = analyzer.initPage( statement, "Execution Time", "Query processing & execution time" );
             }
             return durations.computeIfAbsent( title, k -> analyzer.initDuration( executionTimePage, k, order ) );
-        }
-
-
-        /**
-         * Returns the underlying InformationManager to enable the manual configuration of InformationPages.
-         * This should be refactored to ensure all InformationManager logic is encapsulated in the QueryAnalyzer
-         */
-        @Deprecated()
-        public InformationManager getInformationManager() {
-            return analyzer.manager; // TODO: refactor routing page logic into QueryAnalyzer, then remove this method
         }
 
     }

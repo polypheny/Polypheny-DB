@@ -218,23 +218,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( isPhysical ) {
             return implementPhysicalPlan( root, parameterRowType );
         }
-        if ( !isRouted && statement.getTransaction().isAnalyze() ) {
+        if ( !isRouted && statement.isAnalyze() ) {
             attachPolyAlgPlan( root.alg );
         }
 
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( statement.isAnalyze() ) {
             statement.getOverviewDuration().start( "Processing" );
         }
         final ProposedImplementations proposedImplementations = prepareQueries( root, parameterRowType, isRouted, isSubquery );
 
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( statement.isAnalyze() ) {
             statement.getOverviewDuration().stop( "Processing" );
             statement.getOverviewDuration().start( "Plan Selection" );
         }
 
         final Pair<PolyImplementation, ProposedRoutingPlan> selectedPlan = selectPlan( proposedImplementations );
 
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( statement.isAnalyze() ) {
             statement.getOverviewDuration().stop( "Plan Selection" );
         }
 
@@ -269,7 +269,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private ProposedImplementations prepareQueries( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubQuery ) {
-        boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubQuery;
+        boolean isAnalyze = statement.isAnalyze() && !isSubQuery;
         boolean lock = !isSubQuery;
 
         final Convention resultConvention = ENABLE_BINDABLE ? BindableConvention.INSTANCE : EnumerableConvention.INSTANCE;
@@ -923,7 +923,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConstraintEnforcer, logicalRoot, queryInformation.getQueryHash() ) );
         } else {
             final List<ProposedRoutingPlan> proposedPlans = new ArrayList<>();
-            if ( statement.getTransaction().isAnalyze() ) {
+            if ( statement.isAnalyze() ) {
                 statement.getRoutingDuration().start( "Plan Proposing" );
             }
 
@@ -943,7 +943,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 throw new GenericRuntimeException( "No router was able to route the query successfully." );
             }
 
-            if ( statement.getTransaction().isAnalyze() ) {
+            if ( statement.isAnalyze() ) {
                 statement.getRoutingDuration().stop( "Plan Proposing" );
                 statement.getRoutingDuration().start( "Remove Duplicates" );
             }
@@ -954,7 +954,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 throw new GenericRuntimeException( "No routing of query found" );
             }
 
-            if ( statement.getTransaction().isAnalyze() ) {
+            if ( statement.isAnalyze() ) {
                 statement.getRoutingDuration().stop( "Remove Duplicates" );
             }
 
@@ -1334,10 +1334,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         if ( proposed.plans.size() == 1 ) {
             // If only one plan proposed, return this without further selection
-            if ( statement.getTransaction().isAnalyze() ) {
+            if ( statement.isAnalyze() ) {
                 UiRoutingPageUtil.outputSingleResult(
                         proposed.plans.get( 0 ),
-                        statement,
+                        statement.getAnalyzer(),
                         shouldAttachTextualPolyAlg() );
                 addGeneratedCodeToQueryAnalyzer( proposed.plans.get( 0 ).generatedCodes() );
             }
@@ -1354,7 +1354,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             int index = proposedRoutingPlans.indexOf( (ProposedRoutingPlan) routingPlan );
 
-            if ( statement.getTransaction().isAnalyze() ) {
+            if ( statement.isAnalyze() ) {
                 AlgNode optimalNode = proposed.plans.get( index ).optimalNode();
                 UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getAnalyzer(), shouldAttachTextualPolyAlg() );
                 addGeneratedCodeToQueryAnalyzer( proposed.plans.get( index ).generatedCodes() );

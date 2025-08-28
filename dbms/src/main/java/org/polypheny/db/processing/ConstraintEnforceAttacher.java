@@ -579,7 +579,7 @@ public class ConstraintEnforceAttacher {
 
         AlgRoot enforcementRoot = new AlgRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
         // Send the generated tree with all unoptimized constraint enforcement checks to the UI
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( statement.isAnalyze() ) {
             ObjectMapper objectMapper = new ObjectMapper();
             try {
                 ObjectNode objectNode = enforcementRoot.alg.serializePolyAlgebra( objectMapper );
