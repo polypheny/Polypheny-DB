@@ -1337,7 +1337,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             if ( statement.getTransaction().isAnalyze() ) {
                 UiRoutingPageUtil.outputSingleResult(
                         proposed.plans.get( 0 ),
-                        statement.getAnalyzer(),
+                        statement,
                         shouldAttachTextualPolyAlg() );
                 addGeneratedCodeToQueryAnalyzer( proposed.plans.get( 0 ).generatedCodes() );
             }

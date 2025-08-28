@@ -63,17 +63,17 @@ public class UiRoutingPageUtil {
     }
 
 
-    public static void outputSingleResult( Plan plan, StatementAnalyzer analyzer, boolean attachTextualPlan ) {
-        addPhysicalPlanPage( plan.optimalNode(), analyzer, attachTextualPlan );
+    public static void outputSingleResult( Plan plan, Statement statement, boolean attachTextualPlan ) {
+        addPhysicalPlanPage( plan.optimalNode(), statement.getAnalyzer(), attachTextualPlan );
 
-        InformationManager queryAnalyzer = analyzer.getInformationManager(); // TODO: move logic into QueryAnalyzer
-        InformationPage page = queryAnalyzer.getPage( "routing" );
+        InformationManager queryAnalyzer = statement.getAnalyzer().getInformationManager(); // TODO: move logic into QueryAnalyzer
+        InformationPage page = queryAnalyzer.getPage( "routing" + statement.getIndex() );
         if ( page == null ) {
-            page = setBaseOutput( "Routing", 1, plan.proposedRoutingPlan(), queryAnalyzer );
+            page = setBaseOutput( "Routing", 1, plan.proposedRoutingPlan(), queryAnalyzer, statement.getIndex() );
         }
         addSelectedAdapterTable( queryAnalyzer, plan.proposedRoutingPlan(), page );
         final AlgRoot root = plan.proposedRoutingPlan().getRoutedRoot();
-        addRoutedPolyPlanPage( root.alg, analyzer, false, attachTextualPlan );
+        addRoutedPolyPlanPage( root.alg, statement.getAnalyzer(), false, attachTextualPlan );
     }
 
 
@@ -148,8 +148,8 @@ public class UiRoutingPageUtil {
     }
 
 
-    public static InformationPage setBaseOutput( String title, Integer numberOfPlans, RoutingPlan selectedPlan, InformationManager queryAnalyzer ) {
-        InformationPage page = new InformationPage( "routing", title, null );
+    public static InformationPage setBaseOutput( String title, Integer numberOfPlans, RoutingPlan selectedPlan, InformationManager queryAnalyzer, long stmtIndex ) {
+        InformationPage page = new InformationPage( "routing" + stmtIndex, title, null ).setStmtLabel( stmtIndex );
         page.fullWidth();
         queryAnalyzer.addPage( page );
 
@@ -188,9 +188,9 @@ public class UiRoutingPageUtil {
             Statement statement ) {
 
         InformationManager queryAnalyzer = statement.getAnalyzer().getInformationManager(); // TODO: move logic into QueryAnalyzer
-        InformationPage page = queryAnalyzer.getPage( "routing" );
+        InformationPage page = queryAnalyzer.getPage( "routing" + statement.getIndex() );
         if ( page == null ) {
-            page = setBaseOutput( "Routing", routingPlans.size(), selectedPlan, queryAnalyzer );
+            page = setBaseOutput( "Routing", routingPlans.size(), selectedPlan, queryAnalyzer, statement.getIndex() );
         }
 
         final boolean isIcarus = icarusCosts != null;
