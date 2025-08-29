@@ -57,7 +57,7 @@ public class TemporalStatisticColumn extends StatisticColumn {
 
 
     public TemporalStatisticColumn( QueryResult column ) {
-        super( column.getColumn().namespaceId, column.getColumn().type );
+        super( column.getColumn().namespaceId, column.getColumn().type, column.getColumn().name );
         temporalType = column.getColumn().type.getFamily().name();
     }
 

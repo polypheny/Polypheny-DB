@@ -39,6 +39,8 @@ public abstract class StatisticColumn {
 
     public final long columnId;
 
+    public final String columnName;
+
     public final PolyType type;
 
 
@@ -58,9 +60,10 @@ public abstract class StatisticColumn {
     protected PolyInteger count;
 
 
-    public StatisticColumn( long columnId, PolyType type ) {
+    public StatisticColumn( long columnId, PolyType type, String columnName ) {
         this.columnId = columnId;
         this.type = type;
+        this.columnName = columnName;
     }
 
 

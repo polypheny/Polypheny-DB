@@ -52,7 +52,7 @@ public class NumericalStatisticColumn extends StatisticColumn {
 
 
     public NumericalStatisticColumn( QueryResult column ) {
-        super( column.getColumn().id, column.getColumn().type );
+        super( column.getColumn().id, column.getColumn().type, column.getColumn().name );
     }
 
 
