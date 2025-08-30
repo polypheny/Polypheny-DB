@@ -1083,14 +1083,14 @@ public class StatisticsManagerImpl extends StatisticsManager {
             columnIds.addAll( ((LogicalTable) entity).getColumnIds() );
         }
 
-        TableStatistics t = new TableStatistics( entityId, entity.name, statisticTable.getNumberOfRows(), statisticTable.getCalls() );
+        TableStatistics t = new TableStatistics( entityId, entity.name, statisticTable.getEntityType(), statisticTable.getNumberOfRows(), statisticTable.getCalls() );
         statisticFields.forEach( ( k, v ) -> {
             if ( columnIds.contains( k ) ) {
                 t.columns.add( v );
             }
         } );
 
-        return statisticTable;
+        return t;
     }
 
 
@@ -1100,14 +1100,16 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
         long tableId;
         String tableName;
+        EntityType entityType;
         long numberOfRows;
         TableCalls calls;
         List<StatisticColumn> columns = new ArrayList<>();
 
 
-        TableStatistics( long tableId, String tableName, long numberOfRows, TableCalls calls ) {
+        TableStatistics( long tableId, String tableName, EntityType entityType, long numberOfRows, TableCalls calls ) {
             this.tableId = tableId;
             this.tableName = tableName;
+            this.entityType = entityType;
             this.numberOfRows = numberOfRows;
             this.calls = calls;
         }
