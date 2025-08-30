@@ -98,7 +98,7 @@ public class LanguageManager {
     public List<ImplementationContext> anyPrepareQuery( QueryContext context, Statement statement ) {
         Transaction transaction = statement.getTransaction();
         if ( transaction.isAnalyze() ) {
-            context.getInformationTarget().accept( statement.getTransaction().getQueryAnalyzer() );
+            transaction.getQueryAnalyzer().visitInformationTarget( context.getInformationTarget() );
         }
 
         List<ParsedQueryContext> parsedQueries;
@@ -119,7 +119,7 @@ public class LanguageManager {
                 parsedQueries = context.getLanguage().parser().apply( context );
             } catch ( Throwable e ) {
                 if ( transaction.isAnalyze() ) {
-                    transaction.getQueryAnalyzer().attachStacktrace( e );
+                    statement.getAnalyzer().registerException( e );
                 }
                 cancelTransaction( transaction, String.format( "Error on preparing query: %s", e.getMessage() ) );
                 context.removeTransaction( transaction );
@@ -145,7 +145,8 @@ public class LanguageManager {
             if ( i != 0 ) {
                 // as long as we directly commit the transaction, we cannot reuse the same transaction
                 if ( previousDdl && !transaction.isActive() ) {
-                    transaction = parsed.getTransactionManager().startTransaction( transaction.getUser().id, transaction.getDefaultNamespace().id, transaction.isAnalyze(), transaction.getOrigin() );
+                    // Use the query analyzer of the old transaction
+                    transaction = parsed.getTransactionManager().startTransaction( transaction.getUser().id, transaction.getDefaultNamespace().id, transaction.getQueryAnalyzer(), transaction.getOrigin() );
                     parsed.addTransaction( transaction );
                 }
                 statement = transaction.createStatement();
@@ -219,7 +220,7 @@ public class LanguageManager {
                 }
 
                 if ( transaction.isAnalyze() ) {
-                    transaction.getQueryAnalyzer().attachStacktrace( e );
+                    statement.getAnalyzer().registerException( e );
                 }
                 if ( e instanceof DeadlockException ) {
                     cancelTransaction( transaction, null );
@@ -238,7 +239,7 @@ public class LanguageManager {
     @NotNull
     private static List<ImplementationContext> handleParseException( Statement statement, ParsedQueryContext parsed, Transaction transaction, Exception e, List<ImplementationContext> implementationContexts ) {
         if ( transaction.isAnalyze() ) {
-            transaction.getQueryAnalyzer().attachStacktrace( e );
+            statement.getAnalyzer().registerException( e );
         }
         implementationContexts.add( ImplementationContext.ofError( e, parsed, statement ) );
         return implementationContexts;
@@ -270,7 +271,7 @@ public class LanguageManager {
             } catch ( Throwable e ) {
                 Transaction transaction = implementation.getStatement().getTransaction();
                 if ( transaction.isAnalyze() && implementation.getException().isEmpty() ) {
-                    transaction.getQueryAnalyzer().attachStacktrace( e );
+                    implementation.getStatement().getAnalyzer().registerException( e );
                 }
                 cancelTransaction( transaction, e.getMessage() );
 
@@ -301,7 +302,7 @@ public class LanguageManager {
             return List.of( new ImplementationContext( implementation, translated, statement, null ) );
         } catch ( Throwable e ) {
             if ( transaction.isAnalyze() ) {
-                transaction.getQueryAnalyzer().attachStacktrace( e );
+                statement.getAnalyzer().registerException( e );
             }
             if ( !(e instanceof DeadlockException) ) {
                 // we only log unexpected cases with stacktrace

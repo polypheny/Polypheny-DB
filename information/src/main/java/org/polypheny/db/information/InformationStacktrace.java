@@ -24,6 +24,7 @@ import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.rmi.RemoteException;
+import java.util.Objects;
 import java.util.UUID;
 
 
@@ -31,6 +32,9 @@ public class InformationStacktrace extends Information {
 
     @JsonProperty
     private Throwable exception;
+
+    @JsonProperty
+    private String error;
 
 
     /**
@@ -42,6 +46,7 @@ public class InformationStacktrace extends Information {
     public InformationStacktrace( final Throwable exception, final InformationGroup group ) {
         super( UUID.randomUUID().toString(), group.getId() );
         this.exception = exception;
+        this.error = exception == null ? null : Objects.requireNonNullElse( exception.getMessage(), exception.getClass().getName() );
     }
 
 

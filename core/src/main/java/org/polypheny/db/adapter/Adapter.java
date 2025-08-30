@@ -203,19 +203,18 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
                     .toList().contains( deployMode ) ) {
                 continue;
             }
-            if ( !initialSetup && settings.containsKey( s.name ) && settings.get( s.name ).equals( s.getValue() ) ) {
-                // we can leave the setting as it is
-                return;
-            }
 
             if ( newSettings.containsKey( s.name ) ) {
+                String newValue = newSettings.get( s.name );
                 if ( s.modifiable || initialSetup ) {
-                    String newValue = newSettings.get( s.name );
                     if ( !s.canBeNull && newValue == null ) {
                         throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be null." );
                     }
                 } else {
-                    throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
+                    assert settings != null;
+                    if ( !newValue.equals( settings.get( s.name ) ) ) {
+                        throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
+                    }
                 }
             } else if ( s.required && initialSetup ) {
                 throw new GenericRuntimeException( "Setting \"" + s.name + "\" must be present." );

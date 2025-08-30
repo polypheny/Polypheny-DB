@@ -208,7 +208,7 @@ public class QueryUtils {
 
     public static Transaction startTransaction( TransactionManager transactionManager, long namespace, String originSuffix ) {
         String origin = (originSuffix == null || originSuffix.isEmpty()) ? StorageManager.ORIGIN : StorageManager.ORIGIN + "-" + originSuffix;
-        return transactionManager.startTransaction( Catalog.defaultUserId, namespace, false, origin );
+        return transactionManager.startTransaction( Catalog.defaultUserId, namespace, null, origin );
     }
 
 

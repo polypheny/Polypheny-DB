@@ -65,6 +65,7 @@ import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.TranslatedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.routing.UiRoutingPageUtil;
+import org.polypheny.db.transaction.QueryAnalyzer;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -171,7 +172,7 @@ public class PolyAlgParsingTest {
     private static void testQueryRoundTrip( String query, QueryLanguage ql, String namespace ) throws NodeParseException {
         long ns = namespace == null ? Catalog.defaultNamespaceId : Catalog.snapshot().getNamespace( namespace ).orElseThrow().id;
         TransactionManager transactionManager = TransactionManagerImpl.getInstance();
-        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, ns, true, ORIGIN );
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, ns, new QueryAnalyzer(), ORIGIN );
 
         try {
 
@@ -245,7 +246,7 @@ public class PolyAlgParsingTest {
         assert planType != PlanType.PHYSICAL : "Physical plan is not yet supported by this helper function";
 
         TransactionManager transactionManager = TransactionManagerImpl.getInstance();
-        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, true, ORIGIN );
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, new QueryAnalyzer(), ORIGIN );
         Statement statement = transaction.createStatement();
         try {
             AlgRoot root = buildFromPolyAlg( polyAlg, planType, statement );

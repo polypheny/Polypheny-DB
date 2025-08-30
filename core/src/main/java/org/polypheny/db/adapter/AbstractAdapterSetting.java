@@ -58,7 +58,7 @@ public abstract class AbstractAdapterSetting {
     public List<String> filenames = new ArrayList<>();
 
 
-    public AbstractAdapterSetting( final AdapterSettingType type, final String name, final boolean canBeNull, final String subOf, final boolean required, final boolean modifiable, List<DeploySetting> appliesTo, String defaultValue, int position ) {
+    public AbstractAdapterSetting( final AdapterSettingType type, final String name, final boolean canBeNull, final String subOf, final boolean required, final boolean modifiable, List<DeploySetting> appliesTo, String defaultValue, int position, String description ) {
         this.type = type;
         this.name = name;
         this.canBeNull = canBeNull;
@@ -68,6 +68,7 @@ public abstract class AbstractAdapterSetting {
         this.position = position;
         this.appliesTo = appliesTo;
         this.defaultValue = defaultValue;
+        this.description = (description == null || description.isEmpty()) ? null : description;
         assert this.subOf == null || this.subOf.split( "_" ).length == 2
                 : "SubOf needs to be null or has to be separated by \"_\" and requires link and value due to limitation in Java";
     }

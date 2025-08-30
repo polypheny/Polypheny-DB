@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.statistics;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;
@@ -32,10 +33,13 @@ import org.polypheny.db.type.entity.numerical.PolyInteger;
  * Stores the available statistic data of a specific column
  */
 
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public abstract class StatisticColumn {
 
 
     public final long columnId;
+
+    public final String columnName;
 
     public final PolyType type;
 
@@ -56,9 +60,10 @@ public abstract class StatisticColumn {
     protected PolyInteger count;
 
 
-    public StatisticColumn( long columnId, PolyType type ) {
+    public StatisticColumn( long columnId, PolyType type, String columnName ) {
         this.columnId = columnId;
         this.type = type;
+        this.columnName = columnName;
     }
 
 

@@ -83,12 +83,6 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.information.Information;
-import org.polypheny.db.information.InformationCode;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationPolyAlg;
 import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
@@ -224,23 +218,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( isPhysical ) {
             return implementPhysicalPlan( root, parameterRowType );
         }
-        if ( !isRouted && statement.getTransaction().isAnalyze() ) {
+        if ( !isRouted && statement.isAnalyze() ) {
             attachPolyAlgPlan( root.alg );
         }
 
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( statement.isAnalyze() ) {
             statement.getOverviewDuration().start( "Processing" );
         }
         final ProposedImplementations proposedImplementations = prepareQueries( root, parameterRowType, isRouted, isSubquery );
 
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( statement.isAnalyze() ) {
             statement.getOverviewDuration().stop( "Processing" );
             statement.getOverviewDuration().start( "Plan Selection" );
         }
 
         final Pair<PolyImplementation, ProposedRoutingPlan> selectedPlan = selectPlan( proposedImplementations );
 
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( statement.isAnalyze() ) {
             statement.getOverviewDuration().stop( "Plan Selection" );
         }
 
@@ -258,26 +252,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         try {
             ObjectNode objectNode = alg.serializePolyAlgebra( objectMapper, gs );
             String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString( objectNode );
-
-            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Logical Query Plan" ).setStmtLabel( statement.getIndex() );
-            page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
-            queryAnalyzer.addPage( page );
-            queryAnalyzer.addGroup( group );
-
-            InformationPolyAlg infoPolyAlg = new InformationPolyAlg( group, jsonString, PlanType.LOGICAL );
+            String serialized = null;
             if ( shouldAttachTextualPolyAlg() ) {
                 // when testing, we want to access the human-readable form
-                String serialized = alg.buildPolyAlgebra( (String) null );
+                serialized = alg.buildPolyAlgebra( (String) null );
                 if ( serialized == null ) {
                     throw new GenericRuntimeException( "Could not serialize PolyAlgebra" );
                 }
-                infoPolyAlg.setTextualPolyAlg( serialized );
             }
-
-            queryAnalyzer.registerInformation( infoPolyAlg );
-
+            statement.getAnalyzer().registerQueryPlan( PlanType.LOGICAL, jsonString, serialized );
         } catch ( Exception e ) {
             throw new GenericRuntimeException( e.getMessage(), e );
         }
@@ -286,7 +269,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private ProposedImplementations prepareQueries( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubQuery ) {
-        boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubQuery;
+        boolean isAnalyze = statement.isAnalyze() && !isSubQuery;
         boolean lock = !isSubQuery;
 
         final Convention resultConvention = ENABLE_BINDABLE ? BindableConvention.INSTANCE : EnumerableConvention.INSTANCE;
@@ -560,7 +543,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         final Convention resultConvention = ENABLE_BINDABLE ? BindableConvention.INSTANCE : EnumerableConvention.INSTANCE;
 
         PreparedResult<PolyValue> preparedResult = implement( root, parameterRowType );
-        UiRoutingPageUtil.addPhysicalPlanPage( root.alg, statement.getTransaction().getQueryAnalyzer(), statement.getIndex(), shouldAttachTextualPolyAlg() );
+        UiRoutingPageUtil.addPhysicalPlanPage( root.alg, statement.getAnalyzer(), shouldAttachTextualPolyAlg() );
         return createPolyImplementation(
                 preparedResult,
                 root.kind,
@@ -940,7 +923,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConstraintEnforcer, logicalRoot, queryInformation.getQueryHash() ) );
         } else {
             final List<ProposedRoutingPlan> proposedPlans = new ArrayList<>();
-            if ( statement.getTransaction().isAnalyze() ) {
+            if ( statement.isAnalyze() ) {
                 statement.getRoutingDuration().start( "Plan Proposing" );
             }
 
@@ -960,7 +943,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 throw new GenericRuntimeException( "No router was able to route the query successfully." );
             }
 
-            if ( statement.getTransaction().isAnalyze() ) {
+            if ( statement.isAnalyze() ) {
                 statement.getRoutingDuration().stop( "Plan Proposing" );
                 statement.getRoutingDuration().start( "Remove Duplicates" );
             }
@@ -971,7 +954,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 throw new GenericRuntimeException( "No routing of query found" );
             }
 
-            if ( statement.getTransaction().isAnalyze() ) {
+            if ( statement.isAnalyze() ) {
                 statement.getRoutingDuration().stop( "Remove Duplicates" );
             }
 
@@ -1351,11 +1334,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         if ( proposed.plans.size() == 1 ) {
             // If only one plan proposed, return this without further selection
-            if ( statement.getTransaction().isAnalyze() ) {
+            if ( statement.isAnalyze() ) {
                 UiRoutingPageUtil.outputSingleResult(
                         proposed.plans.get( 0 ),
-                        statement.getTransaction().getQueryAnalyzer(),
-                        statement.getIndex(), shouldAttachTextualPolyAlg() );
+                        statement.getAnalyzer(),
+                        shouldAttachTextualPolyAlg() );
                 addGeneratedCodeToQueryAnalyzer( proposed.plans.get( 0 ).generatedCodes() );
             }
             return new Pair<>( proposed.plans.get( 0 ).result(), proposed.plans.get( 0 ).proposedRoutingPlan() );
@@ -1371,10 +1354,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             int index = proposedRoutingPlans.indexOf( (ProposedRoutingPlan) routingPlan );
 
-            if ( statement.getTransaction().isAnalyze() ) {
+            if ( statement.isAnalyze() ) {
                 AlgNode optimalNode = proposed.plans.get( index ).optimalNode();
-                UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer(),
-                        statement.getIndex(), shouldAttachTextualPolyAlg() );
+                UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getAnalyzer(), shouldAttachTextualPolyAlg() );
                 addGeneratedCodeToQueryAnalyzer( proposed.plans.get( index ).generatedCodes() );
             }
 
@@ -1385,18 +1367,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private void addGeneratedCodeToQueryAnalyzer( String code ) {
         if ( code != null ) {
-            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Implementation" ).setStmtLabel( statement.getIndex() );
-            page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Java Code" );
-            queryAnalyzer.addPage( page );
-            queryAnalyzer.addGroup( group );
-
-            // Clean Code (remove package names to make code better readable)
-            String cleanedCode = code.replaceAll( "(org.)([a-z][a-z_0-9]*\\.)*", "" );
-
-            Information informationCode = new InformationCode( group, cleanedCode );
-            queryAnalyzer.registerInformation( informationCode );
+            statement.getAnalyzer().registerImplementation( code );
         } else {
             log.error( "Generated code is null" );
         }

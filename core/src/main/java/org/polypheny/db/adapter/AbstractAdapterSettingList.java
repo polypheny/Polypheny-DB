@@ -29,8 +29,8 @@ public class AbstractAdapterSettingList extends AbstractAdapterSetting {
     public boolean dynamic = false;
 
 
-    public AbstractAdapterSettingList( String name, boolean canBeNull, final String subOf, boolean required, boolean modifiable, List<String> options, List<DeploySetting> appliesTo, String defaultValue, int position ) {
-        super( AdapterSettingType.LIST, name, canBeNull, subOf, required, modifiable, appliesTo, defaultValue, position );
+    public AbstractAdapterSettingList( String name, boolean canBeNull, final String subOf, boolean required, boolean modifiable, List<String> options, List<DeploySetting> appliesTo, String defaultValue, int position, String description ) {
+        super( AdapterSettingType.LIST, name, canBeNull, subOf, required, modifiable, appliesTo, defaultValue, position, description );
         this.options = options;
     }
 
@@ -45,7 +45,9 @@ public class AbstractAdapterSettingList extends AbstractAdapterSetting {
                 Arrays.asList( annotation.options() ),
                 Arrays.asList( annotation.appliesTo() ),
                 annotation.defaultValue(),
-                annotation.position() );
+                annotation.position(),
+                annotation.description()
+        );
     }
 
 

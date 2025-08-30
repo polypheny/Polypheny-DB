@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.statistics;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -31,39 +32,31 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 /**
  * Stores the available statistic data of a specific table.
  */
+@Getter
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class StatisticTable {
 
-    @Getter
     private String table;
 
-    @Getter
     private final long tableId;
 
-    @Getter
     @Setter
     private TableCalls calls;
 
-    @Getter
     private DataModel dataModel;
 
-    @Getter
     private final List<Integer> availableAdapters = new ArrayList<>();
 
-    @Getter
     private EntityType entityType;
 
-    @Getter
     private long numberOfRows;
 
-    @Getter
     @Setter
     private List<AlphabeticStatisticColumn> alphabeticColumn;
 
-    @Getter
     @Setter
     private List<NumericalStatisticColumn> numericalColumn;
 
-    @Getter
     @Setter
     private List<TemporalStatisticColumn> temporalColumn;
 

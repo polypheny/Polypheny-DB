@@ -264,7 +264,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
         Transaction transaction = null;
         try {
-            transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "FrequencyMap" );
+            transaction = transactionManager.startTransaction( Catalog.defaultUserId, null, "FrequencyMap" );
 
             Statement statement = transaction.createStatement();
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();

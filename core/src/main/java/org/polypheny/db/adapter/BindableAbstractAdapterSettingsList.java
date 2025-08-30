@@ -48,7 +48,7 @@ public class BindableAbstractAdapterSettingsList<T extends ConfigObject> extends
 
 
     public BindableAbstractAdapterSettingsList( String name, String nameAlias, boolean canBeNull, String subOf, boolean required, boolean modifiable, List<T> options, List<DeploySetting> appliesTo, Function<T, String> mapper, Class<T> clazz ) {
-        super( name, canBeNull, subOf, required, modifiable, options.stream().map( el -> String.valueOf( el.getId() ) ).toList(), appliesTo, null, 1000 );
+        super( name, canBeNull, subOf, required, modifiable, options.stream().map( el -> String.valueOf( el.getId() ) ).toList(), appliesTo, null, 1000, null );
         this.mapper = mapper;
         this.clazz = clazz;
         this.dynamic = true;

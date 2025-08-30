@@ -43,7 +43,8 @@ public class DocResult extends Result<String, FieldDefinition> {
             @JsonProperty("highestPage") int highestPage,
             @JsonProperty("hasMore") boolean hasMore,
             @JsonProperty("language") QueryLanguage language,
-            @JsonProperty("affectedTuples") int affectedTuples ) {
+            @JsonProperty("affectedTuples") int affectedTuples,
+            @JsonProperty("isRolledBack") boolean isRolledBack  ) {
         super(
                 dataModel,
                 namespace,
@@ -58,7 +59,8 @@ public class DocResult extends Result<String, FieldDefinition> {
                 highestPage,
                 hasMore,
                 language,
-                affectedTuples );
+                affectedTuples,
+                isRolledBack);
     }
 
 

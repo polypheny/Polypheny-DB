@@ -17,16 +17,17 @@
 package org.polypheny.db.transaction;
 
 
+import javax.annotation.Nullable;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 
 
 public interface TransactionManager {
 
-    Transaction startTransaction( long userId, long defaultNamespaceId, boolean analyze, String origin );
+    Transaction startTransaction( long userId, long defaultNamespaceId, @Nullable QueryAnalyzer analyzer, String origin );
 
-    Transaction startTransaction( long userId, long defaultNamespaceId, boolean analyze, String origin, MultimediaFlavor flavor );
+    Transaction startTransaction( long userId, long defaultNamespaceId, @Nullable QueryAnalyzer analyzer, String origin, MultimediaFlavor flavor );
 
-    Transaction startTransaction( long userId, boolean analyze, String origin );
+    Transaction startTransaction( long userId, @Nullable QueryAnalyzer analyzer, String origin );
 
     void removeTransaction( PolyXid xid );
 

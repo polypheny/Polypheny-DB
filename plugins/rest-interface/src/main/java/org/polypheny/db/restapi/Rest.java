@@ -533,7 +533,7 @@ public class Rest {
 
 
     private Transaction getTransaction() {
-        return transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, false, "REST Interface", MultimediaFlavor.FILE );
+        return transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, null, "REST Interface", MultimediaFlavor.FILE );
     }
 
 

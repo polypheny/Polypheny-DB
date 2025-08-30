@@ -66,11 +66,6 @@ import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationPolyAlg;
-import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -584,19 +579,12 @@ public class ConstraintEnforceAttacher {
 
         AlgRoot enforcementRoot = new AlgRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
         // Send the generated tree with all unoptimized constraint enforcement checks to the UI
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( statement.isAnalyze() ) {
             ObjectMapper objectMapper = new ObjectMapper();
             try {
                 ObjectNode objectNode = enforcementRoot.alg.serializePolyAlgebra( objectMapper );
                 String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString( objectNode );
-                InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-                InformationPage page = new InformationPage( "Constraint Enforcement Plan" ).setStmtLabel( statement.getIndex() );
-                page.fullWidth();
-                InformationGroup group = new InformationGroup( page, "Constraint Enforcement Plan" );
-                queryAnalyzer.addPage( page );
-                queryAnalyzer.addGroup( group );
-                InformationPolyAlg infoPolyAlg = new InformationPolyAlg( group, jsonString, PlanType.LOGICAL );
-                queryAnalyzer.registerInformation( infoPolyAlg );
+                statement.getAnalyzer().registerConstraintPlan( jsonString );
             } catch ( Exception e ) {
                 e.printStackTrace();
             }
@@ -651,7 +639,7 @@ public class ConstraintEnforceAttacher {
                             .flatMap( n -> Catalog.snapshot().rel().getTables( n.id, null ).stream() )
                             .filter( t -> t.entityType == EntityType.ENTITY && t.getDataModel() == DataModel.RELATIONAL )
                             .toList();
-                    Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, false, "ConstraintEnforcement" );
+                    Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, null, "ConstraintEnforcement" );
                     Statement statement = transaction.createStatement();
                     QueryProcessor processor = statement.getQueryProcessor();
                     List<EnforcementInformation> infos = ConstraintEnforceAttacher

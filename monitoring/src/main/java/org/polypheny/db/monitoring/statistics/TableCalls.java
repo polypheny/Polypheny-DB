@@ -16,11 +16,13 @@
 
 package org.polypheny.db.monitoring.statistics;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class TableCalls {
 
     private long tableId;

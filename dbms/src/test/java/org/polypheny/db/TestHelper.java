@@ -67,6 +67,7 @@ import org.polypheny.db.processing.caching.QueryPlanCache;
 import org.polypheny.db.processing.caching.RoutingPlanCache;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.RoutingManager;
+import org.polypheny.db.transaction.QueryAnalyzer;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyList;
@@ -190,7 +191,7 @@ public class TestHelper {
 
 
     public Transaction getTransaction() {
-        return transactionManager.startTransaction( Catalog.defaultUserId, true, "Test Helper" );
+        return transactionManager.startTransaction( Catalog.defaultUserId, new QueryAnalyzer(), "Test Helper" );
     }
 
 

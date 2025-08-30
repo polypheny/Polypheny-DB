@@ -37,8 +37,8 @@ public class AbstractAdapterSettingDirectory extends AbstractAdapterSetting {
     public transient final Map<String, InputStream> inputStreams;
 
 
-    public AbstractAdapterSettingDirectory( String name, String defaultValue, boolean canBeNull, String subOf, boolean required, boolean modifiable, List<DeploySetting> modes, int position ) {
-        super( AdapterSettingType.DIRECTORY, name, canBeNull, subOf, required, modifiable, modes, defaultValue, position );
+    public AbstractAdapterSettingDirectory( String name, String defaultValue, boolean canBeNull, String subOf, boolean required, boolean modifiable, List<DeploySetting> modes, int position, String description ) {
+        super( AdapterSettingType.DIRECTORY, name, canBeNull, subOf, required, modifiable, modes, defaultValue, position, description );
         //so it will be serialized
         this.directory = "";
         this.inputStreams = new HashMap<>();
@@ -54,7 +54,8 @@ public class AbstractAdapterSettingDirectory extends AbstractAdapterSetting {
                 annotation.required(),
                 annotation.modifiable(),
                 Arrays.asList( annotation.appliesTo() ),
-                annotation.position()
+                annotation.position(),
+                annotation.description()
         );
     }
 

@@ -536,7 +536,7 @@ public class PolyphenyDb {
         Transaction trx = transactionManager.startTransaction(
                 Catalog.defaultUserId,
                 Catalog.defaultNamespaceId,
-                false,
+                null,
                 "Catalog Startup" );
         if ( !resetCatalog && !memoryCatalog && mode != RunMode.TEST ) {
             Catalog.getInstance().restore( trx );
