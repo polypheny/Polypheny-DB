@@ -422,7 +422,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public boolean isConstraint( long keyId ) {
-        return constraints.entrySet().stream().anyMatch(  c -> c.getValue().getKeyId() == keyId );
+        return constraints.entrySet().stream().anyMatch( c -> c.getValue().getKeyId() == keyId );
     }
 
 

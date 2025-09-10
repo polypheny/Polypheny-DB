@@ -207,6 +207,12 @@ public class TestHelper {
     }
 
 
+    public static void addMongodb( String name, Statement statement ) throws SQLException {
+        executeSQL( statement, "ALTER ADAPTERS ADD \"" + name + "\" USING 'mongodb' AS 'Store'"
+                + " WITH '{trxLifetimeLimit:\"1209600\",mode:docker,instanceId:\"0\"}'" );
+    }
+
+
     public static void addCsv( String name, Statement statement ) throws SQLException {
         executeSQL( statement, "ALTER ADAPTERS ADD \"" + name + "\" USING 'Csv' AS 'Store'"
                 + " WITH '{}'" );
@@ -463,6 +469,14 @@ public class TestHelper {
 
 
     public static abstract class HttpConnection {
+
+        static {
+            // TODO: remove this (is there a way to only disable the timeout, when I am actually debugging?)
+            Unirest.config()
+                    .socketTimeout(0)
+                    .connectTimeout(0);
+        }
+
 
         public static HttpRequest<?> buildQuery( String route, String query, String database ) {
             JsonObject data = new JsonObject();

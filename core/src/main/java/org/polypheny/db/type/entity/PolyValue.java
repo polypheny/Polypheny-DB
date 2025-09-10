@@ -875,6 +875,15 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     @NotNull
     public PolyGeometry asGeometry() {
+        if (this.type == PolyType.VARCHAR){
+            PolyString value = this.asString();
+            PolyGeometry geometry = PolyGeometry.of(value.getValue());
+            if (geometry == null){
+                throw cannotParse( this, PolyGeometry.class );
+            }
+            return geometry;
+        }
+
         if ( isGeometry() ) {
             return (PolyGeometry) this;
         }
@@ -901,7 +910,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         switch ( type ) {
             case INTEGER:
                 return PolyInteger.convert( value );
-            case DOCUMENT:
+            case DOCUMENT, GEOMETRY:
                 // docs accept all
                 return value;
             case BIGINT:

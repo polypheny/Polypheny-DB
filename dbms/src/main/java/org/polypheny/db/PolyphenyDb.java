@@ -188,6 +188,10 @@ public class PolyphenyDb {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
 
+        // TODO: Remove after testing
+        String currentPath = System.getProperty( "user.home" );
+        log.info("user.home: {}", currentPath);
+
         // Configuration shall not be persisted
         ConfigManager.memoryMode = (mode == RunMode.TEST || memoryCatalog);
         ConfigManager.resetCatalogOnStartup = resetCatalog;
