@@ -61,10 +61,6 @@ import org.polypheny.db.algebra.enumerable.RexToLixTranslator.InputGetter;
 import org.polypheny.db.algebra.enumerable.RexToLixTranslator.InputGetterImpl;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.information.InformationCode;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -148,15 +144,8 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
             Util.debugCode( System.out, s );
         }
-        if ( dataContext != null && dataContext.getStatement() != null && dataContext.getStatement().getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = dataContext.getStatement().getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Generated Code" );
-            page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Generated Code" );
-            queryAnalyzer.addPage( page );
-            queryAnalyzer.addGroup( group );
-            InformationCode informationCode = new InformationCode( group, s );
-            queryAnalyzer.registerInformation( informationCode );
+        if ( dataContext != null && dataContext.getStatement() != null && dataContext.getStatement().isAnalyze() ) {
+            dataContext.getStatement().getAnalyzer().registerGeneratedCode( s );
         }
         try {
             return getScalar( classDeclaration, s );

@@ -27,6 +27,7 @@ import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.DeployMode;
@@ -54,6 +55,12 @@ public class AdapterModel extends IdEntity {
     @JsonProperty
     public List<IndexMethodModel> indexMethods;
 
+    @JsonProperty
+    public boolean persistent;
+
+    @JsonProperty
+    public boolean dataReadOnly;
+
 
     public AdapterModel(
             @JsonProperty("id") @Nullable Long id,
@@ -62,13 +69,17 @@ public class AdapterModel extends IdEntity {
             @JsonProperty("type") AdapterType type,
             @JsonProperty("settings") Map<String, String> settings,
             @JsonProperty("mode") DeployMode mode,
-            @JsonProperty("indexMethods") List<IndexMethodModel> indexMethods ) {
+            @JsonProperty("indexMethods") List<IndexMethodModel> indexMethods,
+            @JsonProperty("persistent") boolean persistent,
+            @JsonProperty("dataReadOnly") boolean dataReadOnly ) {
         super( id, name );
         this.adapterName = adapterName;
         this.type = type;
         this.settings = settings;
         this.mode = mode;
         this.indexMethods = indexMethods;
+        this.persistent = persistent;
+        this.dataReadOnly = dataReadOnly;
     }
 
 
@@ -84,7 +95,10 @@ public class AdapterModel extends IdEntity {
                 adapter.type,
                 settings,
                 adapter.mode,
-                adapter.type == AdapterType.STORE ? ((DataStore<?>) dataStore).getAvailableIndexMethods() : List.of() ) ).orElse( null );
+                adapter.type == AdapterType.STORE ? ((DataStore<?>) dataStore).getAvailableIndexMethods() : List.of(),
+                adapter.type == AdapterType.STORE && ((DataStore<?>) dataStore).isPersistent(),
+                adapter.type == AdapterType.SOURCE && ((DataSource<?>) dataStore).isDataReadOnly()
+        ) ).orElse( null );
 
     }
 

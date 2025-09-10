@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalUser;
@@ -81,12 +82,12 @@ public class TransactionManagerImpl implements TransactionManager {
     }
 
 
-    private Transaction startTransaction( LogicalUser user, LogicalNamespace defaultNamespace, boolean analyze, String origin, MultimediaFlavor flavor ) {
+    private Transaction startTransaction( LogicalUser user, LogicalNamespace defaultNamespace, @Nullable QueryAnalyzer analyzer, String origin, MultimediaFlavor flavor ) {
         final NodeId nodeId = (NodeId) PUID.randomPUID( Type.NODE ); // TODO: get real node id -- configuration.get("nodeid")
         final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: use real user id
         final ConnectionId connectionId = (ConnectionId) PUID.randomPUID( Type.CONNECTION ); // TODO
         PolyXid xid = generateNewTransactionId( nodeId, userId, connectionId );
-        transactions.put( xid, new TransactionImpl( xid, this, user, defaultNamespace, analyze, origin, flavor ) );
+        transactions.put( xid, new TransactionImpl( xid, this, user, defaultNamespace, analyzer, origin, flavor ) );
         totalTransactions.incrementAndGet();
         log.debug( "open {}", xid );
         return transactions.get( xid );
@@ -94,28 +95,28 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( long userId, long defaultNamespaceId, boolean analyze, String origin ) {
+    public Transaction startTransaction( long userId, long defaultNamespaceId, @Nullable QueryAnalyzer analyzer, String origin ) {
         return startTransaction(
                 Catalog.snapshot().getUser( userId ).orElse( null ),
                 Catalog.snapshot().getNamespace( defaultNamespaceId ).orElse( null ),
-                analyze,
+                analyzer,
                 origin,
                 MultimediaFlavor.DEFAULT );
     }
 
 
     @Override
-    public Transaction startTransaction( long userId, long defaultNamespaceId, boolean analyze, String origin, MultimediaFlavor flavor ) {
-        return startTransaction( Catalog.snapshot().getUser( userId ).orElseThrow(), Catalog.snapshot().getNamespace( defaultNamespaceId ).orElseThrow(), analyze, origin, flavor );
+    public Transaction startTransaction( long userId, long defaultNamespaceId, @Nullable QueryAnalyzer analyzer, String origin, MultimediaFlavor flavor ) {
+        return startTransaction( Catalog.snapshot().getUser( userId ).orElseThrow(), Catalog.snapshot().getNamespace( defaultNamespaceId ).orElseThrow(), analyzer, origin, flavor );
     }
 
 
     @Override
-    public Transaction startTransaction( long userId, boolean analyze, String origin ) {
+    public Transaction startTransaction( long userId, @Nullable QueryAnalyzer analyzer, String origin ) {
         return startTransaction(
                 Catalog.snapshot().getUser( userId ).orElseThrow(),
                 Catalog.snapshot().getNamespace( Catalog.defaultNamespaceId ).orElseThrow(),
-                analyze,
+                analyzer,
                 origin,
                 MultimediaFlavor.DEFAULT );
     }

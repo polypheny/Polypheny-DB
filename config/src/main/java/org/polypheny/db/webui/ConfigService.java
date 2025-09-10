@@ -65,6 +65,8 @@ public class ConfigService implements ConfigListener {
 
         http.get( PREFIX + "/getPageList", ctx -> ctx.result( cm.getWebUiPageList() ) );
 
+        http.post( PREFIX + "/getConfig", ctx -> ctx.result( cm.getConfig( ctx.body() ).toJson() ) );
+
         // get Ui of certain page
         http.post( PREFIX + "/getPage", ctx -> {
             //input: req: {pageId: 123}

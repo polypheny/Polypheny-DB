@@ -19,6 +19,7 @@ package org.polypheny.db.information;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 public class InformationPolyAlg extends Information {
@@ -53,10 +54,14 @@ public class InformationPolyAlg extends Information {
     }
 
 
+    @Getter
+    @RequiredArgsConstructor
     public enum PlanType {
-        LOGICAL,
-        ALLOCATION,
-        PHYSICAL
+        LOGICAL( "Logical" ),
+        ALLOCATION( "Routed" ),
+        PHYSICAL( "Physical" );
+
+        private final String displayName;
     }
 
 }

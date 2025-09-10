@@ -22,10 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
 import io.javalin.http.Context;
@@ -48,11 +45,8 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +57,6 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -97,6 +90,7 @@ import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
@@ -132,11 +126,9 @@ import org.polypheny.db.docker.models.UpdateDockerRequest;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceCreateRequest;
-import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationText;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.QueryLanguage;
@@ -203,7 +195,9 @@ import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
 import org.polypheny.db.webui.models.requests.PolyAlgRequest;
+import org.polypheny.db.webui.models.requests.RenameEntityRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
+import org.polypheny.db.webui.models.requests.UpdateAdapterRequest;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.RelationalResult.RelationalResultBuilder;
 import org.polypheny.db.webui.models.results.Result;
@@ -379,13 +373,31 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     void renameTable( final Context ctx ) {
-        IndexModel table = ctx.bodyAsClass( IndexModel.class );
-        String query = String.format( "ALTER TABLE \"%s\".\"%s\" RENAME TO \"%s\"", table.getNamespaceId(), table.getEntityId(), table.getName() );
+        RenameEntityRequest table = ctx.bodyAsClass( RenameEntityRequest.class );
+        String query = String.format( "ALTER TABLE %s RENAME TO \"%s\"", getFullEntityName( table.getEntityId() ), table.getEntityName() );
         QueryLanguage language = QueryLanguage.from( "sql" );
         Result<?, ?> result = LanguageCrud.anyQueryResult(
                 QueryContext.builder()
                         .query( query )
                         .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), UIRequest.builder().build() ).get( 0 );
+
+        ctx.json( result );
+    }
+
+
+    void renameCollection( final Context ctx ) {
+        RenameEntityRequest request = ctx.bodyAsClass( RenameEntityRequest.class );
+        LogicalCollection collection = Catalog.snapshot().doc().getCollection( request.getEntityId() ).orElseThrow();
+        String query = String.format( "db.\"%s\".renameCollection(\"%s\")", collection.name, request.getEntityName() );
+        QueryLanguage language = QueryLanguage.from( "mql" );
+        Result<?, ?> result = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .namespaceId( request.namespaceId )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
                         .build(), UIRequest.builder().build() ).get( 0 );
@@ -619,7 +631,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     }
 
-
     /**
      * Run any query coming from the SQL console
      */
@@ -766,35 +777,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         return results;
     }*/
-    public static void attachQueryAnalyzer( InformationManager queryAnalyzer, long executionTime, String commitStatus, int numberOfQueries ) {
-        InformationPage p1 = new InformationPage( "Transaction", "Analysis of the transaction." );
-        queryAnalyzer.addPage( p1 );
-        InformationGroup g1 = new InformationGroup( p1, "Execution time" );
-        queryAnalyzer.addGroup( g1 );
-        InformationText text1;
-        if ( executionTime < 1e4 ) {
-            text1 = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
-        } else {
-            long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
-            // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
-            DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
-            String durationText = df.format( new Date( millis ) );
-            text1 = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
-        }
-        queryAnalyzer.registerInformation( text1 );
-
-        // Number of queries
-        InformationGroup g2 = new InformationGroup( p1, "Number of queries" );
-        queryAnalyzer.addGroup( g2 );
-        InformationText text2 = new InformationText( g2, String.format( "Number of queries in this transaction: %d", numberOfQueries ) );
-        queryAnalyzer.registerInformation( text2 );
-
-        // Commit Status
-        InformationGroup g3 = new InformationGroup( p1, "Status" );
-        queryAnalyzer.addGroup( g3 );
-        InformationText text3 = new InformationText( g3, commitStatus );
-        queryAnalyzer.registerInformation( text3 );
-    }
 
 
     /**
@@ -1994,24 +1976,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      * Update the settings of an adapter
      */
     void updateAdapterSettings( final Context ctx ) {
-        //see https://stackoverflow.com/questions/16872492/gson-and-abstract-superclasses-deserialization-issue
-        JsonDeserializer<Adapter<?>> storeDeserializer = ( json, typeOfT, context ) -> {
-            JsonObject jsonObject = json.getAsJsonObject();
-            String type = jsonObject.get( "type" ).getAsString();
-            try {
-                return context.deserialize( jsonObject, Class.forName( type ) );
-            } catch ( ClassNotFoundException cnfe ) {
-                throw new JsonParseException( "Unknown element type: " + type, cnfe );
-            }
-        };
-        Gson adapterGson = new GsonBuilder().registerTypeAdapter( Adapter.class, storeDeserializer ).create();
-        Adapter<?> adapter = adapterGson.fromJson( ctx.body(), Adapter.class );
+        UpdateAdapterRequest request = ctx.bodyAsClass( UpdateAdapterRequest.class );
         try {
-            if ( adapter instanceof DataStore ) {
-                AdapterManager.getInstance().getStore( adapter.getAdapterId() ).orElseThrow().updateSettings( adapter.getCurrentSettings() );
-            } else if ( adapter instanceof DataSource ) {
-                AdapterManager.getInstance().getSource( adapter.getAdapterId() ).orElseThrow().updateSettings( adapter.getCurrentSettings() );
-            }
+            AdapterManager.getInstance().getAdapter( request.getUniqueName() ).orElseThrow().updateSettings( request.getSettings() );
             Catalog.getInstance().commit();
         } catch ( Throwable t ) {
             ctx.json( RelationalResult.builder().error( "Could not update AdapterSettings: " + t.getMessage() ).build() );
@@ -2711,20 +2678,20 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     public Transaction getTransaction() {
-        return getTransaction( false, true, this );
+        return getTransaction( true, this );
     }
 
 
-    public static Transaction getTransaction( boolean analyze, boolean useCache, TransactionManager transactionManager, long userId, long databaseId ) {
-        return getTransaction( analyze, useCache, transactionManager, userId, databaseId, ORIGIN );
+    public static Transaction getTransaction( boolean useCache, TransactionManager transactionManager, long userId, long databaseId ) {
+        return getTransaction( useCache, transactionManager, userId, databaseId, ORIGIN );
     }
 
 
-    public static Transaction getTransaction( boolean analyze, boolean useCache, TransactionManager transactionManager, long userId, long namespaceId, String origin ) {
+    public static Transaction getTransaction( boolean useCache, TransactionManager transactionManager, long userId, long namespaceId, String origin ) {
         Transaction transaction = transactionManager.startTransaction(
                 userId,
                 namespaceId,
-                analyze,
+                null,
                 origin,
                 MultimediaFlavor.FILE );
         transaction.setUseCache( useCache );
@@ -2732,8 +2699,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    public static Transaction getTransaction( boolean analyze, boolean useCache, Crud crud ) {
-        return getTransaction( analyze, useCache, crud.transactionManager, Catalog.defaultUserId, Catalog.defaultNamespaceId );
+    public static Transaction getTransaction( boolean useCache, Crud crud ) {
+        return getTransaction( useCache, crud.transactionManager, Catalog.defaultUserId, Catalog.defaultNamespaceId );
     }
 
 

@@ -59,7 +59,7 @@ public class SqlLanguageDependent {
 
         TransactionManager transactionManager = testHelper.getTransactionManager();
 
-        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Sql Test" );
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, null, "Sql Test" );
 
         DdlManager manager = DdlManager.getInstance();
 
@@ -74,7 +74,7 @@ public class SqlLanguageDependent {
     private static void removeTestSchema() {
         TransactionManager transactionManager = testHelper.getTransactionManager();
 
-        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Sql Test" );
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, null, "Sql Test" );
 
         DdlManager manager = DdlManager.getInstance();
 
@@ -102,7 +102,7 @@ public class SqlLanguageDependent {
 
         TransactionManager transactionManager = testHelper.getTransactionManager();
 
-        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Sql Test" );
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, null, "Sql Test" );
 
         DdlManager manager = DdlManager.getInstance();
 
@@ -128,7 +128,7 @@ public class SqlLanguageDependent {
 
         TransactionManager transactionManager = testHelper.getTransactionManager();
 
-        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Sql Test" );
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, null, "Sql Test" );
 
         DdlManager manager = DdlManager.getInstance();
 

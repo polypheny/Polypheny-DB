@@ -36,7 +36,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -56,7 +55,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.util.ConstraintCondition;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -66,6 +64,7 @@ import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
+import org.polypheny.db.transaction.QueryAnalyzer.TransactionAnalyzer;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.DeadlockException;
@@ -88,6 +87,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
     @Getter
+    private boolean isRolledBack = false;
+
+    @Getter
     private final LogicalUser user;
     @Getter
     private final LogicalNamespace defaultNamespace;
@@ -100,9 +102,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Getter
     private final MultimediaFlavor flavor;
 
-    @Getter
-    @Setter
-    private boolean analyze;
+    private final TransactionAnalyzer analyzer; // wraps the queryAnalyzer with this transaction context
 
     private final List<Statement> statements = new ArrayList<>();
 
@@ -142,7 +142,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             TransactionManagerImpl transactionManager,
             LogicalUser user,
             LogicalNamespace defaultNamespace,
-            boolean analyze,
+            @Nullable QueryAnalyzer queryAnalyzer,
             String origin,
             MultimediaFlavor flavor ) {
         this.id = TRANSACTION_COUNTER.getAndIncrement();
@@ -150,7 +150,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         this.transactionManager = transactionManager;
         this.user = user;
         this.defaultNamespace = defaultNamespace;
-        this.analyze = analyze;
+        this.analyzer = queryAnalyzer == null ? null : new TransactionAnalyzer( queryAnalyzer, this );
         this.origin = origin;
         this.flavor = flavor;
     }
@@ -163,8 +163,14 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
-    public InformationManager getQueryAnalyzer() {
-        return InformationManager.getInstance( xid.toString() );
+    public TransactionAnalyzer getAnalyzer() {
+        return analyzer;
+    }
+
+
+    @Override
+    public QueryAnalyzer getQueryAnalyzer() {
+        return analyzer == null ? null : analyzer.getAnalyzer();
     }
 
 
@@ -312,6 +318,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             releaseAllLocks();
             // Remove transaction
             transactionManager.removeTransaction( xid );
+            isRolledBack = true;
         }
     }
 
@@ -328,6 +335,12 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // it can lead to validator bleed when using multiple simultaneous insert for example
         // caching therefore is not possible atm
         return language.processorSupplier().get();
+    }
+
+
+    @Override
+    public boolean isAnalyze() {
+        return analyzer != null;
     }
 
 

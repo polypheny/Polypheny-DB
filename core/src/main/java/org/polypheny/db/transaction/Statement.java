@@ -21,6 +21,7 @@ import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryProcessor;
+import org.polypheny.db.transaction.QueryAnalyzer.StatementAnalyzer;
 import org.polypheny.db.util.FileInputHandle;
 
 public interface Statement {
@@ -40,6 +41,10 @@ public interface Statement {
     InformationDuration getOverviewDuration();
 
     StatementEvent getMonitoringEvent();
+
+    StatementAnalyzer getAnalyzer();
+
+    boolean isAnalyze();
 
     /**
      * Get the index of this statement in the list of statements for that transaction

@@ -24,8 +24,8 @@ import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
 public class AbstractAdapterSettingBoolean extends AbstractAdapterSetting {
 
 
-    public AbstractAdapterSettingBoolean( String name, boolean canBeNull, String subOf, boolean required, boolean modifiable, boolean defaultValue, List<DeploySetting> modes, int position ) {
-        super( AdapterSettingType.BOOLEAN, name, canBeNull, subOf, required, modifiable, modes, String.valueOf( defaultValue ), position );
+    public AbstractAdapterSettingBoolean( String name, boolean canBeNull, String subOf, boolean required, boolean modifiable, boolean defaultValue, List<DeploySetting> modes, int position, String description ) {
+        super( AdapterSettingType.BOOLEAN, name, canBeNull, subOf, required, modifiable, modes, String.valueOf( defaultValue ), position, description );
     }
 
 
@@ -38,7 +38,9 @@ public class AbstractAdapterSettingBoolean extends AbstractAdapterSetting {
                 annotation.modifiable(),
                 annotation.defaultValue(),
                 Arrays.asList( annotation.appliesTo() ),
-                annotation.position() );
+                annotation.position(),
+                annotation.description()
+        );
     }
 
 
