@@ -310,11 +310,11 @@ public class Rest {
         boolean firstTable = true;
         for ( LogicalTable catalogTable : tables ) {
             if ( firstTable ) {
-                algBuilder = algBuilder.relScan( catalogTable.getNamespaceName(), catalogTable.name );
+                algBuilder = algBuilder.relScan( catalogTable.getNamespaceName(), catalogTable.getName() );
                 firstTable = false;
             } else {
                 algBuilder = algBuilder
-                        .relScan( catalogTable.getNamespaceName(), catalogTable.name )
+                        .relScan( catalogTable.getNamespaceName(), catalogTable.getName() )
                         .join( JoinAlgType.INNER, rexBuilder.makeLiteral( true ) );
             }
         }
@@ -324,7 +324,7 @@ public class Rest {
 
     @VisibleForTesting
     List<RexNode> filters( Statement statement, AlgBuilder algBuilder, RexBuilder rexBuilder, Filters filters, HttpServletRequest req ) {
-        if ( filters.literalFilters != null ) {
+        if ( filters.getLiteralFilters() != null ) {
             if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Starting to process filters. Session ID: {}.", req.getSession().getId() );
             }
@@ -335,15 +335,15 @@ public class Rest {
             Map<String, AlgDataTypeField> filterMap = new HashMap<>();
             filtersRows.forEach( ( r ) -> filterMap.put( r.getName(), r ) );
             int index = 0;
-            for ( RequestColumn column : filters.literalFilters.keySet() ) {
-                for ( Pair<Operator, PolyValue> filterOperationPair : filters.literalFilters.get( column ) ) {
-                    AlgDataTypeField typeField = filterMap.get( column.getColumn().name );
+            for ( RequestColumn column : filters.getLiteralFilters().keySet() ) {
+                for ( Pair<Operator, PolyValue> filterOperationPair : filters.getLiteralFilters().get( column ) ) {
+                    AlgDataTypeField typeField = filterMap.get( column.getColumn().getName() );
                     RexNode inputRef = rexBuilder.makeInputRef( baseNodeForFilters, typeField.getIndex() );
-                    PolyValue param = filterOperationPair.right;
+                    PolyValue param = filterOperationPair.getRight();
                     statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( param ) );
                     RexNode rightHandSide = rexBuilder.makeDynamicParam( typeField.getType(), index );
                     index++;
-                    RexNode call = rexBuilder.makeCall( filterOperationPair.left, inputRef, rightHandSide );
+                    RexNode call = rexBuilder.makeCall( filterOperationPair.getLeft(), inputRef, rightHandSide );
                     filterNodes.add( call );
                 }
             }
@@ -364,11 +364,12 @@ public class Rest {
     }
 
 
+    @VisibleForTesting
     List<String> valuesColumnNames( List<List<Pair<RequestColumn, PolyValue>>> values ) {
         List<String> valueColumnNames = new ArrayList<>();
         List<Pair<RequestColumn, PolyValue>> rowsToInsert = values.get( 0 );
         for ( Pair<RequestColumn, PolyValue> insertValue : rowsToInsert ) {
-            valueColumnNames.add( insertValue.left.getColumn().name );
+            valueColumnNames.add( insertValue.getLeft().getColumn().getName() );
         }
 
         return valueColumnNames;
@@ -416,6 +417,7 @@ public class Rest {
     }
 
 
+    @VisibleForTesting
     AlgBuilder initialProjection( AlgBuilder algBuilder, RexBuilder rexBuilder, List<RequestColumn> columns ) {
         AlgNode baseNode = algBuilder.peek();
         List<RexNode> inputRefs = new ArrayList<>();
@@ -432,6 +434,7 @@ public class Rest {
     }
 
 
+    @VisibleForTesting
     AlgBuilder finalProjection( AlgBuilder algBuilder, RexBuilder rexBuilder, List<RequestColumn> columns ) {
         AlgNode baseNode = algBuilder.peek();
         List<RexNode> inputRefs = new ArrayList<>();
@@ -450,6 +453,7 @@ public class Rest {
     }
 
 
+    @VisibleForTesting
     AlgBuilder aggregates( AlgBuilder algBuilder, RexBuilder rexBuilder, List<RequestColumn> requestColumns, List<RequestColumn> groupings ) {
         AlgNode baseNodeForAggregation = algBuilder.peek();
 
@@ -503,6 +507,7 @@ public class Rest {
     }
 
 
+    @VisibleForTesting
     AlgBuilder sort( AlgBuilder algBuilder, RexBuilder rexBuilder, List<Pair<RequestColumn, Boolean>> sorts, int limit, int offset ) {
         if ( (sorts == null || sorts.isEmpty()) && (limit >= 0 || offset >= 0) ) {
             algBuilder = algBuilder.limit( offset, limit );
@@ -537,6 +542,7 @@ public class Rest {
     }
 
 
+    @VisibleForTesting
     String executeAndTransformPolyAlg( AlgRoot algRoot, final Statement statement, final Context ctx ) {
         RestResult restResult;
         try {
