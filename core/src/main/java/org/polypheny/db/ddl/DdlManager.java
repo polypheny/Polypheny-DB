@@ -44,6 +44,8 @@ import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
+import org.polypheny.db.schema.document.DocumentSchema;
+import org.polypheny.db.schema.document.EnforcementMode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -457,7 +459,17 @@ public abstract class DdlManager {
      */
     public abstract void createMaterializedView( String viewName, long namespaceId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore<?>> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered );
 
-    public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement );
+    /**
+     *  Creates a new document collection explicitly with or without an attached schema
+     * @param namespaceId
+     * @param name
+     * @param ifNotExists
+     * @param stores
+     * @param placementType
+     * @param statement
+     * @param json the schema
+     */
+    public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement, @Nullable String json);
 
     public abstract void createCollectionPlacement( long namespaceId, String name, List<DataStore<?>> stores, Statement statement );
 
@@ -557,6 +569,8 @@ public abstract class DdlManager {
 
     public abstract void dropGraphPlacement( long graphId, DataStore<?> dataStores, Statement statement );
 
+    //TODO: Implement this
+    public abstract void alterCollectionSchema( long nsId, String name, @Nullable DocumentSchema newSchema, EnforcementMode mode );
 
     public abstract void dropCollection( LogicalCollection catalogCollection, Statement statement );
 

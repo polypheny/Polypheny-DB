@@ -17,6 +17,8 @@
 package org.polypheny.db.ddl;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -81,6 +83,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.impl.logical.DocumentCatalog;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -108,6 +111,9 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty.Partit
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
+import org.polypheny.db.schema.document.DocumentSchema;
+import org.polypheny.db.schema.document.EnforcementMode;
+import org.polypheny.db.schema.document.SchemaOptionsResolver;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -123,6 +129,8 @@ public class DdlManagerImpl extends DdlManager {
 
     public static final String UNPARTITIONED = "part0";
     private final Catalog catalog;
+
+    private static final ObjectMapper MAPPER = new ObjectMapper(); // === NEW ===
 
 
     public DdlManagerImpl( Catalog catalog ) {
@@ -2186,9 +2194,32 @@ public class DdlManagerImpl extends DdlManager {
         store.updateNamespace( logical.getNamespaceName(), namespaceId );
     }
 
-
     @Override
-    public void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement ) {
+    public void createCollection(
+            long namespaceId, String name, boolean ifNotExists,
+            List<DataStore<?>> stores, PlacementType placementType,
+            Statement statement, @Nullable String optionsJson // opaque
+    ) {
+        // 1) resolve schema (language-agnostic)
+        DocumentSchema schema = null;
+        EnforcementMode mode = EnforcementMode.OFF;
+        if (optionsJson != null) {
+            var resolved = SchemaOptionsResolver.resolve(optionsJson);
+            schema = resolved.schema;
+            mode   = resolved.mode;
+        }
+
+        if (schema == null) {
+            // fallback to existing behavior (your createCollectionWOS(...))
+            createCollectionWOS(namespaceId, name, ifNotExists, stores, placementType, statement);
+            return;
+        }
+
+        // 2) otherwise run the schema-aware path (your createCollectionWS(...))
+        createCollectionWS(namespaceId, name, ifNotExists, stores, placementType, statement, schema, mode);
+    }
+
+    private void createCollectionWOS( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement ) {
         String adjustedName = adjustNameIfNeeded( name, namespaceId );
 
         checkModelLangCompatibility( DataModel.DOCUMENT, namespaceId );
@@ -2221,6 +2252,64 @@ public class DdlManagerImpl extends DdlManager {
 
     }
 
+    private void createCollectionWS(
+            long namespaceId, String name, boolean ifNotExists,
+            List<DataStore<?>> stores, PlacementType placementType,
+            Statement statement, DocumentSchema schema, EnforcementMode mode
+    ) {
+        String adjusted = adjustNameIfNeeded(name, namespaceId);
+        checkModelLangCompatibility(DataModel.DOCUMENT, namespaceId);
+        if (assertEntityExists(namespaceId, adjusted, ifNotExists)) return;
+
+        if (stores == null) {
+            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewEntity();
+        }
+
+        LogicalCollection logical = catalog.getLogicalDoc(namespaceId).addCollection(adjusted, EntityType.ENTITY, true);
+
+        AllocationPartition partition = catalog.getAllocDoc(namespaceId).addPartition(logical, PartitionType.NONE, "undefined");
+        for (DataStore<?> store : stores) {
+            AllocationPlacement placement = catalog.getAllocDoc(namespaceId).addPlacement(logical, store.getAdapterId());
+            AllocationCollection alloc = catalog.getAllocDoc(namespaceId).addAllocation(logical, placement.id, partition.id, store.getAdapterId());
+            store.createCollection(statement.getPrepareContext(), logical, alloc);
+        }
+
+        // persist canonical JSON
+        schema.validateOrThrow();
+        String json = toCanonicalJson(schema);
+        persistCollectionSchema(namespaceId, logical.id, json, mode.name());
+
+        catalog.updateSnapshot();
+    }
+
+    private String toCanonicalJson( DocumentSchema schema ) {
+        try {
+            return MAPPER.writeValueAsString( schema );
+        } catch ( JsonProcessingException e ) {
+            throw new IllegalArgumentException( "Failed to serialize DocumentSchema", e );
+        }
+    }
+
+    private void persistCollectionSchema( long namespaceId, long collectionId, String schemaJson, String enforcement ) {
+        // getLogicalDoc(namespaceId) returns LogicalDocumentCatalog, implemented by DocumentCatalog here.
+        var logicalDoc = catalog.getLogicalDoc( namespaceId );
+        if ( logicalDoc instanceof DocumentCatalog ) {
+            ((DocumentCatalog) logicalDoc).upsertCollectionSchema( collectionId, schemaJson, enforcement );
+        } else {
+            // Fallback: no-op or throw, depending on your tolerance.
+            throw new IllegalStateException( "LogicalDocumentCatalog is not a DocumentCatalog implementation" );
+        }
+    }
+
+    private void dropPersistedCollectionSchema( long namespaceId, long collectionId ) {
+        var logicalDoc = catalog.getLogicalDoc( namespaceId );
+        if ( logicalDoc instanceof DocumentCatalog ) {
+            ((DocumentCatalog) logicalDoc).dropCollectionSchema( collectionId );
+        }
+    }
+
+    @Override
+    public void alterCollectionSchema(long nsId, String name, @Nullable DocumentSchema newSchema, EnforcementMode mode){}
 
     private boolean assertEntityExists( long namespaceId, String name, boolean ifNotExists ) {
         Snapshot snapshot = catalog.getSnapshot();

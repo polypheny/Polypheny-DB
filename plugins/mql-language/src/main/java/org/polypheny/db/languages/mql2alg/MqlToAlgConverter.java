@@ -16,6 +16,7 @@
 
 package org.polypheny.db.languages.mql2alg;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,6 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
@@ -64,6 +66,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -71,6 +74,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.impl.logical.DocumentCatalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -93,8 +97,11 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.document.DocumentSchema;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.schema.document.DocumentUtil.UpdateOperation;
+import org.polypheny.db.schema.document.SchemaMeta;
+import org.polypheny.db.schema.document.SchemaValidator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
@@ -683,6 +690,7 @@ public class MqlToAlgConverter {
      * @return the modified AlgNode
      */
     private AlgNode convertInsert( MqlInsert query, Entity entity ) {
+        validateInsertsAgainstSchema(query, entity);
         return LogicalDocumentModify.create(
                 entity,
                 convertMultipleValues( query.getValues() ),
@@ -2057,6 +2065,59 @@ public class MqlToAlgConverter {
             }
         }
     }
+
+    private static final ObjectMapper JSON = new ObjectMapper();
+
+    private Optional<SchemaMeta> loadSchemaMeta(Entity entity) {
+        if (!(entity instanceof LogicalCollection lc)) {
+            return Optional.empty();
+        }
+        var logicalDoc = Catalog.getInstance().getLogicalDoc(lc.namespaceId);
+        if (logicalDoc instanceof DocumentCatalog docCat) {
+            return docCat.getCollectionSchema(lc.id); // Optional<SchemaMeta>
+        }
+        return Optional.empty();
+    }
+
+    private DocumentSchema parseSchemaOrThrow(String json) {
+        try {
+            return JSON.readValue(json, DocumentSchema.class);
+        } catch ( IOException e) {
+            throw new GenericRuntimeException("Stored collection schema is invalid JSON", e);
+        }
+    }
+
+    private void validateInsertsAgainstSchema(MqlInsert query, Entity entity) {
+        var metaOpt = loadSchemaMeta(entity);
+        if (metaOpt.isEmpty()) return; // no schema attached → nothing to enforce
+
+        SchemaMeta meta = metaOpt.get();
+        String enforcement = meta.enforcement == null ? "STRICT" : meta.enforcement;
+        boolean strict = enforcement.equalsIgnoreCase("STRICT");
+        boolean warn   = enforcement.equalsIgnoreCase("WARN");
+
+        DocumentSchema schema = parseSchemaOrThrow(meta.schemaJson);
+
+        // validate each literal doc in the insert
+        for (var v : query.getValues()) {
+            if (!v.isDocument()) {
+                if (strict) {
+                    throw new GenericRuntimeException("Insert value is not a document, but a schema is attached.");
+                } else if (warn) {
+                    // optional: log.warn("Non-document literal ignored under WARN mode");
+                }
+                continue;
+            }
+            if (!SchemaValidator.conformsTo(schema, v.asDocument())) {
+                if (strict) {
+                    throw new GenericRuntimeException("Inserted document does not conform to the collection schema.");
+                } else if (warn) {
+                    // optional: log.warn("Document violates schema but WARN mode is enabled");
+                }
+            }
+        }
+    }
+
 
 
 }

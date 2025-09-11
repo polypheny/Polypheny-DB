@@ -17,8 +17,10 @@
 package org.polypheny.db.languages.mql;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
+import org.bson.conversions.Bson;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -27,6 +29,7 @@ import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.nodes.ExecutableStatement;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
@@ -72,6 +75,8 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
         long namespaceId = parsedQueryContext.getNamespaceId();
 
         PlacementType placementType = PlacementType.AUTOMATIC;
+        BsonDocument test = this.options;
+        String json = test.toJson();
 
         List<DataStore<?>> dataStores = stores
                 .stream()
@@ -83,7 +88,9 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
                 true,
                 dataStores.isEmpty() ? null : dataStores,
                 placementType,
-                statement );
+                statement,
+                json); // Unfortunatly I can not use this in my createCollection implementation, can i somehow transform this in a diferent type which I can use to work with
+
     }
 
 }
