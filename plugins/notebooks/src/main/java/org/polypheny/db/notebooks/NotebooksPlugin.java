@@ -98,6 +98,11 @@ public class NotebooksPlugin extends PolyPlugin {
         Optional<DockerContainer> maybeContainer = DockerContainer.getContainerByUUID( ConfigManager.getInstance().getConfig( CONFIG_CONTAINER_KEY ).getString() );
         if ( maybeContainer.isPresent() ) {
             this.container = maybeContainer.get();
+            // just because the container exists does not mean it is running
+            if ( !testConnection() ) {
+                this.container = null;
+                return false;
+            }
             onContainerRunning();
             return true;
         }
@@ -154,6 +159,15 @@ public class NotebooksPlugin extends PolyPlugin {
                 log.info( "Jupyter Server container has been deployed" );
             } else {
                 this.container = maybeContainer.get();
+                // ensure the existing container is actually running
+                if ( !testConnection() ) {
+                    this.container.start();
+                    if ( !this.container.waitTillStarted( this::testConnection, 20000 ) ) {
+                        this.container.destroy();
+                        this.container = null;
+                        throw new GenericRuntimeException( "Failed to start Jupyter Server container" );
+                    }
+                }
             }
             onContainerRunning();
             return true;

@@ -88,18 +88,18 @@ public class JupyterKernel {
         this.name = name;
         this.clientId = UUID.randomUUID().toString();
         this.kernelLanguage = JupyterLanguageFactory.getKernelLanguage( name );
-
         this.supportsPolyCells = this.kernelLanguage != null;
-
-        String url = "ws://" + host + "/api/kernels/" + this.kernelId + "/channels?session_id=" + clientId;
-
-        this.webSocket = builder.buildAsync( URI.create( url ), new WebSocketClient() ).join();
 
         this.statusMsg = new JsonObject();
         this.statusMsg.addProperty( "msg_type", "status" );
         JsonObject content = new JsonObject();
         content.addProperty( "execution_state", "starting" );
         this.statusMsg.add( "content", content );
+
+        String url = "ws://" + host + "/api/kernels/" + this.kernelId + "/channels?session_id=" + clientId;
+
+        this.webSocket = builder.buildAsync( URI.create( url ), new WebSocketClient() ).join();
+
         sendInitCode();
     }
 
