@@ -64,7 +64,7 @@ public class WorkflowManager {
         repo = WorkflowRepoImpl.getInstance();
         sessionManager = new SessionManager( tm );
         registerEndpoints( sessionManager );
-        apiManager = new WorkflowApi( sessionManager );
+        apiManager = new WorkflowApi( sessionManager, repo );
         apiManager.registerEndpoints( HttpServer.getInstance() );
         jobManager = new JobManager( sessionManager );
 
