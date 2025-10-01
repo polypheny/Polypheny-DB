@@ -14,6 +14,7 @@ import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.languages.mql.MqlAggregate;
 import org.polypheny.db.languages.mql.MqlCount;
 import org.polypheny.db.languages.mql.MqlCreateCollection;
+import org.polypheny.db.languages.mql.MqlAlterCollection;
 import org.polypheny.db.languages.mql.MqlCreateView;
 import org.polypheny.db.languages.mql.MqlDelete;
 import org.polypheny.db.languages.mql.MqlDrop;
@@ -181,6 +182,8 @@ TOKEN : /* IDENTIFIERS */ // for nested documentValues check out Document_Splits
 < CREATE_VIEW: "createView(" >
 |
 < CREATE_COLLECTION : "createCollection(" >
+|
+  < ALTER_COLLECTION : "alterCollection(" >
 |
 < RENAME_COLLECTION : "renameCollection(" >
 |
@@ -430,6 +433,10 @@ MqlNode Db_Statement( String namespace ):
         {n = new MqlCreateCollection(getPos(), name, namespace, doc);}
         (Details(n))* (Primary(n))*
 
+    |
+            <ALTER_COLLECTION> name = Literal() [<COMMA> doc = Document() ] ")"
+            { n = new MqlAlterCollection(getPos(), name, namespace, doc); }
+            (Details(n))* (Primary(n))*
     |
         <GET_COLLECTION> name = Literal() ")"
         < DOT > n = Collection_Statement( name, namespace )

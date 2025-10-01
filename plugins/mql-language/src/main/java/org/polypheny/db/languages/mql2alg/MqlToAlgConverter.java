@@ -29,6 +29,10 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import org.polypheny.db.schema.document.EnforcementMode;
+import org.polypheny.db.util.WarningSink;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.BsonArray;
@@ -115,6 +119,7 @@ import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimestampString;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -2087,36 +2092,73 @@ public class MqlToAlgConverter {
         }
     }
 
+    private static final Logger LOG = LoggerFactory.getLogger(MqlToAlgConverter.class);
+
     private void validateInsertsAgainstSchema(MqlInsert query, Entity entity) {
         var metaOpt = loadSchemaMeta(entity);
         if (metaOpt.isEmpty()) return; // no schema attached → nothing to enforce
 
         SchemaMeta meta = metaOpt.get();
-        String enforcement = meta.enforcement == null ? "STRICT" : meta.enforcement;
-        boolean strict = enforcement.equalsIgnoreCase("STRICT");
-        boolean warn   = enforcement.equalsIgnoreCase("WARN");
+
+        // normalize mode
+        EnforcementMode mode;
+        try {
+            mode = EnforcementMode.valueOf(
+                    (meta.enforcement == null ? "OFF" : meta.enforcement).trim().toUpperCase()
+            );
+        } catch (IllegalArgumentException iae) {
+            mode = EnforcementMode.OFF;
+        }
+        if (mode == EnforcementMode.OFF) {
+            return; // nothing to enforce
+        }
 
         DocumentSchema schema = parseSchemaOrThrow(meta.schemaJson);
+
+        // GUI warning collector
+        var warnings = WarningSink.from(/* you can pass statement/context here if available */ null);
 
         // validate each literal doc in the insert
         for (var v : query.getValues()) {
             if (!v.isDocument()) {
-                if (strict) {
-                    throw new GenericRuntimeException("Insert value is not a document, but a schema is attached.");
-                } else if (warn) {
-                    // optional: log.warn("Non-document literal ignored under WARN mode");
+                switch (mode) {
+                    case STRICT -> throw new GenericRuntimeException(
+                            "Insert value is not a document, but a schema is attached.");
+                    case WARN -> {
+                        String msg = "Insert value is not a document; allowed due to WARN mode.";
+                        warnings.add(msg);
+                        LOG.warn("{} Entity='{}' Value={}", msg, entity.getName(), summarize(v));
+                    }
+                    default -> {}
                 }
                 continue;
             }
+
             if (!SchemaValidator.conformsTo(schema, v.asDocument())) {
-                if (strict) {
-                    throw new GenericRuntimeException("Inserted document does not conform to the collection schema.");
-                } else if (warn) {
-                    // optional: log.warn("Document violates schema but WARN mode is enabled");
+                switch (mode) {
+                    case STRICT -> throw new GenericRuntimeException(
+                            "Inserted document does not conform to the collection schema.");
+                    case WARN -> {
+                        String msg = "Document violates collection schema; allowed due to WARN mode.";
+                        warnings.add(msg);
+                        LOG.warn("{} Entity='{}' Doc={}", msg, entity.getName(), summarize(v.asDocument()));
+                    }
+                    default -> {}
                 }
             }
         }
     }
+
+    /** Keep logs readable and safe. */
+    private static String summarize(Object value) {
+        try {
+            String s = String.valueOf(value);
+            return s.length() > 500 ? s.substring(0, 500) + "…" : s;
+        } catch (Exception e) {
+            return "<unprintable>";
+        }
+    }
+
 
 
 

@@ -471,6 +471,12 @@ public abstract class DdlManager {
      */
     public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement, @Nullable String json);
 
+    // TODO: COMMENTS
+    public abstract void alterCollection(long namespaceId, String name, Statement statement, String optionsJson);
+
+    // TODO: COMMENTS
+    public abstract void alterCollectionSchema(long namespaceId, String name, @Nullable DocumentSchema newSchema, EnforcementMode mode);
+
     public abstract void createCollectionPlacement( long namespaceId, String name, List<DataStore<?>> stores, Statement statement );
 
     /**
@@ -568,9 +574,6 @@ public abstract class DdlManager {
     public abstract long createGraphPlacement( long graphId, List<DataStore<?>> stores, Statement statement );
 
     public abstract void dropGraphPlacement( long graphId, DataStore<?> dataStores, Statement statement );
-
-    //TODO: Implement this
-    public abstract void alterCollectionSchema( long nsId, String name, @Nullable DocumentSchema newSchema, EnforcementMode mode );
 
     public abstract void dropCollection( LogicalCollection catalogCollection, Statement statement );
 

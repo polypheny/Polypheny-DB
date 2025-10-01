@@ -28,32 +28,50 @@ import org.bson.BsonNumber;
 import org.bson.BsonString;
 import org.bson.BsonTimestamp;
 import org.bson.BsonValue;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class SchemaValidator {
 
     private SchemaValidator() {}
 
-    public static boolean conformsTo(DocumentSchema schema, BsonDocument doc) {
+    // === NEW: rich validation result ===
+    public record Violation(String path, String code, String message) {}
+    public record ValidationResult(boolean ok, List<Violation> violations) {
+        public String compactSummary(int maxItems) {
+            if (ok || violations.isEmpty()) return "ok";
+            return violations.stream()
+                    .limit(Math.max(1, maxItems))
+                    .map(v -> v.code + "@" + v.path + "(" + v.message + ")")
+                    .collect( Collectors.joining("; "))
+                    + (violations.size() > maxItems ? " … +" + (violations.size() - maxItems) + " more" : "");
+        }
+    }
+
+    /** NEW: use this for WARN logs + STRICT errors. */
+    public static ValidationResult validate(DocumentSchema schema, BsonDocument doc) {
+        List<Violation> out = new ArrayList<>();
+
         // 1) required
         Set<String> required = schema.required();
         for (String key : required) {
-            if (!doc.containsKey(key)) {
-                return false;
+            if (!doc.containsKey(key) || doc.get(key).isNull()) {
+                out.add(new Violation(key, "REQUIRED_MISSING", "Required field is missing"));
             }
         }
 
         // 2) field types (only for those specified)
-        for ( Map.Entry<String, DocumentSchema.FieldType> e : schema.types().entrySet()) {
+        for (Map.Entry<String, DocumentSchema.FieldType> e : schema.types().entrySet()) {
             String key = e.getKey();
-            DocumentSchema.FieldType expected = e.getValue();
-            if (!doc.containsKey(key)) {
-                // Not present → OK unless it's also in "required" (already checked)
-                continue;
+            if (!doc.containsKey(key) || doc.get(key).isNull()) {
+                continue; // required already handled
             }
-            if (!matchesType(doc.get(key), expected)) {
-                return false;
+            if (!matchesType(doc.get(key), e.getValue())) {
+                out.add(new Violation(key, "TYPE_MISMATCH",
+                        "Expected " + e.getValue() + " but got " + bsonTypeName(doc.get(key))));
             }
         }
 
@@ -61,37 +79,35 @@ public final class SchemaValidator {
         if (schema.additionalProperties() == DocumentSchema.AdditionalProperties.FORBID) {
             for (String k : doc.keySet()) {
                 if (!required.contains(k) && !schema.types().containsKey(k)) {
-                    return false;
+                    out.add(new Violation(k, "ADDITIONAL_PROPERTY",
+                            "Unexpected field while additionalProperties=FORBID"));
                 }
             }
         }
 
-        return true;
+        return new ValidationResult(out.isEmpty(), out);
     }
 
-    private static boolean matchesType( BsonValue v, DocumentSchema.FieldType t) {
-        switch (t) {
-            case BOOLEAN:
-                return v instanceof BsonBoolean;
-            case STRING:
-                return v instanceof BsonString;
-            case NUMBER:
-                return (v instanceof BsonNumber) || v instanceof BsonDouble || v instanceof BsonInt32 || v instanceof BsonInt64;
-            case INTEGER:
-                return v instanceof BsonInt32 || v instanceof BsonInt64; // (accept both 32/64)
-            case ARRAY:
-                return v instanceof BsonArray;
-            case OBJECT:
-                return v instanceof BsonDocument;
-            case DATE:
-                // Mongo drivers represent dates as BsonDateTime (millis since epoch)
-                return v instanceof BsonDateTime;
-            case TIMESTAMP:
-                return v instanceof BsonTimestamp;
-            case BINARY:
-                return v instanceof BsonBinary;
-            default:
-                return false;
-        }
+    /** Backward-compatible: still available for quick boolean checks. */
+    public static boolean conformsTo(DocumentSchema schema, BsonDocument doc) {
+        return validate(schema, doc).ok();
+    }
+
+    private static boolean matchesType(BsonValue v, DocumentSchema.FieldType t) {
+        return switch (t) {
+            case BOOLEAN   -> v instanceof BsonBoolean;
+            case STRING    -> v instanceof BsonString;
+            case NUMBER    -> v instanceof BsonNumber || v instanceof BsonDouble || v instanceof BsonInt32 || v instanceof BsonInt64;
+            case INTEGER   -> v instanceof BsonInt32 || v instanceof BsonInt64;
+            case ARRAY     -> v instanceof BsonArray;
+            case OBJECT    -> v instanceof BsonDocument;
+            case DATE      -> v instanceof BsonDateTime;   // Mongo dates as millis
+            case TIMESTAMP -> v instanceof BsonTimestamp;
+            case BINARY    -> v instanceof BsonBinary;
+        };
+    }
+
+    private static String bsonTypeName(BsonValue v) {
+        return v == null ? "NULL" : v.getBsonType().name();
     }
 }
