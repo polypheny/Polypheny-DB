@@ -309,7 +309,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                 }
             }
         } catch ( SQLException | ConnectionHandlerException e ) {
-            throw new GenericRuntimeException( "Exception while collecting schema information!" + e );
+            throw new GenericRuntimeException( "Exception while collecting schema information!", e );
         }
         return map;
     }
