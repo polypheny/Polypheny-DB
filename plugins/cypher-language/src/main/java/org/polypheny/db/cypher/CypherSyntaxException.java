@@ -19,10 +19,10 @@ package org.polypheny.db.cypher;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.parser.ParseException;
 
-public class CypherSyntaxException extends RuntimeException {
+public class CypherSyntaxException extends GenericRuntimeException {
 
     public CypherSyntaxException( ParseException e, int beginOffset, int beginLine, int beginColumn ) {
-        throw new GenericRuntimeException( e.getMessage() );
+        super( e.getMessage() );
     }
 
 

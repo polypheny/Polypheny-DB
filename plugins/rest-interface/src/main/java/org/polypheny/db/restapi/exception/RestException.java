@@ -18,16 +18,18 @@ package org.polypheny.db.restapi.exception;
 
 
 import lombok.Getter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.restapi.RestErrorCode;
 
 
 @Getter
-public class RestException extends RuntimeException {
+public class RestException extends GenericRuntimeException {
 
     private final RestErrorCode errorCode;
 
 
     public RestException( RestErrorCode errorCode ) {
+        super( "Rest Exception: ", errorCode.name );
         this.errorCode = errorCode;
     }
 

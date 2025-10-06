@@ -45,6 +45,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntFunction;
+import net.bytebuddy.description.type.TypeList.Generic;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.BitSets;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Permutation;
@@ -1060,7 +1062,7 @@ public abstract class Mappings {
     /**
      * Thrown when a mapping is expected to return one element but returns none.
      */
-    public static class NoElementException extends RuntimeException {
+    public static class NoElementException extends GenericRuntimeException {
 
         /**
          * Creates a NoElementException.
