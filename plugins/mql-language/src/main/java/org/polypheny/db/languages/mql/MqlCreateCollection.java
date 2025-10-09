@@ -30,6 +30,8 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.BsonUtil;
 
 public class MqlCreateCollection extends MqlNode implements ExecutableStatement {
 
@@ -71,9 +73,13 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
         long namespaceId = parsedQueryContext.getNamespaceId();
 
         PlacementType placementType = PlacementType.AUTOMATIC;
-
-        BsonDocument raw = this.options != null ? this.options : new BsonDocument();
-        String json = raw.toJson();
+        PolyValue test = null;
+        if(this.options != null){
+            BsonDocument raw = this.options.toBsonDocument();
+            test = BsonUtil.toPolyValue( raw );
+        }
+        //BsonDocument raw = this.options != null ? this.options : new BsonDocument();
+        //String json = raw.toJson();
 
         List<DataStore<?>> dataStores = stores
                 .stream()
@@ -82,11 +88,11 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
         DdlManager.getInstance().createCollection(
                 namespaceId,
                 name,
-                true,
+                false,
                 dataStores.isEmpty() ? null : dataStores,
                 placementType,
                 statement,
-                json); // Unfortunatly I can not use this in my createCollection implementation, can i somehow transform this in a diferent type which I can use to work with
+                test);
 
     }
 

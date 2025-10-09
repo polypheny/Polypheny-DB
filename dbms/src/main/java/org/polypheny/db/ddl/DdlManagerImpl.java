@@ -18,7 +18,9 @@ package org.polypheny.db.ddl;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -113,9 +115,12 @@ import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.document.DocumentSchema;
 import org.polypheny.db.schema.document.EnforcementMode;
+import org.polypheny.db.schema.document.SchemaAlterPreflightReport;
 import org.polypheny.db.schema.document.SchemaCompatibility;
 import org.polypheny.db.schema.document.SchemaMeta;
 import org.polypheny.db.schema.document.SchemaOptionsResolver;
+import org.polypheny.db.schema.document.SchemaValidator;
+import org.polypheny.db.schema.document.SchemaAlterPreflight;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -2196,39 +2201,45 @@ public class DdlManagerImpl extends DdlManager {
         store.updateNamespace( logical.getNamespaceName(), namespaceId );
     }
 
+
     @Override
     public void createCollection(
             long namespaceId, String name, boolean ifNotExists,
             List<DataStore<?>> stores, PlacementType placementType,
-            Statement statement, @Nullable String optionsJson // opaque
+            Statement statement, @Nullable PolyValue polyValue // opaque
     ) {
+
+        // Normalize + validate context once
+        String adjusted = adjustNameIfNeeded(name, namespaceId);
+        checkModelLangCompatibility(DataModel.DOCUMENT, namespaceId);
+
+        // Fail fast (or early-return if IF NOT EXISTS)
+        if (assertEntityExists(namespaceId, adjusted, ifNotExists)) {
+            return;
+        }
+
+
         // 1) resolve schema
         DocumentSchema schema = null;
         EnforcementMode mode = EnforcementMode.OFF;
-        if (optionsJson != null) {
-            var resolved = SchemaOptionsResolver.resolve(optionsJson);
+        if ( polyValue!= null) {
+            var resolved = SchemaOptionsResolver.resolve( polyValue );
             schema = resolved.schema;
-            mode   = resolved.mode;
+            mode = resolved.mode;
         }
 
-        if (schema == null) {
+        if ( schema == null ) {
             // fallback to existing behavior
-            createCollectionWOS(namespaceId, name, ifNotExists, stores, placementType, statement);
+            createCollectionWOS( namespaceId, name, ifNotExists, stores, statement, adjusted );
             return;
         }
 
         // 2) otherwise run the schema-aware path
-        createCollectionWS(namespaceId, name, ifNotExists, stores, placementType, statement, schema, mode);
+        createCollectionWS( namespaceId, name, ifNotExists, stores, statement, schema, mode, adjusted );
     }
 
-    private void createCollectionWOS( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement ) {
-        String adjustedName = adjustNameIfNeeded( name, namespaceId );
 
-        checkModelLangCompatibility( DataModel.DOCUMENT, namespaceId );
-
-        if ( assertEntityExists( namespaceId, adjustedName, ifNotExists ) ) {
-            return;
-        }
+    private void createCollectionWOS( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, Statement statement, String adjustedName ) {
 
         if ( stores == null ) {
             // Ask router on which storeId(s) the table should be placed
@@ -2254,32 +2265,30 @@ public class DdlManagerImpl extends DdlManager {
 
     }
 
+
     private void createCollectionWS(
             long namespaceId, String name, boolean ifNotExists,
-            List<DataStore<?>> stores, PlacementType placementType,
-            Statement statement, DocumentSchema schema, EnforcementMode mode
+            List<DataStore<?>> stores,
+            Statement statement, DocumentSchema schema, EnforcementMode mode, String adjusted
     ) {
-        String adjusted = adjustNameIfNeeded(name, namespaceId);
-        checkModelLangCompatibility(DataModel.DOCUMENT, namespaceId);
-        if (assertEntityExists(namespaceId, adjusted, ifNotExists)) return;
 
-        if (stores == null) {
+        if ( stores == null ) {
             stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewEntity();
         }
 
-        LogicalCollection logical = catalog.getLogicalDoc(namespaceId).addCollection(adjusted, EntityType.ENTITY, true);
+        LogicalCollection logical = catalog.getLogicalDoc( namespaceId ).addCollection( adjusted, EntityType.ENTITY, true );
 
-        AllocationPartition partition = catalog.getAllocDoc(namespaceId).addPartition(logical, PartitionType.NONE, "undefined");
-        for (DataStore<?> store : stores) {
-            AllocationPlacement placement = catalog.getAllocDoc(namespaceId).addPlacement(logical, store.getAdapterId());
-            AllocationCollection alloc = catalog.getAllocDoc(namespaceId).addAllocation(logical, placement.id, partition.id, store.getAdapterId());
-            store.createCollection(statement.getPrepareContext(), logical, alloc);
+        AllocationPartition partition = catalog.getAllocDoc( namespaceId ).addPartition( logical, PartitionType.NONE, "undefined" );
+        for ( DataStore<?> store : stores ) {
+            AllocationPlacement placement = catalog.getAllocDoc( namespaceId ).addPlacement( logical, store.getAdapterId() );
+            AllocationCollection alloc = catalog.getAllocDoc( namespaceId ).addAllocation( logical, placement.id, partition.id, store.getAdapterId() );
+            store.createCollection( statement.getPrepareContext(), logical, alloc );
         }
 
         // persist canonical JSON
         schema.validateOrThrow();
-        String json = toCanonicalJson(schema);
-        persistCollectionSchema(namespaceId, logical.id, json, mode.name());
+        String json = toCanonicalJson( schema );
+        persistCollectionSchema( namespaceId, logical.id, json, (mode == null ? EnforcementMode.OFF : mode).name() );
 
         catalog.updateSnapshot();
     }
@@ -2292,16 +2301,50 @@ public class DdlManagerImpl extends DdlManager {
 //        }
 //    }
 
-    private void persistCollectionSchema( long namespaceId, long collectionId, String schemaJson, String enforcement ) {
-        // getLogicalDoc(namespaceId) returns LogicalDocumentCatalog, implemented by DocumentCatalog here.
-        var logicalDoc = catalog.getLogicalDoc( namespaceId );
-        if ( logicalDoc instanceof DocumentCatalog ) {
-            ((DocumentCatalog) logicalDoc).upsertCollectionSchema( collectionId, schemaJson, enforcement );
-        } else {
 
-            throw new IllegalStateException( "LogicalDocumentCatalog is not a DocumentCatalog implementation" );
+    private void persistCollectionSchema(long namespaceId, long collectionId, String schemaJson, String enforcement) {
+        final JsonNode normalized;
+        try {
+            // Parse what we got (may be an object or a JSON string that contains JSON)
+            JsonNode n = MAPPER.readTree(schemaJson);
+            if (n.isTextual()) {
+                n = MAPPER.readTree(n.asText());
+            }
+            if (!n.isObject()) {
+                throw new IllegalArgumentException("Schema JSON must be a JSON object");
+            }
+
+            // ---- CANONICALIZE: always store {"root": {...}} ----
+            // If it's already a DocumentSchema JSON (has "root"), keep it.
+            // If it's a bare docSchema object, wrap it.
+            if (!n.has("root")) {
+                ObjectNode wrapper = MAPPER.createObjectNode();
+                wrapper.set("root", n);
+                n = wrapper;
+            }
+
+            normalized = n;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to persist schema JSON (not valid JSON object).", e);
+        }
+
+        final String compact;
+        try {
+            compact = MAPPER.writeValueAsString(normalized); // compact canonical JSON
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to compact schema JSON", e);
+        }
+
+        var logicalDoc = catalog.getLogicalDoc(namespaceId);
+        if (logicalDoc instanceof DocumentCatalog) {
+            ((DocumentCatalog) logicalDoc).upsertCollectionSchema(collectionId, compact, enforcement);
+        } else {
+            throw new IllegalStateException("LogicalDocumentCatalog is not a DocumentCatalog implementation");
         }
     }
+
+
+
 
     private void dropPersistedCollectionSchema( long namespaceId, long collectionId ) {
         var logicalDoc = catalog.getLogicalDoc( namespaceId );
@@ -2310,101 +2353,125 @@ public class DdlManagerImpl extends DdlManager {
         }
     }
 
-    @Override
-    public void alterCollection(long namespaceId, String name, Statement statement, String optionsJson) {
-        SchemaOptionsResolver.Resolved r = SchemaOptionsResolver.resolveAlter(optionsJson);
-        alterCollectionSchemaInternal(namespaceId, name, r, statement);
-        safeResetCaches(statement);
-    }
 
     @Override
-    public void alterCollectionSchema(long nsId, String name, @Nullable DocumentSchema newSchema, EnforcementMode mode) {
-        // keep backward-compat signature: treat as REPLACE without migration hints
+    public void alterCollection( long namespaceId, String name, Statement statement, PolyValue polyValue ) {
+        SchemaOptionsResolver.Resolved r = SchemaOptionsResolver.resolveAlter( polyValue );
+        alterCollectionSchemaInternal( namespaceId, name, r, statement );
+        safeResetCaches( statement );
+    }
+
+
+    @Override
+    public void alterCollectionSchema( long nsId, String name, @Nullable DocumentSchema newSchema, EnforcementMode mode ) {
+        // Back-compat API: treat as REPLACE without migration hints
         SchemaOptionsResolver.Resolved r = new SchemaOptionsResolver.Resolved(
                 newSchema, mode, SchemaOptionsResolver.AlterMode.REPLACE,
-                List.of(), Map.of(), Map.of(), false, false);
-        alterCollectionSchemaInternal(nsId, name, r, null);
+                List.of(), Map.of(), Map.of(), false, false );
+        alterCollectionSchemaInternal( nsId, name, r, null );
     }
 
-    private void alterCollectionSchemaInternal(long nsId, String name, SchemaOptionsResolver.Resolved r, @Nullable Statement statement) {
-        String adjusted = adjustNameIfNeeded(name, nsId);
-        checkModelLangCompatibility(DataModel.DOCUMENT, nsId);
+
+    private void alterCollectionSchemaInternal( long nsId, String name, SchemaOptionsResolver.Resolved r, @Nullable Statement statement ) {
+        String adjusted = adjustNameIfNeeded( name, nsId );
+        checkModelLangCompatibility( DataModel.DOCUMENT, nsId );
 
         var snapshot = catalog.getSnapshot();
         LogicalCollection coll = snapshot.doc()
-                .getCollection(nsId, adjusted)
-                .orElseThrow(() -> new GenericRuntimeException("Collection %s does not exist.", adjusted));
+                .getCollection( nsId, adjusted )
+                .orElseThrow( () -> new GenericRuntimeException( "Collection %s does not exist.", adjusted ) );
 
-        Optional<SchemaMeta> metaOpt = readCollectionSchema(nsId, coll.id);
-        DocumentSchema current = metaOpt.map(m -> fromCanonicalJson(m.schemaJson)).orElse(null);
-        String currentEnf = metaOpt.map(m -> m.enforcement).orElse(EnforcementMode.OFF.name());
+        Optional<SchemaMeta> metaOpt = readCollectionSchema( nsId, coll.id );
+        DocumentSchema current = metaOpt.map( m -> fromCanonicalJson( m.schemaJson ) ).orElse( null );
+        String currentEnf = metaOpt.map( m -> m.enforcement ).orElse( EnforcementMode.OFF.name() );
 
-        // 1) enforcement-only flip (no schema provided)
-        if (r.schema == null) {
-            if (r.mode == null) {
-                // Nothing to change
-                return;
+        // 1) enforcement-only change (no schema provided)
+        if ( r.schema == null ) {
+            if ( r.mode == null ) {
+                return; // nothing to change
             }
-            if (metaOpt.isEmpty() && r.mode != EnforcementMode.OFF) {
-                // no schema to enforce; accept OFF only
-                throw new GenericRuntimeException("Cannot set validationAction without a persisted schema. Create a schema first.");
+            if ( metaOpt.isEmpty() && r.mode != EnforcementMode.OFF ) {
+                throw new GenericRuntimeException( "Cannot set validationAction without a persisted schema. Create a schema first." );
             }
-            if (metaOpt.isPresent()) {
-                persistCollectionSchema(nsId, coll.id, metaOpt.get().schemaJson, r.mode.name());
+            if ( metaOpt.isPresent() ) {
+                persistCollectionSchema( nsId, coll.id, metaOpt.get().schemaJson, r.mode.name() );
                 catalog.updateSnapshot();
             }
-            // migration hints present? just acknowledge as TODOs
-            handleMigrationHints(nsId, coll, r);
             return;
         }
 
         // 2) schema present: compute final schema (REPLACE or PATCH)
         DocumentSchema finalSchema;
-        if (r.alterMode == SchemaOptionsResolver.AlterMode.PATCH && current != null) {
-            finalSchema = mergePatch(current, r.schema);
+        if ( r.alterMode == SchemaOptionsResolver.AlterMode.PATCH && current != null ) {
+            finalSchema = mergePatch( current, r.schema );
         } else {
-            finalSchema = r.schema; // REPLACE or no current
+            finalSchema = r.schema;
         }
 
-        // validate & persist (we always accept, no compatibility checks)
+        // 2.1) validate schema object itself
         finalSchema.validateOrThrow();
+
+        // 2.2) compatibility fast gate (no-scan allow for widenings, FORBID->ALLOW, etc.)
+        boolean noScanSafe = (current == null) || SchemaCompatibility.isCompatible( current, finalSchema );
+
+        // 2.3) if tightening, run preflight across existing docs; reject on any violation
+        if ( !noScanSafe ) {
+            SchemaAlterPreflightReport rep =
+                    SchemaAlterPreflight.run(catalog, coll, finalSchema, statement);
+            if ( !rep.ok ) {
+                String summary = rep.compactSummary(5);
+                throw new GenericRuntimeException(
+                        "ALTER SCHEMA would invalidate %d/%d documents; examples: %s",
+                        rep.failing, rep.scanned, summary );
+            }
+        }
+
+        // 2.4) persist new schema + enforcement
         String enforcement = r.mode != null ? r.mode.name() : currentEnf;
-        persistCollectionSchema(nsId, coll.id, toCanonicalJson(finalSchema), enforcement);
+        persistCollectionSchema( nsId, coll.id, toCanonicalJson( finalSchema ), enforcement );
         catalog.updateSnapshot();
-
-        // 3) acknowledge migration hints (no scans/changes; just TODOs)
-        handleMigrationHints(nsId, coll, r);
     }
 
-    private DocumentSchema mergePatch(DocumentSchema current, DocumentSchema patch) {
-        // Semantics:
-        // - If 'required' is present in patch.short-form -> override required to exactly those keys.
-        //   If you prefer additive: switch to union below.
-        Set<String> required = patch.required().isEmpty()
-                ? new HashSet<>(current.required())
-                : new HashSet<>(patch.required());
+    // inside your DDL manager class:
 
-        // - Types: update/insert types for keys present in patch; keep others
-        Map<String, DocumentSchema.FieldType> types = new HashMap<>(current.types());
-        types.putAll(patch.types());
 
-        // - additionalProperties: if patch specifies, use it; else keep current
-        DocumentSchema.AdditionalProperties ap = patch.additionalProperties() != null
-                ? patch.additionalProperties()
-                : current.additionalProperties();
-
-        return new DocumentSchema(required, types, ap);
+    private DocumentSchema mergePatch( DocumentSchema current, DocumentSchema patch ) {
+        return new DocumentSchema( mergeObject( current.root(), patch.root() ) );
     }
+
+
+    private DocumentSchema.ObjectNode mergeObject( DocumentSchema.ObjectNode cur, DocumentSchema.ObjectNode p ) {
+        if ( p == null ) {
+            return cur;
+        }
+
+        // properties: deep-merge by key
+        Map<String, DocumentSchema.Node> props = new java.util.LinkedHashMap<>( cur.properties );
+        for ( var e : p.properties.entrySet() ) {
+            String k = e.getKey();
+            DocumentSchema.Node pn = e.getValue();
+            DocumentSchema.Node cn = cur.properties.get( k );
+            if ( pn instanceof DocumentSchema.ObjectNode && cn instanceof DocumentSchema.ObjectNode ) {
+                props.put( k, mergeObject( (DocumentSchema.ObjectNode) cn, (DocumentSchema.ObjectNode) pn ) );
+            } else {
+                props.put( k, pn );
+            }
+        }
+
+        // additionalProperties: keep current unless patch specifies
+        DocumentSchema.AdditionalProperties ap = p.additionalProperties != null ? p.additionalProperties : cur.additionalProperties;
+
+        return new DocumentSchema.ObjectNode(props, ap);
+    }
+
 
     private boolean assertEntityExists( long namespaceId, String name, boolean ifNotExists ) {
         Snapshot snapshot = catalog.getSnapshot();
         LogicalNamespace namespace = snapshot.getNamespace( namespaceId ).orElseThrow();
-        // Check if there is already an entity with this name
         if ( (namespace.dataModel == DataModel.RELATIONAL && snapshot.rel().getTable( namespaceId, name ).isPresent())
                 || (namespace.dataModel == DataModel.DOCUMENT && snapshot.doc().getCollection( namespaceId, name ).isPresent())
                 || (namespace.dataModel == DataModel.GRAPH && snapshot.graph().getGraph( namespaceId ).isPresent()) ) {
             if ( ifNotExists ) {
-                // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
                 return true;
             } else {
                 throw new GenericRuntimeException( "There already exists an entity with the name %s", name );
@@ -2413,70 +2480,114 @@ public class DdlManagerImpl extends DdlManager {
         return false;
     }
 
-    // TODO: implement functionalites of the functions!!
-    private void handleMigrationHints(long nsId, LogicalCollection coll, SchemaOptionsResolver.Resolved r) {
-        if (r.dryRun) {
-            // Intentionally no scans here; just log the intention.
-//            LOG.info("[SCHEMA][ALTER][DRYRUN] ns={} coll={} renames={} defaults={} coercions={} pruneExtras={}",
-//                    nsId, coll.name, r.renames, r.defaults.keySet(), r.coercions.keySet(), r.pruneExtras);
-            // TODO: implement preflight/scan & return a report to caller
-        }
 
-        if (!r.renames.isEmpty()) {
-            scheduleFieldRenames(nsId, coll, r.renames); // TODO
-        }
-        if (!r.defaults.isEmpty()) {
-            scheduleDefaultBackfill(nsId, coll, r.defaults); // TODO
-        }
-        if (!r.coercions.isEmpty()) {
-            scheduleCoercions(nsId, coll, r.coercions); // TODO
-        }
-        if (r.pruneExtras) {
-            schedulePruneExtras(nsId, coll); // TODO
-        }
-    }
-
-    private void scheduleFieldRenames(long nsId, LogicalCollection coll, List<SchemaOptionsResolver.Rename> renames) {
-        //LOG.info("[SCHEMA][ALTER][TODO] scheduleFieldRenames ns={} coll={} renames={}", nsId, coll.name, renames);
-        // TODO: implement dual-write + background rename migration
-    }
-
-    private void scheduleDefaultBackfill(long nsId, LogicalCollection coll, Map<String, com.fasterxml.jackson.databind.JsonNode> defaults) {
-        //LOG.info("[SCHEMA][ALTER][TODO] scheduleDefaultBackfill ns={} coll={} defaults={}", nsId, coll.name, defaults.keySet());
-        // TODO: implement 2-phase default injection (write-path + backfill)
-    }
-
-    private void scheduleCoercions(long nsId, LogicalCollection coll, Map<String, SchemaOptionsResolver.Coercion> coercions) {
-        //LOG.info("[SCHEMA][ALTER][TODO] scheduleCoercions ns={} coll={} coercions={}", nsId, coll.name, coercions);
-        // TODO: implement type coercion migration
-    }
-
-    private void schedulePruneExtras(long nsId, LogicalCollection coll) {
-        //LOG.info("[SCHEMA][ALTER][TODO] schedulePruneExtras ns={} coll={}", nsId, coll.name);
-        // TODO: scan and drop extra top-level fields not in schema
-    }
-
-    private Optional<SchemaMeta> readCollectionSchema(long namespaceId, long collectionId) {
-        var logicalDoc = catalog.getLogicalDoc(namespaceId);
-        if (logicalDoc instanceof DocumentCatalog dc) {
-            return dc.getCollectionSchema(collectionId); // ensure this exists
+    private Optional<SchemaMeta> readCollectionSchema( long namespaceId, long collectionId ) {
+        var logicalDoc = catalog.getLogicalDoc( namespaceId );
+        if ( logicalDoc instanceof DocumentCatalog dc ) {
+            return dc.getCollectionSchema( collectionId ); // ensure this exists
         }
         return Optional.empty();
     }
 
-    private DocumentSchema fromCanonicalJson(String json) {
-        try { return MAPPER.readValue(json, DocumentSchema.class); }
-        catch (Exception e) { throw new IllegalStateException("Failed to deserialize persisted DocumentSchema", e); }
+
+    private DocumentSchema fromCanonicalJson(String raw) {
+        if (raw == null || raw.isBlank()) {
+            throw new IllegalStateException("Stored collection schema is invalid JSON: empty");
+        }
+        final String original = raw.trim();
+
+        try {
+            JsonNode node = tryParseAny(original);
+            if (node.has("root")) {
+                return MAPPER.treeToValue(node, DocumentSchema.class);
+            } else {
+                // Bare object case; map to ObjectNode and wrap
+                DocumentSchema.ObjectNode root = MAPPER.treeToValue(node, DocumentSchema.ObjectNode.class);
+                return new DocumentSchema(root);
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Stored collection schema is invalid JSON: " + summarize(original), e);
+        }
     }
+
+
+    /**
+     * Parses JSON that might be:
+     *  - a normal object
+     *  - a JSON string that contains JSON (possibly multiple nesting levels)
+     * Tries a few safe unwrapping rounds.
+     */
+    private JsonNode tryParseAny(String text) throws Exception {
+        JsonNode n = null;
+        String cur = text;
+
+        // Try as-is
+        try {
+            n = MAPPER.readTree(cur);
+        } catch (Exception ignored) {}
+
+        // If it's a JSON string that itself contains JSON, unwrap up to 3 times
+        for (int i = 0; i < 3 && (n == null || n.isTextual()); i++) {
+            if (n == null) {
+                // previous read failed; try to read a JSON string to get inner text
+                // Example: "\"{\\\"root\\\":{...}}\""  (a JSON string literal)
+                try {
+                    String inner = MAPPER.readValue(cur, String.class);
+                    n = MAPPER.readTree(inner);
+                    cur = inner;
+                    continue;
+                } catch (Exception ignored) {}
+            } else if (n.isTextual()) {
+                String inner = n.asText();
+                try {
+                    n = MAPPER.readTree(inner);
+                    cur = inner;
+                    continue;
+                } catch (Exception ignored) {}
+            }
+            break;
+        }
+
+        if (n == null) {
+            // Last-ditch: if it looks like a quoted JSON object, strip outer quotes naively once.
+            if (cur.length() >= 2 && cur.charAt(0) == '"' && cur.charAt(cur.length() - 1) == '"') {
+                String stripped = cur.substring(1, cur.length() - 1);
+                n = MAPPER.readTree(stripped);
+            }
+        }
+
+        if (n == null || !n.isObject()) {
+            throw new IllegalArgumentException("Not a parseable JSON object");
+        }
+        return n;
+    }
+
+    private static String summarize(String s) {
+        int max = Math.min(160, s.length());
+        return s.substring(0, max).replace('\n', ' ') + (s.length() > max ? "…" : "");
+    }
+
+
+
 
     private String toCanonicalJson(DocumentSchema schema) {
-        try { return MAPPER.writeValueAsString(schema); }
-        catch (JsonProcessingException e) { throw new IllegalArgumentException("Failed to serialize DocumentSchema", e); }
+        try {
+            JsonNode n = MAPPER.valueToTree(schema); // {"root": {...}}
+            return MAPPER.writeValueAsString(n);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to serialize DocumentSchema", e);
+        }
     }
 
-    private static void safeResetCaches(Statement statement) {
-        try { statement.getQueryProcessor().resetCaches(); } catch (Throwable ignore) {}
+
+
+    private static void safeResetCaches( Statement statement ) {
+        try {
+            statement.getQueryProcessor().resetCaches();
+        } catch ( Throwable ignore ) {
+        }
     }
+
 
     @Override
     public void dropCollection( LogicalCollection collection, Statement statement ) {
@@ -2492,6 +2603,10 @@ public class DdlManagerImpl extends DdlManager {
             catalog.getAllocDoc( allocation.namespaceId ).removePlacement( allocation.placementId );
         }
         catalog.getAllocDoc( collection.namespaceId ).removePartition( snapshot.alloc().getPartitionsFromLogical( collection.id ).get( 0 ).id );
+
+        // also remove persisted schema
+        dropPersistedCollectionSchema( collection.namespaceId, collection.id );
+
         catalog.getLogicalDoc( collection.namespaceId ).deleteCollection( collection.id );
 
         catalog.updateSnapshot();

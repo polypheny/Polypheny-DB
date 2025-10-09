@@ -1,44 +1,18 @@
-/*
- * Copyright 2019-2025 The Polypheny Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.polypheny.db.schema.document;
 
-import org.bson.BsonArray;
-import org.bson.BsonBinary;
-import org.bson.BsonBoolean;
-import org.bson.BsonDateTime;
-import org.bson.BsonDocument;
-import org.bson.BsonDouble;
-import org.bson.BsonInt32;
-import org.bson.BsonInt64;
-import org.bson.BsonNumber;
-import org.bson.BsonString;
-import org.bson.BsonTimestamp;
-import org.bson.BsonValue;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+import org.bson.*;
+import org.polypheny.db.schema.document.DocumentSchema.ArrayNode;
+import org.polypheny.db.schema.document.DocumentSchema.Node;
+import org.polypheny.db.schema.document.DocumentSchema.ObjectNode;
+import org.polypheny.db.schema.document.DocumentSchema.ScalarNode;
+import org.polypheny.db.type.PolyType;
 
 public final class SchemaValidator {
 
     private SchemaValidator() {}
 
-    // === NEW: rich validation result ===
     public record Violation(String path, String code, String message) {}
     public record ValidationResult(boolean ok, List<Violation> violations) {
         public String compactSummary(int maxItems) {
@@ -46,68 +20,186 @@ public final class SchemaValidator {
             return violations.stream()
                     .limit(Math.max(1, maxItems))
                     .map(v -> v.code + "@" + v.path + "(" + v.message + ")")
-                    .collect( Collectors.joining("; "))
+                    .collect(Collectors.joining("; "))
                     + (violations.size() > maxItems ? " … +" + (violations.size() - maxItems) + " more" : "");
         }
     }
 
-    /** NEW: use this for WARN logs + STRICT errors. */
     public static ValidationResult validate(DocumentSchema schema, BsonDocument doc) {
         List<Violation> out = new ArrayList<>();
-
-        // 1) required
-        Set<String> required = schema.required();
-        for (String key : required) {
-            if (!doc.containsKey(key) || doc.get(key).isNull()) {
-                out.add(new Violation(key, "REQUIRED_MISSING", "Required field is missing"));
-            }
-        }
-
-        // 2) field types (only for those specified)
-        for (Map.Entry<String, DocumentSchema.FieldType> e : schema.types().entrySet()) {
-            String key = e.getKey();
-            if (!doc.containsKey(key) || doc.get(key).isNull()) {
-                continue; // required already handled
-            }
-            if (!matchesType(doc.get(key), e.getValue())) {
-                out.add(new Violation(key, "TYPE_MISMATCH",
-                        "Expected " + e.getValue() + " but got " + bsonTypeName(doc.get(key))));
-            }
-        }
-
-        // 3) additionalProperties
-        if (schema.additionalProperties() == DocumentSchema.AdditionalProperties.FORBID) {
-            for (String k : doc.keySet()) {
-                if (!required.contains(k) && !schema.types().containsKey(k)) {
-                    out.add(new Violation(k, "ADDITIONAL_PROPERTY",
-                            "Unexpected field while additionalProperties=FORBID"));
-                }
-            }
-        }
-
+        validateObject("$", schema.root(), doc, out);
         return new ValidationResult(out.isEmpty(), out);
     }
 
-    /** Backward-compatible: still available for quick boolean checks. */
     public static boolean conformsTo(DocumentSchema schema, BsonDocument doc) {
         return validate(schema, doc).ok();
     }
 
-    private static boolean matchesType(BsonValue v, DocumentSchema.FieldType t) {
-        return switch (t) {
-            case BOOLEAN   -> v instanceof BsonBoolean;
-            case STRING    -> v instanceof BsonString;
-            case NUMBER    -> v instanceof BsonNumber || v instanceof BsonDouble || v instanceof BsonInt32 || v instanceof BsonInt64;
-            case INTEGER   -> v instanceof BsonInt32 || v instanceof BsonInt64;
-            case ARRAY     -> v instanceof BsonArray;
-            case OBJECT    -> v instanceof BsonDocument;
-            case DATE      -> v instanceof BsonDateTime;   // Mongo dates as millis
-            case TIMESTAMP -> v instanceof BsonTimestamp;
-            case BINARY    -> v instanceof BsonBinary;
-        };
+    // ----------------------------------------------------------------------
+
+    private static void validateObject(String path, ObjectNode schema, BsonDocument doc, List<Violation> out) {
+        if (doc == null) {
+            out.add(v(path, "TYPE", "Expected object but was null"));
+            return;
+        }
+
+        // Every declared property is required by dialect
+        for (Map.Entry<String, Node> e : schema.properties.entrySet()) {
+            String key = e.getKey();
+            Node child = e.getValue();
+            String p = pathDot(path, key);
+
+            if (!doc.containsKey(key) || doc.get(key).isNull()) {
+                out.add(v(p, "REQUIRED_MISSING", "Required field is missing"));
+                continue;
+            }
+
+            BsonValue bv = doc.get(key);
+
+            if (child instanceof ObjectNode) {
+                if (!(bv instanceof BsonDocument)) {
+                    out.add(v(p, "TYPE", "Expected object, got " + bsonTypeName(bv)));
+                } else {
+                    validateObject(p, (ObjectNode) child, (BsonDocument) bv, out);
+                }
+            } else if (child instanceof ArrayNode) {
+                if (!(bv instanceof BsonArray)) {
+                    out.add(v(p, "TYPE", "Expected array, got " + bsonTypeName(bv)));
+                } else {
+                    validateArray(p, (ArrayNode) child, (BsonArray) bv, out);
+                }
+            } else if (child instanceof ScalarNode) {
+                PolyType t = ((ScalarNode) child).type;
+                if (!matchesType(bv, t)) {
+                    out.add(v(p, "TYPE_MISMATCH", "Expected " + t + " but got " + bsonTypeName(bv)));
+                }
+            } else {
+                out.add(v(p, "INTERNAL", "Unknown schema node"));
+            }
+        }
+
+        // additionalProperties
+        if (schema.additionalProperties == DocumentSchema.AdditionalProperties.FORBID) {
+            for (String k : doc.keySet()) {
+                if (!schema.properties.containsKey(k)) {
+                    out.add(v(pathDot(path, k), "ADDITIONAL_PROPERTY", "Unexpected field"));
+                }
+            }
+        }
+    }
+
+
+    private static void validateArray(String path, ArrayNode schema, BsonArray arr, List<Violation> out) {
+        if (schema.minItems != null && arr.size() < schema.minItems) {
+            out.add(v(path, "MIN_ITEMS", "Expected at least " + schema.minItems + " items"));
+        }
+        if (Boolean.TRUE.equals(schema.uniqueItems)) {
+            Set<String> uniq = new HashSet<>();
+            for (int i = 0; i < arr.size(); i++) {
+                String key = arr.get(i).toString();
+                if (!uniq.add(key)) {
+                    out.add(v(pathDot(path, Integer.toString(i)), "UNIQUE", "Duplicate array item"));
+                }
+            }
+        }
+
+        Node item = schema.items;
+        for (int i = 0; i < arr.size(); i++) {
+            BsonValue v = arr.get(i);
+            String ip = pathDot(path, Integer.toString(i));
+
+            if (item instanceof ObjectNode) {
+                if (!(v instanceof BsonDocument)) {
+                    out.add(v(ip, "TYPE", "Expected object, got " + bsonTypeName(v)));
+                } else {
+                    validateObject(ip, (ObjectNode) item, (BsonDocument) v, out);
+                }
+            } else if (item instanceof ArrayNode) {
+                if (!(v instanceof BsonArray)) {
+                    out.add(v(ip, "TYPE", "Expected array, got " + bsonTypeName(v)));
+                } else {
+                    validateArray(ip, (ArrayNode) item, (BsonArray) v, out);
+                }
+            } else if (item instanceof ScalarNode) {
+                PolyType t = ((ScalarNode) item).type;
+                if (!matchesType(v, t)) {
+                    out.add(v(ip, "TYPE_MISMATCH", "Expected " + t + " but got " + bsonTypeName(v)));
+                }
+            } else {
+                out.add(v(ip, "INTERNAL", "Unknown schema node"));
+            }
+        }
+    }
+
+    // ----------------------------------------------------------------------
+
+    private static Violation v(String path, String code, String msg) {
+        return new Violation(path, code, msg);
+    }
+
+    private static String pathDot(String base, String next) {
+        return base.equals("$") ? "$." + next : base + "." + next;
     }
 
     private static String bsonTypeName(BsonValue v) {
         return v == null ? "NULL" : v.getBsonType().name();
+    }
+
+    private static boolean matchesType(BsonValue v, PolyType t) {
+        if (t == PolyType.ANY) return true;
+        if (t == PolyType.NULL) return v == null || v.isNull();
+
+        switch (t) {
+            case BOOLEAN:
+                return v instanceof BsonBoolean;
+
+            // Strings
+            case CHAR:
+            case VARCHAR:
+            case TEXT:
+            case JSON:
+                return v instanceof BsonString;
+
+            // Numerics
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+                return (v instanceof BsonInt32) || (v instanceof BsonInt64);
+            case BIGINT:
+                return (v instanceof BsonInt64) || (v instanceof BsonInt32);
+            case DECIMAL:
+            case FLOAT:
+            case REAL:
+            case DOUBLE:
+                return (v instanceof BsonNumber)
+                        || (v instanceof BsonDouble)
+                        || (v instanceof BsonInt32)
+                        || (v instanceof BsonInt64);
+
+            // Collections / documents
+            case ARRAY:
+                return v instanceof BsonArray;
+            case DOCUMENT:
+            case MAP:
+                return v instanceof BsonDocument;
+
+            // Temporal
+            case DATE:
+                return v instanceof BsonDateTime;
+            case TIMESTAMP:
+                return v instanceof BsonTimestamp;
+
+            // Binary / blobs
+            case BINARY:
+            case VARBINARY:
+            case FILE:
+            case IMAGE:
+            case VIDEO:
+            case AUDIO:
+                return v instanceof BsonBinary;
+
+            default:
+                return false;
+        }
     }
 }

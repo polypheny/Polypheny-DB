@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.polypheny.db.schema.document.EnforcementMode;
 import org.polypheny.db.util.WarningSink;
 import org.slf4j.Logger;
@@ -2086,8 +2087,19 @@ public class MqlToAlgConverter {
 
     private DocumentSchema parseSchemaOrThrow(String json) {
         try {
-            return JSON.readValue(json, DocumentSchema.class);
-        } catch ( IOException e) {
+            JsonNode node = JSON.readTree(json);
+            if (node == null) throw new IOException("empty");
+
+            if (node.has("root")) {
+                return JSON.treeToValue(node, DocumentSchema.class);
+            } else if (node.isObject()) {
+                // bare object is the root
+                DocumentSchema.ObjectNode root = JSON.treeToValue(node, DocumentSchema.ObjectNode.class);
+                return new DocumentSchema(root);
+            } else {
+                throw new IOException("schema must be an object or contain a 'root' object");
+            }
+        } catch (Exception e) {
             throw new GenericRuntimeException("Stored collection schema is invalid JSON", e);
         }
     }

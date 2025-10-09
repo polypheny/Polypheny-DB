@@ -467,12 +467,12 @@ public abstract class DdlManager {
      * @param stores
      * @param placementType
      * @param statement
-     * @param json the schema
+     * @param polyVal the schema
      */
-    public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement, @Nullable String json);
+    public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement, @Nullable PolyValue polyVal);
 
     // TODO: COMMENTS
-    public abstract void alterCollection(long namespaceId, String name, Statement statement, String optionsJson);
+    public abstract void alterCollection(long namespaceId, String name, Statement statement, PolyValue polyVal);
 
     // TODO: COMMENTS
     public abstract void alterCollectionSchema(long namespaceId, String name, @Nullable DocumentSchema newSchema, EnforcementMode mode);

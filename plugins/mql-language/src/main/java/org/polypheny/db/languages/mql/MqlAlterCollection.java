@@ -26,6 +26,8 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.languages.mql.Mql.Type;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.BsonUtil;
 
 /**
  * MQL: db.alterCollection("<name>", { validator: { $jsonSchema: {...} }, validationAction: "warn|error|off" })
@@ -55,8 +57,8 @@ public class MqlAlterCollection extends MqlNode implements ExecutableStatement {
     @Override
     public void execute(Context context, Statement statement, ParsedQueryContext parsedQueryContext) {
         long namespaceId = parsedQueryContext.getNamespaceId();
-        String json = options != null ? options.toJson() : "{}";
-        DdlManager.getInstance().alterCollection(namespaceId, name, statement, json);
+        PolyValue polyValue = options != null ? BsonUtil.toPolyValue( options ) : null;
+        DdlManager.getInstance().alterCollection(namespaceId, name, statement, polyValue);
     }
 
     @Override

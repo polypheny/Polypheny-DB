@@ -3,28 +3,12 @@ package org.polypheny.db.schema.document;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 
-/**
- * Strict resolver that ONLY accepts PolyType short-form:
- *
- *   { "validator": { "$jsonSchema": {
- *        "required": { "fieldA": "VARCHAR(30)", "fieldB": "INTEGER", ... },
- *        "additionalProperties": false|true
- *     }},
- *     "validationAction": "error" | "warn" | "strict" | "off"
- *   }
- *
- * Any other shape (required array, "properties" block, bsonType, shorthand outside $jsonSchema) is rejected.
- */
 public final class SchemaOptionsResolver {
 
     private SchemaOptionsResolver() {}
@@ -32,80 +16,48 @@ public final class SchemaOptionsResolver {
 
     public enum AlterMode { REPLACE, PATCH }
 
-    public static final class Rename {
-        public final String from;
-        public final String to;
-        public Rename(String from, String to) { this.from = from; this.to = to; }
-        @Override public String toString() { return from + "→" + to; }
-    }
-
-    public static final class Coercion {
-        public final String target;       // e.g. "INTEGER", "NUMBER", "DATE"
-        public final String onFailure;    // "null" | "drop" | "error"
-        public Coercion(String target, String onFailure) { this.target = target; this.onFailure = onFailure; }
-    }
+    public static final class Rename { public final String from,to; public Rename(String f,String t){from=f;to=t;} @Override public String toString(){return from+"→"+to;} }
+    public static final class Coercion { public final String target,onFailure; public Coercion(String t,String o){target=t;onFailure=o;} }
 
     public static final class Resolved {
-        public final DocumentSchema schema;     // may be null (enforcement-only)
-        public final EnforcementMode mode;      // may be null (keep previous)
-        public final AlterMode alterMode;       // REPLACE or PATCH
-
-        // migration hints (accepted, not executed here)
+        public final DocumentSchema schema;
+        public final EnforcementMode mode;
+        public final AlterMode alterMode;
         public final List<Rename> renames;
         public final Map<String, JsonNode> defaults;
         public final Map<String, Coercion> coercions;
-        public final boolean pruneExtras;
-        public final boolean dryRun;
+        public final boolean pruneExtras, dryRun;
 
-        public Resolved(DocumentSchema schema,
-                EnforcementMode mode,
-                AlterMode alterMode,
-                List<Rename> renames,
-                Map<String, JsonNode> defaults,
-                Map<String, Coercion> coercions,
-                boolean pruneExtras,
-                boolean dryRun) {
-            this.schema = schema;
-            this.mode = mode;
-            this.alterMode = alterMode;
-            this.renames = renames;
-            this.defaults = defaults;
-            this.coercions = coercions;
-            this.pruneExtras = pruneExtras;
-            this.dryRun = dryRun;
+        public Resolved(DocumentSchema s, EnforcementMode m, AlterMode a, List<Rename> r,
+                Map<String, JsonNode> d, Map<String, Coercion> c, boolean p, boolean dr) {
+            schema=s; mode=m; alterMode=a; renames=r; defaults=d; coercions=c; pruneExtras=p; dryRun=dr;
         }
     }
 
-    /** CREATE path (requires a schema). */
-    public static Resolved resolve(String optionsJson) {
-        var r = parseCommon(optionsJson, false);
-        if (r.schema == null) throw new IllegalArgumentException("CREATE requires validator.$jsonSchema");
+    public static Resolved resolve(PolyValue options) {
+        var r = parseCommon(options, false);
+        if (r.schema == null) throw new IllegalArgumentException("CREATE requires 'docSchema' object.");
         return r;
     }
+    public static Resolved resolveAlter(PolyValue options) { return parseCommon(options, true); }
 
-    /** ALTER path (schema optional, enforcement optional). */
-    public static Resolved resolveAlter(String optionsJson) {
-        return parseCommon(optionsJson, true);
-    }
-
-    private static Resolved parseCommon(String optionsJson, boolean schemaOptional) {
-        if (optionsJson == null || optionsJson.isBlank()) {
-            if (schemaOptional) {
-                return new Resolved(null, null, AlterMode.REPLACE, List.of(), Map.of(), Map.of(), false, false);
-            }
-            throw new IllegalArgumentException("Missing options JSON.");
-        }
-
+    private static Resolved parseCommon(PolyValue options, boolean schemaOptional) {
         final ObjectNode root;
+        if (options == null) {
+            if (schemaOptional) return new Resolved(null,null,AlterMode.REPLACE,List.of(),Map.of(),Map.of(),false,false);
+            throw new IllegalArgumentException("Missing options.");
+        }
         try {
-            JsonNode n = M.readTree(optionsJson);
-            if (!(n instanceof ObjectNode r)) throw new IllegalArgumentException("Options JSON must be an object");
+            JsonNode n = M.readTree(options.toJson());
+            if (!(n instanceof ObjectNode r)) throw new IllegalArgumentException("Options must be a JSON object.");
             root = r;
         } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid options JSON: " + e.getMessage(), e);
+            throw new IllegalArgumentException("Invalid options payload: " + e.getMessage(), e);
         }
 
-        // validationAction
+        if (root.has("validator") || root.has("$jsonSchema"))
+            throw new IllegalArgumentException("Use 'docSchema' instead of 'validator.$jsonSchema'.");
+
         EnforcementMode mode = null;
         if (root.has("validationAction")) {
             String s = root.get("validationAction").asText("");
@@ -113,133 +65,185 @@ public final class SchemaOptionsResolver {
                 case "error", "strict" -> EnforcementMode.STRICT;
                 case "warn"            -> EnforcementMode.WARN;
                 case "off"             -> EnforcementMode.OFF;
-                default                -> throw new IllegalArgumentException("Unknown validationAction: " + s);
+                default -> throw new IllegalArgumentException("Unknown validationAction: " + s);
             };
         }
 
-        // alter mode
         AlterMode alterMode = AlterMode.REPLACE;
-        if (root.has("mode")) {
-            String m = root.get("mode").asText("");
-            alterMode = "patch".equalsIgnoreCase(m) ? AlterMode.PATCH : AlterMode.REPLACE;
-        }
+        if (root.has("mode"))
+            alterMode = "patch".equalsIgnoreCase(root.get("mode").asText("")) ? AlterMode.PATCH : AlterMode.REPLACE;
 
-        // migration hints (just parse & pass through)
         List<Rename> renames = new ArrayList<>();
         if (root.has("renames") && root.get("renames").isArray()) {
-            for (JsonNode r : root.get("renames")) {
-                if (r.has("from") && r.has("to")) {
-                    renames.add(new Rename(r.get("from").asText(), r.get("to").asText()));
-                }
-            }
+            for (JsonNode r : root.get("renames"))
+                if (r.has("from") && r.has("to")) renames.add(new Rename(r.get("from").asText(), r.get("to").asText()));
         }
 
         Map<String, JsonNode> defaults = new HashMap<>();
-        if (root.has("defaults") && root.get("defaults").isObject()) {
+        if (root.has("defaults") && root.get("defaults").isObject())
             root.get("defaults").fields().forEachRemaining(e -> defaults.put(e.getKey(), e.getValue()));
-        }
 
         Map<String, Coercion> coercions = new HashMap<>();
         if (root.has("coercions") && root.get("coercions").isObject()) {
             root.get("coercions").fields().forEachRemaining(e -> {
                 String path = e.getKey();
                 JsonNode spec = e.getValue();
-                String target = spec.has("target") ? spec.get("target").asText() : "STRING";
-                String onFail = spec.has("onFailure") ? spec.get("onFailure").asText("error") : "error";
-                coercions.put(path, new Coercion(target, onFail));
+                coercions.put(path, new Coercion(
+                        spec.has("target") ? spec.get("target").asText() : "text",
+                        spec.has("onFailure") ? spec.get("onFailure").asText("error") : "error"));
             });
         }
 
         boolean pruneExtras = root.has("pruneExtras") && root.get("pruneExtras").asBoolean(false);
-        boolean dryRun = root.has("dryRun") && root.get("dryRun").asBoolean(false);
+        boolean dryRun      = root.has("dryRun")      && root.get("dryRun").asBoolean(false);
 
-        // validator.$jsonSchema (short form)
         DocumentSchema schema = null;
-        if (root.has("validator") && root.get("validator").isObject()) {
-            JsonNode validator = root.get("validator");
-            if (validator.has("$jsonSchema") && validator.get("$jsonSchema").isObject()) {
-                ObjectNode js = (ObjectNode) validator.get("$jsonSchema");
-                schema = buildShortForm(js);
-            } else if (!schemaOptional) {
-                throw new IllegalArgumentException("Expected 'validator.$jsonSchema' object.");
-            }
+        if (root.has("docSchema")) {
+            JsonNode ds = root.get("docSchema");
+            if (!ds.isObject()) throw new IllegalArgumentException("'docSchema' must be an object");
+            schema = new DocumentSchema(readObjectNode((ObjectNode) ds));
         } else if (!schemaOptional) {
-            throw new IllegalArgumentException("Expected 'validator' object.");
+            throw new IllegalArgumentException("Missing 'docSchema'.");
         }
 
         return new Resolved(schema, mode, alterMode, renames, defaults, coercions, pruneExtras, dryRun);
     }
 
-    // --- Short-form builder: required { path: "POLYTYPE" }, additionalProperties ---
-    private static DocumentSchema buildShortForm(ObjectNode js) {
-        if (js.has("properties")) {
-            throw new IllegalArgumentException("Unsupported: '$jsonSchema.properties'. Use short-form 'required' map.");
-        }
-        if (!js.has("required") || !js.get("required").isObject()) {
-            throw new IllegalArgumentException("Short-form requires '$jsonSchema.required' object mapping field -> PolyType string.");
-        }
+    // ---------- Recursive readers ----------
 
-        ObjectNode reqObj = (ObjectNode) js.get("required");
-        Set<String> required = new HashSet<>();
-        Map<String, DocumentSchema.FieldType> types = new HashMap<>();
-
-        reqObj.fields().forEachRemaining(e -> {
-            String field = e.getKey();
-            String typeText = e.getValue().asText();
-            String base = PolyTypeView.parse(typeText).base();
-            types.put(field, mapPolyTypeToFieldType(base));
-            required.add(field);
-        });
-
-        DocumentSchema.AdditionalProperties ap = DocumentSchema.AdditionalProperties.ALLOW;
-        if (js.has("additionalProperties")) {
-            JsonNode apNode = js.get("additionalProperties");
-            if (apNode.isBoolean()) {
-                ap = apNode.asBoolean() ? DocumentSchema.AdditionalProperties.ALLOW : DocumentSchema.AdditionalProperties.FORBID;
-            } else if (apNode.isTextual()) {
-                ap = "FORBID".equalsIgnoreCase(apNode.asText())
-                        ? DocumentSchema.AdditionalProperties.FORBID
-                        : DocumentSchema.AdditionalProperties.ALLOW;
-            }
+    private static DocumentSchema.ObjectNode readObjectNode(ObjectNode objSpec) {
+        if (objSpec.has("type")) {
+            String t = objSpec.get("type").asText("").trim().toLowerCase(Locale.ROOT);
+            if (!t.isEmpty() && !t.equals("object"))
+                throw new IllegalArgumentException("Object node expected, found type: " + t);
         }
 
-        return new DocumentSchema(required, types, ap);
+        if (objSpec.has("required"))
+            throw new IllegalArgumentException("This dialect does not support 'required'. All declared properties are required.");
+
+        Map<String, DocumentSchema.Node> props = new LinkedHashMap<>();
+        if (objSpec.has("properties")) {
+            JsonNode propsNode = objSpec.get("properties");
+            if (!propsNode.isObject()) throw new IllegalArgumentException("'properties' must be an object");
+            propsNode.fields().forEachRemaining(e -> props.put(e.getKey(), readNode(e.getValue())));
+        }
+
+        DocumentSchema.AdditionalProperties ap = readAP(objSpec);
+        return new DocumentSchema.ObjectNode(props, ap);
     }
 
-    private record PolyTypeView(String base) {
-        private static final Pattern SIG = Pattern.compile("^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*(?:\\((\\d+)(?:,(\\d+))?\\))?\\s*$");
-        static PolyTypeView parse(String typeText) {
-            Matcher m = SIG.matcher(typeText == null ? "" : typeText.trim());
-            return new PolyTypeView(m.matches() ? m.group(1).toUpperCase(Locale.ROOT)
-                    : (typeText == null ? "" : typeText).toUpperCase(Locale.ROOT));
+    private static DocumentSchema.Node readNode(JsonNode spec) {
+        if (spec.isTextual()) {
+            PolyType pt = mapInputTypeToPoly(spec.asText());
+            return new DocumentSchema.ScalarNode(pt);
         }
+        if (!spec.isObject()) throw new IllegalArgumentException("Property spec must be string or object");
+
+        ObjectNode o = (ObjectNode) spec;
+        if (o.has("type") && o.get("type").isTextual()) {
+            String typeText = o.get("type").asText().trim().toLowerCase(Locale.ROOT);
+            if (typeText.equals("object")) return readObjectNode(o);
+            if (typeText.equals("array"))  return readArrayNode(o);
+            PolyType pt = mapInputTypeToPoly(typeText);
+            return new DocumentSchema.ScalarNode(pt);
+        }
+
+        if (o.has("properties")) return readObjectNode(o);
+        throw new IllegalArgumentException("Missing or unsupported 'type' in property spec: " + o);
     }
 
-    private static DocumentSchema.FieldType mapPolyTypeToFieldType(String polyBase) {
-        switch (polyBase) {
-            case "BOOLEAN": return DocumentSchema.FieldType.BOOLEAN;
-            case "TINYINT":
-            case "SMALLINT":
-            case "INTEGER":
-            case "BIGINT":  return DocumentSchema.FieldType.INTEGER;
-            case "REAL":
-            case "FLOAT":
-            case "DOUBLE":
-            case "DECIMAL": return DocumentSchema.FieldType.NUMBER;
-            case "CHAR":
-            case "VARCHAR":
-            case "TEXT":
-            case "JSON":
-            case "JSONB":   return DocumentSchema.FieldType.STRING;
-            case "BINARY":
-            case "VARBINARY": return DocumentSchema.FieldType.BINARY;
-            case "DATE":    return DocumentSchema.FieldType.DATE;
-            case "TIME":
-            case "TIMESTAMP": return DocumentSchema.FieldType.TIMESTAMP;
-            case "ARRAY":   return DocumentSchema.FieldType.ARRAY;
-            case "OBJECT":
-            case "MAP":     return DocumentSchema.FieldType.OBJECT;
-            default:        return DocumentSchema.FieldType.STRING;
+    private static DocumentSchema.ArrayNode readArrayNode(ObjectNode arrSpec) {
+        if (!arrSpec.has("items")) throw new IllegalArgumentException("Array spec requires 'items'");
+        DocumentSchema.Node items = readNode(arrSpec.get("items"));
+        Integer minItems = arrSpec.has("minItems") ? arrSpec.get("minItems").asInt() : null;
+        Boolean unique   = arrSpec.has("uniqueItems") ? arrSpec.get("uniqueItems").asBoolean() : null;
+        return new DocumentSchema.ArrayNode(items, minItems, unique);
+    }
+
+    private static DocumentSchema.AdditionalProperties readAP(ObjectNode o) {
+        if (!o.has("additionalProperties")) return DocumentSchema.AdditionalProperties.FORBID;
+        JsonNode n = o.get("additionalProperties");
+        if (n.isBoolean()) return n.asBoolean() ? DocumentSchema.AdditionalProperties.ALLOW : DocumentSchema.AdditionalProperties.FORBID;
+        if (n.isTextual()) return "FORBID".equalsIgnoreCase(n.asText()) ? DocumentSchema.AdditionalProperties.FORBID : DocumentSchema.AdditionalProperties.ALLOW;
+        throw new IllegalArgumentException("'additionalProperties' must be boolean or 'FORBID'/'ALLOW'");
+    }
+
+    // ---------- Mapping from friendly tokens (and legacy) to PolyType ----------
+
+    private static PolyType mapInputTypeToPoly(String raw) {
+        if (raw == null) return PolyType.ANY;
+        String s = raw.trim();
+        // strip any legacy (p,s) suffix: VARCHAR(50), DECIMAL(10,2), etc.
+        int paren = s.indexOf('(');
+        if (paren >= 0) s = s.substring(0, paren);
+        String t = s.toLowerCase(Locale.ROOT);
+
+        // Friendly dialect
+        switch (t) {
+            case "text":
+            case "string":
+                return PolyType.TEXT;
+
+            case "number":
+            case "numeric":
+                // choose a wide numeric so validator accepts int/long/double
+                return PolyType.DOUBLE;
+
+            case "boolean":
+            case "bool":
+                return PolyType.BOOLEAN;
+
+            case "date":
+                return PolyType.DATE;
+
+            case "timestamp":
+            case "datetime":
+                return PolyType.TIMESTAMP;
+
+            case "binary":
+            case "blob":
+                return PolyType.BINARY;
+
+            case "any":
+                return PolyType.ANY;
         }
+
+        // Legacy SQL-ish tokens we still accept
+        switch (t) {
+            // strings
+            case "char":
+            case "varchar":
+            case "json":
+                return PolyType.TEXT;
+
+            // integers
+            case "tinyint":
+            case "smallint":
+            case "int":
+            case "integer":
+            case "bigint":
+                return PolyType.INTEGER;
+
+            // floating / decimal -> keep wide to allow ints as well
+            case "decimal":
+            case "float":
+            case "real":
+            case "double":
+                return PolyType.DOUBLE;
+
+            // binary-ish
+            case "varbinary":
+            case "file":
+            case "image":
+            case "video":
+            case "audio":
+                return PolyType.BINARY;
+
+            // temporal
+            case "time":
+                return PolyType.TIMESTAMP;
+        }
+
+        throw new IllegalArgumentException("Unknown type token: " + raw);
     }
 }
