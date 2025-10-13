@@ -14,7 +14,7 @@ import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.languages.mql.MqlAggregate;
 import org.polypheny.db.languages.mql.MqlCount;
 import org.polypheny.db.languages.mql.MqlCreateCollection;
-import org.polypheny.db.languages.mql.MqlAlterCollection;
+import org.polypheny.db.languages.mql.MqlAlterCollectionSchema;
 import org.polypheny.db.languages.mql.MqlCreateView;
 import org.polypheny.db.languages.mql.MqlDelete;
 import org.polypheny.db.languages.mql.MqlDrop;
@@ -183,7 +183,7 @@ TOKEN : /* IDENTIFIERS */ // for nested documentValues check out Document_Splits
 |
 < CREATE_COLLECTION : "createCollection(" >
 |
-  < ALTER_COLLECTION : "alterCollection(" >
+  < ALTER_COLLECTION_SCHEMA : "alterCollectionSchema(" >
 |
 < RENAME_COLLECTION : "renameCollection(" >
 |
@@ -434,8 +434,8 @@ MqlNode Db_Statement( String namespace ):
         (Details(n))* (Primary(n))*
 
     |
-            <ALTER_COLLECTION> name = Literal() [<COMMA> doc = Document() ] ")"
-            { n = new MqlAlterCollection(getPos(), name, namespace, doc); }
+            <ALTER_COLLECTION_SCHEMA> name = Literal() [<COMMA> doc = Document() ] ")"
+            { n = new MqlAlterCollectionSchema(getPos(), name, namespace, doc); }
             (Details(n))* (Primary(n))*
     |
         <GET_COLLECTION> name = Literal() ")"

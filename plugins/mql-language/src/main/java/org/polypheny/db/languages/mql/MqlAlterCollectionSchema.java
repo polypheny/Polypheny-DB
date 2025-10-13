@@ -20,7 +20,6 @@ import com.mongodb.lang.Nullable;
 import org.bson.BsonDocument;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.mql.MqlNode;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
@@ -33,12 +32,12 @@ import org.polypheny.db.util.BsonUtil;
  * MQL: db.alterCollection("<name>", { validator: { $jsonSchema: {...} }, validationAction: "warn|error|off" })
  * If 'validator' is omitted, the schema is dropped (collection becomes schemaless).
  */
-public class MqlAlterCollection extends MqlNode implements ExecutableStatement {
+public class MqlAlterCollectionSchema extends MqlNode implements ExecutableStatement {
 
     private final String name;
     private final BsonDocument options;
 
-    public MqlAlterCollection(ParserPos pos, String name, String namespace, BsonDocument options) {
+    public MqlAlterCollectionSchema(ParserPos pos, String name, String namespace, BsonDocument options) {
         super(pos, namespace);
         this.name = name;
         this.options = options;
@@ -46,7 +45,7 @@ public class MqlAlterCollection extends MqlNode implements ExecutableStatement {
 
     @Override
     public Type getMqlKind() {
-        return Type.ALTER_COLLECTION;
+        return Type.ALTER_COLLECTION_SCHEMA;
     }
 
     @Override
