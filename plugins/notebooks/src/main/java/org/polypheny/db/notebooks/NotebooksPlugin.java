@@ -132,6 +132,19 @@ public class NotebooksPlugin extends PolyPlugin {
     }
 
 
+    private void getDockerInstance( Context ctx ) {
+        if ( container != null ) {
+            Optional<DockerInstance> dockerInstance = DockerManager.getInstance().getInstanceForContainer( container.getContainerId() );
+            if ( dockerInstance.isPresent() ) {
+                DockerInstanceInfo info = dockerInstance.get().getInfo();
+                ctx.status( 200 ).json( info );
+                return;
+            }
+        }
+        ctx.status( 200 );
+    }
+
+
     /**
      * Deploys the docker container with polypheny-jupyter-server image.
      * For storing the notebooks in the Polypheny Home directory, a bind mount is used.
@@ -277,6 +290,7 @@ public class NotebooksPlugin extends PolyPlugin {
         }, HandlerType.GET );
         server.addSerializedRoute( PATH + "/export/<path>", fs::export, HandlerType.GET );
         server.addSerializedRoute( PATH + "/connections", proxyOrEmpty( proxy -> proxy::openConnections ), HandlerType.GET );
+        server.addSerializedRoute( PATH + "/container/getDockerInstance", this::getDockerInstance, HandlerType.GET );
         server.addSerializedRoute( PATH + "/container/getDockerInstances", this::getDockerInstances, HandlerType.GET );
 
         server.addSerializedRoute( PATH + "/contents/<parentPath>", fs::createFile, HandlerType.POST );
