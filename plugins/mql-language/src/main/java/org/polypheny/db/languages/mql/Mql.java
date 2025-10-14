@@ -27,6 +27,7 @@ public class Mql {
     static List<Type> DDL = Arrays.asList(
             Type.CREATE_COLLECTION,
             Type.ALTER_COLLECTION_SCHEMA,
+            //Type.GET_COLLECTION_SCHEMA,
             Type.CREATE_VIEW,
             Type.DROP,
             Type.USE_DATABASE,
@@ -38,6 +39,7 @@ public class Mql {
             Type.SELECT,
             Type.FIND,
             Type.AGGREGATE,
+            Type.GET_COLLECTION_SCHEMA,
             Type.EXPLAIN
     );
     static List<Type> DML = Arrays.asList(
@@ -84,6 +86,7 @@ public class Mql {
         CREATE_VIEW,
         CREATE_COLLECTION,
         ALTER_COLLECTION_SCHEMA,
+        GET_COLLECTION_SCHEMA,
         ADD_PLACEMENT,
         DELETE_PLACEMENT,
         DROP_DATABASE,

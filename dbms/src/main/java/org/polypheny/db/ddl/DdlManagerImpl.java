@@ -2302,6 +2302,51 @@ public class DdlManagerImpl extends DdlManager {
 //    }
 
 
+    @Override
+    public String getCollectionSchemaAsJson(long namespaceId, String collectionName) {
+        // Normalize and ensure DOCUMENT namespace
+        String adjusted = adjustNameIfNeeded(collectionName, namespaceId);
+        checkModelLangCompatibility(DataModel.DOCUMENT, namespaceId);
+
+        // Locate the logical collection
+        var snapshot = catalog.getSnapshot();
+        var collOpt = snapshot.doc().getCollection(namespaceId, adjusted);
+        if (collOpt.isEmpty()) {
+            // Collection missing → treat as “no schema”
+            return null;
+        }
+        var coll = collOpt.get();
+
+        // Read persisted schema sidecar from the logical document catalog
+        var metaOpt = readCollectionSchema(namespaceId, coll.id); // DocumentCatalog#getCollectionSchema
+        if (metaOpt.isEmpty()) {
+            // No schema attached yet
+            return null;
+        }
+
+        SchemaMeta meta = metaOpt.get();
+
+        try {
+            // meta.schemaJson is canonical {"root": {...}} (or a bare object in legacy cases)
+            JsonNode canonical = tryParseAny(meta.schemaJson);
+            JsonNode root = canonical.has("root") ? canonical.get("root") : canonical;
+
+            ObjectNode out = MAPPER.createObjectNode();
+            out.put("collection", adjusted);
+            out.put("validationAction", meta.enforcement == null ? EnforcementMode.OFF.name() : meta.enforcement);
+            out.set("docSchema", root);
+
+            // Optional: expose version/timestamp if you want later
+            // out.put("version", meta.version);
+            // out.put("updatedAtEpochMs", meta.updatedAtEpochMs);
+
+            return MAPPER.writeValueAsString(out);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to read stored collection schema JSON for '" + adjusted + "'", e);
+        }
+    }
+
+
     private void persistCollectionSchema(long namespaceId, long collectionId, String schemaJson, String enforcement) {
         final JsonNode normalized;
         try {
@@ -2355,20 +2400,10 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void alterCollection( long namespaceId, String name, Statement statement, PolyValue polyValue ) {
+    public void alterCollectionSchema( long namespaceId, String name, Statement statement, PolyValue polyValue ) {
         SchemaOptionsResolver.Resolved r = SchemaOptionsResolver.resolveAlter( polyValue );
         alterCollectionSchemaInternal( namespaceId, name, r, statement );
         safeResetCaches( statement );
-    }
-
-
-    @Override
-    public void alterCollectionSchema( long nsId, String name, @Nullable DocumentSchema newSchema, EnforcementMode mode ) {
-        // Back-compat API: treat as REPLACE without migration hints
-        SchemaOptionsResolver.Resolved r = new SchemaOptionsResolver.Resolved(
-                newSchema, mode, SchemaOptionsResolver.AlterMode.REPLACE,
-                List.of(), Map.of(), Map.of(), false, false );
-        alterCollectionSchemaInternal( nsId, name, r, null );
     }
 
 

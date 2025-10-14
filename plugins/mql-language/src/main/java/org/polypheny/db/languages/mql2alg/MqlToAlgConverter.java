@@ -30,6 +30,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.languages.mql.MqlGetCollectionSchema;
 import org.polypheny.db.schema.document.EnforcementMode;
 import org.polypheny.db.util.WarningSink;
 import org.slf4j.Logger;
@@ -293,6 +295,10 @@ public class MqlToAlgConverter {
             case INSERT -> AlgRoot.of( convertInsert( (MqlInsert) query, entity ), Kind.INSERT );
             case DELETE, FIND_DELETE -> AlgRoot.of( convertDelete( (MqlDelete) query, entity, node ), Kind.DELETE );
             case UPDATE -> AlgRoot.of( convertUpdate( (MqlUpdate) query, entity, node ), Kind.UPDATE );
+            case GET_COLLECTION_SCHEMA -> {
+                AlgNode out = convertGetCollectionSchema((MqlGetCollectionSchema) query);
+                yield AlgRoot.of(out, Kind.SELECT);
+            }
             default -> throw new IllegalStateException( "Unexpected value: " + kind );
         };
     }
@@ -2171,6 +2177,36 @@ public class MqlToAlgConverter {
         }
     }
 
+    private AlgNode convertGetCollectionSchema(MqlGetCollectionSchema query) {
+        // Build one BSON row describing the schema
+        org.bson.BsonDocument row = new org.bson.BsonDocument()
+                .append("collection", new org.bson.BsonString(query.getCollection()));
+
+        // If you already store schema via DdlManager, fetch it. Fall back to “no schema”.
+        String json = org.polypheny.db.ddl.DdlManager.getInstance()
+                .getCollectionSchemaAsJson(namespaceId, query.getCollection());
+
+        if (json != null) {
+            try {
+                row.append("schema", org.bson.BsonDocument.parse(json));
+                row.append("enforcement", new org.bson.BsonString("on"));
+            } catch (Exception e) {
+                // If JSON is malformed, still return something useful
+                row.append("schema", new org.bson.BsonDocument("raw", new org.bson.BsonString(json)));
+                row.append("schemaParseError", new org.bson.BsonString(e.getMessage()));
+                row.append("enforcement", new org.bson.BsonString("on"));
+            }
+        } else {
+            row.append("schema", new org.bson.BsonDocument()); // no schema attached
+            row.append("enforcement", new org.bson.BsonString("off"));
+        }
+
+        org.bson.BsonArray oneRow = new org.bson.BsonArray();
+        oneRow.add(row);
+
+        // Your existing helper produces a one-row VALUES plan (document model aware).
+        return convertMultipleValues(oneRow);
+    }
 
 
 

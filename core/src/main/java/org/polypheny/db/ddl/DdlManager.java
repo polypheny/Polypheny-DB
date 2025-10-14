@@ -472,10 +472,7 @@ public abstract class DdlManager {
     public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement, @Nullable PolyValue polyVal);
 
     // TODO: COMMENTS
-    public abstract void alterCollection(long namespaceId, String name, Statement statement, PolyValue polyVal);
-
-    // TODO: COMMENTS
-    public abstract void alterCollectionSchema(long namespaceId, String name, @Nullable DocumentSchema newSchema, EnforcementMode mode);
+    public abstract void alterCollectionSchema(long namespaceId, String name, Statement statement, PolyValue polyVal);
 
     public abstract void createCollectionPlacement( long namespaceId, String name, List<DataStore<?>> stores, Statement statement );
 
@@ -578,6 +575,8 @@ public abstract class DdlManager {
     public abstract void dropCollection( LogicalCollection catalogCollection, Statement statement );
 
     public abstract void dropCollectionPlacement( long namespaceId, LogicalCollection collection, List<DataStore<?>> dataStores, Statement statement );
+
+    public abstract String getCollectionSchemaAsJson( long nsId, String name );
 
 
     /**

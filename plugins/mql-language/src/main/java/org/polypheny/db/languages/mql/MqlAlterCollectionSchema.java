@@ -29,7 +29,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BsonUtil;
 
 /**
- * MQL: db.alterCollection("<name>", { validator: { $jsonSchema: {...} }, validationAction: "warn|error|off" })
+ * MQL: db.alterCollectionSchema("<name>", { validator: { $jsonSchema: {...} }, validationAction: "warn|error|off" })
  * If 'validator' is omitted, the schema is dropped (collection becomes schemaless).
  */
 public class MqlAlterCollectionSchema extends MqlNode implements ExecutableStatement {
@@ -57,11 +57,11 @@ public class MqlAlterCollectionSchema extends MqlNode implements ExecutableState
     public void execute(Context context, Statement statement, ParsedQueryContext parsedQueryContext) {
         long namespaceId = parsedQueryContext.getNamespaceId();
         PolyValue polyValue = options != null ? BsonUtil.toPolyValue( options ) : null;
-        DdlManager.getInstance().alterCollection(namespaceId, name, statement, polyValue);
+        DdlManager.getInstance().alterCollectionSchema(namespaceId, name, statement, polyValue);
     }
 
     @Override
     public String toString() {
-        return "MqlAlterCollection{name='" + name + "'}";
+        return "MqlAlterCollectionSchema{name='" + name + "'}";
     }
 }
