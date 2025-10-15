@@ -16,7 +16,9 @@
 
 package org.polypheny.db.mql;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.ImmutableList;
@@ -209,5 +211,215 @@ public class DdlTest extends MqlTestTemplate {
             }
         }
     }
+
+
+
+
+    // --------------------------------- NEW TESTS --------------------------------- //
+
+    // ADD THESE TESTS inside class DdlTest (do not modify existing ones)
+
+    @Test
+    public void createCollection_withSchema_strict_validAndInvalidInserts() {
+        final String name = "users_strict_noextras";
+        final String opts = usersOptions(/*allowExtras=*/false, /*enforcement=*/"strict");
+
+        // ensure clean slate
+        dropSilently(name);
+
+        try {
+            // create with schema + STRICT + additionalProperties=false
+            execute("db.createCollection(\"" + name + "\"," + opts + ")");
+
+            // valid doc -> OK
+            assertDoesNotThrow(() -> execute(
+                    "db." + name + ".insert({ name: { firstname: \"Ada\", lastname: \"Lovelace\" }, age: 36 })"));
+
+            // extra top-level field -> REJECT (additionalProperties=false)
+            assertThrows(Exception.class, () -> execute(
+                    "db." + name + ".insert({ name: { firstname: \"Alan\", lastname: \"Turing\" }, age: 41, nickname: \"Al\" })"));
+
+            // missing required field 'age' -> REJECT
+            assertThrows(Exception.class, () -> execute(
+                    "db." + name + ".insert({ name: { firstname: \"Grace\", lastname: \"Hopper\" } })"));
+
+            // type mismatch: age as string -> REJECT
+            assertThrows(Exception.class, () -> execute(
+                    "db." + name + ".insert({ name: { firstname: \"Tim\", lastname: \"Berners-Lee\" }, age: \"35\" })"));
+
+        } finally {
+            dropSilently(name);
+        }
+    }
+
+
+    @Test
+    public void createCollection_withSchema_strict_allowExtras() {
+        final String name = "users_strict_extras";
+        final String opts = usersOptions(/*allowExtras=*/true, /*enforcement=*/"strict");
+
+        dropSilently(name);
+
+        try {
+            execute("db.createCollection(\"" + name + "\"," + opts + ")");
+
+            // valid with extra field -> OK (extras allowed)
+            assertDoesNotThrow(() -> execute(
+                    "db." + name + ".insert({ name: { firstname: \"Ada\", lastname: \"Lovelace\" }, age: 36, nickname: \"Ada\" })"));
+
+            // missing required field still not allowed under STRICT
+            assertThrows(Exception.class, () -> execute(
+                    "db." + name + ".insert({ name: { firstname: \"Alan\", lastname: \"Turing\" } })"));
+
+            // type mismatch still not allowed under STRICT
+            assertThrows(Exception.class, () -> execute(
+                    "db." + name + ".insert({ name: { firstname: \"Grace\", lastname: \"Hopper\" }, age: \"37\" })"));
+
+        } finally {
+            dropSilently(name);
+        }
+    }
+
+
+    @Test
+    public void createCollection_withSchema_warn_allowsInvalidDocuments() {
+        final String name = "users_warn";
+        final String opts = usersOptions(/*allowExtras=*/false, /*enforcement=*/"warn");
+
+        dropSilently(name);
+
+        try {
+            execute("db.createCollection(\"" + name + "\"," + opts + ")");
+
+            // Valid -> OK
+            assertDoesNotThrow(() -> execute(
+                    "db." + name + ".insert({ name: { firstname: \"Ada\", lastname: \"Lovelace\" }, age: 36 })"));
+
+            // Extra field -> should still be accepted in WARN
+            assertDoesNotThrow(() -> execute(
+                    "db." + name + ".insert({ name: { firstname: \"Alan\", lastname: \"Turing\" }, age: 41, nickname: \"Al\" })"));
+
+            // Missing required field -> should still be accepted in WARN
+            assertDoesNotThrow(() -> execute(
+                    "db." + name + ".insert({ name: { firstname: \"Grace\", lastname: \"Hopper\" } })"));
+
+            // Type mismatch -> should still be accepted in WARN
+            assertDoesNotThrow(() -> execute(
+                    "db." + name + ".insert({ name: { firstname: \"Tim\", lastname: \"Berners-Lee\" }, age: \"35\" })"));
+
+        } finally {
+            dropSilently(name);
+        }
+    }
+
+
+    @Test
+    public void createCollection_withSchema_off_allowsAnything() {
+        final String name = "users_off";
+        // enforcement OFF; extras flag shouldn't matter, but keep it explicit
+        final String opts = usersOptions(/*allowExtras=*/false, /*enforcement=*/"off");
+
+        dropSilently(name);
+
+        try {
+            execute("db.createCollection(\"" + name + "\"," + opts + ")");
+
+            // Everything should be accepted with OFF
+            assertDoesNotThrow(() -> execute(
+                    "db." + name + ".insert({ any: { crazy: [1,2,3] }, shape: \"whatever\", x: null })"));
+
+        } finally {
+            dropSilently(name);
+        }
+    }
+
+
+    @Test
+    public void createCollection_rejects_legacyValidatorKey() {
+        final String name = "users_validator_legacy";
+
+        dropSilently(name);
+
+        try {
+            // Using legacy 'validator.$jsonSchema' must be rejected by resolver
+            String badOpts =
+                    "{ validator: { $jsonSchema: { properties: { name: { type: \"object\" } } } }, validationAction: \"strict\" }";
+
+            assertThrows(Exception.class, () -> execute(
+                    "db.createCollection(\"" + name + "\"," + badOpts + ")"));
+
+        } finally {
+            dropSilently(name);
+        }
+    }
+
+
+    @Test
+    public void createCollection_rejects_requiredKeyword() {
+        final String name = "users_required_keyword";
+
+        dropSilently(name);
+
+        try {
+            String badOpts =
+                    "{ docSchema: { type: \"object\", properties: { name: { type: \"object\", properties: { firstname: { type: \"text\" } } }, age: { type: \"number\" } }, required: [\"name\",\"age\"], additionalProperties: false }, validationAction: \"strict\" }";
+
+            assertThrows(Exception.class, () -> execute(
+                    "db.createCollection(\"" + name + "\"," + badOpts + ")"));
+
+        } finally {
+            dropSilently(name);
+        }
+    }
+
+
+    @Test
+    public void createCollection_rejects_nonObjectDocSchema() {
+        final String name = "users_bad_docSchema";
+
+        dropSilently(name);
+
+        try {
+            String badOpts = "{ docSchema: \"text\", validationAction: \"strict\" }";
+
+            assertThrows(Exception.class, () -> execute(
+                    "db.createCollection(\"" + name + "\"," + badOpts + ")"));
+
+        } finally {
+            dropSilently(name);
+        }
+    }
+
+
+// -------------------- helpers (private) --------------------
+
+    /**
+     * Produces the options payload for users schema in your dialect.
+     * All declared fields are required by design; 'additionalProperties' toggles extras.
+     */
+    private static String usersOptions(boolean allowExtras, String enforcement) {
+        // additionalProperties: false | true
+        String ap = allowExtras ? "true" : "false";
+        return "{ " +
+                "docSchema: {" +
+                "  type: \"object\"," +
+                "  properties: {" +
+                "    name: {" +
+                "      type: \"object\"," +
+                "      properties: {" +
+                "        firstname: { type: \"text\" }," +
+                "        lastname:  { type: \"text\" }" +
+                "      }" +
+                "    }," +
+                "    age: { type: \"number\" }" +
+                "  }," +
+                "  additionalProperties: " + ap +
+                "}," +
+                "validationAction: \"" + enforcement + "\"" +
+                "}";
+    }
+
+
+
 
 }

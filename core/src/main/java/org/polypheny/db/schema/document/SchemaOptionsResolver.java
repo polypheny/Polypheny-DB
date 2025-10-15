@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -41,16 +39,33 @@ public final class SchemaOptionsResolver {
     }
     public static Resolved resolveAlter(PolyValue options) { return parseCommon(options, true); }
 
+    private static ObjectNode requireObjectNode(JsonNode first) {
+        JsonNode n = first;
+        // unwrap up to 3 times if it's a JSON string containing JSON
+        for (int i = 0; i < 3 && n != null; i++) {
+            if (n instanceof ObjectNode obj) return obj;
+            if (n.isTextual()) {
+                try {
+                    n = M.readTree(n.asText());
+                    continue;
+                } catch (Exception ignored) {
+                    break;
+                }
+            }
+            break;
+        }
+        throw new IllegalArgumentException("Options must be a JSON object.");
+    }
+
     private static Resolved parseCommon(PolyValue options, boolean schemaOptional) {
         final ObjectNode root;
         if (options == null) {
-            if (schemaOptional) return new Resolved(null,null,AlterMode.REPLACE,List.of(),Map.of(),Map.of(),false,false);
+            if (schemaOptional) return new Resolved(null, null, AlterMode.REPLACE, List.of(), Map.of(), Map.of(), false, false);
             throw new IllegalArgumentException("Missing options.");
         }
         try {
-            JsonNode n = M.readTree(options.toJson());
-            if (!(n instanceof ObjectNode r)) throw new IllegalArgumentException("Options must be a JSON object.");
-            root = r;
+            JsonNode raw = M.readTree(options.toJson());
+            root = requireObjectNode(raw);
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid options payload: " + e.getMessage(), e);
         }

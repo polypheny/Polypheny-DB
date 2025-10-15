@@ -2293,14 +2293,6 @@ public class DdlManagerImpl extends DdlManager {
         catalog.updateSnapshot();
     }
 
-//    private String toCanonicalJson( DocumentSchema schema ) {
-//        try {
-//            return MAPPER.writeValueAsString( schema );
-//        } catch ( JsonProcessingException e ) {
-//            throw new IllegalArgumentException( "Failed to serialize DocumentSchema", e );
-//        }
-//    }
-
 
     @Override
     public String getCollectionSchemaAsJson(long namespaceId, String collectionName) {
@@ -2420,15 +2412,42 @@ public class DdlManagerImpl extends DdlManager {
         DocumentSchema current = metaOpt.map( m -> fromCanonicalJson( m.schemaJson ) ).orElse( null );
         String currentEnf = metaOpt.map( m -> m.enforcement ).orElse( EnforcementMode.OFF.name() );
 
+        // Normalize current enforcement to enum (defensive)
+        EnforcementMode currentEnfEnum;
+        try {
+            currentEnfEnum = EnforcementMode.valueOf( currentEnf );
+        } catch ( Exception ignore ) {
+            currentEnfEnum = EnforcementMode.OFF;
+        }
+
         // 1) enforcement-only change (no schema provided)
         if ( r.schema == null ) {
             if ( r.mode == null ) {
                 return; // nothing to change
             }
             if ( metaOpt.isEmpty() && r.mode != EnforcementMode.OFF ) {
-                throw new GenericRuntimeException( "Cannot set validationAction without a persisted schema. Create a schema first." );
+                throw new GenericRuntimeException(
+                        "Cannot set validationAction without a persisted schema. Create a schema first." );
             }
             if ( metaOpt.isPresent() ) {
+                // Skip no-op
+                if ( r.mode == currentEnfEnum ) {
+                    return;
+                }
+
+                // If tightening to STRICT, verify all existing docs already conform to the current schema
+                if ( r.mode == EnforcementMode.STRICT ) {
+                    DocumentSchema currentSchema = fromCanonicalJson( metaOpt.get().schemaJson );
+                    SchemaAlterPreflightReport rep =
+                            SchemaAlterPreflight.run( catalog, coll, currentSchema, statement );
+                    if ( !rep.ok ) {
+                        throw new GenericRuntimeException(
+                                "Cannot set validationAction=STRICT: %d/%d documents violate the current schema; examples: %s",
+                                rep.failing, rep.scanned, rep.compactSummary(5) );
+                    }
+                }
+
+                // Persist unchanged schema with new enforcement
                 persistCollectionSchema( nsId, coll.id, metaOpt.get().schemaJson, r.mode.name() );
                 catalog.updateSnapshot();
             }
@@ -2452,17 +2471,16 @@ public class DdlManagerImpl extends DdlManager {
         // 2.3) if tightening, run preflight across existing docs; reject on any violation
         if ( !noScanSafe ) {
             SchemaAlterPreflightReport rep =
-                    SchemaAlterPreflight.run(catalog, coll, finalSchema, statement);
+                    SchemaAlterPreflight.run( catalog, coll, finalSchema, statement );
             if ( !rep.ok ) {
-                String summary = rep.compactSummary(5);
                 throw new GenericRuntimeException(
                         "ALTER SCHEMA would invalidate %d/%d documents; examples: %s",
-                        rep.failing, rep.scanned, summary );
+                        rep.failing, rep.scanned, rep.compactSummary(5) );
             }
         }
 
-        // 2.4) persist new schema + enforcement
-        String enforcement = r.mode != null ? r.mode.name() : currentEnf;
+        // 2.4) persist new schema + enforcement (if null, keep current)
+        String enforcement = ( r.mode != null ? r.mode.name() : currentEnfEnum.name() );
         persistCollectionSchema( nsId, coll.id, toCanonicalJson( finalSchema ), enforcement );
         catalog.updateSnapshot();
     }
