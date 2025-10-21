@@ -115,8 +115,10 @@ import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.document.DocumentSchema;
 import org.polypheny.db.schema.document.EnforcementMode;
+import org.polypheny.db.schema.document.SchemaAlterEngine;
 import org.polypheny.db.schema.document.SchemaAlterPreflightReport;
 import org.polypheny.db.schema.document.SchemaCompatibility;
+import org.polypheny.db.schema.document.SchemaJson;
 import org.polypheny.db.schema.document.SchemaMeta;
 import org.polypheny.db.schema.document.SchemaOptionsResolver;
 import org.polypheny.db.schema.document.SchemaValidator;
@@ -2287,9 +2289,19 @@ public class DdlManagerImpl extends DdlManager {
 
         // persist canonical JSON
         schema.validateOrThrow();
-        String json = toCanonicalJson( schema );
-        persistCollectionSchema( namespaceId, logical.id, json, (mode == null ? EnforcementMode.OFF : mode).name() );
+        String json = toCanonicalJson(schema);
+        //persistCollectionSchema(namespaceId, logical.id, json, (mode == null ? EnforcementMode.OFF : mode).name());
 
+        SchemaMeta.writeCurrent(
+                catalog,
+                logical.id,
+                new SchemaMeta(
+                        SchemaJson.toJson(schema),
+                        (mode == null ? EnforcementMode.OFF : mode).name(),
+                        1L,
+                        System.currentTimeMillis()
+                )
+        );
         catalog.updateSnapshot();
     }
 
@@ -2339,182 +2351,138 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void persistCollectionSchema(long namespaceId, long collectionId, String schemaJson, String enforcement) {
+    private void persistCollectionSchema(final long namespaceId, final long collectionId, final String schemaJson, final String enforcement) {
+        // Normalize to canonical {"root": {...}}
         final JsonNode normalized;
         try {
-            // Parse what we got (may be an object or a JSON string that contains JSON)
             JsonNode n = MAPPER.readTree(schemaJson);
-            if (n.isTextual()) {
-                n = MAPPER.readTree(n.asText());
-            }
-            if (!n.isObject()) {
-                throw new IllegalArgumentException("Schema JSON must be a JSON object");
-            }
-
-            // ---- CANONICALIZE: always store {"root": {...}} ----
-            // If it's already a DocumentSchema JSON (has "root"), keep it.
-            // If it's a bare docSchema object, wrap it.
+            if (n.isTextual()) n = MAPPER.readTree(n.asText());
+            if (!n.isObject()) throw new IllegalArgumentException("Schema JSON must be a JSON object");
             if (!n.has("root")) {
                 ObjectNode wrapper = MAPPER.createObjectNode();
                 wrapper.set("root", n);
                 n = wrapper;
             }
-
             normalized = n;
         } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to persist schema JSON (not valid JSON object).", e);
+            throw new IllegalArgumentException("Failed to persist schema JSON (invalid object).", e);
         }
 
         final String compact;
         try {
-            compact = MAPPER.writeValueAsString(normalized); // compact canonical JSON
+            compact = MAPPER.writeValueAsString(normalized);
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to compact schema JSON", e);
         }
 
-        var logicalDoc = catalog.getLogicalDoc(namespaceId);
-        if (logicalDoc instanceof DocumentCatalog) {
-            ((DocumentCatalog) logicalDoc).upsertCollectionSchema(collectionId, compact, enforcement);
-        } else {
-            throw new IllegalStateException("LogicalDocumentCatalog is not a DocumentCatalog implementation");
-        }
+        final long newVersion = readCollectionSchema(namespaceId, collectionId).map(m -> m.version + 1L).orElse(1L);
+        final long nowMs = System.currentTimeMillis();
+
+        SchemaMeta.writeCurrent(
+                catalog,
+                collectionId,
+                new SchemaMeta(
+                        compact,
+                        (enforcement == null ? EnforcementMode.OFF.name() : enforcement),
+                        newVersion,
+                        nowMs
+                ));
     }
 
 
 
 
-    private void dropPersistedCollectionSchema( long namespaceId, long collectionId ) {
-        var logicalDoc = catalog.getLogicalDoc( namespaceId );
-        if ( logicalDoc instanceof DocumentCatalog ) {
-            ((DocumentCatalog) logicalDoc).dropCollectionSchema( collectionId );
-        }
+    private void dropPersistedCollectionSchema(final long namespaceId, final long collectionId) {
+        SchemaMeta.clear(collectionId);
     }
 
+    private final SchemaAlterEngine schemaAlterEngine = new SchemaAlterEngine();
 
     @Override
-    public void alterCollectionSchema( long namespaceId, String name, Statement statement, PolyValue polyValue ) {
-        SchemaOptionsResolver.Resolved r = SchemaOptionsResolver.resolveAlter( polyValue );
-        alterCollectionSchemaInternal( namespaceId, name, r, statement );
-        safeResetCaches( statement );
+    public void alterCollectionSchema(long namespaceId, String name, Statement statement, PolyValue polyValue) {
+        // Parse
+        SchemaOptionsResolver.Resolved r = SchemaOptionsResolver.resolveAlter(polyValue);
+
+        // Orchestrate
+        alterCollectionSchemaInternal(namespaceId, name, r, statement);
+        safeResetCaches(statement);
     }
 
 
-    private void alterCollectionSchemaInternal( long nsId, String name, SchemaOptionsResolver.Resolved r, @Nullable Statement statement ) {
-        String adjusted = adjustNameIfNeeded( name, nsId );
-        checkModelLangCompatibility( DataModel.DOCUMENT, nsId );
+    private void alterCollectionSchemaInternal(long nsId, String name, SchemaOptionsResolver.Resolved r, @Nullable Statement statement) {
+        String adjusted = adjustNameIfNeeded(name, nsId);
+        checkModelLangCompatibility(DataModel.DOCUMENT, nsId);
 
         var snapshot = catalog.getSnapshot();
         LogicalCollection coll = snapshot.doc()
-                .getCollection( nsId, adjusted )
-                .orElseThrow( () -> new GenericRuntimeException( "Collection %s does not exist.", adjusted ) );
+                .getCollection(nsId, adjusted)
+                .orElseThrow(() -> new GenericRuntimeException("Collection %s does not exist.", adjusted));
 
-        Optional<SchemaMeta> metaOpt = readCollectionSchema( nsId, coll.id );
-        DocumentSchema current = metaOpt.map( m -> fromCanonicalJson( m.schemaJson ) ).orElse( null );
-        String currentEnf = metaOpt.map( m -> m.enforcement ).orElse( EnforcementMode.OFF.name() );
+        // Read current persisted schema (if any)
+        var metaOpt = SchemaMeta.readCurrent(catalog, coll.id);
+        DocumentSchema current = metaOpt.map(m -> SchemaJson.parse(m.schemaJson)).orElse(null);
+        EnforcementMode currentMode = metaOpt.map(m -> safeEnum(m.enforcement, EnforcementMode.OFF)).orElse(EnforcementMode.OFF);
 
-        // Normalize current enforcement to enum (defensive)
-        EnforcementMode currentEnfEnum;
-        try {
-            currentEnfEnum = EnforcementMode.valueOf( currentEnf );
-        } catch ( Exception ignore ) {
-            currentEnfEnum = EnforcementMode.OFF;
-        }
+        // Build plan (merge/validate/decide preflight)
+        SchemaAlterEngine.Plan plan = schemaAlterEngine.plan(r, current, currentMode);
 
-        // 1) enforcement-only change (no schema provided)
-        if ( r.schema == null ) {
-            if ( r.mode == null ) {
-                return; // nothing to change
+        // Enforcement-only?
+        if (plan.finalSchema() == null) {
+            SchemaAlterPreflightReport rep =
+                    schemaAlterEngine.preflightForEnforcementOnlyIfRequired(catalog, coll, plan, statement);
+            schemaAlterEngine.applyPolicyOrThrow(rep, false, currentMode, plan.finalMode());
+
+            if (metaOpt.isEmpty() && plan.finalMode() != EnforcementMode.OFF) {
+                throw new GenericRuntimeException("Cannot set validationAction without a persisted schema. Create a schema first.");
             }
-            if ( metaOpt.isEmpty() && r.mode != EnforcementMode.OFF ) {
-                throw new GenericRuntimeException(
-                        "Cannot set validationAction without a persisted schema. Create a schema first." );
-            }
-            if ( metaOpt.isPresent() ) {
-                // Skip no-op
-                if ( r.mode == currentEnfEnum ) {
-                    return;
+            if (metaOpt.isPresent()) {
+                long newVersion = metaOpt.get().version + 1L;
+                String newEnf = plan.finalMode().name();
+                if (!safeEnum(metaOpt.get().enforcement, EnforcementMode.OFF).name().equals(newEnf)) {
+                    SchemaMeta.writeCurrent(
+                            catalog,
+                            coll.id,
+                            new SchemaMeta(
+                                    metaOpt.get().schemaJson,
+                                    newEnf,
+                                    newVersion,
+                                    System.currentTimeMillis()
+                            )
+                    );
+                    catalog.updateSnapshot();
                 }
-
-                // If tightening to STRICT, verify all existing docs already conform to the current schema
-                if ( r.mode == EnforcementMode.STRICT ) {
-                    DocumentSchema currentSchema = fromCanonicalJson( metaOpt.get().schemaJson );
-                    SchemaAlterPreflightReport rep =
-                            SchemaAlterPreflight.run( catalog, coll, currentSchema, statement );
-                    if ( !rep.ok ) {
-                        throw new GenericRuntimeException(
-                                "Cannot set validationAction=STRICT: %d/%d documents violate the current schema; examples: %s",
-                                rep.failing, rep.scanned, rep.compactSummary(5) );
-                    }
-                }
-
-                // Persist unchanged schema with new enforcement
-                persistCollectionSchema( nsId, coll.id, metaOpt.get().schemaJson, r.mode.name() );
-                catalog.updateSnapshot();
             }
             return;
         }
 
-        // 2) schema present: compute final schema (REPLACE or PATCH)
-        DocumentSchema finalSchema;
-        if ( r.alterMode == SchemaOptionsResolver.AlterMode.PATCH && current != null ) {
-            finalSchema = mergePatch( current, r.schema );
-        } else {
-            finalSchema = r.schema;
-        }
+        // ---------- schema-changing path ----------
+        SchemaAlterPreflightReport rep = schemaAlterEngine.preflightIfRequired(catalog, coll, plan, statement);
+        schemaAlterEngine.applyPolicyOrThrow(rep, true, currentMode, plan.finalMode());
 
-        // 2.1) validate schema object itself
-        finalSchema.validateOrThrow();
+        long newVersion = metaOpt.map(m -> m.version + 1L).orElse(1L);
+        String newSchemaJson = SchemaJson.toJson(plan.finalSchema());
+        String newEnforcement = (plan.finalMode() != null ? plan.finalMode() : currentMode).name();
 
-        // 2.2) compatibility fast gate (no-scan allow for widenings, FORBID->ALLOW, etc.)
-        boolean noScanSafe = (current == null) || SchemaCompatibility.isCompatible( current, finalSchema );
+        SchemaMeta.writeCurrent(
+                catalog,
+                coll.id,
+                new SchemaMeta(
+                        newSchemaJson,
+                        newEnforcement,
+                        newVersion,
+                        System.currentTimeMillis()
+                )
+        );
 
-        // 2.3) if tightening, run preflight across existing docs; reject on any violation
-        if ( !noScanSafe ) {
-            SchemaAlterPreflightReport rep =
-                    SchemaAlterPreflight.run( catalog, coll, finalSchema, statement );
-            if ( !rep.ok ) {
-                throw new GenericRuntimeException(
-                        "ALTER SCHEMA would invalidate %d/%d documents; examples: %s",
-                        rep.failing, rep.scanned, rep.compactSummary(5) );
-            }
-        }
-
-        // 2.4) persist new schema + enforcement (if null, keep current)
-        String enforcement = ( r.mode != null ? r.mode.name() : currentEnfEnum.name() );
-        persistCollectionSchema( nsId, coll.id, toCanonicalJson( finalSchema ), enforcement );
         catalog.updateSnapshot();
     }
 
-    // inside your DDL manager class:
 
-
-    private DocumentSchema mergePatch( DocumentSchema current, DocumentSchema patch ) {
-        return new DocumentSchema( mergeObject( current.root(), patch.root() ) );
-    }
-
-
-    private DocumentSchema.ObjectNode mergeObject( DocumentSchema.ObjectNode cur, DocumentSchema.ObjectNode p ) {
-        if ( p == null ) {
-            return cur;
-        }
-
-        // properties: deep-merge by key
-        Map<String, DocumentSchema.Node> props = new java.util.LinkedHashMap<>( cur.properties );
-        for ( var e : p.properties.entrySet() ) {
-            String k = e.getKey();
-            DocumentSchema.Node pn = e.getValue();
-            DocumentSchema.Node cn = cur.properties.get( k );
-            if ( pn instanceof DocumentSchema.ObjectNode && cn instanceof DocumentSchema.ObjectNode ) {
-                props.put( k, mergeObject( (DocumentSchema.ObjectNode) cn, (DocumentSchema.ObjectNode) pn ) );
-            } else {
-                props.put( k, pn );
-            }
-        }
-
-        // additionalProperties: keep current unless patch specifies
-        DocumentSchema.AdditionalProperties ap = p.additionalProperties != null ? p.additionalProperties : cur.additionalProperties;
-
-        return new DocumentSchema.ObjectNode(props, ap);
+    // Normalize a stored enforcement string to the enum, falling back to `def` if null/invalid.
+    private static EnforcementMode safeEnum(final String s, final EnforcementMode fallback) {
+        if (s == null || s.isBlank()) return fallback;
+        try { return EnforcementMode.valueOf(s.toUpperCase(java.util.Locale.ROOT)); }
+        catch (Exception ignore) { return fallback; }
     }
 
 
@@ -2534,34 +2502,11 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private Optional<SchemaMeta> readCollectionSchema( long namespaceId, long collectionId ) {
-        var logicalDoc = catalog.getLogicalDoc( namespaceId );
-        if ( logicalDoc instanceof DocumentCatalog dc ) {
-            return dc.getCollectionSchema( collectionId ); // ensure this exists
-        }
-        return Optional.empty();
+    private Optional<SchemaMeta> readCollectionSchema(final long namespaceId, final long collectionId) {
+        // namespaceId is not needed by the in-memory registry but is kept for symmetry
+        return SchemaMeta.readCurrent(catalog, collectionId);
     }
 
-
-    private DocumentSchema fromCanonicalJson(String raw) {
-        if (raw == null || raw.isBlank()) {
-            throw new IllegalStateException("Stored collection schema is invalid JSON: empty");
-        }
-        final String original = raw.trim();
-
-        try {
-            JsonNode node = tryParseAny(original);
-            if (node.has("root")) {
-                return MAPPER.treeToValue(node, DocumentSchema.class);
-            } else {
-                // Bare object case; map to ObjectNode and wrap
-                DocumentSchema.ObjectNode root = MAPPER.treeToValue(node, DocumentSchema.ObjectNode.class);
-                return new DocumentSchema(root);
-            }
-        } catch (Exception e) {
-            throw new IllegalStateException("Stored collection schema is invalid JSON: " + summarize(original), e);
-        }
-    }
 
 
     /**
@@ -2614,14 +2559,6 @@ public class DdlManagerImpl extends DdlManager {
         }
         return n;
     }
-
-    private static String summarize(String s) {
-        int max = Math.min(160, s.length());
-        return s.substring(0, max).replace('\n', ' ') + (s.length() > max ? "…" : "");
-    }
-
-
-
 
     private String toCanonicalJson(DocumentSchema schema) {
         try {

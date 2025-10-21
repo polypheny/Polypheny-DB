@@ -27,7 +27,7 @@ public final class SchemaValidator {
 
     public static ValidationResult validate(DocumentSchema schema, BsonDocument doc) {
         List<Violation> out = new ArrayList<>();
-        validateObject("$", schema.root(), doc, out);
+        validateObject("$", schema.root(), doc, out, schema.additionalProperties());
         return new ValidationResult(out.isEmpty(), out);
     }
 
@@ -37,16 +37,22 @@ public final class SchemaValidator {
 
     // ----------------------------------------------------------------------
 
-    private static void validateObject(String path, ObjectNode schema, BsonDocument doc, List<Violation> out) {
+    private static void validateObject(
+            String path,
+            DocumentSchema.ObjectNode schemaNode,
+            BsonDocument doc,
+            List<Violation> out,
+            DocumentSchema.AdditionalProperties rootAp) {
+
         if (doc == null) {
             out.add(v(path, "TYPE", "Expected object but was null"));
             return;
         }
 
         // Every declared property is required by dialect
-        for (Map.Entry<String, Node> e : schema.properties.entrySet()) {
+        for (Map.Entry<String, DocumentSchema.Node> e : schemaNode.properties.entrySet()) {
             String key = e.getKey();
-            Node child = e.getValue();
+            DocumentSchema.Node child = e.getValue();
             String p = pathDot(path, key);
 
             if (!doc.containsKey(key) || doc.get(key).isNull()) {
@@ -56,20 +62,20 @@ public final class SchemaValidator {
 
             BsonValue bv = doc.get(key);
 
-            if (child instanceof ObjectNode) {
+            if (child instanceof DocumentSchema.ObjectNode on) {
                 if (!(bv instanceof BsonDocument)) {
                     out.add(v(p, "TYPE", "Expected object, got " + bsonTypeName(bv)));
                 } else {
-                    validateObject(p, (ObjectNode) child, (BsonDocument) bv, out);
+                    validateObject(p, on, (BsonDocument) bv, out, rootAp); // propagate root AP
                 }
-            } else if (child instanceof ArrayNode) {
+            } else if (child instanceof DocumentSchema.ArrayNode an) {
                 if (!(bv instanceof BsonArray)) {
                     out.add(v(p, "TYPE", "Expected array, got " + bsonTypeName(bv)));
                 } else {
-                    validateArray(p, (ArrayNode) child, (BsonArray) bv, out);
+                    validateArray(p, an, (BsonArray) bv, out, rootAp); // propagate root AP
                 }
-            } else if (child instanceof ScalarNode) {
-                PolyType t = ((ScalarNode) child).type;
+            } else if (child instanceof DocumentSchema.ScalarNode sn) {
+                PolyType t = sn.type;
                 if (!matchesType(bv, t)) {
                     out.add(v(p, "TYPE_MISMATCH", "Expected " + t + " but got " + bsonTypeName(bv)));
                 }
@@ -78,18 +84,23 @@ public final class SchemaValidator {
             }
         }
 
-        // additionalProperties
-        if (schema.additionalProperties == DocumentSchema.AdditionalProperties.FORBID) {
+        // Enforce root AP at every level
+        if (rootAp == DocumentSchema.AdditionalProperties.FORBID) {
             for (String k : doc.keySet()) {
-                if (!schema.properties.containsKey(k)) {
+                if (!schemaNode.properties.containsKey(k)) {
                     out.add(v(pathDot(path, k), "ADDITIONAL_PROPERTY", "Unexpected field"));
                 }
             }
         }
     }
 
+    private static void validateArray(
+            String path,
+            ArrayNode schema,
+            BsonArray arr,
+            List<Violation> out,
+            DocumentSchema.AdditionalProperties rootAp) {
 
-    private static void validateArray(String path, ArrayNode schema, BsonArray arr, List<Violation> out) {
         if (schema.minItems != null && arr.size() < schema.minItems) {
             out.add(v(path, "MIN_ITEMS", "Expected at least " + schema.minItems + " items"));
         }
@@ -108,20 +119,20 @@ public final class SchemaValidator {
             BsonValue v = arr.get(i);
             String ip = pathDot(path, Integer.toString(i));
 
-            if (item instanceof ObjectNode) {
+            if (item instanceof ObjectNode on) {
                 if (!(v instanceof BsonDocument)) {
                     out.add(v(ip, "TYPE", "Expected object, got " + bsonTypeName(v)));
                 } else {
-                    validateObject(ip, (ObjectNode) item, (BsonDocument) v, out);
+                    validateObject(ip, on, (BsonDocument) v, out, rootAp); // propagate root AP
                 }
-            } else if (item instanceof ArrayNode) {
+            } else if (item instanceof ArrayNode an) {
                 if (!(v instanceof BsonArray)) {
                     out.add(v(ip, "TYPE", "Expected array, got " + bsonTypeName(v)));
                 } else {
-                    validateArray(ip, (ArrayNode) item, (BsonArray) v, out);
+                    validateArray(ip, an, (BsonArray) v, out, rootAp); // propagate root AP
                 }
-            } else if (item instanceof ScalarNode) {
-                PolyType t = ((ScalarNode) item).type;
+            } else if (item instanceof ScalarNode sn) {
+                PolyType t = sn.type;
                 if (!matchesType(v, t)) {
                     out.add(v(ip, "TYPE_MISMATCH", "Expected " + t + " but got " + bsonTypeName(v)));
                 }

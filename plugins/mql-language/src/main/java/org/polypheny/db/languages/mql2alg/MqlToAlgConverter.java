@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.mql.MqlGetCollectionSchema;
 import org.polypheny.db.schema.document.EnforcementMode;
@@ -2096,19 +2097,50 @@ public class MqlToAlgConverter {
             JsonNode node = JSON.readTree(json);
             if (node == null) throw new IOException("empty");
 
+            // Case 1: Persisted DocumentSchema JSON: { "root": { ... }, "additionalProperties": ... }
             if (node.has("root")) {
+                // Ensure root-level AP is present and valid (will also be consumed by the ctor)
+                DocumentSchema.AdditionalProperties ap = readRootAPOrThrow(node.get("additionalProperties"));
+                // Let Jackson construct the DocumentSchema (ctor: (root, additionalProperties))
                 return JSON.treeToValue(node, DocumentSchema.class);
-            } else if (node.isObject()) {
-                // bare object is the root
-                DocumentSchema.ObjectNode root = JSON.treeToValue(node, DocumentSchema.ObjectNode.class);
-                return new DocumentSchema(root);
-            } else {
-                throw new IOException("schema must be an object or contain a 'root' object");
             }
+
+            // Case 2: Bare object = the docSchema itself (what users write):
+            // { type:"object", properties:{...}, additionalProperties: <...> }
+            if (node.isObject()) {
+                ObjectNode obj = (ObjectNode) node;
+
+                DocumentSchema.AdditionalProperties ap = readRootAPOrThrow(obj.get("additionalProperties"));
+                // Build the root ObjectNode; the ObjectNode deserializer ignores 'additionalProperties' (by design)
+                DocumentSchema.ObjectNode root = JSON.treeToValue(obj, DocumentSchema.ObjectNode.class);
+
+                return new DocumentSchema(root, ap);
+            }
+
+            throw new IOException("schema must be an object or contain a 'root' object");
         } catch (Exception e) {
             throw new GenericRuntimeException("Stored collection schema is invalid JSON", e);
         }
     }
+
+    /** Parse REQUIRED top-level additionalProperties (boolean or 'ALLOW'/'FORBID'). */
+    private static DocumentSchema.AdditionalProperties readRootAPOrThrow(JsonNode apNode) {
+        if (apNode == null) {
+            throw new IllegalArgumentException(
+                    "Top-level 'additionalProperties' must be specified (true/false or ALLOW/FORBID).");
+        }
+        if (apNode.isBoolean()) {
+            return apNode.asBoolean() ? DocumentSchema.AdditionalProperties.ALLOW
+                    : DocumentSchema.AdditionalProperties.FORBID;
+        }
+        if (apNode.isTextual()) {
+            String s = apNode.asText();
+            if ("ALLOW".equalsIgnoreCase(s) || "true".equalsIgnoreCase(s))  return DocumentSchema.AdditionalProperties.ALLOW;
+            if ("FORBID".equalsIgnoreCase(s) || "false".equalsIgnoreCase(s)) return DocumentSchema.AdditionalProperties.FORBID;
+        }
+        throw new IllegalArgumentException("'additionalProperties' must be boolean or 'ALLOW'/'FORBID'");
+    }
+
 
     private static final Logger LOG = LoggerFactory.getLogger(MqlToAlgConverter.class);
 

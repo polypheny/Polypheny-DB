@@ -28,7 +28,7 @@ public final class SchemaOptionsResolver {
 
         public Resolved(DocumentSchema s, EnforcementMode m, AlterMode a, List<Rename> r,
                 Map<String, JsonNode> d, Map<String, Coercion> c, boolean p, boolean dr) {
-            schema=s; mode=m; alterMode=a; renames=r; defaults=d; coercions=c; pruneExtras=p; dryRun=dr;
+            schema = s; mode = m; alterMode = a; renames = r; defaults = d; coercions = c; pruneExtras = p; dryRun = dr;
         }
     }
 
@@ -116,7 +116,14 @@ public final class SchemaOptionsResolver {
         if (root.has("docSchema")) {
             JsonNode ds = root.get("docSchema");
             if (!ds.isObject()) throw new IllegalArgumentException("'docSchema' must be an object");
-            schema = new DocumentSchema(readObjectNode((ObjectNode) ds));
+
+            // Root-aware parse: nested objects may NOT define additionalProperties.
+            DocumentSchema.ObjectNode rootNode = readObjectNode((ObjectNode) ds, /*isRoot=*/true);
+
+            // Root-level additionalProperties is REQUIRED (strict mode).
+            DocumentSchema.AdditionalProperties ap = readRootAPOrThrow((ObjectNode) ds);
+
+            schema = new DocumentSchema(rootNode, ap);
         } else if (!schemaOptional) {
             throw new IllegalArgumentException("Missing 'docSchema'.");
         }
@@ -126,28 +133,30 @@ public final class SchemaOptionsResolver {
 
     // ---------- Recursive readers ----------
 
-    private static DocumentSchema.ObjectNode readObjectNode(ObjectNode objSpec) {
+    private static DocumentSchema.ObjectNode readObjectNode(ObjectNode objSpec, boolean isRoot) {
         if (objSpec.has("type")) {
             String t = objSpec.get("type").asText("").trim().toLowerCase(Locale.ROOT);
             if (!t.isEmpty() && !t.equals("object"))
                 throw new IllegalArgumentException("Object node expected, found type: " + t);
         }
-
         if (objSpec.has("required"))
             throw new IllegalArgumentException("This dialect does not support 'required'. All declared properties are required.");
+
+        // Reject nested additionalProperties outright
+        if (!isRoot && objSpec.has("additionalProperties")) {
+            throw new IllegalArgumentException("Nested 'additionalProperties' is not allowed; only the top-level may define it.");
+        }
 
         Map<String, DocumentSchema.Node> props = new LinkedHashMap<>();
         if (objSpec.has("properties")) {
             JsonNode propsNode = objSpec.get("properties");
             if (!propsNode.isObject()) throw new IllegalArgumentException("'properties' must be an object");
-            propsNode.fields().forEachRemaining(e -> props.put(e.getKey(), readNode(e.getValue())));
+            propsNode.fields().forEachRemaining(e -> props.put(e.getKey(), readNode(e.getValue(), /*isRoot=*/false)));
         }
-
-        DocumentSchema.AdditionalProperties ap = readAP(objSpec);
-        return new DocumentSchema.ObjectNode(props, ap);
+        return new DocumentSchema.ObjectNode(props);
     }
 
-    private static DocumentSchema.Node readNode(JsonNode spec) {
+    private static DocumentSchema.Node readNode(JsonNode spec, boolean isRoot) {
         if (spec.isTextual()) {
             PolyType pt = mapInputTypeToPoly(spec.asText());
             return new DocumentSchema.ScalarNode(pt);
@@ -157,29 +166,36 @@ public final class SchemaOptionsResolver {
         ObjectNode o = (ObjectNode) spec;
         if (o.has("type") && o.get("type").isTextual()) {
             String typeText = o.get("type").asText().trim().toLowerCase(Locale.ROOT);
-            if (typeText.equals("object")) return readObjectNode(o);
+            if (typeText.equals("object")) return readObjectNode(o, /*isRoot=*/false);
             if (typeText.equals("array"))  return readArrayNode(o);
             PolyType pt = mapInputTypeToPoly(typeText);
             return new DocumentSchema.ScalarNode(pt);
         }
 
-        if (o.has("properties")) return readObjectNode(o);
+        if (o.has("properties")) return readObjectNode(o, /*isRoot=*/false);
         throw new IllegalArgumentException("Missing or unsupported 'type' in property spec: " + o);
     }
 
     private static DocumentSchema.ArrayNode readArrayNode(ObjectNode arrSpec) {
         if (!arrSpec.has("items")) throw new IllegalArgumentException("Array spec requires 'items'");
-        DocumentSchema.Node items = readNode(arrSpec.get("items"));
+        DocumentSchema.Node items = readNode(arrSpec.get("items"), /*isRoot=*/false);
         Integer minItems = arrSpec.has("minItems") ? arrSpec.get("minItems").asInt() : null;
         Boolean unique   = arrSpec.has("uniqueItems") ? arrSpec.get("uniqueItems").asBoolean() : null;
         return new DocumentSchema.ArrayNode(items, minItems, unique);
     }
 
-    private static DocumentSchema.AdditionalProperties readAP(ObjectNode o) {
-        if (!o.has("additionalProperties")) return DocumentSchema.AdditionalProperties.FORBID;
+    // Root-only AP: must be present at top level; throw if missing/invalid.
+    private static DocumentSchema.AdditionalProperties readRootAPOrThrow(ObjectNode o) {
+        if (!o.has("additionalProperties")) {
+            throw new IllegalArgumentException("Top-level 'additionalProperties' must be specified (true/false or ALLOW/FORBID).");
+        }
         JsonNode n = o.get("additionalProperties");
         if (n.isBoolean()) return n.asBoolean() ? DocumentSchema.AdditionalProperties.ALLOW : DocumentSchema.AdditionalProperties.FORBID;
-        if (n.isTextual()) return "FORBID".equalsIgnoreCase(n.asText()) ? DocumentSchema.AdditionalProperties.FORBID : DocumentSchema.AdditionalProperties.ALLOW;
+        if (n.isTextual()) {
+            String s = n.asText();
+            if ("FORBID".equalsIgnoreCase(s) || "false".equalsIgnoreCase(s)) return DocumentSchema.AdditionalProperties.FORBID;
+            if ("ALLOW".equalsIgnoreCase(s)  || "true".equalsIgnoreCase(s))  return DocumentSchema.AdditionalProperties.ALLOW;
+        }
         throw new IllegalArgumentException("'additionalProperties' must be boolean or 'FORBID'/'ALLOW'");
     }
 
@@ -201,7 +217,6 @@ public final class SchemaOptionsResolver {
 
             case "number":
             case "numeric":
-                // choose a wide numeric so validator accepts int/long/double
                 return PolyType.DOUBLE;
 
             case "boolean":
@@ -239,7 +254,7 @@ public final class SchemaOptionsResolver {
             case "bigint":
                 return PolyType.INTEGER;
 
-            // floating / decimal -> keep wide to allow ints as well
+            // floating / decimal
             case "decimal":
             case "float":
             case "real":

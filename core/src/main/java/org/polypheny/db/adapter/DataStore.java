@@ -23,13 +23,17 @@ import com.google.gson.JsonSerializer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.transaction.Statement;
 
 @Slf4j
 public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> implements Modifiable, ExtensionPoint {
@@ -92,6 +96,14 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
 
     private AdapterType getAdapterType() {
         return AdapterType.STORE;
+    }
+
+    public void streamCollectionAsJson(
+            final AllocationCollection alloc,
+            final Consumer<CharSequence> sink,
+            final Statement statement) {
+        throw new GenericRuntimeException(
+                "Store " + getUniqueName() + " does not support document scans (streamCollectionAsJson).");
     }
 
 }

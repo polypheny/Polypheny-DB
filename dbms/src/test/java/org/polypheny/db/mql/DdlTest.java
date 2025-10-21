@@ -212,214 +212,208 @@ public class DdlTest extends MqlTestTemplate {
         }
     }
 
-
-
-
-    // --------------------------------- NEW TESTS --------------------------------- //
-
-    // ADD THESE TESTS inside class DdlTest (do not modify existing ones)
+    // -----------------------------
+    // New tests around docSchema / validation options
+    // -----------------------------
 
     @Test
-    public void createCollection_withSchema_strict_validAndInvalidInserts() {
-        final String name = "users_strict_noextras";
-        final String opts = usersOptions(/*allowExtras=*/false, /*enforcement=*/"strict");
-
-        // ensure clean slate
-        dropSilently(name);
-
+    public void createCollection_missingDocSchema_ShouldFail() {
+        String coll = "schema_missing_ds";
+        String opts = "{ \"validationAction\": \"ERROR\" }";
         try {
-            // create with schema + STRICT + additionalProperties=false
-            execute("db.createCollection(\"" + name + "\"," + opts + ")");
-
-            // valid doc -> OK
-            assertDoesNotThrow(() -> execute(
-                    "db." + name + ".insert({ name: { firstname: \"Ada\", lastname: \"Lovelace\" }, age: 36 })"));
-
-            // extra top-level field -> REJECT (additionalProperties=false)
-            assertThrows(Exception.class, () -> execute(
-                    "db." + name + ".insert({ name: { firstname: \"Alan\", lastname: \"Turing\" }, age: 41, nickname: \"Al\" })"));
-
-            // missing required field 'age' -> REJECT
-            assertThrows(Exception.class, () -> execute(
-                    "db." + name + ".insert({ name: { firstname: \"Grace\", lastname: \"Hopper\" } })"));
-
-            // type mismatch: age as string -> REJECT
-            assertThrows(Exception.class, () -> execute(
-                    "db." + name + ".insert({ name: { firstname: \"Tim\", lastname: \"Berners-Lee\" }, age: \"35\" })"));
-
+            assertThrows( RuntimeException.class, () ->
+                    execute( "db.createCollection(\"" + coll + "\"," + opts + ")" ) );
         } finally {
-            dropSilently(name);
+            dropSilently( coll );
         }
     }
 
 
     @Test
-    public void createCollection_withSchema_strict_allowExtras() {
-        final String name = "users_strict_extras";
-        final String opts = usersOptions(/*allowExtras=*/true, /*enforcement=*/"strict");
-
-        dropSilently(name);
-
+    public void createCollection_docSchemaNotObject_ShouldFail() {
+        String coll = "schema_ds_not_object";
+        String opts = "{ \"docSchema\":\"string\", \"validationAction\":\"ERROR\" }";
         try {
-            execute("db.createCollection(\"" + name + "\"," + opts + ")");
-
-            // valid with extra field -> OK (extras allowed)
-            assertDoesNotThrow(() -> execute(
-                    "db." + name + ".insert({ name: { firstname: \"Ada\", lastname: \"Lovelace\" }, age: 36, nickname: \"Ada\" })"));
-
-            // missing required field still not allowed under STRICT
-            assertThrows(Exception.class, () -> execute(
-                    "db." + name + ".insert({ name: { firstname: \"Alan\", lastname: \"Turing\" } })"));
-
-            // type mismatch still not allowed under STRICT
-            assertThrows(Exception.class, () -> execute(
-                    "db." + name + ".insert({ name: { firstname: \"Grace\", lastname: \"Hopper\" }, age: \"37\" })"));
-
+            assertThrows( RuntimeException.class, () ->
+                    execute( "db.createCollection(\"" + coll + "\"," + opts + ")" ) );
         } finally {
-            dropSilently(name);
+            dropSilently( coll );
         }
     }
 
 
     @Test
-    public void createCollection_withSchema_warn_allowsInvalidDocuments() {
-        final String name = "users_warn";
-        final String opts = usersOptions(/*allowExtras=*/false, /*enforcement=*/"warn");
-
-        dropSilently(name);
-
+    public void createCollection_unknownTypeToken_ShouldFail() {
+        // 'str' should be unknown; use 'string' for valid tests elsewhere
+        String coll = "schema_bad_type_token";
+        String opts = "{ \"docSchema\": { \"additionalProperties\":\"ALLOW\", \"properties\": { \"name\": { \"type\":\"str\" } } }, \"validationAction\":\"ERROR\" }";
         try {
-            execute("db.createCollection(\"" + name + "\"," + opts + ")");
-
-            // Valid -> OK
-            assertDoesNotThrow(() -> execute(
-                    "db." + name + ".insert({ name: { firstname: \"Ada\", lastname: \"Lovelace\" }, age: 36 })"));
-
-            // Extra field -> should still be accepted in WARN
-            assertDoesNotThrow(() -> execute(
-                    "db." + name + ".insert({ name: { firstname: \"Alan\", lastname: \"Turing\" }, age: 41, nickname: \"Al\" })"));
-
-            // Missing required field -> should still be accepted in WARN
-            assertDoesNotThrow(() -> execute(
-                    "db." + name + ".insert({ name: { firstname: \"Grace\", lastname: \"Hopper\" } })"));
-
-            // Type mismatch -> should still be accepted in WARN
-            assertDoesNotThrow(() -> execute(
-                    "db." + name + ".insert({ name: { firstname: \"Tim\", lastname: \"Berners-Lee\" }, age: \"35\" })"));
-
+            assertThrows( RuntimeException.class, () ->
+                    execute( "db.createCollection(\"" + coll + "\"," + opts + ")" ) );
         } finally {
-            dropSilently(name);
+            dropSilently( coll );
         }
     }
 
 
     @Test
-    public void createCollection_withSchema_off_allowsAnything() {
-        final String name = "users_off";
-        // enforcement OFF; extras flag shouldn't matter, but keep it explicit
-        final String opts = usersOptions(/*allowExtras=*/false, /*enforcement=*/"off");
-
-        dropSilently(name);
-
+    public void createCollection_invalidAdditionalProperties_ShouldFail() {
+        String coll = "schema_bad_ap";
+        String opts = "{ \"docSchema\": { \"additionalProperties\":\"DENY\", \"properties\": { \"name\": { \"type\":\"string\" } } }, \"validationAction\":\"ERROR\" }";
         try {
-            execute("db.createCollection(\"" + name + "\"," + opts + ")");
-
-            // Everything should be accepted with OFF
-            assertDoesNotThrow(() -> execute(
-                    "db." + name + ".insert({ any: { crazy: [1,2,3] }, shape: \"whatever\", x: null })"));
-
+            assertThrows( RuntimeException.class, () ->
+                    execute( "db.createCollection(\"" + coll + "\"," + opts + ")" ) );
         } finally {
-            dropSilently(name);
+            dropSilently( coll );
         }
     }
 
 
     @Test
-    public void createCollection_rejects_legacyValidatorKey() {
-        final String name = "users_validator_legacy";
-
-        dropSilently(name);
-
+    public void createCollection_unknownValidationAction_ShouldFail() {
+        String coll = "schema_bad_action";
+        String opts = "{ \"docSchema\": { \"additionalProperties\":\"ALLOW\", \"properties\": { \"name\": { \"type\":\"string\" } } }, \"validationAction\":\"enforce\" }";
         try {
-            // Using legacy 'validator.$jsonSchema' must be rejected by resolver
-            String badOpts =
-                    "{ validator: { $jsonSchema: { properties: { name: { type: \"object\" } } } }, validationAction: \"strict\" }";
-
-            assertThrows(Exception.class, () -> execute(
-                    "db.createCollection(\"" + name + "\"," + badOpts + ")"));
-
+            assertThrows( RuntimeException.class, () ->
+                    execute( "db.createCollection(\"" + coll + "\"," + opts + ")" ) );
         } finally {
-            dropSilently(name);
+            dropSilently( coll );
         }
     }
 
 
     @Test
-    public void createCollection_rejects_requiredKeyword() {
-        final String name = "users_required_keyword";
-
-        dropSilently(name);
+    public void createCollection_validSchema_ErrorAction_AndInsertValidation() {
+        String coll = "schema_ok_error";
+        String opts = "{ \"docSchema\": {"
+                + "  \"additionalProperties\":\"FORBID\","
+                + "  \"properties\": {"
+                + "    \"name\": { \"type\":\"string\" }"
+                + "  }"
+                + "},"
+                + "\"validationAction\":\"ERROR\" }";
 
         try {
-            String badOpts =
-                    "{ docSchema: { type: \"object\", properties: { name: { type: \"object\", properties: { firstname: { type: \"text\" } } }, age: { type: \"number\" } }, required: [\"name\",\"age\"], additionalProperties: false }, validationAction: \"strict\" }";
+            // create succeeds
+            assertDoesNotThrow( () -> execute( "db.createCollection(\"" + coll + "\"," + opts + ")" ) );
 
-            assertThrows(Exception.class, () -> execute(
-                    "db.createCollection(\"" + name + "\"," + badOpts + ")"));
+            // valid insert
+            assertDoesNotThrow( () -> insert( "{ \"name\": \"Ada\" }", coll ) );
+
+            // wrong type for 'name' triggers error
+            assertThrows( RuntimeException.class, () -> insert( "{ \"name\": 42 }", coll ) );
+
+            // additional properties are forbidden; should error
+            assertThrows( RuntimeException.class, () -> insert( "{ \"name\": \"Bob\", \"age\": 30 }", coll ) );
 
         } finally {
-            dropSilently(name);
+            dropSilently( coll );
         }
     }
 
 
     @Test
-    public void createCollection_rejects_nonObjectDocSchema() {
-        final String name = "users_bad_docSchema";
-
-        dropSilently(name);
+    public void createCollection_validSchema_WarnAction_AllowsViolations() {
+        String coll = "schema_ok_warn";
+        String opts = "{ \"docSchema\": {"
+                + "  \"additionalProperties\":\"FORBID\","
+                + "  \"properties\": {"
+                + "    \"name\": { \"type\":\"string\" }"
+                + "  }"
+                + "},"
+                + "\"validationAction\":\"WARN\" }";
 
         try {
-            String badOpts = "{ docSchema: \"text\", validationAction: \"strict\" }";
+            assertDoesNotThrow( () -> execute( "db.createCollection(\"" + coll + "\"," + opts + ")" ) );
 
-            assertThrows(Exception.class, () -> execute(
-                    "db.createCollection(\"" + name + "\"," + badOpts + ")"));
+            // violations should not throw with WARN
+            assertDoesNotThrow( () -> insert( "{ \"name\": 5 }", coll ) );
+            assertDoesNotThrow( () -> insert( "{ \"name\": \"Eve\", \"extra\": true }", coll ) );
 
+            // confirm we can read back at least one violating doc
+            DocResult result = MongoConnection.executeGetResponse( "db." + coll + ".find({},{})" );
+            // just sanity check that the find returned something (we reuse existing helper pattern)
+            assertTrue( result != null );
         } finally {
-            dropSilently(name);
+            dropSilently( coll );
         }
     }
 
 
-// -------------------- helpers (private) --------------------
+    @Test
+    public void createCollection_additionalPropertiesBooleanVariants() {
+        // additionalProperties as boolean should be accepted per validator ("boolean or 'FORBID'/'ALLOW'")
+        String collTrue = "schema_ap_true";
+        String collFalse = "schema_ap_false";
 
-    /**
-     * Produces the options payload for users schema in your dialect.
-     * All declared fields are required by design; 'additionalProperties' toggles extras.
-     */
-    private static String usersOptions(boolean allowExtras, String enforcement) {
-        // additionalProperties: false | true
-        String ap = allowExtras ? "true" : "false";
-        return "{ " +
-                "docSchema: {" +
-                "  type: \"object\"," +
-                "  properties: {" +
-                "    name: {" +
-                "      type: \"object\"," +
-                "      properties: {" +
-                "        firstname: { type: \"text\" }," +
-                "        lastname:  { type: \"text\" }" +
-                "      }" +
-                "    }," +
-                "    age: { type: \"number\" }" +
-                "  }," +
-                "  additionalProperties: " + ap +
-                "}," +
-                "validationAction: \"" + enforcement + "\"" +
-                "}";
+        String optsTrue = "{ \"docSchema\": {"
+                + "  \"additionalProperties\": true,"
+                + "  \"properties\": { \"name\": { \"type\":\"string\" } }"
+                + "}, \"validationAction\":\"ERROR\" }";
+
+        String optsFalse = "{ \"docSchema\": {"
+                + "  \"additionalProperties\": false,"
+                + "  \"properties\": { \"name\": { \"type\":\"string\" } }"
+                + "}, \"validationAction\":\"ERROR\" }";
+
+        try {
+            // true => allow extras even with ERROR action (no violation)
+            assertDoesNotThrow( () -> execute( "db.createCollection(\"" + collTrue + "\"," + optsTrue + ")" ) );
+            assertDoesNotThrow( () -> insert( "{ \"name\":\"N\", \"x\":1 }", collTrue ) );
+
+            // false => forbid extras; inserting an extra field should error
+            assertDoesNotThrow( () -> execute( "db.createCollection(\"" + collFalse + "\"," + optsFalse + ")" ) );
+            assertDoesNotThrow( () -> insert( "{ \"name\":\"N\" }", collFalse ) );
+            assertThrows( RuntimeException.class, () -> insert( "{ \"name\":\"N\", \"x\":1 }", collFalse ) );
+
+        } finally {
+            dropSilently( collTrue );
+            dropSilently( collFalse );
+        }
     }
 
 
+    @Test
+    public void insert_conformingDocument_succeedsAndIsQueryable() {
+        String coll = "schema_queryable";
+        String opts = "{ \"docSchema\": {"
+                + "  \"additionalProperties\":\"FORBID\","
+                + "  \"properties\": {"
+                + "    \"key\": { \"type\":\"string\" },"
+                + "    \"key1\": { \"type\":\"string\" }"
+                + "  }"
+                + "},"
+                + "\"validationAction\":\"ERROR\" }";
 
+        final String DATA = "{ \"key\": \"value\", \"key1\": \"value1\" }";
+
+        try {
+            assertDoesNotThrow( () -> execute( "db.createCollection(\"" + coll + "\"," + opts + ")" ) );
+            assertDoesNotThrow( () -> insert( DATA, coll ) );
+
+            DocResult result = MongoConnection.executeGetResponse( "db." + coll + ".find({},{})" );
+            assertTrue(
+                    MongoConnection.checkDocResultSet(
+                            result,
+                            ImmutableList.of( DATA ), true,
+                            false ) );
+
+        } finally {
+            dropSilently( coll );
+        }
+    }
+
+
+    @Test
+    public void createCollection_alreadyExists_ShouldFail() {
+        String coll = "dup_collection_test";
+        try {
+            execute( "db.createCollection(\"" + coll + "\")" );
+            assertThrows( RuntimeException.class, () ->
+                    execute( "db.createCollection(\"" + coll + "\")" ) );
+        } finally {
+            dropSilently( coll );
+        }
+    }
 
 }
