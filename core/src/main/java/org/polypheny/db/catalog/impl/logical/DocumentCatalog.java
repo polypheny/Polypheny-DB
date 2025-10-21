@@ -118,8 +118,7 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
         SchemaMeta meta = new SchemaMeta(
                 schemaJson,
                 enforcement,
-                nextVersion,
-                Instant.now().toEpochMilli()
+                nextVersion
         );
         collectionSchemas.put(collectionId, meta);
         // Optionally: fire a dedicated event if you later add one to CatalogEvent.

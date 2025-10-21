@@ -460,18 +460,33 @@ public abstract class DdlManager {
     public abstract void createMaterializedView( String viewName, long namespaceId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore<?>> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered );
 
     /**
-     *  Creates a new document collection explicitly with or without an attached schema
-     * @param namespaceId
-     * @param name
-     * @param ifNotExists
-     * @param stores
-     * @param placementType
-     * @param statement
-     * @param polyVal the schema
+     * Creates a new document collection.
+     * <p>
+     * Resolves optional schema options from {@code polyValue}.
+     * - If schema is provided: runs CreateCollectionWS(...)
+     * - If no schema is provided: runs CreateCollectionWOS(...)
+     *
+     * @param namespaceId the id of the namespace to which the collection belongs
+     * @param name requested collection name
+     * @param ifNotExists whether to silently ignore if the collection already exists
+     * @param stores list of data stores on which to create a full placement for this collection
+     * @param placementType which placement type should be used for the initial placements
+     * @param statement the used Statement
+     * @param polyVal JSON-like options; may include docSchema and validationAction
      */
     public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement, @Nullable PolyValue polyVal);
 
-    // TODO: COMMENTS
+    /**
+     * Alters a collection's schema or enforcement settings.
+     * <p>
+     * Parses options, orchestrates the alteration (including preflight when required),
+     * and resets relevant caches.
+     *
+     * @param namespaceId the id of the namespace to which the collection belongs
+     * @param name collection name
+     * @param statement the used Statement
+     * @param polyVal JSON-like options for ALTER
+     */
     public abstract void alterCollectionSchema(long namespaceId, String name, Statement statement, PolyValue polyVal);
 
     public abstract void createCollectionPlacement( long namespaceId, String name, List<DataStore<?>> stores, Statement statement );
@@ -575,9 +590,6 @@ public abstract class DdlManager {
     public abstract void dropCollection( LogicalCollection catalogCollection, Statement statement );
 
     public abstract void dropCollectionPlacement( long namespaceId, LogicalCollection collection, List<DataStore<?>> dataStores, Statement statement );
-
-    public abstract String getCollectionSchemaAsJson( long nsId, String name );
-
 
     /**
      * Helper class which holds all information required for creating a column,

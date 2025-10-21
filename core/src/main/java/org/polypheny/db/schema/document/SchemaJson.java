@@ -18,31 +18,59 @@ package org.polypheny.db.schema.document;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * JSON utilities for {@link DocumentSchema}.
+ * Provides parsing from a JSON string to a {@code DocumentSchema} and serialization
+ * from a {@code DocumentSchema} to its canonical JSON form.
+ */
 public final class SchemaJson {
-    private static final ObjectMapper M = new ObjectMapper();
-    private SchemaJson() {}
 
-    public static DocumentSchema parse(String json) {
+    private static final ObjectMapper M = new ObjectMapper();
+
+
+    private SchemaJson() {
+    }
+
+
+    /**
+     * Parses a JSON string into a {@link DocumentSchema}.
+     *
+     * @param json schema JSON as text
+     * @return parsed {@code DocumentSchema}
+     * @throws IllegalArgumentException if the input cannot be parsed into a schema
+     */
+    public static DocumentSchema parse( String json ) {
         try {
             // accept {"root": {...}} or bare {...}
-            var node = M.readTree(json);
-            if (node.isTextual()) node = M.readTree(node.asText());
-            if (!node.has("root")) {
+            var node = M.readTree( json );
+            if ( node.isTextual() ) {
+                node = M.readTree( node.asText() );
+            }
+            if ( !node.has( "root" ) ) {
                 var wrapper = M.createObjectNode();
-                wrapper.set("root", node);
+                wrapper.set( "root", node );
                 node = wrapper;
             }
-            return M.treeToValue(node, DocumentSchema.class);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid DocumentSchema JSON: " + e.getMessage(), e);
+            return M.treeToValue( node, DocumentSchema.class );
+        } catch ( Exception e ) {
+            throw new IllegalArgumentException( "Invalid DocumentSchema JSON: " + e.getMessage(), e );
         }
     }
 
-    public static String toJson(DocumentSchema schema) {
+
+    /**
+     * Serializes a {@link DocumentSchema} to its canonical JSON representation.
+     *
+     * @param schema schema instance to serialize
+     * @return canonical JSON string
+     * @throws IllegalStateException if serialization fails
+     */
+    public static String toJson( DocumentSchema schema ) {
         try {
-            return M.writeValueAsString(schema); // canonical {"root": {...}}
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to serialize DocumentSchema: " + e.getMessage(), e);
+            return M.writeValueAsString( schema ); // canonical {"root": {...}}
+        } catch ( Exception e ) {
+            throw new IllegalStateException( "Failed to serialize DocumentSchema: " + e.getMessage(), e );
         }
     }
+
 }

@@ -18,27 +18,28 @@ package org.polypheny.db.languages.mql;
 
 import com.mongodb.lang.Nullable;
 import lombok.Getter;
-import org.bson.BsonDocument;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.mql.Mql.Type;
 
 @Getter
 public class MqlGetCollectionSchema extends MqlCollectionStatement {
 
-    public MqlGetCollectionSchema(final ParserPos pos,
+    public MqlGetCollectionSchema(
+            final ParserPos pos,
             final String collection,
-            final String namespace) {
-        // match MqlFind: (collection, namespace, pos)
-        super(collection, namespace, pos);
+            final String namespace ) {
+        super( collection, namespace, pos );
     }
+
 
     @Override
     public Mql.Type getMqlKind() {
         return Mql.Type.GET_COLLECTION_SCHEMA;
     }
 
+
     @Override
     public @Nullable String getEntity() {
         return getCollection();
     }
+
 }

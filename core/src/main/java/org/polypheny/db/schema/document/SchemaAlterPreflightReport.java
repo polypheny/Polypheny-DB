@@ -29,20 +29,23 @@ public final class SchemaAlterPreflightReport {
     public final long failing;
     public final List<Violation> sample;
 
-    public SchemaAlterPreflightReport(boolean ok, long scanned, long failing, List<Violation> sample) {
+
+    public SchemaAlterPreflightReport( boolean ok, long scanned, long failing, List<Violation> sample ) {
         this.ok = ok;
         this.scanned = scanned;
         this.failing = failing;
         this.sample = sample;
     }
 
+
     /**
      * Convenience: compact human-readable summary of violations.
      */
-    public String compactSummary(int maxItems) {
-        if (ok || sample == null || sample.isEmpty()) {
+    public String compactSummary( int maxItems ) {
+        if ( ok || sample == null || sample.isEmpty() ) {
             return "ok";
         }
-        return new SchemaValidator.ValidationResult(false, sample).compactSummary(maxItems);
+        return new SchemaValidator.ValidationResult( false, sample ).compactSummary( maxItems );
     }
+
 }

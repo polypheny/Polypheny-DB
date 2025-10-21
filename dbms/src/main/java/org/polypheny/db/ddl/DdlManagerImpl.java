@@ -17,7 +17,6 @@
 package org.polypheny.db.ddl;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -2212,19 +2211,18 @@ public class DdlManagerImpl extends DdlManager {
     ) {
 
         // Normalize + validate context once
-        String adjusted = adjustNameIfNeeded(name, namespaceId);
-        checkModelLangCompatibility(DataModel.DOCUMENT, namespaceId);
+        String adjusted = adjustNameIfNeeded( name, namespaceId );
+        checkModelLangCompatibility( DataModel.DOCUMENT, namespaceId );
 
         // Fail fast (or early-return if IF NOT EXISTS)
-        if (assertEntityExists(namespaceId, adjusted, ifNotExists)) {
+        if ( assertEntityExists( namespaceId, adjusted, ifNotExists ) ) {
             return;
         }
-
 
         // 1) resolve schema
         DocumentSchema schema = null;
         EnforcementMode mode = EnforcementMode.OFF;
-        if ( polyValue!= null) {
+        if ( polyValue != null ) {
             var resolved = SchemaOptionsResolver.resolve( polyValue );
             schema = resolved.schema;
             mode = resolved.mode;
@@ -2294,118 +2292,59 @@ public class DdlManagerImpl extends DdlManager {
                 logical.namespaceId,
                 logical.id,
                 new SchemaMeta(
-                        SchemaJson.toJson(schema),
+                        SchemaJson.toJson( schema ),
                         (mode == null ? EnforcementMode.OFF : mode).name(),
-                        1L,
-                        System.currentTimeMillis()
+                        1L
                 )
         );
         catalog.updateSnapshot();
     }
 
 
-    @Override
-    public String getCollectionSchemaAsJson(long namespaceId, String collectionName) {
-        // 1) Do NOT call adjustNameIfNeeded here
-        checkModelLangCompatibility(DataModel.DOCUMENT, namespaceId);
-
-        var snapshot = catalog.getSnapshot();
-
-        // Pass the raw name; Snapshot handles case-sensitivity rules of the namespace
-        var collOpt = snapshot.doc().getCollection(namespaceId, collectionName);
-        if (collOpt.isEmpty()) {
-            return null; // no such collection
-        }
-        var coll = collOpt.get();
-
-        var metaOpt = SchemaMeta.readCurrent(catalog, namespaceId, coll.id);
-        if (metaOpt.isEmpty()) {
-            return null; // no schema persisted
-        }
-        SchemaMeta meta = metaOpt.get();
-
-        DocumentSchema ds = SchemaJson.parse(meta.schemaJson);
-
-        ObjectNode docSchema = MAPPER.createObjectNode();
-        docSchema.put("type", "object");
-
-        ObjectNode props = MAPPER.createObjectNode();
-        for (var e : ds.root().properties.entrySet()) {
-            props.set(e.getKey(), MAPPER.valueToTree(e.getValue()));
-        }
-        docSchema.set("properties", props);
-
-        boolean ap = (ds.additionalProperties() == DocumentSchema.AdditionalProperties.ALLOW);
-        docSchema.put("additionalProperties", ap);
-
-        ObjectNode out = MAPPER.createObjectNode();
-        out.put("collection", coll.name);                    // authoritative actual name
-        out.set("docSchema", docSchema);
-        out.put("validationAction", normalizeEnforcement(meta.enforcement));
-
-        try {
-            return MAPPER.writeValueAsString(out);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            throw new GenericRuntimeException(
-                    "Failed to serialize collection schema JSON for '" + coll.name + "'", e);
-        }
-    }
-
-    private static String normalizeEnforcement(String s) {
-        if (s == null) return EnforcementMode.OFF.name();
-        String v = s.trim().toLowerCase(java.util.Locale.ROOT);
-        return switch (v) {
-            case "strict", "error" -> EnforcementMode.STRICT.name();
-            case "warn", "warning", "on" -> EnforcementMode.WARN.name(); // legacy "on" -> WARN
-            case "off" -> EnforcementMode.OFF.name();
-            default -> EnforcementMode.OFF.name();
-        };
-    }
-
-
     private final SchemaAlterEngine schemaAlterEngine = new SchemaAlterEngine();
 
+
     @Override
-    public void alterCollectionSchema(long namespaceId, String name, Statement statement, PolyValue polyValue) {
+    public void alterCollectionSchema( long namespaceId, String name, Statement statement, PolyValue polyValue ) {
         // Parse
-        SchemaOptionsResolver.Resolved r = SchemaOptionsResolver.resolveAlter(polyValue);
+        SchemaOptionsResolver.Resolved r = SchemaOptionsResolver.resolveAlter( polyValue );
 
         // Orchestrate
-        alterCollectionSchemaInternal(namespaceId, name, r, statement);
-        safeResetCaches(statement);
+        alterCollectionSchemaInternal( namespaceId, name, r, statement );
+        safeResetCaches( statement );
     }
 
 
-    private void alterCollectionSchemaInternal(long nsId, String name, SchemaOptionsResolver.Resolved r, @Nullable Statement statement) {
-        String adjusted = adjustNameIfNeeded(name, nsId);
-        checkModelLangCompatibility(DataModel.DOCUMENT, nsId);
+    private void alterCollectionSchemaInternal( long nsId, String name, SchemaOptionsResolver.Resolved r, @Nullable Statement statement ) {
+        String adjusted = adjustNameIfNeeded( name, nsId );
+        checkModelLangCompatibility( DataModel.DOCUMENT, nsId );
 
         var snapshot = catalog.getSnapshot();
         LogicalCollection coll = snapshot.doc()
-                .getCollection(nsId, adjusted)
-                .orElseThrow(() -> new GenericRuntimeException("Collection %s does not exist.", adjusted));
+                .getCollection( nsId, adjusted )
+                .orElseThrow( () -> new GenericRuntimeException( "Collection %s does not exist.", adjusted ) );
 
         // Read current persisted schema (if any)
-        var metaOpt = SchemaMeta.readCurrent(catalog, coll.namespaceId, coll.id);
-        DocumentSchema current = metaOpt.map(m -> SchemaJson.parse(m.schemaJson)).orElse(null);
-        EnforcementMode currentMode = metaOpt.map(m -> safeEnum(m.enforcement, EnforcementMode.OFF)).orElse(EnforcementMode.OFF);
+        var metaOpt = SchemaMeta.readCurrent( catalog, coll.namespaceId, coll.id );
+        DocumentSchema current = metaOpt.map( m -> SchemaJson.parse( m.schemaJson ) ).orElse( null );
+        EnforcementMode currentMode = metaOpt.map( m -> safeEnum( m.enforcement, EnforcementMode.OFF ) ).orElse( EnforcementMode.OFF );
 
         // Build plan (merge/validate/decide preflight)
-        SchemaAlterEngine.Plan plan = schemaAlterEngine.plan(r, current, currentMode);
+        SchemaAlterEngine.Plan plan = schemaAlterEngine.plan( r, current, currentMode );
 
         // Enforcement-only?
-        if (plan.finalSchema() == null) {
+        if ( plan.finalSchema() == null ) {
             SchemaAlterPreflightReport rep =
-                    schemaAlterEngine.preflightForEnforcementOnlyIfRequired(catalog, coll, plan, statement);
-            schemaAlterEngine.applyPolicyOrThrow(rep, false, currentMode, plan.finalMode());
+                    schemaAlterEngine.preflightForEnforcementOnlyIfRequired( catalog, coll, plan, statement );
+            schemaAlterEngine.applyPolicyOrThrow( rep, false, currentMode, plan.finalMode() );
 
-            if (metaOpt.isEmpty() && plan.finalMode() != EnforcementMode.OFF) {
-                throw new GenericRuntimeException("Cannot set validationAction without a persisted schema. Create a schema first.");
+            if ( metaOpt.isEmpty() && plan.finalMode() != EnforcementMode.OFF ) {
+                throw new GenericRuntimeException( "Cannot set validationAction without a persisted schema. Create a schema first." );
             }
-            if (metaOpt.isPresent()) {
+            if ( metaOpt.isPresent() ) {
                 long newVersion = metaOpt.get().version + 1L;
                 String newEnf = plan.finalMode().name();
-                if (!safeEnum(metaOpt.get().enforcement, EnforcementMode.OFF).name().equals(newEnf)) {
+                if ( !safeEnum( metaOpt.get().enforcement, EnforcementMode.OFF ).name().equals( newEnf ) ) {
                     SchemaMeta.writeCurrent(
                             catalog,
                             coll.namespaceId,
@@ -2413,8 +2352,7 @@ public class DdlManagerImpl extends DdlManager {
                             new SchemaMeta(
                                     metaOpt.get().schemaJson,   // schema unchanged
                                     newEnf,
-                                    newVersion,
-                                    System.currentTimeMillis()
+                                    newVersion
                             )
                     );
                     catalog.updateSnapshot();
@@ -2424,11 +2362,11 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // ---------- schema-changing path ----------
-        SchemaAlterPreflightReport rep = schemaAlterEngine.preflightIfRequired(catalog, coll, plan, statement);
-        schemaAlterEngine.applyPolicyOrThrow(rep, true, currentMode, plan.finalMode());
+        SchemaAlterPreflightReport rep = schemaAlterEngine.preflightIfRequired( catalog, coll, plan, statement );
+        schemaAlterEngine.applyPolicyOrThrow( rep, true, currentMode, plan.finalMode() );
 
-        long newVersion = metaOpt.map(m -> m.version + 1L).orElse(1L);
-        String newSchemaJson = SchemaJson.toJson(plan.finalSchema());
+        long newVersion = metaOpt.map( m -> m.version + 1L ).orElse( 1L );
+        String newSchemaJson = SchemaJson.toJson( plan.finalSchema() );
         String newEnforcement = (plan.finalMode() != null ? plan.finalMode() : currentMode).name();
 
         SchemaMeta.writeCurrent(
@@ -2438,8 +2376,7 @@ public class DdlManagerImpl extends DdlManager {
                 new SchemaMeta(
                         newSchemaJson,
                         newEnforcement,
-                        newVersion,
-                        System.currentTimeMillis()
+                        newVersion
                 )
         );
         catalog.updateSnapshot();
@@ -2447,10 +2384,23 @@ public class DdlManagerImpl extends DdlManager {
 
 
     // Normalize a stored enforcement string to the enum, falling back to `def` if null/invalid.
-    private static EnforcementMode safeEnum(final String s, final EnforcementMode fallback) {
-        if (s == null || s.isBlank()) return fallback;
-        try { return EnforcementMode.valueOf(s.toUpperCase(java.util.Locale.ROOT)); }
-        catch (Exception ignore) { return fallback; }
+    private static EnforcementMode safeEnum( final String s, final EnforcementMode fallback ) {
+        if ( s == null || s.isBlank() ) {
+            return fallback;
+        }
+        try {
+            return EnforcementMode.valueOf( s.toUpperCase( java.util.Locale.ROOT ) );
+        } catch ( Exception ignore ) {
+            return fallback;
+        }
+    }
+
+
+    private static void safeResetCaches( Statement statement ) {
+        try {
+            statement.getQueryProcessor().resetCaches();
+        } catch ( Throwable ignore ) {
+        }
     }
 
 
@@ -2467,64 +2417,6 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
         return false;
-    }
-
-    /**
-     * Parses JSON that might be:
-     *  - a normal object
-     *  - a JSON string that contains JSON (possibly multiple nesting levels)
-     * Tries a few safe unwrapping rounds.
-     */
-    private JsonNode tryParseAny(String text) throws Exception {
-        JsonNode n = null;
-        String cur = text;
-
-        // Try as-is
-        try {
-            n = MAPPER.readTree(cur);
-        } catch (Exception ignored) {}
-
-        // If it's a JSON string that itself contains JSON, unwrap up to 3 times
-        for (int i = 0; i < 3 && (n == null || n.isTextual()); i++) {
-            if (n == null) {
-                // previous read failed; try to read a JSON string to get inner text
-                // Example: "\"{\\\"root\\\":{...}}\""  (a JSON string literal)
-                try {
-                    String inner = MAPPER.readValue(cur, String.class);
-                    n = MAPPER.readTree(inner);
-                    cur = inner;
-                    continue;
-                } catch (Exception ignored) {}
-            } else if (n.isTextual()) {
-                String inner = n.asText();
-                try {
-                    n = MAPPER.readTree(inner);
-                    cur = inner;
-                    continue;
-                } catch (Exception ignored) {}
-            }
-            break;
-        }
-
-        if (n == null) {
-            // Last-ditch: if it looks like a quoted JSON object, strip outer quotes naively once.
-            if (cur.length() >= 2 && cur.charAt(0) == '"' && cur.charAt(cur.length() - 1) == '"') {
-                String stripped = cur.substring(1, cur.length() - 1);
-                n = MAPPER.readTree(stripped);
-            }
-        }
-
-        if (n == null || !n.isObject()) {
-            throw new IllegalArgumentException("Not a parseable JSON object");
-        }
-        return n;
-    }
-
-    private static void safeResetCaches( Statement statement ) {
-        try {
-            statement.getQueryProcessor().resetCaches();
-        } catch ( Throwable ignore ) {
-        }
     }
 
 

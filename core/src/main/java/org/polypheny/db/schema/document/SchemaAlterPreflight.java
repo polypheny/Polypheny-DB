@@ -33,171 +33,204 @@ import java.util.Optional;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 
-
+/**
+ * Preflight validator for schema alterations.
+ * <p>
+ * Streams existing documents from readable placements, validates them against a proposed
+ * {@link DocumentSchema}, and returns a {@link SchemaAlterPreflightReport} containing counters
+ * and a small representative sample of violations.
+ */
 public final class SchemaAlterPreflight {
 
-    private SchemaAlterPreflight() {}
+    private SchemaAlterPreflight() {
+    }
+
 
     private static final ObjectMapper OM = new ObjectMapper();
 
+
+    /**
+     * Runs a preflight scan for a collection against a proposed schema.
+     *
+     * @param catalog catalog access for allocations and adapters
+     * @param coll logical collection to scan
+     * @param schema proposed schema used for validation
+     * @param stmt transactional statement context passed to adapters
+     * @return a {@link SchemaAlterPreflightReport} summarizing the scan
+     */
     public static SchemaAlterPreflightReport run(
             final Catalog catalog,
             final LogicalCollection coll,
             final DocumentSchema schema,
-            final Statement stmt) {
+            final Statement stmt ) {
 
         final var snap = catalog.getSnapshot();
-        final List<AllocationEntity> allocs = new ArrayList<>(snap.alloc().getFromLogical(coll.id));
-        if (allocs.isEmpty()) {
-            return new SchemaAlterPreflightReport(true, 0, 0, List.of());
+        final List<AllocationEntity> allocs = new ArrayList<>( snap.alloc().getFromLogical( coll.id ) );
+        if ( allocs.isEmpty() ) {
+            return new SchemaAlterPreflightReport( true, 0, 0, List.of() );
         }
 
         final LongAdder scanned = new LongAdder();
         final LongAdder failing = new LongAdder();
-        final List<Violation> sample = new ArrayList<>(16);
+        final List<Violation> sample = new ArrayList<>( 16 );
         boolean sawReadablePlacement = false;
 
-        for (AllocationEntity ae : allocs) {
-            final Optional<DataStore<?>> optStore = AdapterManager.getInstance().getStore(ae.adapterId);
-            if (optStore.isEmpty()) {
+        for ( AllocationEntity ae : allocs ) {
+            final Optional<DataStore<?>> optStore = AdapterManager.getInstance().getStore( ae.adapterId );
+            if ( optStore.isEmpty() ) {
                 continue;
             }
             final DataStore<?> store = optStore.get();
             sawReadablePlacement = true;
 
-            final AllocationCollection alloc = ae.unwrapOrThrow(AllocationCollection.class);
+            final AllocationCollection alloc = ae.unwrapOrThrow( AllocationCollection.class );
 
             // The store streams JSON strings (some stores may wrap or double-encode).
-            final Consumer<CharSequence> sink = (CharSequence json) -> {
+            final Consumer<CharSequence> sink = ( CharSequence json ) -> {
                 try {
                     String raw = json.toString();
-                    Unwrapped u = unwrapPossibleWrappers(raw); // robust against PolyValue/quoted JSON
+                    Unwrapped u = unwrapPossibleWrappers( raw ); // robust against PolyValue/quoted JSON
 
                     // If this doesn't even look like a document/array, ignore this fragment.
-                    if (!u.looksLikeDoc) {
+                    if ( !u.looksLikeDoc ) {
                         return;
                     }
 
                     // Parse only now; count "scanned" after successful parse.
-                    BsonDocument d = BsonDocument.parse(u.json);
+                    BsonDocument d = BsonDocument.parse( u.json );
                     scanned.increment();
 
-                    var res = SchemaValidator.validate(schema, d);
-                    if (!res.ok()) {
+                    var res = SchemaValidator.validate( schema, d );
+                    if ( !res.ok() ) {
                         failing.increment();
-                        if (sample.size() < 16) {
+                        if ( sample.size() < 16 ) {
                             var vs = res.violations();
                             int room = 16 - sample.size();
-                            sample.addAll(vs.subList(0, Math.min(vs.size(), room)));
+                            sample.addAll( vs.subList( 0, Math.min( vs.size(), room ) ) );
                         }
                     }
-                } catch (Exception e) {
+                } catch ( Exception e ) {
                     // Only treat as a failure if the fragment looked like a document but couldn't be parsed.
                     // Otherwise it's likely a non-document column/value streamed by the store; skip it.
                     String s = json.toString().trim();
-                    boolean lookedLikeDoc = (s.startsWith("{") && s.endsWith("}")) || (s.startsWith("[") && s.endsWith("]"));
-                    if (lookedLikeDoc) {
+                    boolean lookedLikeDoc = (s.startsWith( "{" ) && s.endsWith( "}" )) || (s.startsWith( "[" ) && s.endsWith( "]" ));
+                    if ( lookedLikeDoc ) {
                         failing.increment();
-                        if (sample.size() < 16) {
-                            sample.add(new SchemaValidator.Violation("$", "parse", e.getMessage()));
+                        if ( sample.size() < 16 ) {
+                            sample.add( new SchemaValidator.Violation( "$", "parse", e.getMessage() ) );
                         }
                     }
                 }
             };
 
-            store.streamCollectionAsJson(alloc, sink, stmt);
+            store.streamCollectionAsJson( alloc, sink, stmt );
         }
 
-        if (!sawReadablePlacement) {
+        if ( !sawReadablePlacement ) {
             // If nothing was readable, treat as OK (engine typically guards this earlier).
-            return new SchemaAlterPreflightReport(true, 0, 0, List.of());
+            return new SchemaAlterPreflightReport( true, 0, 0, List.of() );
         }
 
         final long scannedCount = scanned.sum();
         final long failingCount = failing.sum();
-        return new SchemaAlterPreflightReport(failingCount == 0, scannedCount, failingCount, sample);
+        return new SchemaAlterPreflightReport( failingCount == 0, scannedCount, failingCount, sample );
     }
 
+
+    /**
+     * Determines whether a collection has no placements to scan.
+     *
+     * @param catalog catalog access
+     * @param coll logical collection
+     * @param stmt transactional statement context (unused here; present for symmetry)
+     * @return {@code true} if there are no placements, {@code false} otherwise
+     */
     public static boolean canProveEmpty(
             final Catalog catalog,
             final LogicalCollection coll,
-            final Statement stmt) {
+            final Statement stmt ) {
         var snap = catalog.getSnapshot();
-        List<AllocationEntity> allocs = new ArrayList<>(snap.alloc().getFromLogical(coll.id));
+        List<AllocationEntity> allocs = new ArrayList<>( snap.alloc().getFromLogical( coll.id ) );
         return allocs.isEmpty();
     }
 
-    // --------------------------------------------------------------------------------------------
-    // Unwrap helpers
-    // --------------------------------------------------------------------------------------------
 
-    /** Small holder for unwrap result. */
+    /**
+     * Small holder for unwrap result.
+     */
     private static final class Unwrapped {
+
         final String json;
         final boolean looksLikeDoc;
-        Unwrapped(String json, boolean looksLikeDoc) {
+
+
+        Unwrapped( String json, boolean looksLikeDoc ) {
             this.json = json;
             this.looksLikeDoc = looksLikeDoc;
         }
+
     }
 
+
     /**
-     * Accepts:
-     *  - raw JSON document:         {"name":{...},"age":22}         -> returned as-is
-     *  - JSON string literal:       "\"{...}\""                     -> unquoted to {...}
-     *  - PolyValue-like wrapper:    {"@type":...,"value":"{...}"}   -> extracts value
-     * If the end result does not look like a JSON object/array, marks it as not-a-document.
+     * Normalizes wrapped or quoted JSON fragments to a raw document string.
+     *
+     * @param s input text possibly containing wrappers
+     * @return {@link Unwrapped} with normalized JSON text and a best-effort shape flag
      */
-    private static Unwrapped unwrapPossibleWrappers(String s) {
-        if (s == null) return new Unwrapped(null, false);
+    private static Unwrapped unwrapPossibleWrappers( String s ) {
+        if ( s == null ) {
+            return new Unwrapped( null, false );
+        }
         String trimmed = s.trim();
 
         // Quick path: looks like an object/array
-        if ((trimmed.startsWith("{") && trimmed.endsWith("}")) ||
-                (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+        if ( (trimmed.startsWith( "{" ) && trimmed.endsWith( "}" )) ||
+                (trimmed.startsWith( "[" ) && trimmed.endsWith( "]" )) ) {
             // Common PolyValue wrapper: {"@type": "...", "value": "...json..."}
-            if (trimmed.startsWith("{\"@type\"") && trimmed.contains("\"value\"")) {
+            if ( trimmed.startsWith( "{\"@type\"" ) && trimmed.contains( "\"value\"" ) ) {
                 try {
-                    JsonNode n = OM.readTree(trimmed);
-                    JsonNode val = n.get("value");
-                    if (val != null && val.isTextual()) {
+                    JsonNode n = OM.readTree( trimmed );
+                    JsonNode val = n.get( "value" );
+                    if ( val != null && val.isTextual() ) {
                         String inner = val.asText();
                         String innerTrim = inner.trim();
-                        boolean looksDoc = (innerTrim.startsWith("{") && innerTrim.endsWith("}"))
-                                || (innerTrim.startsWith("[") && innerTrim.endsWith("]"));
-                        return new Unwrapped(inner, looksDoc);
+                        boolean looksDoc = (innerTrim.startsWith( "{" ) && innerTrim.endsWith( "}" ))
+                                || (innerTrim.startsWith( "[" ) && innerTrim.endsWith( "]" ));
+                        return new Unwrapped( inner, looksDoc );
                     }
-                } catch (Exception ignore) {
+                } catch ( Exception ignore ) {
                     // fall through
                 }
             }
-            return new Unwrapped(s, true); // assume it's the real doc JSON
+            return new Unwrapped( s, true ); // assume it's the real doc JSON
         }
 
         // Maybe it's a JSON string literal of the document -> unescape via Jackson
         try {
-            JsonNode n = OM.readTree(s);
-            if (n.isTextual()) {
+            JsonNode n = OM.readTree( s );
+            if ( n.isTextual() ) {
                 String inner = n.asText();
                 String innerTrim = inner.trim();
-                boolean looksDoc = (innerTrim.startsWith("{") && innerTrim.endsWith("}"))
-                        || (innerTrim.startsWith("[") && innerTrim.endsWith("]"));
-                return new Unwrapped(inner, looksDoc);
+                boolean looksDoc = (innerTrim.startsWith( "{" ) && innerTrim.endsWith( "}" ))
+                        || (innerTrim.startsWith( "[" ) && innerTrim.endsWith( "]" ));
+                return new Unwrapped( inner, looksDoc );
             }
             // Fallback: if it's an object with "value": "<json>"
-            JsonNode val = n.get("value");
-            if (val != null && val.isTextual()) {
+            JsonNode val = n.get( "value" );
+            if ( val != null && val.isTextual() ) {
                 String inner = val.asText();
                 String innerTrim = inner.trim();
-                boolean looksDoc = (innerTrim.startsWith("{") && innerTrim.endsWith("}"))
-                        || (innerTrim.startsWith("[") && innerTrim.endsWith("]"));
-                return new Unwrapped(inner, looksDoc);
+                boolean looksDoc = (innerTrim.startsWith( "{" ) && innerTrim.endsWith( "}" ))
+                        || (innerTrim.startsWith( "[" ) && innerTrim.endsWith( "]" ));
+                return new Unwrapped( inner, looksDoc );
             }
-        } catch (Exception ignore) {
+        } catch ( Exception ignore ) {
             // fall through
         }
 
         // Not a document (likely a primitive or a non-doc column)
-        return new Unwrapped(s, false);
+        return new Unwrapped( s, false );
     }
+
 }
