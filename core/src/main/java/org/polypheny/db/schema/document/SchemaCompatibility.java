@@ -28,15 +28,14 @@ public final class SchemaCompatibility {
      */
     public static boolean isCompatible(@Nullable DocumentSchema current, @Nullable DocumentSchema proposed) {
         if (proposed == null) return true;
-        if (current == null) return false; // conservative: force preflight on ALTER
+        if (current == null) return false; // force preflight when no current schema
 
-        // Root-level AP tightening ALLOW -> FORBID is unsafe (requires preflight)
+        // Root-level AP tightening is unsafe (requires preflight)
         if (current.additionalProperties() == DocumentSchema.AdditionalProperties.ALLOW
                 && proposed.additionalProperties() == DocumentSchema.AdditionalProperties.FORBID) {
             return false;
         }
 
-        // We need to know if the *proposed* root allows extras to decide if dropping fields is safe.
         boolean proposedAllowsExtras = (proposed.additionalProperties() == DocumentSchema.AdditionalProperties.ALLOW);
         return isObjectCompatible(current.root(), proposed.root(), proposedAllowsExtras);
     }
@@ -130,13 +129,5 @@ public final class SchemaCompatibility {
                 || t == PolyType.FLOAT
                 || t == PolyType.REAL
                 || t == PolyType.DOUBLE;
-    }
-
-    // ---------- Helpers ----------
-
-    private static boolean isNoopRoot(DocumentSchema s) {
-        DocumentSchema.ObjectNode r = s.root();
-        return r.properties.isEmpty()
-                && s.additionalProperties() == DocumentSchema.AdditionalProperties.ALLOW;
     }
 }

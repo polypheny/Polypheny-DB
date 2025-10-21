@@ -267,25 +267,26 @@ public class HsqldbStore extends AbstractJdbcStore {
 
     private static int resolveJsonColumn(ResultSetMetaData md) throws SQLException {
         int cols = md.getColumnCount();
-
-        // Prefer a column named DOC
+        String[] preferred = {"D", "DOC", "DATA", "DOCUMENT", "JSON"};
         for (int i = 1; i <= cols; i++) {
             String label = md.getColumnLabel(i);
-            if (label != null && "DOC".equalsIgnoreCase(label)) {
-                return i;
+            String name  = md.getColumnName(i);
+            for (String p : preferred) {
+                if ((label != null && label.equalsIgnoreCase(p)) ||
+                        (name  != null && name.equalsIgnoreCase(p))) {
+                    return i;
+                }
             }
         }
-
-        // Otherwise pick a large-text type (Polypheny maps DOCUMENT/JSON to LONGVARCHAR on HSQLDB)
+        // keep your LONGVARCHAR/CLOB heuristic next...
         for (int i = 1; i <= cols; i++) {
             int t = md.getColumnType(i);
-            if (t == Types.LONGVARCHAR || t == Types.CLOB || t == Types.LONGNVARCHAR || t == Types.VARCHAR) {
+            if (t == Types.LONGVARCHAR || t == Types.CLOB ||
+                    t == Types.LONGNVARCHAR || t == Types.VARCHAR) {
                 return i;
             }
         }
-
-        // Last resort
-        return 1;
+        return 1; // last resort, but try to avoid hitting this
     }
 
     // Robustly read JSON text (handles HSQLDB CLOBs)

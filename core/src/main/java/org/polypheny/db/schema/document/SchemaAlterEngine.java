@@ -130,7 +130,8 @@ public final class SchemaAlterEngine {
         }
 
         // Need a persisted schema to validate against
-        Optional<SchemaMeta> metaOpt = SchemaMeta.readCurrent(catalog, coll.id);
+        Optional<SchemaMeta> metaOpt = SchemaMeta.readCurrent(catalog, coll.namespaceId, coll.id);
+
         if (metaOpt.isEmpty()) {
             // You already reject changing validation without a schema elsewhere
             return new SchemaAlterPreflightReport(true, 0, 0, List.of());
@@ -150,9 +151,6 @@ public final class SchemaAlterEngine {
             final EnforcementMode currentMode,
             final EnforcementMode finalMode) {
 
-        final boolean tightening = isTightening(currentMode, finalMode);
-
-        // *** IMPORTANT: For schema changes, deny if preflight fails, no matter the enforcement mode. ***
         if (isSchemaChange) {
             if (!rep.ok) {
                 throw new GenericRuntimeException(
@@ -163,8 +161,7 @@ public final class SchemaAlterEngine {
             return new Outcome(true, rep);
         }
 
-        // Enforcement-only changes keep the old behavior (only deny when tightening to STRICT).
-        if (tightening && !rep.ok) {
+        if (isTightening(currentMode, finalMode) && !rep.ok) {
             throw new GenericRuntimeException(
                     String.format(
                             "Cannot set validationAction=STRICT: %d/%d documents violate the current schema; examples: %s",
@@ -178,8 +175,8 @@ public final class SchemaAlterEngine {
 
     private static boolean isTightening(final EnforcementMode cur, final EnforcementMode fin) {
         if (fin == null) return false;
-        if (cur == EnforcementMode.STRICT) return false;   // cannot go tighter than STRICT
-        return fin == EnforcementMode.STRICT;              // OFF/WARN → STRICT is tightening
+        if (cur == EnforcementMode.STRICT) return false;
+        return fin == EnforcementMode.STRICT;
     }
 
     private static SchemaAlterPreflightReport ok() {

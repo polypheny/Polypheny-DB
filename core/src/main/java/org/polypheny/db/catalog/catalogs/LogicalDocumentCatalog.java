@@ -18,9 +18,11 @@ package org.polypheny.db.catalog.catalogs;
 
 import io.activej.serializer.annotations.SerializeClass;
 import java.util.Map;
+import java.util.Optional;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.impl.logical.DocumentCatalog;
 import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.schema.document.SchemaMeta;
 
 @SerializeClass(subclasses = { DocumentCatalog.class })
 public interface LogicalDocumentCatalog extends LogicalCatalog {
@@ -48,5 +50,14 @@ public interface LogicalDocumentCatalog extends LogicalCatalog {
 
 
     void renameCollection( LogicalCollection collection, String newName );
+
+    /** Lookup schema metadata for a collection. */
+    Optional<SchemaMeta> getCollectionSchema(long collectionId);
+
+    /** Create or update the schema attached to an existing collection. */
+    void upsertCollectionSchema(long collectionId, String schemaJson, String enforcement);
+
+    /** Drop schema metadata for a collection. */
+    void dropCollectionSchema(long collectionId);
 
 }

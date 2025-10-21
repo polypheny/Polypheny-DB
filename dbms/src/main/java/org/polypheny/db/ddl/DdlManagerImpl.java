@@ -2289,11 +2289,9 @@ public class DdlManagerImpl extends DdlManager {
 
         // persist canonical JSON
         schema.validateOrThrow();
-        String json = toCanonicalJson(schema);
-        //persistCollectionSchema(namespaceId, logical.id, json, (mode == null ? EnforcementMode.OFF : mode).name());
-
         SchemaMeta.writeCurrent(
                 catalog,
+                logical.namespaceId,
                 logical.id,
                 new SchemaMeta(
                         SchemaJson.toJson(schema),
@@ -2308,93 +2306,62 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public String getCollectionSchemaAsJson(long namespaceId, String collectionName) {
-        // Normalize and ensure DOCUMENT namespace
-        String adjusted = adjustNameIfNeeded(collectionName, namespaceId);
+        // 1) Do NOT call adjustNameIfNeeded here
         checkModelLangCompatibility(DataModel.DOCUMENT, namespaceId);
 
-        // Locate the logical collection
         var snapshot = catalog.getSnapshot();
-        var collOpt = snapshot.doc().getCollection(namespaceId, adjusted);
+
+        // Pass the raw name; Snapshot handles case-sensitivity rules of the namespace
+        var collOpt = snapshot.doc().getCollection(namespaceId, collectionName);
         if (collOpt.isEmpty()) {
-            // Collection missing → treat as “no schema”
-            return null;
+            return null; // no such collection
         }
         var coll = collOpt.get();
 
-        // Read persisted schema sidecar from the logical document catalog
-        var metaOpt = readCollectionSchema(namespaceId, coll.id); // DocumentCatalog#getCollectionSchema
+        var metaOpt = SchemaMeta.readCurrent(catalog, namespaceId, coll.id);
         if (metaOpt.isEmpty()) {
-            // No schema attached yet
-            return null;
+            return null; // no schema persisted
         }
-
         SchemaMeta meta = metaOpt.get();
 
+        DocumentSchema ds = SchemaJson.parse(meta.schemaJson);
+
+        ObjectNode docSchema = MAPPER.createObjectNode();
+        docSchema.put("type", "object");
+
+        ObjectNode props = MAPPER.createObjectNode();
+        for (var e : ds.root().properties.entrySet()) {
+            props.set(e.getKey(), MAPPER.valueToTree(e.getValue()));
+        }
+        docSchema.set("properties", props);
+
+        boolean ap = (ds.additionalProperties() == DocumentSchema.AdditionalProperties.ALLOW);
+        docSchema.put("additionalProperties", ap);
+
+        ObjectNode out = MAPPER.createObjectNode();
+        out.put("collection", coll.name);                    // authoritative actual name
+        out.set("docSchema", docSchema);
+        out.put("validationAction", normalizeEnforcement(meta.enforcement));
+
         try {
-            // meta.schemaJson is canonical {"root": {...}} (or a bare object in legacy cases)
-            JsonNode canonical = tryParseAny(meta.schemaJson);
-            JsonNode root = canonical.has("root") ? canonical.get("root") : canonical;
-
-            ObjectNode out = MAPPER.createObjectNode();
-            out.put("collection", adjusted);
-            out.put("validationAction", meta.enforcement == null ? EnforcementMode.OFF.name() : meta.enforcement);
-            out.set("docSchema", root);
-
-            // Optional: expose version/timestamp if you want later
-            // out.put("version", meta.version);
-            // out.put("updatedAtEpochMs", meta.updatedAtEpochMs);
-
             return MAPPER.writeValueAsString(out);
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to read stored collection schema JSON for '" + adjusted + "'", e);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new GenericRuntimeException(
+                    "Failed to serialize collection schema JSON for '" + coll.name + "'", e);
         }
     }
 
-
-    private void persistCollectionSchema(final long namespaceId, final long collectionId, final String schemaJson, final String enforcement) {
-        // Normalize to canonical {"root": {...}}
-        final JsonNode normalized;
-        try {
-            JsonNode n = MAPPER.readTree(schemaJson);
-            if (n.isTextual()) n = MAPPER.readTree(n.asText());
-            if (!n.isObject()) throw new IllegalArgumentException("Schema JSON must be a JSON object");
-            if (!n.has("root")) {
-                ObjectNode wrapper = MAPPER.createObjectNode();
-                wrapper.set("root", n);
-                n = wrapper;
-            }
-            normalized = n;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to persist schema JSON (invalid object).", e);
-        }
-
-        final String compact;
-        try {
-            compact = MAPPER.writeValueAsString(normalized);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to compact schema JSON", e);
-        }
-
-        final long newVersion = readCollectionSchema(namespaceId, collectionId).map(m -> m.version + 1L).orElse(1L);
-        final long nowMs = System.currentTimeMillis();
-
-        SchemaMeta.writeCurrent(
-                catalog,
-                collectionId,
-                new SchemaMeta(
-                        compact,
-                        (enforcement == null ? EnforcementMode.OFF.name() : enforcement),
-                        newVersion,
-                        nowMs
-                ));
+    private static String normalizeEnforcement(String s) {
+        if (s == null) return EnforcementMode.OFF.name();
+        String v = s.trim().toLowerCase(java.util.Locale.ROOT);
+        return switch (v) {
+            case "strict", "error" -> EnforcementMode.STRICT.name();
+            case "warn", "warning", "on" -> EnforcementMode.WARN.name(); // legacy "on" -> WARN
+            case "off" -> EnforcementMode.OFF.name();
+            default -> EnforcementMode.OFF.name();
+        };
     }
 
-
-
-
-    private void dropPersistedCollectionSchema(final long namespaceId, final long collectionId) {
-        SchemaMeta.clear(collectionId);
-    }
 
     private final SchemaAlterEngine schemaAlterEngine = new SchemaAlterEngine();
 
@@ -2419,7 +2386,7 @@ public class DdlManagerImpl extends DdlManager {
                 .orElseThrow(() -> new GenericRuntimeException("Collection %s does not exist.", adjusted));
 
         // Read current persisted schema (if any)
-        var metaOpt = SchemaMeta.readCurrent(catalog, coll.id);
+        var metaOpt = SchemaMeta.readCurrent(catalog, coll.namespaceId, coll.id);
         DocumentSchema current = metaOpt.map(m -> SchemaJson.parse(m.schemaJson)).orElse(null);
         EnforcementMode currentMode = metaOpt.map(m -> safeEnum(m.enforcement, EnforcementMode.OFF)).orElse(EnforcementMode.OFF);
 
@@ -2441,9 +2408,10 @@ public class DdlManagerImpl extends DdlManager {
                 if (!safeEnum(metaOpt.get().enforcement, EnforcementMode.OFF).name().equals(newEnf)) {
                     SchemaMeta.writeCurrent(
                             catalog,
+                            coll.namespaceId,
                             coll.id,
                             new SchemaMeta(
-                                    metaOpt.get().schemaJson,
+                                    metaOpt.get().schemaJson,   // schema unchanged
                                     newEnf,
                                     newVersion,
                                     System.currentTimeMillis()
@@ -2465,6 +2433,7 @@ public class DdlManagerImpl extends DdlManager {
 
         SchemaMeta.writeCurrent(
                 catalog,
+                coll.namespaceId,
                 coll.id,
                 new SchemaMeta(
                         newSchemaJson,
@@ -2473,7 +2442,6 @@ public class DdlManagerImpl extends DdlManager {
                         System.currentTimeMillis()
                 )
         );
-
         catalog.updateSnapshot();
     }
 
@@ -2500,14 +2468,6 @@ public class DdlManagerImpl extends DdlManager {
         }
         return false;
     }
-
-
-    private Optional<SchemaMeta> readCollectionSchema(final long namespaceId, final long collectionId) {
-        // namespaceId is not needed by the in-memory registry but is kept for symmetry
-        return SchemaMeta.readCurrent(catalog, collectionId);
-    }
-
-
 
     /**
      * Parses JSON that might be:
@@ -2560,17 +2520,6 @@ public class DdlManagerImpl extends DdlManager {
         return n;
     }
 
-    private String toCanonicalJson(DocumentSchema schema) {
-        try {
-            JsonNode n = MAPPER.valueToTree(schema); // {"root": {...}}
-            return MAPPER.writeValueAsString(n);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to serialize DocumentSchema", e);
-        }
-    }
-
-
-
     private static void safeResetCaches( Statement statement ) {
         try {
             statement.getQueryProcessor().resetCaches();
@@ -2594,8 +2543,8 @@ public class DdlManagerImpl extends DdlManager {
         }
         catalog.getAllocDoc( collection.namespaceId ).removePartition( snapshot.alloc().getPartitionsFromLogical( collection.id ).get( 0 ).id );
 
-        // also remove persisted schema
-        dropPersistedCollectionSchema( collection.namespaceId, collection.id );
+        // gets deleted in DocumentCatalog.deleteCollection(...)
+        //SchemaMeta.clear(catalog, collection.namespaceId, collection.id);
 
         catalog.getLogicalDoc( collection.namespaceId ).deleteCollection( collection.id );
 

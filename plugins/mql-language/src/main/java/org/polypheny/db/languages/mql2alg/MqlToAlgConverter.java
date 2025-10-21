@@ -24,6 +24,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -34,6 +35,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.mql.MqlGetCollectionSchema;
 import org.polypheny.db.schema.document.EnforcementMode;
+import org.polypheny.db.schema.document.SchemaJson;
 import org.polypheny.db.util.WarningSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -2082,14 +2084,8 @@ public class MqlToAlgConverter {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private Optional<SchemaMeta> loadSchemaMeta(Entity entity) {
-        if (!(entity instanceof LogicalCollection lc)) {
-            return Optional.empty();
-        }
-        var logicalDoc = Catalog.getInstance().getLogicalDoc(lc.namespaceId);
-        if (logicalDoc instanceof DocumentCatalog docCat) {
-            return docCat.getCollectionSchema(lc.id); // Optional<SchemaMeta>
-        }
-        return Optional.empty();
+        if (!(entity instanceof LogicalCollection lc)) return Optional.empty();
+        return SchemaMeta.readCurrent(Catalog.getInstance(), lc.namespaceId, lc.id);
     }
 
     private DocumentSchema parseSchemaOrThrow(String json) {
@@ -2097,23 +2093,23 @@ public class MqlToAlgConverter {
             JsonNode node = JSON.readTree(json);
             if (node == null) throw new IOException("empty");
 
-            // Case 1: Persisted DocumentSchema JSON: { "root": { ... }, "additionalProperties": ... }
+            // Canonical persisted form: {"root": {...}, "additionalProperties": ...}
             if (node.has("root")) {
-                // Ensure root-level AP is present and valid (will also be consumed by the ctor)
-                DocumentSchema.AdditionalProperties ap = readRootAPOrThrow(node.get("additionalProperties"));
-                // Let Jackson construct the DocumentSchema (ctor: (root, additionalProperties))
+                // Validate AP early
+                readRootAPOrThrow(node.get("additionalProperties"));
                 return JSON.treeToValue(node, DocumentSchema.class);
             }
 
-            // Case 2: Bare object = the docSchema itself (what users write):
-            // { type:"object", properties:{...}, additionalProperties: <...> }
+            // Bare docSchema form: {type:"object", properties:{...}, additionalProperties:...}
             if (node.isObject()) {
                 ObjectNode obj = (ObjectNode) node;
-
                 DocumentSchema.AdditionalProperties ap = readRootAPOrThrow(obj.get("additionalProperties"));
-                // Build the root ObjectNode; the ObjectNode deserializer ignores 'additionalProperties' (by design)
-                DocumentSchema.ObjectNode root = JSON.treeToValue(obj, DocumentSchema.ObjectNode.class);
 
+                // Remove AP before mapping to ObjectNode to avoid unknown-property failures
+                ObjectNode objForRoot = obj.deepCopy();
+                objForRoot.remove("additionalProperties");
+
+                DocumentSchema.ObjectNode root = JSON.treeToValue(objForRoot, DocumentSchema.ObjectNode.class);
                 return new DocumentSchema(root, ap);
             }
 
@@ -2166,7 +2162,7 @@ public class MqlToAlgConverter {
         DocumentSchema schema = parseSchemaOrThrow(meta.schemaJson);
 
         // GUI warning collector
-        var warnings = WarningSink.from(/* you can pass statement/context here if available */ null);
+        var warnings = WarningSink.from(null);
 
         // validate each literal doc in the insert
         for (var v : query.getValues()) {
@@ -2210,36 +2206,74 @@ public class MqlToAlgConverter {
     }
 
     private AlgNode convertGetCollectionSchema(MqlGetCollectionSchema query) {
-        // Build one BSON row describing the schema
-        org.bson.BsonDocument row = new org.bson.BsonDocument()
-                .append("collection", new org.bson.BsonString(query.getCollection()));
+        final long ns   = this.namespaceId;      // use context namespaceId
+        final Snapshot snap = this.snapshot;
 
-        // If you already store schema via DdlManager, fetch it. Fall back to “no schema”.
-        String json = org.polypheny.db.ddl.DdlManager.getInstance()
-                .getCollectionSchemaAsJson(namespaceId, query.getCollection());
+        final String adjusted = adjustNameForNamespace(query.getCollection(), ns);
 
-        if (json != null) {
-            try {
-                row.append("schema", org.bson.BsonDocument.parse(json));
-                row.append("enforcement", new org.bson.BsonString("on"));
-            } catch (Exception e) {
-                // If JSON is malformed, still return something useful
-                row.append("schema", new org.bson.BsonDocument("raw", new org.bson.BsonString(json)));
-                row.append("schemaParseError", new org.bson.BsonString(e.getMessage()));
-                row.append("enforcement", new org.bson.BsonString("on"));
-            }
-        } else {
-            row.append("schema", new org.bson.BsonDocument()); // no schema attached
-            row.append("enforcement", new org.bson.BsonString("off"));
+        BsonDocument row = new BsonDocument()
+                .append("collection", new BsonString(adjusted));
+
+        // Resolve the collection using the normalized name
+        var collOpt = snap.doc().getCollection(ns, adjusted);
+        if (collOpt.isEmpty()) {
+            row.append("schema", new BsonDocument()); // no such collection
+            BsonArray one = new BsonArray(); one.add(row);
+            return convertMultipleValues(one);
         }
 
-        org.bson.BsonArray oneRow = new org.bson.BsonArray();
-        oneRow.add(row);
+        // Read persisted schema directly from the logical document catalog
+        var ldc = Catalog.getInstance().getLogicalDoc(ns);
+        if (ldc instanceof org.polypheny.db.catalog.impl.logical.DocumentCatalog dc) {
+            var metaOpt = dc.getCollectionSchema(collOpt.get().id);
+            if (metaOpt.isPresent()) {
+                var meta = metaOpt.get();
 
-        // Your existing helper produces a one-row VALUES plan (document model aware).
-        return convertMultipleValues(oneRow);
+                // Build the JSON shape your client expects
+                var ds = SchemaJson.parse(meta.schemaJson);
+
+                ObjectNode docSchema = JSON.createObjectNode();
+                docSchema.put("type", "object");
+
+                ObjectNode props = JSON.createObjectNode();
+                for (var e : ds.root().properties.entrySet()) {
+                    props.set(e.getKey(), JSON.valueToTree(e.getValue()));
+                }
+                docSchema.set("properties", props);
+                boolean ap = (ds.additionalProperties() == DocumentSchema.AdditionalProperties.ALLOW);
+                docSchema.put("additionalProperties", ap);
+
+                ObjectNode out = JSON.createObjectNode();
+                out.put("collection", adjusted);
+                out.set("docSchema", docSchema);
+                out.put("validationAction", normalizeEnforcement(meta.enforcement));
+
+                row.append("schema", BsonDocument.parse(out.toString()));
+            } else {
+                row.append("schema", new BsonDocument()); // exists, but no schema attached
+            }
+        } else {
+            row.append("schema", new BsonDocument());     // defensive
+        }
+
+        BsonArray one = new BsonArray(); one.add(row);
+        return convertMultipleValues(one);
     }
 
+    private String adjustNameForNamespace(String name, long nsId) {
+        var ns = Catalog.getInstance().getSnapshot().getNamespace(nsId).orElseThrow();
+        return ns.caseSensitive ? name : name.toLowerCase(java.util.Locale.ROOT);
+    }
 
+    private static String normalizeEnforcement(String s) {
+        if (s == null) return EnforcementMode.OFF.name();
+        String v = s.trim().toLowerCase(java.util.Locale.ROOT);
+        return switch (v) {
+            case "strict", "error" -> EnforcementMode.STRICT.name();
+            case "warn", "warning", "on" -> EnforcementMode.WARN.name(); // legacy "on"
+            case "off" -> EnforcementMode.OFF.name();
+            default -> EnforcementMode.OFF.name();
+        };
+    }
 
 }

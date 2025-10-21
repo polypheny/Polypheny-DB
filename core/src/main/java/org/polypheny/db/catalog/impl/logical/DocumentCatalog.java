@@ -111,6 +111,7 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
      * @param schemaJson schema
      * @param enforcement
      */
+    @Override
     public void upsertCollectionSchema(long collectionId, String schemaJson, String enforcement) {
         SchemaMeta old = collectionSchemas.get(collectionId);
         long nextVersion = (old == null) ? 1 : (old.version + 1);
@@ -125,11 +126,13 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
     }
 
     /** Drop schema metadata for a collection. */
+    @Override
     public void dropCollectionSchema(long collectionId) {
         collectionSchemas.remove(collectionId);
     }
 
     /** Lookup schema metadata for a collection. */
+    @Override
     public Optional<SchemaMeta> getCollectionSchema(long collectionId) {
         return Optional.ofNullable(collectionSchemas.get(collectionId));
     }
