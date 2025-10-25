@@ -18,6 +18,7 @@ package org.polypheny.db.sql.fun;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
@@ -85,6 +86,19 @@ public class GeoFunctionsTest {
                         ),
                         true );
             }
+        }
+    }
+
+    @Test
+    public void testInsert() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+
+            PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO TEST_GIS(id,geom) VALUES (?, ?)" );
+
+            preparedInsert.setInt( 1, 1 );
+            preparedInsert.setString( 2, "ST_GeomFromText('POINT (9.289382 48.741588)', 4326))" );
+            preparedInsert.execute();
         }
     }
 
@@ -365,6 +379,21 @@ public class GeoFunctionsTest {
             }
         }
     }
+
+    @Test
+    public void persistance() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT count(*) from TEST_GIS where ST_Distance(geom, ST_GeomFromText('POINT (9.289382 48.741588)', 4326)) < 135555" ),
+                        ImmutableList.of(
+                                new Object[]{ 2 }
+                        ) );
+            }
+        }
+    }
+
 
 
     @Test

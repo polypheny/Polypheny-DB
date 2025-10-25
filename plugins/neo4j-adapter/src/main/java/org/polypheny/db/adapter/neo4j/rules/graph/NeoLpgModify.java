@@ -106,7 +106,6 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
                 return;
             } else {
                 // normal values
-
             }
         } else {
             if ( !implementor.statements.isEmpty() ) {

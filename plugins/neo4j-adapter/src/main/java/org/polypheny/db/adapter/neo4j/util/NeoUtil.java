@@ -36,6 +36,7 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
@@ -78,7 +79,9 @@ import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyPoint;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -152,6 +155,12 @@ public interface NeoUtil {
                 coordinate.setZ( point.z() );
             }
             return PolyGeometry.of( geometryFactory.createPoint( coordinate ) );
+        }else if ( value instanceof StringValue stringValue ) {
+            try {
+                return new PolyGeometry( stringValue.asString() );
+            } catch ( InvalidGeometryException e ) {
+                throw new RuntimeException( e );
+            }
         }
 
         throw new GenericRuntimeException( String.format( "Could not transform object of type %s to PolyGeometry", value.type() ) );
@@ -532,7 +541,14 @@ public interface NeoUtil {
             case BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO -> value.asBinary().value;
             case FLOAT, REAL, DOUBLE -> value.asNumber().doubleValue();
             case DECIMAL -> value.asNumber().bigDecimalValue();
-            case GEOMETRY -> value.asGeometry().toWKT();
+            case GEOMETRY -> {
+                if (value.asGeometry().isPoint()) {
+                    PolyPoint point = value.asGeometry().asPoint();
+                    yield new PointValue( new InternalPoint2D(point.getSRID(), point.getX(), point.getY()));
+                }else{
+                    yield value.asGeometry().toWKT();
+                }
+            }
             case ARRAY -> value.asList().value.stream().map( e -> {
                 if ( isNested ) {
                     return e.toTypedJson();
