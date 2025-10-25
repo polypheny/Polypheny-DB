@@ -319,6 +319,28 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                 """.formatted( mongoCollection ), namespace );
     }
 
+    @Test
+    public void docsNear() {
+        String insertMany = """
+                db.%s.insertMany(
+                [{"id": 0, "coordinates": [16.4, 48.25]}, {"id": 1, "coordinates": [2.29275, 48.79325]}, {"id": 2, "coordinates": [-2.09814, 57.14369]}, {"id": 3, "coordinates": [15.00913, 37.51803]}, {"id": 4, "coordinates": [0.30367, 51.38673]}, {"id": 5, "coordinates": [6.10237, 46.18396]}, {"id": 6, "coordinates": [18.28333, 59.33333]}, {"id": 7, "coordinates": [5.4384, 43.2907]}, {"id": 8, "coordinates": [6.10237, 46.18396]}, {"id": 9, "coordinates": [6.10237, 46.18396]}])
+                """;
+        execute( insertMany.formatted( mongoCollection ), namespace );
+
+        execute( """
+                db.%s.find({
+                    legacy: {
+                       $near: {
+                           $geometry: {
+                                  type: "Point",
+                                  coordinates: [0,0]
+                           }
+                       },
+                    }
+                })
+                """.formatted( mongoCollection ), namespace );
+    }
+
 
     @Test
     public void docsNearTestOnlHsqlDb() {

@@ -572,8 +572,9 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyDocument asDocument() {
         if ( isDocument() ) {
             return (PolyDocument) this;
+        } else {
+            return new PolyDocument( PolyString.of( "value" ), this );
         }
-        throw cannotParse( this, PolyDocument.class );
     }
 
 

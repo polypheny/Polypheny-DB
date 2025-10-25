@@ -394,6 +394,22 @@ public class GeoFunctionsTest {
         }
     }
 
+    @Test
+    public void persistance2() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT Count(*) FROM TEST_GIS WHERE ST_DWithin(ST_GeomFromText('POINT (7.852923 47.998949)', 4326), geom, 135000)" ),
+                        ImmutableList.of(
+                                new Object[]{ 2 }
+                        ) );
+            }
+        }
+    }
+
+
+
 
 
     @Test
