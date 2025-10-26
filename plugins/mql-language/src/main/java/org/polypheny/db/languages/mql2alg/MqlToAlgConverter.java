@@ -34,7 +34,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.polypheny.db.languages.mql.MqlGetCollectionSchema;
 import org.polypheny.db.schema.document.EnforcementMode;
 import org.polypheny.db.schema.document.SchemaJson;
-import org.polypheny.db.util.WarningSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.stream.Collectors;
@@ -82,7 +81,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.impl.logical.DocumentCatalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -123,7 +121,6 @@ import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimestampString;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -182,6 +179,8 @@ public class MqlToAlgConverter {
 
     private final AlgDataType jsonType;
 
+    private final MqlSchemaEnforcer schemaEnforcer;
+
 
     private static final Map<String, Operator> singleMathOperators = new HashMap<>() {{
         put( "$abs", OperatorRegistry.get( OperatorName.ABS ) );
@@ -237,6 +236,7 @@ public class MqlToAlgConverter {
         this.nullableAny = this.cluster.getTypeFactory().createTypeWithNullability( any, true );
 
         this.jsonType = this.cluster.getTypeFactory().createPolyType( PolyType.JSON );
+        this.schemaEnforcer = new MqlSchemaEnforcer();
 
         resetDefaults();
     }
@@ -332,6 +332,7 @@ public class MqlToAlgConverter {
      * Starts converting a db.collection.update();
      */
     private AlgNode convertUpdate( MqlUpdate query, Entity entity, AlgNode node ) {
+        schemaEnforcer.validateUpdate(query, entity);
         if ( !query.getQuery().isEmpty() ) {
             node = convertQuery( query, entity.getTupleType(), node );
             if ( query.isOnlyOne() ) {
@@ -703,7 +704,7 @@ public class MqlToAlgConverter {
      * @return the modified AlgNode
      */
     private AlgNode convertInsert( MqlInsert query, Entity entity ) {
-        validateInsertsAgainstSchema(query, entity);
+        schemaEnforcer.validateInsert(query, entity);
         return LogicalDocumentModify.create(
                 entity,
                 convertMultipleValues( query.getValues() ),
@@ -2081,41 +2082,7 @@ public class MqlToAlgConverter {
 
     private static final ObjectMapper JSON = new ObjectMapper();
 
-    private Optional<SchemaMeta> loadSchemaMeta(Entity entity) {
-        if (!(entity instanceof LogicalCollection lc)) return Optional.empty();
-        return SchemaMeta.readCurrent(Catalog.getInstance(), lc.namespaceId, lc.id);
-    }
 
-    private DocumentSchema parseSchemaOrThrow(String json) {
-        try {
-            JsonNode node = JSON.readTree(json);
-            if (node == null) throw new IOException("empty");
-
-            // Canonical persisted form: {"root": {...}, "additionalProperties": ...}
-            if (node.has("root")) {
-                // Validate AP early
-                readRootAPOrThrow(node.get("additionalProperties"));
-                return JSON.treeToValue(node, DocumentSchema.class);
-            }
-
-            // Bare docSchema form: {type:"object", properties:{...}, additionalProperties:...}
-            if (node.isObject()) {
-                ObjectNode obj = (ObjectNode) node;
-                DocumentSchema.AdditionalProperties ap = readRootAPOrThrow(obj.get("additionalProperties"));
-
-                // Remove AP before mapping to ObjectNode to avoid unknown-property failures
-                ObjectNode objForRoot = obj.deepCopy();
-                objForRoot.remove("additionalProperties");
-
-                DocumentSchema.ObjectNode root = JSON.treeToValue(objForRoot, DocumentSchema.ObjectNode.class);
-                return new DocumentSchema(root, ap);
-            }
-
-            throw new IOException("schema must be an object or contain a 'root' object");
-        } catch (Exception e) {
-            throw new GenericRuntimeException("Stored collection schema is invalid JSON", e);
-        }
-    }
 
     /** Parse REQUIRED top-level additionalProperties (boolean or 'ALLOW'/'FORBID'). */
     private static DocumentSchema.AdditionalProperties readRootAPOrThrow(JsonNode apNode) {
@@ -2133,70 +2100,6 @@ public class MqlToAlgConverter {
             if ("FORBID".equalsIgnoreCase(s) || "false".equalsIgnoreCase(s)) return DocumentSchema.AdditionalProperties.FORBID;
         }
         throw new IllegalArgumentException("'additionalProperties' must be boolean or 'ALLOW'/'FORBID'");
-    }
-
-
-    private static final Logger LOG = LoggerFactory.getLogger(MqlToAlgConverter.class);
-
-    private void validateInsertsAgainstSchema(MqlInsert query, Entity entity) {
-        var metaOpt = loadSchemaMeta(entity);
-        if (metaOpt.isEmpty()) return; // no schema attached → nothing to enforce
-
-        SchemaMeta meta = metaOpt.get();
-
-        // normalize mode
-        EnforcementMode mode;
-        try {
-            mode = EnforcementMode.valueOf(
-                    (meta.enforcement == null ? "OFF" : meta.enforcement).trim().toUpperCase()
-            );
-        } catch (IllegalArgumentException iae) {
-            mode = EnforcementMode.OFF;
-        }
-        if (mode == EnforcementMode.OFF) {
-            return; // nothing to enforce
-        }
-
-        DocumentSchema schema = parseSchemaOrThrow(meta.schemaJson);
-
-        // GUI warning collector
-        //var warnings = WarningSink.from(null);
-
-        // validate each literal doc in the insert
-        for (var v : query.getValues()) {
-
-            BsonDocument d = v.asDocument();
-
-            // Ignore the engine's _id during schema checks unless the schema explicitly models it
-            BsonDocument toCheck = d;
-            if (d.containsKey(DocumentType.DOCUMENT_ID)) {
-                toCheck = d.clone();
-                toCheck.remove(DocumentType.DOCUMENT_ID);
-            }
-
-            if (!SchemaValidator.conformsTo(schema, toCheck)) {
-                switch (mode) {
-                    case STRICT -> throw new GenericRuntimeException(
-                            "Inserted document does not conform to the collection schema.");
-                    case WARN -> {
-                        String msg = "Document violates collection schema; allowed due to WARN mode.";
-//                        warnings.add(msg);
-                        LOG.warn("{} Entity='{}' Doc={}", msg, entity.getName(), summarize(d));
-                    }
-                    default -> {}
-                }
-            }
-        }
-    }
-
-    /** Keep logs readable and safe. */
-    private static String summarize(Object value) {
-        try {
-            String s = String.valueOf(value);
-            return s.length() > 500 ? s.substring(0, 500) + "…" : s;
-        } catch (Exception e) {
-            return "<unprintable>";
-        }
     }
 
     private AlgNode convertGetCollectionSchema(MqlGetCollectionSchema query) {
@@ -2269,5 +2172,4 @@ public class MqlToAlgConverter {
             default -> EnforcementMode.OFF.name();
         };
     }
-
 }

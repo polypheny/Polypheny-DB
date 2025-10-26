@@ -29,8 +29,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BsonUtil;
 
 /**
- * MQL: db.alterCollectionSchema("<name>", { validator: { docSchema: {...} }, validationAction: "warn|error|off" })
- * If 'validator' is omitted, the schema is dropped (collection becomes schemaless).
+ * MQL: db.alterCollectionSchema("<name>", { docSchema: {...} }, validationAction: "strict|warn|off" )
  */
 public class MqlAlterCollectionSchema extends MqlNode implements ExecutableStatement {
 
