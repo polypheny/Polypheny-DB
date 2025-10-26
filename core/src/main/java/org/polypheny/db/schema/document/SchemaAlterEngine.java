@@ -137,11 +137,6 @@ public final class SchemaAlterEngine {
             return new SchemaAlterPreflightReport( true, 0, 0, java.util.List.of() );
         }
 
-        // If provably empty, skip scan.
-        if ( SchemaAlterPreflight.canProveEmpty( catalog, coll, stmt ) ) {
-            return new SchemaAlterPreflightReport( true, 0, 0, java.util.List.of() );
-        }
-
         return SchemaAlterPreflight.run( catalog, coll, plan.finalSchema(), stmt );
     }
 

@@ -24,7 +24,6 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -32,7 +31,6 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.mql.MqlGetCollectionSchema;
 import org.polypheny.db.schema.document.EnforcementMode;
 import org.polypheny.db.schema.document.SchemaJson;
@@ -2162,32 +2160,28 @@ public class MqlToAlgConverter {
         DocumentSchema schema = parseSchemaOrThrow(meta.schemaJson);
 
         // GUI warning collector
-        var warnings = WarningSink.from(null);
+        //var warnings = WarningSink.from(null);
 
         // validate each literal doc in the insert
         for (var v : query.getValues()) {
-            if (!v.isDocument()) {
-                switch (mode) {
-                    case STRICT -> throw new GenericRuntimeException(
-                            "Insert value is not a document, but a schema is attached.");
-                    case WARN -> {
-                        String msg = "Insert value is not a document; allowed due to WARN mode.";
-                        warnings.add(msg);
-                        LOG.warn("{} Entity='{}' Value={}", msg, entity.getName(), summarize(v));
-                    }
-                    default -> {}
-                }
-                continue;
+
+            BsonDocument d = v.asDocument();
+
+            // Ignore the engine's _id during schema checks unless the schema explicitly models it
+            BsonDocument toCheck = d;
+            if (d.containsKey(DocumentType.DOCUMENT_ID)) {
+                toCheck = d.clone();
+                toCheck.remove(DocumentType.DOCUMENT_ID);
             }
 
-            if (!SchemaValidator.conformsTo(schema, v.asDocument())) {
+            if (!SchemaValidator.conformsTo(schema, toCheck)) {
                 switch (mode) {
                     case STRICT -> throw new GenericRuntimeException(
                             "Inserted document does not conform to the collection schema.");
                     case WARN -> {
                         String msg = "Document violates collection schema; allowed due to WARN mode.";
-                        warnings.add(msg);
-                        LOG.warn("{} Entity='{}' Doc={}", msg, entity.getName(), summarize(v.asDocument()));
+//                        warnings.add(msg);
+                        LOG.warn("{} Entity='{}' Doc={}", msg, entity.getName(), summarize(d));
                     }
                     default -> {}
                 }

@@ -20,17 +20,11 @@ package org.polypheny.db.hsqldb.stores;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.hsqldb.jdbc.JDBCClobClient;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
@@ -39,7 +33,6 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
-import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -51,8 +44,6 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
@@ -228,73 +219,4 @@ public class HsqldbStore extends AbstractJdbcStore {
         return "PUBLIC";
     }
 
-    @Override
-    public void streamCollectionAsJson(
-            final AllocationCollection alloc,
-            final Consumer<CharSequence> sink,
-            final Statement statement) {
-
-        // Resolve physical table
-        final PhysicalTable physical = adapterCatalog.fromAllocation(alloc.id);
-        final String fqTable = dialect.quoteIdentifier(physical.namespaceName)
-                + "." + dialect.quoteIdentifier(physical.name);
-        final String sql = "SELECT * FROM " + fqTable;
-
-        try {
-            // Participate in txn
-            statement.getTransaction().registerInvolvedAdapter(this);
-
-            var handler = connectionFactory.getOrCreateConnectionHandler(statement.getTransaction().getXid());
-
-            // --- Use the handler API that RETURNS a ResultSet ---
-            try (ResultSet rs = handler.executeQuery(sql)) {
-                int jsonCol = resolveJsonColumn(rs.getMetaData());
-
-                while (rs.next()) {
-                    String json = readJsonCell(rs, jsonCol);
-                    sink.accept(json != null ? json : "null");
-                }
-            }
-
-        } catch (SQLException e) {
-            throw new GenericRuntimeException(
-                    "HSQLDB scan failed for " + physical.namespaceName + "." + physical.name, e);
-        } catch (Exception e) {
-            throw new GenericRuntimeException(
-                    "HSQLDB scan failed for " + physical.namespaceName + "." + physical.name, e);
-        }
-    }
-
-    private static int resolveJsonColumn(ResultSetMetaData md) throws SQLException {
-        int cols = md.getColumnCount();
-        String[] preferred = {"D", "DOC", "DATA", "DOCUMENT", "JSON"};
-        for (int i = 1; i <= cols; i++) {
-            String label = md.getColumnLabel(i);
-            String name  = md.getColumnName(i);
-            for (String p : preferred) {
-                if ((label != null && label.equalsIgnoreCase(p)) ||
-                        (name  != null && name.equalsIgnoreCase(p))) {
-                    return i;
-                }
-            }
-        }
-        // keep your LONGVARCHAR/CLOB heuristic next...
-        for (int i = 1; i <= cols; i++) {
-            int t = md.getColumnType(i);
-            if (t == Types.LONGVARCHAR || t == Types.CLOB ||
-                    t == Types.LONGNVARCHAR || t == Types.VARCHAR) {
-                return i;
-            }
-        }
-        return 1; // last resort, but try to avoid hitting this
-    }
-
-    // Robustly read JSON text (handles HSQLDB CLOBs)
-    private static String readJsonCell(ResultSet rs, int col) throws SQLException {
-        Object v = rs.getObject(col);
-        if (v == null) return "null";
-        if (v instanceof String s) return s;
-        if (v instanceof JDBCClobClient c) return HsqldbSqlDialect.toString(c);
-        return String.valueOf(v); // best-effort
-    }
 }
