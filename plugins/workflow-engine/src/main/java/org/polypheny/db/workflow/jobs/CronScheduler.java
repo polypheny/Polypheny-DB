@@ -21,7 +21,7 @@ import com.cronutils.model.CronType;
 import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
-import io.javalin.http.HttpCode;
+import io.javalin.http.HttpStatus;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -91,7 +91,7 @@ public class CronScheduler {
         try {
             parser.parse( cronExpression ).validate();
         } catch ( IllegalArgumentException e ) {
-            throw new WorkflowJobException( "Invalid Cron expression: " + e.getMessage(), HttpCode.BAD_REQUEST );
+            throw new WorkflowJobException( "Invalid Cron expression: " + e.getMessage(), HttpStatus.BAD_REQUEST );
         }
     }
 

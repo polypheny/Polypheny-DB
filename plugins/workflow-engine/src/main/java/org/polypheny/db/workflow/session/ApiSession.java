@@ -18,7 +18,7 @@ package org.polypheny.db.workflow.session;
 
 import static org.polypheny.db.workflow.models.SessionModel.SessionModelType.API_SESSION;
 
-import io.javalin.http.HttpCode;
+import io.javalin.http.HttpStatus;
 import io.javalin.websocket.WsMessageContext;
 import java.util.UUID;
 import javax.annotation.Nullable;
@@ -71,14 +71,14 @@ public class ApiSession extends AbstractSession {
             Triple<Result<?, ?>, Integer, Long> triple = getCheckpointData( activityId, outputIdx, maxTuples );
             return new CheckpointResponse( triple.getLeft(), triple.getMiddle(), triple.getRight() );
         } catch ( Exception e ) {
-            throw new WorkflowApiException( e.getMessage(), HttpCode.BAD_REQUEST );
+            throw new WorkflowApiException( e.getMessage(), HttpStatus.BAD_REQUEST );
         }
     }
 
 
     public void execute( @Nullable UUID targetId ) throws WorkflowApiException {
         if ( workflow.getState() != WorkflowState.IDLE ) {
-            throw new WorkflowApiException( "Workflow is currently not idle: " + workflow.getState(), HttpCode.CONFLICT );
+            throw new WorkflowApiException( "Workflow is currently not idle: " + workflow.getState(), HttpStatus.CONFLICT );
         }
         startExecution( targetId );
     }
@@ -86,7 +86,7 @@ public class ApiSession extends AbstractSession {
 
     public void interrupt() throws WorkflowApiException {
         if ( workflow.getState() != WorkflowState.EXECUTING ) {
-            throw new WorkflowApiException( "Workflow is currently not being executed: " + workflow.getState(), HttpCode.CONFLICT );
+            throw new WorkflowApiException( "Workflow is currently not being executed: " + workflow.getState(), HttpStatus.CONFLICT );
         }
         interruptExecution();
     }
@@ -94,7 +94,7 @@ public class ApiSession extends AbstractSession {
 
     public void reset( @Nullable UUID targetId ) throws WorkflowApiException {
         if ( workflow.getState() != WorkflowState.IDLE ) {
-            throw new WorkflowApiException( "Workflow is currently not idle: " + workflow.getState(), HttpCode.CONFLICT );
+            throw new WorkflowApiException( "Workflow is currently not idle: " + workflow.getState(), HttpStatus.CONFLICT );
         }
         workflow.reset( targetId, sm );
         broadcastMessage( new StateUpdateResponse( null, workflow ) );
@@ -103,7 +103,7 @@ public class ApiSession extends AbstractSession {
 
     public void setWorkflowConfig( WorkflowConfigModel config ) throws WorkflowApiException {
         if ( workflow.getState() != WorkflowState.IDLE ) {
-            throw new WorkflowApiException( "Workflow is currently not idle: " + workflow.getState(), HttpCode.CONFLICT );
+            throw new WorkflowApiException( "Workflow is currently not idle: " + workflow.getState(), HttpStatus.CONFLICT );
         }
         setConfig( config );
     }

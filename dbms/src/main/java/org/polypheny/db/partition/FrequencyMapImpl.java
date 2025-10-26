@@ -264,7 +264,7 @@ public class FrequencyMapImpl extends FrequencyMap {
 
         Transaction transaction = null;
         try {
-            transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "FrequencyMap" );
+            transaction = transactionManager.startTransaction( Catalog.defaultUserId, null, "FrequencyMap" );
 
             Statement statement = transaction.createStatement();
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
@@ -331,7 +331,7 @@ public class FrequencyMapImpl extends FrequencyMap {
             if ( !hotPartitionsToCreate.isEmpty() ) {
                 catalog.getSnapshot().alloc().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
 
-                store.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( null, null, null ), AllocationTableWrapper.of( null, null ) );
+                store.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( null, null, null ), AllocationTableWrapper.of( null, null, null ) );
 
                 List<LogicalColumn> logicalColumns = new ArrayList<>();
                 catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerEntity( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getSnapshot().rel().getColumn( cp.columnId ).orElseThrow() ) );

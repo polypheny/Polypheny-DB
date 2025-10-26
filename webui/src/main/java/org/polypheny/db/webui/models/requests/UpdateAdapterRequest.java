@@ -14,18 +14,24 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.entity.allocation;
+package org.polypheny.db.webui.models.requests;
 
-import java.util.List;
+
+import java.util.Map;
+import lombok.AllArgsConstructor;
 import lombok.Value;
 
-@Value(staticConstructor = "of")
-public class AllocationTableWrapper {
 
-    public AllocationTable table;
+/**
+ * Model for a request to edit or create a Table used for request where you want to truncate/drop a table
+ * and when you want to create a new table
+ */
+@Value
+@AllArgsConstructor
+public class UpdateAdapterRequest {
 
-    public List<AllocationColumn> columns;
+    String uniqueName;
+    Map<String, String> settings;
 
-    public String physicalSchema;
 
 }

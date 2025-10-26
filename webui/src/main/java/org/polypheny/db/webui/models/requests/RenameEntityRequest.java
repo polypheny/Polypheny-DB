@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.entity.allocation;
+package org.polypheny.db.webui.models.requests;
 
-import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Value;
 
-@Value(staticConstructor = "of")
-public class AllocationTableWrapper {
+@Value
+@AllArgsConstructor
+public class RenameEntityRequest {
 
-    public AllocationTable table;
-
-    public List<AllocationColumn> columns;
-
-    public String physicalSchema;
+    public Long namespaceId;
+    public Long entityId;
+    public String entityName;
 
 }

@@ -16,7 +16,7 @@
 
 package org.polypheny.db.workflow.repo;
 
-import io.javalin.http.HttpCode;
+import io.javalin.http.HttpStatus;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -147,7 +147,7 @@ public interface WorkflowRepo {
     default JobModel getJob( UUID jobId ) throws WorkflowRepoException {
         JobModel model = getJobs().get( jobId );
         if ( model == null ) {
-            throw new WorkflowRepoException( "Job does not exist: " + jobId, HttpCode.NOT_FOUND );
+            throw new WorkflowRepoException( "Job does not exist: " + jobId, HttpStatus.NOT_FOUND );
         }
         return model;
     }
@@ -237,7 +237,7 @@ public interface WorkflowRepo {
         try {
             validated = WorkflowImpl.fromModel( workflow ).toModel( false );
         } catch ( Exception e ) {
-            throw new WorkflowRepoException( "Workflow has an invalid format: " + e.getMessage(), HttpCode.BAD_REQUEST );
+            throw new WorkflowRepoException( "Workflow has an invalid format: " + e.getMessage(), HttpStatus.BAD_REQUEST );
         }
         UUID workflowId = createWorkflow( name, group );
         if ( workflow.getDescription() != null ) {
@@ -282,27 +282,27 @@ public interface WorkflowRepo {
     @Getter
     class WorkflowRepoException extends IOException {
 
-        private final HttpCode errorCode;
+        private final HttpStatus errorCode;
 
 
-        public WorkflowRepoException( String message, Throwable cause, HttpCode errorCode ) {
+        public WorkflowRepoException( String message, Throwable cause, HttpStatus errorCode ) {
             super( message, cause );
             this.errorCode = errorCode;
         }
 
 
         public WorkflowRepoException( String message ) {
-            this( message, null, HttpCode.INTERNAL_SERVER_ERROR );
+            this( message, null, HttpStatus.INTERNAL_SERVER_ERROR );
         }
 
 
-        public WorkflowRepoException( String message, HttpCode errorCode ) {
+        public WorkflowRepoException( String message, HttpStatus errorCode ) {
             this( message, null, errorCode );
         }
 
 
         public WorkflowRepoException( String message, Throwable cause ) {
-            this( message, cause, HttpCode.INTERNAL_SERVER_ERROR );
+            this( message, cause, HttpStatus.INTERNAL_SERVER_ERROR );
         }
 
 

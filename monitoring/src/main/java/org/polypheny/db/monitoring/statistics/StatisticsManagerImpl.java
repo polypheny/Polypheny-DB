@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.statistics;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeSupport;
 import java.math.BigDecimal;
@@ -33,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +52,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -141,7 +144,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     private Transaction getTransaction() {
         Transaction transaction;
-        transaction = statisticQueryInterface.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, false, "Statistic Manager" );
+        transaction = statisticQueryInterface.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, null, "Statistic Manager" );
         return transaction;
     }
 
@@ -1073,25 +1076,44 @@ public class StatisticsManagerImpl extends StatisticsManager {
     @Override
     public Object getEntityStatistic( long namespaceId, long entityId ) {
         StatisticTable statisticTable = entityStatistic.get( entityId );
-        List<NumericalStatisticColumn> numericInfo = new ArrayList<>();
-        List<AlphabeticStatisticColumn> alphabeticInfo = new ArrayList<>();
-        List<TemporalStatisticColumn> temporalInfo = new ArrayList<>();
-        statisticTable.setNumericalColumn( numericInfo );
-        statisticTable.setAlphabeticColumn( alphabeticInfo );
-        statisticTable.setTemporalColumn( temporalInfo );
+
+        LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( entityId ).orElseThrow();
+        final List<Long> columnIds = new ArrayList<>();
+        if ( entity instanceof LogicalTable ) {
+            columnIds.addAll( ((LogicalTable) entity).getColumnIds() );
+        }
+
+        TableStatistics t = new TableStatistics( entityId, entity.name, statisticTable.getEntityType(), statisticTable.getNumberOfRows(), statisticTable.getCalls() );
         statisticFields.forEach( ( k, v ) -> {
-            if ( v.type.getFamily() == PolyTypeFamily.NUMERIC ) {
-                numericInfo.add( (NumericalStatisticColumn) v );
-                statisticTable.setNumericalColumn( numericInfo );
-            } else if ( v.type.getFamily() == PolyTypeFamily.CHARACTER ) {
-                alphabeticInfo.add( (AlphabeticStatisticColumn) v );
-                statisticTable.setAlphabeticColumn( alphabeticInfo );
-            } else if ( PolyType.DATETIME_TYPES.contains( Catalog.snapshot().rel().getColumn( k ).orElseThrow().type ) ) {
-                temporalInfo.add( (TemporalStatisticColumn) v );
-                statisticTable.setTemporalColumn( temporalInfo );
+            if ( columnIds.contains( k ) ) {
+                t.columns.add( v );
             }
         } );
-        return statisticTable;
+
+        return t;
+    }
+
+
+    @Data
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+    static class TableStatistics {
+
+        long tableId;
+        String tableName;
+        EntityType entityType;
+        long numberOfRows;
+        TableCalls calls;
+        List<StatisticColumn> columns = new ArrayList<>();
+
+
+        TableStatistics( long tableId, String tableName, EntityType entityType, long numberOfRows, TableCalls calls ) {
+            this.tableId = tableId;
+            this.tableName = tableName;
+            this.entityType = entityType;
+            this.numberOfRows = numberOfRows;
+            this.calls = calls;
+        }
+
     }
 
 

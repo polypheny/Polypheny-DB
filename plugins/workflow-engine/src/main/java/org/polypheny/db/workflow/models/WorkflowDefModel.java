@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -97,6 +98,23 @@ public class WorkflowDefModel {
                     "description='" + description + '\'' +
                     ", creationTime=" + creationTime +
                     '}';
+        }
+
+    }
+
+
+    /**
+     * This class can be used for serialization where the workflowId needs to be included
+     */
+    @Getter
+    public static class IdentifiedWorflowDefModel extends WorkflowDefModel {
+
+        private final UUID workflowId;
+
+
+        public IdentifiedWorflowDefModel( WorkflowDefModel defModel, UUID workflowId ) {
+            super( defModel.getName(), defModel.getGroup(), defModel.getDescription(), defModel.getVersions() );
+            this.workflowId = workflowId;
         }
 
     }

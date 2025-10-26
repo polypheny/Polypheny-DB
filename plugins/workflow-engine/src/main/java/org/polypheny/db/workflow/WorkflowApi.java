@@ -17,24 +17,29 @@
 package org.polypheny.db.workflow;
 
 import io.javalin.http.Context;
-import io.javalin.http.HttpCode;
+import io.javalin.http.HttpStatus;
 import java.util.UUID;
 import lombok.Getter;
 import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.workflow.dag.activities.ActivityRegistry;
 import org.polypheny.db.workflow.models.WorkflowConfigModel;
+import org.polypheny.db.workflow.models.WorkflowDefModel.IdentifiedWorflowDefModel;
 import org.polypheny.db.workflow.models.WorkflowModel;
+import org.polypheny.db.workflow.repo.WorkflowRepo;
+import org.polypheny.db.workflow.repo.WorkflowRepo.WorkflowRepoException;
 import org.polypheny.db.workflow.session.SessionManager;
 
 public class WorkflowApi {
 
     private final SessionManager sessionManager;
+    private final WorkflowRepo repo;
     public static final String PATH = WorkflowManager.PATH + "/api";
 
 
-    public WorkflowApi( SessionManager sessionManager ) {
+    public WorkflowApi( SessionManager sessionManager, WorkflowRepo repo ) {
         this.sessionManager = sessionManager;
+        this.repo = repo;
     }
 
 
@@ -53,12 +58,15 @@ public class WorkflowApi {
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/{activityId}/{outIndex}", this::getIntermediaryResult, HandlerType.GET );  // queryParam: limit = null
         server.addSerializedRoute( PATH + "/registry", this::getActivityRegistry, HandlerType.GET ); // queryParam: array = false
         server.addSerializedRoute( PATH + "/registry/{activityType}", this::getActivityDef, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/workflows", this::getWorkflowDefs, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/workflows/{workflowId}/{version}", this::getStoredWorkflow, HandlerType.GET );
 
         server.addSerializedRoute( PATH + "/sessions", this::createSession, HandlerType.POST ); // queryParam: execute = false       <- if true: immediately execute workflow
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/execute", this::execute, HandlerType.POST ); // queryParam: target = null
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/reset", this::reset, HandlerType.POST ); // queryParam: target = null
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/interrupt", this::interrupt, HandlerType.POST );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}/workflow/config", this::setWorkflowConfig, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/workflows/{workflowId}/{version}/open", this::createSessionFromStoredWorkflow, HandlerType.POST );
 
         server.addSerializedRoute( PATH + "/sessions", this::terminateSessions, HandlerType.DELETE );
         server.addSerializedRoute( PATH + "/sessions/{sessionId}", this::terminateSession, HandlerType.DELETE );
@@ -67,7 +75,7 @@ public class WorkflowApi {
 
 
     private void getSessions( final Context ctx ) {
-        process( ctx, sessionManager::getApiSessionModels );
+        process( ctx, () -> sessionManager.getApiSessionModels().values() );
     }
 
 
@@ -150,7 +158,33 @@ public class WorkflowApi {
             try {
                 return ActivityRegistry.get( activityType );
             } catch ( Exception e ) {
-                throw new WorkflowApiException( "Specified activityType does not exist: " + activityType, HttpCode.NOT_FOUND );
+                throw new WorkflowApiException( "Specified activityType does not exist: " + activityType, HttpStatus.NOT_FOUND );
+            }
+        } );
+    }
+
+
+    private void getWorkflowDefs( final Context ctx ) {
+        process( ctx, () -> {
+            try {
+                return repo.getWorkflowDefs().entrySet().stream()
+                        .map( e -> new IdentifiedWorflowDefModel( e.getValue(), e.getKey() ) )
+                        .toList();
+            } catch ( WorkflowRepoException e ) {
+                throw new WorkflowApiException( e.getMessage(), e.getErrorCode() );
+            }
+        } );
+    }
+
+
+    private void getStoredWorkflow( final Context ctx ) {
+        UUID workflowId = UUID.fromString( ctx.pathParam( "workflowId" ) );
+        int version = Integer.parseInt( ctx.pathParam( "version" ) );
+        process( ctx, () -> {
+            try {
+                return repo.readVersion( workflowId, version );
+            } catch ( WorkflowRepoException e ) {
+                throw new WorkflowApiException( e.getMessage(), e.getErrorCode() );
             }
         } );
     }
@@ -210,6 +244,26 @@ public class WorkflowApi {
     }
 
 
+    private void createSessionFromStoredWorkflow( final Context ctx ) {
+        UUID workflowId = UUID.fromString( ctx.pathParam( "workflowId" ) );
+        int version = Integer.parseInt( ctx.pathParam( "version" ) );
+        boolean execute = getQueryParam( ctx, "execute", false );
+        process( ctx, () -> {
+            try {
+                WorkflowModel workflowModel = repo.readVersion( workflowId, version );
+                UUID sessionId = sessionManager.createApiSession( workflowModel );
+                if ( execute ) {
+                    sessionManager.getApiSessionOrThrow( sessionId ).execute( null );
+                }
+                return sessionId;
+            } catch ( WorkflowRepoException e ) {
+                throw new WorkflowApiException( e.getMessage(), e.getErrorCode() );
+            }
+        } );
+
+    }
+
+
     private void terminateSessions( final Context ctx ) {
         process( ctx, sessionManager::terminateApiSessions );
     }
@@ -232,7 +286,7 @@ public class WorkflowApi {
             ctx.status( e.getErrorCode() );
             ctx.json( e.getMessage() );
         } catch ( Exception e ) {
-            ctx.status( HttpCode.INTERNAL_SERVER_ERROR );
+            ctx.status( HttpStatus.INTERNAL_SERVER_ERROR );
             ctx.json( e.getMessage() );
             e.printStackTrace();
         }
@@ -259,10 +313,10 @@ public class WorkflowApi {
     @Getter
     public static class WorkflowApiException extends Exception {
 
-        private final HttpCode errorCode;
+        private final HttpStatus errorCode;
 
 
-        public WorkflowApiException( String message, HttpCode errorCode ) {
+        public WorkflowApiException( String message, HttpStatus errorCode ) {
             super( message );
             this.errorCode = errorCode;
         }

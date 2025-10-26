@@ -281,7 +281,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         Transaction transaction = getTransactionManager().startTransaction(
                 Catalog.defaultUserId,
-                false,
+                null,
                 "Materialized View" );
 
         try {

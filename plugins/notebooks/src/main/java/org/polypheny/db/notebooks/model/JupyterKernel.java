@@ -88,18 +88,18 @@ public class JupyterKernel {
         this.name = name;
         this.clientId = UUID.randomUUID().toString();
         this.kernelLanguage = JupyterLanguageFactory.getKernelLanguage( name );
-
         this.supportsPolyCells = this.kernelLanguage != null;
-
-        String url = "ws://" + host + "/api/kernels/" + this.kernelId + "/channels?session_id=" + clientId;
-
-        this.webSocket = builder.buildAsync( URI.create( url ), new WebSocketClient() ).join();
 
         this.statusMsg = new JsonObject();
         this.statusMsg.addProperty( "msg_type", "status" );
         JsonObject content = new JsonObject();
         content.addProperty( "execution_state", "starting" );
         this.statusMsg.add( "content", content );
+
+        String url = "ws://" + host + "/api/kernels/" + this.kernelId + "/channels?session_id=" + clientId;
+
+        this.webSocket = builder.buildAsync( URI.create( url ), new WebSocketClient() ).join();
+
         sendInitCode();
     }
 
@@ -179,7 +179,7 @@ public class JupyterKernel {
             return;
         }
         Optional<LogicalNamespace> namespace = Catalog.snapshot().getNamespace( apc.namespace );
-        String result = anyQuery( query, apc.language, namespace.orElseThrow().name );
+        String result = anyQuery( query, apc.language, namespace.orElseThrow() );
         ByteBuffer request = buildInputReply( result, parentHeader );
         webSocket.sendBinary( request, true );
     }
@@ -253,12 +253,13 @@ public class JupyterKernel {
      * @param namespace the target namespace
      * @return the serialized results in JSON format
      */
-    private String anyQuery( String query, String language, String namespace ) {
-        QueryRequest queryRequest = new QueryRequest( query, false, true, language, namespace );
+    private String anyQuery( String query, String language, LogicalNamespace namespace ) {
+        QueryRequest queryRequest = new QueryRequest( query, false, true, language, namespace.name );
         List<? extends Result<?, ?>> results = LanguageCrud.anyQueryResult(
                 QueryContext.builder()
                         .query( query )
                         .language( QueryLanguage.from( language ) )
+                        .namespaceId( namespace.id )
                         .origin( "Notebooks" )
                         .transactionManager( jsm.getTransactionManager() )
                         .build(), queryRequest );

@@ -44,6 +44,7 @@ import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.PhysicalQueryContext;
 import org.polypheny.db.processing.QueryContext.TranslatedQueryContext;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.transaction.QueryAnalyzer;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
@@ -84,7 +85,7 @@ public class WebSocket implements Consumer<WsConfig> {
     public void closed( WsCloseContext ctx ) {
         log.debug( "UI disconnected from WebSocket" );
         sessions.remove( ctx.session );
-        Crud.cleanupOldSession( queryAnalyzers, ctx.getSessionId() );
+        Crud.cleanupOldSession( queryAnalyzers, ctx.sessionId() );
     }
 
 
@@ -113,7 +114,7 @@ public class WebSocket implements Consumer<WsConfig> {
             return;
         }
         //close analyzers of a previous query that was sent over the same socket.
-        Crud.cleanupOldSession( queryAnalyzers, ctx.getSessionId() );
+        Crud.cleanupOldSession( queryAnalyzers, ctx.sessionId() );
 
         RequestModel request = ctx.messageAsClass( RequestModel.class );
         Set<String> xIds = new HashSet<>();
@@ -158,7 +159,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 break;
             case "PolyAlgRequest":
                 PolyAlgRequest polyAlgRequest = ctx.messageAsClass( PolyAlgRequest.class );
-                Transaction transaction = crud.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, true, POLYPHENY_UI );
+                Transaction transaction = crud.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, new QueryAnalyzer(), POLYPHENY_UI );
                 AlgRoot root;
                 Statement statement;
                 try {
@@ -256,7 +257,7 @@ public class WebSocket implements Consumer<WsConfig> {
             default:
                 throw new GenericRuntimeException( "Unexpected WebSocket request: " + request.type );
         }
-        queryAnalyzers.put( ctx.getSessionId(), xIds );
+        queryAnalyzers.put( ctx.sessionId(), xIds );
     }
 
 
