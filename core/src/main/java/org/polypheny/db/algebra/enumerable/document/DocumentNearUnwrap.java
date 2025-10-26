@@ -114,7 +114,7 @@ public class DocumentNearUnwrap extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         if ( !(alg instanceof DocumentFilter filter) ) {
-            throw new GenericRuntimeException( "todo" );
+            return null;
         }
         cluster = alg.getCluster();
         RexCall nearCall = (RexCall) filter.getCondition();

@@ -297,14 +297,6 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                 """;
         execute( insertMany.formatted( mongoCollection ), namespace );
 
-//        DocResult result = execute( """
-//                db.%s.find({
-//                    legacy: {
-//                       $near: [0,0],
-//                       $maxDistance: 10
-//                    }
-//                })
-//                """.formatted( mongoCollection ), namespace );
         DocResult result = execute( """
                 db.%s.find({
                     legacy: {
@@ -365,14 +357,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                 """;
         execute( insertMany.formatted( defaultCollection ), namespace );
 
-//        DocResult result = execute( """
-//                db.%s.find({
-//                    legacy: {
-//                       $near: [0,0],
-//                       $maxDistance: 10
-//                    }
-//                })
-//                """.formatted( mongoCollection ), namespace );
+
         DocResult result = execute( """
                 db.%s.find({
                     legacy: {
@@ -435,12 +420,6 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
         // TODO: This test currently fails, because the sort is not working correctly for some reason.
         ArrayList<String> queries = new ArrayList<>();
 
-        // TODO: Support indexes
-        // An index is necessary, because that tells MongoDB which field to use for calculating
-        // the distance. Currently, the field name specified in 'key' is created.
-//        queries.add( """
-//                db.%s.createIndex({ legacy: "2d" })
-//                """);
         queries.add( """
                 db.%s.insertMany([
                     {

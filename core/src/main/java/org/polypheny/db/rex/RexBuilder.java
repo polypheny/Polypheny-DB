@@ -1339,11 +1339,20 @@ public class RexBuilder {
                 }
                 break;
             case ARRAY:
-                ArrayType arrayType = (ArrayType) type;
+                AlgDataType compType;
+                List<?> unknownList = (List<Object>) o;
+                if ( type instanceof ArrayType arrayType ) {
+                    compType = arrayType.getComponentType();
+                } else if ( !unknownList.isEmpty() ) {
+                    compType = guessType( unknownList.get( 0 ) );
+                } else {
+                    throw new AssertionError();
+                }
+
                 List<PolyValue> list = new ArrayList<>();
 
-                for ( Object object : (List<Object>) o ) {
-                    list.add( clean( object, arrayType.getComponentType() ) );
+                for ( Object object : unknownList ) {
+                    list.add( clean( object, compType ) );
                 }
                 return PolyList.copyOf( list );
             case BOOLEAN:
@@ -1393,11 +1402,20 @@ public class RexBuilder {
         if ( value instanceof Boolean ) {
             return typeFactory.createPolyType( PolyType.BOOLEAN );
         }
-        if ( value instanceof String ) {
-            return typeFactory.createPolyType( PolyType.CHAR, ((String) value).length() );
+        if ( value instanceof String string ) {
+            return typeFactory.createPolyType( PolyType.CHAR, string.length() );
         }
-        if ( value instanceof ByteString ) {
-            return typeFactory.createPolyType( PolyType.BINARY, ((ByteString) value).length() );
+        if ( value instanceof ByteString string ) {
+            return typeFactory.createPolyType( PolyType.BINARY, string.length() );
+        }
+        if ( value instanceof PolyList<?> list ) {
+            if ( list.isEmpty() ) {
+                throw new RuntimeException( "List is empty, cannot derive the type automatically!" );
+            }
+            return typeFactory.createArrayType( guessType( list.get( 0 ) ), list.size() );
+        }
+        if ( value instanceof PolyBigDecimal ) {
+            return typeFactory.createPolyType( PolyType.BIGINT );
         }
         throw new AssertionError( "unknown type " + value.getClass() );
     }
@@ -1427,11 +1445,11 @@ public class RexBuilder {
 
     public RexLiteral makeMap( AlgDataType type, Map<RexNode, RexNode> operands ) {
         Map<PolyValue, PolyValue> map = new HashMap<>();
-        operands.forEach((key, value) -> {
-            map.put(((RexLiteral) key).value, ((RexLiteral) value).value);
-        });
+        operands.forEach( ( key, value ) -> {
+            map.put( ((RexLiteral) key).value, ((RexLiteral) value).value );
+        } );
 
-        return new RexLiteral( PolyMap.of(map), type, type.getPolyType() ); // todo fix this
+        return new RexLiteral( PolyMap.of( map ), type, type.getPolyType() ); // todo fix this
     }
 
 

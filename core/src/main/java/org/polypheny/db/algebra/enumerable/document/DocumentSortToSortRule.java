@@ -52,7 +52,7 @@ public class DocumentSortToSortRule extends AlgOptRule {
         if ( !sort.fieldExps.isEmpty() ) {
             // we have to project the target keys out to use it in the sort
             builder.transform( ModelTrait.RELATIONAL, DocumentType.ofRelational(), false, null );
-            NameRefReplacer visitor = new NameRefReplacer( sort.getCluster(), false );
+            NameRefReplacer visitor = new NameRefReplacer( sort.getCluster(), false, builder.peek() );
             List<RexNode> inputs = Stream.concat(
                     Stream.of(
                             RexIndexRef.of( 0, DocumentType.ofId().asRelational().getFields() ),

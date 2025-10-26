@@ -26,7 +26,9 @@ import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule.Ne
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgCluster;
@@ -67,7 +69,7 @@ public class DocumentFilterToCalcRule extends ConverterRule {
         final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
         final AlgDataType inputRowType = input.getTupleType();
         final RexProgramBuilder programBuilder = new RexProgramBuilder( inputRowType, rexBuilder );
-        NameRefReplacer replacer = new NameRefReplacer( filter.getCluster(), false );
+        NameRefReplacer replacer = new NameRefReplacer( filter.getCluster(), false, alg.getInput(0 ) );
         programBuilder.addIdentity();
         programBuilder.addCondition( filter.condition.accept( replacer ) );
         final RexProgram program = programBuilder.getProgram();
@@ -82,26 +84,30 @@ public class DocumentFilterToCalcRule extends ConverterRule {
     public static class NameRefReplacer extends RexShuttle {
 
         private final AlgCluster cluster;
+        private final AlgNode input;
         boolean inplace;
 
 
-        public NameRefReplacer( AlgCluster cluster, boolean inplace ) {
+        public NameRefReplacer( AlgCluster cluster, boolean inplace, AlgNode input ) {
             this.cluster = cluster;
             this.inplace = inplace;
+            this.input = input;
         }
 
 
         @Override
         public RexNode visitNameRef( RexNameRef nameRef ) {
+            int index = 0;
+            if ( input.getModel() == DataModel.RELATIONAL ){
+                // within document model we just access the main field, if already mapped we use the data field
+                index = input.getTupleType().getFields().stream().filter( f -> f.getName().equals( "_data" )).map( AlgDataTypeField::getIndex ).findAny().orElse( 0 );
+            }
+
             return new RexCall(
                     nameRef.getType(),
                     OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_QUERY_VALUE ),
-                    RexIndexRef.of( 0, DocumentType.ofDoc() ),
+                    RexIndexRef.of( index, input.getTupleType() ),
                     DocumentUtil.getStringArray( nameRef.names, cluster ) );
         }
-
-
     }
-
-
 }
