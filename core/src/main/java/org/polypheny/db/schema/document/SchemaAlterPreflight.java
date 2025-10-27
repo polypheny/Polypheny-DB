@@ -16,16 +16,10 @@
 
 package org.polypheny.db.schema.document;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.BsonDocument;
 import org.polypheny.db.ResultIterator;
-import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
@@ -35,11 +29,8 @@ import org.polypheny.db.schema.document.SchemaValidator.Violation;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Consumer;
 
 /**
  * Preflight validator for schema alterations.

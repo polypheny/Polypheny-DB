@@ -2211,11 +2211,11 @@ public class DdlManagerImpl extends DdlManager {
     ) {
 
         // Normalize + validate context once
-        String adjusted = adjustNameIfNeeded( name, namespaceId );
+        String adjustedName = adjustNameIfNeeded( name, namespaceId );
         checkModelLangCompatibility( DataModel.DOCUMENT, namespaceId );
 
         // Fail fast (or early-return if IF NOT EXISTS)
-        if ( assertEntityExists( namespaceId, adjusted, ifNotExists ) ) {
+        if ( assertEntityExists( namespaceId, adjustedName, ifNotExists ) ) {
             return;
         }
 
@@ -2230,12 +2230,12 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( schema == null ) {
             // fallback to existing behavior
-            createCollectionWOS( namespaceId, name, ifNotExists, stores, statement, adjusted );
+            createCollectionWOS( namespaceId, name, ifNotExists, stores, statement, adjustedName );
             return;
         }
 
         // 2) otherwise run the schema-aware path
-        createCollectionWS( namespaceId, name, ifNotExists, stores, statement, schema, mode, adjusted );
+        createCollectionWS( namespaceId, name, ifNotExists, stores, statement, schema, mode, adjustedName );
     }
 
 
@@ -2272,6 +2272,9 @@ public class DdlManagerImpl extends DdlManager {
             Statement statement, DocumentSchema schema, EnforcementMode mode, String adjusted
     ) {
 
+        schema.validateOrThrow();
+        final String schemaJson = SchemaJson.toJson(schema);
+        final String enforcement = (mode == null ? EnforcementMode.OFF : mode).name();
         if ( stores == null ) {
             stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewEntity();
         }
@@ -2291,11 +2294,7 @@ public class DdlManagerImpl extends DdlManager {
                 catalog,
                 logical.namespaceId,
                 logical.id,
-                new SchemaMeta(
-                        SchemaJson.toJson( schema ),
-                        (mode == null ? EnforcementMode.OFF : mode).name(),
-                        1L
-                )
+                new SchemaMeta(schemaJson, enforcement, 1L)
         );
         catalog.updateSnapshot();
     }

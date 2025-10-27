@@ -206,10 +206,6 @@ public final class SchemaOptionsResolver {
             throw new IllegalArgumentException( "Invalid options payload: " + e.getMessage(), e );
         }
 
-        if ( root.has( "validator" ) || root.has( "$jsonSchema" ) ) {
-            throw new IllegalArgumentException( "Use 'docSchema' instead of 'validator.$jsonSchema'." );
-        }
-
         EnforcementMode mode = null;
         if ( root.has( "validationAction" ) ) {
             String s = root.get( "validationAction" ).asText( "" );
@@ -265,7 +261,13 @@ public final class SchemaOptionsResolver {
             DocumentSchema.ObjectNode rootNode = readObjectNode( (ObjectNode) ds, /*isRoot=*/true );
 
             // Root-level additionalProperties is REQUIRED (strict mode).
-            DocumentSchema.AdditionalProperties ap = readRootAPOrThrow( (ObjectNode) ds );
+            DocumentSchema.AdditionalProperties ap;
+            ObjectNode dso = (ObjectNode) ds;
+            if ( schemaOptional && alterMode == AlterMode.PATCH && !dso.has( "additionalProperties" ) ) {
+                ap = null;  // inherit during merge
+            } else {
+                ap = readRootAPOrThrow( dso );
+            }
 
             schema = new DocumentSchema( rootNode, ap );
         } else if ( !schemaOptional ) {
@@ -326,7 +328,7 @@ public final class SchemaOptionsResolver {
      */
     private static DocumentSchema.Node readNode( JsonNode spec, boolean isRoot ) {
         if ( spec.isTextual() ) {
-            PolyType pt = mapInputTypeToPoly( spec.asText() );
+            PolyType pt = JsonTypeTokens.toPolyType( spec.asText() );
             return new DocumentSchema.ScalarNode( pt );
         }
         if ( !spec.isObject() ) {
@@ -342,7 +344,7 @@ public final class SchemaOptionsResolver {
             if ( typeText.equals( "array" ) ) {
                 return readArrayNode( o );
             }
-            PolyType pt = mapInputTypeToPoly( typeText );
+            PolyType pt = JsonTypeTokens.toPolyType( typeText );
             return new DocumentSchema.ScalarNode( pt );
         }
 
@@ -396,95 +398,6 @@ public final class SchemaOptionsResolver {
             }
         }
         throw new IllegalArgumentException( "'additionalProperties' must be boolean or 'FORBID'/'ALLOW'" );
-    }
-
-    // ---------- Mapping from friendly tokens (and legacy) to PolyType ----------
-
-    /**
-     * Maps a type token to a{@link PolyType}.
-     *
-     * @param raw input token; may include width or precision suffixes
-     * @return resolved {@link PolyType}
-     * @throws IllegalArgumentException if the token is not recognized
-     */
-    private static PolyType mapInputTypeToPoly( String raw ) {
-        if ( raw == null ) {
-            return PolyType.ANY;
-        }
-        String s = raw.trim();
-        // strip any legacy (p,s) suffix: VARCHAR(50), DECIMAL(10,2), etc.
-        int paren = s.indexOf( '(' );
-        if ( paren >= 0 ) {
-            s = s.substring( 0, paren );
-        }
-        String t = s.toLowerCase( Locale.ROOT );
-
-        // Friendly dialect
-        switch ( t ) {
-            case "text":
-            case "string":
-                return PolyType.TEXT;
-
-            case "number":
-            case "numeric":
-                return PolyType.DOUBLE;
-
-            case "boolean":
-            case "bool":
-                return PolyType.BOOLEAN;
-
-            case "date":
-                return PolyType.DATE;
-
-            case "timestamp":
-            case "datetime":
-                return PolyType.TIMESTAMP;
-
-            case "binary":
-            case "blob":
-                return PolyType.BINARY;
-
-            case "any":
-                return PolyType.ANY;
-        }
-
-        // Legacy SQL-ish tokens we still accept
-        switch ( t ) {
-            // strings
-            case "char":
-            case "varchar":
-            case "json":
-                return PolyType.TEXT;
-
-            // integers
-            case "tinyint":
-            case "smallint":
-            case "int":
-            case "integer":
-            case "bigint":
-                return PolyType.INTEGER;
-
-            // floating / decimal
-            case "decimal":
-            case "float":
-            case "real":
-            case "double":
-                return PolyType.DOUBLE;
-
-            // binary-ish
-            case "varbinary":
-            case "file":
-            case "image":
-            case "video":
-            case "audio":
-                return PolyType.BINARY;
-
-            // temporal
-            case "time":
-                return PolyType.TIMESTAMP;
-        }
-
-        throw new IllegalArgumentException( "Unknown type token: " + raw );
     }
 
 }

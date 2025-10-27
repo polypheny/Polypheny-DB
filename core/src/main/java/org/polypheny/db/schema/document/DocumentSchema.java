@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -232,7 +231,7 @@ public final class DocumentSchema {
             public void serialize( Node value, JsonGenerator gen, SerializerProvider sp ) throws IOException {
                 if ( value instanceof ScalarNode s ) {
                     gen.writeStartObject();
-                    gen.writeStringField( "type", s.type.name() );
+                    gen.writeStringField( "type", JsonTypeTokens.toJsonToken( s.type ) );
                     gen.writeEndObject();
                 } else if ( value instanceof ArrayNode a ) {
                     gen.writeStartObject();
@@ -300,68 +299,8 @@ public final class DocumentSchema {
                 if ( t == null || !t.isTextual() ) {
                     throw new IOException( "Scalar node requires textual 'type'" );
                 }
-                PolyType pt = parsePolyTypeRelaxed( t.asText() );
+                PolyType pt = JsonTypeTokens.toPolyType( t.asText() );
                 return new ScalarNode( pt );
-            }
-
-            // TODO: IS THIS PART NECESSARY??
-
-
-            /**
-             * Maps SQL-like types
-             */
-            private static PolyType parsePolyTypeRelaxed( String raw ) {
-                if ( raw == null ) {
-                    return PolyType.ANY;
-                }
-                String s = raw.trim();
-                int i = s.indexOf( '(' );
-                if ( i >= 0 ) {
-                    s = s.substring( 0, i );
-                }
-                String t = s.toUpperCase( Locale.ROOT );
-                if ( t.equals( "TEXT" ) || t.equals( "STRING" ) ) {
-                    return PolyType.TEXT;
-                }
-                if ( t.equals( "NUMBER" ) || t.equals( "NUMERIC" ) ) {
-                    return PolyType.DOUBLE;
-                }
-                if ( t.equals( "BOOLEAN" ) || t.equals( "BOOL" ) ) {
-                    return PolyType.BOOLEAN;
-                }
-                if ( t.equals( "DATE" ) ) {
-                    return PolyType.DATE;
-                }
-                if ( t.equals( "TIMESTAMP" ) || t.equals( "DATETIME" ) ) {
-                    return PolyType.TIMESTAMP;
-                }
-                if ( t.equals( "ANY" ) ) {
-                    return PolyType.ANY;
-                }
-                switch ( t ) {
-                    case "CHAR":
-                    case "VARCHAR":
-                    case "JSON":
-                        return PolyType.TEXT;
-                    case "TINYINT":
-                    case "SMALLINT":
-                    case "INT":
-                    case "INTEGER":
-                    case "BIGINT":
-                        return PolyType.INTEGER;
-                    case "DECIMAL":
-                    case "FLOAT":
-                    case "REAL":
-                    case "DOUBLE":
-                        return PolyType.DOUBLE;
-                    case "TIME":
-                        return PolyType.TIMESTAMP;
-                }
-                try {
-                    return PolyType.valueOf( t );
-                } catch ( IllegalArgumentException iae ) {
-                    throw new IllegalArgumentException( "Unknown scalar type token: " + raw );
-                }
             }
 
         }

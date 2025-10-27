@@ -196,6 +196,12 @@ public final class SchemaAlterEngine {
 
         if ( isSchemaChange ) {
             if ( !rep.ok ) {
+                // Allow schema changes that have violations when we are NOT moving to STRICT.
+                // Under WARN/OFF, legacy violations are tolerated and future writes will be warned/allowed.
+                if ( finalMode != EnforcementMode.STRICT ) {
+                    return new Outcome( true, rep ); // apply despite violations
+                }
+                // Target is STRICT -> block
                 throw new GenericRuntimeException(
                         String.format(
                                 "ALTER SCHEMA would invalidate %d/%d documents; examples: %s",

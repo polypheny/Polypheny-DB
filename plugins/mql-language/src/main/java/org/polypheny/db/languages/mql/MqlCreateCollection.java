@@ -88,7 +88,7 @@
             DdlManager.getInstance().createCollection(
                     namespaceId,
                     name,
-                    false,
+                    true, //TODO: should it really always be true?
                     dataStores.isEmpty() ? null : dataStores,
                     placementType,
                     statement,

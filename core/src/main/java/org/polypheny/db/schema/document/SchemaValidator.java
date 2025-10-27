@@ -102,7 +102,7 @@ public final class SchemaValidator {
                 }
             } else if ( child instanceof DocumentSchema.ScalarNode sn ) {
                 PolyType t = sn.type;
-                if ( !matchesType( bv, t ) ) {
+                if ( !JsonTypeTokens.matchesJson( bv, t ) ) {
                     out.add( v( p, "TYPE_MISMATCH", "Expected " + t + " but got " + bsonTypeName( bv ) ) );
                 }
             } else {
@@ -160,7 +160,7 @@ public final class SchemaValidator {
                 }
             } else if ( item instanceof ScalarNode sn ) {
                 PolyType t = sn.type;
-                if ( !matchesType( v, t ) ) {
+                if ( !JsonTypeTokens.matchesJson( v, t ) ) {
                     out.add( v( ip, "TYPE_MISMATCH", "Expected " + t + " but got " + bsonTypeName( v ) ) );
                 }
             } else {
@@ -168,8 +168,6 @@ public final class SchemaValidator {
             }
         }
     }
-
-    // ----------------------------------------------------------------------
 
 
     private static Violation v( String path, String code, String msg ) {
@@ -184,69 +182,6 @@ public final class SchemaValidator {
 
     private static String bsonTypeName( BsonValue v ) {
         return v == null ? "NULL" : v.getBsonType().name();
-    }
-
-
-    private static boolean matchesType( BsonValue v, PolyType t ) {
-        if ( t == PolyType.ANY ) {
-            return true;
-        }
-        if ( t == PolyType.NULL ) {
-            return v == null || v.isNull();
-        }
-
-        switch ( t ) {
-            case BOOLEAN:
-                return v instanceof BsonBoolean;
-
-            // Strings
-            case CHAR:
-            case VARCHAR:
-            case TEXT:
-            case JSON:
-                return v instanceof BsonString;
-
-            // Numerics
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-                return (v instanceof BsonInt32) || (v instanceof BsonInt64);
-            case BIGINT:
-                return (v instanceof BsonInt64) || (v instanceof BsonInt32);
-            case DECIMAL:
-            case FLOAT:
-            case REAL:
-            case DOUBLE:
-                return (v instanceof BsonNumber)
-                        || (v instanceof BsonDouble)
-                        || (v instanceof BsonInt32)
-                        || (v instanceof BsonInt64);
-
-            // Collections / documents
-            case ARRAY:
-                return v instanceof BsonArray;
-            case DOCUMENT:
-            case MAP:
-                return v instanceof BsonDocument;
-
-            // Temporal
-            case DATE:
-                return v instanceof BsonDateTime;
-            case TIMESTAMP:
-                return v instanceof BsonTimestamp;
-
-            // Binary / blobs
-            case BINARY:
-            case VARBINARY:
-            case FILE:
-            case IMAGE:
-            case VIDEO:
-            case AUDIO:
-                return v instanceof BsonBinary;
-
-            default:
-                return false;
-        }
     }
 
 }

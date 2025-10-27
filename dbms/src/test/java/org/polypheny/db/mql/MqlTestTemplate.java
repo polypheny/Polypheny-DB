@@ -41,37 +41,17 @@ public class MqlTestTemplate {
         TestHelper.getInstance();
         initDatabase();
     }
-//
-//
-//    @BeforeEach
-//    public void initCollection() {
-//        initCollection( namespace );
-//    }
-//
-//
-//    @AfterEach
-//    public void dropCollection() {
-//        dropCollection( namespace );
-//    }
 
-    /** Drop a collection if it exists; ignore failures. */
-    public static void dropSilently(String collection) {
-        try {
-            dropCollection(collection);
-        } catch (Exception ignore) {
-        }
-    }
 
     @BeforeEach
     public void initCollection() {
-        // ensure clean slate
-        dropSilently(namespace);
-        initCollection(namespace); // db.createCollection(namespace)
+        initCollection( namespace );
     }
+
 
     @AfterEach
     public void dropCollection() {
-        dropSilently(namespace);
+        dropCollection( namespace );
     }
 
 
