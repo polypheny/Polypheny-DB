@@ -104,11 +104,10 @@ public class PrismValueDeserializer {
 
     private static PolyValue deserializeToPolyDocument( ProtoValue protoValue ) {
         PolyDocument document = new PolyDocument();
-        protoValue.getDocument().getEntriesList().stream()
-                .filter( e -> e.getKey().getValueCase() == ValueCase.STRING )
-                .forEach( e -> document.put(
-                        new PolyString( e.getKey().getString().getString() ),
-                        deserializeProtoValue( e.getValue() )
+        protoValue.getDocument().getEntriesMap()
+                .forEach( (k, v) -> document.put(
+                        new PolyString( k ),
+                        deserializeProtoValue( v )
                 ) );
         return document;
     }

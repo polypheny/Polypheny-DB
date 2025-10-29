@@ -18,7 +18,7 @@ package org.polypheny.db.prisminterface.utils;
 
 import com.google.protobuf.ByteString;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -33,7 +33,6 @@ import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
-import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
@@ -44,7 +43,6 @@ import org.polypheny.prism.ProtoBoolean;
 import org.polypheny.prism.ProtoDate;
 import org.polypheny.prism.ProtoDocument;
 import org.polypheny.prism.ProtoDouble;
-import org.polypheny.prism.ProtoEntry;
 import org.polypheny.prism.ProtoFloat;
 import org.polypheny.prism.ProtoInteger;
 import org.polypheny.prism.ProtoInterval;
@@ -61,19 +59,6 @@ public class PolyValueSerializer {
 
     public static List<ProtoValue> serializeList( List<PolyValue> valuesList ) {
         return valuesList.stream().map( PolyValueSerializer::serialize ).toList();
-    }
-
-
-    public static List<ProtoEntry> serializeToProtoEntryList( PolyMap<PolyValue, PolyValue> polyMap ) {
-        return polyMap.entrySet().stream().map( PolyValueSerializer::serializeToProtoEntry ).toList();
-    }
-
-
-    public static ProtoEntry serializeToProtoEntry( Map.Entry<PolyValue, PolyValue> polyMapEntry ) {
-        return ProtoEntry.newBuilder()
-                .setKey( serialize( polyMapEntry.getKey() ) )
-                .setValue( serialize( polyMapEntry.getValue() ) )
-                .build();
     }
 
 
@@ -112,7 +97,7 @@ public class PolyValueSerializer {
 
     public static ProtoDocument buildProtoDocument( PolyDocument polyDocument ) {
         return ProtoDocument.newBuilder()
-                .addAllEntries( serializeToProtoEntryList( polyDocument.asMap() ) )
+                .putAllEntries( polyDocument.map.entrySet().stream().collect( Collectors.toMap( e -> e.getKey().value, e -> serialize( e.getValue() ) ) ) )
                 .build();
     }
 
