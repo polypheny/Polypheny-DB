@@ -16,14 +16,11 @@
 
 package org.polypheny.db.adapter;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializer;
 import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
-import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.logistic.DataModel;
 
 @Getter
@@ -38,28 +35,6 @@ public abstract class DataSource<S extends AdapterCatalog> extends Adapter<S> im
         this.dataReadOnly = dataReadOnly;
         this.supportedDataModels = Set.copyOf( supportedModels );
         informationPage.setLabel( "Sources" );
-
-    }
-
-
-    public static JsonSerializer<DataSource<?>> getSerializer() {
-        //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
-        return ( src, typeOfSrc, context ) -> {
-            JsonObject jsonSource = new JsonObject();
-            jsonSource.addProperty( "adapterId", src.getAdapterId() );
-            jsonSource.addProperty( "uniqueName", src.getUniqueName() );
-            jsonSource.addProperty( "adapterName", src.getAdapterName() );
-            jsonSource.add( "adapterSettings", context.serialize( AbstractAdapterSetting.serializeSettings( src.getAvailableSettings( src.getClass() ), src.getCurrentSettings() ) ) );
-            jsonSource.add( "settings", context.serialize( src.getCurrentSettings() ) );
-            jsonSource.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
-            jsonSource.addProperty( "type", src.getAdapterType().name() );
-            return jsonSource;
-        };
-    }
-
-
-    private AdapterType getAdapterType() {
-        return AdapterType.SOURCE;
     }
 
 

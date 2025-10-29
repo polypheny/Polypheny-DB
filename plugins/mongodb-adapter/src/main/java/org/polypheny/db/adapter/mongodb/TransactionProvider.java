@@ -21,9 +21,9 @@ import com.mongodb.MongoCommandException;
 import com.mongodb.TransactionOptions;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoClient;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.transaction.PolyXid;
@@ -111,7 +111,8 @@ public class TransactionProvider {
      * requires this
      */
     public void commitAll() {
-        new ArrayList<>( sessions.keySet() ).forEach( this::commit );
+        // Copy the keyset because this::commit modifies sessions
+        Set.copyOf( sessions.keySet() ).forEach( this::commit );
     }
 
 

@@ -69,11 +69,6 @@ public abstract class AdapterCatalog {
     public ConcurrentMap<Pair<Long, Long>, PhysicalField> fields; // allocId, fieldId
 
 
-    public AdapterCatalog( long adapterId ) {
-        this( adapterId, Map.of(), Map.of(), Map.of(), Map.of(), Map.of() );
-    }
-
-
     public AdapterCatalog(
             long adapterId,
             Map<Long, Namespace> namespaces,

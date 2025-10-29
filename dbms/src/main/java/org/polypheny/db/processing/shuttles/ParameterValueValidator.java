@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
@@ -185,7 +186,7 @@ public class ParameterValueValidator extends AlgShuttleImpl {
     }
 
 
-    static class InvalidParameterValueException extends RuntimeException {
+    static class InvalidParameterValueException extends GenericRuntimeException {
 
         public InvalidParameterValueException( String message ) {
             super( message );
