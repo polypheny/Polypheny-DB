@@ -269,9 +269,8 @@ public class StatisticsManagerImpl extends StatisticsManager {
      * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
      */
     private StatisticColumn reevaluateField( QueryResult column ) {
-
         if ( column.getColumn().type.getFamily() == PolyTypeFamily.ARRAY ) {
-            log.warn( "array not yet supported" );
+            log.warn( "arrays are not yet supported" );
             return null;
         }
 
@@ -343,7 +342,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     /**
-     * Helper method tho assign unique values or set isFull if too much exist
+     * Helper method tho assign unique values or set isFull if too much exists
      *
      * @param column the column in which the values should be inserted
      */
