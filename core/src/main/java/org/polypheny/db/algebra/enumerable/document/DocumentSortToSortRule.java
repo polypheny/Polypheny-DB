@@ -20,6 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule.NameRefReplacer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
@@ -31,6 +34,7 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.util.Collation;
 
 public class DocumentSortToSortRule extends AlgOptRule {
 
@@ -49,6 +53,7 @@ public class DocumentSortToSortRule extends AlgOptRule {
         builder.push( sort.getInput() );
 
         List<RexNode> fieldExps = sort.fieldExps;
+        AlgCollation collation = sort.collation;
         if ( !sort.fieldExps.isEmpty() ) {
             // we have to project the target keys out to use it in the sort
             builder.transform( ModelTrait.RELATIONAL, DocumentType.ofRelational(), false, null );
@@ -60,8 +65,10 @@ public class DocumentSortToSortRule extends AlgOptRule {
                     sort.fieldExps.stream().map( f -> f.accept( visitor ) ) ).toList();
             builder.push( LogicalRelProject.create( builder.build(), inputs, IntStream.range( 0, inputs.size() ).mapToObj( i -> "in" + i ).toList() ) );
             fieldExps = List.of( RexIndexRef.of( 2, DocumentType.ofId() ) );
+
+            collation = AlgCollations.of( new AlgFieldCollation( 2 ) );
         }
-        builder.push( LogicalRelSort.create( builder.build(), fieldExps, sort.collation, sort.offset, sort.fetch ) );
+        builder.push( LogicalRelSort.create( builder.build(), fieldExps, collation, sort.offset, sort.fetch ) );
 
         if ( !sort.fieldExps.isEmpty() ) {
             // we have to restore the initial structure

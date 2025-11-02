@@ -384,7 +384,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                       name: "Legacy [2,2]",
                       num: 3,
                       legacy: [2,2]
-                    }
+                    },
                     {
                       name: "Legacy [0,0]",
                       num: 1,
@@ -394,12 +394,12 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                       name: "Legacy [3,3]",
                       num: 4,
                       legacy: [3,3]
-                    }
+                    },
                     {
                       name: "Legacy [1,1]",
                       num: 2,
                       legacy: [1,1]
-                    },
+                    }
                 ])
                 """ );
         queries.add( """

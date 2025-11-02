@@ -37,6 +37,8 @@ package org.polypheny.db.algebra.enumerable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
 

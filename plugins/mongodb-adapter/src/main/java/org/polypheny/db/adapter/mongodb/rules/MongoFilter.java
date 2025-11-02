@@ -774,6 +774,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                 final String distanceField = "__temp_%s".formatted( UUID.randomUUID().toString() );
                 BsonDocument geoNearOptions = new BsonDocument();
                 geoNearOptions.put( "distanceField", new BsonString( distanceField ) );
+                geoNearOptions.put( "key", new BsonString( fieldName ) );
                 geoNearOptions.put( "near", near );
                 implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$geoNear", geoNearOptions ) ) );
                 implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$unset", new BsonString( distanceField ) ) ) );
