@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.TestHelper;
@@ -525,6 +526,7 @@ public class PolyAlgParsingTest {
 
 
     @Test
+    @Disabled // this leads to error as it tries to insert multiple _id with the same value, which is not possible in MongoDB
     public void mongoInsertTest() throws NodeParseException {
         testMqlRoundTrip( "db." + DOC_COLL + ".insertOne({item: \"canvas\"})" );
     }
