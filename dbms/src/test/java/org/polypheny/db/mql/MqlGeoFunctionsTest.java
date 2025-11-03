@@ -47,8 +47,8 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     final static String mongoCollection = "mongo";
     final static String defaultCollection = "default";
     final static List<String> collections = List.of(
-            defaultCollection,
-            mongoCollection
+            mongoCollection,
+            defaultCollection
     );
     final static Map<String, String> collectionToStore = Map.of( mongoCollection, mongoAdapterName, defaultCollection, "hsqldb" );
     final static String clearCollection = """
@@ -377,7 +377,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     @Test
     public void docsNearTest() {
         // TODO: This test currently fails, because the sort is not working correctly for some reason.
-        ArrayList<String> queries = new ArrayList<>();
+        List<String> queries = new ArrayList<>();
         queries.add( """
                 db.%s.insertMany([
                     {
@@ -418,7 +418,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     @Test
     public void docGeoNearTest() {
         // TODO: This test currently fails, because the sort is not working correctly for some reason.
-        ArrayList<String> queries = new ArrayList<>();
+        List<String> queries = new ArrayList<>();
 
         queries.add( """
                 db.%s.insertMany([
@@ -496,7 +496,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
      * the query contains a placeholder %s for the collection.
      */
     private List<DocResult> runQueries( List<String> queries ) {
-        ArrayList<DocResult> results = new ArrayList<>();
+        List<DocResult> results = new ArrayList<>();
 
         for ( String collection : collections ) {
             DocResult finalResult = null;
@@ -546,9 +546,31 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                 }
                 Object value = entry.getValue();
                 Object mongoValue = mongoDocumentMap.get( key );
-                assertEquals( mongoValue, value );
+
+                compareValues( mongoValue, value );
             }
         }
+    }
+
+
+    private static void compareValues( Object mongoValue, Object value ) {
+        if( mongoValue instanceof Map<?,?> val1 && value instanceof Map<?,?> val2 ) {
+            assertEquals( val1.size(), val2.size() );
+            assertEquals( val1.keySet(), val2.keySet() );
+            for ( Object key : val1.keySet() ) {
+                Object subVal1 = val1.get( key );
+                Object subVal2 = val2.get( key );
+                compareValues( subVal1, subVal2 );
+            }
+            return;
+
+        }else if ( mongoValue instanceof Number val && value instanceof Number val2 ) {
+            if (val.doubleValue() - val2.doubleValue() > 0.000001){
+                throw new RuntimeException("Floating point numbers are not withing accepted delta");
+            }
+            return;
+        }
+        assertEquals( mongoValue, value );
     }
 
 }

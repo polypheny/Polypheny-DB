@@ -253,7 +253,6 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
         final Function1<Document, PolyValue[]> getter = MongoEnumerator.getter( tupleType );
 
-        log.info( list.stream().map( el -> el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ).collect( Collectors.joining( ",\n" ) ) );
         if ( log.isDebugEnabled() ) {
             log.warn( list.stream().map( el -> el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ).collect( Collectors.joining( ",\n" ) ) );
         }

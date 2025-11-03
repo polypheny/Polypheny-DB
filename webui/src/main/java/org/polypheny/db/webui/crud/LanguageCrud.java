@@ -474,9 +474,11 @@ public class LanguageCrud {
 
             boolean hasMoreRows = context.getIterator().hasMoreRows();
 
+            String[] normalizedData = data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new );
+
             return DocResult.builder()
                     .header( new FieldDefinition[]{ FieldDefinition.builder().name( "Document" ).dataType( DataModel.DOCUMENT.name() ).build() } )
-                    .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
+                    .data( normalizedData )
                     .query( context.getQuery().getQuery() )
                     .language( context.getQuery().getLanguage() )
                     .queryType( QueryType.from( context.getImplementation().getKind() ) )

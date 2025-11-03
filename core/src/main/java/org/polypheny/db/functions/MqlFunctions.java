@@ -71,8 +71,15 @@ public class MqlFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyValue docQueryValue( PolyValue input, List<PolyString> filters ) {
-        if ( input == null || !input.isDocument() ) {
+        if ( input == null ) {
             return null;
+        }
+        if (!input.isDocument() ) {
+            if (input.isString()){
+                input = PolyDocument.fromTypedJson( input.asString().value, PolyDocument.class );
+            }else {
+                return null;
+            }
         }
         PolyValue temp = input;
         for ( PolyString filter : filters ) {
