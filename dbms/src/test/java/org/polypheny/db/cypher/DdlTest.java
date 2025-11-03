@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -32,8 +33,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 @Tag("adapter")
@@ -97,7 +101,7 @@ public class DdlTest extends CypherTestTemplate {
             execute( "DROP DATABASE " + graphName );
 
         } finally {
-
+            checkAllocationsSize(0);
             removeStore( "store1" );
         }
 
@@ -126,6 +130,7 @@ public class DdlTest extends CypherTestTemplate {
             execute( "DROP DATABASE " + graphName );
 
         } finally {
+            checkAllocationsSize(0);
             removeStore( "store1" );
         }
 
@@ -158,6 +163,7 @@ public class DdlTest extends CypherTestTemplate {
             execute( "DROP DATABASE " + graphName );
 
         } finally {
+            checkAllocationsSize(0);
             removeStore( "store1" );
         }
 
@@ -188,10 +194,19 @@ public class DdlTest extends CypherTestTemplate {
 
             execute( "DROP DATABASE " + graphName );
 
+            checkAllocationsSize(0);
         } finally {
             removeStore( "store1" );
         }
 
+    }
+
+
+    private static void checkAllocationsSize(int size) {
+        PolyCatalog catalog = (PolyCatalog) Catalog.getInstance();
+        LogicalAdapter store = catalog.getSnapshot().getAdapter( "store1" ).orElseThrow();
+        List<AllocationEntity> entities = catalog.getSnapshot().alloc().getEntitiesOnAdapter( store.id ).orElseThrow();
+        assertEquals( size, entities.size() );
     }
 
 

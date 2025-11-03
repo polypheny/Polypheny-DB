@@ -96,6 +96,7 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.numerical.PolyLong.PolyLongSerializerDef;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
+import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometryDeserializer;
 import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometrySerializer;
@@ -877,9 +878,24 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     @NotNull
     public PolyGeometry asGeometry() {
         if (this.type == PolyType.VARCHAR){
-            PolyString value = this.asString();
-            PolyGeometry geometry = PolyGeometry.of(value.getValue());
+            String value = this.asString().getValue();
+            PolyGeometry geometry = PolyGeometry.of(value);
             if (geometry == null){
+                if (value.startsWith( "ST_GeomFromText" )){
+                    value = value.replace( "ST_GeomFromText", "" );
+                    value = value.trim();
+                    value = value.substring( 1, value.length() - 2 );
+                    String[] splits = value.split( "," );
+                    try {
+                        if (splits.length == 2){
+                            return PolyGeometry.fromWKT( splits[0].replace( "'", ""), Integer.parseInt(splits[1].trim()) );
+                        }
+                        return PolyGeometry.fromWKT( value );
+                    } catch ( InvalidGeometryException e ) {
+                        throw cannotParse( this, PolyGeometry.class );
+                    }
+                }
+
                 throw cannotParse( this, PolyGeometry.class );
             }
             return geometry;

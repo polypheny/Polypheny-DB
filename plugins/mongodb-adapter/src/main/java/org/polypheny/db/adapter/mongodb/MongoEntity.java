@@ -481,6 +481,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                         // prepared
                         MongoDynamic util = MongoDynamic.create( BsonDocument.parse( operations.get( 0 ) ), bucket, getEntity().getDataModel() );
                         List<Document> inserts = util.getAll( dataContext.getParameterValues() );
+
                         entity.getCollection().insertMany( session, inserts );
                         return inserts.size();
                     } else {

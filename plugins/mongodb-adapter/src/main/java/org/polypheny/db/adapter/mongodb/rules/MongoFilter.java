@@ -326,6 +326,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                     return;
                 case MQL_ELEM_MATCH:
                     translateElemMatch( (RexCall) node );
+                    return;
                 case MQL_GEO_INTERSECTS:
                     translateGeoIntersects( (RexCall) node );
                     return;

@@ -169,7 +169,7 @@ public class PolyAlgParsingTest {
      * <p>
      * Then we check whether PolyAlg1 equals PolyAlg2 and Result1 equals Result2.
      */
-    private static void testQueryRoundTrip( String query, QueryLanguage ql, String namespace ) throws NodeParseException {
+    private static void testQueryRoundTrip( String query, QueryLanguage ql, String namespace ) {
         long ns = namespace == null ? Catalog.defaultNamespaceId : Catalog.snapshot().getNamespace( namespace ).orElseThrow().id;
         TransactionManager transactionManager = TransactionManagerImpl.getInstance();
         Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, ns, new QueryAnalyzer(), ORIGIN );

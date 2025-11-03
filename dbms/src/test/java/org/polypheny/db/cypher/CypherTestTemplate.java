@@ -103,8 +103,6 @@ public class CypherTestTemplate {
 
     public static void deleteData( String graph ) {
         execute( format( "DROP DATABASE %s IF EXISTS", graph ) );
-        Snapshot snapshot = Catalog.snapshot();
-        AdapterCatalog adapterCatalog = Catalog.getInstance().getAdapterCatalog( 0 ).orElseThrow();
     }
 
 

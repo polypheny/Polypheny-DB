@@ -379,6 +379,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Override
     public void dropNamespace( long id ) {
         logicalCatalogs.remove( id );
+        allocationCatalogs.remove( id );
 
         change();
     }

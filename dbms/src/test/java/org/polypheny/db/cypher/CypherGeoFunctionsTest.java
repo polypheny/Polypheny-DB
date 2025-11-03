@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CypherGeoFunctionsTest extends CypherTestTemplate {
@@ -62,12 +62,28 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         }
     }
 
+    @AfterAll
+    public static void close() {
+        tearDown();
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( "ALTER ADAPTERS DROP \"" + neo4jAdapterName + "\"" );
+            }
+        } catch ( SQLException e ) {
+            // If there is an error while adding the adapter, the most likely reason it does not work
+            // is that docker is not running!
+            throw new RuntimeException( e );
+        }
+    }
+
 
     @BeforeEach
     public void reset() {
         tearDown();
         createGraph();
     }
+
 
 
     /**
@@ -84,33 +100,37 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
     }
 
     private List<GraphResult> runQueries( List<String> queries, boolean onHsqlDb, boolean onNeo4j ) {
-        ArrayList<GraphResult> results = new ArrayList<>();
-        GraphResult finalResult = null;
+        try {
+            List<GraphResult> results = new ArrayList<>();
+            GraphResult finalResult = null;
 
-        // 1. Run queries internally
-        if (onHsqlDb){
-            tearDown();
-            createGraph();
-            for ( String query : queries ) {
-                finalResult = execute( query, GRAPH_NAME );
+            // 1. Run queries internally
+            if ( onHsqlDb ) {
+                tearDown();
+                createGraph();
+                for ( String query : queries ) {
+                    finalResult = execute( query, GRAPH_NAME );
+                }
+                results.add( finalResult );
             }
-            results.add( finalResult );
-        }
 
-        // 2. Run queries in Docker
-        if (onNeo4j){
+            // 2. Run queries in Docker
+            if ( onNeo4j ) {
+                deleteData( neo4jDatabaseName );
+                createGraph( neo4jDatabaseName, neo4jAdapterName );
+                for ( String query : queries ) {
+                    finalResult = execute( query, neo4jDatabaseName );
+                }
+                results.add( finalResult );
+            }
+
+            if ( onHsqlDb && onNeo4j ) {
+                assertEquals( 2, results.size() );
+            }
+            return results;
+        }finally {
             deleteData( neo4jDatabaseName );
-            createGraph( neo4jDatabaseName, neo4jAdapterName );
-            for ( String query : queries ) {
-                finalResult = execute( query, neo4jDatabaseName );
-            }
-            results.add( finalResult );
         }
-
-        if (onHsqlDb && onNeo4j){
-            assertEquals( 2, results.size() );
-        }
-        return results;
     }
 
 
@@ -141,7 +161,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
 
     private List<Map<String, Object>> convertResultToMap( GraphResult result ) {
-        ArrayList<Map<String, Object>> results = new ArrayList<>();
+        List<Map<String, Object>> results = new ArrayList<>();
 
         ObjectMapper objectMapper = new ObjectMapper();
         try {
@@ -183,7 +203,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
     @Test
     public void distanceNeo4jTest() {
-        ArrayList<String> queries = new ArrayList<>();
+        List<String> queries = new ArrayList<>();
         queries.add( "CREATE (berlin:Location {name: \"Berlin\", lat: 52.5200, lon: 13.4050})" );
         queries.add( "CREATE (paris:Location {name: \"Paris\", lat: 48.8566, lon: 2.3522})" );
 
@@ -205,7 +225,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
     @Test
     public void createPointTest() {
-        ArrayList<String> queries = new ArrayList<>();
+        List<String> queries = new ArrayList<>();
         queries.add( "CREATE (bob:User)" );
         queries.add( "MATCH (n) RETURN point({longitude: 56.7, latitude: 12}) AS point" );
 
@@ -352,7 +372,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
     @Test
     public void withinBBoxTest() {
-        ArrayList<String> queries = new ArrayList<>();
+        List<String> queries = new ArrayList<>();
 
         queries.add( """
                 CREATE (a:Dot {x: 1, y: 1, name: 'on edge'}),
@@ -397,7 +417,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
      */
     @Test
     public void withinGeometryTest() {
-        ArrayList<String> queries = new ArrayList<>();
+        List<String> queries = new ArrayList<>();
         queries.add( """
                 CREATE (a:Dot {x: 1, y: 1, name: 'on edge'}),
                        (b:Dot {x: 1.5, y: 1.5, name: 'inside'}),

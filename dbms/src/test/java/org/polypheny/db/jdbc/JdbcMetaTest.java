@@ -367,10 +367,10 @@ public class JdbcMetaTest {
 
             boolean trigger = false;
             while ( rs.next() ) {
-                Integer value = rs.getInt( "some_value" );
+                int value = rs.getInt( "some_value" );
                 if ( value == 0 ) {
                     trigger = true;
-                } else if ( trigger && value != null ) {
+                } else if ( trigger ) {
                     fail( "Values are not sorted correctly." );
                 }
             }
@@ -379,10 +379,10 @@ public class JdbcMetaTest {
 
             trigger = false;
             while ( rs2.next() ) {
-                Integer value = rs2.getInt( "some_value" );
+                int value = rs2.getInt( "some_value" );
                 if ( value == 0 ) {
                     trigger = true;
-                } else if ( trigger && value != null ) {
+                } else if ( trigger ) {
                     fail( "Values are not sorted correctly." );
                 }
             }
