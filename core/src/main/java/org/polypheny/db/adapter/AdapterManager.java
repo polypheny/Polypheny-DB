@@ -17,8 +17,6 @@
 package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializer;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -64,7 +62,7 @@ public class AdapterManager {
     }
 
 
-    public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer ) {
+    public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, DeployFn deployer ) {
         List<AbstractAdapterSetting> settings = AdapterTemplate.getAllSettings( clazz );
         AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
         long id = AdapterManager.getInstance().idBuilder.getAndIncrement();
@@ -252,24 +250,13 @@ public class AdapterManager {
 
     public record AdapterInformation( String name, String description, AdapterType type, List<AbstractAdapterSetting> settings, List<DeployMode> modes ) {
 
-        public static JsonSerializer<AdapterInformation> getSerializer() {
-            return ( src, typeOfSrc, context ) -> {
-                JsonObject jsonStore = new JsonObject();
-                jsonStore.addProperty( "name", src.name );
-                jsonStore.addProperty( "description", src.description );
-                jsonStore.addProperty( "type", src.type.name() );
-                jsonStore.add( "adapterSettings", context.serialize( src.settings ) );
-                return jsonStore;
-            };
-        }
-
     }
 
 
     @FunctionalInterface
-    public interface Function5<P1, P2, P3, P4, R> {
+    public interface DeployFn {
 
-        R get( P1 p1, P2 p2, P3 p3, P4 p4 );
+        Adapter<?> get( Long adapterId, String uniqueName, Map<String, String> settings, DeployMode deployMode );
 
     }
 

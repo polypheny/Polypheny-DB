@@ -188,12 +188,6 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
     }
 
 
-    public Map<String, String> getCurrentSettings() {
-        // we unwrap the dockerInstance details here, for convenience
-        return settings;
-    }
-
-
     protected void validateSettings( Map<String, String> newSettings, boolean initialSetup ) {
         for ( AbstractAdapterSetting s : getAvailableSettings( getClass() ) ) {
             // we only need to check settings which apply to the used mode

@@ -17,7 +17,9 @@
 package org.polypheny.db.restapi.exception;
 
 
-public class UnauthorizedAccessException extends RuntimeException {
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+
+public class UnauthorizedAccessException extends GenericRuntimeException {
 
     public UnauthorizedAccessException( String s ) {
         super( s );

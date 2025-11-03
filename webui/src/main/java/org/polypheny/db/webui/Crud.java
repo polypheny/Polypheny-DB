@@ -2060,6 +2060,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return;
         }
 
+        if ( adapterModel.name == null || adapterModel.name.isEmpty() ) {
+            ctx.status( HttpStatus.BAD_REQUEST );
+            ctx.result( "Missing adapter attribute: name" );
+            return;
+        }
+
         AdapterTemplate adapterTemplate = AdapterManager.getAdapterTemplate( adapterModel.adapterName, adapterModel.type );
 
         // This is only used to be able to get the type of property based on the key

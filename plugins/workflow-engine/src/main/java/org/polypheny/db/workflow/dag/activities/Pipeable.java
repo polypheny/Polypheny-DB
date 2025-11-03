@@ -19,6 +19,7 @@ package org.polypheny.db.workflow.dag.activities;
 import java.util.List;
 import java.util.Optional;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.workflow.dag.settings.SettingDef.Settings;
 import org.polypheny.db.workflow.dag.settings.SettingDef.SettingsPreview;
 import org.polypheny.db.workflow.engine.execution.context.ExecutionContext;
@@ -133,7 +134,7 @@ public interface Pipeable extends Activity {
     }
 
 
-    class PipeInterruptedException extends RuntimeException {
+    class PipeInterruptedException extends GenericRuntimeException {
 
         public PipeInterruptedException() {
             this( null );

@@ -26,7 +26,6 @@ import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
-import com.google.gson.JsonParseException;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -111,7 +110,6 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
-import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
@@ -134,8 +132,6 @@ import org.polypheny.db.util.Static;
 @Deterministic
 @Slf4j
 public class Functions {
-
-    private static final Gson gson = new Gson();
 
     private static final Function1<List<?>, Enumerable<?>> LIST_AS_ENUMERABLE = Linq4j::asEnumerable;
 
@@ -217,21 +213,9 @@ public class Functions {
         }
 
 
-        MetadataModel addTag( Directory dir ) {
-            tags.add( new MetadataModel( dir ) );
-            return this;
-        }
-
-
         MetadataModel addTag( Tag tag ) {
             tags.add( new MetadataModel( tag ) );
             return this;
-        }
-
-
-        @SuppressWarnings("unused")
-        String toJson() {
-            return new Gson().toJson( this );
         }
 
     }
@@ -2598,7 +2582,7 @@ public class Functions {
                 PolyValue val;
                 try {
                     val = json == null ? null : PolyValue.fromJson( json.toString() );
-                } catch ( JsonParseException | GenericRuntimeException e ) {
+                } catch ( GenericRuntimeException e ) {
                     // if the BsonParser cannot parse it we might try as string
                     val = PolyValue.fromJson( "\"" + json + "\"" );
                 }
@@ -2822,18 +2806,6 @@ public class Functions {
         } catch ( Exception e ) {
             return false;
         }
-    }
-
-
-    @SuppressWarnings("unused")
-    public static List<?> deserializeList( String parsed ) {
-        return gson.fromJson( parsed, List.class );
-    }
-
-
-    @SuppressWarnings("unused")
-    public static PolyDictionary deserializeDirectory( String parsed ) {
-        return gson.fromJson( parsed, PolyDictionary.class );
     }
 
 
