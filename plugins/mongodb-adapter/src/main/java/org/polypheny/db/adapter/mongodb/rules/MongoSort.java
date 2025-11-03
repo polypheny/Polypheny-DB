@@ -70,12 +70,10 @@ public class MongoSort extends Sort implements MongoAlg {
             final List<AlgDataTypeField> fields = getTupleType().getFields();
             for ( AlgFieldCollation fieldCollation : collation.getFieldCollations() ) {
                 String name;
-                if (!fieldExps.isEmpty() && fieldExps.get( fieldCollation.getFieldIndex() ) instanceof RexNameRef rexNameRef ) {
+                if (!fieldExps.isEmpty() && fieldExps.size() > fieldCollation.getFieldIndex() && fieldExps.get( fieldCollation.getFieldIndex() ) instanceof RexNameRef rexNameRef ) {
                     name = rexNameRef.getName();
                 } else {
-                    // TODO: Not sure if there is a case in which we want to get the name from the fields instead
-                    //       of the fieldsExps. In my testing, this always resolved to _id.
-                    //       => Remove this branch?
+                    // for relational cases
                     name = fields.get( fieldCollation.getFieldIndex() ).getName();
                 }
 
