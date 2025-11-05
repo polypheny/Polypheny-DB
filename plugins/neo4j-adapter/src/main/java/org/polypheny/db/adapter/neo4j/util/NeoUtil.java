@@ -36,6 +36,7 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
@@ -130,7 +131,13 @@ public interface NeoUtil {
             case GRAPH -> o -> (PolyValue) o;
             case NODE -> o -> asPolyNode( o.asNode() );
             case EDGE -> o -> asPolyEdge( o.asRelationship() );
-            case PATH -> o -> asPolyPath( o.asPath() );
+            case PATH -> o -> {
+
+                if (o instanceof ListValue) {
+                    return asPolyPath( ((InternalPath)o.asList().get( 0 )), type.asList().names );
+                }
+                return asPolyPath( o.asPath(), type.asList().names );
+            };
             case GEOMETRY -> NeoUtil::asPolyGeometry;
             default -> throw new GenericRuntimeException( String.format( "Object of type %s was not transformable.", type ) );
         };
@@ -166,21 +173,22 @@ public interface NeoUtil {
         throw new GenericRuntimeException( String.format( "Could not transform object of type %s to PolyGeometry", value.type() ) );
     }
 
-    static PolyPath asPolyPath( Path path ) {
+    static PolyPath asPolyPath( Path path, List<String> names ) {
         Iterator<Node> nodeIter = path.nodes().iterator();
         Iterator<Relationship> edgeIter = path.relationships().iterator();
-        List<PolyNode> nodes = new ArrayList<>();
-        List<PolyEdge> edges = new ArrayList<>();
+        Iterator<String> nameIter = names.iterator();
+        List<Pair<PolyString, PolyNode>> nodes = new ArrayList<>();
+        List<Pair<PolyString, PolyEdge>> edges = new ArrayList<>();
         while ( nodeIter.hasNext() ) {
-            nodes.add( asPolyNode( nodeIter.next() ) );
+            nodes.add( Pair.of( nameIter.hasNext() ? PolyString.of( nameIter.next()) : null, asPolyNode( nodeIter.next() )) );
             if ( nodeIter.hasNext() ) {
-                edges.add( asPolyEdge( edgeIter.next() ) );
+                edges.add( Pair.of( null, asPolyEdge( edgeIter.next() ) ) );
             }
         }
 
         return PolyPath.create(
-                nodes.stream().map( n -> Pair.of( (PolyString) null, n ) ).toList(),
-                edges.stream().map( e -> Pair.of( (PolyString) null, e ) ).toList() );
+                nodes,
+                edges );
     }
 
     static PolyNode asPolyNode( Node node ) {

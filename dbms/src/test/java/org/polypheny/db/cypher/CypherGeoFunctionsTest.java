@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.type.entity.PolyString;
@@ -223,8 +224,8 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         var hsqldbResult = convertResultToMap( results.get( 0 ) ).get( 0 );
         var neo4jResult = convertResultToMap( results.get( 1 ) ).get( 0 );
 
-        // Validate that the difference change between both numbers is smaller than a trashold, e.g. 0,2% (
-        assert isWithinPercentageChange( (Double) hsqldbResult.get( "value" ), (Integer) neo4jResult.get( "value" ), 0.2 );
+        // Validate that the difference change between both numbers is smaller than a threshold, e.g. 0,2% (
+        assert isWithinPercentageChange( ((Number) hsqldbResult.get( "value" )).doubleValue(), (Integer) neo4jResult.get( "value" ), 0.2 );
     }
 
 
@@ -273,16 +274,25 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
 
     @Test
+    @Tag( "fileExcluded" )
     public void createNodeWithPointTest() throws InvalidGeometryException {
         List<GraphResult> results = runQueries( List.of(
                 "CREATE (z:Station {name: 'Zürich', location: point({latitude: 47.3769, longitude: 8.5417})})",
                 "MATCH (n) RETURN n;"
         ) );
         assert results.size() == 2;
-        var hsqlValue = extractValueAtPath( convertResultToMap( results.get( 0 ) ).get( 0 ), List.of( "properties", "_ps", "location", "value" ) );
-        var neo4jValue = extractValueAtPath( convertResultToMap( results.get( 1 ) ).get( 0 ), List.of( "properties", "_ps", "location", "wkt" ) );
-        var neo4jGeometry = PolyGeometry.of( neo4jValue.toString() );
-        var hsqlGeometry = new PolyGeometry( hsqlValue.toString(), 4326, GeometryInputFormat.GEO_JSON );
+        String name = "value";
+
+        boolean usesNeo4j = PolyphenyDb.defaultStoreName.equals( "neo4j" );
+
+        if ( usesNeo4j ) {
+            name = "wkt";
+        }
+
+        Object hsqlValue = extractValueAtPath( convertResultToMap( results.get( 0 ) ).get( 0 ), List.of( "properties", "_ps", "location", name ) );
+        Object neo4jValue = extractValueAtPath( convertResultToMap( results.get( 1 ) ).get( 0 ), List.of( "properties", "_ps", "location", "wkt" ) );
+        PolyGeometry neo4jGeometry = PolyGeometry.of( neo4jValue.toString() );
+        PolyGeometry hsqlGeometry = usesNeo4j ? PolyGeometry.of( hsqlValue.toString() ) : new PolyGeometry( hsqlValue.toString(), 4326, GeometryInputFormat.GEO_JSON );
         assertEquals( neo4jGeometry, hsqlGeometry );
 
         results = runQueries( List.of(
@@ -290,10 +300,10 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                 "MATCH (n) RETURN n;"
         ) );
         assert results.size() == 2;
-        hsqlValue = extractValueAtPath( convertResultToMap( results.get( 0 ) ).get( 0 ), List.of( "properties", "_ps", "location", "value" ) );
+        hsqlValue = extractValueAtPath( convertResultToMap( results.get( 0 ) ).get( 0 ), List.of( "properties", "_ps", "location", name ) );
         neo4jValue = extractValueAtPath( convertResultToMap( results.get( 1 ) ).get( 0 ), List.of( "properties", "_ps", "location", "wkt" ) );
         neo4jGeometry = PolyGeometry.of( neo4jValue.toString() );
-        hsqlGeometry = new PolyGeometry( hsqlValue.toString(), 0, GeometryInputFormat.GEO_JSON );
+        hsqlGeometry = usesNeo4j ? PolyGeometry.of( hsqlValue.toString() ) : new PolyGeometry( hsqlValue.toString(), 4326, GeometryInputFormat.GEO_JSON );
         assertEquals( neo4jGeometry, hsqlGeometry );
     }
 

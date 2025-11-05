@@ -166,6 +166,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
 
     @Test
+    @Tag( "fileExcluded" )
     public void docGeoWithinLegacyCoordinatesTest() {
         List<DocResult> results;
         String insertMany = """
