@@ -75,7 +75,7 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
                 .map( store -> adapterManager.getStore( store ).orElseThrow() )
                 .collect( Collectors.toList() );
 
-        if ( !adapterManager.getAdapters().containsKey( store ) ) {
+        if ( !adapterManager.getAdapters().containsKey( store.toLowerCase() ) ) {
             throw new GenericRuntimeException( "The targeted storeId does not exist." );
         }
 

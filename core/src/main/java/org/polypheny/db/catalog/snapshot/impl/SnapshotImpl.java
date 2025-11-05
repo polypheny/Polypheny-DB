@@ -145,7 +145,7 @@ public class SnapshotImpl implements Snapshot {
 
     @Override
     public @NotNull Optional<LogicalAdapter> getAdapter( String uniqueName ) {
-        return Optional.ofNullable( adapterNames.get( uniqueName ) );
+        return Optional.ofNullable( adapterNames.get( uniqueName.toLowerCase() ) );
     }
 
 
