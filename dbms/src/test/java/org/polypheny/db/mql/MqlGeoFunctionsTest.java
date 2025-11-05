@@ -40,6 +40,7 @@ import org.polypheny.db.webui.models.results.DocResult;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
 @Tag("adapter")
+@Tag("docker")
 @Slf4j
 public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
