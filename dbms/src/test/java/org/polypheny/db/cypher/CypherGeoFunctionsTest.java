@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -72,6 +73,11 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
     public static void close() {
         tearDown();
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            if ( Catalog.getInstance().getAdapters().values().stream().noneMatch( a -> a.adapterName.equals( neo4jAdapterName ) ) ) {
+                System.out.println("Already shutting down neo4j adapter");
+                return;
+            }
+
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.execute( "ALTER ADAPTERS DROP \"" + neo4jAdapterName + "\"" );
