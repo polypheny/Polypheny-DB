@@ -59,8 +59,11 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 int id = DockerManager.getInstance().getDockerInstances().keySet().stream().findFirst().orElseThrow();
+                Thread.sleep( 2000 ); // we wait if docker is no running currently
                 statement.execute( """
             ALTER ADAPTERS ADD "%s" USING 'Neo4j' AS 'Store' WITH '{mode:docker,instanceId:"%d"}'""".formatted( neo4jAdapterName, id ) );
+            } catch ( InterruptedException e ) {
+                throw new RuntimeException( e );
             }
         } catch ( SQLException e ) {
             // If there is an error while adding the adapter, the most likely reason it does not work
@@ -227,8 +230,8 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                 RETURN point.distance(pointBerlin, pointParis, 'neo4j') AS distance_meters;
                 """ );
         List<GraphResult> results = runQueries( queries );
-        var hsqldbResult = convertResultToMap( results.get( 0 ) ).get( 0 );
-        var neo4jResult = convertResultToMap( results.get( 1 ) ).get( 0 );
+        Map<String, Object> hsqldbResult = convertResultToMap( results.get( 0 ) ).get( 0 );
+        Map<String, Object> neo4jResult = convertResultToMap( results.get( 1 ) ).get( 0 );
 
         // Validate that the difference change between both numbers is smaller than a threshold, e.g. 0,2% (
         assert isWithinPercentageChange( ((Number) hsqldbResult.get( "value" )).doubleValue(), (Integer) neo4jResult.get( "value" ), 0.2 );
