@@ -23,8 +23,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
@@ -41,6 +43,8 @@ import java.util.Map.Entry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@SuppressWarnings("SqlNoDataSourceInspection")
+@Tag("adapter")
 public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
     final static String neo4jAdapterName = "neo4j";
@@ -52,8 +56,9 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.execute( "ALTER ADAPTERS ADD \"" + neo4jAdapterName + "\" USING 'Neo4j' AS 'Store'"
-                        + " WITH '{mode:docker,instanceId:\"0\"}'" );
+                int id = DockerManager.getInstance().getDockerInstances().keySet().stream().findFirst().orElseThrow();
+                statement.execute( """
+            ALTER ADAPTERS ADD "%s" USING 'Neo4j' AS 'Store' WITH '{mode:docker,instanceId:"%d"}'""".formatted( neo4jAdapterName, id ) );
             }
         } catch ( SQLException e ) {
             // If there is an error while adding the adapter, the most likely reason it does not work

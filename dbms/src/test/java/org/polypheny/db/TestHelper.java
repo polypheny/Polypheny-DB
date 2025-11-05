@@ -61,6 +61,7 @@ import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.impl.PolyCatalog;
+import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.processing.caching.ImplementationCache;
 import org.polypheny.db.processing.caching.QueryPlanCache;
@@ -208,8 +209,10 @@ public class TestHelper {
 
 
     public static void addMongodb( String name, Statement statement ) throws SQLException {
-        executeSQL( statement, "ALTER ADAPTERS ADD \"" + name + "\" USING 'mongodb' AS 'Store'"
-                + " WITH '{trxLifetimeLimit:\"1209600\",mode:docker,instanceId:\"0\"}'" );
+        int instanceId = DockerManager.getInstance().getDockerInstances().keySet().stream().findFirst().orElseThrow();
+
+        executeSQL( statement, """
+                ALTER ADAPTERS ADD "%s" USING 'mongodb' AS 'Store' WITH '{trxLifetimeLimit:"1209600",mode:docker,instanceId:"%s"}'""".formatted( name, instanceId ) );
     }
 
 
