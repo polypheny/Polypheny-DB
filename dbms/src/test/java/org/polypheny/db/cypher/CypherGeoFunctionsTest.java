@@ -59,11 +59,8 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 int id = DockerManager.getInstance().getDockerInstances().keySet().stream().findFirst().orElseThrow();
-                Thread.sleep( 2000 ); // we wait if docker is no running currently
                 statement.execute( """
             ALTER ADAPTERS ADD "%s" USING 'Neo4j' AS 'Store' WITH '{mode:docker,instanceId:"%d"}'""".formatted( neo4jAdapterName, id ) );
-            } catch ( InterruptedException e ) {
-                throw new RuntimeException( e );
             }
         } catch ( SQLException e ) {
             // If there is an error while adding the adapter, the most likely reason it does not work
