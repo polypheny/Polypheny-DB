@@ -303,7 +303,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         hsqlValue = extractValueAtPath( convertResultToMap( results.get( 0 ) ).get( 0 ), List.of( "properties", "_ps", "location", name ) );
         neo4jValue = extractValueAtPath( convertResultToMap( results.get( 1 ) ).get( 0 ), List.of( "properties", "_ps", "location", "wkt" ) );
         neo4jGeometry = PolyGeometry.of( neo4jValue.toString() );
-        hsqlGeometry = usesNeo4j ? PolyGeometry.of( hsqlValue.toString() ) : new PolyGeometry( hsqlValue.toString(), 4326, GeometryInputFormat.GEO_JSON );
+        hsqlGeometry = usesNeo4j ? PolyGeometry.of( hsqlValue.toString() ) : new PolyGeometry( hsqlValue.toString(), 0, GeometryInputFormat.GEO_JSON );
         assertEquals( neo4jGeometry, hsqlGeometry );
     }
 
