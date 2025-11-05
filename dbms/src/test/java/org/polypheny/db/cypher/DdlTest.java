@@ -89,9 +89,9 @@ public class DdlTest extends CypherTestTemplate {
 
             assertEquals( 1, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
 
-            addStore( "store1" );
+            addStore( "storeCypherDdl" );
 
-            execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
+            execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "storeCypherDdl" ), graphName );
 
             namespace = catalog.getSnapshot().getNamespace( graphName ).orElseThrow();
             graph = catalog.getSnapshot().graph().getGraph( namespace.id ).orElseThrow();
@@ -102,7 +102,7 @@ public class DdlTest extends CypherTestTemplate {
 
         } finally {
             checkAllocationsSize(0);
-            removeStore( "store1" );
+            removeStore( "storeCypherDdl" );
         }
 
     }
@@ -112,9 +112,9 @@ public class DdlTest extends CypherTestTemplate {
     public void initialPlacementTest() throws SQLException {
         Catalog catalog = Catalog.getInstance();
         try {
-            addStore( "store1" );
+            addStore( "storeCypherDdl" );
 
-            execute( String.format( "CREATE DATABASE %s IF NOT EXISTS ON STORE %s ", graphName, "store1" ) );
+            execute( String.format( "CREATE DATABASE %s IF NOT EXISTS ON STORE %s ", graphName, "storeCypherDdl" ) );
             LogicalNamespace namespace = catalog.getSnapshot().getNamespace( graphName ).orElseThrow();
             LogicalGraph graph = catalog.getSnapshot().graph().getGraph( namespace.id ).orElseThrow();
 
@@ -131,7 +131,7 @@ public class DdlTest extends CypherTestTemplate {
 
         } finally {
             checkAllocationsSize(0);
-            removeStore( "store1" );
+            removeStore( "storeCypherDdl" );
         }
 
     }
@@ -149,22 +149,22 @@ public class DdlTest extends CypherTestTemplate {
 
             assertEquals( 1, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
 
-            addStore( "store1" );
+            addStore( "storeCypherDdl" );
 
-            execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
+            execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "storeCypherDdl" ), graphName );
 
             namespace = catalog.getSnapshot().getNamespace( graphName ).orElseThrow();
             graph = catalog.getSnapshot().graph().getGraph( namespace.id ).orElseThrow();
 
             assertEquals( 2, catalog.getSnapshot().alloc().getFromLogical( graph.id ).size() );
 
-            execute( String.format( "DROP PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
+            execute( String.format( "DROP PLACEMENT OF %s ON STORE %s", graphName, "storeCypherDdl" ), graphName );
 
             execute( "DROP DATABASE " + graphName );
 
         } finally {
             checkAllocationsSize(0);
-            removeStore( "store1" );
+            removeStore( "storeCypherDdl" );
         }
 
     }
@@ -178,9 +178,9 @@ public class DdlTest extends CypherTestTemplate {
         execute( DmlInsertTest.CREATE_COMPLEX_GRAPH_2, graphName );
 
         try {
-            addStore( "store1" );
+            addStore( "storeCypherDdl" );
 
-            execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "store1" ), graphName );
+            execute( String.format( "CREATE PLACEMENT OF %s ON STORE %s", graphName, "storeCypherDdl" ), graphName );
 
             execute( String.format( "DROP PLACEMENT OF %s ON STORE %s", graphName, "hsqldb" ), graphName );
 
@@ -196,7 +196,7 @@ public class DdlTest extends CypherTestTemplate {
 
             checkAllocationsSize(0);
         } finally {
-            removeStore( "store1" );
+            removeStore( "storeCypherDdl" );
         }
 
     }
@@ -204,7 +204,7 @@ public class DdlTest extends CypherTestTemplate {
 
     private static void checkAllocationsSize(int size) {
         PolyCatalog catalog = (PolyCatalog) Catalog.getInstance();
-        LogicalAdapter store = catalog.getSnapshot().getAdapter( "store1" ).orElseThrow();
+        LogicalAdapter store = catalog.getSnapshot().getAdapter( "storeCypherDdl" ).orElseThrow();
         List<AllocationEntity> entities = catalog.getSnapshot().alloc().getEntitiesOnAdapter( store.id ).orElseThrow();
         assertEquals( size, entities.size() );
     }
