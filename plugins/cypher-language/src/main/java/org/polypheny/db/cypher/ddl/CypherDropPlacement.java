@@ -59,9 +59,7 @@ public class CypherDropPlacement extends CypherAdminCommand implements Executabl
 
         List<LogicalNamespace> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( this.databaseName ) );
 
-        DataStore<?> dataStore = Stream.of( storeName )
-                .map( store -> adapterManager.getStore( storeName ).orElseThrow() )
-                .toList().get( 0 );
+        DataStore<?> dataStore = adapterManager.getStore( storeName ).orElseThrow();
 
         if ( graphs.size() != 1 ) {
             throw new GenericRuntimeException( "Error while adding graph placement" );

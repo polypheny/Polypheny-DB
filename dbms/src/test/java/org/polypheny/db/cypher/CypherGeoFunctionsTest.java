@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.type.entity.PolyString;
@@ -44,6 +45,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
 @Tag("adapter")
@@ -73,7 +75,8 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
     public static void close() {
         tearDown();
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            if ( Catalog.getInstance().getAdapters().values().stream().noneMatch( a -> a.adapterName.equals( neo4jAdapterName ) ) ) {
+
+            if ( Catalog.getInstance().getAdapters().values().stream().noneMatch( a -> a.uniqueName.equals( neo4jAdapterName ) ) ) {
                 System.out.println("Already shutting down neo4j adapter");
                 return;
             }
@@ -81,6 +84,10 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.execute( "ALTER ADAPTERS DROP \"" + neo4jAdapterName + "\"" );
+            }
+            AdapterManager adapterManager = AdapterManager.getInstance();
+            if ( adapterManager.getAdapters().containsKey( neo4jAdapterName ) ) {
+                fail();
             }
         } catch ( SQLException e ) {
             // If there is an error while adding the adapter, the most likely reason it does not work

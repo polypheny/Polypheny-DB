@@ -1933,7 +1933,13 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropGraphPlacement( long graphId, DataStore<?> store, Statement statement ) {
-        AllocationPlacement placement = statement.getTransaction().getSnapshot().alloc().getPlacement( store.getAdapterId(), graphId ).orElseThrow();
+        Optional<AllocationPlacement> optPlacement = statement.getTransaction().getSnapshot().alloc().getPlacement( store.getAdapterId(), graphId );
+
+        if ( optPlacement.isEmpty() ) {
+            log.warn( "Store: {} does not have a placement", store.adapterName );
+        }
+
+        AllocationPlacement placement = optPlacement.orElseThrow();
 
         List<AllocationPartition> partitions = statement.getTransaction().getSnapshot().alloc().getPartitionsFromLogical( graphId );
 
