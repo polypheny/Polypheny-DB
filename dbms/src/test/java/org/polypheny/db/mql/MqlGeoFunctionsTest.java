@@ -120,6 +120,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
 
     @Test
+    @Tag( "fileExcluded" )
     public void docGeoWithinGeoJsonTest() {
         List<DocResult> results;
         String insertMany = """
@@ -278,6 +279,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
 
     @Test
+    @Tag( "fileExcluded" )
     public void docsNearTestOnlMongoDb() {
         String insertMany = """
                 db.%s.insertMany([
@@ -315,6 +317,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     }
 
     @Test
+    @Tag( "fileExcluded" )
     public void docsNear() {
         String insertMany = """
                 db.%s.insertMany(
@@ -379,7 +382,6 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
     @Test
     public void docsNearTest() {
-        // TODO: This test currently fails, because the sort is not working correctly for some reason.
         List<String> queries = new ArrayList<>();
         queries.add( """
                 db.%s.insertMany([
@@ -420,7 +422,6 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
     @Test
     public void docGeoNearTest() {
-        // TODO: This test currently fails, because the sort is not working correctly for some reason.
         List<String> queries = new ArrayList<>();
 
         queries.add( """
