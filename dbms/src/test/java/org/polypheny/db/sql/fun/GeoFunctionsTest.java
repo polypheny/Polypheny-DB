@@ -96,7 +96,7 @@ public class GeoFunctionsTest {
 
             PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO TEST_GIS(id,geom) VALUES (?, ?)" );
 
-            preparedInsert.setInt( 1, 1 );
+            preparedInsert.setInt( 1, 11 );
             preparedInsert.setString( 2, "ST_GeomFromText('POINT (9.289382 48.741588)', 4326))" );
             preparedInsert.execute();
         }
