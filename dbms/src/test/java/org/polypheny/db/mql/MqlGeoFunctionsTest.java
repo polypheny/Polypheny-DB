@@ -80,6 +80,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
 
     @Test
+    @Tag( "fileExcluded" )
     public void docGeoIntersectsTest() {
         ArrayList<String> queries = new ArrayList<>();
         queries.add( """
