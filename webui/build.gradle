@@ -66,7 +66,6 @@ compileJava {
 
 processResources {
     setDuplicatesStrategy(DuplicatesStrategy.WARN)
-    setDuplicatesStrategy(DuplicatesStrategy.WARN)
     if (!project.hasProperty('withoutpullingUi')) {
         dependsOn(":webui:downloadUiZip")
     }
