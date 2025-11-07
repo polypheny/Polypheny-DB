@@ -21,7 +21,7 @@ import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.parser.errors.ParseException;
-import java.awt.SystemTray;
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -190,7 +190,7 @@ public class PolyphenyDb {
 
         // TODO: Remove after testing
         String currentPath = System.getProperty( "user.home" );
-        log.info("user.home: {}", currentPath);
+        log.info( "user.home: {}", currentPath );
 
         // Configuration shall not be persisted
         ConfigManager.memoryMode = (mode == RunMode.TEST || memoryCatalog);

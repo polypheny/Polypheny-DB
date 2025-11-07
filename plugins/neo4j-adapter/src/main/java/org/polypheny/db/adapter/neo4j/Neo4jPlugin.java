@@ -433,7 +433,7 @@ public class Neo4jPlugin extends PolyPlugin {
         public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
             for ( PhysicalEntity entity : entities ) {
                 updateNamespace( entity.namespaceName, entity.namespaceId );
-                adapterCatalog.addPhysical( alloc,  currentNamespace.createGraph( entity, List.of(), this.db, this ) );
+                adapterCatalog.addPhysical( alloc, currentNamespace.createGraph( entity, List.of(), this.db, this ) );
             }
         }
 

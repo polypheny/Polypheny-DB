@@ -52,9 +52,11 @@ public class LogicalDocumentProject extends DocumentProject {
         return create( node, Pair.zip( includesName, includes ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) ), excludes, Map.of() );
     }
 
+
     public static LogicalDocumentProject create( AlgNode node, List<RexNode> includes, List<String> includesName ) {
         return create( node, includes, includesName, List.of() );
     }
+
 
     public static LogicalDocumentProject create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
         ListArg<RexArg> includes = args.getListArg( "includes", RexArg.class );
@@ -64,6 +66,7 @@ public class LogicalDocumentProject extends DocumentProject {
                 includes.map( RexArg::getAlias ),
                 excludes.map( StringArg::getArg ) );
     }
+
 
     @Override
     public LogicalDocumentProject copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {

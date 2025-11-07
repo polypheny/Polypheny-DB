@@ -74,7 +74,7 @@ public class CalcMergeRule extends AlgOptRule {
         final Calc bottomCalc = call.alg( 1 );
 
         // RB: I had problems with merging programs, because the row type did not match.
-        if (topCalc.getModel() == DataModel.DOCUMENT && bottomCalc.getModel() == DataModel.DOCUMENT) {
+        if ( topCalc.getModel() == DataModel.DOCUMENT && bottomCalc.getModel() == DataModel.DOCUMENT ) {
             return;
         }
 

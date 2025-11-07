@@ -47,7 +47,7 @@ public class DocumentProjectToCalcRule extends ConverterRule {
     public AlgNode convert( AlgNode alg ) {
         final LogicalDocumentProject project = (LogicalDocumentProject) alg;
         final AlgNode input = project.getInput();
-        NameRefReplacer replacer = new NameRefReplacer( project.getCluster(), false, alg.getInput(0 ) );
+        NameRefReplacer replacer = new NameRefReplacer( project.getCluster(), false, alg.getInput( 0 ) );
 
         NearDetector nearDetector = new NearDetector();
         project.accept( nearDetector );

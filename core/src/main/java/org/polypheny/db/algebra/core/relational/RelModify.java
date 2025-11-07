@@ -202,7 +202,8 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
                 isFlattened() + "&";
     }
 
-    protected static Quadruple<Operation, List<String>, List<? extends RexNode>, Boolean> extractArgs(PolyAlgArgs args) {
+
+    protected static Quadruple<Operation, List<String>, List<? extends RexNode>, Boolean> extractArgs( PolyAlgArgs args ) {
         EnumArg<Operation> op = args.getEnumArg( "operation", Operation.class );
         List<String> updateColumns = args.getListArg( "targets", StringArg.class ).map( StringArg::getArg );
         List<? extends RexNode> sourceExpressions = args.getListArg( "sources", RexArg.class ).map( RexArg::getNode );
@@ -212,6 +213,7 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
         sourceExpressions = sourceExpressions.isEmpty() ? null : sourceExpressions;
         return Quadruple.of( op.getArg(), updateColumns, sourceExpressions, flattened.toBool() );
     }
+
 
     @Override
     public PolyAlgArgs bindArguments() {

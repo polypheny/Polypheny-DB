@@ -514,7 +514,7 @@ public enum BuiltInMethod {
     // GeoFunctions
     MQL_GEO_INTERSECTS( MqlFunctions.class, "docGeoIntersects", PolyValue.class, PolyValue.class ),
     MQL_GEO_WITHIN( MqlFunctions.class, "docGeoWithin", PolyValue.class, PolyValue.class, PolyValue.class ),
-    MQL_GEO_DISTANCE(MqlFunctions.class, "docGeoDistance", PolyValue.class, PolyValue.class, PolyValue.class ),
+    MQL_GEO_DISTANCE( MqlFunctions.class, "docGeoDistance", PolyValue.class, PolyValue.class, PolyValue.class ),
 //    MQL_NEAR( MqlFunctions.class, "docNear", PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class ),
 //    MQL_NEAR_SPHERE( MqlFunctions.class, "docNearSphere", PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class ),
 //    MQL_GEO_NEAR( MqlFunctions.class, "notUnset", PolyValue.class ),
@@ -545,7 +545,7 @@ public enum BuiltInMethod {
     CYPHER_DISTANCE( CypherFunctions.class, "distance", PolyValue.class, PolyValue.class ),
     CYPHER_DISTANCE_NEO4J( CypherFunctions.class, "distanceNeo4j", PolyValue.class, PolyValue.class ),
     CYPHER_WITHIN_BBOX( CypherFunctions.class, "withinBBox", PolyValue.class, PolyValue.class, PolyValue.class ),
-    CYPHER_WITHIN_GEOMETRY( CypherFunctions.class, "withinGeometry", PolyValue.class, PolyValue.class),
+    CYPHER_WITHIN_GEOMETRY( CypherFunctions.class, "withinGeometry", PolyValue.class, PolyValue.class ),
     TO_NODE( CypherFunctions.class, "toNode", Enumerable.class ),
     TO_EDGE( CypherFunctions.class, "toEdge", Enumerable.class ),
     TO_GRAPH( CypherFunctions.class, "toGraph", Enumerable.class, Enumerable.class ),

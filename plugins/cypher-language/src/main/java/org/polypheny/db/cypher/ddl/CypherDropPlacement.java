@@ -18,7 +18,6 @@ package org.polypheny.db.cypher.ddl;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;

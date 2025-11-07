@@ -22,7 +22,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.locationtech.jts.geom.Coordinate;
@@ -43,12 +42,10 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
-import org.polypheny.db.type.entity.spatial.PolyPoint;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -122,8 +119,8 @@ public class CypherLiteral extends CypherExpression {
             }
             case MAP -> {
                 Map<PolyString, PolyValue> map = mapValue.entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), e -> {
-                    if (e.getValue() instanceof CypherFunctionInvocation func && func.getOperatorName() == OperatorName.CYPHER_POINT ){
-                        if (func.getArguments().get( 0 ) instanceof CypherLiteral literal){
+                    if ( e.getValue() instanceof CypherFunctionInvocation func && func.getOperatorName() == OperatorName.CYPHER_POINT ) {
+                        if ( func.getArguments().get( 0 ) instanceof CypherLiteral literal ) {
                             return convertMapToPolyGeometry( literal.getMapValue() );
                         }
                     }
@@ -142,47 +139,47 @@ public class CypherLiteral extends CypherExpression {
         };
     }
 
-    public PolyGeometry convertMapToPolyGeometry( Map<String, CypherExpression> map ){
+
+    public PolyGeometry convertMapToPolyGeometry( Map<String, CypherExpression> map ) {
         Coordinate coordinate = new Coordinate();
         boolean isCartesian = false;
         boolean isSpherical = false;
         boolean is3d = false;
 
-        for (String key : map.keySet()) {
-            CypherExpression value = map.get(key);
+        for ( String key : map.keySet() ) {
+            CypherExpression value = map.get( key );
 
             double doubleValue;
-            if (value.getComparable().isInteger()){
+            if ( value.getComparable().isInteger() ) {
                 doubleValue = value.getComparable().asInteger().intValue();
-            }
-            else{
+            } else {
                 doubleValue = value.getComparable().asDouble().doubleValue();
             }
 
-            switch (key) {
+            switch ( key ) {
                 case "x":
-                    coordinate.setX(doubleValue);
+                    coordinate.setX( doubleValue );
                     isCartesian = true;
                     break;
                 case "y":
-                    coordinate.setY(doubleValue);
+                    coordinate.setY( doubleValue );
                     isCartesian = true;
                     break;
                 case "z":
-                    coordinate.setZ(doubleValue);
+                    coordinate.setZ( doubleValue );
                     isCartesian = true;
                     is3d = true;
                     break;
                 case "latitude":
-                    coordinate.setX(doubleValue);
+                    coordinate.setX( doubleValue );
                     isSpherical = true;
                     break;
                 case "longitude":
-                    coordinate.setY(doubleValue);
+                    coordinate.setY( doubleValue );
                     isSpherical = true;
                     break;
                 case "height":
-                    coordinate.setZ(doubleValue);
+                    coordinate.setZ( doubleValue );
                     isSpherical = true;
                     is3d = true;
                     break;
@@ -198,6 +195,7 @@ public class CypherLiteral extends CypherExpression {
         GeometryFactory geometryFactory = new GeometryFactory( new PrecisionModel(), srid );
         return PolyGeometry.of( geometryFactory.createPoint( coordinate ) );
     }
+
 
     @Override
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {

@@ -16,11 +16,13 @@
 
 package org.polypheny.db.cypher.expression;
 
+import static org.polypheny.db.algebra.operators.OperatorName.CYPHER_POINT;
+
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import com.google.common.collect.ImmutableList;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -34,8 +36,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
-
-import static org.polypheny.db.algebra.operators.OperatorName.CYPHER_POINT;
 
 @Getter
 public class CypherFunctionInvocation extends CypherExpression {

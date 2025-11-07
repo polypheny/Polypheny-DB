@@ -655,11 +655,9 @@ public class CypherToAlgConverter {
                         List.of(),
                         ImmutableList.of( ImmutableList.copyOf( nameAndValues.stream().map( e -> (RexLiteral) e.getValue() ).toList() ) ),
                         new AlgRecordType( fields ) );
-            }
-            else if (nameAndValues.stream().allMatch( v -> v.right.isA( Kind.CYPHER_FUNCTION ) )){
-                throw new NotImplementedException("RETURN statement with function call without MATCH currently not supported");
-            }
-            else {
+            } else if ( nameAndValues.stream().allMatch( v -> v.right.isA( Kind.CYPHER_FUNCTION ) ) ) {
+                throw new NotImplementedException( "RETURN statement with function call without MATCH currently not supported" );
+            } else {
                 throw new UnsupportedOperationException();
             }
         }

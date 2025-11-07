@@ -504,7 +504,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             // Check if there is already a unique constraint
             List<LogicalConstraint> logicalConstraints = constraints.values().stream()
                     .filter( c -> c.keyId == keyId.get() && c.type == ConstraintType.UNIQUE )
-                .toList();
+                    .toList();
             if ( !logicalConstraints.isEmpty() ) {
                 throw new GenericRuntimeException( "There is already a unique constraint!" );
             }

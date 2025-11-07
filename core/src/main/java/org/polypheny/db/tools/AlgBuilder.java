@@ -1385,7 +1385,7 @@ public class AlgBuilder {
 
 
     public AlgBuilder documentProject( Map<String, RexNode> includes, List<String> excludes ) {
-        stack.add( new Frame( LogicalDocumentProject.create( build(), includes, excludes, Map.of()  ) ) );
+        stack.add( new Frame( LogicalDocumentProject.create( build(), includes, excludes, Map.of() ) ) );
         return this;
     }
 

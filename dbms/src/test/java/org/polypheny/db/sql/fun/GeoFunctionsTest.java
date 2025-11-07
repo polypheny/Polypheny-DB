@@ -89,6 +89,7 @@ public class GeoFunctionsTest {
         }
     }
 
+
     @Test
     public void testInsert() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
@@ -380,6 +381,7 @@ public class GeoFunctionsTest {
         }
     }
 
+
     @Test
     public void persistance() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
@@ -394,6 +396,7 @@ public class GeoFunctionsTest {
         }
     }
 
+
     @Test
     public void persistance2() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
@@ -407,9 +410,6 @@ public class GeoFunctionsTest {
             }
         }
     }
-
-
-
 
 
     @Test

@@ -38,13 +38,15 @@ public class NestedListType extends NestedPolyType {
 
     public List<NestedPolyType> types;
 
-    public NestedListType(PolyType type, List<String> names, List<NestedPolyType> types) {
+
+    public NestedListType( PolyType type, List<String> names, List<NestedPolyType> types ) {
         this.type = type;
         this.names = names;
         this.types = types;
     }
 
-    public NestedListType(PolyType type, List<NestedPolyType> types) {
+
+    public NestedListType( PolyType type, List<NestedPolyType> types ) {
         this.type = type;
         this.types = types;
         this.names = types.stream().map( t -> (String) null ).toList();

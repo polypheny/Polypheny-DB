@@ -16,6 +16,8 @@
 
 package org.polypheny.db.functions;
 
+import static org.polypheny.db.functions.spatial.GeoDistanceFunctions.EARTH_RADIUS_M;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -23,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -46,15 +47,12 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.Pair;
-
-import static org.polypheny.db.functions.spatial.GeoDistanceFunctions.EARTH_RADIUS_M;
 
 
 /**
@@ -74,10 +72,10 @@ public class MqlFunctions {
         if ( input == null ) {
             return null;
         }
-        if (!input.isDocument() ) {
-            if (input.isString()){
+        if ( !input.isDocument() ) {
+            if ( input.isString() ) {
                 input = PolyDocument.fromTypedJson( input.asString().value, PolyDocument.class );
-            }else {
+            } else {
                 return null;
             }
         }
@@ -446,7 +444,7 @@ public class MqlFunctions {
     public static PolyDocument mergeDocument( PolyValue value, List<PolyList<PolyString>> names, PolyValue... documents ) {
         assert names.size() == documents.length;
         Map<PolyString, PolyValue> doc = new HashMap<>();
-        addFieldsToDoc(doc, names, documents);
+        addFieldsToDoc( doc, names, documents );
         return PolyDocument.ofDocument( doc );
     }
 
@@ -455,14 +453,15 @@ public class MqlFunctions {
     public static PolyDocument mergeDocumentAdd( PolyValue value, List<PolyList<PolyString>> names, PolyValue... documents ) {
         assert names.size() == documents.length;
         Map<PolyString, PolyValue> doc = new HashMap<>();
-        if(value.isDocument()){
+        if ( value.isDocument() ) {
             doc.putAll( value.asDocument() );
         }
-        addFieldsToDoc(doc, names, documents);
+        addFieldsToDoc( doc, names, documents );
         return PolyDocument.ofDocument( doc );
     }
 
-    private static void addFieldsToDoc(Map<PolyString, PolyValue> doc, List<PolyList<PolyString>> names, PolyValue... documents){
+
+    private static void addFieldsToDoc( Map<PolyString, PolyValue> doc, List<PolyList<PolyString>> names, PolyValue... documents ) {
         Iterator<PolyString> iter;
         Map<PolyString, PolyValue> temp;
         for ( int i = 0; i < documents.length; i++ ) {
@@ -790,31 +789,28 @@ public class MqlFunctions {
     public static PolyBoolean docGeoWithin( PolyValue input, PolyValue geometry, PolyValue distance ) {
         try {
             PolyGeometry geometryFilter;
-            if (geometry.isString()){
-                geometryFilter = PolyGeometry.of(geometry.asString().getValue());
-                if (geometryFilter == null){
-                    throw new GenericRuntimeException( "Cannot parse geometry string %s to type Geometry", distance);
+            if ( geometry.isString() ) {
+                geometryFilter = PolyGeometry.of( geometry.asString().getValue() );
+                if ( geometryFilter == null ) {
+                    throw new GenericRuntimeException( "Cannot parse geometry string %s to type Geometry", distance );
                 }
-            } else if (geometry.isGeometry()){
+            } else if ( geometry.isGeometry() ) {
                 geometryFilter = geometry.asGeometry();
-            }
-            else {
-                throw new GenericRuntimeException( "Cannot parse geometry %s to type Geometry", distance);
+            } else {
+                throw new GenericRuntimeException( "Cannot parse geometry %s to type Geometry", distance );
             }
             PolyGeometry inputGeometry = convertInputToPolyGeometry( input, geometryFilter.getSRID() );
             double distanceValue;
-            if (distance.isBigDecimal()){
+            if ( distance.isBigDecimal() ) {
                 distanceValue = distance.asBigDecimal().doubleValue();
-            }
-            else if (distance.isDouble()){
+            } else if ( distance.isDouble() ) {
                 distanceValue = distance.asDouble().doubleValue();
-            }
-            else {
-                throw new GenericRuntimeException( "Cannot parse distance %s to type double", distance);
+            } else {
+                throw new GenericRuntimeException( "Cannot parse distance %s to type double", distance );
             }
 
             if ( distanceValue > 0 ) {
-                if(geometryFilter.getSRID() != 0){
+                if ( geometryFilter.getSRID() != 0 ) {
                     // In the case of $centerSphere, we first have to convert radians to meters.
                     distanceValue = EARTH_RADIUS_M * distanceValue;
                 }
@@ -828,6 +824,7 @@ public class MqlFunctions {
         }
     }
 
+
     @SuppressWarnings("UnusedDeclaration")
     public static PolyNumber docGeoDistance( PolyValue input, PolyValue geometry, PolyValue distanceMultiplier ) {
         PolyGeometry geometryFilter = geometry.asGeometry();
@@ -835,17 +832,15 @@ public class MqlFunctions {
         PolyNumber distance = GeoFunctions.stDistance( inputGeometry, geometryFilter );
         float distanceFloat = distance.asFloat().floatValue();
 
-        if (distanceMultiplier.isInteger()){
+        if ( distanceMultiplier.isInteger() ) {
             int distanceMultiplierInt = distanceMultiplier.asInteger().intValue();
-            return PolyFloat.of(distance.asFloat().floatValue() * distanceMultiplierInt) ;
-        }
-        else if (distanceMultiplier.isFloat()){
+            return PolyFloat.of( distance.asFloat().floatValue() * distanceMultiplierInt );
+        } else if ( distanceMultiplier.isFloat() ) {
             float distanceMultiplierFloat = distanceMultiplier.asFloat().floatValue();
-            return PolyFloat.of(distance.asFloat().floatValue() * distanceMultiplierFloat) ;
-        }
-        else if (distanceMultiplier.isDouble()){
+            return PolyFloat.of( distance.asFloat().floatValue() * distanceMultiplierFloat );
+        } else if ( distanceMultiplier.isDouble() ) {
             double distanceMultiplierDouble = distanceMultiplier.asDouble().doubleValue();
-            return PolyFloat.of(distance.asFloat().floatValue() * distanceMultiplierDouble) ;
+            return PolyFloat.of( distance.asFloat().floatValue() * distanceMultiplierDouble );
         }
         // TODO: Is this exhaustive? Is there a better way?
         throw new GenericRuntimeException( "Probably forgot to implement conersion for distanceMultiplier in docGeoDistance." );
@@ -861,6 +856,7 @@ public class MqlFunctions {
 //        throw new GenericRuntimeException( " Something went wrong in the DocumentNearUnwrap conversion rule. This method should not be called. " );
 //    }
 
+
     /**
      * Converts a PolyValue into a PolyGeometry type. We support the following cases:
      * 1. Legacy Coordinates:
@@ -873,11 +869,11 @@ public class MqlFunctions {
      * - A document that adheres to the GeoJSON specification.
      */
     public static PolyGeometry convertInputToPolyGeometry( PolyValue input, Integer srid ) {
-        if (input.isGeometry()){
+        if ( input.isGeometry() ) {
             return input.asGeometry();
         }
 
-        GeometryFactory geoFactory = new GeometryFactory(new PrecisionModel(), srid );
+        GeometryFactory geoFactory = new GeometryFactory( new PrecisionModel(), srid );
 
         // Legacy Coordinates
         if ( input.isList() ) {
@@ -915,7 +911,7 @@ public class MqlFunctions {
         if ( input.isDocument() ) {
             PolyDocument inputDocument = input.asDocument();
 
-            if ( inputDocument.keySet().isEmpty() ){
+            if ( inputDocument.keySet().isEmpty() ) {
                 // TODO: Should we detect this in each spatial function, and then just return false, if the document
                 //       does not contain the field / document?
                 throw new GenericRuntimeException( "Field selected in query is empty or does not exist." );

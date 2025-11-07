@@ -202,7 +202,7 @@ public class BsonUtil {
             case INTERVAL -> handleInterval( obj );
             case JSON -> handleDocument( obj );
             case DOCUMENT -> {
-                if (obj.getType() != PolyType.DOCUMENT){
+                if ( obj.getType() != PolyType.DOCUMENT ) {
                     // Fixes the case where the document contains only a single of another type. This influences
                     // how a value is converted to JSON, when executing inside MongoBD, e.g. a number inside a
                     // document is converted as string (see default case) without this check.

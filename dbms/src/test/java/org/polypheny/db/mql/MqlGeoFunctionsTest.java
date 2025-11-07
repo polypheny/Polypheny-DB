@@ -80,7 +80,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
 
     @Test
-    @Tag( "fileExcluded" )
+    @Tag("fileExcluded")
     public void docGeoIntersectsTest() {
         ArrayList<String> queries = new ArrayList<>();
         queries.add( """
@@ -120,7 +120,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
 
     @Test
-    @Tag( "fileExcluded" )
+    @Tag("fileExcluded")
     public void docGeoWithinGeoJsonTest() {
         List<DocResult> results;
         String insertMany = """
@@ -169,7 +169,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
 
     @Test
-    @Tag( "fileExcluded" )
+    @Tag("fileExcluded")
     public void docGeoWithinLegacyCoordinatesTest() {
         List<DocResult> results;
         String insertMany = """
@@ -279,7 +279,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
 
     @Test
-    @Tag( "fileExcluded" )
+    @Tag("fileExcluded")
     public void docsNearTestOnlMongoDb() {
         String insertMany = """
                 db.%s.insertMany([
@@ -316,8 +316,9 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                 """.formatted( mongoCollection ), namespace );
     }
 
+
     @Test
-    @Tag( "fileExcluded" )
+    @Tag("fileExcluded")
     public void docsNear() {
         String insertMany = """
                 db.%s.insertMany(
@@ -362,7 +363,6 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                 ])
                 """;
         execute( insertMany.formatted( defaultCollection ), namespace );
-
 
         DocResult result = execute( """
                 db.%s.find({
@@ -448,7 +448,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                     }
                 ])
                 """ );
-        queries.add("""
+        queries.add( """
                 db.%s.aggregate([
                   {
                     "$geoNear": {
@@ -462,8 +462,8 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                     }
                   }
                 ])
-                """);
-        
+                """ );
+
         List<DocResult> results = runQueries( queries );
         compareResults( results );
     }
@@ -558,7 +558,7 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
 
 
     private static void compareValues( Object mongoValue, Object value ) {
-        if( mongoValue instanceof Map<?,?> val1 && value instanceof Map<?,?> val2 ) {
+        if ( mongoValue instanceof Map<?, ?> val1 && value instanceof Map<?, ?> val2 ) {
             assertEquals( val1.size(), val2.size() );
             assertEquals( val1.keySet(), val2.keySet() );
             for ( Object key : val1.keySet() ) {
@@ -568,9 +568,9 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
             }
             return;
 
-        }else if ( mongoValue instanceof Number val && value instanceof Number val2 ) {
-            if (val.doubleValue() - val2.doubleValue() > 0.000001){
-                throw new RuntimeException("Floating point numbers are not withing accepted delta");
+        } else if ( mongoValue instanceof Number val && value instanceof Number val2 ) {
+            if ( val.doubleValue() - val2.doubleValue() > 0.000001 ) {
+                throw new RuntimeException( "Floating point numbers are not withing accepted delta" );
             }
             return;
         }

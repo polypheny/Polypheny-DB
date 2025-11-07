@@ -782,7 +782,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             }
 
         }
-        
+
 
         private void translateGeoNear( RexNode condition, Implementor implementor ) {
             if ( !(condition instanceof RexCall node) ) {
@@ -818,29 +818,29 @@ public class MongoFilter extends Filter implements MongoAlg {
             }
 
             // Optional
-            if (distanceMultiplier.getValue() > 1.0){
+            if ( distanceMultiplier.getValue() > 1.0 ) {
                 geoNearOptions.put( "distanceMultiplier", new BsonDouble( distanceMultiplier.getValue() ) );
             }
-            if (!includeLocs.name.isEmpty()){
+            if ( !includeLocs.name.isEmpty() ) {
                 geoNearOptions.put( "includeLocs", new BsonString( includeLocs.name ) );
             }
-            if (!key.getValue().isEmpty()){
+            if ( !key.getValue().isEmpty() ) {
                 geoNearOptions.put( "key", new BsonString( key.getValue() ) );
                 // If the user specified which field should be used for the query, then we can create the index
                 // if it does not exist. If there is no index, and key is not set, the operation will fail.
                 // Normally this field is used if there are multiple indexes, so that we can decide which to use.
                 implementor.indexAndIndexType.add(
-                        "%s\n%s".formatted(key.getValue(), nearGeometry.getSRID() == 0 ? "2d" : "2dsphere")
+                        "%s\n%s".formatted( key.getValue(), nearGeometry.getSRID() == 0 ? "2d" : "2dsphere" )
                 );
             }
-            if (maxDistance.getValue() != -1.0){
+            if ( maxDistance.getValue() != -1.0 ) {
                 geoNearOptions.put( "maxDistance", new BsonDouble( maxDistance.getValue() ) );
             }
-            if (minDistance.getValue() != -1.0){
+            if ( minDistance.getValue() != -1.0 ) {
                 geoNearOptions.put( "minDistance", new BsonDouble( minDistance.getValue() ) );
             }
 
-            if (query instanceof RexCall){
+            if ( query instanceof RexCall ) {
                 // TODO RB: Query is wrongly converted to JSON. Double gets converted to String.
                 //   MQL_GTE(RexNameRef(names=[num], index=Optional.empty), 2) => {"num": {"$gte": "2"}}
                 BsonDocument queryDocument = translateFinalOr( query );

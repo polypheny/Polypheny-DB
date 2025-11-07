@@ -224,7 +224,7 @@ public class LanguageCrud {
 
         boolean lastRolledBack = false;
         for ( Result<?, ?> result : results ) {
-            if (result.xid != null ) {
+            if ( result.xid != null ) {
                 lastRolledBack = abortedXids.contains( result.xid );
             }
             result.isRolledBack = lastRolledBack;

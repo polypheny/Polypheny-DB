@@ -70,7 +70,7 @@ public class MongoSort extends Sort implements MongoAlg {
             final List<AlgDataTypeField> fields = getTupleType().getFields();
             for ( AlgFieldCollation fieldCollation : collation.getFieldCollations() ) {
                 String name;
-                if (!fieldExps.isEmpty() && fieldExps.size() > fieldCollation.getFieldIndex() && fieldExps.get( fieldCollation.getFieldIndex() ) instanceof RexNameRef rexNameRef ) {
+                if ( !fieldExps.isEmpty() && fieldExps.size() > fieldCollation.getFieldIndex() && fieldExps.get( fieldCollation.getFieldIndex() ) instanceof RexNameRef rexNameRef ) {
                     name = rexNameRef.getName();
                 } else {
                     // for relational cases

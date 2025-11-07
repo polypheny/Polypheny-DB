@@ -16,6 +16,11 @@
 
 package org.polypheny.db.functions;
 
+import static java.lang.Math.toRadians;
+import static org.polypheny.db.functions.spatial.GeoDistanceFunctions.EARTH_RADIUS_M;
+import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
+import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84_3D;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,7 +38,6 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.GraphObject;
@@ -49,11 +53,6 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
-
-import static java.lang.Math.toRadians;
-import static org.polypheny.db.functions.spatial.GeoDistanceFunctions.EARTH_RADIUS_M;
-import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
-import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84_3D;
 
 
 @Deterministic
@@ -588,6 +587,7 @@ public class CypherFunctions {
         throw new GenericRuntimeException( "This should not be possible!" );
     }
 
+
     @SuppressWarnings("unused")
     public static PolyDouble distanceNeo4j( PolyValue p1, PolyValue p2 ) {
         PolyPoint g1 = p1.asGeometry().asPoint();
@@ -601,7 +601,7 @@ public class CypherFunctions {
         try {
             if ( g1.hasZ() && g2.hasZ() ) {
                 if ( srid == 0 ) {
-                    return distance(g1, g2);
+                    return distance( g1, g2 );
                 } else if ( srid == WGS_84_3D ) {
                     // See https://github.com/neo4j/neo4j/blob/5.20/community/values/src/main/java/org/neo4j/values/storable/CRSCalculator.java
                     double greatCircleDistance = getGreatCircleDistance( g1, g2 );
@@ -658,18 +658,20 @@ public class CypherFunctions {
         return new PolyBoolean( g.coveredBy( gBBox ) );
     }
 
+
     @SuppressWarnings("unused")
     public static PolyBoolean withinGeometry( PolyValue point, PolyValue geometry ) {
         PolyPoint g = point.asGeometry().asPoint();
         PolyGeometry polyGeometry = geometry.asGeometry();
 
-        if ( !(g.getSRID().equals( polyGeometry.getSRID() ) )) {
+        if ( !(g.getSRID().equals( polyGeometry.getSRID() )) ) {
             // Return null if the CRS of all points are not the same.
             return null;
         }
 
         return new PolyBoolean( g.coveredBy( polyGeometry ) );
     }
+
 
     private static PolyGeometry createBbox( PolyPoint lowerLeft, PolyPoint upperRight ) {
         Coordinate bottomLeft = new Coordinate( lowerLeft.getX(), lowerLeft.getY() );

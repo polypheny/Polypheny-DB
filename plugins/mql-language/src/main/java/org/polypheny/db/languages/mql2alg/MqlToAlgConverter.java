@@ -16,6 +16,8 @@
 
 package org.polypheny.db.languages.mql2alg;
 
+import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -115,9 +117,6 @@ import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimestampString;
-
-import static org.polypheny.db.type.entity.PolyNull.NULL;
-import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
 
 
 /**

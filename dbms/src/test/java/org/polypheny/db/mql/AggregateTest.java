@@ -345,7 +345,6 @@ public class AggregateTest extends MqlTestTemplate {
                 "{\"test\":1.3,\"key\":0}",
                 "{\"test\":\"test\",\"key\":13}" );
 
-
         List<String> expected = ImmutableList.of(
                 "{\"test\":1,\"key\":4}",
                 "{\"test\":\"test\",\"key\":13}" );

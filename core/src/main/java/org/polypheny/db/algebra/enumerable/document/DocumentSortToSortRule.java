@@ -16,7 +16,6 @@
 
 package org.polypheny.db.algebra.enumerable.document;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -34,7 +33,6 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.util.Collation;
 
 public class DocumentSortToSortRule extends AlgOptRule {
 

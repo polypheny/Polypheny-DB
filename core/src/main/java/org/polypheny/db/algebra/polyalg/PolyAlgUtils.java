@@ -458,8 +458,8 @@ public class PolyAlgUtils {
                     }
                 }
                 // Argument of CYPHER_POINT not used (=unknown). We can safely skip it.
-                if (call.getOperator().getOperatorName() == OperatorName.CYPHER_POINT){
-                    if (((RexLiteral)operand).value == null){
+                if ( call.getOperator().getOperatorName() == OperatorName.CYPHER_POINT ) {
+                    if ( ((RexLiteral) operand).value == null ) {
                         continue;
                     }
                 }

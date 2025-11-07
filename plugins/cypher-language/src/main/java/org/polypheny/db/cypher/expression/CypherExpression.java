@@ -17,9 +17,7 @@
 package org.polypheny.db.cypher.expression;
 
 import com.google.common.collect.ImmutableList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
@@ -37,7 +35,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -79,9 +76,9 @@ public class CypherExpression extends CypherNode {
 
 
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
-        if (this instanceof CypherFunctionInvocation func){
+        if ( this instanceof CypherFunctionInvocation func ) {
             // var is null in case of function call
-            return Pair.of( PolyString.of( null ), func.getRexCall( context ));
+            return Pair.of( PolyString.of( null ), func.getRexCall( context ) );
         }
 
         OperatorName operatorName = switch ( this.type ) {

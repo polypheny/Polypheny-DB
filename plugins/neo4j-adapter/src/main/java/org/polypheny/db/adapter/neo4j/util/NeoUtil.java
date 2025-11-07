@@ -133,8 +133,8 @@ public interface NeoUtil {
             case EDGE -> o -> asPolyEdge( o.asRelationship() );
             case PATH -> o -> {
 
-                if (o instanceof ListValue) {
-                    return asPolyPath( ((InternalPath)o.asList().get( 0 )), type.asList().names );
+                if ( o instanceof ListValue ) {
+                    return asPolyPath( ((InternalPath) o.asList().get( 0 )), type.asList().names );
                 }
                 return asPolyPath( o.asPath(), type.asList().names );
             };
@@ -162,7 +162,7 @@ public interface NeoUtil {
                 coordinate.setZ( point.z() );
             }
             return PolyGeometry.of( geometryFactory.createPoint( coordinate ) );
-        }else if ( value instanceof StringValue stringValue ) {
+        } else if ( value instanceof StringValue stringValue ) {
             try {
                 return new PolyGeometry( stringValue.asString() );
             } catch ( InvalidGeometryException e ) {
@@ -180,7 +180,7 @@ public interface NeoUtil {
         List<Pair<PolyString, PolyNode>> nodes = new ArrayList<>();
         List<Pair<PolyString, PolyEdge>> edges = new ArrayList<>();
         while ( nodeIter.hasNext() ) {
-            nodes.add( Pair.of( nameIter.hasNext() ? PolyString.of( nameIter.next()) : null, asPolyNode( nodeIter.next() )) );
+            nodes.add( Pair.of( nameIter.hasNext() ? PolyString.of( nameIter.next() ) : null, asPolyNode( nodeIter.next() ) ) );
             if ( nodeIter.hasNext() ) {
                 edges.add( Pair.of( null, asPolyEdge( edgeIter.next() ) ) );
             }
@@ -550,10 +550,10 @@ public interface NeoUtil {
             case FLOAT, REAL, DOUBLE -> value.asNumber().doubleValue();
             case DECIMAL -> value.asNumber().bigDecimalValue();
             case GEOMETRY -> {
-                if (value.asGeometry().isPoint()) {
+                if ( value.asGeometry().isPoint() ) {
                     PolyPoint point = value.asGeometry().asPoint();
-                    yield new PointValue( new InternalPoint2D(point.getSRID(), point.getX(), point.getY()));
-                }else{
+                    yield new PointValue( new InternalPoint2D( point.getSRID(), point.getX(), point.getY() ) );
+                } else {
                     yield value.asGeometry().toWKT();
                 }
             }

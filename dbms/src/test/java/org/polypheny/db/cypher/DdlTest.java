@@ -101,7 +101,7 @@ public class DdlTest extends CypherTestTemplate {
             execute( "DROP DATABASE " + graphName );
 
         } finally {
-            checkAllocationsSize(0);
+            checkAllocationsSize( 0 );
             removeStore( "storeCypherDdl" );
         }
 
@@ -130,7 +130,7 @@ public class DdlTest extends CypherTestTemplate {
             execute( "DROP DATABASE " + graphName );
 
         } finally {
-            checkAllocationsSize(0);
+            checkAllocationsSize( 0 );
             removeStore( "storeCypherDdl" );
         }
 
@@ -163,7 +163,7 @@ public class DdlTest extends CypherTestTemplate {
             execute( "DROP DATABASE " + graphName );
 
         } finally {
-            checkAllocationsSize(0);
+            checkAllocationsSize( 0 );
             removeStore( "storeCypherDdl" );
         }
 
@@ -194,7 +194,7 @@ public class DdlTest extends CypherTestTemplate {
 
             execute( "DROP DATABASE " + graphName );
 
-            checkAllocationsSize(0);
+            checkAllocationsSize( 0 );
         } finally {
             removeStore( "storeCypherDdl" );
         }
@@ -202,7 +202,7 @@ public class DdlTest extends CypherTestTemplate {
     }
 
 
-    private static void checkAllocationsSize(int size) {
+    private static void checkAllocationsSize( int size ) {
         PolyCatalog catalog = (PolyCatalog) Catalog.getInstance();
         LogicalAdapter store = catalog.getSnapshot().getAdapter( "storeCypherDdl" ).orElseThrow();
         List<AllocationEntity> entities = catalog.getSnapshot().alloc().getEntitiesOnAdapter( store.id ).orElseThrow();

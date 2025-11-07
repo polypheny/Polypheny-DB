@@ -132,7 +132,7 @@ public class QueryInterfaceManager {
     public void restoreInterfaces( Snapshot snapshot ) {
         Map<Long, LogicalQueryInterface> interfaces = snapshot.getQueryInterfaces();
         interfaces.forEach( ( id, l ) -> {
-            QueryInterface q = Optional.of( interfaceTemplates.get( l.interfaceType ) )
+                    QueryInterface q = Optional.of( interfaceTemplates.get( l.interfaceType ) )
                             .map( t -> t.deployer.get( transactionManager, authenticator, l.name, l.settings ) )
                             .orElseThrow();
                     startInterface( q, l.interfaceType, id );

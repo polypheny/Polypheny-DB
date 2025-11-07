@@ -61,7 +61,6 @@ import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.impl.PolyCatalog;
-import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.processing.caching.ImplementationCache;
 import org.polypheny.db.processing.caching.QueryPlanCache;
@@ -474,8 +473,8 @@ public class TestHelper {
         static {
             // TODO: remove this (is there a way to only disable the timeout, when I am actually debugging?)
             Unirest.config()
-                    .socketTimeout(0)
-                    .connectTimeout(0);
+                    .socketTimeout( 0 )
+                    .connectTimeout( 0 );
         }
 
 

@@ -50,6 +50,7 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
     public List<String> excludes;
     public Map<String, ? extends RexNode> adds;
 
+
     /**
      * Creates a {@link DocumentProject}.
      * {@link ModelTrait#DOCUMENT} native node of a project.
@@ -59,7 +60,7 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
         this.includes = includes;
         this.adds = adds;
         this.excludes = excludes;
-        var map = new HashMap<String, RexNode>();
+        Map<String, RexNode> map = new HashMap<>();
         map.putAll( adds );
         map.putAll( includes );
         this.rowType = DocumentType.ofIncludes( map ).ofExcludes( excludes );
@@ -104,7 +105,7 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
 
         if ( !adds.isEmpty() ) {
             nodes.clear();
-            nodes.add(doc);
+            nodes.add( doc );
             nodes.add(
                     builder.makeLiteral(
                             PolyList.copyOf( adds.keySet().stream().filter( Objects::nonNull ).map( v -> PolyList.copyOf( Arrays.stream( v.split( "\\." ) ).map( PolyString::of ).toList() ) )

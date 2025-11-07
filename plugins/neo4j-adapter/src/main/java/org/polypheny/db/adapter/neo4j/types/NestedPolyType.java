@@ -30,7 +30,7 @@ public abstract class NestedPolyType implements Expressible {
             return new NestedListType(
                     rowType.getPolyType(),
                     rowType.getFields().stream().map( AlgDataTypeField::getName ).toList(),
-                    rowType.getFields().stream().map( NestedPolyType::from ).toList());
+                    rowType.getFields().stream().map( NestedPolyType::from ).toList() );
         }
 
         if ( rowType instanceof ArrayType type ) {

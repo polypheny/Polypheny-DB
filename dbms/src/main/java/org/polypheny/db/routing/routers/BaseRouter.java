@@ -436,7 +436,7 @@ public abstract class BaseRouter implements Router {
             return alg;
         } else if ( alg.getModel() != DataModel.DOCUMENT ) {
             // cross model
-            if( alg instanceof Scan<?> scan ) {
+            if ( alg instanceof Scan<?> scan ) {
                 switch ( alg.getModel() ) {
                     case RELATIONAL -> {
                         handleRelScan( builder, statement, scan.entity );
@@ -448,7 +448,7 @@ public abstract class BaseRouter implements Router {
                         handleGraphScan( (LogicalLpgScan) alg, statement, (AllocationEntity) scan.entity, List.of() );
                     }
                 }
-            }else {
+            } else {
                 this.handleGeneric( alg, builder );
             }
 

@@ -404,9 +404,9 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                 values = dataContext.getParameterValues().get( 0 );
             }
 
-            if (!ddls.isEmpty()){
-                for (String ddl : ddls){
-                    String[] ddlArray = ddl.split("\n");
+            if ( !ddls.isEmpty() ) {
+                for ( String ddl : ddls ) {
+                    String[] ddlArray = ddl.split( "\n" );
                     String field = ddlArray[0];
                     String indexType = ddlArray[1];
                     BsonDocument index = new BsonDocument();

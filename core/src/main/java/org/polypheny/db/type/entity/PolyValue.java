@@ -877,18 +877,18 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     @NotNull
     public PolyGeometry asGeometry() {
-        if (this.type == PolyType.VARCHAR){
+        if ( this.type == PolyType.VARCHAR ) {
             String value = this.asString().getValue();
-            PolyGeometry geometry = PolyGeometry.of(value);
-            if (geometry == null){
-                if (value.startsWith( "ST_GeomFromText" )){
+            PolyGeometry geometry = PolyGeometry.of( value );
+            if ( geometry == null ) {
+                if ( value.startsWith( "ST_GeomFromText" ) ) {
                     value = value.replace( "ST_GeomFromText", "" );
                     value = value.trim();
                     value = value.substring( 1, value.length() - 2 );
                     String[] splits = value.split( "," );
                     try {
-                        if (splits.length == 2){
-                            return PolyGeometry.fromWKT( splits[0].replace( "'", ""), Integer.parseInt(splits[1].trim()) );
+                        if ( splits.length == 2 ) {
+                            return PolyGeometry.fromWKT( splits[0].replace( "'", "" ), Integer.parseInt( splits[1].trim() ) );
                         }
                         return PolyGeometry.fromWKT( value );
                     } catch ( InvalidGeometryException e ) {

@@ -16,7 +16,10 @@
 
 package org.polypheny.db.algebra.enumerable.document;
 
-import org.locationtech.jts.geom.Point;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
@@ -30,7 +33,6 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -43,15 +45,8 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.numerical.PolyDouble;
-import org.polypheny.db.type.entity.numerical.PolyInteger;
-import org.polypheny.db.type.entity.spatial.PolyGeometry;
-import org.polypheny.db.type.entity.spatial.PolyPoint;
 import org.polypheny.db.util.Pair;
-import java.util.*;
 
 /**
  * The $near function cannot be executed as a single function, which is why this conversion
@@ -106,7 +101,7 @@ public class DocumentGeoNearUnwrap extends ConverterRule {
 
         AlgNode replacementNode = filter.getInput();
 
-        if ( key.value.toString().isEmpty() ){
+        if ( key.value.toString().isEmpty() ) {
             // Necessary, because otherwise we do not know which field contains the spatial information.
             throw new GenericRuntimeException( "The key option is required when executing $geoNear internally. This is because Polypheny currently does not support any indexes." );
         }

@@ -261,7 +261,7 @@ public class MongoRules {
                 // mongodb sorts nulls first for ascending (or desc, nulls last), so this requires expensive precalcs,
                 if ( field.nullDirection == NullDirection.LAST && field.direction == Direction.ASCENDING ) {
                     return null;
-                }else if (  field.direction == Direction.DESCENDING && field.nullDirection == NullDirection.FIRST ) {
+                } else if ( field.direction == Direction.DESCENDING && field.nullDirection == NullDirection.FIRST ) {
                     return null;
                 }
             }
@@ -435,7 +435,7 @@ public class MongoRules {
                     convert( project.getInput(), out ),
                     project.includes,
                     project.excludes,
-                    project.adds);
+                    project.adds );
         }
 
     }

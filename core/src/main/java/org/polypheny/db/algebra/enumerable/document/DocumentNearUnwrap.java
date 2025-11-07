@@ -16,16 +16,11 @@
 
 package org.polypheny.db.algebra.enumerable.document;
 
-import org.bson.BsonArray;
-import org.bson.BsonDocument;
-import org.bson.BsonDouble;
-import org.bson.BsonInt32;
-import org.bson.BsonString;
-import org.bson.BsonValue;
-import org.jetbrains.annotations.Nullable;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.PrecisionModel;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
@@ -33,50 +28,27 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.document.DocumentFilter;
-import org.polypheny.db.algebra.enumerable.EnumerableCalc;
-import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule.NearDetector;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.rex.*;
-import org.polypheny.db.schema.document.DocumentUtil;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNameRef;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
-import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
-import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.Pair;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.function.BiFunction;
-
-import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
 
 /**
  * The $near function cannot be executed as a single function, which is why this conversion
@@ -104,6 +76,7 @@ public class DocumentNearUnwrap extends ConverterRule {
 
 
     private AlgCluster cluster;
+
 
     public static boolean supports( DocumentFilter filter ) {
         Kind nearKind = filter.getCondition().getKind();

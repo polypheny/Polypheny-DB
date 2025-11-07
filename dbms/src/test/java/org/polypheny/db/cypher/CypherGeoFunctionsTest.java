@@ -16,10 +16,20 @@
 
 package org.polypheny.db.cypher;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,23 +39,12 @@ import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyGeometry.GeometryInputFormat;
 import org.polypheny.db.webui.models.results.GraphResult;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
 @Tag("adapter")
@@ -62,7 +61,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.execute( """
-            ALTER ADAPTERS ADD "%s" USING 'Neo4j' AS 'Store' WITH '{mode:docker,instanceId:"%d"}'""".formatted( neo4jAdapterName, 0 ) );
+                        ALTER ADAPTERS ADD "%s" USING 'Neo4j' AS 'Store' WITH '{mode:docker,instanceId:"%d"}'""".formatted( neo4jAdapterName, 0 ) );
             }
         } catch ( SQLException e ) {
             // If there is an error while adding the adapter, the most likely reason it does not work
@@ -71,13 +70,14 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         }
     }
 
+
     @AfterAll
     public static void close() {
         tearDown();
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
 
             if ( Catalog.getInstance().getAdapters().values().stream().noneMatch( a -> a.uniqueName.equals( neo4jAdapterName ) ) ) {
-                System.out.println("Already shutting down neo4j adapter");
+                System.out.println( "Already shutting down neo4j adapter" );
                 return;
             }
 
@@ -104,7 +104,6 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
     }
 
 
-
     /**
      * Measures percentages change, relative to the larger number.
      */
@@ -114,9 +113,11 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         return diff <= maxAllowedDiff;
     }
 
+
     private List<GraphResult> runQueries( List<String> queries ) {
         return runQueries( queries, true, true );
     }
+
 
     private List<GraphResult> runQueries( List<String> queries, boolean onHsqlDb, boolean onNeo4j ) {
         try {
@@ -147,7 +148,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
                 assertEquals( 2, results.size() );
             }
             return results;
-        }finally {
+        } finally {
             deleteData( neo4jDatabaseName );
         }
     }
@@ -287,7 +288,7 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
 
     @Test
-    @Tag( "fileExcluded" )
+    @Tag("fileExcluded")
     public void createNodeWithPointTest() throws InvalidGeometryException {
         List<GraphResult> results = runQueries( List.of(
                 "CREATE (z:Station {name: 'Zürich', location: point({latitude: 47.3769, longitude: 8.5417})})",
