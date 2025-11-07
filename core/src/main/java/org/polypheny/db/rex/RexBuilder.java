@@ -954,7 +954,6 @@ public class RexBuilder {
         // Special handling for arrays
         if ( node instanceof RexCall && ((RexCall) node).op.getKind() == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
             ArrayType arrayType = (ArrayType) node.getType();
-            log.warn( "why" );
             return new RexLiteral( (PolyValue) List.of( ((RexCall) node).operands ), arrayType, arrayType.getPolyType() );
         } else if ( !node.getType().equals( targetType ) ) {
             return makeCast( targetType, node );
