@@ -14,6 +14,7 @@ import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.languages.mql.MqlAggregate;
 import org.polypheny.db.languages.mql.MqlCount;
 import org.polypheny.db.languages.mql.MqlCreateCollection;
+import org.polypheny.db.languages.mql.MqlCreateIndex;
 import org.polypheny.db.languages.mql.MqlCreateView;
 import org.polypheny.db.languages.mql.MqlDelete;
 import org.polypheny.db.languages.mql.MqlDrop;
@@ -181,6 +182,8 @@ TOKEN : /* IDENTIFIERS */ // for nested documentValues check out Document_Splits
 < CREATE_VIEW: "createView(" >
 |
 < CREATE_COLLECTION : "createCollection(" >
+|
+< CREATE_INDEX : "createIndex(" >
 |
 < RENAME_COLLECTION : "renameCollection(" >
 |
@@ -476,6 +479,8 @@ MqlNode Collection_Statement( String collection, String namespace ):
     |
         n = Rename_Statement( collection, namespace )
     |
+        n = CreateIndex_Statement( collection, namespace )
+    |
         n = Drop_Statement( collection, namespace )
     |
         n = Modify_Placement( collection, namespace )
@@ -544,6 +549,17 @@ MqlNode Rename_Statement(String collection, String namespace):
     < RENAME_COLLECTION > newName = Literal() [<COMMA> dropTarget=Bool() ] ")"
     {
         return new MqlRenameCollection(getPos(), collection, namespace, newName, dropTarget);
+    }
+}
+
+MqlNode CreateIndex_Statement(String collection, String namespace):
+{
+    BsonDocument options = null;
+}
+{
+    < CREATE_INDEX > options = Document() ")"
+    {
+        return new MqlCreateIndex(getPos(), collection, namespace, options);
     }
 }
 

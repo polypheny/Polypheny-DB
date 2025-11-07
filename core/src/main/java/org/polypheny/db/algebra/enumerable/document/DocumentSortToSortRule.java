@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,9 @@ package org.polypheny.db.algebra.enumerable.document;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule.NameRefReplacer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
@@ -47,14 +50,23 @@ public class DocumentSortToSortRule extends AlgOptRule {
         AlgBuilder builder = call.builder();
         builder.push( sort.getInput() );
 
+        List<RexNode> fieldExps = sort.fieldExps;
+        AlgCollation collation = sort.collation;
         if ( !sort.fieldExps.isEmpty() ) {
             // we have to project the target keys out to use it in the sort
             builder.transform( ModelTrait.RELATIONAL, DocumentType.ofRelational(), false, null );
-            NameRefReplacer visitor = new NameRefReplacer( sort.getCluster(), false );
-            List<RexNode> inputs = Stream.concat( Stream.of( RexIndexRef.of( 0, DocumentType.ofId().asRelational().getFields() ), RexIndexRef.of( 1, DocumentType.ofId().asRelational().getFields() ) ), sort.fieldExps.stream().map( f -> f.accept( visitor ) ) ).toList();
+            NameRefReplacer visitor = new NameRefReplacer( sort.getCluster(), false, builder.peek() );
+            List<RexNode> inputs = Stream.concat(
+                    Stream.of(
+                            RexIndexRef.of( 0, DocumentType.ofId().asRelational().getFields() ),
+                            RexIndexRef.of( 1, DocumentType.ofId().asRelational().getFields() ) ),
+                    sort.fieldExps.stream().map( f -> f.accept( visitor ) ) ).toList();
             builder.push( LogicalRelProject.create( builder.build(), inputs, IntStream.range( 0, inputs.size() ).mapToObj( i -> "in" + i ).toList() ) );
+            fieldExps = List.of( RexIndexRef.of( 2, DocumentType.ofId() ) );
+
+            collation = AlgCollations.of( new AlgFieldCollation( 2 ) );
         }
-        builder.push( LogicalRelSort.create( builder.build(), sort.fieldExps, sort.collation, sort.offset, sort.fetch ) );
+        builder.push( LogicalRelSort.create( builder.build(), fieldExps, collation, sort.offset, sort.fetch ) );
 
         if ( !sort.fieldExps.isEmpty() ) {
             // we have to restore the initial structure

@@ -112,6 +112,17 @@ allprojects {
     }
     integrationTests.dependsOn(testClasses)
 
+    // matrix tests exclude tests which rely on docker during testing due to different platform requirements
+    tasks.register('platformTests', Test) {
+        description = 'Runs platform tests.'
+        group = 'verification'
+        useJUnitPlatform {
+            excludeTags("docker")
+        }
+        shouldRunAfter(tasks.named('test'))
+    }
+    platformTests.dependsOn(testClasses)
+
     testlogger {
         theme 'standard'
         showExceptions true

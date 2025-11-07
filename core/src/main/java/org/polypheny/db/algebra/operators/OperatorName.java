@@ -1629,11 +1629,25 @@ public enum OperatorName {
 
     MQL_MERGE( LangFunctionOperator.class ),
 
+    MQL_MERGE_ADD( LangFunctionOperator.class ),
+
     MQL_PROJECT_INCLUDES( LangFunctionOperator.class ),
 
     MQL_REPLACE_ROOT( LangFunctionOperator.class ),
 
     MQL_NOT_UNSET( LangFunctionOperator.class ),
+
+    MQL_GEO_INTERSECTS( LangFunctionOperator.class ),
+
+    MQL_GEO_WITHIN( LangFunctionOperator.class ),
+
+    MQL_GEO_DISTANCE( LangFunctionOperator.class ),
+
+    MQL_NEAR( LangFunctionOperator.class ),
+
+    MQL_NEAR_SPHERE( LangFunctionOperator.class ),
+
+    MQL_GEO_NEAR( LangFunctionOperator.class ),
 
     //-------------------------------------------------------------
     //                   OPENCYPHER OPERATORS
@@ -1707,6 +1721,14 @@ public enum OperatorName {
     CYPHER_GEO_INTERSECTS( LangFunctionOperator.class ),
 
     CYPHER_GEO_WITHIN( LangFunctionOperator.class ),
+
+    CYPHER_POINT( LangFunctionOperator.class ),
+
+    CYPHER_WITHIN_BBOX( LangFunctionOperator.class ),
+
+    CYPHER_WITHIN_GEOMETRY( LangFunctionOperator.class ),
+
+    DISTANCE_NEO4J( LangFunctionOperator.class ),
 
     // CROSS MODEL FUNCTION
 

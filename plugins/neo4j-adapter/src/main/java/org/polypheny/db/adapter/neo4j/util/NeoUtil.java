@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,14 +31,21 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.lang3.NotImplementedException;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.InternalPath;
+import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
+import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
 import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
 import org.polypheny.db.algebra.constant.Kind;
@@ -46,8 +53,10 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
@@ -71,7 +80,9 @@ import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyPoint;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -120,29 +131,64 @@ public interface NeoUtil {
             case GRAPH -> o -> (PolyValue) o;
             case NODE -> o -> asPolyNode( o.asNode() );
             case EDGE -> o -> asPolyEdge( o.asRelationship() );
-            case PATH -> o -> asPolyPath( o.asPath() );
-            case GEOMETRY -> o -> PolyGeometry.of( o.asString() );
+            case PATH -> o -> {
+
+                if ( o instanceof ListValue ) {
+                    return asPolyPath( ((InternalPath) o.asList().get( 0 )), type.asList().names );
+                }
+                return asPolyPath( o.asPath(), type.asList().names );
+            };
+            case GEOMETRY -> NeoUtil::asPolyGeometry;
             default -> throw new GenericRuntimeException( String.format( "Object of type %s was not transformable.", type ) );
         };
 
 
     }
 
-    static PolyPath asPolyPath( Path path ) {
+    static PolyGeometry asPolyGeometry( Value value ) {
+        if ( value instanceof PointValue pointValue ) {
+            Point point = pointValue.asPoint();
+
+            // These are the only real SRIDs that Neo4j uses, the others are only used
+            // internally for the cartesian 2D / 3D case, which we will represent as 0.
+            int srid = 0;
+            if ( point.srid() == 4326 || point.srid() == 4979 ) {
+                srid = point.srid();
+            }
+
+            GeometryFactory geometryFactory = new GeometryFactory( new PrecisionModel(), srid );
+            Coordinate coordinate = new Coordinate( point.x(), point.y() );
+            if ( !Double.isNaN( point.z() ) ) {
+                coordinate.setZ( point.z() );
+            }
+            return PolyGeometry.of( geometryFactory.createPoint( coordinate ) );
+        } else if ( value instanceof StringValue stringValue ) {
+            try {
+                return new PolyGeometry( stringValue.asString() );
+            } catch ( InvalidGeometryException e ) {
+                throw new RuntimeException( e );
+            }
+        }
+
+        throw new GenericRuntimeException( String.format( "Could not transform object of type %s to PolyGeometry", value.type() ) );
+    }
+
+    static PolyPath asPolyPath( Path path, List<String> names ) {
         Iterator<Node> nodeIter = path.nodes().iterator();
         Iterator<Relationship> edgeIter = path.relationships().iterator();
-        List<PolyNode> nodes = new ArrayList<>();
-        List<PolyEdge> edges = new ArrayList<>();
+        Iterator<String> nameIter = names.iterator();
+        List<Pair<PolyString, PolyNode>> nodes = new ArrayList<>();
+        List<Pair<PolyString, PolyEdge>> edges = new ArrayList<>();
         while ( nodeIter.hasNext() ) {
-            nodes.add( asPolyNode( nodeIter.next() ) );
+            nodes.add( Pair.of( nameIter.hasNext() ? PolyString.of( nameIter.next() ) : null, asPolyNode( nodeIter.next() ) ) );
             if ( nodeIter.hasNext() ) {
-                edges.add( asPolyEdge( edgeIter.next() ) );
+                edges.add( Pair.of( null, asPolyEdge( edgeIter.next() ) ) );
             }
         }
 
         return PolyPath.create(
-                nodes.stream().map( n -> Pair.of( (PolyString) null, n ) ).toList(),
-                edges.stream().map( e -> Pair.of( (PolyString) null, e ) ).toList() );
+                nodes,
+                edges );
     }
 
     static PolyNode asPolyNode( Node node ) {
@@ -185,8 +231,11 @@ public interface NeoUtil {
             return PolyString.of( value.asString() );
         } else if ( value instanceof FloatValue ) {
             return PolyString.of( String.valueOf( value.asDouble() ) );
+
         } else if ( value instanceof ListValue ) {
             return new PolyList<>( value.asList( NeoUtil::getComparableOrString ) );
+        } else if ( value instanceof PointValue ) {
+            return asPolyGeometry( value );
         }
         throw new NotImplementedException( "Type not supported" );
     }
@@ -264,7 +313,7 @@ public interface NeoUtil {
 
     }
 
-    static Function1<List<String>, String> getOpAsNeo( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType ) {
+    static Function1<List<String>, String> getOpAsNeo( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType, List<AlgDataTypeField> beforeFields ) {
         return switch ( operatorName ) {
             case AND -> o -> o.stream().map( e -> String.format( "(%s)", e ) ).collect( Collectors.joining( " AND " ) );
             case DIVIDE -> handleDivide( operatorName, operands, returnType );
@@ -343,6 +392,9 @@ public interface NeoUtil {
             case AVG -> o -> String.format( "avg(%s)", o.get( 0 ) );
             case MIN -> o -> String.format( "min(%s)", o.get( 0 ) );
             case MAX -> o -> String.format( "max(%s)", o.get( 0 ) );
+            case CYPHER_POINT -> handlePoint( operands, returnType, beforeFields );
+            case DISTANCE_NEO4J -> o -> String.format( "distance(%s, %s)", o.get( 0 ), o.get( 1 ) );
+            case CYPHER_WITHIN_BBOX -> o -> String.format( "point.withinBBox(%s, %s, %s)", o.get( 0 ), o.get( 1 ), o.get( 2 ) );
             default -> null;
         };
 
@@ -357,6 +409,56 @@ public interface NeoUtil {
             return null;
         }
         return o -> o.get( 0 );
+    }
+
+    static Function1<List<String>, String> handlePoint( List<RexNode> operands, AlgDataType returnType, List<AlgDataTypeField> beforeFields ) {
+        // return point( { argName1: argValue1, argName2: argValue2 } )
+        List<String> arguments = new ArrayList<>();
+        for ( int i = 0; i < operands.size(); i += 2 ) {
+            RexNode argName = operands.get( i );
+            RexNode argValue = operands.get( i + 1 );
+
+            if ( argName instanceof RexLiteral argNameLiteral && argValue instanceof RexLiteral argValueLiteral ) {
+                if ( argNameLiteral.value == null ) {
+                    // Unknown value, we are done.
+                    break;
+                }
+                String arg = argNameLiteral.value.toString() + ":" + argValueLiteral.value.toString();
+                arguments.add( arg );
+            }
+
+            if ( argName instanceof RexLiteral argNameLiteral &&
+                    argValue instanceof RexCall cypherExtractProperty &&
+                    cypherExtractProperty.getOperator().getOperatorName() == OperatorName.CYPHER_EXTRACT_PROPERTY ) {
+                if ( argNameLiteral.value == null ) {
+                    // Unknown value, we are done.
+                    break;
+                }
+
+                ArrayList<String> cypherExtractPropertyOperands = new ArrayList<String>( 2 );
+                for ( int operandIndex = 0; operandIndex < cypherExtractProperty.operands.size(); operandIndex++ ) {
+                    RexNode operand = cypherExtractProperty.operands.get( operandIndex );
+
+                    if ( operand instanceof RexIndexRef rexIndexRef && !beforeFields.isEmpty() ) {
+                        for ( AlgDataTypeField field : beforeFields ) {
+                            if ( field.getIndex() == rexIndexRef.getIndex() ) {
+                                cypherExtractPropertyOperands.add( field.getName() );
+                                break;
+                            }
+                        }
+                    } else {
+                        cypherExtractPropertyOperands.add( maybeUnquote( operand.toString() ) );
+                    }
+                }
+                String path = String.join( ".", cypherExtractPropertyOperands );
+
+                String arg = argNameLiteral.value.toString() + ":" + path;
+                arguments.add( arg );
+            }
+
+        }
+
+        return o -> "point({" + String.join( ",", arguments ) + "})";
     }
 
     static Function1<List<String>, String> handleDivide( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType ) {
@@ -447,7 +549,14 @@ public interface NeoUtil {
             case BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO -> value.asBinary().value;
             case FLOAT, REAL, DOUBLE -> value.asNumber().doubleValue();
             case DECIMAL -> value.asNumber().bigDecimalValue();
-            case GEOMETRY -> value.asGeometry().toWKT();
+            case GEOMETRY -> {
+                if ( value.asGeometry().isPoint() ) {
+                    PolyPoint point = value.asGeometry().asPoint();
+                    yield new PointValue( new InternalPoint2D( point.getSRID(), point.getX(), point.getY() ) );
+                } else {
+                    yield value.asGeometry().toWKT();
+                }
+            }
             case ARRAY -> value.asList().value.stream().map( e -> {
                 if ( isNested ) {
                     return e.toTypedJson();
@@ -472,7 +581,7 @@ public interface NeoUtil {
 
         @Override
         public Void visitCall( RexCall call ) {
-            if ( NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type ) == null ) {
+            if ( NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type, List.of() ) == null ) {
                 supports = false;
             }
             return super.visitCall( call );

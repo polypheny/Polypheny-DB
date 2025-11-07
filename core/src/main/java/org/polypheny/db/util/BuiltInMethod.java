@@ -508,7 +508,16 @@ public enum BuiltInMethod {
     MQL_GET_ARRAY( MqlFunctions.class, "docGetArray", PolyValue.class ),
     MQL_EXISTS( MqlFunctions.class, "docExists", PolyValue.class, PolyValue.class, List.class ),
     MQL_MERGE( MqlFunctions.class, "mergeDocument", PolyValue.class, PolyList.class, PolyValue[].class ),
+    MQL_MERGE_ADD( MqlFunctions.class, "mergeDocumentAdd", PolyValue.class, PolyList.class, PolyValue[].class ),
     MQL_NOT_UNSET( MqlFunctions.class, "notUnset", PolyValue.class ),
+
+    // GeoFunctions
+    MQL_GEO_INTERSECTS( MqlFunctions.class, "docGeoIntersects", PolyValue.class, PolyValue.class ),
+    MQL_GEO_WITHIN( MqlFunctions.class, "docGeoWithin", PolyValue.class, PolyValue.class, PolyValue.class ),
+    MQL_GEO_DISTANCE( MqlFunctions.class, "docGeoDistance", PolyValue.class, PolyValue.class, PolyValue.class ),
+//    MQL_NEAR( MqlFunctions.class, "docNear", PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class ),
+//    MQL_NEAR_SPHERE( MqlFunctions.class, "docNearSphere", PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class ),
+//    MQL_GEO_NEAR( MqlFunctions.class, "notUnset", PolyValue.class ),
 
     MQL_PROJECT_INCLUDES( MqlFunctions.class, "projectIncludes", PolyValue.class, PolyList.class, PolyValue[].class ),
     MQL_REPLACE_ROOT( MqlFunctions.class, "replaceRoot", PolyValue.class ),
@@ -532,6 +541,11 @@ public enum BuiltInMethod {
     CYPHER_SET_LABELS( CypherFunctions.class, "setLabels", GraphPropertyHolder.class, List.class, PolyBoolean.class ),
     CYPHER_REMOVE_LABELS( CypherFunctions.class, "removeLabels", GraphPropertyHolder.class, List.class ),
     CYPHER_REMOVE_PROPERTY( CypherFunctions.class, "removeProperty", GraphPropertyHolder.class, String.class ),
+    CYPHER_POINT( CypherFunctions.class, "point", PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class ),
+    CYPHER_DISTANCE( CypherFunctions.class, "distance", PolyValue.class, PolyValue.class ),
+    CYPHER_DISTANCE_NEO4J( CypherFunctions.class, "distanceNeo4j", PolyValue.class, PolyValue.class ),
+    CYPHER_WITHIN_BBOX( CypherFunctions.class, "withinBBox", PolyValue.class, PolyValue.class, PolyValue.class ),
+    CYPHER_WITHIN_GEOMETRY( CypherFunctions.class, "withinGeometry", PolyValue.class, PolyValue.class ),
     TO_NODE( CypherFunctions.class, "toNode", Enumerable.class ),
     TO_EDGE( CypherFunctions.class, "toEdge", Enumerable.class ),
     TO_GRAPH( CypherFunctions.class, "toGraph", Enumerable.class, Enumerable.class ),

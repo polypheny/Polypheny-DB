@@ -127,7 +127,7 @@ public class Neo4jPlugin extends PolyPlugin {
     }
 
 
-    private static String getMappingLabel( long id ) {
+    static String getMappingLabel( long id ) {
         return String.format( "___n_%d___", id );
     }
 
@@ -421,6 +421,9 @@ public class Neo4jPlugin extends PolyPlugin {
         public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
             for ( PhysicalEntity entity : entities ) {
                 updateNamespace( entity.namespaceName, entity.namespaceId );
+
+                // TODO: If entity is of type PhysicalGraph, unwrap() does not work
+                //   Happens if we restart Polypheny-DB and try to restore the graph from Neo4j.
                 adapterCatalog.addPhysical( alloc, currentNamespace.createEntity( entity, entity.unwrapOrThrow( PhysicalTable.class ).columns, currentNamespace ) );
             }
         }
@@ -430,7 +433,7 @@ public class Neo4jPlugin extends PolyPlugin {
         public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
             for ( PhysicalEntity entity : entities ) {
                 updateNamespace( entity.namespaceName, entity.namespaceId );
-                adapterCatalog.addPhysical( alloc, currentNamespace.createEntity( entity, List.of(), currentNamespace ) );
+                adapterCatalog.addPhysical( alloc, currentNamespace.createGraph( entity, List.of(), this.db, this ) );
             }
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoConvention;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
 import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgFieldCollation.NullDirection;
 import org.polypheny.db.algebra.AlgNode;
@@ -255,6 +256,16 @@ public class MongoRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final Sort sort = (Sort) alg;
+
+            for ( AlgFieldCollation field : sort.collation.getFieldCollations() ) {
+                // mongodb sorts nulls first for ascending (or desc, nulls last), so this requires expensive precalcs,
+                if ( field.nullDirection == NullDirection.LAST && field.direction == Direction.ASCENDING ) {
+                    return null;
+                } else if ( field.direction == Direction.DESCENDING && field.nullDirection == NullDirection.FIRST ) {
+                    return null;
+                }
+            }
+
             final AlgTraitSet traitSet = sort.getTraitSet().replace( out ).replace( sort.getCollation() );
             return new MongoSort(
                     alg.getCluster(),
@@ -423,7 +434,8 @@ public class MongoRules {
                     traitSet,
                     convert( project.getInput(), out ),
                     project.includes,
-                    project.excludes );
+                    project.excludes,
+                    project.adds );
         }
 
     }
@@ -470,6 +482,7 @@ public class MongoRules {
                     || call.operands.stream().anyMatch( o -> o.isA( Kind.QUERY ) )
                     || operator.getOperatorName() == OperatorName.COT
                     || operator.getOperatorName() == OperatorName.TRIM
+                    || operator.getOperatorName() == OperatorName.IS_NULL
                     || operator.getOperatorName() == OperatorName.INITCAP
                     || operator.getOperatorName() == OperatorName.SUBSTRING
                     || operator.getOperatorName() == OperatorName.FLOOR

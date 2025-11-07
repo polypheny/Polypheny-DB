@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -204,6 +204,12 @@ public class TestHelper {
     public static void addHsqldb( String name, Statement statement ) throws SQLException {
         executeSQL( statement, "ALTER ADAPTERS ADD \"" + name + "\" USING 'Hsqldb' AS 'Store'"
                 + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+    }
+
+
+    public static void addMongodb( String name, Statement statement ) throws SQLException {
+        executeSQL( statement, """
+                ALTER ADAPTERS ADD "%s" USING 'mongodb' AS 'Store' WITH '{trxLifetimeLimit:"1209600",mode:docker,instanceId:"%s"}'""".formatted( name, 0 ) );
     }
 
 
@@ -463,6 +469,14 @@ public class TestHelper {
 
 
     public static abstract class HttpConnection {
+
+        static {
+            // TODO: remove this (is there a way to only disable the timeout, when I am actually debugging?)
+            Unirest.config()
+                    .socketTimeout( 0 )
+                    .connectTimeout( 0 );
+        }
+
 
         public static HttpRequest<?> buildQuery( String route, String query, String database ) {
             JsonObject data = new JsonObject();

@@ -231,6 +231,5 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
                 .put( "flattened", new BooleanArg( isFlattened() ) );
     }
 
-
 }
 

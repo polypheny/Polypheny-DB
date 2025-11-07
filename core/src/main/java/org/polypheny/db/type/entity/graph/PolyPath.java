@@ -189,6 +189,14 @@ public class PolyPath extends GraphObject {
             }
         }
 
+        int i = 0;
+        for ( PolyString n : this.names ) {
+            if ( name.equals( n ) ) {
+                return path.get( i );
+            }
+            i++;
+        }
+
         return null;
     }
 

@@ -33,6 +33,7 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Util;
 
@@ -68,9 +69,15 @@ public class MongoSort extends Sort implements MongoAlg {
             final List<String> keys = new ArrayList<>();
             final List<AlgDataTypeField> fields = getTupleType().getFields();
             for ( AlgFieldCollation fieldCollation : collation.getFieldCollations() ) {
+                String name;
+                if ( !fieldExps.isEmpty() && fieldExps.size() > fieldCollation.getFieldIndex() && fieldExps.get( fieldCollation.getFieldIndex() ) instanceof RexNameRef rexNameRef ) {
+                    name = rexNameRef.getName();
+                } else {
+                    // for relational cases
+                    name = fields.get( fieldCollation.getFieldIndex() ).getName();
+                }
+
                 // we can only sort by field not by db.collection.field
-                String name =
-                        fields.get( fieldCollation.getFieldIndex() ).getName();
                 String[] splits = name.split( "\\." );
                 name = splits[splits.length - 1];
                 name = MongoRules.adjustName( name );
