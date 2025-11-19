@@ -97,6 +97,7 @@ public class NotebooksPlugin extends PolyPlugin {
 
         Optional<DockerContainer> maybeContainer = DockerContainer.getContainerByUUID( ConfigManager.getInstance().getConfig( CONFIG_CONTAINER_KEY ).getString() );
         if ( maybeContainer.isPresent() ) {
+            this.token = ConfigManager.getInstance().getConfig( CONFIG_TOKEN_KEY ).getString();
             this.container = maybeContainer.get();
             // just because the container exists does not mean it is running
             if ( !testConnection() ) {
