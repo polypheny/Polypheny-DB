@@ -19,6 +19,7 @@ package org.polypheny.db.transaction.locking;
 import lombok.NonNull;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.DeadlockException;
+import java.util.Set;
 
 public interface Lockable {
 
@@ -38,6 +39,10 @@ public interface Lockable {
     void release( @NonNull Transaction transaction );
 
     LockType getLockType();
+
+    public Set<Transaction> getCopyOfOwners();
+
+    Lockable getParent();
 
     boolean isRoot();
 

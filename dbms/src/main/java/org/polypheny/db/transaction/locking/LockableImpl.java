@@ -47,6 +47,9 @@ public class LockableImpl implements Lockable {
         try {
             concurrencyLock.lock();
             if ( !owners.contains( transaction ) ) {
+                if ( parent != null && !parent.getCopyOfOwners().contains( transaction ) ) {
+                    throw new AssertionError( "Parent lock must be held" );
+                }
                 switch ( lockType ) {
                     case SHARED -> acquireShared( transaction );
                     case EXCLUSIVE -> acquireExclusive( transaction );
@@ -144,15 +147,18 @@ public class LockableImpl implements Lockable {
 
 
     @Override
+    public Lockable getParent() {
+        return parent;
+    }
+
+
+    @Override
     public boolean isRoot() {
         return parent == null;
     }
 
 
     private void acquireShared( Transaction transaction ) throws InterruptedException {
-        if ( !isRoot() ) {
-            parent.acquire( transaction, LockType.SHARED );
-        }
         while ( state == LockState.EXCLUSIVE || hasWaitingTransactions() ) {
             if ( DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners ) ) {
                 throw new InterruptedException( "Deadlock detected" );
@@ -168,9 +174,6 @@ public class LockableImpl implements Lockable {
 
 
     private void acquireExclusive( Transaction transaction ) throws InterruptedException {
-        if ( !isRoot() ) {
-            parent.acquire( transaction, LockType.SHARED );
-        }
         while ( !owners.isEmpty() ) {
             if ( DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners ) ) {
                 throw new InterruptedException( "Deadlock detected" );
