@@ -18,14 +18,11 @@ package org.polypheny.db.transaction.locking;
 
 import lombok.NonNull;
 
-public class LockableObjectWrapper extends LockableImpl {
-
-    private final LockableObject lockableObject;
-
+public record LockableObjectWrapper( Lockable parent, LockableObject lockableObject ) implements Lockable {
 
     public LockableObjectWrapper( @NonNull Lockable parent, @NonNull LockableObject lockableObject ) {
-        super( parent );
         this.lockableObject = lockableObject;
+        this.parent = parent;
     }
 
 

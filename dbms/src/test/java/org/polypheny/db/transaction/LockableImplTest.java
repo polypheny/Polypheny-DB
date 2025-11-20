@@ -31,7 +31,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
-import org.polypheny.db.transaction.locking.LockableImpl;
 
 public class LockableImplTest {
 

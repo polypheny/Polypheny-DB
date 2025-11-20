@@ -19,26 +19,15 @@ package org.polypheny.db.transaction.locking;
 import lombok.NonNull;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.DeadlockException;
+import javax.annotation.Nullable;
 
 public interface Lockable {
-
-    enum LockState {
-        SHARED,
-        EXCLUSIVE,
-    }
-
 
     enum LockType {
         SHARED,
         EXCLUSIVE,
     }
 
-    void acquire( @NonNull Transaction transaction, @NonNull LockType lockType ) throws DeadlockException;
-
-    void release( @NonNull Transaction transaction );
-
-    LockType getLockType();
-
-    boolean isRoot();
-
+    @Nullable
+    Lockable parent();
 }

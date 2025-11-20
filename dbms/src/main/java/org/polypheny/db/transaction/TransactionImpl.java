@@ -17,12 +17,10 @@
 package org.polypheny.db.transaction;
 
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -65,9 +63,9 @@ import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.QueryAnalyzer.TransactionAnalyzer;
+import org.polypheny.db.transaction.locking.LockManager;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.type.entity.category.PolyNumber;
-import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
 
@@ -131,9 +129,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private final Collection<ConstraintCondition> commitConstraints = new ConcurrentLinkedDeque<>();
 
-    @Getter
-    private final Set<Lockable> lockedEntities = new HashSet<>();
-
     private boolean releasePhase = false;
 
 
@@ -153,6 +148,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         this.analyzer = queryAnalyzer == null ? null : new TransactionAnalyzer( queryAnalyzer, this );
         this.origin = origin;
         this.flavor = flavor;
+        LockManager.getInstance().registerTransaction( this );
     }
 
 
@@ -427,14 +423,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public void releaseAllLocks() {
         releasePhase = true;
-        lockedEntities.forEach( lockedEntity -> {
-            try {
-                lockedEntity.release( this );
-            } catch ( Exception e ) {
-                // TODO TH: introduce proper exception type here. Or wrap in release method of lockable
-                throw new DeadlockException( MessageFormat.format( "Failed to release lock for transaction {0}", this ) );
-            }
-        } );
+        LockManager.getInstance().releaseAllLocks(this);
     }
 
 
@@ -446,8 +435,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         if ( releasePhase ) {
             throw new IllegalStateException( "Cannot acquire lock: transaction is in release phase!" );
         }
-        lockable.acquire( this, lockType );
-        lockedEntities.add( lockable );
+        LockManager.getInstance().acquire(this, lockable, lockType);
     }
 
 

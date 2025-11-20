@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Supplier;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
@@ -34,14 +35,13 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.transaction.QueryAnalyzer.TransactionAnalyzer;
+import org.polypheny.db.transaction.locking.LockManager;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 
 public class MockTransaction implements Transaction {
 
     private long id;
-
-    private Set<Lockable> locks;
 
     private boolean committed = false;
 
@@ -51,7 +51,7 @@ public class MockTransaction implements Transaction {
 
     public MockTransaction( long id ) {
         this.id = id;
-        this.locks = new HashSet<>();
+        LockManager.getInstance().registerTransaction( this );
     }
 
 
@@ -243,14 +243,13 @@ public class MockTransaction implements Transaction {
 
     @Override
     public void releaseAllLocks() {
-        locks.forEach( l -> l.release( this ) );
+        LockManager.getInstance().releaseAllLocks( this );
     }
 
 
     @Override
     public void acquireLockable( Lockable lockable, LockType lockType ) {
-        lockable.acquire( this, lockType );
-        locks.add( lockable );
+        LockManager.getInstance().acquire( this, lockable, lockType );
     }
 
 }

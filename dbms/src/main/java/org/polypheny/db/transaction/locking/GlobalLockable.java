@@ -16,10 +16,18 @@
 
 package org.polypheny.db.transaction.locking;
 
-public class GlobalLockable extends LockableImpl {
+import org.jetbrains.annotations.Nullable;
+
+public class GlobalLockable implements Lockable {
 
     public GlobalLockable() {
-        super( null );
+
+    }
+
+
+    @Override
+    public @Nullable Lockable parent() {
+        return null;
     }
 
 }
