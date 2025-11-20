@@ -21,8 +21,10 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import kotlin.collections.ArrayDeque;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +69,7 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.QueryAnalyzer.TransactionAnalyzer;
 import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
@@ -446,6 +450,16 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         if ( releasePhase ) {
             throw new IllegalStateException( "Cannot acquire lock: transaction is in release phase!" );
         }
+        Deque<Lockable> parents = new LinkedList<>();
+        Lockable parent = lockable.getParent();
+        while ( parent != null ) {
+            parents.push( parent );
+            parent = parent.getParent();
+        }
+        for (Lockable p : parents) {
+            p.acquire( this, LockType.SHARED );
+        }
+
         lockable.acquire( this, lockType );
         lockedEntities.add( lockable );
     }
