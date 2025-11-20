@@ -65,25 +65,25 @@ public class LockManager {
     }
 
 
-    private static Set<LockEntry> tryAcquireLock( Set<LockEntry> locks, LockEntry entry ) {
-        if ( locks.contains( entry ) ) {
-            return locks; // We already have the lock
-        }
-
-        // Acquire shared lock while holding exclusive lock
+    private static boolean canLockDirectly( Set<LockEntry> locks, LockEntry entry ) {
         if ( entry.lockType == LockType.SHARED && locks.stream().anyMatch( e -> e.transaction == entry.transaction && e.lockable == entry.lockable && e.lockType == LockType.EXCLUSIVE ) ) {
-            Set<LockEntry> newLocks = new HashSet<>( locks );
-            newLocks.add( entry );
-            return Set.copyOf( newLocks );
+            // We already have an exclusive lock
+            return true;
         }
 
         if ( entry.lockType == LockType.EXCLUSIVE && locks.stream().noneMatch( e -> e.transaction != entry.transaction && e.lockable == entry.lockable ) ) {
             // No one else holds a lock
-            Set<LockEntry> newLocks = new HashSet<>( locks );
-            newLocks.add( entry );
-            return Set.copyOf( newLocks );
+            return true;
         } else if ( entry.lockType == LockType.SHARED && locks.stream().noneMatch( e -> e.lockable == entry.lockable && e.lockType == LockType.EXCLUSIVE ) ) { // No match for transaction, handled above
-            // No one else has an exclusive lock
+            // No one has an exclusive lock
+            return true;
+        }
+        return false;
+    }
+
+
+    private static Set<LockEntry> tryAcquireLock( Set<LockEntry> locks, LockEntry entry ) {
+        if ( canLockDirectly( locks, entry ) ) {
             Set<LockEntry> newLocks = new HashSet<>( locks );
             newLocks.add( entry );
             return Set.copyOf( newLocks );
@@ -109,11 +109,11 @@ public class LockManager {
             openTransactions.remove( t );
             closedTransactions.add( t );
             Lockable waitingFor = waiting.get( t );
-            if (waitingFor != null) {
-                for (Transaction t2 : findLockHolders( t, waitingFor, locks )) {
-                    if (t2 == transaction) {
+            if ( waitingFor != null ) {
+                for ( Transaction t2 : findLockHolders( t, waitingFor, locks ) ) {
+                    if ( t2 == transaction ) {
                         return true; // Deadlock!
-                    } else if (!closedTransactions.contains( t2)) {
+                    } else if ( !closedTransactions.contains( t2 ) ) {
                         openTransactions.add( t2 );
                     }
                 }
@@ -128,6 +128,11 @@ public class LockManager {
 
         LockEntry entry = new LockEntry( transaction, lockable, lockType );
 
+        if ( locks.contains( entry ) ) {
+            // If we have the lock, return immediately
+            return true;
+        }
+
         Set<LockEntry> newLocks = tryAcquireLock( locks, entry );
 
         if ( newLocks != null && (locks == newLocks || entries.compareAndSet( locks, newLocks )) ) {// TODO: Use equal
@@ -137,18 +142,18 @@ public class LockManager {
             }
             return true;
         } else {
-            // If there is a Deadlock, this means that other Transactions are already waiting for us, so the relevant parts wont change
+            waitFor.put( transaction, lockable ); // TODO: Two transactions could abort at the same time
+            // If there is a Deadlock, this means that other Transactions are already waiting for us, so the relevant parts won't change
             if ( hasDeadlock( locks, Map.copyOf( waitFor ), transaction, lockable ) ) {
                 throw new DeadlockException( "Deadlock detected" );
             }
 
             CompletableFuture<Boolean> future = futures.putIfAbsent( lockable, new CompletableFuture<>() );
             if ( future == null ) {
-                // Retry, lock state could have changed
+                // Retry, lock state could have changed already
                 return false;
             }
             try {
-                waitFor.put( transaction, lockable );
                 future.get();
             } catch ( InterruptedException | ExecutionException e ) {
                 // ignore
