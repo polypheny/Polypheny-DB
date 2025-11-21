@@ -46,6 +46,11 @@ public interface BackgroundTask {
     }
 
 
+    /**
+     * FIXED: Every x amount of time, independent of the runtime of the task. There can be multiple instances of the task running in parallel.
+     *
+     * DELAYED: x amount of time between the executions of the task. It is ensured that there is only one instance of the task running at the same time.
+     */
     enum TaskDelayType {
         FIXED, DELAYED
     }

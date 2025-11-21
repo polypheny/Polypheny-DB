@@ -50,65 +50,25 @@ public enum RuntimeConfig {
             ConfigType.ENUM
     ),
 
-    APPROXIMATE_DISTINCT_COUNT(
-            "runtime/approximateDistinctCount",
-            "Whether approximate results from \"COUNT(DISTINCT ...)\" aggregate functions are acceptable.",
-            false,
-            ConfigType.BOOLEAN
-    ), // Druid
-
-    APPROXIMATE_TOP_N(
-            "runtime/approximateTopN",
-            "Whether approximate results from \"Top N\" queries (\"ORDER BY aggFun DESC LIMIT n\") are acceptable.",
-            false,
-            ConfigType.BOOLEAN
-    ), // Druid
-
-    APPROXIMATE_DECIMAL(
-            "runtime/approximateDecimal",
-            "Whether approximate results from aggregate functions on DECIMAL types are acceptable.",
-            false,
-            ConfigType.BOOLEAN
-    ), // Druid
-
-    NULL_EQUAL_TO_EMPTY(
-            "runtime/nullEqualToEmpty",
-            "Whether to treat empty strings as null for Druid Adapter.",
-            true,
-            ConfigType.BOOLEAN
-    ), // Druid
-
     RELATIONAL_NAMESPACE_DEFAULT_CASE_SENSITIVE(
             "runtime/relationalCaseSensitive",
             "Whether a relational namespace is case-sensitive if not specified otherwise.",
             false,
             ConfigType.BOOLEAN
     ),
+
     DOCUMENT_NAMESPACE_DEFAULT_CASE_SENSITIVE(
             "runtime/documentCaseSensitive",
             "Whether a document namespace is case-sensitive if not specified otherwise.",
             false,
             ConfigType.BOOLEAN
     ),
+
     GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE(
             "runtime/graphCaseSensitive",
             "Whether a graph (namespace) is case-sensitive if not specified otherwise.",
             false,
             ConfigType.BOOLEAN
-    ),
-
-    CONFIG_SERVER_PORT(
-            "runtime/configServerPort",
-            "The port on which the config server should listen.",
-            8081,
-            ConfigType.INTEGER
-    ),
-
-    INFORMATION_SERVER_PORT(
-            "runtime/informationServerPort",
-            "The port on which the information server should listen.",
-            8082,
-            ConfigType.INTEGER
     ),
 
     WEBUI_SERVER_PORT(
@@ -220,36 +180,30 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "statisticSettingsGroup" ),
 
-    UNIQUE_VALUES(
-            "statistics/maxCharUniqueVal",
-            "Maximum character of unique values",
-            10,
+    STATISTIC_BATCH_SIZE(
+            "statistics/statisticBatchSize",
+            "Number of tuples to process in each iteration step.",
+            100,
             ConfigType.INTEGER,
             "statisticSettingsGroup" ),
 
     STATISTIC_RATE(
             "statistics/passiveTrackingRate",
             "Rate of passive tracking of statistics.",
-            BackgroundTask.TaskSchedulingType.EVERY_THIRTY_SECONDS_FIXED,
-            ConfigType.ENUM ),
+            TaskSchedulingType.EVERY_THIRTY_SECONDS,
+            ConfigType.ENUM,
+            "statisticSettingsGroup" ),
 
     MATERIALIZED_VIEW_LOOP(
             "materializedView/freshnessLoopRate",
-            "Rate of freshness Loop for Materialized Views with update type interval.",
+            "Rate of freshness loop for Materialized Views with update type interval.",
             TaskSchedulingType.EVERY_SECOND_FIXED,
             ConfigType.ENUM ),
 
-    EXPLORE_BY_EXAMPLE_TO_SQL(
-            "exploreByExample/classificationToSQL",
-            "Build SQL query from classification.",
-            true,
-            ConfigType.BOOLEAN,
-            "uiSettings" ),
-
     UI_PAGE_SIZE(
             "ui/pageSize",
-            "Number of rows per page in the data view.",
-            10,
+            "Number of tuples (rows / documents) in query results and per page in the data view.",
+            25,
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
 
@@ -267,29 +221,6 @@ public enum RuntimeConfig {
             10_000,
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
-
-    UI_USE_HARDLINKS(
-            "ui/useHardlinks",
-            "Whether or not to use hardlinks for temporal files in the UI. If false, softlinks are used. This config has only an effect when one or multiple file stores are deployed. "
-                    + "With hardlinks, the data you see is the correct data that was selected during the transaction. "
-                    + "But with multiple file stores on different file systems, hardlinks won't work. "
-                    + "In this case you can use softlinks, but you might see data that is more recent.",
-            true,
-            ConfigType.BOOLEAN,
-            "uiSettingsDataViewGroup" ),
-
-    HUB_IMPORT_BATCH_SIZE(
-            "hub/hubImportBatchSize",
-            "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub.",
-            1000,
-            ConfigType.INTEGER,
-            "uiSettingsDataViewGroup" ),
-
-    SCHEMA_CACHING(
-            "runtime/schemaCaching",
-            "Cache polypheny-db schema",
-            true,
-            ConfigType.BOOLEAN ),
 
     QUERY_PLAN_CACHING(
             "runtime/queryPlanCaching",
@@ -479,13 +410,6 @@ public enum RuntimeConfig {
             ConfigType.ENUM,
             "temperaturePartitionProcessingSettingsGroup" ),
 
-    CATALOG_DEBUG_MESSAGES(
-            "runtime/catalogDebugMessages",
-            "Enable output of catalog debug messages on the monitoring page.",
-            false,
-            ConfigType.BOOLEAN,
-            "monitoringGroup" ),
-
     AVAILABLE_PLUGINS(
             "runtime/availablePlugins",
             "All plugins, which are available, be it active, only loaded or unloaded.",
@@ -530,7 +454,7 @@ public enum RuntimeConfig {
 
     DOCKER_TIMEOUT(
             "runtime/dockerTimeout",
-            "Connection and respones timeout for autodocker.",
+            "Connection and response timeout for auto-docker.",
             45,
             ConfigType.INTEGER
     ),
@@ -544,14 +468,8 @@ public enum RuntimeConfig {
 
     SERIALIZATION_BUFFER_SIZE(
             "runtime/serialization",
-            "How big the buffersize for catalog objects should be.",
+            "How big the buffer size for catalog objects should be.",
             2_000_000,
-            ConfigType.INTEGER ),
-
-    LOCKING_MAX_TIMEOUT_SECONDS(
-            "runtime/maxTimeout",
-            "How long a transactions should wait for a lock until it is aborted",
-            90,
             ConfigType.INTEGER );
 
 
@@ -611,7 +529,7 @@ public enum RuntimeConfig {
         final WebUiPage queryStatisticsPage = new WebUiPage(
                 "statisticsPage",
                 "Statistics",
-                "Settings on the stored data." );
+                "Statistics on the stored data." );
         //queryStatisticsPage.withIcon( "fa fa-percent" );
         final WebUiGroup statisticSettingsGroup = new WebUiGroup( "statisticSettingsGroup", queryStatisticsPage.getId() );
         statisticSettingsGroup.withTitle( "Statistics Settings" );
@@ -655,9 +573,6 @@ public enum RuntimeConfig {
         final WebUiGroup uiSettingsDataViewGroup = new WebUiGroup( "uiSettingsDataViewGroup", uiSettingsPage.getId() );
         uiSettingsDataViewGroup.withTitle( "Data View" );
         configManager.registerWebUiGroup( uiSettingsDataViewGroup );
-        final WebUiGroup monitoringGroup = new WebUiGroup( "monitoringGroup", uiSettingsPage.getId() );
-        monitoringGroup.withTitle( "Monitoring" );
-        configManager.registerWebUiGroup( monitoringGroup );
 
         // Workload Monitoring specific setting
         final WebUiPage monitoringSettingsPage = new WebUiPage(
