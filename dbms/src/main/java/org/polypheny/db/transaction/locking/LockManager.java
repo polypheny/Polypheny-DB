@@ -146,6 +146,7 @@ public class LockManager {
                 return false; // Try again, someone else has acquired a lock
             }
         } else {
+            // We only get here when there is a conflict, i.e. we have to wait for the lock
             waitFor.put( transaction, lockable ); // TODO: Two transactions could abort at the same time
             // If there is a Deadlock, this means that other Transactions are already waiting for us, so the relevant parts won't change
             if ( hasDeadlock( locks, Map.copyOf( waitFor ), transaction, lockable ) ) {
@@ -154,7 +155,7 @@ public class LockManager {
 
             CompletableFuture<Boolean> future = futures.putIfAbsent( lockable, new CompletableFuture<>() );
             if ( future == null ) {
-                // Retry, lock state could have changed already
+                // We try again because this could mean the lock was released since checking
                 return false;
             }
             try {
