@@ -16,11 +16,6 @@
 
 package org.polypheny.db.transaction.locking;
 
-import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.locking.Lockable.LockType;
-import org.polypheny.db.util.DeadlockException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +26,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.util.DeadlockException;
 
 @Slf4j
 public class LockManager {
@@ -46,7 +46,7 @@ public class LockManager {
     private final Map<Transaction, Lockable> waitFor = new ConcurrentHashMap<>();
 
 
-    record LockEntry( Transaction transaction, Lockable lockable, LockType lockType ) {
+    public record LockEntry( Transaction transaction, Lockable lockable, LockType lockType ) {
 
     }
 
@@ -135,12 +135,16 @@ public class LockManager {
 
         Set<LockEntry> newLocks = tryAcquireLock( locks, entry );
 
-        if ( newLocks != null && (locks == newLocks || entries.compareAndSet( locks, newLocks )) ) {// TODO: Use equal
-            Lockable l = waitFor.remove( transaction ); // No longer waiting
-            if ( l != null && l != lockable ) {
-                throw new AssertionError( "Wrong lockable" );
+        if ( newLocks != null ) {
+            if ( entries.compareAndSet( locks, newLocks ) ) {
+                Lockable l = waitFor.remove( transaction ); // No longer waiting
+                if ( l != null && l != lockable ) {
+                    throw new AssertionError( "Wrong lockable" );
+                }
+                return true;
+            } else {
+                return false; // Try again, someone else has acquired a lock
             }
-            return true;
         } else {
             waitFor.put( transaction, lockable ); // TODO: Two transactions could abort at the same time
             // If there is a Deadlock, this means that other Transactions are already waiting for us, so the relevant parts won't change
