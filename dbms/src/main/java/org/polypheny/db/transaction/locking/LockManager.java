@@ -200,8 +200,11 @@ public class LockManager {
                     // Success
                     locks.stream().filter( e -> e.transaction == transaction ).forEach( e -> {
                         CompletableFuture<Boolean> future = futures.remove( e.lockable );
-                        future.complete( true );
+                        if ( future != null ) {
+                            future.complete( true );
+                        }
                     } );
+                    break;
                 }
             }
         } finally {
