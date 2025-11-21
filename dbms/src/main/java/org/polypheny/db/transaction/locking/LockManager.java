@@ -16,8 +16,12 @@
 
 package org.polypheny.db.transaction.locking;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -174,6 +178,19 @@ public class LockManager {
             throw new GenericRuntimeException( "Multiple threads using same transaction" );
         }
         try {
+            Deque<Lockable> parents = new ArrayDeque<>();
+            Lockable parent = lockable.parent();
+            while (  parent != null ) {
+                parents.push( parent );
+                parent = parent.parent();
+            }
+            for ( Lockable p : parents ) {
+                while ( true ) {
+                    if ( acquireLock( transaction, p, LockType.SHARED ) ) {
+                        break;
+                    }
+                }
+            }
             while ( true ) {
                 if ( acquireLock( transaction, lockable, lockType ) ) {
                     break;
