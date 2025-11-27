@@ -26,6 +26,7 @@ import io.javalin.json.JavalinJackson;
 import io.javalin.plugin.bundled.CorsPluginConfig.CorsRule;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -36,11 +37,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.pf4j.Extension;
 import org.polypheny.db.StatusNotificationService;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.http.model.NamespaceModel;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
@@ -146,6 +151,9 @@ public class HttpInterfacePlugin extends PolyPlugin {
             StatusNotificationService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
 
             LanguageManager.getLanguages().forEach( this::addRoute );
+
+            // register schema exploration
+            server.post( "/schema", this::getSchema );
         }
 
 
@@ -156,6 +164,19 @@ public class HttpInterfacePlugin extends PolyPlugin {
             }
         }
 
+        public void getSchema(final Context ctx ) {
+            Snapshot snapshot = Catalog.getInstance().getSnapshot();
+            List<LogicalNamespace> namespaces = snapshot.getNamespaces( null );
+
+            List<NamespaceModel> entities = new ArrayList<>();
+
+
+            snapshot.rel().getTables( null, (Pattern) null ).forEach( table -> entities.add( new NamespaceModel(table.getNamespaceName(), table.name, table.dataModel ) ) );
+            snapshot.doc().getCollections(  null, null ).forEach( collection -> entities.add( new NamespaceModel(collection.getNamespaceName(), collection.name, collection.dataModel ) ) );
+            snapshot.graph().getGraphs(   null ).forEach( graph -> entities.add( new NamespaceModel(graph.getNamespaceName(), graph.name, graph.dataModel ) ) );
+
+            ctx.json( entities );
+        }
 
         public void anyQuery( QueryLanguage language, final Context ctx ) {
             QueryRequest query = ctx.bodyAsClass( QueryRequest.class );
