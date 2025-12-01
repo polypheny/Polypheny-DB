@@ -17,7 +17,6 @@
 package org.polypheny.db.http.model;
 
 import org.polypheny.db.catalog.logistic.DataModel;
-import javax.xml.crypto.Data;
 
 public record NamespaceModel( String namespace, String name, DataModel dataModel) {
 

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.notebooks.model.language;
 
+import org.polypheny.db.config.RuntimeConfig;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +29,7 @@ public class IPythonKernelLanguage implements JupyterKernelLanguage {
 
     @Override
     public List<String> getInitCode() {
-        return Collections.singletonList( "%load_ext poly" );
+        return Collections.singletonList( "%load_ext poly\n%poly db: http://" + RuntimeConfig.NOTEBOOKS_POLYPHENY_ADDRESS.getString() );
     }
 
 
@@ -48,7 +49,7 @@ public class IPythonKernelLanguage implements JupyterKernelLanguage {
 
     @Override
     public List<String> getExportedInitCode() {
-        return Collections.singletonList( "%load_ext poly\n%poly db: http://localhost:13137" );
+        return Collections.singletonList( "%load_ext poly\n%poly db: http://" + RuntimeConfig.NOTEBOOKS_POLYPHENY_ADDRESS );
     }
 
 

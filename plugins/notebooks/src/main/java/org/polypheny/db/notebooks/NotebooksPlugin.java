@@ -161,7 +161,7 @@ public class NotebooksPlugin extends PolyPlugin {
         try {
             Optional<DockerContainer> maybeContainer = DockerContainer.getContainerByUUID( ConfigManager.getInstance().getConfig( CONFIG_CONTAINER_KEY ).getString() );
             if ( maybeContainer.isEmpty() ) {
-                this.container = dockerInstance.newBuilder( "polypheny/polypheny-jupyter-server", "jupyter-container" )
+                this.container = dockerInstance.newBuilder( "polypheny/polypheny-jupyter-server:notebooks", "jupyter-container" )
                         .withCommand( Arrays.asList( "start-notebook.sh", "--IdentityProvider.token=" + token ) )
                         .createAndStart();
 
