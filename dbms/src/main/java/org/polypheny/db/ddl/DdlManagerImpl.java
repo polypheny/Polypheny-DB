@@ -17,9 +17,7 @@
 package org.polypheny.db.ddl;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -84,7 +82,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.impl.logical.DocumentCatalog;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -116,12 +113,9 @@ import org.polypheny.db.schema.document.DocumentSchema;
 import org.polypheny.db.schema.document.EnforcementMode;
 import org.polypheny.db.schema.document.SchemaAlterEngine;
 import org.polypheny.db.schema.document.SchemaAlterPreflightReport;
-import org.polypheny.db.schema.document.SchemaCompatibility;
 import org.polypheny.db.schema.document.SchemaJson;
 import org.polypheny.db.schema.document.SchemaMeta;
 import org.polypheny.db.schema.document.SchemaOptionsResolver;
-import org.polypheny.db.schema.document.SchemaValidator;
-import org.polypheny.db.schema.document.SchemaAlterPreflight;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;

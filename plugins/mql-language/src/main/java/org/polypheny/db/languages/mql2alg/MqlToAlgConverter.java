@@ -332,7 +332,7 @@ public class MqlToAlgConverter {
      * Starts converting a db.collection.update();
      */
     private AlgNode convertUpdate( MqlUpdate query, Entity entity, AlgNode node ) {
-        schemaEnforcer.validateUpdate(query, entity);
+        //schemaEnforcer.validateUpdate(query, entity);
         if ( !query.getQuery().isEmpty() ) {
             node = convertQuery( query, entity.getTupleType(), node );
             if ( query.isOnlyOne() ) {
@@ -689,7 +689,7 @@ public class MqlToAlgConverter {
         return LogicalDocumentModify.create(
                 table,
                 node,
-                Modify.Operation.DELETE,
+                Modify.Operation.DELETE,    
                 null,
                 null,
                 null );
@@ -704,7 +704,7 @@ public class MqlToAlgConverter {
      * @return the modified AlgNode
      */
     private AlgNode convertInsert( MqlInsert query, Entity entity ) {
-        schemaEnforcer.validateInsert(query, entity);
+        //schemaEnforcer.validateInsert(query, entity);
         return LogicalDocumentModify.create(
                 entity,
                 convertMultipleValues( query.getValues() ),
@@ -2102,64 +2102,79 @@ public class MqlToAlgConverter {
         throw new IllegalArgumentException("'additionalProperties' must be boolean or 'ALLOW'/'FORBID'");
     }
 
-    private AlgNode convertGetCollectionSchema(MqlGetCollectionSchema query) {
-        final long ns   = this.namespaceId;      // use context namespaceId
+    private AlgNode convertGetCollectionSchema( MqlGetCollectionSchema query ) {
+        final long ns = this.namespaceId;
         final Snapshot snap = this.snapshot;
 
-        final String adjusted = adjustNameForNamespace(query.getCollection(), ns);
+        final String adjusted = adjustNameForNamespace( query.getCollection(), ns );
+
+        // Cache-buster: make the plan differ per requested collection (even if Values digest ignores tuple content)
+        final String cacheField = "__mql_cache_buster_" + Integer.toHexString( adjusted.hashCode() );
 
         BsonDocument row = new BsonDocument()
-                .append("collection", new BsonString(adjusted));
+                .append( "collection", new BsonString( adjusted ) )
+                .append( cacheField, BsonBoolean.TRUE );
 
-        // Resolve the collection using the normalized name
-        var collOpt = snap.doc().getCollection(ns, adjusted);
-        if (collOpt.isEmpty()) {
-            row.append("schema", new BsonDocument()); // no such collection
-            BsonArray one = new BsonArray(); one.add(row);
-            return convertMultipleValues(one);
+        // Resolve collection
+        var collOpt = snap.doc().getCollection( ns, adjusted );
+        if ( collOpt.isEmpty() ) {
+            row.append( "schema", new BsonDocument() );
+
+            BsonArray one = new BsonArray();
+            one.add( row );
+
+            // Force document output for this metadata command
+            this.usesDocumentModel = true;
+            AlgNode values = convertMultipleValues( one );
+
+            // Remove cache field from output
+            return LogicalDocumentProject.create( values, new HashMap<>(), List.of( cacheField ) );
         }
 
-        // Read persisted schema directly from the logical document catalog
-        var ldc = Catalog.getInstance().getLogicalDoc(ns);
-        if (ldc instanceof org.polypheny.db.catalog.impl.logical.DocumentCatalog dc) {
-            var metaOpt = dc.getCollectionSchema(collOpt.get().id);
-            if (metaOpt.isPresent()) {
-                var meta = metaOpt.get();
+        var coll = collOpt.get();
 
-                // Build the JSON shape your client expects
-                var ds = SchemaJson.parse(meta.schemaJson);
+        // Read persisted schema meta
+        var metaOpt = SchemaMeta.readCurrent( Catalog.getInstance(), ns, coll.id );
 
-                ObjectNode docSchema = JSON.createObjectNode();
-                docSchema.put("type", "object");
+        if ( metaOpt.isPresent() ) {
+            var meta = metaOpt.get();
 
-                ObjectNode props = JSON.createObjectNode();
-                for (var e : ds.root().properties.entrySet()) {
-                    props.set(e.getKey(), JSON.valueToTree(e.getValue()));
-                }
-                docSchema.set("properties", props);
-                boolean ap = (ds.additionalProperties() == DocumentSchema.AdditionalProperties.ALLOW);
-                docSchema.put("additionalProperties", ap);
+            var ds = SchemaJson.parse( meta.schemaJson );
 
-                ObjectNode out = JSON.createObjectNode();
-                out.put("collection", adjusted);
-                out.set("docSchema", docSchema);
-                out.put("validationAction", normalizeEnforcement(meta.enforcement));
+            ObjectNode docSchema = JSON.createObjectNode();
+            docSchema.put( "type", "object" );
 
-                row.append("schema", BsonDocument.parse(out.toString()));
-            } else {
-                row.append("schema", new BsonDocument()); // exists, but no schema attached
+            ObjectNode props = JSON.createObjectNode();
+            for ( var e : ds.root().properties.entrySet() ) {
+                props.set( e.getKey(), JSON.valueToTree( e.getValue() ) );
             }
+            docSchema.set( "properties", props );
+
+            boolean ap = (ds.additionalProperties() == DocumentSchema.AdditionalProperties.ALLOW);
+            docSchema.put( "additionalProperties", ap );
+
+            ObjectNode out = JSON.createObjectNode();
+            out.put( "collection", adjusted );
+            out.set( "docSchema", docSchema );
+            out.put( "validationAction", normalizeEnforcement( meta.enforcement ) );
+
+            row.append( "schema", BsonDocument.parse( out.toString() ) );
         } else {
-            row.append("schema", new BsonDocument());     // defensive
+            row.append( "schema", new BsonDocument() ); // exists, but no schema attached
         }
 
-        BsonArray one = new BsonArray(); one.add(row);
-        return convertMultipleValues(one);
+        BsonArray one = new BsonArray();
+        one.add( row );
+
+        this.usesDocumentModel = true;
+        AlgNode values = convertMultipleValues( one );
+
+        return LogicalDocumentProject.create( values, new HashMap<>(), List.of( cacheField ) );
     }
 
-    private String adjustNameForNamespace(String name, long nsId) {
-        var ns = Catalog.getInstance().getSnapshot().getNamespace(nsId).orElseThrow();
-        return ns.caseSensitive ? name : name.toLowerCase(java.util.Locale.ROOT);
+    private String adjustNameForNamespace( String name, long nsId ) {
+        var ns = snapshot.getNamespace( nsId ).orElseThrow();
+        return ns.caseSensitive ? name : name.toLowerCase( java.util.Locale.ROOT );
     }
 
     private static String normalizeEnforcement(String s) {

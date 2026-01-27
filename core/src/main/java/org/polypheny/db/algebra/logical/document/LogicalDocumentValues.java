@@ -127,4 +127,12 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
                 .put( "dynamic", new ListArg<>( dynamicDocuments, RexArg::new ) );
     }
 
+    /**
+     * Static documents for VALUES-style inserts.
+     * Dynamic documents (RexDynamicParam) are not included here.
+     */
+    public List<PolyDocument> getDocuments() {
+        return documents;
+    }
+
 }
