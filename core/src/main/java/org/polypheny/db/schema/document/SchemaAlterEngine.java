@@ -88,34 +88,46 @@ public final class SchemaAlterEngine {
             return new Plan( current, currentMode, null, targetMode, false, needsPreflight );
         }
 
+        // PATCH without base schema is not well-defined -> reject.
+        if ( r.alterMode == AlterMode.PATCH && current == null ) {
+            throw new GenericRuntimeException("Cannot PATCH schema: collection has no persisted schema to patch.");
+        }
+
         // Build final schema (PATCH or REPLACE)
         final DocumentSchema finalSchema =
-                (r.alterMode == AlterMode.PATCH && current != null)
-                        ? mergePatch( current, r.schema )
+                (r.alterMode == AlterMode.PATCH)
+                        ? mergePatch( requireNonNull(current, "current schema"), r.schema )
                         : requireNonNull( r.schema, "schema" );
 
         finalSchema.validateOrThrow();
 
         // ---------- Decide preflight ----------
-        boolean needsPreflight;
+        boolean needsPreflight = false;
 
         if ( current == null ) {
-            // If there is data, introducing a schema could invalidate docs.
-            // Be conservative: force preflight (scan) when adding a schema to an existing collection.
-            needsPreflight = true;
+            // Adding schema to an existing collection: only *required* if we're going STRICT.
+            needsPreflight = (targetMode == EnforcementMode.STRICT);
         } else {
-            // Compatibility heuristic
-            needsPreflight = !SchemaCompatibility.isCompatible( current, finalSchema );
+            boolean compatible = SchemaCompatibility.isCompatible( current, finalSchema );
 
-            // EXTRA SAFETY: force preflight on AP ALLOW -> FORBID even if a bug ever sneaks into compatibility.
-            if ( current.additionalProperties() == DocumentSchema.AdditionalProperties.ALLOW
-                    && finalSchema.additionalProperties() == DocumentSchema.AdditionalProperties.FORBID ) {
+            boolean apTighten =
+                    current.additionalProperties() == DocumentSchema.AdditionalProperties.ALLOW
+                            && finalSchema.additionalProperties() == DocumentSchema.AdditionalProperties.FORBID;
+
+            // Base heuristic: scan if not compatible / AP tightened
+            needsPreflight = !compatible || apTighten;
+
+            // Critical rule for correctness:
+            // If we are going STRICT but the collection was NOT previously STRICT,
+            // we must scan even if schemas look "compatible" (data may already violate current schema).
+            if ( targetMode == EnforcementMode.STRICT && currentMode != EnforcementMode.STRICT ) {
                 needsPreflight = true;
             }
         }
 
         return new Plan( current, currentMode, finalSchema, targetMode, r.alterMode == AlterMode.PATCH, needsPreflight );
     }
+
 
 
     /**
@@ -259,7 +271,7 @@ public final class SchemaAlterEngine {
      * Merges two object nodes for PATCH semantics.
      * <p>
      * For each property:
-     * if both sides are objects, merge recursively; otherwise the patch value replaces the current value.
+     * if both sides are objects, merge recursively; otherwise the patch value replaces the current value
      *
      * @param cur current object node
      * @param p patch object node

@@ -2299,6 +2299,11 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void alterCollectionSchema( long namespaceId, String name, Statement statement, PolyValue polyValue ) {
+        if ( polyValue == null ) {
+            throw new GenericRuntimeException(
+                    "ALTER COLLECTION SCHEMA requires an options document (docSchema and/or validationAction)." );
+        }
+
         // Parse
         SchemaOptionsResolver.Resolved r = SchemaOptionsResolver.resolveAlter( polyValue );
 
@@ -2309,59 +2314,136 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void alterCollectionSchemaInternal( long nsId, String name, SchemaOptionsResolver.Resolved r, @Nullable Statement statement ) {
-        String adjusted = adjustNameIfNeeded( name, nsId );
+        final String adjusted = adjustNameIfNeeded( name, nsId );
         checkModelLangCompatibility( DataModel.DOCUMENT, nsId );
 
-        var snapshot = catalog.getSnapshot();
-        LogicalCollection coll = snapshot.doc()
+        final var snapshot = catalog.getSnapshot();
+        final LogicalCollection coll = snapshot.doc()
                 .getCollection( nsId, adjusted )
                 .orElseThrow( () -> new GenericRuntimeException( "Collection %s does not exist.", adjusted ) );
 
         // Read current persisted schema (if any)
-        var metaOpt = SchemaMeta.readCurrent( catalog, coll.namespaceId, coll.id );
-        DocumentSchema current = metaOpt.map( m -> SchemaJson.parse( m.schemaJson ) ).orElse( null );
-        EnforcementMode currentMode = metaOpt.map( m -> safeEnum( m.enforcement, EnforcementMode.OFF ) ).orElse( EnforcementMode.OFF );
+        final Optional<SchemaMeta> metaOpt = SchemaMeta.readCurrent( catalog, coll.namespaceId, coll.id );
+
+        DocumentSchema currentSchema = null;
+        if ( metaOpt.isPresent() ) {
+            try {
+                currentSchema = SchemaJson.parse( metaOpt.get().schemaJson );
+            } catch ( Exception e ) {
+                throw new GenericRuntimeException(
+                        "Stored schema for collection %s is invalid: %s",
+                        adjusted,
+                        e.getMessage()
+                );
+            }
+        }
+
+        final EnforcementMode currentMode = metaOpt
+                .map( m -> safeEnum( m.enforcement, EnforcementMode.OFF ) )
+                .orElse( EnforcementMode.OFF );
+
+        // PATCH must have a base schema
+        if ( r != null && r.alterMode == SchemaOptionsResolver.AlterMode.PATCH && currentSchema == null ) {
+            throw new GenericRuntimeException(
+                    "Cannot PATCH schema for collection %s because it has no persisted schema.",
+                    adjusted
+            );
+        }
 
         // Build plan (merge/validate/decide preflight)
-        SchemaAlterEngine.Plan plan = schemaAlterEngine.plan( r, current, currentMode );
+        final SchemaAlterEngine.Plan plan = schemaAlterEngine.plan( r, currentSchema, currentMode );
+        final EnforcementMode targetMode = plan.finalMode() != null ? plan.finalMode() : currentMode;
 
-        // Enforcement-only?
+        // ----------------------------------------------------------------------
+        // Enforcement-only (no schema section supplied)
+        // ----------------------------------------------------------------------
         if ( plan.finalSchema() == null ) {
-            SchemaAlterPreflightReport rep =
-                    schemaAlterEngine.preflightForEnforcementOnlyIfRequired( catalog, coll, plan, statement );
-            schemaAlterEngine.applyPolicyOrThrow( rep, false, currentMode, plan.finalMode() );
-
-            if ( metaOpt.isEmpty() && plan.finalMode() != EnforcementMode.OFF ) {
-                throw new GenericRuntimeException( "Cannot set validationAction without a persisted schema. Create a schema first." );
+            // no-op (nothing requested / no change)
+            if ( targetMode == currentMode ) {
+                return;
             }
-            if ( metaOpt.isPresent() ) {
-                long newVersion = metaOpt.get().version + 1L;
-                String newEnf = plan.finalMode().name();
-                if ( !safeEnum( metaOpt.get().enforcement, EnforcementMode.OFF ).name().equals( newEnf ) ) {
-                    SchemaMeta.writeCurrent(
-                            catalog,
-                            coll.namespaceId,
-                            coll.id,
-                            new SchemaMeta(
-                                    metaOpt.get().schemaJson,   // schema unchanged
-                                    newEnf,
-                                    newVersion
-                            )
-                    );
-                    catalog.updateSnapshot();
+
+            // cannot set validationAction without a persisted schema (except OFF, which is effectively a no-op)
+            if ( metaOpt.isEmpty() ) {
+                if ( targetMode == EnforcementMode.OFF ) {
+                    return;
                 }
+                throw new GenericRuntimeException(
+                        "Cannot set validationAction without a persisted schema. Create/attach a schema first."
+                );
+            }
+
+            if ( plan.needsPreflight() && statement == null ) {
+                throw new GenericRuntimeException(
+                        "ALTER COLLECTION SCHEMA requires a Statement when tightening validation to STRICT (preflight scan required)."
+                );
+            }
+
+            final SchemaAlterPreflightReport rep = plan.needsPreflight()
+                    ? schemaAlterEngine.preflightForEnforcementOnlyIfRequired( catalog, coll, plan, statement )
+                    : new SchemaAlterPreflightReport( true, 0, 0, java.util.List.of() );
+
+            schemaAlterEngine.applyPolicyOrThrow( rep, /*isSchemaChange*/ false, currentMode, targetMode );
+
+            if ( r != null && r.dryRun ) {
+                return;
+            }
+
+            // Persist enforcement change
+            final String newEnf = targetMode.name();
+            final String oldEnf = safeEnum( metaOpt.get().enforcement, EnforcementMode.OFF ).name();
+
+            if ( !oldEnf.equals( newEnf ) ) {
+                final long newVersion = metaOpt.get().version + 1L;
+                SchemaMeta.writeCurrent(
+                        catalog,
+                        coll.namespaceId,
+                        coll.id,
+                        new SchemaMeta(
+                                metaOpt.get().schemaJson, // schema unchanged
+                                newEnf,
+                                newVersion
+                        )
+                );
+                catalog.updateSnapshot();
             }
             return;
         }
 
-        // ---------- schema-changing path ----------
-        SchemaAlterPreflightReport rep = schemaAlterEngine.preflightIfRequired( catalog, coll, plan, statement );
-        schemaAlterEngine.applyPolicyOrThrow( rep, true, currentMode, plan.finalMode() );
+        // ----------------------------------------------------------------------
+        // Schema-changing path
+        // ----------------------------------------------------------------------
+        plan.finalSchema().validateOrThrow(); // extra safety
+        final String newSchemaJson = SchemaJson.toJson( plan.finalSchema() );
+        final String newEnforcement = targetMode.name();
 
-        long newVersion = metaOpt.map( m -> m.version + 1L ).orElse( 1L );
-        String newSchemaJson = SchemaJson.toJson( plan.finalSchema() );
-        String newEnforcement = (plan.finalMode() != null ? plan.finalMode() : currentMode).name();
+        // No-op guard: schema + enforcement unchanged
+        if ( metaOpt.isPresent() ) {
+            final String oldSchemaJson = metaOpt.get().schemaJson;
+            final String oldEnf = safeEnum( metaOpt.get().enforcement, EnforcementMode.OFF ).name();
+            if ( oldSchemaJson != null && oldSchemaJson.equals( newSchemaJson ) && oldEnf.equals( newEnforcement ) ) {
+                return;
+            }
+        }
 
+        if ( plan.needsPreflight() && statement == null ) {
+            throw new GenericRuntimeException(
+                    "ALTER COLLECTION SCHEMA requires a Statement when a preflight scan is required."
+            );
+        }
+
+        final SchemaAlterPreflightReport rep = plan.needsPreflight()
+                ? schemaAlterEngine.preflightIfRequired( catalog, coll, plan, statement )
+                : new SchemaAlterPreflightReport( true, 0, 0, java.util.List.of() );
+
+        // STRICT denies when violations exist; WARN/OFF may allow (engine policy)
+        schemaAlterEngine.applyPolicyOrThrow( rep, /*isSchemaChange*/ true, currentMode, targetMode );
+
+        if ( r != null && r.dryRun ) {
+            return;
+        }
+
+        final long newVersion = metaOpt.map( m -> m.version + 1L ).orElse( 1L );
         SchemaMeta.writeCurrent(
                 catalog,
                 coll.namespaceId,
@@ -2373,6 +2455,16 @@ public class DdlManagerImpl extends DdlManager {
                 )
         );
         catalog.updateSnapshot();
+    }
+
+    private static void safeResetCaches( @Nullable Statement statement ) {
+        if ( statement == null ) {
+            return;
+        }
+        try {
+            statement.getQueryProcessor().resetCaches();
+        } catch ( Throwable ignore ) {
+        }
     }
 
 
@@ -2387,15 +2479,6 @@ public class DdlManagerImpl extends DdlManager {
             return fallback;
         }
     }
-
-
-    private static void safeResetCaches( Statement statement ) {
-        try {
-            statement.getQueryProcessor().resetCaches();
-        } catch ( Throwable ignore ) {
-        }
-    }
-
 
     private boolean assertEntityExists( long namespaceId, String name, boolean ifNotExists ) {
         Snapshot snapshot = catalog.getSnapshot();
