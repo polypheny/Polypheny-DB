@@ -26,6 +26,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.db.TestHelper;
@@ -547,6 +548,25 @@ public class ForeignKeyConstraintTest {
                 } finally {
                     statement.executeUpdate( "DROP TABLE constraint_test2" );
                     statement.executeUpdate( "DROP TABLE constraint_test" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void dropConstraintTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // Create schema
+                try {
+                    statement.executeUpdate( "CREATE TABLE t(i INTEGER PRIMARY KEY)" );
+                    statement.executeUpdate( "CREATE TABLE t2(i INTEGER PRIMARY KEY, i2 INTEGER, i3 INTEGER, FOREIGN KEY (i2) REFERENCES t(i), FOREIGN KEY (i3) REFERENCES t(i))" );
+                    statement.executeUpdate( "DROP TABLE t2" );
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS t2" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS t" );
                 }
             }
         }
