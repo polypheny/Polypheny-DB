@@ -1484,7 +1484,7 @@ public class MqlToAlgConverter {
             throw new GenericRuntimeException( "The used identifier is not part of the table." );
         }
 
-        // we look if we already extracted a part of the document
+        // Reuse a previously extracted sub-document segment when present.
 
         return translateDocValue( null, parentKey );
 

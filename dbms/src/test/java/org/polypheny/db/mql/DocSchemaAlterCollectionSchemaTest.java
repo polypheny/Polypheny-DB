@@ -72,6 +72,7 @@ public class DocSchemaAlterCollectionSchemaTest extends MqlTestTemplate {
                 "  docSchema: {" +
                 "    type: \"object\"," +
                 "    properties: { name: { type: \"text\" } }," +
+                "    required: [\"name\"]," +
                 "    additionalProperties: true" +
                 "  }," +
                 "  validationAction: \"strict\"" +
@@ -85,6 +86,7 @@ public class DocSchemaAlterCollectionSchemaTest extends MqlTestTemplate {
                 "  docSchema: {" +
                 "    type: \"object\"," +
                 "    properties: { name: { type: \"text\" } }," +
+                "    required: [\"name\"]," +
                 "    additionalProperties: false" +
                 "  }," +
                 "  validationAction: \"strict\"" +
@@ -101,6 +103,7 @@ public class DocSchemaAlterCollectionSchemaTest extends MqlTestTemplate {
                 "  docSchema: {" +
                 "    type: \"object\"," +
                 "    properties: { name: { type: \"text\" } }," +
+                "    required: [\"name\"]," +
                 "    additionalProperties: true" +
                 "  }," +
                 "  validationAction: \"strict\"" +
@@ -113,6 +116,7 @@ public class DocSchemaAlterCollectionSchemaTest extends MqlTestTemplate {
                 "  docSchema: {" +
                 "    type: \"object\"," +
                 "    properties: { name: { type: \"text\" } }," +
+                "    required: [\"name\"]," +
                 "    additionalProperties: false" +
                 "  }," +
                 "  validationAction: \"warn\"" +
@@ -129,6 +133,7 @@ public class DocSchemaAlterCollectionSchemaTest extends MqlTestTemplate {
                 "  docSchema: {" +
                 "    type: \"object\"," +
                 "    properties: { name: { type: \"text\" } }," +
+                "    required: [\"name\"]," +
                 "    additionalProperties: true" +
                 "  }," +
                 "  validationAction: \"strict\"" +
@@ -136,14 +141,15 @@ public class DocSchemaAlterCollectionSchemaTest extends MqlTestTemplate {
 
         assertDoesNotThrow( () -> insert( "{\"name\":\"Alice\"}", USER ) );
 
-        // Adding a declared property makes it required in this dialect.
+        // Make 'age' required via explicit required list -> must preflight & deny under STRICT.
         assertThrows( Exception.class, () -> alterUserSchema( "{" +
                 "  docSchema: {" +
                 "    type: \"object\"," +
                 "    properties: {" +
                 "      name: { type: \"text\" }," +
-                "      age:  { type: \"text\" }" +
+                "      age:  { type: \"number\" }" +
                 "    }," +
+                "    required: [\"name\",\"age\"]," +
                 "    additionalProperties: true" +
                 "  }," +
                 "  validationAction: \"strict\"" +
@@ -160,6 +166,7 @@ public class DocSchemaAlterCollectionSchemaTest extends MqlTestTemplate {
                 "  docSchema: {" +
                 "    type: \"object\"," +
                 "    properties: { name: { type: \"text\" } }," +
+                "    required: [\"name\"]," +
                 "    additionalProperties: true" +
                 "  }," +
                 "  validationAction: \"strict\"" +
@@ -173,8 +180,9 @@ public class DocSchemaAlterCollectionSchemaTest extends MqlTestTemplate {
                 "    type: \"object\"," +
                 "    properties: {" +
                 "      name: { type: \"text\" }," +
-                "      age:  { type: \"text\" }" +
+                "      age:  { type: \"number\" }" +
                 "    }," +
+                "    required: [\"name\",\"age\"]," +
                 "    additionalProperties: true" +
                 "  }," +
                 "  validationAction: \"warn\"" +
@@ -186,12 +194,96 @@ public class DocSchemaAlterCollectionSchemaTest extends MqlTestTemplate {
 
 
     @Test
+    public void alterSchema_strict_addOptionalField_shouldSucceed_andBeEnforcedOnWrites() {
+        createUserCollection( "{" +
+                "  docSchema: {" +
+                "    type: \"object\"," +
+                "    properties: { name: { type: \"text\" } }," +
+                "    required: [\"name\"]," +
+                "    additionalProperties: true" +
+                "  }," +
+                "  validationAction: \"strict\"" +
+                "}" );
+
+        assertDoesNotThrow( () -> insert( "{\"name\":\"Alice\"}", USER ) );
+
+        // Add 'age' but keep required list unchanged (age is optional) -> safe under STRICT.
+        assertDoesNotThrow( () -> alterUserSchema( "{" +
+                "  docSchema: {" +
+                "    type: \"object\"," +
+                "    properties: {" +
+                "      name: { type: \"text\" }," +
+                "      age:  { type: \"number\" }" +
+                "    }," +
+                "    required: [\"name\"]," +
+                "    additionalProperties: true" +
+                "  }," +
+                "  validationAction: \"strict\"" +
+                "}" ) );
+
+        // Existing documents without age still OK
+        assertDoesNotThrow( () -> insert( "{\"name\":\"Bob\"}", USER ) );
+
+        // But wrong type for age is rejected
+        assertThrows( Exception.class, () -> insert( "{\"name\":\"Carl\",\"age\":\"oops\"}", USER ) );
+    }
+
+
+    @Test
+    public void alterSchema_strict_tightenNestedAdditionalProperties_withExistingNestedExtras_shouldFail_andNotChangeSchema() {
+        createUserCollection( "{" +
+                "  docSchema: {" +
+                "    type: \"object\"," +
+                "    properties: {" +
+                "      name: { type: \"text\" }," +
+                "      profile: {" +
+                "        type: \"object\"," +
+                "        properties: { first: { type: \"text\" } }," +
+                "        required: [\"first\"]," +
+                "        additionalProperties: true" +
+                "      }" +
+                "    }," +
+                "    required: [\"name\",\"profile\"]," +
+                "    additionalProperties: true" +
+                "  }," +
+                "  validationAction: \"strict\"" +
+                "}" );
+
+        // valid under profile.additionalProperties=true
+        assertDoesNotThrow( () -> insert( "{\"name\":\"Alice\",\"profile\":{\"first\":\"A\",\"x\":1}}", USER ) );
+
+        // tighten nested AP to FORBID under STRICT -> must preflight & deny
+        assertThrows( Exception.class, () -> alterUserSchema( "{" +
+                "  docSchema: {" +
+                "    type: \"object\"," +
+                "    properties: {" +
+                "      name: { type: \"text\" }," +
+                "      profile: {" +
+                "        type: \"object\"," +
+                "        properties: { first: { type: \"text\" } }," +
+                "        required: [\"first\"]," +
+                "        additionalProperties: false" +
+                "      }" +
+                "    }," +
+                "    required: [\"name\",\"profile\"]," +
+                "    additionalProperties: true" +
+                "  }," +
+                "  validationAction: \"strict\"" +
+                "}" ) );
+
+        // old schema must still be active (nested extra field still allowed)
+        assertDoesNotThrow( () -> insert( "{\"name\":\"Bob\",\"profile\":{\"first\":\"B\",\"x\":2}}", USER ) );
+    }
+
+
+    @Test
     public void alterEnforcementOnly_toStrict_withViolationsAgainstCurrentSchema_shouldFail() {
         // Start with schema persisted but enforcement OFF, so invalid data can exist.
         createUserCollection( "{" +
                 "  docSchema: {" +
                 "    type: \"object\"," +
                 "    properties: { name: { type: \"text\" } }," +
+                "    required: [\"name\"]," +
                 "    additionalProperties: true" +
                 "  }," +
                 "  validationAction: \"off\"" +
@@ -211,6 +303,7 @@ public class DocSchemaAlterCollectionSchemaTest extends MqlTestTemplate {
                 "  docSchema: {" +
                 "    type: \"object\"," +
                 "    properties: { name: { type: \"text\" } }," +
+                "    required: [\"name\"]," +
                 "    additionalProperties: true" +
                 "  }," +
                 "  validationAction: \"off\"" +
@@ -254,6 +347,8 @@ public class DocSchemaAlterCollectionSchemaTest extends MqlTestTemplate {
 
     @Test
     public void alterSchema_patchMode_missingAdditionalProperties_shouldBeAllowedForPatch_andPersisted() {
+        // Intentionally omit "required" to keep dialect-default (all declared properties required).
+        // This makes PATCH-addition of a property become required as well (since required remains null).
         createUserCollection( "{" +
                 "  docSchema: {" +
                 "    type: \"object\"," +
@@ -265,14 +360,14 @@ public class DocSchemaAlterCollectionSchemaTest extends MqlTestTemplate {
 
         assertDoesNotThrow( () -> insert( "{\"name\":\"Alice\"}", USER ) );
 
-        // PATCH: omit additionalProperties -> inherit from current schema
-        // Add a new required field, but keep enforcement WARN so it's allowed even if existing docs violate.
+        // PATCH: omit top-level additionalProperties -> inherit from current schema wrapper
+        // Add a new property "age". With required omitted on both schemas, age becomes required.
+        // Keep enforcement WARN so the schema change is allowed even if existing docs violate.
         assertDoesNotThrow( () -> alterUserSchema( "{" +
                 "  mode: \"patch\"," +
                 "  docSchema: {" +
                 "    type: \"object\"," +
                 "    properties: { age: { type: \"text\" } }" +
-                "    additionalProperties: false" +
                 "  }," +
                 "  validationAction: \"warn\"" +
                 "}" ) );

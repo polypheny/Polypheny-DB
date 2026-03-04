@@ -53,6 +53,7 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.webui.ConfigService.Consumer3;
 import org.polypheny.db.webui.ConfigService.HandlerType;
+import org.polypheny.db.webui.crud.DocumentSchemaCrud;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.results.RelationalResult;
 
@@ -358,6 +359,8 @@ public class HttpServer implements Runnable {
         webuiServer.post( "/buildPolyPlan", crud::buildPlanFromPolyAlg );
 
         webuiServer.get( "/isReady", ctx -> ctx.result( String.valueOf( isReady ) ) );
+
+        webuiServer.post( "/validateDocuments", DocumentSchemaCrud::validateDocuments );
 
     }
 

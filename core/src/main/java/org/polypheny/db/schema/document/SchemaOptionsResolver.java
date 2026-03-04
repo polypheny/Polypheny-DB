@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,72 +18,63 @@ package org.polypheny.db.schema.document;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.*;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
 /**
  * Parses and validates schema-related options for CREATE and ALTER document statements.
  * Consumes a JSON-like options payload and produces a normalized {@link Resolved}.
+ *
+ * <p>This resolver supports a JSON-Schema-inspired dialect that includes:</p>
+ * <ul>
+ *   <li>required (per object)</li>
+ *   <li>per-subdocument additionalProperties (INHERIT/ALLOW/FORBID)</li>
+ *   <li>scalar union types: type: ["text","null"]</li>
+ *   <li>composition: anyOf/oneOf/allOf/not</li>
+ *   <li>extra constraints: enum/const/multipleOf, maxItems, min/maxProperties</li>
+ * </ul>
  */
 public final class SchemaOptionsResolver {
 
     private SchemaOptionsResolver() {
     }
 
-
-    /**
-     * Shared JSON mapper used for parsing payloads.
-     */
     private static final ObjectMapper M = new ObjectMapper();
 
-
-    /**
-     * Alteration strategy for applying schema changes.
-     * REPLACE - replace the entire schema.
-     * PATCH - merge the into existing schema.
-     */
     public enum AlterMode {REPLACE, PATCH}
 
-
     public static final class Rename {
-
         public final String from, to;
 
-        /**
-         * Rename directive mapping one path to another.
-         * Contains the source path {@code from} and the destination path {@code to}.
-         */
         public Rename( String f, String t ) {
             from = f;
             to = t;
         }
 
-
         @Override
         public String toString() {
             return from + "→" + to;
         }
-
     }
 
-
     public static final class Coercion {
-
         public final String target, onFailure;
-
 
         public Coercion( String t, String o ) {
             target = t;
             onFailure = o;
         }
-
     }
 
-    /**
-     * Final, normalized set of options.
-     * Contains the parsed schema
-     */
     public static final class Resolved {
 
         public final DocumentSchema schema;
@@ -94,23 +85,6 @@ public final class SchemaOptionsResolver {
         public final Map<String, Coercion> coercions;
         public final boolean pruneExtras, dryRun;
 
-        /**
-         * Final, normalized set of options derived from the input payload.
-         * Contains the parsed schema (if provided), enforcement mode, alter mode, rename directives,
-         * default value specifications, coercion rules, and execution flags.
-         *
-         * Fields:
-         *  - schema: parsed {@link DocumentSchema} to apply. May be {@code null} for ALTER when no schema section is supplied.
-         *  - mode: enforcement setting (OFF, WARN, STRICT) that governs how validation violations are handled.
-         *  - alterMode: application strategy; REPLACE overwrites the full schema, PATCH merges into the existing schema.
-         *  - renames: list of path-level rename operations to move or rename fields during migration.
-         *  - defaults: map from JSON path to a default {@link JsonNode} value; when a property is missing, this value is written before validation.
-         *  - coercions: map from JSON path to a {@link Coercion} rule; each rule specifies a target type token and an on-failure policy (e.g., "error", "skip")
-         *               and is applied before validation to convert incompatible values.
-         *  - pruneExtras: when {@code true}, undeclared properties are removed during processing (useful when additionalProperties is FORBID);
-         *                 when {@code false}, extra fields are left as-is and may trigger violations depending on the enforcement mode.
-         *  - dryRun: when {@code true}, performs planning/validation only and does not persist catalog changes or modify stored documents.
-         */
         public Resolved(
                 DocumentSchema s, EnforcementMode m, AlterMode a, List<Rename> r,
                 Map<String, JsonNode> d, Map<String, Coercion> c, boolean p, boolean dr ) {
@@ -123,17 +97,8 @@ public final class SchemaOptionsResolver {
             pruneExtras = p;
             dryRun = dr;
         }
-
     }
 
-    /**
-     * Resolves options for a CREATE statement.
-     * Requires a {@code docSchema} definition and returns a normalized {@link Resolved}.
-     *
-     * @param options JSON-like options
-     * @return resolved options with a non-null schema
-     * @throws IllegalArgumentException if {@code options} is missing or {@code docSchema} is absent or invalid
-     */
     public static Resolved resolve( PolyValue options ) {
         var r = parseCommon( options, false );
         if ( r.schema == null ) {
@@ -142,28 +107,12 @@ public final class SchemaOptionsResolver {
         return r;
     }
 
-    /**
-     * Resolves options for an ALTER statement.
-     * The {@code docSchema} section is optional.
-     *
-     * @param options JSON-like options
-     * @return resolved options; {@code schema} may be null when no schema change is supplied
-     * @throws IllegalArgumentException if the options payload is malformed
-     */
     public static Resolved resolveAlter( PolyValue options ) {
         return parseCommon( options, true );
     }
 
-    /**
-     * Ensures that a given JSON node represents an object.
-     *
-     * @param first initial node to inspect
-     * @return the object node view of the input
-     * @throws IllegalArgumentException if the input cannot be resolved to an object
-     */
     private static ObjectNode requireObjectNode( JsonNode first ) {
         JsonNode n = first;
-        // unwrap up to 3 times if it's a JSON string containing JSON
         for ( int i = 0; i < 3 && n != null; i++ ) {
             if ( n instanceof ObjectNode obj ) {
                 return obj;
@@ -181,16 +130,6 @@ public final class SchemaOptionsResolver {
         throw new IllegalArgumentException( "Options must be a JSON object." );
     }
 
-    /**
-     * Parses the common options structure used by CREATE and ALTER statements.
-     * Handles enforcement mode, alter mode, rename directives, defaults, coercions, pruning, dry-run,
-     * and optionally a {@code docSchema} section.
-     *
-     * @param options JSON-like options wrapped in {@link PolyValue}
-     * @param schemaOptional whether the {@code docSchema} section is optional
-     * @return normalized {@link Resolved} options
-     * @throws IllegalArgumentException if the payload is invalid or required fields are missing
-     */
     private static Resolved parseCommon( PolyValue options, boolean schemaOptional ) {
         final ObjectNode root;
         if ( options == null ) {
@@ -257,14 +196,15 @@ public final class SchemaOptionsResolver {
                 throw new IllegalArgumentException( "'docSchema' must be an object" );
             }
 
-            // Root-aware parse: nested objects may NOT define additionalProperties.
+            // Root-aware parse: root additionalProperties is stored in wrapper, not on the node.
             DocumentSchema.ObjectNode rootNode = readObjectNode( (ObjectNode) ds, /*isRoot=*/true );
 
-            // Root-level additionalProperties is REQUIRED (strict mode).
+            // Root-level additionalProperties is REQUIRED for CREATE/REPLACE.
+            // For PATCH schema fragments, it may be omitted (inherit during merge).
             DocumentSchema.AdditionalProperties ap;
             ObjectNode dso = (ObjectNode) ds;
             if ( schemaOptional && alterMode == AlterMode.PATCH && !dso.has( "additionalProperties" ) ) {
-                ap = null;  // inherit during merge
+                ap = null; // inherit during merge
             } else {
                 ap = readRootAPOrThrow( dso );
             }
@@ -279,31 +219,40 @@ public final class SchemaOptionsResolver {
 
     // ---------- Recursive readers ----------
 
-    /**
-     * Reads an object-node schema from a JSON.
-     * Validates that the node is an object and
-     * recursively parses {@code properties}.
-     *
-     * @param objSpec object specification
-     * @param isRoot whether this node is the schema root
-     * @return parsed {@link DocumentSchema.ObjectNode}
-     * @throws IllegalArgumentException if the specification is invalid
-     */
     private static DocumentSchema.ObjectNode readObjectNode( ObjectNode objSpec, boolean isRoot ) {
-        if ( objSpec.has( "type" ) ) {
+
+        // type can be omitted or must be "object"
+        if ( objSpec.has( "type" ) && objSpec.get("type").isTextual() ) {
             String t = objSpec.get( "type" ).asText( "" ).trim().toLowerCase( Locale.ROOT );
             if ( !t.isEmpty() && !t.equals( "object" ) ) {
                 throw new IllegalArgumentException( "Object node expected, found type: " + t );
             }
         }
-        if ( objSpec.has( "required" ) ) {
-            throw new IllegalArgumentException( "This dialect does not support 'required'. All declared properties are required." );
+
+        // required
+        Set<String> required = null;
+        if ( objSpec.has("required") ) {
+            JsonNode r = objSpec.get("required");
+            if ( !r.isArray() ) {
+                throw new IllegalArgumentException("'required' must be an array of strings.");
+            }
+            required = new LinkedHashSet<>();
+            for ( JsonNode el : r ) {
+                if ( !el.isTextual() ) {
+                    throw new IllegalArgumentException("'required' must contain only strings.");
+                }
+                required.add(el.asText());
+            }
         }
 
-        // Reject nested additionalProperties outright
-        if ( !isRoot && objSpec.has( "additionalProperties" ) ) {
-            throw new IllegalArgumentException( "Nested 'additionalProperties' is not allowed; only the top-level may define it." );
+        // nested additionalProperties (root handled separately via wrapper ap)
+        DocumentSchema.AdditionalProperties nodeAp = DocumentSchema.AdditionalProperties.INHERIT;
+        if ( !isRoot && objSpec.has("additionalProperties") ) {
+            nodeAp = readNodeAPOrThrow(objSpec.get("additionalProperties"));
         }
+
+        Integer minProps = objSpec.has("minProperties") ? objSpec.get("minProperties").asInt() : null;
+        Integer maxProps = objSpec.has("maxProperties") ? objSpec.get("maxProperties").asInt() : null;
 
         Map<String, DocumentSchema.Node> props = new LinkedHashMap<>();
         if ( objSpec.has( "properties" ) ) {
@@ -313,29 +262,68 @@ public final class SchemaOptionsResolver {
             }
             propsNode.fields().forEachRemaining( e -> props.put( e.getKey(), readNode( e.getValue(), /*isRoot=*/false ) ) );
         }
-        return new DocumentSchema.ObjectNode( props );
+
+        return new DocumentSchema.ObjectNode( props, required, nodeAp, minProps, maxProps );
     }
 
-    /**
-     * Reads an arbitrary schema node from a JSON specification.
-     * Accepts string shorthand for scalars or an object with a {@code type} field.
-     * Dispatches to {@code readObjectNode} or {@code readArrayNode} as appropriate.
-     *
-     * @param spec node specification (string or object)
-     * @param isRoot whether this node is the schema root
-     * @return parsed {@link DocumentSchema.Node}
-     * @throws IllegalArgumentException if the specification is invalid or unsupported
-     */
     private static DocumentSchema.Node readNode( JsonNode spec, boolean isRoot ) {
+
+        // string shorthand for scalars
         if ( spec.isTextual() ) {
             PolyType pt = JsonTypeTokens.toPolyType( spec.asText() );
-            return new DocumentSchema.ScalarNode( pt );
+            return new DocumentSchema.ScalarNode(
+                    List.of(pt),
+                    null, null, null,
+                    null, null, null,
+                    null, null
+            );
         }
+
         if ( !spec.isObject() ) {
             throw new IllegalArgumentException( "Property spec must be string or object" );
         }
 
         ObjectNode o = (ObjectNode) spec;
+
+        // composition
+        if ( o.has("anyOf") ) {
+            JsonNode arr = o.get("anyOf");
+            if ( !arr.isArray() ) {
+                throw new IllegalArgumentException("'anyOf' must be an array.");
+            }
+            List<DocumentSchema.Node> opts = new ArrayList<>();
+            for ( JsonNode el : arr ) {
+                opts.add(readNode(el, false));
+            }
+            return new DocumentSchema.AnyOfNode(opts);
+        }
+        if ( o.has("oneOf") ) {
+            JsonNode arr = o.get("oneOf");
+            if ( !arr.isArray() ) {
+                throw new IllegalArgumentException("'oneOf' must be an array.");
+            }
+            List<DocumentSchema.Node> opts = new ArrayList<>();
+            for ( JsonNode el : arr ) {
+                opts.add(readNode(el, false));
+            }
+            return new DocumentSchema.OneOfNode(opts);
+        }
+        if ( o.has("allOf") ) {
+            JsonNode arr = o.get("allOf");
+            if ( !arr.isArray() ) {
+                throw new IllegalArgumentException("'allOf' must be an array.");
+            }
+            List<DocumentSchema.Node> opts = new ArrayList<>();
+            for ( JsonNode el : arr ) {
+                opts.add(readNode(el, false));
+            }
+            return new DocumentSchema.AllOfNode(opts);
+        }
+        if ( o.has("not") ) {
+            return new DocumentSchema.NotNode(readNode(o.get("not"), false));
+        }
+
+        // object node
         if ( o.has( "type" ) && o.get( "type" ).isTextual() ) {
             String typeText = o.get( "type" ).asText().trim().toLowerCase( Locale.ROOT );
             if ( typeText.equals( "object" ) ) {
@@ -344,42 +332,90 @@ public final class SchemaOptionsResolver {
             if ( typeText.equals( "array" ) ) {
                 return readArrayNode( o );
             }
+
+            // scalar node with textual type
             PolyType pt = JsonTypeTokens.toPolyType( typeText );
-            return new DocumentSchema.ScalarNode( pt );
+            return readScalarNode( List.of(pt), o );
         }
 
+        // allow object node inference by properties
         if ( o.has( "properties" ) ) {
             return readObjectNode( o, /*isRoot=*/false );
         }
-        throw new IllegalArgumentException( "Missing or unsupported 'type' in property spec: " + o );
+
+        // allow array node inference by items
+        if ( o.has("items") ) {
+            return readArrayNode(o);
+        }
+
+        // scalar node with type array
+        if ( o.has("type") && o.get("type").isArray() ) {
+            List<PolyType> pts = new ArrayList<>();
+            for ( JsonNode el : o.get("type") ) {
+                if ( !el.isTextual() ) {
+                    throw new IllegalArgumentException("type array must contain only strings.");
+                }
+                String tok = el.asText().trim().toLowerCase(Locale.ROOT);
+                if ( tok.equals("object") || tok.equals("array") ) {
+                    throw new IllegalArgumentException("type unions containing object/array are not supported; use anyOf/oneOf instead.");
+                }
+                pts.add(JsonTypeTokens.toPolyType(tok));
+            }
+            if ( pts.isEmpty() ) {
+                throw new IllegalArgumentException("type array must be non-empty.");
+            }
+            return readScalarNode( pts, o );
+        }
+
+        throw new IllegalArgumentException( "Missing or unsupported schema node: " + o );
     }
 
-    /**
-     * Reads an array-node schema from a JSON.
-     * Requires an {@code items} definition and supports optional constraints.
-     *
-     * @param arrSpec array specification
-     * @return parsed {@link DocumentSchema.ArrayNode}
-     * @throws IllegalArgumentException if the specification is invalid
-     */
+    private static DocumentSchema.ScalarNode readScalarNode( List<PolyType> types, ObjectNode o ) {
+
+        Integer minLength = o.has("minLength") ? o.get("minLength").asInt() : null;
+        Integer maxLength = o.has("maxLength") ? o.get("maxLength").asInt() : null;
+        String pattern = o.has("pattern") ? o.get("pattern").asText(null) : null;
+
+        BigDecimal minimum = o.has("minimum") && o.get("minimum").isNumber()
+                ? o.get("minimum").decimalValue()
+                : null;
+
+        BigDecimal maximum = o.has("maximum") && o.get("maximum").isNumber()
+                ? o.get("maximum").decimalValue()
+                : null;
+
+        BigDecimal multipleOf = o.has("multipleOf") && o.get("multipleOf").isNumber()
+                ? o.get("multipleOf").decimalValue()
+                : null;
+
+        JsonNode constValue = o.get("const");
+
+        List<JsonNode> enumValues = null;
+        if ( o.has("enum") ) {
+            JsonNode en = o.get("enum");
+            if ( !en.isArray() ) {
+                throw new IllegalArgumentException("'enum' must be an array.");
+            }
+            enumValues = new ArrayList<>();
+            for ( JsonNode el : en ) {
+                enumValues.add(el);
+            }
+        }
+
+        return new DocumentSchema.ScalarNode(types, minLength, maxLength, pattern, minimum, maximum, multipleOf, constValue, enumValues);
+    }
+
     private static DocumentSchema.ArrayNode readArrayNode( ObjectNode arrSpec ) {
         if ( !arrSpec.has( "items" ) ) {
             throw new IllegalArgumentException( "Array spec requires 'items'" );
         }
         DocumentSchema.Node items = readNode( arrSpec.get( "items" ), /*isRoot=*/false );
         Integer minItems = arrSpec.has( "minItems" ) ? arrSpec.get( "minItems" ).asInt() : null;
+        Integer maxItems = arrSpec.has( "maxItems" ) ? arrSpec.get( "maxItems" ).asInt() : null;
         Boolean unique = arrSpec.has( "uniqueItems" ) ? arrSpec.get( "uniqueItems" ).asBoolean() : null;
-        return new DocumentSchema.ArrayNode( items, minItems, unique );
+        return new DocumentSchema.ArrayNode( items, minItems, maxItems, unique );
     }
 
-
-    /**
-     * Reads the root-level {@code additionalProperties} flag.
-     *
-     * @param o root object specification
-     * @return resolved {@link DocumentSchema.AdditionalProperties} value
-     * @throws IllegalArgumentException if the field is missing or invalid
-     */
     private static DocumentSchema.AdditionalProperties readRootAPOrThrow( ObjectNode o ) {
         if ( !o.has( "additionalProperties" ) ) {
             throw new IllegalArgumentException( "Top-level 'additionalProperties' must be specified (true/false or ALLOW/FORBID)." );
@@ -398,6 +434,28 @@ public final class SchemaOptionsResolver {
             }
         }
         throw new IllegalArgumentException( "'additionalProperties' must be boolean or 'FORBID'/'ALLOW'" );
+    }
+
+    private static DocumentSchema.AdditionalProperties readNodeAPOrThrow( JsonNode n ) {
+        if ( n == null ) {
+            return DocumentSchema.AdditionalProperties.INHERIT;
+        }
+        if ( n.isBoolean() ) {
+            return n.asBoolean() ? DocumentSchema.AdditionalProperties.ALLOW : DocumentSchema.AdditionalProperties.FORBID;
+        }
+        if ( n.isTextual() ) {
+            String s = n.asText().trim();
+            if ( s.equalsIgnoreCase("inherit") ) {
+                return DocumentSchema.AdditionalProperties.INHERIT;
+            }
+            if ( s.equalsIgnoreCase("allow") || s.equalsIgnoreCase("true") ) {
+                return DocumentSchema.AdditionalProperties.ALLOW;
+            }
+            if ( s.equalsIgnoreCase("forbid") || s.equalsIgnoreCase("false") ) {
+                return DocumentSchema.AdditionalProperties.FORBID;
+            }
+        }
+        throw new IllegalArgumentException( "'additionalProperties' must be boolean or one of 'INHERIT'/'ALLOW'/'FORBID'." );
     }
 
 }

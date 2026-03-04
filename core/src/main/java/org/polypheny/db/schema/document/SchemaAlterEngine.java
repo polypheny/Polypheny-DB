@@ -178,7 +178,7 @@ public final class SchemaAlterEngine {
         Optional<SchemaMeta> metaOpt = SchemaMeta.readCurrent( catalog, coll.namespaceId, coll.id );
 
         if ( metaOpt.isEmpty() ) {
-            // You already reject changing validation without a schema elsewhere
+            // Changing validationAction without a persisted schema is handled earlier; no preflight needed here.
             return new SchemaAlterPreflightReport( true, 0, 0, List.of() );
         }
 
@@ -259,19 +259,25 @@ public final class SchemaAlterEngine {
      * @return merged schema
      */
     public static DocumentSchema mergePatch( final DocumentSchema current, final DocumentSchema patch ) {
-        // merge properties trees; choose AP at root
+
+        // merge properties trees + object attributes; choose AP at schema wrapper root
         DocumentSchema.ObjectNode mergedRoot = mergeObject( current.root(), patch.root() );
+
         DocumentSchema.AdditionalProperties ap =
                 patch.additionalProperties() != null ? patch.additionalProperties() : current.additionalProperties();
+
         return new DocumentSchema( mergedRoot, ap );
     }
 
 
     /**
      * Merges two object nodes for PATCH semantics.
-     * <p>
-     * For each property:
-     * if both sides are objects, merge recursively; otherwise the patch value replaces the current value
+     *
+     * <p>For each property:
+     * if both sides are objects, merge recursively; otherwise the patch value replaces the current value.</p>
+     *
+     * <p>Object-level attributes ({@code required}, {@code additionalProperties}, {@code minProperties}, {@code maxProperties})
+     * are merged with "patch overrides current when specified".</p>
      *
      * @param cur current object node
      * @param p patch object node
@@ -280,6 +286,7 @@ public final class SchemaAlterEngine {
     private static DocumentSchema.ObjectNode mergeObject(
             final DocumentSchema.ObjectNode cur,
             final DocumentSchema.ObjectNode p ) {
+
         if ( p == null ) {
             return cur;
         }
@@ -289,13 +296,26 @@ public final class SchemaAlterEngine {
             String k = e.getKey();
             DocumentSchema.Node pn = e.getValue();
             DocumentSchema.Node cn = cur.properties.get( k );
+
             if ( pn instanceof DocumentSchema.ObjectNode && cn instanceof DocumentSchema.ObjectNode ) {
                 props.put( k, mergeObject( (DocumentSchema.ObjectNode) cn, (DocumentSchema.ObjectNode) pn ) );
             } else {
                 props.put( k, pn );
             }
         }
-        return new DocumentSchema.ObjectNode( props );
+
+        // Merge attributes
+        java.util.Set<String> required = (p.required != null) ? p.required : cur.required;
+
+        DocumentSchema.AdditionalProperties ap =
+                (p.additionalProperties != null && p.additionalProperties != DocumentSchema.AdditionalProperties.INHERIT)
+                        ? p.additionalProperties
+                        : cur.additionalProperties;
+
+        Integer minProps = (p.minProperties != null) ? p.minProperties : cur.minProperties;
+        Integer maxProps = (p.maxProperties != null) ? p.maxProperties : cur.maxProperties;
+
+        return new DocumentSchema.ObjectNode( props, required, ap, minProps, maxProps );
     }
 
 }

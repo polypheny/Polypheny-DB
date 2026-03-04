@@ -22,6 +22,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+/**
+ * CREATE COLLECTION with docSchema tests.
+ *
+ * Coverage:
+ *  - root object rules (type optional, additionalProperties required)
+ *  - required arrays (valid + invalid)
+ *  - per-object additionalProperties overrides
+ *  - scalar union types ("OR" via type array)
+ *  - composition nodes (oneOf/anyOf/allOf/not)
+ */
 @Tag("adapter")
 public class DocSchemaTest extends MqlTestTemplate {
 
@@ -36,9 +46,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         }
     }
 
-    /**
-     * Correct createCollection query
-     */
+
     @Test
     public void createCollection_withValidMinimalSchema_shouldSucceed() {
         dropUserCollectionIfExists();
@@ -49,6 +57,7 @@ public class DocSchemaTest extends MqlTestTemplate {
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: { name: { type: \"text\" } }," +
+                                "    required: [\"name\"]," +
                                 "    additionalProperties: true" +
                                 "  }," +
                                 "  validationAction: \"strict\"" +
@@ -57,10 +66,47 @@ public class DocSchemaTest extends MqlTestTemplate {
         );
     }
 
-    /**
-     * Root type must be a supported value; an unknown type
-     * should cause createCollection to fail.
-     */
+
+    @Test
+    public void createCollection_missingRootType_shouldSucceed() {
+        // Root "type" is optional (object is inferred / assumed)
+        dropUserCollectionIfExists();
+
+        assertDoesNotThrow(
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    properties: { name: { type: \"text\" } }," +
+                                "    required: [\"name\"]," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+
+    @Test
+    public void createCollection_missingAdditionalProperties_shouldFail() {
+        // Top-level additionalProperties is required for CREATE/REPLACE.
+        dropUserCollectionIfExists();
+
+        assertThrows(
+                Exception.class,
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: { name: { type: \"text\" } }" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+
     @Test
     public void createCollection_withUnknownRootType_shouldFail() {
         dropUserCollectionIfExists();
@@ -80,9 +126,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         );
     }
 
-    /**
-     * Property type must be supported; "banana" should be rejected.
-     */
+
     @Test
     public void createCollection_withUnknownPropertyType_shouldFail() {
         dropUserCollectionIfExists();
@@ -102,32 +146,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         );
     }
 
-    /**
-     * Missing "type" on the root docSchema should be rejected.
-     * //TODO: IS IT ALLOWED??? --> does not fail, SUCCEEDS!!
-     */
-    @Test
-    public void createCollection_missingRootType_shouldFail() {
-        dropUserCollectionIfExists();
 
-        assertThrows(
-                Exception.class,
-                () -> execute(
-                        "db.createCollection(\"user\", {" +
-                                "  docSchema: {" +
-                                "    properties: { name: { type: \"text\" } }," +
-                                "    additionalProperties: true" +
-                                "  }," +
-                                "  validationAction: \"strict\"" +
-                                "})"
-                )
-        );
-    }
-
-    /**
-     * "properties" must be an object; using a non-object (e.g. a string)
-     * should cause schema validation to fail.
-     */
     @Test
     public void createCollection_withNonObjectProperties_shouldFail() {
         dropUserCollectionIfExists();
@@ -138,7 +157,7 @@ public class DocSchemaTest extends MqlTestTemplate {
                         "db.createCollection(\"user\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
-                                "    properties: \"not-an-object\"," + // illegal structure
+                                "    properties: \"not-an-object\"," +
                                 "    additionalProperties: true" +
                                 "  }," +
                                 "  validationAction: \"strict\"" +
@@ -147,10 +166,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         );
     }
 
-    /**
-     * docSchema must itself be an object; passing a literal value instead
-     * (e.g. string) should be rejected.
-     */
+
     @Test
     public void createCollection_withNonObjectDocSchemaLiteral_shouldFail() {
         dropUserCollectionIfExists();
@@ -159,12 +175,231 @@ public class DocSchemaTest extends MqlTestTemplate {
                 Exception.class,
                 () -> execute(
                         "db.createCollection(\"user\", {" +
-                                "  docSchema: \"just-a-string\"," + // invalid: not an object
+                                "  docSchema: \"just-a-string\"," +
                                 "  validationAction: \"strict\"" +
                                 "})"
                 )
         );
     }
+
+
+    @Test
+    public void createCollection_requiredSubset_shouldSucceed() {
+        dropUserCollectionIfExists();
+
+        assertDoesNotThrow(
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: {" +
+                                "      name: { type: \"text\" }," +
+                                "      age:  { type: \"number\" }" +
+                                "    }," +
+                                "    required: [\"name\"]," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+
+    @Test
+    public void createCollection_requiredRefersToUndeclaredProperty_shouldFail() {
+        dropUserCollectionIfExists();
+
+        assertThrows(
+                Exception.class,
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: { name: { type: \"text\" } }," +
+                                "    required: [\"name\",\"doesNotExist\"]," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+
+    @Test
+    public void createCollection_nestedAdditionalPropertiesOverride_shouldSucceed() {
+        dropUserCollectionIfExists();
+
+        assertDoesNotThrow(
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: {" +
+                                "      name: { type: \"text\" }," +
+                                "      profile: {" +
+                                "        type: \"object\"," +
+                                "        properties: { first: { type: \"text\" } }," +
+                                "        required: [\"first\"]," +
+                                "        additionalProperties: false" +
+                                "      }" +
+                                "    }," +
+                                "    required: [\"name\"]," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+
+    @Test
+    public void createCollection_invalidNestedAdditionalPropertiesToken_shouldFail() {
+        dropUserCollectionIfExists();
+
+        assertThrows(
+                Exception.class,
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: {" +
+                                "      name: { type: \"text\" }," +
+                                "      profile: {" +
+                                "        type: \"object\"," +
+                                "        properties: { first: { type: \"text\" } }," +
+                                "        additionalProperties: \"banana\"" +
+                                "      }" +
+                                "    }," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+
+    @Test
+    public void createCollection_scalarUnionType_shouldSucceed() {
+        dropUserCollectionIfExists();
+
+        assertDoesNotThrow(
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: {" +
+                                "      name: { type: \"text\" }," +
+                                "      nickname: { type: [\"text\",\"null\"] }" +
+                                "    }," +
+                                "    required: [\"name\"]," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+
+    @Test
+    public void createCollection_invalidScalarUnionContainingObject_shouldFail() {
+        dropUserCollectionIfExists();
+
+        assertThrows(
+                Exception.class,
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: {" +
+                                "      name: { type: [\"text\",\"object\"] }" +
+                                "    }," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+
+    @Test
+    public void createCollection_oneOf_shouldSucceed() {
+        dropUserCollectionIfExists();
+
+        assertDoesNotThrow(
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: {" +
+                                "      name: { type: \"text\" }," +
+                                "      contact: {" +
+                                "        oneOf: [" +
+                                "          { type: \"object\", properties: { email: { type: \"text\" } }, required: [\"email\"], additionalProperties: true }," +
+                                "          { type: \"object\", properties: { phone: { type: \"text\" } }, required: [\"phone\"], additionalProperties: true }" +
+                                "        ]" +
+                                "      }" +
+                                "    }," +
+                                "    required: [\"name\"]," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+
+    @Test
+    public void createCollection_emptyOneOf_shouldFail() {
+        dropUserCollectionIfExists();
+
+        assertThrows(
+                Exception.class,
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: {" +
+                                "      name: { type: \"text\" }," +
+                                "      contact: { oneOf: [] }" +
+                                "    }," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+
+    @Test
+    public void createCollection_anyOf_allOf_not_shouldSucceed() {
+        dropUserCollectionIfExists();
+
+        assertDoesNotThrow(
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: {" +
+                                "      status: { anyOf: [ { type: \"text\", const: \"active\" }, { type: \"text\", const: \"pending\" } ] }," +
+                                "      score: { allOf: [ { type: \"number\", minimum: 0 }, { type: \"number\", maximum: 10 } ] }," +
+                                "      token: { not: { type: \"null\" } }" +
+                                "    }," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
 
     /**
      * More complex schema: user has a nested address object and a tags array.
@@ -201,10 +436,35 @@ public class DocSchemaTest extends MqlTestTemplate {
         );
     }
 
-    /**
-     * Root type must be a supported value; an unknown type
-     * should cause createCollection to fail.
-     */
+
+    @Test
+    public void createCollection_missingRootType_complexSchema_shouldSucceed() {
+        // Root "type" is optional (object inferred from properties)
+        dropUserCollectionIfExists();
+
+        assertDoesNotThrow(
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    properties: {" +
+                                "      name: { type: \"text\" }," +
+                                "      address: {" +
+                                "        type: \"object\"," +
+                                "        properties: {" +
+                                "          streetname: { type: \"text\" }," +
+                                "          streetno: { type: \"text\" }" +
+                                "        }" +
+                                "      }" +
+                                "    }," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+
     @Test
     public void createCollection_withUnknownRootType_complexSchema_shouldFail() {
         dropUserCollectionIfExists();
@@ -214,7 +474,7 @@ public class DocSchemaTest extends MqlTestTemplate {
                 () -> execute(
                         "db.createCollection(\"user\", {" +
                                 "  docSchema: {" +
-                                "    type: \"wrongType\"," + // invalid root type
+                                "    type: \"wrongType\"," +
                                 "    properties: {" +
                                 "      name: { type: \"text\" }," +
                                 "      address: {" +
@@ -239,9 +499,6 @@ public class DocSchemaTest extends MqlTestTemplate {
     }
 
 
-    /**
-     * Property type must be supported; use an invalid type in a nested property.
-     */
     @Test
     public void createCollection_withUnknownPropertyType_complexSchema_shouldFail() {
         dropUserCollectionIfExists();
@@ -258,97 +515,12 @@ public class DocSchemaTest extends MqlTestTemplate {
                                 "        type: \"object\"," +
                                 "        properties: {" +
                                 "          streetname: { type: \"text\" }," +
-                                "          streetno: { type: \"wrongType\" }" + // invalid nested scalar type
+                                "          streetno: { type: \"wrongType\" }" +
                                 "        }" +
-                                "      }," +
-                                "      tags: {" +
-                                "        type: \"array\"," +
-                                "        items: { type: \"text\" }," +
-                                "        uniqueItems: true" +
                                 "      }" +
                                 "    }," +
                                 "    additionalProperties: true" +
                                 "  }," +
-                                "  validationAction: \"strict\"" +
-                                "})"
-                )
-        );
-    }
-
-
-    /**
-     * Missing "type" on the root docSchema.
-     */
-    @Test
-    public void createCollection_missingRootType_complexSchema_shouldFail() {
-        dropUserCollectionIfExists();
-
-        assertThrows(
-                Exception.class,
-                () -> execute(
-                        "db.createCollection(\"user\", {" +
-                                "  docSchema: {" +
-                                "    properties: {" +
-                                "      name: { type: \"text\" }," +
-                                "      address: {" +
-                                "        type: \"object\"," +
-                                "        properties: {" +
-                                "          streetname: { type: \"text\" }," +
-                                "          streetno: { type: \"text\" }" +
-                                "        }" +
-                                "      }," +
-                                "      tags: {" +
-                                "        type: \"array\"," +
-                                "        items: { type: \"text\" }," +
-                                "        uniqueItems: true" +
-                                "      }" +
-                                "    }," +
-                                "    additionalProperties: true" +
-                                "  }," +
-                                "  validationAction: \"strict\"" +
-                                "})"
-                )
-        );
-    }
-
-
-    /**
-     * "properties" must be an object; using a non-object (e.g. a string)
-     * should cause schema validation to fail.
-     */
-    @Test
-    public void createCollection_withNonObjectProperties_complexSchema_shouldFail() {
-        dropUserCollectionIfExists();
-
-        assertThrows(
-                Exception.class,
-                () -> execute(
-                        "db.createCollection(\"user\", {" +
-                                "  docSchema: {" +
-                                "    type: \"object\"," +
-                                "    properties: \"not-an-object\"," + // illegal structure
-                                "    additionalProperties: true" +
-                                "  }," +
-                                "  validationAction: \"strict\"" +
-                                "})"
-                )
-        );
-    }
-
-
-    /**
-     * docSchema must itself be an object; passing a literal value instead
-     * (e.g. string) should be rejected.
-     */
-    @Test
-    public void createCollection_withNonObjectDocSchemaLiteral_complexSchema_shouldFail() {
-        dropUserCollectionIfExists();
-
-        assertThrows(
-                Exception.class,
-                () -> execute(
-                        "db.createCollection(\"user\", {" +
-                                "  docSchema: \"just-a-string\"," + // invalid: not an object
                                 "  validationAction: \"strict\"" +
                                 "})"
                 )

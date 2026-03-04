@@ -1,4 +1,6 @@
-package org.polypheny.db.algebra.logical.document;/*
+package org.polypheny.db.algebra.logical.document;
+
+/*
  * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -425,9 +427,9 @@ public final class DocumentSchemaWriteEnforcer {
             return;
         }
 
-        // In your current dialect/tests: every declared property is required.
-        // So removing/renaming a declared root property would violate requiredness.
-        var requiredTop = schema.root().properties.keySet();
+        // Dialect rule: if "required" is omitted, all declared properties are treated as required.
+        // Therefore, removing/renaming a declared root property violates requiredness.
+        var requiredTop = schema.root().effectiveRequired();
 
         // $unset / removes
         if ( removes != null ) {
@@ -491,7 +493,8 @@ public final class DocumentSchemaWriteEnforcer {
                 continue;
             }
 
-            PolyType expected = sn.type;
+            List<PolyType> expectedTypes = sn.types;
+            PolyType expected = sn.type; // first allowed type (for legacy messages)
 
             // Infer which Mongo update operator this expression represents
             String semantic = "$set";
@@ -589,10 +592,11 @@ public final class DocumentSchemaWriteEnforcer {
             // Operator-specific rules: $inc/$mul/$min/$max require numeric targets + numeric operand
             if ( semantic.equals( "$inc" ) || semantic.equals( "$mul" ) || semantic.equals( "$min" ) || semantic.equals( "$max" ) ) {
 
-                if ( !isNumeric.test( expected ) ) {
+                boolean targetNumeric = expectedTypes != null && expectedTypes.stream().anyMatch( isNumeric );
+                if ( !targetNumeric ) {
                     String msg = "Update operator " + semantic
                             + " cannot be applied to non-numeric field '" + path
-                            + "' (schema expects " + expected + ")";
+                            + "' (schema expects one of " + expectedTypes + ")";
                     handleViolation( mode, msg, entity.getName(), path );
                     continue;
                 }
@@ -622,26 +626,36 @@ public final class DocumentSchemaWriteEnforcer {
 
             // Generic scalar compatibility ($set and also the final type of computed ops)
             if ( actual != null ) {
-                boolean ok;
 
-                if ( expected == null || actual == null ) {
+                boolean ok = true;
+
+                // If the converter was forced to DOCUMENT for scalars, don't over-enforce here.
+                if ( actual == PolyType.DOCUMENT ) {
                     ok = true;
-                } else if ( isText.test( expected ) ) {
-                    ok = isText.test( actual );
-                } else if ( isNumeric.test( expected ) ) {
-                    ok = isNumeric.test( actual );
-                } else if ( expected == PolyType.BOOLEAN ) {
-                    ok = actual == PolyType.BOOLEAN;
-                } else if ( expected == PolyType.NULL ) {
-                    ok = true; // don't over-enforce statically for null-only
-                } else {
-                    ok = expected == actual;
+                } else if ( expectedTypes != null && !expectedTypes.isEmpty() ) {
+
+                    boolean allowsNull = expectedTypes.contains( PolyType.NULL );
+                    boolean allowsText = expectedTypes.stream().anyMatch( isText );
+                    boolean allowsNumeric = expectedTypes.stream().anyMatch( isNumeric );
+                    boolean allowsBoolean = expectedTypes.contains( PolyType.BOOLEAN );
+
+                    if ( actual == PolyType.NULL ) {
+                        ok = allowsNull;
+                    } else if ( isText.test( actual ) ) {
+                        ok = allowsText;
+                    } else if ( isNumeric.test( actual ) ) {
+                        ok = allowsNumeric;
+                    } else if ( actual == PolyType.BOOLEAN ) {
+                        ok = allowsBoolean;
+                    } else {
+                        ok = expectedTypes.contains( actual );
+                    }
                 }
 
                 if ( !ok ) {
                     String msg = "Update expression for field '" + path
                             + "' has type " + actual
-                            + ", but schema expects " + expected
+                            + ", but schema expects one of " + expectedTypes
                             + " (operator: " + semantic + ")";
                     handleViolation( mode, msg, entity.getName(), path );
                 }
