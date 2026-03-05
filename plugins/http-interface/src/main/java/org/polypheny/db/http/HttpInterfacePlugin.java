@@ -209,10 +209,8 @@ public class HttpInterfacePlugin extends PolyPlugin {
 
 
         @Override
-        public void languageChange() {
-            for ( QueryLanguage language : LanguageManager.getLanguages() ) {
-                addRoute( language );
-            }
+        public void languageChange( QueryLanguage language ) {
+            addRoute( language );
         }
 
 
