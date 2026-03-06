@@ -59,6 +59,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.restapi.exception.ParserException;
@@ -362,7 +363,7 @@ public class RestInterfacePlugin extends PolyPlugin {
 
 
         @Override
-        public void languageChange() {
+        public void languageChange( QueryLanguage language ) {
 
         }
 
