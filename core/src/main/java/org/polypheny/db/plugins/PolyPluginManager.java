@@ -16,24 +16,16 @@
 
 package org.polypheny.db.plugins;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonToken;
-import com.google.gson.stream.JsonWriter;
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -95,24 +87,20 @@ public class PolyPluginManager extends DefaultPluginManager {
         if ( jarFile.isFile() ) {  // Run with JAR file
             // Copy plugins bundled into the jar file to the designated plugins' folder.
             // Overwrites existing plugins with same name (name includes version number).
-            try {
-                final JarFile jar = new JarFile( jarFile );
-                final Enumeration<JarEntry> entries = jar.entries();
-                while ( entries.hasMoreElements() ) {
-                    final String name = entries.nextElement().getName();
+            try ( JarFile jar = new JarFile( jarFile ) ) {
+                for ( String name : jar.stream().map( JarEntry::getName ).toList() ) {
                     if ( name.startsWith( "plugins/" ) && name.endsWith( ".zip" ) ) {
                         FileUtils.copyURLToFile(
                                 PolyPluginManager.class.getResource( "/" + name ),
                                 new File( pluginsFolder, name.split( "/" )[1] ) );
                     }
                 }
-                jar.close();
             } catch ( Exception e ) {
                 // ignore
             }
         }
         pluginManager = new PolyPluginManager(
-                Path.of( PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" ).getPath() ),
+                pluginsFolder.toPath(),
                 Path.of( "../build/plugins" ),
                 Path.of( "./build/plugins" ),
                 Path.of( "../../build/plugins" ) );
@@ -155,7 +143,6 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     public static void init( boolean resetPluginsOnStartup ) {
         if ( resetPluginsOnStartup ) {
-            //deletePluginFolder(); we cannot delete the folder, we can only reset the plugins, because we need the folder for the plugins
             RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ).clear();
             RuntimeConfig.BLOCKED_PLUGINS.getList( ConfigString.class ).clear();
         }
@@ -189,38 +176,26 @@ public class PolyPluginManager extends DefaultPluginManager {
         List<PluginWrapper> startedPlugins = pluginManager.getStartedPlugins();
         for ( PluginWrapper plugin : startedPlugins ) {
             String pluginId = plugin.getDescriptor().getPluginId();
-            log.info( String.format( "Plugin '%s' added", pluginId ) );
-        }
-    }
-
-
-    private static void deletePluginFolder() {
-        try {
-            FileUtils.deleteDirectory( PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" ) );
-        } catch ( IOException e ) {
-            throw new GenericRuntimeException( e );
+            log.info( "Plugin '{}' added", pluginId );
         }
     }
 
 
     private static void attachRuntimeToPlugins() {
-        PLUGINS.addListener( ( e ) -> {
-            RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ).clear();
-            RuntimeConfig.AVAILABLE_PLUGINS.setList(
-                    PLUGINS
-                            .values()
-                            .stream()
-                            .map( p -> (PolyPluginDescriptor) p.getDescriptor() )
-                            .map( d -> new ConfigPlugin(
-                                    d.getPluginId(),
-                                    org.polypheny.db.config.PluginStatus.ACTIVE,
-                                    d.imagePath, d.categories,
-                                    d.getPluginDescription(),
-                                    d.getVersion(),
-                                    d.isSystemComponent,
-                                    d.isUiVisible ) )
-                            .collect( Collectors.toList() ) );
-        } );
+        PLUGINS.addListener( e -> RuntimeConfig.AVAILABLE_PLUGINS.setList(
+                PLUGINS
+                        .values()
+                        .stream()
+                        .map( p -> (PolyPluginDescriptor) p.getDescriptor() )
+                        .map( d -> new ConfigPlugin(
+                                d.getPluginId(),
+                                org.polypheny.db.config.PluginStatus.ACTIVE,
+                                d.imagePath, d.categories,
+                                d.getPluginDescription(),
+                                d.getVersion(),
+                                d.isSystemComponent,
+                                d.isUiVisible ) )
+                        .collect( Collectors.toList() ) ) );
     }
 
 
@@ -292,26 +267,14 @@ public class PolyPluginManager extends DefaultPluginManager {
         }
 
         PolyPluginDescriptor descriptor = (PolyPluginDescriptor) PLUGINS.get( pluginId ).getDescriptor();
-        boolean isCompatible = isCompatible( descriptor.versionDependencies );
 
-        if ( !isCompatible ) {
-            log.debug( "Cannot load plugin {} with version {}.", pluginId, ((PolyPluginDescriptor) PLUGINS.get( pluginId ).getDescriptor()).versionDependencies );
+        if ( descriptor.hasVersionDependencies ) {
+            log.debug( "Cannot load plugin {} because version dependencies are not yet supported", pluginId );
             return;
         }
 
         pluginManager.startPlugin( pluginId );
         PLUGINS.get( pluginId ).setPluginState( org.pf4j.PluginState.STARTED );
-    }
-
-
-    private static boolean isCompatible( VersionDependency versionDependencies ) {
-        // todo check if main version fits
-        if ( versionDependencies.type == DependencyType.NONE ) {
-            return true;
-        }
-
-        throw new GenericRuntimeException( "Polypheny dependencies for plugins are not yet supported." );
-
     }
 
 
@@ -322,17 +285,11 @@ public class PolyPluginManager extends DefaultPluginManager {
      * @return the status in the PF4j format
      */
     private static org.pf4j.PluginState toState( org.polypheny.db.config.PluginStatus status ) {
-        switch ( status ) {
-
-            case UNLOADED:
-                return org.pf4j.PluginState.CREATED;
-            case LOADED:
-                return org.pf4j.PluginState.DISABLED;
-            case ACTIVE:
-                return org.pf4j.PluginState.STARTED;
-            default:
-                throw new GenericRuntimeException( "Could not find the corresponding plugin state." );
-        }
+        return switch ( status ) {
+            case UNLOADED -> PluginState.CREATED;
+            case LOADED -> PluginState.DISABLED;
+            case ACTIVE -> PluginState.STARTED;
+        };
     }
 
 
@@ -408,7 +365,7 @@ public class PolyPluginManager extends DefaultPluginManager {
      */
     public static void setPersistentRepository( PersistentMonitoringRepository repository ) {
         if ( PERSISTENT_MONITORING != null ) {
-            throw new RuntimeException( "There is already a persistent repository." );
+            throw new GenericRuntimeException( "There is already a persistent repository." );
         }
         PERSISTENT_MONITORING = repository;
     }
@@ -483,7 +440,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         @Getter
         private final List<String> categories;
         @Getter
-        private final VersionDependency versionDependencies;
+        private final boolean hasVersionDependencies;
         private final boolean isSystemComponent;
         private final boolean isUiVisible;
 
@@ -492,46 +449,26 @@ public class PolyPluginManager extends DefaultPluginManager {
             super( descriptor.getPluginId(), descriptor.getPluginDescription(), descriptor.getPluginClass(), descriptor.getVersion(), descriptor.getRequires(), descriptor.getProvider(), descriptor.getLicense() );
             this.imagePath = manifest.getMainAttributes().getValue( PLUGIN_ICON_PATH );
             this.categories = getCategories( manifest );
-            this.versionDependencies = getVersionDependencies( manifest );
-            this.isSystemComponent = Boolean.TRUE.equals( getManifestValue( Boolean::valueOf, manifest, PLUGIN_SYSTEM_COMPONENT, false ) );
-            this.isUiVisible = Boolean.TRUE.equals( getManifestValue( Boolean::valueOf, manifest, PLUGIN_UI_VISIBLE, false ) );
+            this.hasVersionDependencies = hasVersionDependencies( manifest );
+            this.isSystemComponent = Boolean.TRUE.equals( getManifestValue( Boolean::valueOf, manifest, PLUGIN_SYSTEM_COMPONENT ) );
+            this.isUiVisible = Boolean.TRUE.equals( getManifestValue( Boolean::valueOf, manifest, PLUGIN_UI_VISIBLE ) );
         }
 
 
-        private <T> T getManifestValue( Function1<String, T> transformer, Manifest manifest, String key, boolean allowsNull ) {
+        private <T> T getManifestValue( Function1<String, T> transformer, Manifest manifest, String key ) {
             String attribute = manifest.getMainAttributes().getValue( key );
 
-            if ( attribute == null && !allowsNull ) {
-                if ( !allowsNull ) {
-                    throw new GenericRuntimeException( String.format( "Plugin contains not all required keys: %s", key ) );
-                }
-                return null;
+            if ( attribute == null ) {
+                throw new GenericRuntimeException( "Plugin contains not all required keys: %s", key );
             }
 
             return transformer.apply( attribute );
         }
 
 
-        private VersionDependency getVersionDependencies( Manifest manifest ) {
+        private boolean hasVersionDependencies( Manifest manifest ) {
             String dep = manifest.getMainAttributes().getValue( PLUGIN_POLYPHENY_DEPENDENCIES );
-
-            if ( dep == null || dep.trim().isEmpty() ) {
-                return new VersionDependency( DependencyType.NONE, null );
-            }
-
-            String[] splits = dep.split( "-" );
-
-            if ( splits.length == 2 ) {
-                return new VersionDependency( DependencyType.RANGE, Stream.of( splits ).map( String::trim ).collect( Collectors.toList() ) );
-            }
-            splits = dep.split( "," );
-
-            if ( splits.length > 1 ) {
-                return new VersionDependency( DependencyType.LIST, Stream.of( splits ).map( String::trim ).collect( Collectors.toList() ) );
-            }
-
-            return new VersionDependency( DependencyType.SINGLE, List.of( dep.trim() ) );
-
+            return dep != null && !dep.trim().isEmpty();
         }
 
 
@@ -542,7 +479,7 @@ public class PolyPluginManager extends DefaultPluginManager {
                 return List.of();
             }
 
-            return Arrays.stream( categories.split( "," ) ).map( String::trim ).collect( Collectors.toList() );
+            return Arrays.stream( categories.split( "," ) ).map( String::trim ).toList();
         }
 
     }
@@ -588,92 +525,6 @@ public class PolyPluginManager extends DefaultPluginManager {
                     .id( wrapper.getPluginId() )
                     .loaded( PLUGINS.containsKey( wrapper.getPluginId() ) );
         }
-
-
-        public static TypeAdapter<PluginStatus> getSerializer() {
-            return new TypeAdapter<>() {
-                @Override
-                public void write( JsonWriter out, PluginStatus value ) throws IOException {
-                    out.beginObject();
-                    out.name( "id" );
-                    out.value( value.id );
-                    out.name( "stringPath" );
-                    out.value( value.stringPath );
-                    out.name( "loaded" );
-                    out.value( value.loaded );
-                    out.name( "imagePath" );
-                    out.value( value.imagePath );
-                    out.name( "isSystemComponent" );
-                    out.value( value.isSystemComponent );
-                    out.name( "isUiVisible" );
-                    out.value( value.isUiVisible );
-                    out.endObject();
-                }
-
-
-                @Override
-                public PluginStatus read( JsonReader in ) throws IOException {
-                    in.beginObject();
-                    String id = null;
-                    String stringPath = null;
-                    boolean loaded = false;
-                    String imagePath = null;
-                    boolean isSystemComponent = false;
-                    boolean isUiVisible = false;
-
-                    while ( in.peek() != JsonToken.END_OBJECT ) {
-                        String name = in.nextName();
-                        switch ( name ) {
-                            case "id":
-                                id = in.nextString();
-                                break;
-                            case "stringPath":
-                                stringPath = in.nextString();
-                                break;
-                            case "loaded":
-                                loaded = in.nextBoolean();
-                                break;
-                            case "imagePath":
-                                imagePath = in.nextString();
-                                break;
-                            case "isSystemComponent":
-                                isSystemComponent = in.nextBoolean();
-                                break;
-                            case "isUiVisible":
-                                isUiVisible = in.nextBoolean();
-                                break;
-                            default:
-                                log.error( "Name is not known." );
-                                return null;
-                        }
-                    }
-                    in.endObject();
-
-                    return new PluginStatus( stringPath, imagePath, isSystemComponent, isUiVisible ).id( id ).loaded( loaded );
-                }
-            };
-        }
-
-    }
-
-
-    /**
-     * Different potential types of dependencies.
-     */
-    public enum DependencyType {
-        SINGLE, // specific version e.g. 0.8.1
-        RANGE, // range of potential versions e.g. 0.8 - 0.9
-        LIST, // different supported version e.g. 0.8.1, 0.9.*
-        NONE
-    }
-
-
-    @AllArgsConstructor
-    public static class VersionDependency {
-
-        public DependencyType type;
-
-        final List<String> versions;
 
     }
 
