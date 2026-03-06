@@ -456,6 +456,10 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
         return tableConstraints.get( tableId ).stream().filter( c -> c.name.equals( constraintName ) ).findFirst();
     }
 
+    @Override
+    public @NonNull Optional<LogicalConstraint> getConstraint( long tableId, long constraintId ) {
+        return tableConstraints.get( tableId ).stream().filter( c -> c.id == constraintId ).findFirst();
+    }
 
     @Override
     public @NonNull Optional<LogicalForeignKey> getForeignKey( long tableId, String foreignKeyName ) {

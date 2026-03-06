@@ -166,6 +166,7 @@ public class MockRelSnapshot implements LogicalRelSnapshot {
         throw new UnsupportedOperationException();
     }
 
+
     @Override
     public @NonNull List<LogicalForeignKey> getForeignKeys( long tableId ) {
         throw new UnsupportedOperationException();
@@ -192,6 +193,12 @@ public class MockRelSnapshot implements LogicalRelSnapshot {
 
     @Override
     public @NonNull Optional<LogicalConstraint> getConstraint( long tableId, String constraintName ) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public @NonNull Optional<LogicalConstraint> getConstraint( long tableId, long id ) {
         throw new UnsupportedOperationException();
     }
 

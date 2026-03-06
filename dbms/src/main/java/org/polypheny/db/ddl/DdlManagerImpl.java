@@ -841,7 +841,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         if ( oldPk != null ) {
-            dropConstraint( statement.getTransaction(), table, ConstraintType.PRIMARY.name() );
+            dropConstraint( statement.getTransaction(), table, oldPk.id );
         }
 
         catalog.getLogicalRel( table.namespaceId ).addPrimaryKey( table.id, columnIds, statement );
@@ -929,7 +929,7 @@ public class DdlManagerImpl extends DdlManager {
                             .toList();
                     if ( !constraints.isEmpty() && constraints.stream().allMatch( k -> k.type == ConstraintType.UNIQUE ) ) {
                         for ( LogicalConstraint c : constraints ) {
-                            dropConstraint( statement.getTransaction(), table, c.name );
+                            dropConstraint( statement.getTransaction(), table, c.id );
                         }
                         continue;
                     }
@@ -997,17 +997,24 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropConstraint( Transaction transaction, LogicalTable table, String constraintName ) {
+        LogicalConstraint constraint = catalog.getSnapshot().rel().getConstraint( table.id, constraintName ).orElseThrow();
+        dropConstraint( transaction, table, constraint.id );
+    }
+
+
+    @Override
+    public void dropConstraint( Transaction transaction, LogicalTable table, long id ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
 
-        LogicalConstraint constraint = catalog.getSnapshot().rel().getConstraint( table.id, constraintName ).orElseThrow();
+        LogicalConstraint constraint = catalog.getSnapshot().rel().getConstraint( table.id, id ).orElseThrow();
 
         Supplier<Boolean> stillUsed = () -> getKeyUniqueCount( constraint.keyId ) < 2;
         if ( constraint.type == ConstraintType.UNIQUE && isForeignKey( constraint.key.id ) && stillUsed.get() ) {
             // maybe we delete multiple constraints in this transaction, so we need to check again
             transaction.attachCommitConstraint(
                     stillUsed,
-                    "The constraint " + constraintName + " is used on a key which is referenced by at least one foreign key which requires this key to be unique. Unable to drop unique constraint." );
+                    "The constraint " + constraint.name + " is used on a key which is referenced by at least one foreign key which requires this key to be unique. Unable to drop unique constraint." );
         }
 
         catalog.getLogicalRel( table.namespaceId ).deleteConstraint( constraint.id );
@@ -2991,7 +2998,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // delete constraints
         for ( LogicalConstraint constraint : snapshot.rel().getConstraints( table.id ) ) {
-            dropConstraint( statement.getTransaction(), table, constraint.name );
+            dropConstraint( statement.getTransaction(), table, constraint.id );
         }
 
         // delete keys
