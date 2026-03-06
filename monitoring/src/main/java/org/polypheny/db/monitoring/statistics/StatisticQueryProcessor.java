@@ -148,7 +148,7 @@ public class StatisticQueryProcessor {
 
         try {
             implementation = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getTupleType(), false );
-            ResultIterator iterator = implementation.execute( statement, getPageSize() );
+            ResultIterator iterator = implementation.execute( statement, getBatchSize() );
             rows = iterator.getNextBatch();
             iterator.close();
         } catch ( Throwable t ) {
@@ -172,11 +172,8 @@ public class StatisticQueryProcessor {
     }
 
 
-    /**
-     * Get the page
-     */
-    private int getPageSize() {
-        return RuntimeConfig.UI_PAGE_SIZE.getInteger();
+    private int getBatchSize() {
+        return RuntimeConfig.STATISTIC_BATCH_SIZE.getInteger();
     }
 
 
