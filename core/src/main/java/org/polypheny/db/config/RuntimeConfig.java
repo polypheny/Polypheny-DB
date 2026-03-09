@@ -486,14 +486,6 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "monitoringGroup" ),
 
-    AVAILABLE_PLUGINS(
-            "runtime/availablePlugins",
-            "All plugins, which are available, be it active, only loaded or unloaded.",
-            List.of(),
-            ConfigType.PLUGIN_LIST,
-            "pluginsGroup"
-    ),
-
     WORKFLOWS_WORKERS(
             "workflows/globalWorkers",
             "The maximum number of worker threads over all workflows. Changes apply as soon as all currently executing workflows have finished.",
@@ -510,16 +502,6 @@ public enum RuntimeConfig {
             "workflowsSettingsGroup"
     ),
 
-    BLOCKED_PLUGINS(
-            "runtime/blockedPlugins",
-            "All plugins, which are blocked by default.",
-            List.of( "druid-adapter",
-                    "elasticsearch-adapter",
-                    "geode-adapter",
-                    "html-adapter",
-                    "pig-adapter" ),
-            ConfigType.STRING_LIST
-    ),
 
     INSTANCE_UUID(
             "runtime/uuid",

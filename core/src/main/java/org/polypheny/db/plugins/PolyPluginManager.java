@@ -45,14 +45,8 @@ import org.pf4j.PluginClassLoader;
 import org.pf4j.PluginDescriptor;
 import org.pf4j.PluginFactory;
 import org.pf4j.PluginLoader;
-import org.pf4j.PluginState;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.config.Config;
-import org.polypheny.db.config.Config.ConfigListener;
-import org.polypheny.db.config.ConfigPlugin;
-import org.polypheny.db.config.ConfigString;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 import org.polypheny.db.processing.TransactionExtension;
@@ -140,36 +134,13 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
-    public static void init( boolean resetPluginsOnStartup ) {
-        if ( resetPluginsOnStartup ) {
-            RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ).clear();
-            RuntimeConfig.BLOCKED_PLUGINS.getList( ConfigString.class ).clear();
-        }
-
-        attachRuntimeToPlugins();
-
+    public static void init() {
         pluginManager.loadPlugins();
 
         // start (active/resolved) the plugins
-        if ( RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ).isEmpty() ) {
-            // no old config there so we just start, except the blocked ones
-            for ( PluginWrapper resolvedPlugin : pluginManager.resolvedPlugins ) {
-                if ( !RuntimeConfig.BLOCKED_PLUGINS.getStringList().contains( resolvedPlugin.getPluginId() ) ) {
-                    pluginManager.startPlugin( resolvedPlugin.getPluginId() );
-                }
-            }
-            pluginManager.startPlugins();
-        } else {
-            for ( ConfigPlugin plugin : RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class ) ) {
-                if ( plugin.getStatus() == org.polypheny.db.config.PluginStatus.ACTIVE ) {
-                    pluginManager.startPlugin( plugin.getPluginId() );
-                }
-            }
-        }
+        pluginManager.startPlugins();
 
         PLUGINS.putAll( pluginManager.getStartedPlugins().stream().collect( Collectors.toMap( PluginWrapper::getPluginId, p -> p ) ) );
-
-        attachPluginsToRuntime();
 
         // print extensions for each started plugin
         List<PluginWrapper> startedPlugins = pluginManager.getStartedPlugins();
@@ -177,118 +148,6 @@ public class PolyPluginManager extends DefaultPluginManager {
             String pluginId = plugin.getDescriptor().getPluginId();
             log.info( "Plugin '{}' added", pluginId );
         }
-    }
-
-
-    private static void attachRuntimeToPlugins() {
-        PLUGINS.addListener( e -> RuntimeConfig.AVAILABLE_PLUGINS.setList(
-                PLUGINS
-                        .values()
-                        .stream()
-                        .map( p -> (PolyPluginDescriptor) p.getDescriptor() )
-                        .map( d -> new ConfigPlugin(
-                                d.getPluginId(),
-                                org.polypheny.db.config.PluginStatus.ACTIVE,
-                                d.imagePath, d.categories,
-                                d.getPluginDescription(),
-                                d.getVersion(),
-                                d.isSystemComponent,
-                                d.isUiVisible ) )
-                        .collect( Collectors.toList() ) ) );
-    }
-
-
-    private static void attachPluginsToRuntime() {
-        RuntimeConfig.AVAILABLE_PLUGINS.addObserver( new ConfigListener() {
-            @Override
-            public void onConfigChange( Config c ) {
-                // check if still the same plugins are present
-                List<ConfigPlugin> configs = RuntimeConfig.AVAILABLE_PLUGINS.getList( ConfigPlugin.class );
-
-                List<String> removed = configs.stream().map( ConfigPlugin::getPluginId ).collect( Collectors.toList() );
-                PLUGINS.keySet().forEach( removed::remove );
-
-                configs.forEach( p -> {
-                    if ( toState( p.getStatus() ) != PLUGINS.get( p.getPluginId() ).getPluginState() ) {
-                        if ( p.getStatus() == org.polypheny.db.config.PluginStatus.ACTIVE ) {
-                            // start
-                            startAvailablePlugin( p.getPluginId() );
-                        } else {
-                            // stop
-                            stopAvailablePlugin( p.getPluginId() );
-                        }
-                    }
-                } );
-
-            }
-
-
-            @Override
-            public void restart( Config c ) {
-
-            }
-        } );
-    }
-
-
-    /**
-     * Stop a plugin, which was loaded and started previously.
-     *
-     * @param pluginId identifier of the plugin
-     */
-    private static void stopAvailablePlugin( String pluginId ) {
-        if ( !PLUGINS.containsKey( pluginId ) ) {
-            throw new GenericRuntimeException( "Plugin is not not loaded and can not be stopped." );
-        }
-        PluginWrapper plugin = PLUGINS.get( pluginId );
-
-        if ( plugin.getPluginState() != PluginState.STARTED ) {
-            throw new GenericRuntimeException( "Plugin is not active and can not be stopped." );
-        }
-        PolyPluginDescriptor descriptor = (PolyPluginDescriptor) plugin.getDescriptor();
-        if ( descriptor.isSystemComponent ) {
-            throw new GenericRuntimeException( "Plugin is system component and cannot be stopped." );
-        }
-
-        pluginManager.stopPlugin( pluginId );
-        PLUGINS.get( pluginId ).setPluginState( org.pf4j.PluginState.STOPPED );
-    }
-
-
-    /**
-     * Starts a plugin, which was loaded previously.
-     *
-     * @param pluginId identifier of the plugin
-     */
-    private static void startAvailablePlugin( String pluginId ) {
-        if ( !PLUGINS.containsKey( pluginId ) ) {
-            throw new GenericRuntimeException( "Plugin is not not loaded and can not be started." );
-        }
-
-        PolyPluginDescriptor descriptor = (PolyPluginDescriptor) PLUGINS.get( pluginId ).getDescriptor();
-
-        if ( descriptor.hasVersionDependencies ) {
-            log.debug( "Cannot load plugin {} because version dependencies are not yet supported", pluginId );
-            return;
-        }
-
-        pluginManager.startPlugin( pluginId );
-        PLUGINS.get( pluginId ).setPluginState( org.pf4j.PluginState.STARTED );
-    }
-
-
-    /**
-     * Mapping of the internal PluginStatus to the PF4J PluginStatus
-     *
-     * @param status the status in the Polypheny format
-     * @return the status in the PF4j format
-     */
-    private static org.pf4j.PluginState toState( org.polypheny.db.config.PluginStatus status ) {
-        return switch ( status ) {
-            case UNLOADED -> PluginState.CREATED;
-            case LOADED -> PluginState.DISABLED;
-            case ACTIVE -> PluginState.STARTED;
-        };
     }
 
 
