@@ -16,6 +16,7 @@
 
 package org.polypheny.db.plugins;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.nio.file.Path;
@@ -137,14 +138,12 @@ public class PolyPluginManager extends DefaultPluginManager {
     public static void init() {
         pluginManager.loadPlugins();
 
-        // start (active/resolved) the plugins
         pluginManager.startPlugins();
 
         PLUGINS.putAll( pluginManager.getStartedPlugins().stream().collect( Collectors.toMap( PluginWrapper::getPluginId, p -> p ) ) );
 
         // print extensions for each started plugin
-        List<PluginWrapper> startedPlugins = pluginManager.getStartedPlugins();
-        for ( PluginWrapper plugin : startedPlugins ) {
+        for ( PluginWrapper plugin : pluginManager.getStartedPlugins() ) {
             String pluginId = plugin.getDescriptor().getPluginId();
             log.info( "Plugin '{}' added", pluginId );
         }
@@ -265,7 +264,7 @@ public class PolyPluginManager extends DefaultPluginManager {
             String attribute = manifest.getMainAttributes().getValue( key );
 
             if ( attribute == null ) {
-                throw new GenericRuntimeException( "Plugin contains not all required keys: %s", key );
+                throw new GenericRuntimeException( "Plugin is missing required key: %s", key );
             }
 
             return transformer.apply( attribute );
@@ -291,7 +290,7 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
-    public record PluginStatus( String id, boolean loaded, String path, String imagePath, boolean isSystemComponent, boolean isUiVisible ) {
+    public record PluginStatus( @JsonSerialize String id, @JsonSerialize boolean loaded, @JsonSerialize String path, @JsonSerialize String imagePath, @JsonSerialize boolean isSystemComponent, @JsonSerialize boolean isUiVisible ) {
 
         public static PluginStatus from( PluginWrapper wrapper ) {
             PolyPluginDescriptor descriptor = ((PolyPluginDescriptor) wrapper.getDescriptor());
