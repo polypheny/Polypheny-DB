@@ -22,13 +22,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.io.FileUtils;
@@ -62,13 +61,13 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 /**
  * Own implementation of the PluginManager from PF4J, which handles the default location, where plugins are loaded from.
- * Custom properties include picture, required-version-of-polypheny.
+ * Custom properties include picture.
  */
 @Slf4j
 public class PolyPluginManager extends DefaultPluginManager {
 
     @Getter
-    private static PersistentMonitoringRepository PERSISTENT_MONITORING;
+    private final static AtomicReference<PersistentMonitoringRepository> PERSISTENT_MONITORING = new AtomicReference<>( null );
 
     @Getter
     public static ObservableMap<String, PluginWrapper> PLUGINS = new ObservableMap<>();
@@ -108,7 +107,7 @@ public class PolyPluginManager extends DefaultPluginManager {
 
 
     public PolyPluginManager( Path... paths ) {
-        super( List.of( paths ) );
+        super( paths );
     }
 
 
@@ -294,57 +293,6 @@ public class PolyPluginManager extends DefaultPluginManager {
 
 
     /**
-     * Tries to load a provided plugin
-     *
-     * @param file a file, which might point to a plugin
-     * @return the status of the loading process
-     */
-    public static PluginStatus loadAdditionalPlugin( File file ) {
-        AFTER_INIT.clear();
-        PluginStatus status = new PluginStatus( file.getPath(), null, false, false );
-        PluginWrapper plugin;
-        try {
-            plugin = pluginManager.getPlugin( pluginManager.loadPlugin( file.toPath() ) );
-            status.id( plugin.getPluginId() );
-        } catch ( Exception e ) {
-            return status.loaded( false );
-        }
-        if ( PLUGINS.containsKey( plugin.getPluginId() ) ) {
-            return status.loaded( false );
-        }
-
-        PLUGINS.put( plugin.getPluginId(), plugin );
-        AFTER_INIT.forEach( Runnable::run );
-
-        PolyPluginDescriptor descriptor = (PolyPluginDescriptor) plugin.getDescriptor();
-        return status.loaded( true )
-                .imagePath( descriptor.imagePath )
-                .isUiVisible( descriptor.isUiVisible )
-                .isSystemComponent( descriptor.isSystemComponent );
-    }
-
-
-    /**
-     * Tries to unload a plugin.
-     *
-     * @param pluginId the identifier of the plugin to unload
-     * @return the status of the unloading process
-     */
-    public static PluginStatus unloadAdditionalPlugin( String pluginId ) {
-        PluginWrapper plugin = pluginManager.getStartedPlugins().stream().filter( p -> p.getPluginId().equals( pluginId ) ).findFirst().orElseThrow();
-        PolyPluginDescriptor descriptor = ((PolyPluginDescriptor) plugin.getDescriptor());
-        PluginStatus status = new PluginStatus( plugin.getPluginId(), descriptor.getImagePath(), descriptor.isSystemComponent, descriptor.isUiVisible );
-        try {
-            pluginManager.unloadPlugin( pluginId );
-        } catch ( Exception e ) {
-            return status.loaded( true );
-        }
-        PLUGINS.remove( pluginId );
-        return status.loaded( false );
-    }
-
-
-    /**
      * The processes, which plugins can register on start, which will be executed as late as possible.
      *
      * @param transactionManager the transactionManager, which plugins like explore-by-example use
@@ -364,10 +312,9 @@ public class PolyPluginManager extends DefaultPluginManager {
      * @param repository the implementation
      */
     public static void setPersistentRepository( PersistentMonitoringRepository repository ) {
-        if ( PERSISTENT_MONITORING != null ) {
+        if ( !PERSISTENT_MONITORING.compareAndSet( null, repository ) ) {
             throw new GenericRuntimeException( "There is already a persistent repository." );
         }
-        PERSISTENT_MONITORING = repository;
     }
 
 
@@ -485,45 +432,11 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
-    @Accessors(fluent = true)
-    public static class PluginStatus {
-
-
-        @Setter
-        boolean loaded = false;
-        final String stringPath;
-
-        @Setter
-        private String id;
-
-        @Setter
-        private String imagePath;
-
-        @Setter
-        private boolean isSystemComponent;
-
-        @Setter
-        private boolean isUiVisible;
-
-
-        public PluginStatus( String stringPath, String imagePath, boolean isSystemComponent, boolean isUiVisible ) {
-            this.stringPath = stringPath;
-            this.imagePath = imagePath;
-            this.isSystemComponent = isSystemComponent;
-            this.isUiVisible = isUiVisible;
-        }
-
-
-        public Path getPath() {
-            return Path.of( stringPath );
-        }
-
+    public record PluginStatus( String id, boolean loaded, String path, String imagePath, boolean isSystemComponent, boolean isUiVisible ) {
 
         public static PluginStatus from( PluginWrapper wrapper ) {
             PolyPluginDescriptor descriptor = ((PolyPluginDescriptor) wrapper.getDescriptor());
-            return new PluginStatus( wrapper.getPluginPath().toAbsolutePath().toString(), descriptor.getImagePath(), descriptor.isSystemComponent, descriptor.isUiVisible )
-                    .id( wrapper.getPluginId() )
-                    .loaded( PLUGINS.containsKey( wrapper.getPluginId() ) );
+            return new PluginStatus( wrapper.getPluginId(), PLUGINS.containsKey( wrapper.getPluginId() ), wrapper.getPluginPath().toAbsolutePath().toString(), descriptor.getImagePath(), descriptor.isSystemComponent, descriptor.isUiVisible );
         }
 
     }

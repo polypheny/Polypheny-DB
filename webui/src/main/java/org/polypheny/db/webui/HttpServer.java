@@ -401,10 +401,6 @@ public class HttpServer implements Runnable {
 
 
     private static void attachPluginRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.post( "/loadPlugins", crud::loadPlugins );
-
-        webuiServer.post( "/unloadPlugin", crud::unloadPlugin );
-
         webuiServer.get( "/getAvailablePlugins", crud::getAvailablePlugins );
     }
 
