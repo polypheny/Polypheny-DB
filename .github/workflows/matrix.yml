@@ -12,7 +12,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                java: [ 17, 21 ]
+                java: [ 21 ]
                 os: [ macos-latest, ubuntu-latest, windows-latest ]
         name: Java ${{ matrix.java }} @ ${{ matrix.os }}
         steps:
