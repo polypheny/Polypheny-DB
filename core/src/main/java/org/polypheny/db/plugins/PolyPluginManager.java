@@ -48,6 +48,8 @@ import org.pf4j.PluginFactory;
 import org.pf4j.PluginLoader;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.config.ConfigPlugin;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 import org.polypheny.db.processing.TransactionExtension;
@@ -137,8 +139,14 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     public static void init() {
         pluginManager.loadPlugins();
-
         pluginManager.startPlugins();
+
+        RuntimeConfig.AVAILABLE_PLUGINS.setList(
+                pluginManager.getStartedPlugins().stream().map( p -> (PolyPluginDescriptor) p.getDescriptor() )
+                        .map( p -> new ConfigPlugin( p.getPluginId(), org.polypheny.db.config.PluginStatus.ACTIVE,
+                                p.imagePath, p.categories, p.getPluginDescription(), p.getVersion(), p.isSystemComponent, p.isUiVisible ) )
+                        .toList()
+        );
 
         PLUGINS.putAll( pluginManager.getStartedPlugins().stream().collect( Collectors.toMap( PluginWrapper::getPluginId, p -> p ) ) );
 

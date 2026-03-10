@@ -525,7 +525,7 @@ public abstract class Config {
     }
 
 
-    public void setList( List<ConfigScalar> values ) {
+    public void setList( List<? extends ConfigScalar> values ) {
         throw new ConfigRuntimeException( "Not possible to set a list on a configuration element of type " + this.getClass().getSimpleName() + "!" );
     }
 

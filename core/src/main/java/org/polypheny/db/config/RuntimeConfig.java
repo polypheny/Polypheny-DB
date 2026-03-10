@@ -486,6 +486,14 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "monitoringGroup" ),
 
+    AVAILABLE_PLUGINS(
+            "runtime/availablePlugins",
+            "All plugins which are loaded.",
+            List.of(),
+            ConfigType.PLUGIN_LIST,
+            "pluginsGroup"
+    ),
+
     WORKFLOWS_WORKERS(
             "workflows/globalWorkers",
             "The maximum number of worker threads over all workflows. Changes apply as soon as all currently executing workflows have finished.",
@@ -800,7 +808,7 @@ public enum RuntimeConfig {
     }
 
 
-    public void setList( final List<ConfigScalar> values ) {
+    public void setList( final List<? extends ConfigScalar> values ) {
         configManager.getConfig( key ).setList( values );
     }
 
