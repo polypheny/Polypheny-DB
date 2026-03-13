@@ -1,0 +1,79 @@
+group "org.polypheny"
+
+
+dependencies {
+    compileOnly project(":core")
+    compileOnly project(":dbms")
+    compileOnly project(":plugins:sql-language")
+
+    implementation(group: "org.apache.parquet", name: "parquet-hadoop", version: parquet_version) {
+//        transitive = false
+    }
+    implementation group: "org.apache.parquet", name: "parquet-column", version: parquet_version
+    implementation group: "org.apache.parquet", name: "parquet-common", version: parquet_version
+    implementation group: "org.apache.hadoop", name: "hadoop-common", version: hadoop_version
+    implementation group: "org.apache.hadoop", name: "hadoop-mapreduce-client-core", version: hadoop_version
+
+    // --- Test Compile ---
+    testImplementation project(path: ":dbms", configuration: "test")
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
+    testImplementation project(path: ":plugins:sql-language")
+}
+
+configurations.configureEach {
+    exclude group: "javax.annotation", module: "javax.annotation-api"
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+compileJava {
+    dependsOn(":config:processResources")
+    dependsOn(":core:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":plugins:sql-language:processResources")
+}
+
+delombok {
+    dependsOn(":plugins:sql-language:processResources")
+}
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+licensee {
+    allow('MIT')
+    allow('Apache-2.0')
+}
