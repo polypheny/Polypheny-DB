@@ -76,4 +76,7 @@ java {
 licensee {
     allow('MIT')
     allow('Apache-2.0')
+    allow('BSD-2-Clause')
+    allow('BSD-3-Clause')
+    allow('CDDL-1.1')
 }
