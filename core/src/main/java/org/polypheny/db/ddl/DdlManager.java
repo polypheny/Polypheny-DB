@@ -258,6 +258,15 @@ public abstract class DdlManager {
     public abstract void dropConstraint( Transaction transaction, LogicalTable table, String constraintName );
 
     /**
+     * Drop a specific constraint from a table
+     *
+     * @param transaction current transaction
+     * @param table the table
+     * @param constraintId the id of the constraint to be dropped
+     */
+    public abstract void dropConstraint( Transaction transaction, LogicalTable table, long constraintId );
+
+    /**
      * Drop a foreign key of a table
      *
      * @param table the table the foreign key belongs to

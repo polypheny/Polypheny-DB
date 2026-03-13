@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prisminterface.PIPlugin.PrismInterface.Transport;
@@ -134,7 +135,7 @@ public class PIPlugin extends PolyPlugin {
 
 
         @Override
-        public void languageChange() {
+        public void languageChange( QueryLanguage language ) {
 
         }
 
