@@ -2,7 +2,17 @@
 
 ## Overview
 
-The Parquet adapter exposes Parquet files as Polypheny source tables, derives schema from Parquet metadata, restores tables during adapter activation, and provides the infrastructure needed for query planning over data stored in Parquet files.
+The Parquet adapter exposes `.parquet` files as Polypheny source tables.
+At a high level, the adapter is responsible for:
+- discovering Parquet files from the configured source location
+- extracting relational schema metadata from Parquet file footers
+- restoring and registering tables whose data is read from Parquet files
+- executing read queries over Parquet data
+- applying projections and supported predicate filtering during query execution
+
+The adapter is read-only and currently targets relational source integration for embedded deployments.
+
+The following sections describe the architecture, execution flow, package responsibilities, supported query behavior, and current limitations in more detail.
 
 ## Build and Integration Changes
 
@@ -13,191 +23,133 @@ Affected files:
 - `gradle.properties`
 - `plugins/parquet-adapter/build.gradle`
 
-<br>
 
 2\. To make Parquet the default data source, `PolyphenyDB.java` sets `defaultSourceName` to `parquet`.<br>
 During `restore()`, `Catalog.defaultSource` is populated from the configured adapter state.
 
 
+## Execution Flow
 
+1. **Plugin registration**
+    - **Responsible class:** `ParquetPlugin`
+    - Registers the Parquet adapter template during startup.
+    - Removes the template during shutdown.
+2. **Schema initialization**
+    - **Responsible classes:** `ParquetSource`, `ParquetFileDiscovery`, `ParquetTypeConverter`
+    - Resolves the configured Parquet directory or file location.
+    - Discovers available `.parquet` files.
+    - Builds table schemas from Parquet file metadata.
+    - Maps Parquet field types to Polypheny types.
+    - Normalizes physical table names and column names.
+    - Initializes the information page from the extracted column definitions.
+3. **Namespace and table creation**
+    - **Responsible classes:** `ParquetSource`, `ParquetNamespace`, `ParquetTable`
+    - Creates table wrappers for discovered Parquet files.
+    - Chooses the active table flavor.
+    - Registers physical tables in the adapter catalog.
+4. **Table restore during startup**
+    - **Responsible classes:** `ParquetSource`, `ParquetNamespace`
+    - During application startup, the adapter calls `restoreTable(...)` for persisted Parquet tables.
+    - The adapter recreates table wrappers and re-registers them in the adapter catalog.
+5. **Query entry into the adapter**
+    - **Responsible class:** `ParquetFilterableTable`
+    - Receives scan requests from the query engine.
+    - Inspects projected columns and query conditions.
+    - Translates supported query conditions into adapter-level filters.
+6. **Projection and filter pushdown**
+    - **Responsible classes:** `ParquetFilterableTable`, `ParquetEnumerator`, `ParquetFilter`
+    - Pushes supported filter conditions into adapter-specific filter objects.
+    - Pushes column projection into the Parquet reader by limiting the read schema to required columns.
+    - Ensures that columns needed for filtering are included even if they are not part of the final output.
+7. **Row-group pruning**
+    - **Responsible classes:** `ParquetEnumerator`, `PredicateEvaluator`
+    - Uses pushed filter conditions together with Parquet statistics to skip row groups that cannot match.
 
-## Main Execution Flow
+## Supported Filter Conditions
 
-1\. `ParquetPlugin` registers the adapter template on initialization and removes it on shutdown.
+The active `FILTERABLE` execution path currently pushes only simple comparison conditions into the adapter.
 
-2\. `ParquetSource` is instantiated and configured with the Parquet source location.
+Supported operators:
+- `=`
+- `!=`
+- `>`
+- `>=`
+- `<`
+- `<=`
 
-3\. `ParquetFileDiscovery` identifies the available `.parquet` files in the configured source.
+Supported condition shape:
+- `column OP literal`
 
-4\. `ParquetSource` reads Parquet metadata and extracts exported columns.
-
-5\. `ParquetNamespace` creates table wrappers for each discovered file.
-
-6\. Restored tables are registered in the adapter catalog.
-
-7\. Query execution uses the planning layer through `ParquetScan` and related rules.
+Notes:
+- The left-hand side must be a column reference.
+- The right-hand side must be a literal value.
+- Simple casts on the column side are accepted.
+- Unsupported conditions remain outside the adapter-specific filter flow.
 
 
 ## Package Structure and Responsibilities
 
 ### `root`
-
-Contains main classes
-
-#### 1. `ParquetPlugin`
-
-Registers the adapter template (`ParquetSource`) on initialization and removes the template on stop.
-
-#### 2. `ParquetSource`
-
-Core adapter entry point. Responsible for extracting column information from Parquet metadata, creating the information page, restoring tables, and coordinating namespace/table creation.
-
-Main functions:
-
-- `constructor()`
-
-- `setParquetDir()`
-
-- `createInformationPage()`
-
-- `getExportedColumns()`
-
-- `computePhysicalTableName()`
-
-- `getValidTableName()`
-
-- `getExportedColumnsFromFile()`
-
-- `getExportedColumnFromField()`
-
-- `getValidColumnNameFromField()`
-
-- `getInformationTable()`
-
-- `enableInformationPage()`
-
-- `restoreTable()` called from `AdapterRestore.activate()`
-
-- `createParquetTable()`
-
-
-Restore flow:
-
-- `restoreTable()` calls `parquetNamespace.createParquetTable()` to create physical tables by flavor.
-
-- Restored tables are then added to `adapterCatalog`.
-
-
-Create/refresh flow:
-
-- `createParquetTable()` calls `parquetNamespace.createParquetTable()` and replaces the affected tables in `adapterCatalog`.
+Core adapter entry points and lifecycle integration.
+- `ParquetPlugin`: registers and unregisters the adapter template.
+- `ParquetSource`: main adapter implementation; manages source settings, schema export, information-page setup, namespace updates, table creation, and table restore.
 
 ### `io`
-Contains classes related to Parquet file access and discovery, including locating input files and handling Parquet-specific input operations.
-
-#### 3. `ParquetFileDiscovery`
-
-Helper functionality for identifying valid Parquet files.
-
-Main functions:
-
-- `listParquetFiles(dir)`
-
-- `isParquetFile(filename)`
-
+Parquet file access helpers.
+- `ParquetFileDiscovery`: discovers valid `.parquet` files in the configured source.
 
 ### `schema`
-
-Contains namespace and table wrapper classes that expose Parquet-backed tables to Polypheny.
-
-
-#### 4. `ParquetNamespace`
-
-Creates table wrappers for Parquet files and chooses table creation by flavor.
-
-Main functions:
-
-- `createParquetTable()`
-
-- `createTable()` to create the concrete table according to flavor
-
-
-#### 5. `ParquetTable`
-
-Base table abstraction containing metadata and other shared information.
-
-Main elements:
-
-- `Flavor` enum
-
-
-#### 6. `ParquetFilterableTable` extends `ParquetTable`
-
-Currently a placeholder or dummy implementation for filterable behavior.
-
-#### 7. `ParquetScannableTable` extends `ParquetTable`
-
-Currently a placeholder or dummy implementation for scannable behavior.
-
-#### 8. `ParquetTranslatableTable` extends `ParquetTable`
-
-Currently a placeholder or dummy implementation for translatable behavior.
-
-
+Table wrappers and schema-related conversion logic.
+- `ParquetNamespace`: creates Parquet table wrappers for the active table flavor.
+- `ParquetTable`: base class for Parquet-backed physical tables.
+- `ParquetFilterableTable`: active table implementation for filter-aware scans.
+- `ParquetScannableTable`: scaffold for scan-based execution.
+- `ParquetTranslatableTable`: scaffold for planner-driven execution.
+- `ParquetTypeConverter`: converts Parquet schema types, runtime values, and filter literals into Polypheny-compatible representations.
 
 ### `model`
+Internal data representation.
+- `ParquetFilter`: immutable representation of a pushed filter condition.
 
-Contains Parquet-to-Polypheny type conversion logic.
-
-#### 9. `ParquetTypeConverter`
-
-Converts Parquet types to Polypheny types.
-
-Main function:
-
-- `fromParquetTypeToPolyType()`
-
+### `execution`
+Runtime data access and filter evaluation.
+Classes responsible for reading Parquet data and returning rows.
+- `ParquetEnumerator`: drives Parquet reading, projection handling, row-group iteration, and row production.
+- `PredicateEvaluator`: uses Parquet statistics to decide whether row groups can be skipped.
+- `ValueExtractor`: extracts raw values from Parquet records.
+- `ValueComparator`: compares runtime values during filter evaluation.
 
 ### `planning`
-
-Contains relational scan and planner rule classes for Parquet query support.
-
-#### 10. `ParquetScan`
-
-Represents the Parquet scan operator in the planning/execution layer.
-
-#### 11. `ParquetProjectScanRule`
-
-Planner rule associated with Parquet scans.
-
+Classes that integrate the Parquet adapter with Polypheny’s query planner.
+Handling query-plan representation and optimization.
+- `ParquetScan`: Parquet scan operator for the planning layer.
+- `ParquetProjectScanRule`: planner rule for projection handling over Parquet scans.
 
 ### `util`
+Shared infrastructure helpers.
+- `HadoopConfigurationFactory`: builds Hadoop configuration objects for Parquet access inside the plugin environment.
 
-Contains reusable infrastructure helpers such as Hadoop configuration setup for Parquet reading.
+## Schema Mapping Rules
 
-#### 12. `HadoopConfigurationFactory`
-
-Creates Hadoop `Configuration` instances for Parquet readers and ensures the proper classloader and local filesystem registration are available in the plugin environment.
-
-
-
-## Schema Extraction and Naming Rules
-
-- Table names are derived from Parquet file names and normalized through `getValidTableName()`.
-
-- Column metadata is extracted from Parquet footer/schema metadata.
-
-- Column names are normalized through `getValidColumnNameFromField()`.
-
-- Type mapping is delegated to `ParquetTypeConverter`.
-
-- The document should explicitly mention how unsupported or ambiguous Parquet types are handled.
-
+- Table names are derived from Parquet file names and normalized before registration.
+- Column names are derived from Parquet field names and normalized before registration.
+- Column types are mapped from Parquet schema types to Polypheny types.
+- String-like Parquet fields are mapped to `TEXT`.
+- Unlike SQL types with fixed length declarations, Parquet does not impose a fixed maximum string length.
 
 ## Flavor Selection
 
-Appropriate table wrapper is created for a discovered Parquet file, for example `filterable`, `scannable`, or `translatable`.
-Currently only one flavor is active in practice.
+The adapter defines three table flavors through `ParquetTable.Flavor`:
+
+- `FILTERABLE`
+- `SCANNABLE`
+- `TRANSLATABLE`
+
+The active flavor is selected by `ParquetSource` when the namespace is created.
+
+In the current implementation, `ParquetSource.updateNamespace()` selects `FILTERABLE`, so discovered and restored Parquet tables are exposed through `ParquetFilterableTable`.
+
+`SCANNABLE` and `TRANSLATABLE` remain available as structural alternatives, but they are not currently used as the default execution path.
 
 
 ## Information Page
@@ -214,15 +166,27 @@ The information page displays the following column metadata:
 The following figure shows an example of the displayed schema information.
 ![Schema display](images/parquet_schema.png)
 
+## Data Presentation
+![Schema display](images/customers_data.png)
 
+## Query Projection
+![Schema display](images/query_projection.png)
+
+## Query Filter
+![Schema display](images/query_filter.png)
 
 ## Current Gaps and Future Work
+### Relational Parquet data source implementation
+- Complete the `SCANNABLE` and `TRANSLATABLE` execution paths so they provide real runtime behavior comparable to the active `FILTERABLE` path.
+- Extend filter support beyond simple comparisons of the form `column OP literal`.
+  Planned examples include `BETWEEN`, `IN`, `IS NULL`, `IS NOT NULL`, and more complex boolean combinations such as `AND` and `OR`.
+- Improve handling of nested and complex Parquet schemas instead of treating them only as textual representations.
+- Add partition-aware file discovery and query pruning for partitioned Parquet datasets.
+- Add support for remote and Hadoop-backed filesystems beyond the current local-file configuration.
+- Document and strengthen error handling for invalid files, unsupported schema constructs, and conversion failures.
+- Automated test coverage for schema extraction, table restore, projection pushdown, filter pushdown, row-group pruning, and runtime type conversion.
+- Add write support if the adapter is later extended beyond its current read-only design.
 
-- Replace placeholder filterable, scannable, and translatable table variants with real implementations.
-- Add explicit support for Hadoop-backed remote filesystems.
-- Add write support
-- Handle nested parquet schema
-- implement partition discovery (?)
-- Document error handling for invalid files, missing metadata, and unsupported types.
-- Add tests and document the tested scenarios for discovery, schema extraction, restore, and planning.
+### Document Parquet data source implementation
+
 

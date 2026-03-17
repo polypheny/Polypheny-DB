@@ -32,11 +32,10 @@ import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
-import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.parquet.io.ParquetFileDiscovery;
-import org.polypheny.db.adapter.parquet.model.ParquetTypeConverter;
+import org.polypheny.db.adapter.parquet.schema.ParquetTypeConverter;
 import org.polypheny.db.adapter.parquet.schema.ParquetNamespace;
 import org.polypheny.db.adapter.parquet.schema.ParquetTable;
 
@@ -78,18 +77,18 @@ import org.slf4j.LoggerFactory;
 @AdapterSettingList(name = "method", options = { "upload", "link" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
 @AdapterSettingDirectory(subOf = "method_upload", name = "directory", defaultValue = "classpath://orders_db", description = "You can upload one or multiple .parquet files.", position = 2)
 @AdapterSettingString(subOf = "method_link", defaultValue = "classpath://orders_db", name = "directoryName", description = "You can select a path to a folder or specific .parquet files.", position = 2)
-@AdapterSettingInteger(
-        name = "maxStringLength",
-        defaultValue = 255,
-        position = 3,
-        description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
+//@AdapterSettingInteger(
+//        name = "maxStringLength",
+//        defaultValue = 255,
+//        position = 3,
+//        description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
 public class ParquetSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
     @Delegate(excludes = Excludes.class)
     private final RelationalScanDelegate delegate;
 
     private final ConnectionMethod connectionMethod;
-    private final int maxStringLength;
+    //private final int maxStringLength;
     private final ParquetTypeConverter parquetTypeConverter;
     private URL parquetDir;
 
@@ -112,10 +111,10 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
                 ? ConnectionMethod.from( settings.get( "method" ).toUpperCase() )
                 : ConnectionMethod.UPLOAD;
 
-        this.maxStringLength = Integer.parseInt( settings.get( "maxStringLength" ) );
-        if ( maxStringLength < 1 ) {
-            throw new GenericRuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
-        }
+//        this.maxStringLength = Integer.parseInt( settings.get( "maxStringLength" ) );
+//        if ( maxStringLength < 1 ) {
+//            throw new GenericRuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
+//        }
 
         setParquetDir( settings );
         createInformationPage();
@@ -201,12 +200,12 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
     private ExportedColumn getExportedColumnFromField(Type field, String fileName, String physicalTableName, int position) {
         String columnName = getValidColumnNameFromField(field);
         PolyType polyType = parquetTypeConverter.fromParquetTypeToPolyType( field );
-        Integer length = polyType == PolyType.VARCHAR ? maxStringLength : null;
+        //Integer length = polyType == PolyType.VARCHAR ? maxStringLength : null;
         return new ExportedColumn(
                     columnName,
                     polyType,
                     null,
-                    length,
+                    null,
                     null,
                     null,
                     null,

@@ -21,12 +21,19 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.parquet.ParquetSource;
+import org.polypheny.db.adapter.parquet.execution.ParquetEnumerator;
+import org.polypheny.db.adapter.parquet.model.ParquetFilter;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.types.FilterableEntity;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -39,36 +46,70 @@ public class ParquetFilterableTable extends ParquetTable implements FilterableEn
         super( id, source, table, fieldTypes, fields, csvSource );
     }
 
+
     /**
      * Pushes supported filters.
      */
     @Override
     public Enumerable<PolyValue[]> scan( DataContext dataContext, List<RexNode> filters ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( parquetSource );
+        final List<ParquetFilter> pushedFilters = new ArrayList<>();
+        filters.removeIf( filter -> addFilter( filter, pushedFilters ) );
+
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                return new Enumerator<>() {
-                    @Override
-                    public PolyValue[] current() {
-                        return new PolyValue[0];
-                    }
-                    @Override
-                    public boolean moveNext() {
-                        return false;
-                    }
-                    @Override
-                    public void reset() {
-
-                    }
-                    @Override
-                    public void close() {
-
-                    }
-                };
+                return new ParquetEnumerator( source, cancelFlag, fields, pushedFilters );
             }
         };
     }
+
+
+    /**
+     * Translates a Rex filter into adapter filter form when possible.
+     */
+    private boolean addFilter( RexNode filter, List<ParquetFilter> pushedFilters ) {
+        if ( !isSupportedOperator( filter.getKind() ) ) {
+            return false;
+        }
+
+        RexCall call = (RexCall) filter;
+        RexNode left = call.getOperands().get( 0 );
+        if ( left.isA( Kind.CAST ) ) {
+            left = ((RexCall) left).operands.get( 0 );
+        }
+        RexNode right = call.getOperands().get( 1 );
+
+        if ( !(left instanceof RexIndexRef) || !(right instanceof RexLiteral literal) ) {
+            return false;
+        }
+
+        if ( literal.getValue() == null ) {
+            return false;
+        }
+
+        int index = ((RexIndexRef) left).getIndex();
+        if ( index < 0 || index >= columns.size() ) {
+            return false;
+        }
+
+        pushedFilters.add( new ParquetFilter( index, filter.getKind(), literal.getValue().toString() ) );
+        return true;
+    }
+
+
+    /**
+     * Checks whether the operator can be handled by the reader.
+     */
+    private boolean isSupportedOperator( Kind kind ) {
+        return kind == Kind.EQUALS
+                || kind == Kind.NOT_EQUALS
+                || kind == Kind.GREATER_THAN
+                || kind == Kind.GREATER_THAN_OR_EQUAL
+                || kind == Kind.LESS_THAN
+                || kind == Kind.LESS_THAN_OR_EQUAL;
+    }
+
 }
 

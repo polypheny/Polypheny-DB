@@ -14,7 +14,17 @@
  * limitations under the License.
  */
 
+package org.polypheny.db.adapter.parquet.execution;
 
-public class ParquetTest {
+import org.apache.parquet.schema.PrimitiveType;
 
+public class ValueComparator {
+
+    public static Integer compareValues( PrimitiveType primitive, Object left, Object right ) {
+        try {
+            return primitive.comparator().compare( left, right );
+        } catch ( Exception e ) {
+            return null;
+        }
+    }
 }

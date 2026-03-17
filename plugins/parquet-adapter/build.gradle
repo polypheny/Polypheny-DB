@@ -11,8 +11,25 @@ dependencies {
     }
     implementation group: "org.apache.parquet", name: "parquet-column", version: parquet_version
     implementation group: "org.apache.parquet", name: "parquet-common", version: parquet_version
-    implementation group: "org.apache.hadoop", name: "hadoop-common", version: hadoop_version
-    implementation group: "org.apache.hadoop", name: "hadoop-mapreduce-client-core", version: hadoop_version
+    implementation(group: "org.apache.hadoop", name: "hadoop-common", version: hadoop_version) {
+        exclude group: "com.google.re2j", module: "re2j"
+        exclude group: "com.jcraft", module: "jsch"
+        exclude group: "jakarta.activation", module: "jakarta.activation-api"
+        exclude group: "javax.activation", module: "activation"
+        exclude group: "javax.servlet", module: "javax.servlet-api"
+        exclude group: "javax.servlet.jsp", module: "jsp-api"
+        exclude group: "javax.ws.rs", module: "jsr311-api"
+        exclude group: "javax.xml.bind", module: "jaxb-api"
+        exclude group: "javax.xml.stream", module: "stax-api"
+        exclude group: "org.bouncycastle", module: "bcprov-jdk18on"
+    }
+    implementation (group: "org.apache.hadoop", name: "hadoop-mapreduce-client-core", version: hadoop_version) {
+        exclude group: "jakarta.activation", module: "jakarta.activation-api"
+        exclude group: "javax.servlet", module: "javax.servlet-api"
+        exclude group: "javax.ws.rs", module: "jsr311-api"
+        exclude group: "aopalliance", module: "aopalliance"
+        exclude group: "jakarta.xml.bind", module: "jakarta.xml.bind-api"
+    }
 
     // --- Test Compile ---
     testImplementation project(path: ":dbms", configuration: "test")
