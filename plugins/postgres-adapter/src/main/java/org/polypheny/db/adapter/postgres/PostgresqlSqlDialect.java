@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
@@ -49,7 +50,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.inference.ReturnTypes;
 
-
+@Slf4j
 /**
  * A <code>SqlDialect</code> implementation for the PostgreSQL database.
  */
@@ -129,6 +130,18 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
     @Override
     public boolean supportsPostGIS() {
+        return true;
+    }
+
+
+    @Override
+    public List<OperatorName> supportedKnnFunctions() {
+        return ImmutableList.of( OperatorName.DISTANCE );
+    }
+
+
+    @Override
+    public boolean supportsPGVector() {
         return true;
     }
 
@@ -279,10 +292,45 @@ public class PostgresqlSqlDialect extends SqlDialect {
                     super.unparseCall( writer, call, leftPrec, rightPrec );
                 }
                 break;
+            case DISTANCE:
+                SqlNode metricNode = call.operand( 2 );
+                String metric = metricNode instanceof SqlLiteral ? ((SqlLiteral) metricNode ).getValueAs( String.class ) : metricNode.toString();
+                log.debug( "Distance metric unparsed: {}", metric );
+                String op = switch ( metric ) {
+                    case "L1"        -> "<+>";
+                    case "L2"        -> "<->";
+                    case "COSINE"    -> "<=>";
+                    default          -> null;
+                };
+                // either unsupported metric or weights provided, fallback to super
+                if ( op == null || call.operandCount() == 4 ) {
+                    super.unparseCall( writer, call, leftPrec, rightPrec );
+                    return;
+                }
+                ((SqlNode) call.operand(0)).unparse( writer, leftPrec, rightPrec );
+                writer.print( " " + op + " " );
+                PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 1 ), leftPrec, rightPrec );
+                break;
 
             default:
                 super.unparseCall( writer, call, leftPrec, rightPrec );
         }
+    }
+
+
+    @Override
+    public Optional<Expression> handleArrayRetrieval( ParameterExpression resultSet, int i, AlgDataType fieldType ) {
+        if ( !supportsPGVector() || fieldType.getPolyType() != PolyType.ARRAY ) {
+            return Optional.empty();
+        }
+        // Nested arrays are not vectors and need to be ignored.
+        AlgDataType component = fieldType.getComponentType();
+        if ( component == null || component.getPolyType() == PolyType.ARRAY ) {
+            return Optional.empty();
+        }
+        Expression object = Expressions.call( resultSet, "getObject", Expressions.constant( i + 1 ) );
+        String processingMethod = ( component.getPolyType() == PolyType.FLOAT ) ? "parseVectorAsFloat" : "parseVectorAsDouble";
+        return Optional.of( Expressions.call( PostgresqlVectorHelper.class, processingMethod, object ) );
     }
 
 }

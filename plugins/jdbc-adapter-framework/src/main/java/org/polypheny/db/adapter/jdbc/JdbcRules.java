@@ -501,7 +501,7 @@ public class JdbcRules {
             return (out.dialect.supportsWindowFunctions()
                     || !RexOver.containsOver( project.getProjects(), null ))
                     && !userDefinedFunctionInProject( project )
-                    && !knnFunctionInProject( project )
+                    && (!knnFunctionInProject( project ) || supportsKnnFunctionInProject( out.dialect, project))
                     && !multimediaFunctionInProject( project )
                     && !contains( project, List.of( OperatorName.INITCAP ) )
                     && (!geoFunctionInProject( project ) || supportsGeoFunction( out.dialect, project ))
@@ -599,6 +599,18 @@ public class JdbcRules {
         }
 
 
+        private static boolean supportsKnnFunctionInProject( SqlDialect dialect, Project project ) {
+            CheckingKnnFunctionSupportVisitor visitor = new CheckingKnnFunctionSupportVisitor( dialect );
+            for ( RexNode node : project.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.supportsKNNFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
         @Override
         public AlgNode convert( AlgNode alg ) {
             final Project project = (Project) alg;
@@ -680,7 +692,7 @@ public class JdbcRules {
                     filter -> (
                             !userDefinedFunctionInFilter( filter )
                                     && !containUnsupportedArray( filter, out )
-                                    && !knnFunctionInFilter( filter )
+                                    && (!knnFunctionInFilter( filter ) || supportsKnnFunctionInFilter( out.dialect, filter ))
                                     && !multimediaFunctionInFilter( filter )
                                     && (!geoFunctionInFilter( filter ) || supportsGeoFunctionInFilter( out.dialect, filter ))
                                     && !DocumentRules.containsJson( filter )
@@ -713,6 +725,18 @@ public class JdbcRules {
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsKnnFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean supportsKnnFunctionInFilter( SqlDialect dialect, Filter filter ) {
+            CheckingKnnFunctionSupportVisitor visitor = new CheckingKnnFunctionSupportVisitor( dialect );
+            for ( RexNode node : filter.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.supportsKNNFunction() ) {
                     return true;
                 }
             }
@@ -1520,6 +1544,33 @@ public class JdbcRules {
             return super.visitCall( call );
         }
 
+    }
+
+
+    private static class CheckingKnnFunctionSupportVisitor extends RexVisitorImpl<Void> {
+        private boolean supportsKnnFunction = false;
+        private SqlDialect dialect;
+
+
+        CheckingKnnFunctionSupportVisitor( SqlDialect dialect ) {
+            super(true);
+            this.dialect = dialect;
+        }
+
+
+        public boolean supportsKNNFunction() {
+            return supportsKnnFunction;
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            Operator operator = call.getOperator();
+            if ( operator instanceof Function && ((SqlFunction) operator).getFunctionCategory().isKnn() && dialect.supportedKnnFunctions().contains( operator.getOperatorName() ) ) {
+                supportsKnnFunction = true;
+            }
+            return super.visitCall( call );
+        }
     }
 
 

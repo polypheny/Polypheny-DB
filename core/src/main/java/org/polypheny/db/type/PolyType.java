@@ -412,6 +412,7 @@ public enum PolyType {
                     .put( Types.DISTINCT, DISTINCT )
                     .put( Types.STRUCT, STRUCTURED )
                     .put( Types.ARRAY, ARRAY )
+                    .put( Types.OTHER, OTHER)
                     .build();
 
     /**

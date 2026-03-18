@@ -17,9 +17,14 @@
 package org.polypheny.db.adapter.postgres.source;
 
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalDataSource;
@@ -29,6 +34,9 @@ import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
 import org.polypheny.db.adapter.postgres.PostgresqlSqlDialect;
+import org.polypheny.db.type.PolyType;
+
+import static org.polypheny.db.adapter.postgres.PostgresqlCatalogQueries.SQL_COLUMN_TYPE_MODIFIERS_AND_ATTR_DIMENSIONS;
 
 
 @Slf4j
@@ -100,5 +108,77 @@ public class PostgresqlSource extends AbstractJdbcSource {
     public RelationalDataSource asRelationalDataSource() {
         return this;
     }
+
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Handled type names:
+     * <ul>
+     *   <li>{@code vector}   — pgvector float4 vector, mapped to {@code
+    ARRAY<DOUBLE>}</li>
+     *   <li>{@code halfvec}  — pgvector float2 vector, mapped to {@code
+    ARRAY<FLOAT>}</li>
+     *   <li>{@code _float4}  — PostgreSQL float4 array, mapped to {@code
+    ARRAY<FLOAT>}</li>
+     *   <li>{@code _float8}  — PostgreSQL float8 array, mapped to {@code
+    ARRAY<DOUBLE>}</li>
+     *   <li>{@code _int4}    — PostgreSQL int4 array, mapped to {@code
+    ARRAY<INTEGER>}</li>
+     *   <li>{@code _int8}    — PostgreSQL int8 array, mapped to {@code
+    ARRAY<BIGINT>}</li>
+     * </ul>
+     * <p><b>Note:</b> PostgreSQL has no enforced array size limits.</p>
+     * @see <a href="https://www.postgresql.org/docs/current/arrays.html">PostgreSQL Arrays Documentation</a>
+     */
+    @Override
+    protected Optional<ColumnTypeInfo> resolveNativeColumnType( Map<String, CollectionMetadata> metadata, String typeName, int jdbcType, ResultSet columnRow ) throws SQLException {
+        CollectionMetadata meta = metadata.get( columnRow.getString( "COLUMN_NAME" ).toLowerCase() );
+        return switch ( typeName ) {
+            case "vector" -> Optional.of(  new ColumnTypeInfo( PolyType.DOUBLE, PolyType.ARRAY,
+                    null, null, 1,  meta != null ? meta.typeModifier() : null) );
+            case "halfvec" -> Optional.of( new ColumnTypeInfo( PolyType.FLOAT, PolyType.ARRAY,
+                    null, null, 1, meta != null ? meta.typeModifier() : null ) );
+            case "_float4" -> Optional.of( new ColumnTypeInfo( PolyType.FLOAT, PolyType.ARRAY,
+                    null, null, arrayDim( meta ), null ) );
+            case "_float8" -> Optional.of( new ColumnTypeInfo( PolyType.DOUBLE, PolyType.ARRAY,
+                    null, null, arrayDim( meta ), null ) );
+            case "_int4"   -> Optional.of( new ColumnTypeInfo( PolyType.INTEGER, PolyType.ARRAY,
+                    null, null, arrayDim( meta ), null ) );
+            case "_int8"   -> Optional.of( new ColumnTypeInfo( PolyType.BIGINT, PolyType.ARRAY,
+                    null, null, arrayDim( meta ), null ) );
+            default        -> Optional.empty();
+        };
+    }
+
+
+    private int arrayDim( CollectionMetadata meta ) {
+        return (meta != null && meta.arrayDimensions() > 0) ? meta.arrayDimensions() : -1;
+    }
+
+
+    @Override
+    protected Map<String, CollectionMetadata> fetchColumnMetadata( Connection conn, String schema, String table ) throws SQLException {
+        Map<String, CollectionMetadata> result = new HashMap<>();
+        try ( PreparedStatement ps = conn.prepareStatement( SQL_COLUMN_TYPE_MODIFIERS_AND_ATTR_DIMENSIONS ) ) {
+            ps.setString( 1, table );
+            ps.setString( 2, schema );
+            try ( ResultSet rs = ps.executeQuery() ) {
+                while ( rs.next() ) {
+                    String col      = rs.getString( "attname" );
+                    int    dims     = rs.getInt( "attndims" );
+                    int    rawMod   = rs.getInt( "atttypmod" );
+                    Integer typeMod = rs.wasNull() ? null : rawMod;
+                    result.put( col, new CollectionMetadata( dims, typeMod ) );
+                    log.debug( "Column metadata: {} -> dims={}, typeMod={}", col, dims, typeMod );
+                }
+            }
+        }
+        return result;
+    }
+
+
+
+
 
 }

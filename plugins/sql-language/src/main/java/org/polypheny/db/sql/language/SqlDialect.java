@@ -695,6 +695,16 @@ public class SqlDialect {
     }
 
 
+    public List<OperatorName> supportedKnnFunctions() {
+        return List.of();
+    }
+
+
+    public boolean supportsPGVector() {
+        return false;
+    }
+
+
     public boolean supportsComplexBinary() {
         return true;
     }
@@ -805,6 +815,28 @@ public class SqlDialect {
             return sb.toString();
         }
 
+    }
+
+
+    /**
+     * Reading an ARRAY column from a JDBC {@link ResultSet} when the default
+     * {@code getArray()} path is not appropriate.
+     *
+     * <p>The default implementation returns {@link Optional#empty()}, causing the caller to fall back
+     * to the standard {@code java.sql.Array} path. Override this to return a Linq4j
+     * {@link Expression} that retrieves and converts the value directly — for example, when the
+     * driver returns a PGobject instead of a {@code java.sql.Array} (e.g. the case for pgvector).
+     *
+     * <p>The returned expression must evaluate to a {@code Collection<? extends PolyValue>} suitable
+     * for passing to {@link org.polypheny.db.type.entity.PolyList#of(java.util.Collection)}.
+     *
+     * @param resultSet represents {@link ResultSet}
+     * @param i         zero-based column index
+     * @param fieldType Polypheny type of the array column
+     * @return expression for the converted value, or empty to use default array path
+     */
+    public Optional<Expression> handleArrayRetrieval(ParameterExpression resultSet, int i, AlgDataType fieldType) {
+        return Optional.empty();
     }
 
 
