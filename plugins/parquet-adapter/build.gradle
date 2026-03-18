@@ -32,10 +32,24 @@ dependencies {
     }
 
     // --- Test Compile ---
+    testImplementation project(":dbms")
     testImplementation project(path: ":dbms", configuration: "test")
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
     testImplementation project(path: ":plugins:sql-language")
+
+    testImplementation(group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version) {
+        exclude(group: "com.fasterxml.jackson.core")
+        exclude(group: "com.fasterxml.jackson.databind")
+    }
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "failed", "standard_out", "standard_error"
+        showStandardStreams = true
+    }
 }
 
 configurations.configureEach {

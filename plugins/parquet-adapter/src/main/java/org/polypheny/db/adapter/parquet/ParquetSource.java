@@ -77,11 +77,6 @@ import org.slf4j.LoggerFactory;
 @AdapterSettingList(name = "method", options = { "upload", "link" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
 @AdapterSettingDirectory(subOf = "method_upload", name = "directory", defaultValue = "classpath://orders_db", description = "You can upload one or multiple .parquet files.", position = 2)
 @AdapterSettingString(subOf = "method_link", defaultValue = "classpath://orders_db", name = "directoryName", description = "You can select a path to a folder or specific .parquet files.", position = 2)
-//@AdapterSettingInteger(
-//        name = "maxStringLength",
-//        defaultValue = 255,
-//        position = 3,
-//        description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
 public class ParquetSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
     @Delegate(excludes = Excludes.class)
@@ -110,11 +105,6 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
         this.connectionMethod = settings.containsKey( "method" )
                 ? ConnectionMethod.from( settings.get( "method" ).toUpperCase() )
                 : ConnectionMethod.UPLOAD;
-
-//        this.maxStringLength = Integer.parseInt( settings.get( "maxStringLength" ) );
-//        if ( maxStringLength < 1 ) {
-//            throw new GenericRuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
-//        }
 
         setParquetDir( settings );
         createInformationPage();

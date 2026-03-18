@@ -190,3 +190,25 @@ The following figure shows an example of the displayed schema information.
 ### Document Parquet data source implementation
 
 
+# Unit Tests
+To run tests for parquet adapter:
+- `.\gradlew.bat :plugins:parquet-adapter:test`
+
+`plugins/parquet-adapter/build.gradle` should contain: 
+- DBMS as a test dependency
+- Polypheny JDBC driver dependency
+
+## `ParquetPluginTest.java` 
+contains the following tests:
+1. `importsAllTablesAndReadsRows()`
+2. `parquetSourceIsReadOnly()`
+3. `readsExpectedRowsFromCustomers()`
+4. `filtersRowsWithWhereClause()`
+5. `projectsOnlyRequestedColumns()`
+6. `supportsGreaterThanFilter()`
+7. `supportsAllComparisonFilterOperations()`
+8. `rejectsUpdateOnParquetSource()`
+9. `projectsAndFiltersOtherTables()`
+10. `returnsNestedShippingAddressAsJSON()`
+
+
