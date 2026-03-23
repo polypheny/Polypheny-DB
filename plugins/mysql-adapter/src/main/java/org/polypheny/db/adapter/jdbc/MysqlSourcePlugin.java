@@ -82,7 +82,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
             description = "Maximum number of concurrent JDBC connections.")
     @AdapterSettingList(name = "transactionIsolation", options = { "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" }, defaultValue = "SERIALIZABLE",
             description = "Which level of transaction isolation should be used.")
-    @AdapterSettingString(name = "tables", defaultValue = "foo,bar",
+    @AdapterSettingString(name = "tables", defaultValue = "",
             description = "List of tables which should be imported. The names must to be separated by a comma.")
     public static class MysqlSource extends AbstractJdbcSource {
 

@@ -220,8 +220,61 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
             Connection connection = statement.getConnection();
             DatabaseMetaData dbmd = connection.getMetaData();
 
-            String[] tables = settings.get( "tables" ).split( "," );
+            String tablesSetting = settings.get( "tables" );
+            String[] tables;
+
+            if ( tablesSetting == null || tablesSetting.trim().isEmpty() ) {
+                log.info( "No tables configured manually. Discovering tables automatically..." );
+
+                String schemaPattern;
+                if ( requiresSchema() ) {
+                    schemaPattern = "%";
+                } else {
+                    schemaPattern = null;
+                }
+
+                String[] types = { "TABLE" }; // VIEW can be added here later
+
+                List<String> discoveredTables = new ArrayList<>();
+
+                try ( ResultSet rs = dbmd.getTables(
+                        settings.get( "database" ),
+                        schemaPattern,
+                        "%",
+                        types ) ) {
+                    while ( rs.next() ) {
+                        String schema;
+                        if (requiresSchema() ) {
+                            schema = rs.getString("TABLE_SCHEM");
+                        } else {
+                            schema = null;
+                        }
+
+                        String table = rs.getString("TABLE_NAME");
+
+                        if ( schema != null ) {
+                            log.info( "Discovered table: {}.{}", schema, table );
+                            discoveredTables.add( schema + "." + table );
+                        } else {
+                            log.info( "Discovered table: {}", table );
+                            discoveredTables.add( table );
+                        }
+                    }
+                } catch ( SQLException e ) {
+                    throw new GenericRuntimeException( "Error while discovering tables", e );
+                }
+
+                tables = discoveredTables.toArray( new String[0] );
+
+            } else {
+                tables = tablesSetting.split( "," );
+            }
+
             for ( String str : tables ) {
+                str = str.trim();
+                if ( str.isEmpty() ) {
+                    continue;
+                }
                 String[] names = str.split( "\\." );
                 if ( names.length == 0 || names.length > 2 || (requiresSchema() && names.length == 1) ) {
                     throw new GenericRuntimeException( "Invalid table name: " + str );
