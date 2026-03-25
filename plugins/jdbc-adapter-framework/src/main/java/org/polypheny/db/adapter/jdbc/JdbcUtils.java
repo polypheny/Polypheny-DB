@@ -56,9 +56,10 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.sql.language.util.SqlTypeRepresentation;
-import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
@@ -142,6 +143,10 @@ public final class JdbcUtils {
         private PolyValue value( int i ) throws SQLException {
             // MySQL returns timestamps shifted into local time. Using getTimestamp(int, Calendar) with a UTC calendar
             // should prevent this, but does not. So we shift explicitly.
+            Object value = resultSet.getObject( i + 1 );
+            if ( value == null ) {
+                return PolyNull.NULL;
+            }
             return switch ( types[i] ) {
                 case Types.TIMESTAMP -> PolyTimestamp.of( shift( resultSet.getTimestamp( i + 1 ) ) );
                 case Types.TIME -> PolyTime.of( shift( resultSet.getTime( i + 1 ) ) );

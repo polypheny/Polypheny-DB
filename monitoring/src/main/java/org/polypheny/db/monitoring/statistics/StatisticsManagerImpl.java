@@ -330,8 +330,9 @@ public class StatisticsManagerImpl extends StatisticsManager {
         StatisticQueryResult unique = this.prepareNode( column, NodeType.UNIQUE_VALUE );
         if ( unique != null ) {
             for ( int idx = 0; idx < unique.getData().length; idx++ ) {
-                unique.getData()[idx] = unique.getData()[idx].asTemporal();
-
+                if ( unique.getData()[idx] != null ) {
+                    unique.getData()[idx] = unique.getData()[idx].asTemporal();
+                }
             }
         }
 

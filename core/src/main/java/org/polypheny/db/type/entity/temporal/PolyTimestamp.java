@@ -35,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.util.TimestampString;
@@ -150,7 +151,7 @@ public class PolyTimestamp extends PolyTemporal {
 
 
     public static PolyTimestamp convert( @Nullable PolyValue value ) {
-        if ( value == null ) {
+        if ( value == null || value instanceof PolyNull ) {
             return null;
         }
 

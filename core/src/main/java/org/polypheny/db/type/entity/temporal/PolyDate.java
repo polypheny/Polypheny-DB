@@ -110,6 +110,9 @@ public class PolyDate extends PolyTemporal {
 
 
     public static PolyDate of( Date date ) {
+        if ( date == null ) {
+            return null;
+        }
         return new PolyDate( TemporalFunctions.dateToLong( date ) );
     }
 
