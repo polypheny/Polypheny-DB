@@ -211,29 +211,21 @@ public class DocumentUtil {
                     OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_RENAME ),
                     Arrays.asList(
                             updateChain,
-                            getStringArray( List.copyOf( renames.keySet() ), cluster ),
-                            getStringArray( List.copyOf( renames.values() ), cluster ) ) );
+                            getNestedStringArrayLiteral( List.copyOf( renames.keySet() ), cluster ),
+                            getNestedStringArrayLiteral( List.copyOf( renames.values() ), cluster ) ) );
         }
 
         // remove
         if ( !removes.isEmpty() ) {
+            // MqlFunctions.docRemove expects a nested path representation:
+            //   [["a"], ["profile", "email"], ...]
+            // not a flat ["a", "profile.email", ...] string array.
             updateChain = new RexCall(
                     new DocumentType(),
                     OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REMOVE ),
                     Arrays.asList(
                             updateChain,
-                            getStringArray( removes, cluster ) ) );
-        }
-
-        if ( !removes.isEmpty() ) {
-            updateChain = new RexCall(
-                    new DocumentType(),
-                    OperatorRegistry.get(
-                            QueryLanguage.from( "mongo" ),
-                            OperatorName.MQL_UPDATE ),
-                    Arrays.asList(
-                            updateChain,
-                            getStringArray( removes, cluster ) ) );
+                            getNestedStringArrayLiteral( removes, cluster ) ) );
         }
 
         return Pair.of(
@@ -269,6 +261,23 @@ public class DocumentUtil {
         return new RexLiteral( PolyList.of( elements.stream().map( PolyString::of ).collect( Collectors.toList() ) ), type, PolyType.ARRAY );
     }
 
+
+
+
+    public static RexLiteral getNestedStringArrayLiteral( List<String> elements, AlgCluster cluster ) {
+        AlgDataType charType = cluster.getTypeFactory().createPolyType( PolyType.CHAR, 255 );
+        AlgDataType type = getNestedArrayType( cluster, 2, charType );
+
+        PolyList<PolyList<PolyString>> value = PolyList.of(
+                elements.stream()
+                        .map( e -> PolyList.of( Arrays.stream( e.split( "\\." ) )
+                                .filter( s -> !s.isEmpty() )
+                                .map( PolyString::of )
+                                .collect( Collectors.toList() ) ) )
+                        .collect( Collectors.toList() ) );
+
+        return new RexLiteral( value, type, PolyType.ARRAY );
+    }
 
     public static AlgDataType getNestedArrayType( AlgCluster cluster, int depth, AlgDataType componentType ) {
         if ( depth == 0 ) {

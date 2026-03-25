@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.bson.BsonDocument;
+import org.bson.BsonNull;
+import org.bson.BsonValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
@@ -59,6 +61,9 @@ public final class DocumentSchemaWriteEnforcer {
      * Schema + enforcement mode bundle.
      */
     private record SchemaContext( DocumentSchema schema, EnforcementMode mode ) {
+    }
+
+    private record ResolvedSchemaNode( DocumentSchema.Node node, AdditionalProperties inheritedAp ) {
     }
 
     /**
@@ -481,20 +486,14 @@ public final class DocumentSchemaWriteEnforcer {
                 continue;
             }
 
-            var nodeOpt = resolveNode( schema, path );
-            if ( nodeOpt.isEmpty() ) {
+            var resolvedOpt = resolveNode( schema, path );
+            if ( resolvedOpt.isEmpty() ) {
                 // unknown path: handled elsewhere for FORBID, or allowed for ALLOW
                 continue;
             }
 
-            DocumentSchema.Node node = nodeOpt.get();
-            if ( !(node instanceof DocumentSchema.ScalarNode sn) ) {
-                // object/array checks need post-image validation; skip here
-                continue;
-            }
-
-            List<PolyType> expectedTypes = sn.types;
-            PolyType expected = sn.type; // first allowed type (for legacy messages)
+            ResolvedSchemaNode resolved = resolvedOpt.get();
+            DocumentSchema.Node node = resolved.node();
 
             // Infer which Mongo update operator this expression represents
             String semantic = "$set";
@@ -516,6 +515,28 @@ public final class DocumentSchemaWriteEnforcer {
                     semantic = "$set";
                 }
             }
+
+            // For literal $set assignments, validate the whole assigned value against the exact schema subtree.
+            // This fixes whole-object / whole-array updates and also rejects literal objects assigned to scalar fields.
+            if ( "$set".equals( semantic ) ) {
+                Optional<BsonValue> literalValue = tryExtractLiteralBsonValue( expr );
+                if ( literalValue.isPresent() ) {
+                    ValidationResult res = SchemaValidator.validateNodeValue( node, literalValue.get(), resolved.inheritedAp() );
+                    if ( !res.ok() ) {
+                        String msg = "Update value for field '" + path + "' does not conform to the collection schema: "
+                                + res.compactSummary( 3 );
+                        handleViolation( mode, msg, entity.getName(), path );
+                    }
+                    continue;
+                }
+            }
+
+            // Non-scalar checks beyond literal $set need post-image validation; skip here.
+            if ( !(node instanceof DocumentSchema.ScalarNode sn) ) {
+                continue;
+            }
+
+            List<PolyType> expectedTypes = sn.types;
 
             // Helpers (inline, no extra methods needed)
             final java.util.function.Predicate<PolyType> isText = t -> {
@@ -629,9 +650,10 @@ public final class DocumentSchemaWriteEnforcer {
 
                 boolean ok = true;
 
-                // If the converter was forced to DOCUMENT for scalars, don't over-enforce here.
                 if ( actual == PolyType.DOCUMENT ) {
-                    ok = true;
+                    // For non-literal computed expressions we cannot infer more safely here.
+                    // Literal object assignments were already validated above and would have continued.
+                    ok = !(expr instanceof org.polypheny.db.rex.RexLiteral);
                 } else if ( expectedTypes != null && !expectedTypes.isEmpty() ) {
 
                     boolean allowsNull = expectedTypes.contains( PolyType.NULL );
@@ -664,6 +686,7 @@ public final class DocumentSchemaWriteEnforcer {
     }
 
 
+
     /**
      * First segment of a dotted path (e.g., "a.b.c" -> "a").
      */
@@ -687,8 +710,11 @@ public final class DocumentSchemaWriteEnforcer {
      *  - array: step into "items", numeric segments are treated as indexes
      *  - scalar: cannot have children
      */
-    private static Optional<DocumentSchema.Node> resolveNode( DocumentSchema schema, String path ) {
+    private static Optional<ResolvedSchemaNode> resolveNode( DocumentSchema schema, String path ) {
         DocumentSchema.Node cur = schema.root();
+        AdditionalProperties inheritedAp =
+                schema.additionalProperties() != null ? schema.additionalProperties() : AdditionalProperties.ALLOW;
+
         if ( path == null || path.isEmpty() ) {
             return Optional.empty();
         }
@@ -697,11 +723,17 @@ public final class DocumentSchemaWriteEnforcer {
         for ( String seg : segs ) {
 
             if ( cur instanceof DocumentSchema.ObjectNode on ) {
+                AdditionalProperties effectiveAp =
+                        (on.additionalProperties == null || on.additionalProperties == AdditionalProperties.INHERIT)
+                                ? inheritedAp
+                                : on.additionalProperties;
+
                 DocumentSchema.Node nxt = on.properties.get( seg );
                 if ( nxt == null ) {
                     return Optional.empty();
                 }
                 cur = nxt;
+                inheritedAp = effectiveAp;
 
             } else if ( cur instanceof DocumentSchema.ArrayNode an ) {
                 // step into items; allow numeric index segments (e.g. "tags.0")
@@ -711,11 +743,17 @@ public final class DocumentSchemaWriteEnforcer {
                     continue;
                 } else {
                     if ( cur instanceof DocumentSchema.ObjectNode aon ) {
+                        AdditionalProperties effectiveAp =
+                                (aon.additionalProperties == null || aon.additionalProperties == AdditionalProperties.INHERIT)
+                                        ? inheritedAp
+                                        : aon.additionalProperties;
+
                         DocumentSchema.Node nxt = aon.properties.get( seg );
                         if ( nxt == null ) {
                             return Optional.empty();
                         }
                         cur = nxt;
+                        inheritedAp = effectiveAp;
                     } else {
                         return Optional.empty();
                     }
@@ -727,8 +765,28 @@ public final class DocumentSchemaWriteEnforcer {
             }
         }
 
-        return Optional.ofNullable( cur );
+        return Optional.of( new ResolvedSchemaNode( cur, inheritedAp ) );
     }
+
+    private static Optional<BsonValue> tryExtractLiteralBsonValue( RexNode expr ) {
+        if ( !(expr instanceof org.polypheny.db.rex.RexLiteral lit) ) {
+            return Optional.empty();
+        }
+
+        PolyValue value = lit.getValue();
+        if ( value == null || value.isNull() ) {
+            return Optional.of( BsonNull.VALUE );
+        }
+
+        try {
+            String json = value.toJson();
+            BsonDocument wrapper = BsonDocument.parse( "{\"v\":" + json + "}" );
+            return Optional.ofNullable( wrapper.get( "v" ) );
+        } catch ( Exception ignored ) {
+            return Optional.empty();
+        }
+    }
+
 
     private static void handleViolation(
             EnforcementMode mode,

@@ -90,6 +90,22 @@ public final class SchemaValidator {
         return validate( schema, doc ).ok();
     }
 
+
+    /**
+     * Validates an arbitrary schema node against a BSON value.
+     * This is used by update-time validation for whole-object / whole-array literal assignments.
+     */
+    public static ValidationResult validateNodeValue(
+            DocumentSchema.Node node,
+            BsonValue value,
+            DocumentSchema.AdditionalProperties inheritedAp ) {
+        List<Violation> out = new ArrayList<>();
+        DocumentSchema.AdditionalProperties effectiveInheritedAp =
+                inheritedAp != null ? inheritedAp : DocumentSchema.AdditionalProperties.ALLOW;
+        validateNode( "$", node, value, out, effectiveInheritedAp );
+        return new ValidationResult( out.isEmpty(), out );
+    }
+
     // -----------------------------------------------------------------------------------------
     // Generic dispatch
     // -----------------------------------------------------------------------------------------

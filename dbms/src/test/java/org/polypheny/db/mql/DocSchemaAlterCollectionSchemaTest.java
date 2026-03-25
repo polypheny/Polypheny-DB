@@ -275,6 +275,127 @@ public class DocSchemaAlterCollectionSchemaTest extends MqlTestTemplate {
         assertDoesNotThrow( () -> insert( "{\"name\":\"Bob\",\"profile\":{\"first\":\"B\",\"x\":2}}", USER ) );
     }
 
+    @Test
+    public void alterSchema_warn_tightenNestedAdditionalProperties_withExistingNestedExtras_shouldSucceed_butTightenToStrictShouldFail() {
+        createUserCollection( "{" +
+                "  docSchema: {" +
+                "    type: \"object\"," +
+                "    properties: {" +
+                "      name: { type: \"text\" }," +
+                "      profile: {" +
+                "        type: \"object\"," +
+                "        properties: { first: { type: \"text\" } }," +
+                "        required: [\"first\"]," +
+                "        additionalProperties: true" +
+                "      }" +
+                "    }," +
+                "    required: [\"name\",\"profile\"]," +
+                "    additionalProperties: true" +
+                "  }," +
+                "  validationAction: \"strict\"" +
+                "}" );
+
+        assertDoesNotThrow( () -> insert( "{\"name\":\"Alice\",\"profile\":{\"first\":\"A\",\"x\":1}}", USER ) );
+
+        assertDoesNotThrow( () -> alterUserSchema( "{" +
+                "  docSchema: {" +
+                "    type: \"object\"," +
+                "    properties: {" +
+                "      name: { type: \"text\" }," +
+                "      profile: {" +
+                "        type: \"object\"," +
+                "        properties: { first: { type: \"text\" } }," +
+                "        required: [\"first\"]," +
+                "        additionalProperties: false" +
+                "      }" +
+                "    }," +
+                "    required: [\"name\",\"profile\"]," +
+                "    additionalProperties: true" +
+                "  }," +
+                "  validationAction: \"warn\"" +
+                "}" ) );
+
+        assertThrows( Exception.class, () -> alterUserSchema( "{ validationAction: \"strict\" }" ) );
+    }
+
+    @Test
+    public void alterSchema_patchNestedOptionalField_underStrict_shouldSucceed_andBeEnforcedOnWrites() {
+        createUserCollection( "{" +
+                "  docSchema: {" +
+                "    type: \"object\"," +
+                "    properties: {" +
+                "      name: { type: \"text\" }," +
+                "      profile: {" +
+                "        type: \"object\"," +
+                "        properties: { first: { type: \"text\" } }," +
+                "        required: [\"first\"]," +
+                "        additionalProperties: false" +
+                "      }" +
+                "    }," +
+                "    required: [\"name\",\"profile\"]," +
+                "    additionalProperties: true" +
+                "  }," +
+                "  validationAction: \"strict\"" +
+                "}" );
+
+        assertDoesNotThrow( () -> insert( "{\"name\":\"Alice\",\"profile\":{\"first\":\"A\"}}", USER ) );
+
+        assertDoesNotThrow( () -> alterUserSchema( "{" +
+                "  mode: \"patch\"," +
+                "  docSchema: {" +
+                "    type: \"object\"," +
+                "    properties: {" +
+                "      profile: {" +
+                "        properties: { last: { type: \"text\" } }" +
+                "      }" +
+                "    }" +
+                "  }," +
+                "  validationAction: \"strict\"" +
+                "}" ) );
+
+        assertDoesNotThrow( () -> insert( "{\"name\":\"Bob\",\"profile\":{\"first\":\"B\"}}", USER ) );
+        assertDoesNotThrow( () -> insert( "{\"name\":\"Carl\",\"profile\":{\"first\":\"C\",\"last\":\"L\"}}", USER ) );
+        assertThrows( Exception.class, () -> insert( "{\"name\":\"Dana\",\"profile\":{\"first\":\"D\",\"last\":1}}", USER ) );
+    }
+
+    @Test
+    public void alterSchema_patchNestedRequiredField_underWarn_shouldPersist_butTightenToStrictShouldFail() {
+        createUserCollection( "{" +
+                "  docSchema: {" +
+                "    type: \"object\"," +
+                "    properties: {" +
+                "      name: { type: \"text\" }," +
+                "      profile: {" +
+                "        type: \"object\"," +
+                "        properties: { first: { type: \"text\" } }," +
+                "        required: [\"first\"]," +
+                "        additionalProperties: false" +
+                "      }" +
+                "    }," +
+                "    required: [\"name\",\"profile\"]," +
+                "    additionalProperties: true" +
+                "  }," +
+                "  validationAction: \"strict\"" +
+                "}" );
+
+        assertDoesNotThrow( () -> insert( "{\"name\":\"Alice\",\"profile\":{\"first\":\"A\"}}", USER ) );
+
+        assertDoesNotThrow( () -> alterUserSchema( "{" +
+                "  mode: \"patch\"," +
+                "  docSchema: {" +
+                "    type: \"object\"," +
+                "    properties: {" +
+                "      profile: {" +
+                "        properties: { first: { type: \"text\" }, last: { type: \"text\" } }," +
+                "        required: [\"first\",\"last\"]" +
+                "      }" +
+                "    }" +
+                "  }," +
+                "  validationAction: \"warn\"" +
+                "}" ) );
+
+        assertThrows( Exception.class, () -> alterUserSchema( "{ validationAction: \"strict\" }" ) );
+    }
 
     @Test
     public void alterEnforcementOnly_toStrict_withViolationsAgainstCurrentSchema_shouldFail() {

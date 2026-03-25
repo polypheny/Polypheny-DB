@@ -360,8 +360,37 @@ public class MqlToAlgConverter {
         Map<String, RexNode> removes = new HashMap<>();
         Map<String, String> renames = new HashMap<>();
 
+        BsonDocument updateDocument = query.getUpdate().asDocument();
+        boolean replacementUpdate = !updateDocument.isEmpty()
+                && updateDocument.keySet().stream().noneMatch( k -> k.startsWith( "$" ) );
+
+        if ( replacementUpdate ) {
+            if ( query.isOnlyOne() ) {
+                node = wrapLimit( node, 1 );
+            }
+
+            Map<String, RexNode> replacementFields = translateSet( updateDocument, rowType );
+            List<String> fieldsToRemove = new ArrayList<>();
+
+            tryLoadCurrentSchema().ifPresent( schema -> {
+                for ( String declared : schema.root().properties.keySet() ) {
+                    if ( !updateDocument.containsKey( declared ) ) {
+                        fieldsToRemove.add( declared );
+                    }
+                }
+            } );
+
+            return LogicalDocumentModify.create(
+                    entity,
+                    node,
+                    Operation.UPDATE,
+                    replacementFields,
+                    fieldsToRemove,
+                    Map.of() );
+        }
+
         UpdateOperation updateOp;
-        for ( Entry<String, BsonValue> entry : query.getUpdate().asDocument().entrySet() ) {
+        for ( Entry<String, BsonValue> entry : updateDocument.entrySet() ) {
             String op = entry.getKey();
             if ( !entry.getValue().isDocument() ) {
                 throw new GenericRuntimeException( "After a update statement a document is needed" );
@@ -554,13 +583,12 @@ public class MqlToAlgConverter {
     private Map<String, RexNode> translateSet( BsonDocument doc, AlgDataType rowType ) {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
-            if ( entry.getValue().isDocument() ) {
-                updates.put( entry.getKey(), translateDocument( entry.getValue().asDocument(), rowType, entry.getKey() ) );
-            } else if ( entry.getValue().isArray() ) {
-                updates.put( entry.getKey(), convertLiteral( entry.getValue() ) );
-            } else {
-                updates.put( entry.getKey(), convertLiteral( entry.getValue() ) );
-            }
+            // IMPORTANT: update values are literals, not filter expressions.
+            // Using translateDocument(...) here turns a document like
+            // {"profile": {"first": "foo", "last": "bar"}}
+            // into a BOOLEAN conjunction, which later materializes as false/true
+            // instead of the intended nested object.
+            updates.put( entry.getKey(), convertLiteral( entry.getValue() ) );
         }
         return updates;
     }
@@ -689,7 +717,7 @@ public class MqlToAlgConverter {
         return LogicalDocumentModify.create(
                 table,
                 node,
-                Modify.Operation.DELETE,    
+                Modify.Operation.DELETE,
                 null,
                 null,
                 null );
@@ -1154,9 +1182,273 @@ public class MqlToAlgConverter {
 
 
     private AlgNode combineFilter( BsonDocument filter, AlgNode node, AlgDataType rowType ) {
-        RexNode condition = translateDocument( filter, rowType, null );
+        if ( isStaticallyUnsatisfiableBySchema( filter ) ) {
+            return LogicalDocumentValues.create( cluster, List.of() );
+        }
 
+        RexNode condition = translateDocument( filter, rowType, null );
         return LogicalDocumentFilter.create( node, condition );
+    }
+
+    private boolean isStaticallyUnsatisfiableBySchema( BsonDocument filter ) {
+        if ( filter == null || filter.isEmpty() ) {
+            return false;
+        }
+
+        Optional<DocumentSchema> schemaOpt = tryLoadCurrentStrictSchema();
+        if ( schemaOpt.isEmpty() ) {
+            return false;
+        }
+
+        try {
+            return isFilterStaticallyUnsatisfiable( filter, schemaOpt.get() );
+        } catch ( Exception e ) {
+            // Never break normal query translation because of the optimization.
+            return false;
+        }
+    }
+
+
+    private Optional<DocumentSchema> tryLoadCurrentStrictSchema() {
+        if ( !(this.entity instanceof LogicalCollection coll) ) {
+            return Optional.empty();
+        }
+
+        Optional<SchemaMeta> metaOpt = SchemaMeta.readCurrent( Catalog.getInstance(), namespaceId, coll.id );
+        if ( metaOpt.isEmpty() ) {
+            return Optional.empty();
+        }
+
+        SchemaMeta meta = metaOpt.get();
+        if ( meta.schemaJson == null || meta.schemaJson.isBlank() ) {
+            return Optional.empty();
+        }
+
+        if ( !EnforcementMode.STRICT.name().equals( normalizeEnforcement( meta.enforcement ) ) ) {
+            return Optional.empty();
+        }
+
+        return Optional.of( SchemaJson.parse( meta.schemaJson ) );
+    }
+
+
+    private Optional<DocumentSchema> tryLoadCurrentSchema() {
+        if ( !(this.entity instanceof LogicalCollection coll) ) {
+            return Optional.empty();
+        }
+
+        Optional<SchemaMeta> metaOpt = SchemaMeta.readCurrent( Catalog.getInstance(), namespaceId, coll.id );
+        if ( metaOpt.isEmpty() ) {
+            return Optional.empty();
+        }
+
+        SchemaMeta meta = metaOpt.get();
+        if ( meta.schemaJson == null || meta.schemaJson.isBlank() ) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of( SchemaJson.parse( meta.schemaJson ) );
+        } catch ( Exception ignored ) {
+            return Optional.empty();
+        }
+    }
+
+
+    private boolean isFilterStaticallyUnsatisfiable( BsonDocument filter, DocumentSchema schema ) {
+        for ( Entry<String, BsonValue> entry : filter.entrySet() ) {
+            String key = entry.getKey();
+            BsonValue value = entry.getValue();
+
+            if ( key.startsWith( "$" ) ) {
+                switch ( key ) {
+                    case "$and":
+                        if ( value.isArray() ) {
+                            for ( BsonValue child : value.asArray() ) {
+                                if ( child.isDocument() && isFilterStaticallyUnsatisfiable( child.asDocument(), schema ) ) {
+                                    return true;
+                                }
+                            }
+                        }
+                        break;
+
+                    case "$or":
+                        if ( value.isArray() && !value.asArray().isEmpty() ) {
+                            boolean allUnsatisfiable = true;
+                            for ( BsonValue child : value.asArray() ) {
+                                if ( !child.isDocument() || !isFilterStaticallyUnsatisfiable( child.asDocument(), schema ) ) {
+                                    allUnsatisfiable = false;
+                                    break;
+                                }
+                            }
+                            if ( allUnsatisfiable ) {
+                                return true;
+                            }
+                        }
+                        break;
+
+                    // Keep these conservative for now.
+                    case "$nor":
+                    case "$not":
+                    case "$expr":
+                    case "$jsonSchema":
+                    default:
+                        break;
+                }
+            } else if ( isFieldPredicateStaticallyUnsatisfiable( key, value, schema ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    private boolean isFieldPredicateStaticallyUnsatisfiable( String fieldPath, BsonValue predicate, DocumentSchema schema ) {
+        if ( fieldPath == null || fieldPath.isBlank() ) {
+            return false;
+        }
+
+        String[] parts = fieldPath.split( "\\." );
+        DocumentSchema.AdditionalProperties rootAp =
+                schema.additionalProperties() == null
+                        ? DocumentSchema.AdditionalProperties.ALLOW
+                        : schema.additionalProperties();
+
+        boolean mayExist = mayPathExist( schema.root(), parts, 0, rootAp );
+        if ( mayExist ) {
+            return false;
+        }
+
+        return predicateRequiresExistingPath( predicate );
+    }
+
+
+    private boolean predicateRequiresExistingPath( BsonValue predicate ) {
+        if ( predicate == null ) {
+            return false;
+        }
+
+        if ( !predicate.isDocument() ) {
+            // Literal equality, regex literal, arrays, etc. all require the field to exist.
+            return true;
+        }
+
+        BsonDocument doc = predicate.asDocument();
+        if ( doc.isEmpty() ) {
+            return true;
+        }
+
+        boolean requiresExistence = false;
+
+        for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
+            String op = entry.getKey();
+            BsonValue value = entry.getValue();
+
+            if ( "$exists".equals( op ) ) {
+                if ( !value.isBoolean() ) {
+                    requiresExistence = true;
+                } else if ( value.asBoolean().getValue() ) {
+                    requiresExistence = true;
+                }
+                continue;
+            }
+
+            // Be conservative for negation / expression-style operators.
+            if ( "$not".equals( op ) || "$nor".equals( op ) || "$expr".equals( op ) || "$jsonSchema".equals( op ) ) {
+                return false;
+            }
+
+            // Everything else is treated as existence-requiring.
+            requiresExistence = true;
+        }
+
+        return requiresExistence;
+    }
+
+
+    private boolean mayPathExist(
+            DocumentSchema.Node node,
+            String[] path,
+            int index,
+            DocumentSchema.AdditionalProperties inheritedAp ) {
+
+        if ( index >= path.length ) {
+            return true;
+        }
+
+        if ( node instanceof DocumentSchema.ObjectNode obj ) {
+            DocumentSchema.AdditionalProperties effectiveAp = resolveAdditionalProperties( obj, inheritedAp );
+            String segment = path[index];
+
+            DocumentSchema.Node child = obj.properties.get( segment );
+            if ( child != null ) {
+                return mayPathExist( child, path, index + 1, effectiveAp );
+            }
+
+            // Unknown property: only possible if the object is open.
+            return effectiveAp == DocumentSchema.AdditionalProperties.ALLOW;
+        }
+
+        if ( node instanceof DocumentSchema.ArrayNode arr ) {
+            // Support Mongo-style dotted traversal through arrays of objects.
+            // Both "items.label" and "items.0.label" must be considered possible.
+            if ( index < path.length && path[index].matches( "\\d+" ) ) {
+                return mayPathExist( arr.items, path, index + 1, inheritedAp );
+            }
+            return mayPathExist( arr.items, path, index, inheritedAp );
+        }
+
+        if ( node instanceof DocumentSchema.AnyOfNode anyOf ) {
+            for ( DocumentSchema.Node child : anyOf.anyOf ) {
+                if ( mayPathExist( child, path, index, inheritedAp ) ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if ( node instanceof DocumentSchema.OneOfNode oneOf ) {
+            for ( DocumentSchema.Node child : oneOf.oneOf ) {
+                if ( mayPathExist( child, path, index, inheritedAp ) ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if ( node instanceof DocumentSchema.AllOfNode allOf ) {
+            // Conservative approximation: only prune when every branch says impossible.
+            for ( DocumentSchema.Node child : allOf.allOf ) {
+                if ( mayPathExist( child, path, index, inheritedAp ) ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if ( node instanceof DocumentSchema.NotNode ) {
+            // Too hard to reason about safely here.
+            return true;
+        }
+
+        // Scalar node: no deeper path can exist below it.
+        return false;
+    }
+
+
+    private DocumentSchema.AdditionalProperties resolveAdditionalProperties(
+            DocumentSchema.ObjectNode node,
+            DocumentSchema.AdditionalProperties inheritedAp ) {
+
+        if ( node.additionalProperties != null
+                && node.additionalProperties != DocumentSchema.AdditionalProperties.INHERIT ) {
+            return node.additionalProperties;
+        }
+
+        return inheritedAp == null
+                ? DocumentSchema.AdditionalProperties.ALLOW
+                : inheritedAp;
     }
 
 

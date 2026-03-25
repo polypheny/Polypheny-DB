@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.bson.BsonArray;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -861,6 +862,462 @@ public class DocSchemaDmlSimpleTest extends MqlTestTemplate {
 
         DocResult result = find( "{}", "{}", USER );
         assertTrue( MongoConnection.checkDocResultSet( result, ImmutableList.of( ok ), true, true ) );
+    }
+
+
+    // ---------------------------------------------------------------------
+    // Extended nested-object coverage aligned with benchmark-style schemas
+    // ---------------------------------------------------------------------
+
+    private void createUserCollectionWithBenchmarkLikeNestedSchema() {
+        recreateUserCollection( "{" +
+                "  docSchema: {" +
+                "    type: \"object\"," +
+                "    properties: {" +
+                "      name: { type: \"text\" }," +
+                "      obj1: {" +
+                "        type: \"object\"," +
+                "        properties: {" +
+                "          n1: { type: \"text\" }," +
+                "          n2: { type: \"number\" }," +
+                "          n3: { type: \"boolean\" }," +
+                "          n4: { type: \"text\" }," +
+                "          n5: { type: \"number\" }" +
+                "        }," +
+                "        required: [\"n1\",\"n2\",\"n3\",\"n4\",\"n5\"]," +
+                "        additionalProperties: false" +
+                "      }," +
+                "      obj2: {" +
+                "        type: \"object\"," +
+                "        properties: {" +
+                "          n1: { type: \"text\" }," +
+                "          n2: { type: \"number\" }," +
+                "          n3: { type: \"boolean\" }," +
+                "          n4: { type: \"text\" }," +
+                "          n5: { type: \"number\" }" +
+                "        }," +
+                "        required: [\"n1\",\"n2\",\"n3\",\"n4\",\"n5\"]," +
+                "        additionalProperties: false" +
+                "      }" +
+                "    }," +
+                "    required: [\"name\",\"obj1\",\"obj2\"]," +
+                "    additionalProperties: false" +
+                "  }," +
+                "  validationAction: \"strict\"" +
+                "}" );
+    }
+
+
+    private void seedBenchmarkLikeNestedDocs() {
+        assertDoesNotThrow( () -> insert(
+                "{\"name\":\"Alice\",\"obj1\":{\"n1\":\"v1_1\",\"n2\":1,\"n3\":true,\"n4\":\"x\",\"n5\":2},\"obj2\":{\"n1\":\"v2_1\",\"n2\":2,\"n3\":false,\"n4\":\"y\",\"n5\":3}}",
+                USER ) );
+        assertDoesNotThrow( () -> insert(
+                "{\"name\":\"Bob\",\"obj1\":{\"n1\":\"v1_2\",\"n2\":4,\"n3\":false,\"n4\":\"m\",\"n5\":5},\"obj2\":{\"n1\":\"v2_2\",\"n2\":6,\"n3\":true,\"n4\":\"n\",\"n5\":7}}",
+                USER ) );
+    }
+
+
+    private void createUserCollectionWithArrayOfObjectsSchema() {
+        recreateUserCollection( "{" +
+                "  docSchema: {" +
+                "    type: \"object\"," +
+                "    properties: {" +
+                "      name: { type: \"text\" }," +
+                "      items: {" +
+                "        type: \"array\"," +
+                "        items: {" +
+                "          type: \"object\"," +
+                "          properties: {" +
+                "            label: { type: \"text\" }," +
+                "            qty: { type: \"number\" }," +
+                "            active: { type: \"boolean\" }" +
+                "          }," +
+                "          required: [\"label\",\"qty\",\"active\"]," +
+                "          additionalProperties: false" +
+                "        }" +
+                "      }" +
+                "    }," +
+                "    required: [\"name\",\"items\"]," +
+                "    additionalProperties: false" +
+                "  }," +
+                "  validationAction: \"strict\"" +
+                "}" );
+    }
+
+
+    private void seedArrayOfObjectsDocs() {
+        assertDoesNotThrow( () -> insert(
+                "{\"name\":\"Alice\",\"items\":[{\"label\":\"a\",\"qty\":1,\"active\":true},{\"label\":\"b\",\"qty\":2,\"active\":false}]}",
+                USER ) );
+        assertDoesNotThrow( () -> insert(
+                "{\"name\":\"Bob\",\"items\":[{\"label\":\"c\",\"qty\":3,\"active\":true}]}",
+                USER ) );
+    }
+
+
+    private void assertProjectionMatches( String projection, String expectedArrayJson ) {
+        String normalizedProjection = projection
+                .replace( "\"_id\":0,", "" )
+                .replace( ",\"_id\":0", "" )
+                .replace( "\"_id\":0", "" )
+                .replace( "{,", "{" )
+                .replace( ",}", "}" );
+
+        if ( normalizedProjection.isBlank() || normalizedProjection.equals( "{" ) ) {
+            normalizedProjection = "{}";
+        }
+
+        DocResult result = find( "{}", normalizedProjection, USER );
+        List<String> expectedDocs = BsonArray.parse( expectedArrayJson )
+                .getValues()
+                .stream()
+                .map( Object::toString )
+                .toList();
+        assertTrue( MongoConnection.checkDocResultSet( result, expectedDocs, true, true ) );
+    }
+
+
+    @Test
+    public void insert_declaredNestedObjectWholeValue_valid_shouldSucceed() {
+        createUserCollectionWithBenchmarkLikeNestedSchema();
+
+        String doc = "{\"name\":\"Alice\",\"obj1\":{\"n1\":\"v1_1\",\"n2\":1,\"n3\":true,\"n4\":\"x\",\"n5\":2},\"obj2\":{\"n1\":\"v2_1\",\"n2\":2,\"n3\":false,\"n4\":\"y\",\"n5\":3}}";
+        assertDoesNotThrow( () -> insert( doc, USER ) );
+
+        assertProjectionMatches(
+                "{\"_id\":0,\"name\":1,\"obj1\":1,\"obj2\":1}",
+                "[" + doc + "]" );
+    }
+
+
+    @Test
+    public void insert_declaredNestedObjectWholeValue_missingRequiredNestedField_shouldFail() {
+        createUserCollectionWithBenchmarkLikeNestedSchema();
+
+        assertThrows( Exception.class, () -> insert(
+                "{\"name\":\"Alice\",\"obj1\":{\"n1\":\"v1_1\",\"n2\":1,\"n3\":true,\"n4\":\"x\"},\"obj2\":{\"n1\":\"v2_1\",\"n2\":2,\"n3\":false,\"n4\":\"y\",\"n5\":3}}",
+                USER ) );
+
+        assertProjectionMatches( "{\"_id\":0,\"name\":1}", "[]" );
+    }
+
+
+    @Test
+    public void insert_declaredNestedObjectWholeValue_extraNestedField_whenForbidden_shouldFail() {
+        createUserCollectionWithBenchmarkLikeNestedSchema();
+
+        assertThrows( Exception.class, () -> insert(
+                "{\"name\":\"Alice\",\"obj1\":{\"n1\":\"v1_1\",\"n2\":1,\"n3\":true,\"n4\":\"x\",\"n5\":2,\"extra\":9},\"obj2\":{\"n1\":\"v2_1\",\"n2\":2,\"n3\":false,\"n4\":\"y\",\"n5\":3}}",
+                USER ) );
+
+        assertProjectionMatches( "{\"_id\":0,\"name\":1}", "[]" );
+    }
+
+
+    @Test
+    public void update_setDeclaredNestedObjectWholeValue_valid_shouldSucceed() {
+        createUserCollectionWithBenchmarkLikeNestedSchema();
+        seedBenchmarkLikeNestedDocs();
+
+        assertDoesNotThrow( () -> update(
+                "{\"name\":\"Alice\"}",
+                "{\"$set\":{\"obj1\":{\"n1\":\"changed\",\"n2\":111,\"n3\":false,\"n4\":\"ok\",\"n5\":222}}}",
+                USER ) );
+
+        assertProjectionMatches(
+                "{\"_id\":0,\"name\":1,\"obj1\":1}",
+                "["
+                        + "{\"name\":\"Alice\",\"obj1\":{\"n1\":\"changed\",\"n2\":111,\"n3\":false,\"n4\":\"ok\",\"n5\":222}},"
+                        + "{\"name\":\"Bob\",\"obj1\":{\"n1\":\"v1_2\",\"n2\":4,\"n3\":false,\"n4\":\"m\",\"n5\":5}}"
+                        + "]" );
+    }
+
+
+    @Test
+    public void update_setDeclaredNestedObjectWholeValue_missingNestedRequired_shouldFail_andKeepOriginal() {
+        createUserCollectionWithBenchmarkLikeNestedSchema();
+        seedBenchmarkLikeNestedDocs();
+
+        assertThrows( Exception.class, () -> update(
+                "{\"name\":\"Alice\"}",
+                "{\"$set\":{\"obj1\":{\"n1\":\"changed\",\"n2\":111,\"n3\":false,\"n4\":\"ok\"}}}",
+                USER ) );
+
+        assertProjectionMatches(
+                "{\"_id\":0,\"name\":1,\"obj1\":1}",
+                "["
+                        + "{\"name\":\"Alice\",\"obj1\":{\"n1\":\"v1_1\",\"n2\":1,\"n3\":true,\"n4\":\"x\",\"n5\":2}},"
+                        + "{\"name\":\"Bob\",\"obj1\":{\"n1\":\"v1_2\",\"n2\":4,\"n3\":false,\"n4\":\"m\",\"n5\":5}}"
+                        + "]" );
+    }
+
+
+    @Test
+    public void update_setDeclaredNestedObjectWholeValue_extraNestedField_shouldFail_andKeepOriginal() {
+        createUserCollectionWithBenchmarkLikeNestedSchema();
+        seedBenchmarkLikeNestedDocs();
+
+        assertThrows( Exception.class, () -> update(
+                "{\"name\":\"Alice\"}",
+                "{\"$set\":{\"obj1\":{\"n1\":\"changed\",\"n2\":111,\"n3\":false,\"n4\":\"ok\",\"n5\":222,\"extra\":1}}}",
+                USER ) );
+
+        assertProjectionMatches(
+                "{\"_id\":0,\"name\":1,\"obj1\":1}",
+                "["
+                        + "{\"name\":\"Alice\",\"obj1\":{\"n1\":\"v1_1\",\"n2\":1,\"n3\":true,\"n4\":\"x\",\"n5\":2}},"
+                        + "{\"name\":\"Bob\",\"obj1\":{\"n1\":\"v1_2\",\"n2\":4,\"n3\":false,\"n4\":\"m\",\"n5\":5}}"
+                        + "]" );
+    }
+
+
+    @Test
+    public void find_declaredNestedFilter_shouldReturnMatch() {
+        createUserCollectionWithBenchmarkLikeNestedSchema();
+        seedBenchmarkLikeNestedDocs();
+
+        DocResult result = find( "{\"obj1.n1\":\"v1_1\"}", "{\"name\":1}", USER );
+        assertTrue( MongoConnection.checkDocResultSet( result, List.of("{\"name\":\"Alice\"}"), true, true ) );
+    }
+
+
+    @Test
+    public void find_wrongTypeNestedFilter_shouldBeNoMatch() {
+        createUserCollectionWithBenchmarkLikeNestedSchema();
+        seedBenchmarkLikeNestedDocs();
+
+        DocResult result = find( "{\"obj1.n1\":12345}", "{\"name\":1}", USER );
+        assertTrue( MongoConnection.checkDocResultSet( result, List.of(), true, true ) );
+    }
+
+
+    @Test
+    public void find_unknownNestedFilter_shouldBeNoMatch_orExposeOptimizationBug() {
+        createUserCollectionWithBenchmarkLikeNestedSchema();
+        seedBenchmarkLikeNestedDocs();
+
+        DocResult result = find( "{\"obj1.unknownNested\":\"x\"}", "{\"name\":1}", USER );
+        assertTrue( MongoConnection.checkDocResultSet( result, List.of(), true, true ) );
+    }
+
+
+    @Test
+    public void updateMany_wrongTypeNestedFilter_withValidNestedObjectTarget_shouldBeNoOp_andKeepOriginal() {
+        createUserCollectionWithBenchmarkLikeNestedSchema();
+        seedBenchmarkLikeNestedDocs();
+
+        assertDoesNotThrow( () -> update(
+                "{\"obj1.n1\":12345}",
+                "{\"$set\":{\"obj1\":{\"n1\":\"changed\",\"n2\":111,\"n3\":true,\"n4\":\"ok\",\"n5\":222}}}",
+                USER ) );
+
+        assertProjectionMatches(
+                "{\"_id\":0,\"name\":1,\"obj1\":1}",
+                "["
+                        + "{\"name\":\"Alice\",\"obj1\":{\"n1\":\"v1_1\",\"n2\":1,\"n3\":true,\"n4\":\"x\",\"n5\":2}},"
+                        + "{\"name\":\"Bob\",\"obj1\":{\"n1\":\"v1_2\",\"n2\":4,\"n3\":false,\"n4\":\"m\",\"n5\":5}}"
+                        + "]" );
+    }
+
+
+    @Test
+    public void updateMany_unknownNestedFilter_withValidNestedObjectTarget_shouldNotCrash_andKeepOriginal() {
+        createUserCollectionWithBenchmarkLikeNestedSchema();
+        seedBenchmarkLikeNestedDocs();
+
+        assertDoesNotThrow( () -> update(
+                "{\"obj1.unknownNested\":\"x\"}",
+                "{\"$set\":{\"obj1\":{\"n1\":\"changed\",\"n2\":111,\"n3\":true,\"n4\":\"ok\",\"n5\":222}}}",
+                USER ) );
+
+        assertProjectionMatches(
+                "{\"_id\":0,\"name\":1,\"obj1\":1}",
+                "["
+                        + "{\"name\":\"Alice\",\"obj1\":{\"n1\":\"v1_1\",\"n2\":1,\"n3\":true,\"n4\":\"x\",\"n5\":2}},"
+                        + "{\"name\":\"Bob\",\"obj1\":{\"n1\":\"v1_2\",\"n2\":4,\"n3\":false,\"n4\":\"m\",\"n5\":5}}"
+                        + "]" );
+    }
+
+
+    @Test
+    public void insert_arrayOfObjects_valid_shouldSucceed() {
+        createUserCollectionWithArrayOfObjectsSchema();
+
+        String doc = "{\"name\":\"Alice\",\"items\":[{\"label\":\"a\",\"qty\":1,\"active\":true},{\"label\":\"b\",\"qty\":2,\"active\":false}]}";
+        assertDoesNotThrow( () -> insert( doc, USER ) );
+
+        assertProjectionMatches( "{\"_id\":0,\"name\":1,\"items\":1}", "[" + doc + "]" );
+    }
+
+
+    @Test
+    public void insert_arrayOfObjects_missingRequiredElementField_shouldFail() {
+        createUserCollectionWithArrayOfObjectsSchema();
+
+        assertThrows( Exception.class, () -> insert(
+                "{\"name\":\"Alice\",\"items\":[{\"label\":\"a\",\"qty\":1}]}",
+                USER ) );
+
+        assertProjectionMatches( "{\"_id\":0,\"name\":1}", "[]" );
+    }
+
+
+    @Test
+    public void insert_arrayOfObjects_wrongElementScalarType_shouldFail() {
+        createUserCollectionWithArrayOfObjectsSchema();
+
+        assertThrows( Exception.class, () -> insert(
+                "{\"name\":\"Alice\",\"items\":[{\"label\":\"a\",\"qty\":\"wrong\",\"active\":true}]}",
+                USER ) );
+
+        assertProjectionMatches( "{\"_id\":0,\"name\":1}", "[]" );
+    }
+
+
+    @Test
+    public void insert_arrayOfObjects_extraElementField_whenForbidden_shouldFail() {
+        createUserCollectionWithArrayOfObjectsSchema();
+
+        assertThrows( Exception.class, () -> insert(
+                "{\"name\":\"Alice\",\"items\":[{\"label\":\"a\",\"qty\":1,\"active\":true,\"extra\":9}]}",
+                USER ) );
+
+        assertProjectionMatches( "{\"_id\":0,\"name\":1}", "[]" );
+    }
+
+
+    @Test
+    public void find_arrayObjectElementField_numericPath_shouldReturnMatch() {
+        createUserCollectionWithArrayOfObjectsSchema();
+        seedArrayOfObjectsDocs();
+
+        DocResult result = find( "{\"items.0.label\":\"a\"}", "{\"name\":1}", USER );
+        assertTrue( MongoConnection.checkDocResultSet( result, List.of("{\"name\":\"Alice\"}"), true, true ) );
+    }
+
+
+    @Test
+    public void find_wrongTypeArrayObjectElementFieldFilter_shouldBeNoMatch() {
+        createUserCollectionWithArrayOfObjectsSchema();
+        seedArrayOfObjectsDocs();
+
+        DocResult result = find( "{\"items.0.label\":12345}", "{\"name\":1}", USER );
+        assertTrue( MongoConnection.checkDocResultSet( result, List.of(), true, true ) );
+    }
+
+
+    @Test
+    public void update_setWholeArrayOfObjects_valid_shouldSucceed() {
+        createUserCollectionWithArrayOfObjectsSchema();
+        seedArrayOfObjectsDocs();
+
+        assertDoesNotThrow( () -> update(
+                "{\"name\":\"Alice\"}",
+                "{\"$set\":{\"items\":[{\"label\":\"z\",\"qty\":9,\"active\":false}]}}",
+                USER ) );
+
+        assertProjectionMatches(
+                "{\"_id\":0,\"name\":1,\"items\":1}",
+                "["
+                        + "{\"name\":\"Alice\",\"items\":[{\"label\":\"z\",\"qty\":9,\"active\":false}]},"
+                        + "{\"name\":\"Bob\",\"items\":[{\"label\":\"c\",\"qty\":3,\"active\":true}]}"
+                        + "]" );
+    }
+
+
+    @Test
+    public void update_setWholeArrayOfObjects_invalidElement_shouldFail_andKeepOriginal() {
+        createUserCollectionWithArrayOfObjectsSchema();
+        seedArrayOfObjectsDocs();
+
+        assertThrows( Exception.class, () -> update(
+                "{\"name\":\"Alice\"}",
+                "{\"$set\":{\"items\":[{\"label\":\"z\",\"qty\":\"wrong\",\"active\":false}]}}",
+                USER ) );
+
+        assertProjectionMatches(
+                "{\"_id\":0,\"name\":1,\"items\":1}",
+                "["
+                        + "{\"name\":\"Alice\",\"items\":[{\"label\":\"a\",\"qty\":1,\"active\":true},{\"label\":\"b\",\"qty\":2,\"active\":false}]},"
+                        + "{\"name\":\"Bob\",\"items\":[{\"label\":\"c\",\"qty\":3,\"active\":true}]}"
+                        + "]" );
+    }
+
+
+    @Test
+    public void update_setArrayObjectElementField_numericPath_valid_shouldSucceed() {
+        createUserCollectionWithArrayOfObjectsSchema();
+        seedArrayOfObjectsDocs();
+
+        assertDoesNotThrow( () -> update(
+                "{\"name\":\"Alice\"}",
+                "{\"$set\":{\"items.0.label\":\"changed\"}}",
+                USER ) );
+
+        assertProjectionMatches(
+                "{\"_id\":0,\"name\":1,\"items\":1}",
+                "["
+                        + "{\"name\":\"Alice\",\"items\":[{\"label\":\"changed\",\"qty\":1,\"active\":true},{\"label\":\"b\",\"qty\":2,\"active\":false}]},"
+                        + "{\"name\":\"Bob\",\"items\":[{\"label\":\"c\",\"qty\":3,\"active\":true}]}"
+                        + "]" );
+    }
+
+
+    @Test
+    public void update_setArrayObjectElementField_numericPath_wrongType_shouldFail_andKeepOriginal() {
+        createUserCollectionWithArrayOfObjectsSchema();
+        seedArrayOfObjectsDocs();
+
+        assertThrows( Exception.class, () -> update(
+                "{\"name\":\"Alice\"}",
+                "{\"$set\":{\"items.0.label\":999}}",
+                USER ) );
+
+        assertProjectionMatches(
+                "{\"_id\":0,\"name\":1,\"items\":1}",
+                "["
+                        + "{\"name\":\"Alice\",\"items\":[{\"label\":\"a\",\"qty\":1,\"active\":true},{\"label\":\"b\",\"qty\":2,\"active\":false}]},"
+                        + "{\"name\":\"Bob\",\"items\":[{\"label\":\"c\",\"qty\":3,\"active\":true}]}"
+                        + "]" );
+    }
+
+
+    @Test
+    public void updateMany_arrayObjectElementFieldFilter_withValidTarget_shouldSucceed() {
+        createUserCollectionWithArrayOfObjectsSchema();
+        seedArrayOfObjectsDocs();
+
+        assertDoesNotThrow( () -> update(
+                "{\"items.0.label\":\"a\"}",
+                "{\"$set\":{\"items\":[{\"label\":\"x\",\"qty\":10,\"active\":true}]}}",
+                USER ) );
+
+        assertProjectionMatches(
+                "{\"_id\":0,\"name\":1,\"items\":1}",
+                "["
+                        + "{\"name\":\"Alice\",\"items\":[{\"label\":\"x\",\"qty\":10,\"active\":true}]},"
+                        + "{\"name\":\"Bob\",\"items\":[{\"label\":\"c\",\"qty\":3,\"active\":true}]}"
+                        + "]" );
+    }
+
+
+    @Test
+    public void updateMany_wrongTypeArrayElementFilter_withValidTarget_shouldBeNoOp_andKeepOriginal() {
+        createUserCollectionWithArrayOfObjectsSchema();
+        seedArrayOfObjectsDocs();
+
+        assertDoesNotThrow( () -> update(
+                "{\"items.0.label\":12345}",
+                "{\"$set\":{\"items\":[{\"label\":\"x\",\"qty\":10,\"active\":true}]}}",
+                USER ) );
+
+        assertProjectionMatches(
+                "{\"_id\":0,\"name\":1,\"items\":1}",
+                "["
+                        + "{\"name\":\"Alice\",\"items\":[{\"label\":\"a\",\"qty\":1,\"active\":true},{\"label\":\"b\",\"qty\":2,\"active\":false}]},"
+                        + "{\"name\":\"Bob\",\"items\":[{\"label\":\"c\",\"qty\":3,\"active\":true}]}"
+                        + "]" );
     }
 
 }

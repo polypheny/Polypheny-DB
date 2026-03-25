@@ -498,6 +498,140 @@ public class DocSchemaTest extends MqlTestTemplate {
         );
     }
 
+    @Test
+    public void createCollection_nestedRequiredRefersToUndeclaredProperty_shouldFail() {
+        dropUserCollectionIfExists();
+
+        assertThrows(
+                Exception.class,
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: {" +
+                                "      profile: {" +
+                                "        type: \"object\"," +
+                                "        properties: { first: { type: \"text\" } }," +
+                                "        required: [\"last\"]" +
+                                "      }" +
+                                "    }," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+    @Test
+    public void createCollection_nestedAdditionalPropertiesInheritToken_shouldSucceed() {
+        dropUserCollectionIfExists();
+
+        assertDoesNotThrow(
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: {" +
+                                "      name: { type: \"text\" }," +
+                                "      profile: {" +
+                                "        type: \"object\"," +
+                                "        properties: { first: { type: \"text\" } }," +
+                                "        additionalProperties: \"inherit\"" +
+                                "      }" +
+                                "    }," +
+                                "    required: [\"name\"]," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+    @Test
+    public void createCollection_emptyAnyOf_shouldFail() {
+        dropUserCollectionIfExists();
+
+        assertThrows(
+                Exception.class,
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: {" +
+                                "      status: { anyOf: [] }" +
+                                "    }," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+    @Test
+    public void createCollection_emptyAllOf_shouldFail() {
+        dropUserCollectionIfExists();
+
+        assertThrows(
+                Exception.class,
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: {" +
+                                "      score: { allOf: [] }" +
+                                "    }," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+    @Test
+    public void createCollection_typeArrayEmpty_shouldFail() {
+        dropUserCollectionIfExists();
+
+        assertThrows(
+                Exception.class,
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: {" +
+                                "      nickname: { type: [] }" +
+                                "    }," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
+
+    @Test
+    public void createCollection_arrayWithoutItems_shouldFail() {
+        dropUserCollectionIfExists();
+
+        assertThrows(
+                Exception.class,
+                () -> execute(
+                        "db.createCollection(\"user\", {" +
+                                "  docSchema: {" +
+                                "    type: \"object\"," +
+                                "    properties: {" +
+                                "      tags: { type: \"array\" }" +
+                                "    }," +
+                                "    additionalProperties: true" +
+                                "  }," +
+                                "  validationAction: \"strict\"" +
+                                "})"
+                )
+        );
+    }
 
     @Test
     public void createCollection_withUnknownPropertyType_complexSchema_shouldFail() {

@@ -54,24 +54,104 @@ public class MqlFunctions {
         // empty on purpose
     }
 
+    private static List<PolyString> tokenizePath( String path ) {
+        if ( path == null || path.isBlank() ) {
+            return List.of();
+        }
+        List<PolyString> out = new ArrayList<>();
+        StringBuilder buf = new StringBuilder();
+        for ( int i = 0; i < path.length(); i++ ) {
+            char c = path.charAt( i );
+            if ( c == '.' ) {
+                if ( buf.length() > 0 ) {
+                    out.add( PolyString.of( buf.toString() ) );
+                    buf.setLength( 0 );
+                }
+                continue;
+            }
+            if ( c == '[' ) {
+                if ( buf.length() > 0 ) {
+                    out.add( PolyString.of( buf.toString() ) );
+                    buf.setLength( 0 );
+                }
+                int end = path.indexOf( ']', i );
+                if ( end < 0 ) {
+                    throw new GenericRuntimeException( "Invalid path: unclosed '[' in '" + path + "'" );
+                }
+                String idx = path.substring( i + 1, end ).trim();
+                if ( !idx.matches( "\\d+" ) ) {
+                    throw new GenericRuntimeException( "Invalid array index in path '" + path + "': '" + idx + "'" );
+                }
+                out.add( PolyString.of( idx ) );
+                i = end;
+                continue;
+            }
+            buf.append( c );
+        }
+        if ( buf.length() > 0 ) {
+            out.add( PolyString.of( buf.toString() ) );
+        }
+        return out;
+    }
+
+
+    private static boolean isNumericSegment( PolyString segment ) {
+        return segment != null && segment.value != null && segment.value.matches( "\\d+" );
+    }
+
+    private static int toIndex( PolyString segment ) {
+        return Integer.parseInt( segment.value );
+    }
+
+    private static PolyValue getPathValue( PolyValue current, List<PolyString> path, int pos ) {
+        if ( current == null ) {
+            return null;
+        }
+        if ( pos >= path.size() ) {
+            return current;
+        }
+
+        PolyString seg = path.get( pos );
+
+        if ( current.isDocument() ) {
+            return getPathValue( current.asDocument().get( seg ), path, pos + 1 );
+        }
+
+        if ( current.isList() ) {
+            PolyList<PolyValue> list = current.asList();
+
+            if ( isNumericSegment( seg ) ) {
+                int idx = toIndex( seg );
+                if ( idx < 0 || idx >= list.size() ) {
+                    return null;
+                }
+                return getPathValue( list.get( idx ), path, pos + 1 );
+            }
+
+            PolyList<PolyValue> projected = PolyList.of();
+            for ( PolyValue element : list ) {
+                PolyValue child = getPathValue( element, path, pos );
+                if ( child != null && !(child.isDocument() && child.asDocument().isUnset) ) {
+                    projected.add( child );
+                }
+            }
+            return projected.isEmpty() ? null : projected;
+        }
+
+        return null;
+    }
+
+    private static PolyValue getPathValue( PolyValue input, List<PolyString> path ) {
+        return getPathValue( input, path, 0 );
+    }
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyValue docQueryValue( PolyValue input, List<PolyString> filters ) {
-        if ( input == null || !input.isDocument() ) {
+        if ( input == null || (!input.isDocument() && !input.isList()) ) {
             return null;
         }
-        PolyValue temp = input;
-        for ( PolyString filter : filters ) {
-            if ( !temp.isDocument() ) {
-                return PolyDocument.ofUnset(); // all fields except _id are unset
-            }
-            temp = temp.asDocument().get( filter );
-            if ( temp == null ) {
-                return PolyDocument.ofUnset();
-            }
-        }
-
-        return temp;
+        PolyValue temp = getPathValue( input, filters );
+        return temp == null ? PolyDocument.ofUnset() : temp;
     }
 
 
@@ -85,7 +165,7 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyValue docAddFields( PolyValue input, List<PolyString> name, PolyValue object ) {
-        updateValue( object, input.asDocument(), name );
+        updateValue( object, input, name );
 
         return input;
     }
@@ -167,31 +247,51 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyValue docRemove( PolyValue input, List<List<PolyString>> names ) {
-        Map<PolyString, PolyValue> doc = input.asDocument();
-        PolyString name;
         for ( List<PolyString> split : names ) {
-            Iterator<PolyString> iter = split.iterator();
-
-            while ( iter.hasNext() ) {
-                name = iter.next();
-                if ( doc.containsKey( name ) ) {
-                    if ( !iter.hasNext() ) {
-                        doc.remove( name );
-                    } else {
-                        if ( doc.get( name ).isDocument() ) {
-                            doc = doc.get( name ).asDocument();
-                        } else {
-                            break;
-                        }
-
-                    }
-                }
-            }
+            removePath( input, split, 0 );
         }
-
         return input;
     }
 
+
+    private static void removePath( PolyValue current, List<PolyString> path, int pos ) {
+        if ( current == null || pos >= path.size() ) {
+            return;
+        }
+
+        PolyString seg = path.get( pos );
+        boolean last = pos == path.size() - 1;
+
+        if ( current.isDocument() ) {
+            PolyDocument doc = current.asDocument();
+            PolyValue child = doc.get( seg );
+            if ( child == null ) {
+                return;
+            }
+            if ( last ) {
+                doc.remove( seg );
+                return;
+            }
+            removePath( child, path, pos + 1 );
+            return;
+        }
+
+        if ( current.isList() ) {
+            if ( !isNumericSegment( seg ) ) {
+                return;
+            }
+            PolyList<PolyValue> list = current.asList();
+            int idx = toIndex( seg );
+            if ( idx < 0 || idx >= list.size() ) {
+                return;
+            }
+            if ( last ) {
+                list.remove( idx );
+                return;
+            }
+            removePath( list.get( idx ), path, pos + 1 );
+        }
+    }
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyDocument docUpdateReplace( PolyValue input, List<PolyString> names, List<PolyValue> values ) {
@@ -199,27 +299,61 @@ public class MqlFunctions {
             return new PolyDocument();
         }
         for ( Pair<PolyString, PolyValue> pair : Pair.zip( names, values ) ) {
-            updateValue( pair.right, input.asDocument(), Arrays.stream( pair.left.value.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) );
+            updateValue( pair.right, input, tokenizePath( pair.left.value ) );
         }
 
         return input.asDocument();
     }
 
 
-    private static void updateValue( PolyValue value, PolyDocument doc, List<PolyString> splitName ) {
-        PolyString name;
-        Iterator<PolyString> iter = splitName.iterator();
+    private static void ensureListSize( PolyList<PolyValue> list, int index ) {
+        while ( list.size() <= index ) {
+            list.add( PolyNull.NULL );
+        }
+    }
 
-        while ( iter.hasNext() ) {
-            name = iter.next();
+    private static void updateValue( PolyValue value, PolyValue container, List<PolyString> splitName ) {
+        PolyValue current = container;
 
-            if ( !iter.hasNext() ) {
-                doc.put( name, value );
-            } else {
-                if ( doc.containsKey( name ) ) {
-                    doc.put( name, PolyDocument.ofDocument( Map.of() ) );
+        for ( int i = 0; i < splitName.size(); i++ ) {
+            PolyString segment = splitName.get( i );
+            boolean last = i == splitName.size() - 1;
+            PolyString next = last ? null : splitName.get( i + 1 );
+
+            if ( current.isDocument() ) {
+                PolyDocument doc = current.asDocument();
+                if ( last ) {
+                    doc.put( segment, value );
+                    return;
                 }
-                doc = doc.get( name ).asDocument();
+
+                PolyValue child = doc.get( segment );
+                if ( child == null || child == PolyNull.NULL ) {
+                    child = isNumericSegment( next ) ? PolyList.of() : PolyDocument.ofDocument( Map.of() );
+                    doc.put( segment, child );
+                }
+                current = child;
+            } else if ( current.isList() ) {
+                if ( !isNumericSegment( segment ) ) {
+                    throw new GenericRuntimeException( "Array segments must use numeric path components." );
+                }
+                PolyList<PolyValue> list = current.asList();
+                int index = toIndex( segment );
+                ensureListSize( list, index );
+
+                if ( last ) {
+                    list.set( index, value );
+                    return;
+                }
+
+                PolyValue child = list.get( index );
+                if ( child == null || child == PolyNull.NULL ) {
+                    child = isNumericSegment( next ) ? PolyList.of() : PolyDocument.ofDocument( Map.of() );
+                    list.set( index, child );
+                }
+                current = child;
+            } else {
+                throw new GenericRuntimeException( "Cannot traverse non-container value while updating document path." );
             }
         }
     }
@@ -243,41 +377,15 @@ public class MqlFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyValue docUpdateRename( PolyValue input, List<List<PolyString>> fields, List<List<PolyString>> newNames ) {
-        PolyDocument doc = input.asDocument();
-
-        PolyValue end = null;
-        PolyDocument temp = doc;
-        Iterator<PolyString> iter;
-        outer:
         for ( int i = 0; i < fields.size(); i++ ) {
-            List<PolyString> names = fields.get( i );
-            iter = names.iterator();
-
-            // search for element
-            while ( iter.hasNext() ) {
-                PolyString name = iter.next();
-                if ( temp.containsKey( name ) ) {
-                    if ( iter.hasNext() ) {
-                        // we go deeper
-                        if ( temp.get( name ).isDocument() ) {
-                            temp = temp.get( name ).asDocument();
-                        } else {
-                            continue outer;
-                        }
-                    } else {
-                        // we found it
-                        end = temp.get( name );
-                        temp.remove( name );
-                    }
-                }
+            PolyValue existing = getPathValue( input, fields.get( i ) );
+            if ( existing == null || (existing.isDocument() && existing.asDocument().isUnset) ) {
+                continue;
             }
-            // we place the element
-            docAddFields( doc, newNames.get( i ), end );
-
-
+            removePath( input, fields.get( i ), 0 );
+            updateValue( existing, input, newNames.get( i ) );
         }
-
-        return doc;
+        return input;
     }
 
 
@@ -696,26 +804,9 @@ public class MqlFunctions {
             throw new GenericRuntimeException( "The second parameter must be a boolean" );
         }
         boolean ifExists = opIfExists.asBoolean().value;
-        if ( obj == null || !obj.isDocument() ) {
-            return PolyBoolean.FALSE;
-        }
-        PolyDocument map = obj.asDocument();
-        Iterator<PolyString> iter = path.iterator();
-        PolyString current = iter.next();
-
-        while ( map.containsKey( current ) ) {
-            obj = map.get( current );
-            if ( !iter.hasNext() ) {
-                return ifExists ? PolyBoolean.TRUE : PolyBoolean.FALSE;
-            }
-            if ( !(obj instanceof Map) ) {
-                return ifExists ? PolyBoolean.FALSE : PolyBoolean.TRUE;
-            }
-            map = map.get( current ).asDocument();
-            current = iter.next();
-        }
-
-        return ifExists ? PolyBoolean.FALSE : PolyBoolean.TRUE;
+        PolyValue value = getPathValue( obj, path );
+        boolean exists = value != null && !(value.isDocument() && value.asDocument().isUnset);
+        return PolyBoolean.of( ifExists ? exists : !exists );
     }
 
 
