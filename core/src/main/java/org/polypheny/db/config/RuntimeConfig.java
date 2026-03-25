@@ -437,6 +437,13 @@ public enum RuntimeConfig {
             ConfigType.STRING,
             "dockerGeneralGroup" ),
 
+    NOTEBOOKS_POLYPHENY_ADDRESS(
+            "notebooks/notebooksPolyphenyAddress",
+            "The default address used by the notebooks to access Polypheny via %poly magic commands.",
+            "host.docker.internal:13137",
+            ConfigType.STRING,
+            "notebooksGeneralGroup" ),
+
     FILE_HANDLE_CACHE_SIZE(
             "runtime/fileHandleCacheSize",
             "Size (in Bytes) up to which media files are cached in-memory instead of creating a temporary file. Needs to be >= 0 and smaller than Integer.MAX_SIZE. Setting to zero disables caching of media files.",
