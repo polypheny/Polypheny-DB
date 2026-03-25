@@ -102,8 +102,8 @@ Parquet file access helpers.
 Table wrappers and schema-related conversion logic.
 - `ParquetNamespace`: creates Parquet table wrappers for the active table flavor.
 - `ParquetTable`: base class for Parquet-backed physical tables.
-- `ParquetFilterableTable`: active table implementation for filter-aware scans.
-- `ParquetScannableTable`: scaffold for scan-based execution.
+- `ParquetFilterableTable`: active table implementation for filter-aware scans; translates supported query conditions into adapter-specific filters and delegates execution to `ParquetEnumerator`.
+- `ParquetScannableTable`: scan-only table implementation; returns rows through `ParquetEnumerator` without adapter-side filter pushdown and uses an empty filter list for plain Parquet scanning.
 - `ParquetTranslatableTable`: scaffold for planner-driven execution.
 - `ParquetTypeConverter`: converts Parquet schema types, runtime values, and filter literals into Polypheny-compatible representations.
 
@@ -145,11 +145,21 @@ The adapter defines three table flavors through `ParquetTable.Flavor`:
 - `SCANNABLE`
 - `TRANSLATABLE`
 
+These flavors represent different levels of integration with the query engine.
+
 The active flavor is selected by `ParquetSource` when the namespace is created.
 
-In the current implementation, `ParquetSource.updateNamespace()` selects `FILTERABLE`, so discovered and restored Parquet tables are exposed through `ParquetFilterableTable`.
+- `SCANNABLE` is the simplest execution path. 
+It performs plain row scanning through `ParquetScannableTable` and delegates reading to `ParquetEnumerator` without adapter-side filter pushdown. 
 
-`SCANNABLE` and `TRANSLATABLE` remain available as structural alternatives, but they are not currently used as the default execution path.
+- `FILTERABLE` extends the scan-based model by accepting supported filter conditions from the query engine. 
+In this path, `ParquetFilterableTable` translates supported expressions into `ParquetFilter` objects, 
+and `ParquetEnumerator` applies projection pushdown, filter evaluation, and row-group pruning. 
+***This is the default and currently active flavor.***
+
+- `TRANSLATABLE` is the planner-oriented flavor. 
+Instead of only returning rows directly, it allows the adapter to expose adapter-specific relational nodes and planner rules. 
+This path is intended for deeper integration with query planning through `ParquetScan` and `ParquetProjectScanRule`.
 
 
 ## Information Page

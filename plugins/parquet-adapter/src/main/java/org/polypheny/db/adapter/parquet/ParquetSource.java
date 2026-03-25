@@ -35,6 +35,7 @@ import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.parquet.io.ParquetFileDiscovery;
+import org.polypheny.db.adapter.parquet.schema.ParquetTable.Flavor;
 import org.polypheny.db.adapter.parquet.schema.ParquetTypeConverter;
 import org.polypheny.db.adapter.parquet.schema.ParquetNamespace;
 import org.polypheny.db.adapter.parquet.schema.ParquetTable;
@@ -271,7 +272,8 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
      */
     @Override
     public void updateNamespace( String name, long id ) {
-        currentNamespace = new ParquetNamespace( id, adapterId, parquetDir, ParquetTable.Flavor.FILTERABLE );
+        ParquetTable.Flavor flavor = Flavor.FILTERABLE;
+        currentNamespace = new ParquetNamespace( id, adapterId, parquetDir, flavor );
     }
 
     /**
