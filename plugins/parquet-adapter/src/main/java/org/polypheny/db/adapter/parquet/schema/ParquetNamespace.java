@@ -21,17 +21,15 @@ import org.polypheny.db.util.Sources;
 public class ParquetNamespace extends Namespace {
 
     private final URL directoryUrl;
-    private final ParquetTable.Flavor flavor;
 
 
     /**
      * Constructor:
      * Creates a namespace bound to a directory URL and table flavor.
      */
-    public ParquetNamespace( long id, long adapterId, URL directoryUrl, ParquetTable.Flavor flavor ) {
+    public ParquetNamespace( long id, long adapterId, URL directoryUrl ) {
         super( id, adapterId );
         this.directoryUrl = directoryUrl;
-        this.flavor = flavor;
     }
 
 
@@ -66,11 +64,7 @@ public class ParquetNamespace extends Namespace {
      * Instantiates the table class based on configured flavor.
      */
     private ParquetTable createTable( long id, Source source, PhysicalTable table, List<PolyType> fieldTypes, int[] fields, ParquetSource parquetSource ) {
-        return switch ( flavor ) {
-            case TRANSLATABLE -> new ParquetTranslatableTable( id, source, table, fieldTypes, fields, parquetSource );
-            case SCANNABLE -> new ParquetScannableTable( id, source, table, fieldTypes, fields, parquetSource );
-            case FILTERABLE -> new ParquetFilterableTable( id, source, table, fieldTypes, fields, parquetSource );
-        };
+        return new ParquetTable( id, source, table, fieldTypes, fields, parquetSource );
     }
 
 

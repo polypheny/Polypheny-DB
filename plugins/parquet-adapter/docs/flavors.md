@@ -43,13 +43,13 @@ Characteristics:
 `FILTERABLE` extends the scan-based model by allowing the adapter to receive filter conditions from the query engine.
 
 In this flavor, the adapter inspects query filters and pushes supported conditions into its own execution logic. 
-This allows the Parquet reader to reduce the amount of data it reads and processes.
+This allows the Parquet reader to reduce the amount of data it reads and processes using native predicate pushdown.
 
 Characteristics:
 
 - supports filter pushdown
 - supports projection-aware reading
-- allows row-group pruning using Parquet metadata
+- uses Parquet native filter stages such as statistics, dictionary, column index, bloom filter, and record filtering when available
 - significantly more efficient than plain scan-only execution
 
 This is the active flavor in the current Parquet adapter implementation.
@@ -110,24 +110,30 @@ Main classes:
 
 - `ParquetFilterableTable`
 - `ParquetEnumerator`
-- `PredicateEvaluator`
+- `ParquetPredicateBuilder`
 
 Flow:
 
 - The query engine calls ParquetFilterableTable.scan(...).
 - The table inspects incoming filter expressions.
-- Supported filters are converted into adapter-specific ParquetFilter objects.
+- Only pushdown-safe filters are converted into adapter-specific `FilterInfo` objects.
 - These filters are passed into ParquetEnumerator.
-- The enumerator computes the required projection columns.
-- Row-group metadata is checked through PredicateEvaluator.
-- Row groups that cannot match the pushed filters are skipped.
-- Matching rows are read, filtered, and returned.
+- The enumerator builds the requested projection schema from the projected columns.
+- `ParquetPredicateBuilder` translates adapter filters into native Parquet predicates.
+- `ParquetFileReader` is opened with `ParquetReadOptions` that enable native predicate pushdown stages.
+- Matching rows are read directly from the projected Parquet schema and returned.
 
 Practical consequence:
 
 - fewer columns may be read
-- fewer row groups may be read
+- fewer row groups and pages may be read when the Parquet file contains usable metadata
 - less work is done outside the adapter
+
+Current limitations:
+
+- Only simple `column OP literal` predicates are pushed down.
+- `BOOLEAN` and string-like fields currently support only `=` and `!=`.
+- Legacy `INT96` timestamp columns are intentionally not pushed down.
 
 
 ### 3. TRANSLATABLE Workflow
@@ -151,4 +157,3 @@ Practical consequence:
 
 - optimization can happen earlier and more explicitly
 - this approach supports more sophisticated future optimizations
-

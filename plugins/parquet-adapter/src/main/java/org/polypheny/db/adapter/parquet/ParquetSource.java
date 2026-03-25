@@ -35,7 +35,6 @@ import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.parquet.io.ParquetFileDiscovery;
-import org.polypheny.db.adapter.parquet.schema.ParquetTable.Flavor;
 import org.polypheny.db.adapter.parquet.schema.ParquetTypeConverter;
 import org.polypheny.db.adapter.parquet.schema.ParquetNamespace;
 import org.polypheny.db.adapter.parquet.schema.ParquetTable;
@@ -99,7 +98,7 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
      * Constructor
      * Creates the Parquet source from adapter settings.
      */
-    public ParquetSource(final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
+    public ParquetSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
         super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), Set.of( DataModel.RELATIONAL ) );
 
         this.parquetTypeConverter = new ParquetTypeConverter();
@@ -113,6 +112,7 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
 
         this.delegate = new RelationalScanDelegate( this, adapterCatalog );
     }
+
 
     /**
      * Get directory information from settings and populate parquetDir variable
@@ -134,10 +134,11 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
         }
     }
 
+
     /**
      * Removes invalid characters and creates a valid table name
      */
-    private static String getValidTableName(String name){
+    private static String getValidTableName( String name ) {
         return name.trim().replaceAll( "[^a-z0-9_]+", "" );
     }
 
@@ -150,31 +151,32 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
         if ( physicalTableName.endsWith( ".parquet" ) ) {
             physicalTableName = physicalTableName.substring( 0, physicalTableName.length() - ".parquet".length() );
         }
-        return getValidTableName(physicalTableName);
+        return getValidTableName( physicalTableName );
     }
 
 
     /**
      * Build valid column name from field data
      */
-    private String getValidColumnNameFromField(Type field) {
+    private String getValidColumnNameFromField( Type field ) {
         return field.getName().toLowerCase().trim().replaceAll( "[^a-z0-9_]+", "_" );
     }
+
 
     /**
      * Get parquet file fields information from metadata
      */
     private List<ExportedColumn> getExportedColumnsFromFile( String fileName, String physicalTableName ) {
         try {
-            Path path = new Path(new URL( parquetDir, fileName ).toURI());
+            Path path = new Path( new URL( parquetDir, fileName ).toURI() );
             Configuration conf = HadoopConfigurationFactory.create( this.getClass().getClassLoader() );
-            try ( ParquetFileReader reader = ParquetFileReader.open( HadoopInputFile.fromPath(path, conf))) {
+            try ( ParquetFileReader reader = ParquetFileReader.open( HadoopInputFile.fromPath( path, conf ) ) ) {
                 List<Type> schemaFields = reader.getFooter().getFileMetaData().getSchema().getFields();
                 List<ExportedColumn> columns = new ArrayList<>();
                 int position = 0;
                 for ( Type field : schemaFields ) {
-                    ExportedColumn column = getExportedColumnFromField(field, fileName, physicalTableName, position);
-                    columns.add(column);
+                    ExportedColumn column = getExportedColumnFromField( field, fileName, physicalTableName, position );
+                    columns.add( column );
                     position++;
                 }
                 return columns;
@@ -188,25 +190,26 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
     /**
      * Extract metadata information from single parquet field and create column object
      */
-    private ExportedColumn getExportedColumnFromField(Type field, String fileName, String physicalTableName, int position) {
-        String columnName = getValidColumnNameFromField(field);
+    private ExportedColumn getExportedColumnFromField( Type field, String fileName, String physicalTableName, int position ) {
+        String columnName = getValidColumnNameFromField( field );
         PolyType polyType = parquetTypeConverter.fromParquetTypeToPolyType( field );
         //Integer length = polyType == PolyType.VARCHAR ? maxStringLength : null;
         return new ExportedColumn(
-                    columnName,
-                    polyType,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    false,
-                    fileName,
-                    physicalTableName,
-                    field.getName(),
-                    position,
-                    position == 0 );
+                columnName,
+                polyType,
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+                fileName,
+                physicalTableName,
+                field.getName(),
+                position,
+                position == 0 );
     }
+
 
     /**
      * Create information page containing exported columns details
@@ -220,14 +223,16 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
 
             InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName() );
             informationGroups.add( group );
-            InformationTable table = getInformationTable(group, entry);
+            InformationTable table = getInformationTable( group, entry );
             informationElements.add( table );
         }
     }
 
+
     /**
      * Extract columns from all parquet files
-     * @return Map<String, List<ExportedColumn>> - column list per table name
+     *
+     * @return Map<String, List < ExportedColumn>> - column list per table name
      */
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
@@ -252,9 +257,9 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
     /**
      * Builds InformationTable from exported columns
      */
-    private InformationTable getInformationTable(InformationGroup group, Map.Entry<String, List<ExportedColumn>> entry) {
-        List<String> columns = Arrays.asList("Position", "Column Name", "Type", "Nullable", "Filename", "Primary");
-        InformationTable table = new InformationTable(group, columns);
+    private InformationTable getInformationTable( InformationGroup group, Map.Entry<String, List<ExportedColumn>> entry ) {
+        List<String> columns = Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Filename", "Primary" );
+        InformationTable table = new InformationTable( group, columns );
         for ( ExportedColumn exportedColumn : entry.getValue() ) {
             table.addRow(
                     exportedColumn.physicalPosition(),
@@ -267,14 +272,15 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
         return table;
     }
 
+
     /**
      * Updates the active namespace wrapper for this source.
      */
     @Override
     public void updateNamespace( String name, long id ) {
-        ParquetTable.Flavor flavor = Flavor.FILTERABLE;
-        currentNamespace = new ParquetNamespace( id, adapterId, parquetDir, flavor );
+        currentNamespace = new ParquetNamespace( id, adapterId, parquetDir );
     }
+
 
     /**
      * Returns this source as relational adapter interface.
@@ -293,6 +299,7 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
         throw new GenericRuntimeException( "Parquet adapter does not support truncate" );
     }
 
+
     /**
      * Prepare does nothing, because data source is read-only.
      */
@@ -301,6 +308,7 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
         log.debug( "Parquet Store does not support prepare()." );
         return true;
     }
+
 
     /**
      * Do nothing - read only
@@ -311,6 +319,7 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
         // do nothing
     }
 
+
     /**
      * Do nothing - read only
      */
@@ -320,6 +329,7 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
         // do nothing
     }
 
+
     /**
      * Cleans up information page state.
      */
@@ -327,6 +337,7 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
     public void shutdown() {
         removeInformationPage();
     }
+
 
     /**
      * Reloads settings that affect source location.
@@ -339,6 +350,7 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
     }
 
     //region Not Delegated Methods
+
 
     /**
      * Creates and registers a physical Parquet table entry.
@@ -367,7 +379,7 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
         PhysicalEntity table = entities.get( 0 );
         updateNamespace( table.namespaceName, table.namespaceId );
         ParquetTable physical = currentNamespace.createParquetTable( table.id, table.unwrapOrThrow( PhysicalTable.class ), this );
-        adapterCatalog.addPhysical( alloc,physical );
+        adapterCatalog.addPhysical( alloc, physical );
     }
 
 
@@ -379,6 +391,8 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
         adapterCatalog.renameLogicalColumn( id, newColumnName );
     }
     //endregion
+
+
     /**
      * Methods excluded from Lombok delegate forwarding.
      * These methods should not be delegated.
@@ -393,4 +407,5 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
         void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context );
 
     }
+
 }

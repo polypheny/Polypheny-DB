@@ -31,7 +31,7 @@ public class ParquetProjectScanRule extends AlgOptRule {
         if ( fields == null ) {
             return;
         }
-        call.transformTo( new ParquetScan( scan.getCluster(), scan.getEntity(), scan.parquetTable, fields ) );
+        call.transformTo( new ParquetScan( scan.getCluster(), scan.getEntity(), fields ) );
     }
 
 

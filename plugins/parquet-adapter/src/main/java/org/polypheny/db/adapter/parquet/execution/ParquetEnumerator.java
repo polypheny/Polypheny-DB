@@ -18,26 +18,25 @@ package org.polypheny.db.adapter.parquet.execution;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.IntStream;
 import org.apache.calcite.linq4j.Enumerator;
+import org.apache.parquet.ParquetReadOptions;
+import org.apache.parquet.filter2.compat.FilterCompat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.column.page.PageReadStore;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.example.data.simple.convert.GroupRecordConverter;
 import org.apache.parquet.hadoop.ParquetFileReader;
-import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.ColumnIOFactory;
 import org.apache.parquet.io.MessageColumnIO;
 import org.apache.parquet.io.RecordReader;
 import org.apache.parquet.schema.MessageType;
-import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
-import org.polypheny.db.adapter.parquet.model.ParquetFilter;
+import org.polypheny.db.adapter.parquet.model.FilterInfo;
 import org.polypheny.db.adapter.parquet.schema.ParquetTypeConverter;
 import org.polypheny.db.adapter.parquet.util.HadoopConfigurationFactory;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -47,63 +46,91 @@ import org.polypheny.db.util.Source;
 public class ParquetEnumerator implements Enumerator<PolyValue[]> {
 
     private final AtomicBoolean cancelFlag;
-    private final List<ParquetFilter> filters;
     private final ParquetFileReader fileReader;
-    private final MessageType schema;
     private final MessageType projectionSchema;
-    private final int[] projectionIndexes;
-    private final List<BlockMetaData> blocks;
     private final ValueExtractor valueExtractor;
-    private final PredicateEvaluator predicateEvaluator;
     private final ParquetTypeConverter typeConverter;
-    private final int columnCount;
+    private final boolean useNativeFilter;
 
     private RecordReader<Group> recordReader;
     private long rowCountInGroup;
     private long rowIndexInGroup;
-    private int blockIndex;
     private PolyValue[] current;
 
 
     /**
-     * Constructor
+     * Constructor:
+     * creates file reader with push-down filter configuration
+     *
+     * @param source file
+     * @param cancelFlag used in moveNext()
+     * @param fields columns
+     * @throws GenericRuntimeException on failure
+     */
+    public ParquetEnumerator( Source source, AtomicBoolean cancelFlag, int[] fields ) {
+        this( source, cancelFlag, fields, List.of() );
+    }
+
+
+    /**
+     * Constructor:
+     * creates file reader with push-down filter configuration
+     *
      * @param source file
      * @param cancelFlag used in moveNext()
      * @param fields columns
      * @param filters list of parquet filters
      * @throws GenericRuntimeException on failure
      */
-
-    public ParquetEnumerator(
-            Source source,
-            AtomicBoolean cancelFlag,
-            int[] fields,
-            List<ParquetFilter> filters ) throws GenericRuntimeException {
+    public ParquetEnumerator( Source source, AtomicBoolean cancelFlag, int[] fields, List<FilterInfo> filters ) {
 
         this.cancelFlag = cancelFlag;
-        this.filters = filters == null ? List.of() : filters;
         this.valueExtractor = new ValueExtractor();
-        this.predicateEvaluator = new PredicateEvaluator();
         this.typeConverter = new ParquetTypeConverter();
 
         try {
-            // create file reader
+            // build HadoopInputFile object from provided path
             Path path = new Path( source.url().toURI() );
             Configuration conf = HadoopConfigurationFactory.create( this.getClass().getClassLoader() );
-            this.fileReader = ParquetFileReader.open( HadoopInputFile.fromPath( path, conf ) );
+            var inputFile = HadoopInputFile.fromPath( path, conf );
 
-            this.schema = fileReader.getFooter().getFileMetaData().getSchema();
-            this.columnCount = fields.length == 0 ? schema.getFieldCount() : Math.min( fields.length, schema.getFieldCount() );
-            // combine projection columns (fields) with filter columns
-            this.projectionIndexes = computeProjectionIndexes( fields, this.filters, this.columnCount );
-            this.projectionSchema = buildProjectionSchema( schema, projectionIndexes );
+            // create parquet file schema
+            MessageType schema;
+            try ( ParquetFileReader schemaReader = ParquetFileReader.open( inputFile ) ) {
+                schema = schemaReader.getFooter().getFileMetaData().getSchema();
+            }
+
+            // create projection from provided projected fields and the whole schema:
+            // if no projection provided return all existing in schema columns
+            int[] projectedFields = buildProjectedFields( fields, schema.getFieldCount() );
+            // build new parquet schema based on provided projection
+            this.projectionSchema = buildProjectionSchema( schema, projectedFields );
+
+            // translate filters provided by Polypheny into a Parquet-native filter object
+            var recordFilter = new ParquetPredicateBuilder().translate( schema, filters == null ? List.of() : filters );
+            // check if there is an actual predicate to apply or is there no filter at all
+            this.useNativeFilter = FilterCompat.isFilteringRequired( recordFilter );
+
+            // set configuration for pushing down
+            ParquetReadOptions.Builder readOptionsBuilder = ParquetReadOptions.builder()
+                    .useStatsFilter()
+                    .useDictionaryFilter()
+                    .useColumnIndexFilter()
+                    .useBloomFilter()
+                    .useRecordFilter();
+
+            if ( useNativeFilter ) {
+                readOptionsBuilder.withRecordFilter( recordFilter );
+            }
+
+            // enable Parquet to apply the filter internally
+            this.fileReader = ParquetFileReader.open( inputFile, readOptionsBuilder.build() );
             this.fileReader.setRequestedSchema( projectionSchema );
-            this.blocks = fileReader.getFooter().getBlocks();
 
-            this.blockIndex = 0;
             this.recordReader = null;
             this.rowCountInGroup = 0;
             this.rowIndexInGroup = 0;
+
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Unable to open parquet file: " + source.path(), e );
         }
@@ -136,25 +163,20 @@ public class ParquetEnumerator implements Enumerator<PolyValue[]> {
                     current = null;
                     return false;
                 }
-
+                // ensure that reader deals with a correct row group
                 if ( !ensureRecordReader() ) {
                     current = null;
                     return false;
                 }
-
+                // read one row from current row group
                 Group group = recordReader.read();
                 rowIndexInGroup++;
                 if ( group == null ) {
                     recordReader = null;
                     continue;
                 }
-
-                PolyValue[] row = extractRow( group );
-                if ( !matchesFilters( row ) ) {
-                    continue;
-                }
-
-                current = row;
+                // convert to PolyValue object array
+                current = extractRow( group );
                 return true;
             }
         } catch ( Exception e ) {
@@ -197,33 +219,19 @@ public class ParquetEnumerator implements Enumerator<PolyValue[]> {
             return true;
         }
 
-        while ( blockIndex < blocks.size() ) {
-            BlockMetaData block = blocks.get( blockIndex );
-            // check if block contains filter values according to metadata in block
-            // if not - row group can be skipped
-            if ( !predicateEvaluator.mightContain( block, schema, filters ) ) {
-                fileReader.skipNextRowGroup();
-                blockIndex++;
-                continue;
-            }
+        PageReadStore pages = useNativeFilter
+                ? fileReader.readNextFilteredRowGroup()
+                : fileReader.readNextRowGroup();
 
-            // create reader for compatible row group
-
-            PageReadStore pages = fileReader.readNextRowGroup();
-            blockIndex++;
-
-            if ( pages == null ) {
-                return false;
-            }
-
-            MessageColumnIO columnIO = new ColumnIOFactory().getColumnIO( this.projectionSchema );
-            this.recordReader = columnIO.getRecordReader( pages, new GroupRecordConverter( this.projectionSchema ) );
-            this.rowCountInGroup = pages.getRowCount();
-            this.rowIndexInGroup = 0;
-            return true;
+        if ( pages == null ) {
+            return false;
         }
 
-        return false;
+        MessageColumnIO columnIO = new ColumnIOFactory().getColumnIO( this.projectionSchema );
+        this.recordReader = columnIO.getRecordReader( pages, new GroupRecordConverter( this.projectionSchema ) );
+        this.rowCountInGroup = pages.getRowCount();
+        this.rowIndexInGroup = 0;
+        return true;
     }
 
 
@@ -231,8 +239,8 @@ public class ParquetEnumerator implements Enumerator<PolyValue[]> {
      * Extracts one row using the requested read schema.
      */
     private PolyValue[] extractRow( Group group ) {
-        PolyValue[] row = new PolyValue[columnCount];
-        for ( int readIndex = 0; readIndex < this.projectionIndexes.length; readIndex++ ) {
+        PolyValue[] row = new PolyValue[projectionSchema.getFieldCount()];
+        for ( int readIndex = 0; readIndex < projectionSchema.getFieldCount(); readIndex++ ) {
             var type = projectionSchema.getType( readIndex );
             var value = valueExtractor.extractValue( group, readIndex, type );
             row[readIndex] = typeConverter.fromObjToPolyValue( type, value );
@@ -242,89 +250,22 @@ public class ParquetEnumerator implements Enumerator<PolyValue[]> {
 
 
     /**
-     * Evaluates pushed filters against one extracted row.
+     * If no projection provided return all existing in schema columns
      */
-    private boolean matchesFilters( PolyValue[] row ) {
-        if ( filters.isEmpty() ) {
-            return true;
+    private static int[] buildProjectedFields( int[] projectedFields, int schemaFieldCount ) {
+        if ( projectedFields == null || projectedFields.length == 0 ) {
+            return IntStream.range( 0, schemaFieldCount ).toArray();
         }
-
-        // each filter - for specific column
-        for ( ParquetFilter filter : filters ) {
-            // validate column index
-            int idx = filter.columnIndex();
-            if ( idx < 0 || idx >= row.length || idx >= projectionIndexes.length ) {
-                return false; //invalid filter column
-            }
-
-            // apply filter only for primitive types
-            int schemaFieldIndex = projectionIndexes[idx];
-            Type fieldType = schema.getType( schemaFieldIndex );
-            if ( !fieldType.isPrimitive() ) {
-                return false;
-            }
-
-            Object actual = row[idx];
-            if ( actual == null ) {
-                return false;
-            }
-
-            PrimitiveType primitiveType = fieldType.asPrimitiveType();
-            Object expected = this.typeConverter.fromLiteralToPrimitive( primitiveType, filter.literalValue() );
-            if ( expected == null ) {
-                // incorrect filter value
-                return false;
-            }
-
-            Integer cmp = ValueComparator.compareValues( primitiveType, actual, expected );
-
-            if ( cmp == null || !matchesOperator( filter, cmp ) ) {
-                return false;
-            }
-        }
-        return true;
+        return projectedFields;
     }
 
 
     /**
-     * Applies comparison result to a filter operator.
-     */
-    private boolean matchesOperator( ParquetFilter filter, int cmp ) {
-        return switch ( filter.operator() ) {
-            case EQUALS -> cmp == 0;
-            case NOT_EQUALS -> cmp != 0;
-            case GREATER_THAN -> cmp > 0;
-            case GREATER_THAN_OR_EQUAL -> cmp >= 0;
-            case LESS_THAN -> cmp < 0;
-            case LESS_THAN_OR_EQUAL -> cmp <= 0;
-            default -> false;
-        };
-    }
-
-
-    /**
-     * Computes the set of columns that must be read:
-     * combines projection columns (fields) with filter columns
-     */
-    private static int[] computeProjectionIndexes( int[] projectedFields, List<ParquetFilter> filters, int columnCount ) {
-        Set<Integer> fields = new LinkedHashSet<>();
-        for ( int field : projectedFields ) {
-            if ( field >= 0 && field < columnCount ) {
-                fields.add( field );
-            }
-        }
-        for ( ParquetFilter filter : filters ) {
-            int index = filter.columnIndex();
-            if ( index >= 0 && index < columnCount ) {
-                fields.add( index );
-            }
-        }
-        return fields.stream().mapToInt( Integer::intValue ).toArray();
-    }
-
-
-    /**
-     * Builds the projected read schema.
+     * Builds the projected parquet schema.
+     *
+     * @param fullSchema - full parquet file schema
+     * @param projectedFieldIndexes - required projection
+     * @return org.apache.parquet.schema.MessageType - new schema
      */
     private static MessageType buildProjectionSchema( MessageType fullSchema, int[] projectedFieldIndexes ) {
         if ( projectedFieldIndexes.length == 0 ) {
@@ -337,6 +278,5 @@ public class ParquetEnumerator implements Enumerator<PolyValue[]> {
         }
         return new MessageType( fullSchema.getName(), fields );
     }
-
 
 }

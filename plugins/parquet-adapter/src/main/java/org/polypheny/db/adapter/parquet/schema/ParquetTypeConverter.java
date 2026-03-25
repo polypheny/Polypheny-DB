@@ -26,7 +26,6 @@ import org.apache.parquet.schema.LogicalTypeAnnotation.TimeLogicalTypeAnnotation
 import org.apache.parquet.schema.LogicalTypeAnnotation.TimestampLogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
-import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeNameConverter;
 import org.apache.parquet.schema.Type;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
@@ -50,6 +49,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Date;
+import java.util.Objects;
 
 import static io.activej.common.StringFormatUtils.parseLocalDateTime;
 
@@ -57,6 +57,7 @@ public class ParquetTypeConverter {
 
     /**
      * Convert original parquet type into {@link PolyType}
+     *
      * @param field parquet type
      * @return {@link PolyType}
      */
@@ -103,6 +104,7 @@ public class ParquetTypeConverter {
 
     /**
      * Convert value from object to appropriate PolyValue
+     *
      * @param fieldType - type of value/column
      * @param value - object to convert
      * @return converted PolyValue
@@ -125,31 +127,43 @@ public class ParquetTypeConverter {
             case TIME -> fromObjToPolyTime( value );
             case TIMESTAMP -> fromObjToPolyTimestamp( value );
             case VARCHAR, TEXT -> fromObjToPolyString( value );
-            default -> throw new IllegalStateException("Unexpected value: " + fieldType);
+            default -> throw new IllegalStateException( "Unexpected value: " + fieldType );
         };
     }
 
 
     /**
-     * Convert literal to primitive type
-     * @param primitive - type to convert
-     * @param literal - string value
-     * @return converted object of primitive type
+     * Convert a typed literal to a parquet primitive value.
      */
-    public Object fromLiteralToPrimitive( PrimitiveType primitive, String literal ) {
+    public Object fromPolyValueToParquetObj( PrimitiveType primitive, PolyValue literal ) {
+        if ( literal == null || literal.isNull() ) {
+            return null;
+        }
+
         try {
-            Object date = fromLiteralToDate( primitive, literal );
-            if (date != null)
+            Object date = fromPolyValueToDate( primitive, literal );
+            if ( date != null ) {
                 return date;
-            // convert to primitive type
-            var converter = new ParquetPrimitiveTypeNameConverter(literal);
-            return primitive.getPrimitiveTypeName().convert( converter );
+            }
+
+            return switch ( primitive.getPrimitiveTypeName() ) {
+                case BOOLEAN -> literal.isBoolean() ? literal.asBoolean().value : Boolean.parseBoolean( literal.toString() );
+                case INT32 -> literal.asNumber().intValue();
+                case INT64 -> literal.asNumber().longValue();
+                case FLOAT -> literal.asNumber().floatValue();
+                case DOUBLE -> literal.asNumber().doubleValue();
+                case INT96 -> null;
+                case FIXED_LEN_BYTE_ARRAY, BINARY -> literal.isBinary()
+                        ? Binary.fromConstantByteArray( literal.asBinary().value )
+                        : Binary.fromString( literal.isString() ? literal.asString().value : literal.toString() );
+            };
         } catch ( Exception e ) {
             return null;
         }
     }
 
-    private Object fromLiteralToDate(PrimitiveType primitive, String literal) {
+
+    private Object fromStringToDate( PrimitiveType primitive, String literal ) {
         LogicalTypeAnnotation logical = primitive.getLogicalTypeAnnotation();
 
         if ( logical instanceof DateLogicalTypeAnnotation ) {
@@ -177,6 +191,57 @@ public class ParquetTypeConverter {
         return null;
     }
 
+
+    private Object fromPolyValueToDate( PrimitiveType primitive, PolyValue literal ) {
+        LogicalTypeAnnotation logical = primitive.getLogicalTypeAnnotation();
+
+        if ( logical instanceof DateLogicalTypeAnnotation ) {
+            if ( literal.isDate() ) {
+                return Math.toIntExact( literal.asDate().getDaysSinceEpoch() );
+            }
+            if ( literal.isNumber() ) {
+                return literal.asNumber().intValue();
+            }
+            return fromStringToDate( primitive, literal.toString() );
+        }
+
+        if ( logical instanceof TimeLogicalTypeAnnotation timeLogical ) {
+            long millis;
+            if ( literal.isTime() ) {
+                millis = Objects.requireNonNull( literal.asTime().ofDay ).longValue();
+            } else if ( literal.isNumber() ) {
+                millis = normalizeTimeToMillis( literal.asNumber().longValue() );
+            } else {
+                millis = normalizeTimeLiteralToMillis( literal.toString() );
+            }
+            return switch ( timeLogical.getUnit() ) {
+                case MILLIS -> primitive.getPrimitiveTypeName() == PrimitiveTypeName.INT32 ? (int) millis : millis;
+                case MICROS -> millis * 1_000L;
+                case NANOS -> millis * 1_000_000L;
+            };
+        }
+
+        if ( logical instanceof TimestampLogicalTypeAnnotation timestampLogical ) {
+            long millis;
+            if ( literal.isTimestamp() ) {
+                //noinspection DataFlowIssue
+                millis = literal.asTimestamp().millisSinceEpoch;
+            } else if ( literal.isNumber() ) {
+                millis = normalizeTimestampToMillis( literal.asNumber().longValue() );
+            } else {
+                millis = normalizeTimestampLiteralToMillis( literal.toString() );
+            }
+            return switch ( timestampLogical.getUnit() ) {
+                case MILLIS -> millis;
+                case MICROS -> millis * 1_000L;
+                case NANOS -> millis * 1_000_000L;
+            };
+        }
+
+        return null;
+    }
+
+
     /**
      * Parses an ISO local date string.
      */
@@ -187,6 +252,7 @@ public class ParquetTypeConverter {
             return null;
         }
     }
+
 
     /**
      * Parses an ISO local time string.
@@ -199,6 +265,7 @@ public class ParquetTypeConverter {
         }
     }
 
+
     /**
      * Parses time literal and normalizes it to milliseconds.
      */
@@ -210,6 +277,7 @@ public class ParquetTypeConverter {
         return normalizeTimeToMillis( Long.parseLong( literal ) );
     }
 
+
     /**
      * Parses timestamp literal and normalizes it to milliseconds.
      */
@@ -220,6 +288,7 @@ public class ParquetTypeConverter {
         }
         return normalizeTimestampToMillis( Long.parseLong( literal ) );
     }
+
 
     /**
      * Normalizes time units to milliseconds.
@@ -235,6 +304,7 @@ public class ParquetTypeConverter {
         return value;
     }
 
+
     /**
      * Normalizes timestamp units to milliseconds.
      */
@@ -249,80 +319,6 @@ public class ParquetTypeConverter {
         return value;
     }
 
-    private record ParquetPrimitiveTypeNameConverter( String literal ) implements PrimitiveTypeNameConverter<Object, Exception> {
-
-        /**
-         * Parses a float literal.
-         */
-        @Override
-        public Object convertFLOAT( PrimitiveTypeName primitiveTypeName ) {
-            return Float.parseFloat( literal );
-        }
-
-
-        /**
-         * Parses a double literal.
-         */
-        @Override
-        public Object convertDOUBLE( PrimitiveTypeName primitiveTypeName ) {
-            return Double.parseDouble( literal );
-        }
-
-
-        /**
-         * Parses a 32-bit integer literal.
-         */
-        @Override
-        public Object convertINT32( PrimitiveTypeName primitiveTypeName ) {
-            return Integer.parseInt( literal );
-        }
-
-
-        /**
-         * Parses a 64-bit integer literal.
-         */
-        @Override
-        public Object convertINT64( PrimitiveTypeName primitiveTypeName ) {
-            return Long.parseLong( literal );
-        }
-
-
-        /**
-         * Encodes the literal as binary for INT96.
-         */
-        @Override
-        public Object convertINT96( PrimitiveTypeName primitiveTypeName ) {
-            return Binary.fromConstantByteArray( literal.getBytes( StandardCharsets.UTF_8 ) );
-        }
-
-
-        /**
-         * Encodes the literal as binary for fixed byte arrays.
-         */
-        @Override
-        public Object convertFIXED_LEN_BYTE_ARRAY( PrimitiveTypeName primitiveTypeName ) {
-            return Binary.fromConstantByteArray( literal.getBytes( StandardCharsets.UTF_8 ) );
-        }
-
-
-        /**
-         * Parses a boolean literal.
-         */
-        @Override
-        public Object convertBOOLEAN( PrimitiveTypeName primitiveTypeName ) {
-            return Boolean.parseBoolean( literal );
-        }
-
-
-        /**
-         * Encodes the literal as binary.
-         */
-        @Override
-        public Object convertBINARY( PrimitiveTypeName primitiveTypeName ) {
-            return Binary.fromConstantByteArray( literal.getBytes( StandardCharsets.UTF_8 ) );
-        }
-
-    }
 
     /**
      * Converts to boolean value.
@@ -347,6 +343,7 @@ public class ParquetTypeConverter {
         }
         return PolyBinary.of( String.valueOf( value ).getBytes( StandardCharsets.UTF_8 ) );
     }
+
 
     /**
      * Converts to string value.
@@ -404,6 +401,7 @@ public class ParquetTypeConverter {
         }
         return PolyDouble.of( Double.parseDouble( String.valueOf( value ) ) );
     }
+
 
     /**
      * Converts to date value.
@@ -472,7 +470,6 @@ public class ParquetTypeConverter {
         }
         return PolyTimestamp.of( millis );
     }
-
 
 
 }

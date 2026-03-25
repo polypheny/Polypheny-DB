@@ -1,13 +1,14 @@
 package org.polypheny.db.adapter.parquet.model;
 
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.type.entity.PolyValue;
 
 /**
  * Immutable Filter description
  * @param columnIndex - index of filter column
  * @param operator - filter operation
- * @param literalValue - filter value
+ * @param polyValue - filter value
  */
-public record ParquetFilter(int columnIndex, Kind operator, String literalValue) {
+public record FilterInfo(int columnIndex, Kind operator, PolyValue polyValue ) {
 
 }

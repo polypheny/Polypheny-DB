@@ -211,6 +211,20 @@ class ParquetPluginTest {
         }
     }
 
+    @Test
+    void supportsDateFilterLiterals() throws SQLException {
+        assertQueryResult(
+                "SELECT customer_id, name "
+                        + "FROM customers "
+                        + "WHERE signup_date = TIMESTAMP '2023-02-04 00:00:00' "
+                        + "AND customer_id = 3 "
+                        + "ORDER BY customer_id",
+                ImmutableList.of(
+                        new Object[]{ 3L, "Rita Garcia" }
+                )
+        );
+    }
+
     // test filter operations
     @Test
     void supportsAllComparisonFilterOperations() throws SQLException {
