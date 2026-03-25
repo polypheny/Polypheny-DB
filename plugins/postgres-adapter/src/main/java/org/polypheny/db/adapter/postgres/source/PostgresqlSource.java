@@ -21,10 +21,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalDataSource;
@@ -32,11 +36,17 @@ import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
 import org.polypheny.db.adapter.postgres.PostgresqlSqlDialect;
+import org.polypheny.db.sql.language.SqlDbFeature;
+import org.polypheny.db.transaction.PUID;
+import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 
-import static org.polypheny.db.adapter.postgres.PostgresqlCatalogQueries.SQL_COLUMN_TYPE_MODIFIERS_AND_ATTR_DIMENSIONS;
+import static org.polypheny.db.adapter.postgres.source.PostgresqlCatalogQueries.SQL_COLUMN_TYPE_MODIFIERS_AND_ATTR_DIMENSIONS;
+import static org.polypheny.db.adapter.postgres.source.PostgresqlCatalogQueries.SQL_INSTALLED_EXTENSIONS;
 
 
 @Slf4j
@@ -70,8 +80,19 @@ public class PostgresqlSource extends AbstractJdbcSource {
                 settings,
                 mode,
                 "org.postgresql.Driver",
-                PostgresqlSqlDialect.DEFAULT,
+                new PostgresqlSqlDialect(),
                 false );
+        try {
+            PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
+            ConnectionHandler connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
+            try ( java.sql.Statement statement = connectionHandler.getStatement() ) {
+                Connection connection = statement.getConnection();
+                Set<SqlDbFeature> features = detectFeatures( connection );
+                dialect.addSupportedFeatures( features );
+            }
+        }  catch ( SQLException | ConnectionHandlerException e) {
+            log.error( "Could not query feature information.", e );
+        }
     }
 
 
@@ -128,7 +149,7 @@ public class PostgresqlSource extends AbstractJdbcSource {
      *   <li>{@code _int8}    — PostgreSQL int8 array, mapped to {@code
     ARRAY<BIGINT>}</li>
      * </ul>
-     * <p><b>Note:</b> PostgreSQL has no enforced array size limits.</p>
+     * <p><b>Note:</b> PostgreSQL has no enforced array size limits. We therefore only detect the specified (but not enforced) dimensions.</p>
      * @see <a href="https://www.postgresql.org/docs/current/arrays.html">PostgreSQL Arrays Documentation</a>
      */
     @Override
@@ -178,7 +199,22 @@ public class PostgresqlSource extends AbstractJdbcSource {
     }
 
 
-
-
+    public static Set<SqlDbFeature> detectFeatures( Connection conn ) throws SQLException {
+        Set<PostgresqlFeature> found = EnumSet.noneOf( PostgresqlFeature.class );
+        PreparedStatement ps = conn.prepareStatement( SQL_INSTALLED_EXTENSIONS );
+        String[] featureNames = Arrays.stream( PostgresqlFeature.values() )
+                .map( PostgresqlFeature::featureName )
+                .toArray( String[]::new );
+        ps.setArray( 1, conn.createArrayOf( "text", featureNames ) );
+        ResultSet rs = ps.executeQuery();
+        while ( rs.next() ) {
+            String name = rs.getString( 1 );
+            Arrays.stream( PostgresqlFeature.values() )
+                    .filter( f -> f.featureName().equals( name ) )
+                    .findFirst()
+                    .ifPresent( found::add );
+        }
+        return Collections.unmodifiableSet( found );
+    }
 
 }

@@ -93,13 +93,16 @@ public class SqlDialect {
     @NonNull
     AlgDataTypeSystem dataTypeSystem;
 
+    @NonNull
+    protected final java.util.Set<SqlDbFeature> supportedFeatures = new java.util.HashSet<>();
+
 
     /**
      * Creates a SqlDialect.
      *
      * @param context All the information necessary to create a dialect
      */
-    public SqlDialect( Context context ) {
+    public SqlDialect( Context context) {
         this.name = context.name;
         this.nullCollation = context.nullCollation;
         this.dataTypeSystem = context.dataTypeSystem;
@@ -700,7 +703,7 @@ public class SqlDialect {
     }
 
 
-    public boolean supportsPGVector() {
+    public boolean supportsVector() {
         return false;
     }
 
@@ -869,5 +872,18 @@ public class SqlDialect {
 
     }
 
+
+    /**
+     * Returns whether this dialect supports a specific database feature (e.g., pgvector for PostgreSQL).
+     * Override in dialect to use.
+     */
+    public boolean supportsFeature( SqlDbFeature feature ) {
+        return false;
+    }
+
+
+    public void addSupportedFeatures( java.util.Set<SqlDbFeature> features ) {
+        supportedFeatures.addAll( features );
+    }
 
 }

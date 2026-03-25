@@ -375,7 +375,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                     Expressions.call( resultSet_, "getString", Expressions.constant( i + 1 ) )
             );
             // If not of type java.sql.Array, use dialect specific handling for vector type
-            if ( fieldType.unwrapOrThrow( ArrayType.class ).getDimension() == 1 || dialect.supportsNestedArrays() ) {
+            if ( fieldType.unwrapOrThrow( ArrayType.class ).getDimension() == 1 && dialect.supportsVector()|| dialect.supportsNestedArrays() ) {
                 log.debug( "Parsing array as vector" );
                 return arrayRetrieval.map( expression -> Expressions.condition(
                         Expressions.typeIs(
@@ -384,7 +384,6 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                         standardMethod,
                         expression ) ).orElse( standardMethod );
             }
-            log.debug( "Parsing array as string" );
             return Expressions.condition(
                     Expressions.typeIs(
                             Expressions.call( resultSet_, "getObject", Expressions.constant( i + 1 ) ),

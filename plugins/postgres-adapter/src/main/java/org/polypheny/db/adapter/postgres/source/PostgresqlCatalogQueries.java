@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.postgres;
+package org.polypheny.db.adapter.postgres.source;
 
 /**
  * Utility class holding raw SQL queries used to interrogate the PostgreSQL system catalog.
@@ -44,5 +44,6 @@ public final class PostgresqlCatalogQueries {
     public static final String SQL_INSTALLED_EXTENSIONS = """
             SELECT extname
             FROM pg_extension
+            WHERE extname = ANY(?)
             """;
 }

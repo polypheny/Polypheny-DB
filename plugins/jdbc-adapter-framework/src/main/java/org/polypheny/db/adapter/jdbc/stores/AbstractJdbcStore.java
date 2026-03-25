@@ -254,7 +254,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
     protected void createColumnDefinition( PhysicalColumn column, StringBuilder builder ) {
         boolean supportsThisArray = column.collectionsType == PolyType.ARRAY && column.dimension != null && this.dialect.supportsArrays() && (this.dialect.supportsNestedArrays() || column.dimension == 1);
-        boolean supportsVector = column.collectionsType == PolyType.ARRAY && column.dimension != null && this.dialect.supportsPGVector() && column.dimension == 1 && ( column.type == PolyType.FLOAT || column.type == PolyType.DOUBLE);
+        boolean supportsVector = column.collectionsType == PolyType.ARRAY && column.dimension != null && this.dialect.supportsVector() && column.dimension == 1 && ( column.type == PolyType.FLOAT || column.type == PolyType.DOUBLE);
         if ( supportsVector ) {
           builder.append( "vector").append( "(" ).append( column.cardinality ).append( ")" );
         } else if ( supportsThisArray ) {

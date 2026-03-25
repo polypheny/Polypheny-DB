@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.polypheny.db.adapter.postgres.source.PostgresqlFeature;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
@@ -37,6 +38,7 @@ import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
+import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -79,6 +81,13 @@ public class PostgresqlSqlDialect extends SqlDialect {
                     .withIdentifierQuoteString( "\"" )
                     .withDataTypeSystem( POSTGRESQL_TYPE_SYSTEM ) );
 
+
+    public PostgresqlSqlDialect() {
+        this( EMPTY_CONTEXT
+                .withNullCollation( NullCollation.HIGH )
+                .withIdentifierQuoteString( "\"" )
+                .withDataTypeSystem( POSTGRESQL_TYPE_SYSTEM )) ;
+    }
 
     /**
      * Creates a PostgresqlSqlDialect.
@@ -130,7 +139,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
     @Override
     public boolean supportsPostGIS() {
-        return true;
+        return supportsFeature( PostgresqlFeature.POSTGIS );
     }
 
 
@@ -141,8 +150,8 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     @Override
-    public boolean supportsPGVector() {
-        return true;
+    public boolean supportsVector() {
+        return supportsFeature( PostgresqlFeature.PGVECTOR );
     }
 
 
@@ -320,7 +329,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
     @Override
     public Optional<Expression> handleArrayRetrieval( ParameterExpression resultSet, int i, AlgDataType fieldType ) {
-        if ( !supportsPGVector() || fieldType.getPolyType() != PolyType.ARRAY ) {
+        if ( !supportsVector() || fieldType.getPolyType() != PolyType.ARRAY ) {
             return Optional.empty();
         }
         // Nested arrays are not vectors and need to be ignored.
@@ -331,6 +340,12 @@ public class PostgresqlSqlDialect extends SqlDialect {
         Expression object = Expressions.call( resultSet, "getObject", Expressions.constant( i + 1 ) );
         String processingMethod = ( component.getPolyType() == PolyType.FLOAT ) ? "parseVectorAsFloat" : "parseVectorAsDouble";
         return Optional.of( Expressions.call( PostgresqlVectorHelper.class, processingMethod, object ) );
+    }
+
+
+    @Override
+    public boolean supportsFeature( SqlDbFeature feature ) {
+        return supportedFeatures.contains( feature );
     }
 
 }
