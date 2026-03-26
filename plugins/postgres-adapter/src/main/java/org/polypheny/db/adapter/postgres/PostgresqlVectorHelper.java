@@ -16,6 +16,9 @@
 
 package org.polypheny.db.adapter.postgres;
 
+import com.pgvector.PGhalfvec;
+import com.pgvector.PGsparsevec;
+import com.pgvector.PGvector;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.sql.language.SqlCall;
@@ -24,10 +27,8 @@ import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
-import org.postgresql.util.PGobject;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 public class PostgresqlVectorHelper {
@@ -47,45 +48,24 @@ public class PostgresqlVectorHelper {
     /**
      *
      * @param dbObject database Object that represents a vector.
-     * @return {@link PolyList<PolyDouble>} representation of the vector
+     * @return {@link PolyList<PolyFloat>} representation of the vector.
      */
-    public static List<PolyDouble> parseVectorAsDouble( Object dbObject ) {
-        Optional<String> optVectorString = convertObjectToString( dbObject );
-        if ( optVectorString.isPresent() ) {
-            String rawVectorString = optVectorString.get();
-            String[] parts = rawVectorString.substring( 1, rawVectorString.length() - 1 ).split( "," );
-            List<PolyDouble> list = new ArrayList<>( parts.length );
-            for ( String p : parts ) list.add( PolyDouble.of( Double.parseDouble( p.trim() ) ) );
+    public static List<PolyFloat> parseVector( Object dbObject ) {
+        float[] vector = null;
+        if (dbObject instanceof PGvector vec) {
+            vector = vec.toArray();
+        } else if (dbObject instanceof PGhalfvec vec) {
+            vector = vec.toArray();
+        } else if (dbObject instanceof PGsparsevec vec) {
+            vector = vec.toArray();
+        }
+        if ( vector != null) {
+            List<PolyFloat> list = new ArrayList<>( vector.length );
+            for ( float f : vector )
+                list.add( PolyFloat.of( f ) );
             return PolyList.of( list );
         }
         return null;
-    }
-
-
-    /**
-     *
-     * @param dbObject database Object that represents a vector.
-     * @return {@link PolyList<PolyFloat>} representation of the vector
-     */
-    public static List<PolyFloat> parseVectorAsFloat( Object dbObject ) {
-        Optional<String> optVectorString = convertObjectToString( dbObject );
-        if ( optVectorString.isPresent() ) {
-            String rawVectorString = optVectorString.get();
-            String[] parts = rawVectorString.substring( 1, rawVectorString.length() - 1 ).split( "," );
-            List<PolyFloat> list = new ArrayList<>( parts.length );
-            for ( String p : parts ) list.add( PolyFloat.of( Float.parseFloat( p.trim() ) ) );
-            return PolyList.of( list );
-        }
-        return null;
-    }
-
-
-    private static Optional<String> convertObjectToString(Object dbObject) {
-        if ( dbObject == null ) return Optional.empty();
-        if ( dbObject instanceof PGobject pgObject ) {
-            return Optional.ofNullable( pgObject.getValue() );
-        }
-        return Optional.empty();
     }
 
 

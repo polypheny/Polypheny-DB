@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import com.pgvector.PGvector;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -133,7 +134,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
     @Override
     public boolean supportsGeoJson() {
-        return true;
+        return supportsFeature( PostgresqlFeature.POSTGIS );
     }
 
 
@@ -338,14 +339,21 @@ public class PostgresqlSqlDialect extends SqlDialect {
             return Optional.empty();
         }
         Expression object = Expressions.call( resultSet, "getObject", Expressions.constant( i + 1 ) );
-        String processingMethod = ( component.getPolyType() == PolyType.FLOAT ) ? "parseVectorAsFloat" : "parseVectorAsDouble";
-        return Optional.of( Expressions.call( PostgresqlVectorHelper.class, processingMethod, object ) );
+        return Optional.of( Expressions.call( PostgresqlVectorHelper.class, "parseVector", object ) );
     }
 
 
     @Override
     public boolean supportsFeature( SqlDbFeature feature ) {
         return supportedFeatures.contains( feature );
+    }
+
+
+    @Override
+    public void initializeConnection ( java.sql.Connection conn ) throws java.sql.SQLException {
+        if ( supportsVector() ) {
+            PGvector.registerTypes( conn );
+        }
     }
 
 }

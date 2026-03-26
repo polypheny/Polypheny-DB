@@ -19,18 +19,19 @@ package org.polypheny.db.adapter.postgres;
 
 import java.sql.SQLException;
 import java.util.List;
+import com.pgvector.PGhalfvec;
+import com.pgvector.PGvector;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.postgresql.jdbc.PgArray;
-import org.postgresql.util.PGobject;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
-import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class PostgresqlVectorHelperTest {
@@ -44,27 +45,21 @@ public class PostgresqlVectorHelperTest {
 
 
     @Test
-    void parseVectorAsDouble_parsesCorrectly() throws SQLException {
-        PGobject obj = new PGobject();
-        obj.setType( "vector" );
-        obj.setValue( "[1.0,2.5,3.0]" );
-        List<PolyDouble> result = PostgresqlVectorHelper.parseVectorAsDouble( obj );
+    void parsesVectorCorrectly() throws SQLException {
+        PGvector obj = new PGvector(new float[]{1f, 2.5f, 3f});
+        List<PolyFloat> result = PostgresqlVectorHelper.parseVector( obj );
         assertNotNull( result );
-        assertEquals( 3, result.size() );
-        assertEquals( 1.0, result.get(0).doubleValue() );
-        assertEquals( 2.5, result.get(1).doubleValue() );
-        assertEquals( 3.0, result.get(2).doubleValue() );
+        assertEquals( 1.0, result.get(0).floatValue() );
+        assertEquals( 2.5, result.get(1).floatValue() );
+        assertEquals( 3.0, result.get(2).floatValue() );
     }
 
 
     @Test
-    void parseVectorAsFloat_parsesCorrectly() throws SQLException {
-        PGobject obj = new PGobject();
-        obj.setType( "vector" );
-        obj.setValue( "[1,2.5,3]" );
-        List<PolyFloat> result = PostgresqlVectorHelper.parseVectorAsFloat( obj );
+    void parsesHalfvecCorrectly() throws SQLException {
+        PGhalfvec obj = new PGhalfvec(new float[]{1f, 2.5f, 3f});
+        List<PolyFloat> result = PostgresqlVectorHelper.parseVector( obj );
         assertNotNull( result );
-        assertEquals( 3, result.size() );
         assertEquals( 1.0f, result.get(0).floatValue() );
         assertEquals( 2.5f, result.get(1).floatValue() );
         assertEquals( 3.0f, result.get(2).floatValue() );
@@ -72,37 +67,33 @@ public class PostgresqlVectorHelperTest {
 
 
     @Test
-    void parseVector_nullReturn() {
-        assertNull( PostgresqlVectorHelper.parseVectorAsDouble( null ) );
+    void nullReturn() {
+        assertNull( PostgresqlVectorHelper.parseVector( null ) );
     }
 
 
     @Test
-    void parseVector_nonPgObject() throws SQLException {
-        assertNull( PostgresqlVectorHelper.parseVectorAsDouble( new PgArray( null, 0, "" ) ) );
+    void nonPgVectorObject() throws SQLException {
+        assertNull( PostgresqlVectorHelper.parseVector( new PgArray( null, 0, "" ) ) );
     }
 
 
     @Test
-    void parseVectorAsDouble_parsesNegativeCorrectly() throws SQLException {
-        PGobject obj = new PGobject();
-        obj.setType( "vector" );
-        obj.setValue( "[-1.0,-2.5,-3.0]" );
-        List<PolyDouble> result = PostgresqlVectorHelper.parseVectorAsDouble( obj );
+    void parsesNegativeVectorCorrectly() throws SQLException {
+        PGvector obj = new PGvector(new float[]{-1f, -2.5f, -3f});
+        List<PolyFloat> result = PostgresqlVectorHelper.parseVector( obj );
         assertNotNull( result );
         assertEquals( 3, result.size() );
-        assertEquals( -1.0, result.get(0).doubleValue() );
-        assertEquals( -2.5, result.get(1).doubleValue() );
-        assertEquals( -3.0, result.get(2).doubleValue() );
+        assertEquals( -1.0, result.get(0).floatValue() );
+        assertEquals( -2.5, result.get(1).floatValue() );
+        assertEquals( -3.0, result.get(2).floatValue() );
     }
 
 
     @Test
-    void parseVectorAsFloat_parsesNegativeCorrectly() throws SQLException {
-        PGobject obj = new PGobject();
-        obj.setType( "vector" );
-        obj.setValue( "[-1.0,-2.5,-3.0]" );
-        List<PolyFloat> result = PostgresqlVectorHelper.parseVectorAsFloat( obj );
+    void parsesNegativeHalfvecCorrectly() throws SQLException {
+        PGhalfvec obj = new PGhalfvec(new float[]{-1f, -2.5f, -3f});
+        List<PolyFloat> result = PostgresqlVectorHelper.parseVector( obj );
         assertNotNull( result );
         assertEquals( 3, result.size() );
         assertEquals( -1.0f, result.get(0).floatValue() );
@@ -112,35 +103,13 @@ public class PostgresqlVectorHelperTest {
 
 
     @Test
-    void parseVector_parseSingleEntry() throws SQLException {
-        PGobject obj = new PGobject();
-        obj.setType( "vector" );
-        obj.setValue( "[-1.0]" );
-        List<PolyFloat> result = PostgresqlVectorHelper.parseVectorAsFloat( obj );
+    void parseSingleEntryVector() throws SQLException {
+        PGvector vector = new PGvector( new float[]{-1f} );
+        List<PolyFloat> result = PostgresqlVectorHelper.parseVector( vector );
         assertNotNull( result );
         assertEquals( 1, result.size() );
+        assertTrue( result.get(0) instanceof PolyFloat );
         assertEquals( -1.0f, result.get(0).floatValue() );
     }
 
-
-    @Test
-    void parseVector_parsesWhiteSpaceCorrectly() throws SQLException {
-        PGobject obj = new PGobject();
-        obj.setType( "vector" );
-        obj.setValue( "[1, 2.5, 3]" );
-        List<PolyFloat> result = PostgresqlVectorHelper.parseVectorAsFloat( obj );
-        assertNotNull( result );
-        assertEquals( 3, result.size() );
-        assertEquals( 1.0f, result.get(0).floatValue() );
-        assertEquals( 2.5f, result.get(1).floatValue() );
-        assertEquals( 3.0f, result.get(2).floatValue() );
-    }
-
-
-    @Test
-    void parseVector_pgObjectWithNullValue() throws SQLException {
-        PGobject obj = new PGobject();
-        obj.setType( "vector" );
-        assertNull( PostgresqlVectorHelper.parseVectorAsDouble( obj ) );
-    }
 }

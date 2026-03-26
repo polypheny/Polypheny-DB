@@ -31,6 +31,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
@@ -38,6 +39,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
 import org.polypheny.db.adapter.postgres.PostgresqlSqlDialect;
+import org.polypheny.db.adapter.postgres.source.PostgresqlFeature;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
@@ -78,6 +80,14 @@ import org.polypheny.db.util.PasswordGenerator;
         description = "Password to be used for authenticating at the remote instance.", appliesTo = DeploySetting.REMOTE)
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25, position = 6,
         description = "Maximum number of concurrent JDBC connections.")
+@AdapterSettingList(
+        name        = "imageVariant",
+        options     = { "Default", "pgvector", "PostGIS", "pgvector & PostGIS" },
+        defaultValue = "DEFAULT",
+        position    = 7,
+        description = "PostgreSQL Docker image variant to deploy.",
+        appliesTo   = DeploySetting.DOCKER
+)
 public class PostgresqlStore extends AbstractJdbcStore {
 
 
@@ -111,9 +121,12 @@ public class PostgresqlStore extends AbstractJdbcStore {
             DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
                     .orElseThrow( () -> new GenericRuntimeException( "No docker instance with id " + instanceId ) );
             try {
-                container = instance.newBuilder( "polypheny/postgres:latest", getUniqueName() )
+                PostgresqlImageVariant variant = PostgresqlImageVariant.valueOf(
+                        settings.getOrDefault( "imageVariant", PostgresqlImageVariant.DEFAULT.name() ).toUpperCase().replace( " & ", "_" ) );
+                container = instance.newBuilder( variant.imageName, getUniqueName() )
                         .withEnvironmentVariable( "POSTGRES_PASSWORD", settings.get( "password" ) )
                         .createAndStart();
+                dialect.addSupportedFeatures( variant.features );
             } catch ( IOException e ) {
                 throw new GenericRuntimeException( e );
             }
@@ -183,6 +196,23 @@ public class PostgresqlStore extends AbstractJdbcStore {
             ch.commit();
         } catch ( ConnectionHandlerException | SQLException e ) {
             log.error( "Error while creating udfs on Postgres", e );
+        }
+    }
+
+
+    @Override
+    public void registerFeatures() {
+        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.CONNECTION ), PUID.randomPUID( Type.CONNECTION ) );
+        try {
+            ConnectionHandler ch = connectionFactory.getOrCreateConnectionHandler( xid );
+            for ( PostgresqlFeature f : PostgresqlFeature.values() ) {
+                if ( f.isSupported( dialect ) ) {
+                    ch.executeUpdate( f.getFeatureRegistrationQuery() );
+                }
+            }
+            ch.commit();
+        } catch ( ConnectionHandlerException | SQLException e ) {
+        log.error( "Error while registering features (CREATE EXTENSION) on Postgres", e );
         }
     }
 

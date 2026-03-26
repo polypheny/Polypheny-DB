@@ -17,24 +17,37 @@
 package org.polypheny.db.adapter.postgres.source;
 
 import org.polypheny.db.sql.language.SqlDbFeature;
+import org.polypheny.db.sql.language.SqlDialect;
+import java.util.function.Predicate;
 
 public enum PostgresqlFeature implements SqlDbFeature {
-
-    PGVECTOR( "vector" ),
-    POSTGIS( "postgis" );
+    PGVECTOR( "vector", SqlDialect::supportsVector ),
+    POSTGIS( "postgis", SqlDialect::supportsPostGIS );
 
     /**
      * Name as it appears in {@code pg_extension.extname}.
      */
-    public final String name;
+    private final String name;
+    private final Predicate<SqlDialect> supportCheck;
 
-    PostgresqlFeature(String name ) {
+    PostgresqlFeature(String name, Predicate<SqlDialect> supportCheck ) {
         this.name = name;
+        this.supportCheck = supportCheck;
     }
 
 
     @Override
     public String featureName() {
         return name;
+    }
+
+
+    public boolean isSupported( SqlDialect dialect ) {
+        return this.supportCheck.test( dialect );
+    }
+
+
+    public String getFeatureRegistrationQuery() {
+        return "CREATE EXTENSION IF NOT EXISTS \"" + this.name + "\"";
     }
 }

@@ -94,10 +94,9 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
         // Register the JDBC Pool Size as information in the information manager and enable it
         registerJdbcInformation();
-
+        registerFeatures();
         // Create udfs
         createUdfs();
-
         this.delegate = new RelationalModifyDelegate( this, adapterCatalog );
     }
 
@@ -135,6 +134,11 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     public void createUdfs() {
+
+    }
+
+
+    public void registerFeatures() {
 
     }
 

@@ -85,23 +85,13 @@ public class PostgresqlSqlDialectTest {
     }
 
 
-    @Test void callsParseFloatforFloatComponent() {
+    @Test void callsParseVectorforEligibleObject() {
         AlgDataType floatType = typeFactory.createPolyType( PolyType.FLOAT );
         AlgDataType floatArray = typeFactory.createArrayType( floatType, -1 );
         dialect.addSupportedFeatures( Set.of( PGVECTOR ) );
         Optional<Expression> result = dialect.handleArrayRetrieval( resultSet, 0, floatArray );
         assertTrue( result.isPresent() );
-        assertTrue( result.get().toString().contains( "parseVectorAsFloat" ) );
-    }
-
-
-    @Test void callsParseDoubleforDoubleComponent() {
-        AlgDataType doubleType = typeFactory.createPolyType( PolyType.DOUBLE );
-        AlgDataType doubleArray = typeFactory.createArrayType( doubleType, -1 );
-        dialect.addSupportedFeatures( Set.of( PGVECTOR ) );
-        Optional<Expression> result = dialect.handleArrayRetrieval( resultSet, 0, doubleArray );
-        assertTrue( result.isPresent() );
-        assertTrue( result.get().toString().contains( "parseVectorAsDouble" ) );
+        assertTrue( result.get().toString().contains( "parseVector" ) );
     }
 
 

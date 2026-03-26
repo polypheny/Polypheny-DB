@@ -39,4 +39,12 @@ public interface SqlDbFeature {
      * @return the feature's catalog name, never {@code null}
      */
     String featureName();
+
+    public boolean isSupported( SqlDialect dialect );
+
+    /**
+     * Creates a query than can be run in order to register the feature in the database.
+     * In PostgreSQL this is e.g. {@code CREATE EXTENSION IF NOT EXISTS <feature name>}.
+     */
+    public String getFeatureRegistrationQuery();
 }

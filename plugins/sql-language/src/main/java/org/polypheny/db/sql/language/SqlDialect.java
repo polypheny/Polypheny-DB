@@ -713,6 +713,20 @@ public class SqlDialect {
     }
 
 
+    /**
+     * Returns whether this dialect supports a specific database feature (e.g., pgvector for PostgreSQL).
+     * Override in dialect to use.
+     */
+    public boolean supportsFeature( SqlDbFeature feature ) {
+        return false;
+    }
+
+
+    public void addSupportedFeatures( java.util.Set<SqlDbFeature> features ) {
+        supportedFeatures.addAll( features );
+    }
+
+
     public Expression handleRetrieval( AlgDataType fieldType, Expression child, ParameterExpression resultSet_, int index ) {
         final String methodName = fieldType.isNullable() ? "ofNullable" : "of";
         return switch ( fieldType.getPolyType() ) {
@@ -874,16 +888,10 @@ public class SqlDialect {
 
 
     /**
-     * Returns whether this dialect supports a specific database feature (e.g., pgvector for PostgreSQL).
-     * Override in dialect to use.
+     * Dialect specific setup on new connection, e.g. register certain non-standard types.
      */
-    public boolean supportsFeature( SqlDbFeature feature ) {
-        return false;
-    }
+    public void initializeConnection( java.sql.Connection conn ) throws java.sql.SQLException {
 
-
-    public void addSupportedFeatures( java.util.Set<SqlDbFeature> features ) {
-        supportedFeatures.addAll( features );
     }
 
 }
