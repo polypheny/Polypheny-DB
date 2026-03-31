@@ -9,6 +9,6 @@ import org.polypheny.db.type.entity.PolyValue;
  * @param operator - filter operation
  * @param polyValue - filter value
  */
-public record FilterInfo(int columnIndex, Kind operator, PolyValue polyValue ) {
+public record AdapterFilter(int columnIndex, Kind operator, PolyValue polyValue ) {
 
 }

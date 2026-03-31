@@ -28,27 +28,35 @@ import org.apache.parquet.schema.Type;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.DocumentDataSource;
+import org.polypheny.db.adapter.DocumentScanDelegate;
 import org.polypheny.db.adapter.RelationalDataSource;
-import org.polypheny.db.adapter.RelationalScanDelegate;
+import org.polypheny.db.adapter.Scannable;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.parquet.io.ParquetFileDiscovery;
+import org.polypheny.db.adapter.parquet.schema.ParquetDocument;
 import org.polypheny.db.adapter.parquet.schema.ParquetTypeConverter;
 import org.polypheny.db.adapter.parquet.schema.ParquetNamespace;
 import org.polypheny.db.adapter.parquet.schema.ParquetTable;
 
 
 import org.polypheny.db.adapter.parquet.util.HadoopConfigurationFactory;
-import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
+import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
@@ -77,10 +85,10 @@ import org.slf4j.LoggerFactory;
 @AdapterSettingList(name = "method", options = { "upload", "link" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
 @AdapterSettingDirectory(subOf = "method_upload", name = "directory", defaultValue = "classpath://orders_db", description = "You can upload one or multiple .parquet files.", position = 2)
 @AdapterSettingString(subOf = "method_link", defaultValue = "classpath://orders_db", name = "directoryName", description = "You can select a path to a folder or specific .parquet files.", position = 2)
-public class ParquetSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
+public class ParquetSource extends DataSource<DocAdapterCatalog> implements RelationalDataSource, DocumentDataSource, Scannable {
 
     @Delegate(excludes = Excludes.class)
-    private final RelationalScanDelegate delegate;
+    private final DocumentScanDelegate delegate;
 
     private final ConnectionMethod connectionMethod;
     //private final int maxStringLength;
@@ -99,7 +107,7 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
      * Creates the Parquet source from adapter settings.
      */
     public ParquetSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
-        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), Set.of( DataModel.RELATIONAL ) );
+        super( storeId, uniqueName, settings, mode, true, new DocAdapterCatalog( storeId ), Set.of( DataModel.RELATIONAL, DataModel.DOCUMENT ) );
 
         this.parquetTypeConverter = new ParquetTypeConverter();
         this.connectionMethod = settings.containsKey( "method" )
@@ -110,7 +118,7 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
         createInformationPage();
         enableInformationPage();
 
-        this.delegate = new RelationalScanDelegate( this, adapterCatalog );
+        this.delegate = new DocumentScanDelegate( this, adapterCatalog );
     }
 
 
@@ -279,6 +287,7 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
     @Override
     public void updateNamespace( String name, long id ) {
         currentNamespace = new ParquetNamespace( id, adapterId, parquetDir );
+        putNamespace( currentNamespace );
     }
 
 
@@ -287,6 +296,12 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
      */
     @Override
     public RelationalDataSource asRelationalDataSource() {
+        return this;
+    }
+
+
+    @Override
+    public DocumentDataSource asDocumentDataSource() {
         return this;
     }
 
@@ -382,6 +397,53 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
         adapterCatalog.addPhysical( alloc, physical );
     }
 
+    @Override
+    public void dropTable( Context context, long allocId ) {
+        adapterCatalog.removeAllocAndPhysical( allocId );
+    }
+
+
+    /**
+     * for each parquet file create document
+     * @return list of documents
+     */
+    @Override
+    public List<ExportedDocument> getExportedCollections() {
+        return getExportedColumns().keySet().stream()
+                .map( name -> new ExportedDocument( name, false, EntityType.SOURCE ) )
+                .toList();
+    }
+
+
+    @Override
+    public List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
+        // create polypheny level document objects
+        PhysicalCollection collection = adapterCatalog.createCollection(
+                logical.getNamespaceName(),
+                logical.getName(),
+                logical,
+                allocation );
+
+        ParquetDocument physical = currentNamespace.createParquetCollection( collection, this );
+        adapterCatalog.replacePhysical( physical );
+        return List.of( physical );
+    }
+
+
+    @Override
+    public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context ) {
+        PhysicalEntity collection = entities.get( 0 );
+        updateNamespace( collection.namespaceName, collection.namespaceId );
+        ParquetDocument physical = currentNamespace.createParquetCollection( collection.unwrapOrThrow( PhysicalCollection.class ), this );
+        adapterCatalog.addPhysical( alloc, physical );
+    }
+
+
+    @Override
+    public void dropCollection( Context context, AllocationCollection allocation ) {
+        adapterCatalog.removeAllocAndPhysical( allocation.id );
+    }
+
 
     /**
      * Updates logical column naming in adapter catalog
@@ -389,6 +451,12 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
     @Override
     public void renameLogicalColumn( long id, String newColumnName ) {
         adapterCatalog.renameLogicalColumn( id, newColumnName );
+    }
+
+
+    @Override
+    public AdapterCatalog getCatalog() {
+        return adapterCatalog;
     }
     //endregion
 
@@ -405,6 +473,14 @@ public class ParquetSource extends DataSource<RelAdapterCatalog> implements Rela
         void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
         void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context );
+
+        void dropTable( Context context, long allocId );
+
+        void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation );
+
+        void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context );
+
+        void dropCollection( Context context, AllocationCollection allocation );
 
     }
 

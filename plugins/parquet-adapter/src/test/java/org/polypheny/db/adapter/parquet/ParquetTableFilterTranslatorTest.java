@@ -21,14 +21,14 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Types;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.adapter.parquet.execution.ParquetPredicateBuilder;
-import org.polypheny.db.adapter.parquet.model.FilterInfo;
+import org.polypheny.db.adapter.parquet.execution.ParquetTableFilterTranslator;
+import org.polypheny.db.adapter.parquet.model.AdapterFilter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class ParquetPredicateBuilderTest {
+class ParquetTableFilterTranslatorTest {
 
     @Test
     void rejectsInt96TimestampPredicatePushdown() {
@@ -37,10 +37,10 @@ class ParquetPredicateBuilderTest {
                 .named( "ts" )
                 .named( "test_schema" );
 
-        FilterInfo filter = new FilterInfo( 0, Kind.EQUALS, PolyTimestamp.of( 1_700_000_000_000L ) );
+        AdapterFilter filter = new AdapterFilter( 0, Kind.EQUALS, PolyTimestamp.of( 1_700_000_000_000L ) );
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new ParquetPredicateBuilder().translate( schema, List.of( filter ) ) );
+                () -> new ParquetTableFilterTranslator().translate( schema, List.of( filter ) ) );
     }
 }

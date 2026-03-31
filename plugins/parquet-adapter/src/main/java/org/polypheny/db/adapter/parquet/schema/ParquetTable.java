@@ -21,17 +21,14 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.parquet.ParquetSource;
-import org.polypheny.db.adapter.parquet.execution.ParquetEnumerator;
-import org.polypheny.db.adapter.parquet.model.FilterInfo;
-import org.polypheny.db.adapter.parquet.planning.ParquetScan;
+import org.polypheny.db.adapter.parquet.execution.ParquetTableEnumerator;
+import org.polypheny.db.adapter.parquet.execution.ParquetTableFilterTranslator;
+import org.polypheny.db.adapter.parquet.model.AdapterFilter;
+import org.polypheny.db.adapter.parquet.planning.ParquetTableScan;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexIndexRef;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.types.FilterableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
@@ -42,6 +39,7 @@ import org.polypheny.db.util.Source;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.IntStream;
 
 /**
  * Base class for Parquet physical tables.
@@ -49,15 +47,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ParquetTable extends PhysicalTable implements FilterableEntity, ScannableEntity, TranslatableEntity {
 
     protected final Source source;
-    protected List<PolyType> fieldTypes;
-    protected final int[] fields;
+    protected final int[] fieldIndexes;
+    private final List<PolyType> fieldTypes;
     protected final ParquetSource parquetSource;
+    protected final ParquetTableFilterTranslator filterTranslator;
 
 
     /**
      * Creates a Parquet table wrapper from a physical table definition.
      */
-    ParquetTable( long id, Source source, PhysicalTable table, List<PolyType> fieldTypes, int[] fields, ParquetSource parquetSource ) {
+    ParquetTable( long id, Source source, PhysicalTable table, ParquetSource parquetSource ) {
         super(
                 id,
                 table.allocationId,
@@ -69,9 +68,10 @@ public class ParquetTable extends PhysicalTable implements FilterableEntity, Sca
                 table.uniqueFieldIds,
                 table.adapterId );
         this.source = source;
-        this.fieldTypes = fieldTypes;
-        this.fields = fields;
+        this.fieldIndexes = IntStream.range( 0, table.columns.size() ).toArray();
+        this.fieldTypes = columns.stream().map( c -> c.type ).toList();
         this.parquetSource = parquetSource;
+        this.filterTranslator = new ParquetTableFilterTranslator();
     }
 
 
@@ -79,20 +79,26 @@ public class ParquetTable extends PhysicalTable implements FilterableEntity, Sca
      * Returns enumerable for FilterableEntity.
      *
      * @param dataContext data context
-     * @param filters filters to push down.
+     * @param polyFilters polyFilters to push down.
      * @return enumerable.
      */
     @Override
-    public Enumerable<PolyValue[]> scan( DataContext dataContext, List<RexNode> filters ) {
+    public Enumerable<PolyValue[]> scan( DataContext dataContext, List<RexNode> polyFilters ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( parquetSource );
-        final List<FilterInfo> pushedFilters = new ArrayList<>();
-        filters.removeIf( filter -> addFilter( filter, pushedFilters ) );
+        final List<AdapterFilter> adapterFilters = new ArrayList<>();
+        polyFilters.removeIf( polyFilter -> {
+            var adapterFilter = filterTranslator.translate( fieldTypes, polyFilter );
+            if ( adapterFilter != null ) {
+                return adapterFilters.add( adapterFilter );
+            }
+            return false;
+        } );
 
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                return new ParquetEnumerator( source, cancelFlag, fields, pushedFilters );
+                return new ParquetTableEnumerator( source, cancelFlag, fieldIndexes, adapterFilters );
             }
         };
     }
@@ -112,7 +118,7 @@ public class ParquetTable extends PhysicalTable implements FilterableEntity, Sca
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                return new ParquetEnumerator( source, cancelFlag, fields );
+                return new ParquetTableEnumerator( source, cancelFlag, fieldIndexes );
             }
         };
     }
@@ -127,12 +133,12 @@ public class ParquetTable extends PhysicalTable implements FilterableEntity, Sca
      */
     @Override
     public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
-        return new ParquetScan( cluster, this, fields );
+        return new ParquetTableScan( cluster, this, fieldIndexes );
     }
 
 
     /**
-     * This method is called from the {@link ParquetScan} via reflection.
+     * This method is called from the {@link ParquetTableScan} via reflection.
      *
      * @param dataContext data context
      * @param fields a list of fields to return.
@@ -144,71 +150,10 @@ public class ParquetTable extends PhysicalTable implements FilterableEntity, Sca
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                return new ParquetEnumerator( source, cancelFlag, fields );
+                return new ParquetTableEnumerator( source, cancelFlag, fields );
             }
         };
     }
-
-
-    /**
-     * Translates a Rex filter into adapter filter form when possible.
-     */
-    private boolean addFilter( RexNode filter, List<FilterInfo> pushedFilters ) {
-        if ( !isSupportedOperator( filter.getKind() ) ) {
-            return false;
-        }
-
-        RexCall call = (RexCall) filter;
-        RexNode left = call.getOperands().get( 0 );
-        if ( left.isA( Kind.CAST ) ) {
-            left = ((RexCall) left).operands.get( 0 );
-        }
-        RexNode right = call.getOperands().get( 1 );
-
-        if ( !(left instanceof RexIndexRef) || !(right instanceof RexLiteral literal) ) {
-            return false;
-        }
-
-        if ( literal.getValue() == null ) {
-            return false;
-        }
-
-        int index = ((RexIndexRef) left).getIndex();
-        if ( index < 0 || index >= columns.size() ) {
-            return false;
-        }
-
-        if ( !isPushdownSupported( index, filter.getKind(), literal ) ) {
-            return false;
-        }
-
-        pushedFilters.add( new FilterInfo( index, filter.getKind(), literal.getValue() ) );
-        return true;
-    }
-
-
-    /**
-     * Checks whether the operator can be handled by the reader.
-     */
-    private boolean isSupportedOperator( Kind kind ) {
-        return kind == Kind.EQUALS
-                || kind == Kind.NOT_EQUALS
-                || kind == Kind.GREATER_THAN
-                || kind == Kind.GREATER_THAN_OR_EQUAL
-                || kind == Kind.LESS_THAN
-                || kind == Kind.LESS_THAN_OR_EQUAL;
-    }
-
-
-    private boolean isPushdownSupported( int index, Kind kind, RexLiteral literal ) {
-        PolyType type = fieldTypes.get( index );
-        return switch ( type ) {
-            case BOOLEAN, VARCHAR, CHAR, TEXT -> kind == Kind.EQUALS || kind == Kind.NOT_EQUALS;
-            case INTEGER, BIGINT, FLOAT, DOUBLE, DATE, TIME, TIMESTAMP -> true;
-            default -> false;
-        } && literal.getValue() != null;
-    }
-
 
 }
 

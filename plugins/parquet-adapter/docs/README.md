@@ -103,9 +103,10 @@ Parquet file access helpers.
 ### `schema`
 Table wrappers and schema-related conversion logic.
 - `ParquetNamespace`: creates Parquet table wrappers.
-- `ParquetTable`: base class for Parquet-backed physical tables.
+- `ParquetTable`: extends PhysicalTable and implements all 3 flavors.
+  - implements `scan()` functions
 - `ParquetTypeConverter`: converts Parquet schema types, runtime values, and filter literals into Polypheny-compatible representations.
-
+- `ParquetDocument`
 ### `model`
 Internal data representation.
 - `FilterInfo`: immutable representation of a pushed filter condition.
@@ -113,15 +114,27 @@ Internal data representation.
 ### `execution`
 Runtime data access and filter evaluation.
 Classes responsible for reading Parquet data and returning rows.
-- `ParquetEnumerator`: drives Parquet reading, projection handling, native filter configuration, row-group iteration, and row production.
-- `ParquetPredicateBuilder`: translates adapter filters into native Parquet predicates.
-- `ValueExtractor`: extracts raw values from Parquet records.
+- `AbstractParquetEnumerator`: basic enumerator functionality general for relational and document data source. Contains abstract `extractRow()` function that should be implemented in derived classes
+- `ParquetTableEnumerator`: implements extractRow() function for RELATIONAL data source.
+- `ParquetDocumentEnumerator`: implements extractRow() function for DOCUMENT data source.
+
+- `ParquetGroupReader`: contains read row group logic
+  - creates native parquet file reader
+  - reads data by row groups
+  - pushes filters down
+  
+- `ParquetTableFilterTranslator`: Translates adapter filters into parquet-native predicates.
+- `ParquetTableFilterBuilder`: Translates a Rex filter into adapter filter when possible.
+
+- `ValueExtractor`: conversion layer between Parquet and Polypheny value representations.
 
 ### `planning`
 Classes that integrate the Parquet adapter with Polypheny’s query planner.
 Handling query-plan representation and optimization.
-- `ParquetScan`: Parquet scan operator for the planning layer.
-- `ParquetProjectScanRule`: planner rule for projection handling over Parquet scans.
+- `ParquetTableScan`: Parquet scan operator for the planning layer.
+- `ParquetTableScanRule`: planner rule for projection handling over Parquet scans.
+- `ParquetDocumentScan`: 
+- `ParquetDocumentScanRule`:
 
 ### `util`
 Shared infrastructure helpers.

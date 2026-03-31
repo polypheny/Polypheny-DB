@@ -10,28 +10,28 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
-public class ParquetProjectScanRule extends AlgOptRule {
+public class ParquetTableScanRule extends AlgOptRule {
 
-    public static final ParquetProjectScanRule INSTANCE = new ParquetProjectScanRule( AlgFactories.LOGICAL_BUILDER );
+    public static final ParquetTableScanRule INSTANCE = new ParquetTableScanRule( AlgFactories.LOGICAL_BUILDER );
 
 
-    public ParquetProjectScanRule( AlgBuilderFactory algBuilderFactory ) {
+    public ParquetTableScanRule(AlgBuilderFactory algBuilderFactory ) {
         super(
-                operand( LogicalRelProject.class, operand( ParquetScan.class, none() ) ),
+                operand( LogicalRelProject.class, operand( ParquetTableScan.class, none() ) ),
                 algBuilderFactory,
-                "ParquetProjectScanRule" );
+                ParquetTableScanRule.class.getSimpleName() );
     }
 
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         final LogicalRelProject project = call.alg( 0 );
-        final ParquetScan scan = call.alg( 1 );
+        final ParquetTableScan scan = call.alg( 1 );
         int[] fields = getProjectFields( project.getProjects() );
         if ( fields == null ) {
             return;
         }
-        call.transformTo( new ParquetScan( scan.getCluster(), scan.getEntity(), fields ) );
+        call.transformTo( new ParquetTableScan( scan.getCluster(), scan.getEntity(), fields ) );
     }
 
 

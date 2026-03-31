@@ -215,18 +215,32 @@ public class DdlManagerImpl extends DdlManager {
     public void createSource( Transaction transaction, String uniqueName, String adapterName, long namespace, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
         uniqueName = uniqueName.toLowerCase();
         DataSource<?> adapter = (DataSource<?>) AdapterManager.getInstance().addAdapter( catalog, adapterName, uniqueName, adapterType, mode, config );
-        namespace = adapter.getCurrentNamespace() == null ? namespace : adapter.getCurrentNamespace().getId(); // TODO: clean implementation. Sources should either create their own namespace or there should be default namespaces for different models.
+        long sourceNamespace = adapter.getCurrentNamespace() == null ? namespace : adapter.getCurrentNamespace().getId(); // TODO: clean implementation. Sources should either create their own namespace or there should be default namespaces for different models.
         if ( adapter.supportsRelational() ) {
-            createRelationalSource( transaction, adapter, namespace );
+            createRelationalSource( transaction, adapter, resolveSourceNamespace( uniqueName, sourceNamespace, DataModel.RELATIONAL ) );
         }
         if ( adapter.supportsDocument() ) {
-            createDocumentSource( adapter, namespace );
+            createDocumentSource( adapter, resolveSourceNamespace( uniqueName, sourceNamespace, DataModel.DOCUMENT ) );
         }
         if ( adapter.supportsGraph() ) {
             // TODO: implement graph source creation
             throw new IllegalArgumentException( "Adapters with native data model graph are not yet supported!" );
         }
         catalog.updateSnapshot();
+    }
+
+
+    private long resolveSourceNamespace( String uniqueName, long namespaceId, DataModel model ) {
+        LogicalNamespace namespace = catalog.getSnapshot().getNamespace( namespaceId ).orElseThrow();
+        if ( namespace.dataModel == model ) {
+            return namespaceId;
+        }
+
+        String sourceNamespaceName = uniqueName + "_" + model.name().toLowerCase();
+        return catalog.getSnapshot().getNamespace( sourceNamespaceName )
+                .filter( ns -> ns.dataModel == model )
+                .map( ns -> ns.id )
+                .orElseGet( () -> createNamespace( sourceNamespaceName, model, true, false, false, null ) );
     }
 
 
