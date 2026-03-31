@@ -216,6 +216,7 @@ public class DdlManagerImpl extends DdlManager {
         uniqueName = uniqueName.toLowerCase();
         DataSource<?> adapter = (DataSource<?>) AdapterManager.getInstance().addAdapter( catalog, adapterName, uniqueName, adapterType, mode, config );
         long sourceNamespace = adapter.getCurrentNamespace() == null ? namespace : adapter.getCurrentNamespace().getId(); // TODO: clean implementation. Sources should either create their own namespace or there should be default namespaces for different models.
+        // Support more than one data model per adapter
         if ( adapter.supportsRelational() ) {
             createRelationalSource( transaction, adapter, resolveSourceNamespace( uniqueName, sourceNamespace, DataModel.RELATIONAL ) );
         }
@@ -230,6 +231,15 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    /**
+     * Support more than one data model per adapter
+     * if there is existing namespace for the provided adapter model (RELATIONAL\DOCUMENT) - use it
+     * otherwise create appropriate namespace
+     * @param uniqueName - adapter name
+     * @param namespaceId - namesapce id of adapter to check
+     * @param model - RELATIONAL\DOCUMENT
+     * @return namespace id
+     */
     private long resolveSourceNamespace( String uniqueName, long namespaceId, DataModel model ) {
         LogicalNamespace namespace = catalog.getSnapshot().getNamespace( namespaceId ).orElseThrow();
         if ( namespace.dataModel == model ) {
