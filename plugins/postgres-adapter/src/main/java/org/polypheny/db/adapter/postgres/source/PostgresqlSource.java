@@ -136,10 +136,8 @@ public class PostgresqlSource extends AbstractJdbcSource {
      *
      * <p>Handled type names:
      * <ul>
-     *   <li>{@code vector}   — pgvector float4 vector, mapped to {@code
-    ARRAY<DOUBLE>}</li>
-     *   <li>{@code halfvec}  — pgvector float2 vector, mapped to {@code
-    ARRAY<FLOAT>}</li>
+     *   <li>{@code vector, halfvec}   — pgvector float4 and float2 vector, mapped to {@code
+    VECTOR<FLOAT>} - internally an array subtype</li>
      *   <li>{@code _float4}  — PostgreSQL float4 array, mapped to {@code
     ARRAY<FLOAT>}</li>
      *   <li>{@code _float8}  — PostgreSQL float8 array, mapped to {@code
@@ -153,13 +151,11 @@ public class PostgresqlSource extends AbstractJdbcSource {
      * @see <a href="https://www.postgresql.org/docs/current/arrays.html">PostgreSQL Arrays Documentation</a>
      */
     @Override
-    protected Optional<ColumnTypeInfo> resolveNativeColumnType( Map<String, CollectionMetadata> metadata, String typeName, int jdbcType, ResultSet columnRow ) throws SQLException {
+    protected Optional<ColumnTypeInfo> resolveNativeColumnType( Map<String, CollectionMetadata> metadata, String typeName, ResultSet columnRow ) throws SQLException {
         CollectionMetadata meta = metadata.get( columnRow.getString( "COLUMN_NAME" ).toLowerCase() );
         return switch ( typeName ) {
-            case "vector" -> Optional.of(  new ColumnTypeInfo( PolyType.DOUBLE, PolyType.ARRAY,
+            case "vector", "halfvec", "sparsevec" -> Optional.of(  new ColumnTypeInfo( PolyType.FLOAT, PolyType.ARRAY,
                     null, null, 1,  meta != null ? meta.typeModifier() : null) );
-            case "halfvec" -> Optional.of( new ColumnTypeInfo( PolyType.FLOAT, PolyType.ARRAY,
-                    null, null, 1, meta != null ? meta.typeModifier() : null ) );
             case "_float4" -> Optional.of( new ColumnTypeInfo( PolyType.FLOAT, PolyType.ARRAY,
                     null, null, arrayDim( meta ), null ) );
             case "_float8" -> Optional.of( new ColumnTypeInfo( PolyType.DOUBLE, PolyType.ARRAY,

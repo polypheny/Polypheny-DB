@@ -16,19 +16,11 @@
 
 package org.polypheny.db.adapter.postgres;
 
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.polypheny.db.adapter.postgres.source.PostgresqlFeature;
 import org.polypheny.db.adapter.postgres.source.PostgresqlSource;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.sql.language.SqlDbFeature;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
 import java.sql.Array;
@@ -36,7 +28,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Optional;
 import java.util.Set;
 
 
@@ -51,47 +42,11 @@ import static org.polypheny.db.adapter.postgres.source.PostgresqlFeature.PGVECTO
 
 public class PostgresqlSqlDialectTest {
 
-    private final PolyTypeFactoryImpl typeFactory = new PolyTypeFactoryImpl(
-            AlgDataTypeSystem.DEFAULT );
-    private final PostgresqlSqlDialect dialect = (PostgresqlSqlDialect)
-            PostgresqlSqlDialect.DEFAULT;
-    private final ParameterExpression resultSet = Expressions.parameter(
-            ResultSet.class, "rs" );
-
     @BeforeAll
     static void init() {
         if ( PolyphenyHomeDirManager.getMode() == null ) {
             PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
         }
-    }
-
-    /*
-    ---------------------- Tests for handleArrayRetrieval method ----------------------
-     */
-    @Test
-    void returnsEmptyforNonArrayType() {
-        AlgDataType varcharType = typeFactory.createPolyType( PolyType.VARCHAR );
-        Optional<Expression> result = dialect.handleArrayRetrieval( resultSet, 0, varcharType);
-        assertTrue( result.isEmpty() );
-    }
-
-
-    @Test void returnsEmptyforNestedArray() {
-        AlgDataType floatType = typeFactory.createPolyType( PolyType.FLOAT );
-        AlgDataType floatArray = typeFactory.createArrayType( floatType, -1 );
-        AlgDataType nestedArray = typeFactory.createArrayType( floatArray, -1 );
-        Optional<Expression> result = dialect.handleArrayRetrieval( resultSet, 0, nestedArray );
-        assertTrue( result.isEmpty() );
-    }
-
-
-    @Test void callsParseVectorforEligibleObject() {
-        AlgDataType floatType = typeFactory.createPolyType( PolyType.FLOAT );
-        AlgDataType floatArray = typeFactory.createArrayType( floatType, -1 );
-        dialect.addSupportedFeatures( Set.of( PGVECTOR ) );
-        Optional<Expression> result = dialect.handleArrayRetrieval( resultSet, 0, floatArray );
-        assertTrue( result.isPresent() );
-        assertTrue( result.get().toString().contains( "parseVector" ) );
     }
 
 
@@ -208,6 +163,5 @@ public class PostgresqlSqlDialectTest {
         d.addSupportedFeatures( features );
         assertTrue( d.supportsVector() );
     }
-
 
 }

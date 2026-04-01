@@ -466,18 +466,6 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
             values.put( i, List.of( new ParameterValue( i, call.type, list ) ) );
             types.add( call.type );
             return new RexDynamicParam( call.type, i );
-        } else if ( call.op.getKind() == Kind.DISTANCE ){
-            List<RexNode> newOperands = new ArrayList<>();
-            for ( int i = 0; i < call.operands.size(); i++ ) {
-                RexNode operand = call.operands.get( i );
-                if ( i == 2 ) {
-                    // metric string do not parameterize
-                    newOperands.add( operand );
-                } else {
-                    newOperands.add( operand.accept( this ) );
-                }
-            }
-            return new RexCall( call.type, call.op, newOperands );
         } else {
             List<RexNode> newOperands = new ArrayList<>();
             for ( RexNode operand : call.operands ) {

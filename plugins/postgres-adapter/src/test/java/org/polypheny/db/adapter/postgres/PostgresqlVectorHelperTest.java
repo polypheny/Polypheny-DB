@@ -23,6 +23,7 @@ import com.pgvector.PGhalfvec;
 import com.pgvector.PGvector;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.postgresql.jdbc.PgArray;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
@@ -45,9 +46,9 @@ public class PostgresqlVectorHelperTest {
 
 
     @Test
-    void parsesVectorCorrectly() throws SQLException {
+    void parsesVectorCorrectly() {
         PGvector obj = new PGvector(new float[]{1f, 2.5f, 3f});
-        List<PolyFloat> result = PostgresqlVectorHelper.parseVector( obj );
+        List<PolyNumber> result = PostgresqlVectorHelper.parseVector( obj );
         assertNotNull( result );
         assertEquals( 1.0, result.get(0).floatValue() );
         assertEquals( 2.5, result.get(1).floatValue() );
@@ -56,9 +57,9 @@ public class PostgresqlVectorHelperTest {
 
 
     @Test
-    void parsesHalfvecCorrectly() throws SQLException {
+    void parsesHalfvecCorrectly() {
         PGhalfvec obj = new PGhalfvec(new float[]{1f, 2.5f, 3f});
-        List<PolyFloat> result = PostgresqlVectorHelper.parseVector( obj );
+        List<PolyNumber> result = PostgresqlVectorHelper.parseVector( obj );
         assertNotNull( result );
         assertEquals( 1.0f, result.get(0).floatValue() );
         assertEquals( 2.5f, result.get(1).floatValue() );
@@ -79,9 +80,9 @@ public class PostgresqlVectorHelperTest {
 
 
     @Test
-    void parsesNegativeVectorCorrectly() throws SQLException {
+    void parsesNegativeVectorCorrectly() {
         PGvector obj = new PGvector(new float[]{-1f, -2.5f, -3f});
-        List<PolyFloat> result = PostgresqlVectorHelper.parseVector( obj );
+        List<PolyNumber> result = PostgresqlVectorHelper.parseVector( obj );
         assertNotNull( result );
         assertEquals( 3, result.size() );
         assertEquals( -1.0, result.get(0).floatValue() );
@@ -91,9 +92,9 @@ public class PostgresqlVectorHelperTest {
 
 
     @Test
-    void parsesNegativeHalfvecCorrectly() throws SQLException {
+    void parsesNegativeHalfvecCorrectly() {
         PGhalfvec obj = new PGhalfvec(new float[]{-1f, -2.5f, -3f});
-        List<PolyFloat> result = PostgresqlVectorHelper.parseVector( obj );
+        List<PolyNumber> result = PostgresqlVectorHelper.parseVector( obj );
         assertNotNull( result );
         assertEquals( 3, result.size() );
         assertEquals( -1.0f, result.get(0).floatValue() );
@@ -103,9 +104,9 @@ public class PostgresqlVectorHelperTest {
 
 
     @Test
-    void parseSingleEntryVector() throws SQLException {
+    void parseSingleEntryVector() {
         PGvector vector = new PGvector( new float[]{-1f} );
-        List<PolyFloat> result = PostgresqlVectorHelper.parseVector( vector );
+        List<PolyNumber> result = PostgresqlVectorHelper.parseVector( vector );
         assertNotNull( result );
         assertEquals( 1, result.size() );
         assertTrue( result.get(0) instanceof PolyFloat );

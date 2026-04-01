@@ -25,7 +25,7 @@ import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,9 +48,17 @@ public class PostgresqlVectorHelper {
     /**
      *
      * @param dbObject database Object that represents a vector.
-     * @return {@link PolyList<PolyFloat>} representation of the vector.
+     * @return {@link PolyList<PolyNumber>} representation of the vector.
+     * Possible PolyNumber values:
+     * <ul>
+     *     <li>{@link org.polypheny.db.type.entity.numerical.PolyDouble},</li>
+     *     <li>{@link org.polypheny.db.type.entity.numerical.PolyFloat},</li>
+     *     <li>{@link org.polypheny.db.type.entity.numerical.PolyInteger},</li>
+     *     <li>{@link org.polypheny.db.type.entity.numerical.PolyLong},</li>
+     *     <li>{@link org.polypheny.db.type.entity.numerical.PolyBigDecimal}.</li>
+     * </ul>
      */
-    public static List<PolyFloat> parseVector( Object dbObject ) {
+    public static PolyList<PolyNumber> parseVector( Object dbObject ) {
         float[] vector = null;
         if (dbObject instanceof PGvector vec) {
             vector = vec.toArray();
@@ -60,9 +68,8 @@ public class PostgresqlVectorHelper {
             vector = vec.toArray();
         }
         if ( vector != null) {
-            List<PolyFloat> list = new ArrayList<>( vector.length );
-            for ( float f : vector )
-                list.add( PolyFloat.of( f ) );
+            List<PolyNumber> list = new ArrayList<>( vector.length );
+            for ( float f : vector ) list.add( PolyFloat.of( f ) );
             return PolyList.of( list );
         }
         return null;
