@@ -255,6 +255,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                         PolyType collectionsType = null;
                         Integer length = null, scale = null, dimension = null, cardinality = null;
                         type = PolyType.getNameForJdbcType( jdbcDataType );
+                        if ( typeName.contains(  "vector" ) ) type = PolyType.OTHER;
                         switch ( type ) {
                             case BOOLEAN:
                             case TINYINT:
@@ -294,7 +295,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                                 break;
                             case ARRAY:
                             case OTHER:
-                                Optional<ColumnTypeInfo> nativeType = resolveNativeColumnType( cardinalities, typeName, jdbcDataType, row );
+                                Optional<ColumnTypeInfo> nativeType = resolveNativeColumnType( cardinalities, typeName, row );
                                 if ( nativeType.isPresent() ){
                                     ColumnTypeInfo info = nativeType.get();
                                     type = info.type;
@@ -393,14 +394,12 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
      * Resolve database-specific column type names that cannot be identified by JDBC.
      *
      * @param typeName {@code TYPE_NAME} from e.g. {@link DatabaseMetaData#getColumns}
-     * @param jdbcType {@code DATA_TYPE} value {@link java.sql.Types}
      * @param columnRow {@link ResultSet} as current row of {@link
      *   java.sql.DatabaseMetaData#getColumns}
      * @return {@link ColumnTypeInfo}
      * @throws SQLException
      */
-    protected Optional<ColumnTypeInfo> resolveNativeColumnType( Map<String, CollectionMetadata> metadata, String typeName,
-            int jdbcType, ResultSet columnRow ) throws SQLException {
+    protected Optional<ColumnTypeInfo> resolveNativeColumnType( Map<String, CollectionMetadata> metadata, String typeName, ResultSet columnRow ) throws SQLException {
         return Optional.empty();
     }
 

@@ -1577,6 +1577,16 @@ public enum OperatorName {
      */
     ST_GEOMETRYN( Function.class ),
 
+    //------------------------------------------------------------
+    //                  VECTOR DISTANCE FUNCTIONS
+    //------------------------------------------------------------
+
+    L2_DISTANCE( Function.class ),
+
+    L1_DISTANCE( Function.class ),
+
+    COS_DISTANCE(Function.class ),
+
     //-------------------------------------------------------------
     //                   SET OPERATORS
     //-------------------------------------------------------------

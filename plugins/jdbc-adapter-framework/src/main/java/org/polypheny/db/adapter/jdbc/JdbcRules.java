@@ -501,7 +501,7 @@ public class JdbcRules {
             return (out.dialect.supportsWindowFunctions()
                     || !RexOver.containsOver( project.getProjects(), null ))
                     && !userDefinedFunctionInProject( project )
-                    && (!knnFunctionInProject( project ) || supportsKnnFunctionInProject( out.dialect, project))
+                    && (!knnFunctionInProject( project ) || supportsKnnFunctionInProject( out.dialect, project ))
                     && !multimediaFunctionInProject( project )
                     && !contains( project, List.of( OperatorName.INITCAP ) )
                     && (!geoFunctionInProject( project ) || supportsGeoFunction( out.dialect, project ))
@@ -1566,7 +1566,9 @@ public class JdbcRules {
         @Override
         public Void visitCall( RexCall call ) {
             Operator operator = call.getOperator();
-            if ( operator instanceof Function && ((SqlFunction) operator).getFunctionCategory().isKnn() && dialect.supportedKnnFunctions().contains( operator.getOperatorName() ) ) {
+            if ( operator instanceof Function
+                    && ((SqlFunction) operator).getFunctionCategory().isKnn()
+                    && dialect.supportedKnnFunctions().contains( operator.getOperatorName() ) ) {
                 supportsKnnFunction = true;
             }
             return super.visitCall( call );

@@ -48,7 +48,7 @@ public class PostgresqlVectorHelper {
     /**
      *
      * @param dbObject database Object that represents a vector.
-     * @return {@link PolyList<PolyNumber>} representation of the vector.
+     * @return {@link List<PolyNumber>} representation of the vector.
      * Possible PolyNumber values:
      * <ul>
      *     <li>{@link org.polypheny.db.type.entity.numerical.PolyDouble},</li>
@@ -58,7 +58,7 @@ public class PostgresqlVectorHelper {
      *     <li>{@link org.polypheny.db.type.entity.numerical.PolyBigDecimal}.</li>
      * </ul>
      */
-    public static PolyList<PolyNumber> parseVector( Object dbObject ) {
+    public static List<PolyNumber> parseVector( Object dbObject ) {
         float[] vector = null;
         if (dbObject instanceof PGvector vec) {
             vector = vec.toArray();
@@ -70,7 +70,7 @@ public class PostgresqlVectorHelper {
         if ( vector != null) {
             List<PolyNumber> list = new ArrayList<>( vector.length );
             for ( float f : vector ) list.add( PolyFloat.of( f ) );
-            return PolyList.of( list );
+            return list;
         }
         return null;
     }

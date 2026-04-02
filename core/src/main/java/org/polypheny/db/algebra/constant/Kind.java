@@ -117,6 +117,12 @@ public enum Kind {
      */
     DISTANCE,
 
+    L1_DISTANCE,
+
+    L2_DISTANCE,
+
+    COS_DISTANCE,
+
     /**
      * GEO functions.
      */

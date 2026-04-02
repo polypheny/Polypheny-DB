@@ -195,6 +195,21 @@ public class Functions {
     }
 
 
+    public static PolyDouble l1Distance( List<PolyNumber> value, List<PolyNumber> target ) {
+        return DistanceFunctions.l1Metric( value, target );
+    }
+
+
+    public static PolyDouble l2Distance( List<PolyNumber> value, List<PolyNumber> target ) {
+        return DistanceFunctions.l2Metric( value, target );
+    }
+
+
+    public static PolyDouble cosDistance( List<PolyNumber> value, List<PolyNumber> target ) {
+        return DistanceFunctions.cosineMetric( value, target );
+    }
+
+
     private static class MetadataModel {
 
         String name;

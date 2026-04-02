@@ -129,6 +129,7 @@ import org.polypheny.db.sql.language.fun.SqlMultisetMemberOfOperator;
 import org.polypheny.db.sql.language.fun.SqlMultisetQueryConstructor;
 import org.polypheny.db.sql.language.fun.SqlMultisetSetOperator;
 import org.polypheny.db.sql.language.fun.SqlMultisetValueConstructor;
+import org.polypheny.db.sql.language.fun.SqlNamedDistanceFunction;
 import org.polypheny.db.sql.language.fun.SqlNewOperator;
 import org.polypheny.db.sql.language.fun.SqlNthValueAggFunction;
 import org.polypheny.db.sql.language.fun.SqlNtileAggFunction;
@@ -1525,6 +1526,15 @@ public class SqlLanguagePlugin extends PolyPlugin {
          * distance function: <code>DISTANCE(column, ARRAY[], METRIC, WEIGHTS)</code>.
          */
         register( OperatorName.DISTANCE, new SqlDistanceFunction() );
+
+        /*
+         * distance functions without additional parameters
+         */
+        register( OperatorName.L1_DISTANCE, new SqlNamedDistanceFunction( "L1_DISTANCE", Kind.L1_DISTANCE, FunctionCategory.L1_DISTANCE ) );
+        register( OperatorName.L2_DISTANCE, new SqlNamedDistanceFunction( "L2_DISTANCE", Kind.L2_DISTANCE, FunctionCategory.L2_DISTANCE ) );
+        register( OperatorName.COS_DISTANCE, new SqlNamedDistanceFunction( "COS_DISTANCE", Kind.COS_DISTANCE, FunctionCategory.COS_DISTANCE ) );
+
+
 
         /*
          * Get metadata of multimedia files

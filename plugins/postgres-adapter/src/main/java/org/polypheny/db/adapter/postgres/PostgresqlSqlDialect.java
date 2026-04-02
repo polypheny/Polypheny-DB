@@ -118,17 +118,21 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
     @Override
     public List<OperatorName> supportedGeoFunctions() {
-        return ImmutableList.of( OperatorName.ST_GEOMFROMTEXT, OperatorName.ST_TRANSFORM, OperatorName.ST_EQUALS,
-                OperatorName.ST_ISSIMPLE, OperatorName.ST_ISCLOSED, OperatorName.ST_ISEMPTY, OperatorName.ST_ISRING,
-                OperatorName.ST_NUMPOINTS, OperatorName.ST_DIMENSION, OperatorName.ST_LENGTH, OperatorName.ST_AREA,
-                OperatorName.ST_ENVELOPE, OperatorName.ST_BOUNDARY, OperatorName.ST_CONVEXHULL, OperatorName.ST_CENTROID,
-                OperatorName.ST_CENTROID, OperatorName.ST_DISJOINT, OperatorName.ST_TOUCHES, OperatorName.ST_INTERSECTS,
-                OperatorName.ST_CROSSES, OperatorName.ST_WITHIN, OperatorName.ST_CONTAINS, OperatorName.ST_OVERLAPS,
-                OperatorName.ST_COVERS, OperatorName.ST_COVEREDBY, OperatorName.ST_RELATE,
-                OperatorName.ST_INTERSECTION, OperatorName.ST_UNION, OperatorName.ST_DIFFERENCE, OperatorName.ST_SYMDIFFERENCE,
-                OperatorName.ST_X, OperatorName.ST_Y, OperatorName.ST_Z, OperatorName.ST_STARTPOINT, OperatorName.ST_ENDPOINT,
-                OperatorName.ST_EXTERIORRING, OperatorName.ST_NUMINTERIORRING, OperatorName.ST_INTERIORRINGN,
-                OperatorName.ST_NUMGEOMETRIES, OperatorName.ST_GEOMETRYN );
+        if ( supportsPostGIS() ) {
+            return ImmutableList.of( OperatorName.ST_GEOMFROMTEXT, OperatorName.ST_TRANSFORM, OperatorName.ST_EQUALS,
+                    OperatorName.ST_ISSIMPLE, OperatorName.ST_ISCLOSED, OperatorName.ST_ISEMPTY, OperatorName.ST_ISRING,
+                    OperatorName.ST_NUMPOINTS, OperatorName.ST_DIMENSION, OperatorName.ST_LENGTH, OperatorName.ST_AREA,
+                    OperatorName.ST_ENVELOPE, OperatorName.ST_BOUNDARY, OperatorName.ST_CONVEXHULL, OperatorName.ST_CENTROID,
+                    OperatorName.ST_CENTROID, OperatorName.ST_DISJOINT, OperatorName.ST_TOUCHES, OperatorName.ST_INTERSECTS,
+                    OperatorName.ST_CROSSES, OperatorName.ST_WITHIN, OperatorName.ST_CONTAINS, OperatorName.ST_OVERLAPS,
+                    OperatorName.ST_COVERS, OperatorName.ST_COVEREDBY, OperatorName.ST_RELATE,
+                    OperatorName.ST_INTERSECTION, OperatorName.ST_UNION, OperatorName.ST_DIFFERENCE, OperatorName.ST_SYMDIFFERENCE,
+                    OperatorName.ST_X, OperatorName.ST_Y, OperatorName.ST_Z, OperatorName.ST_STARTPOINT, OperatorName.ST_ENDPOINT,
+                    OperatorName.ST_EXTERIORRING, OperatorName.ST_NUMINTERIORRING, OperatorName.ST_INTERIORRINGN,
+                    OperatorName.ST_NUMGEOMETRIES, OperatorName.ST_GEOMETRYN );
+        } else {
+            return ImmutableList.of();
+        }
     }
 
 
@@ -146,7 +150,9 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
     @Override
     public List<OperatorName> supportedKnnFunctions() {
-        return ImmutableList.of( OperatorName.DISTANCE );
+        return supportsVector() ?
+        ImmutableList.of( OperatorName.L1_DISTANCE, OperatorName.L2_DISTANCE, OperatorName.COS_DISTANCE )
+                : ImmutableList.of();
     }
 
 
@@ -302,26 +308,21 @@ public class PostgresqlSqlDialect extends SqlDialect {
                     super.unparseCall( writer, call, leftPrec, rightPrec );
                 }
                 break;
-            case DISTANCE:
-                SqlNode metricNode = call.operand( 2 );
-                String metric = metricNode instanceof SqlLiteral ? ((SqlLiteral) metricNode ).getValueAs( String.class ) : metricNode.toString();
-                log.debug( "Distance metric unparsed: {}", metric );
-                String op = switch ( metric ) {
-                    case "L1"        -> "<+>";
-                    case "L2"        -> "<->";
-                    case "COSINE"    -> "<=>";
-                    default          -> null;
-                };
-                // either unsupported metric or weights provided, fallback to super
-                if ( op == null || call.operandCount() == 4 ) {
-                    super.unparseCall( writer, call, leftPrec, rightPrec );
-                    return;
-                }
+            case L1_DISTANCE:
                 ((SqlNode) call.operand(0)).unparse( writer, leftPrec, rightPrec );
-                writer.print( " " + op + " " );
+                writer.print( " <+> " );
                 PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 1 ), leftPrec, rightPrec );
                 break;
-
+            case L2_DISTANCE:
+                ((SqlNode) call.operand(0)).unparse( writer, leftPrec, rightPrec );
+                writer.print( " <-> " );
+                PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 1 ), leftPrec, rightPrec );
+                break;
+            case COS_DISTANCE:
+                ((SqlNode) call.operand(0)).unparse( writer, leftPrec, rightPrec );
+                writer.print( " <=> " );
+                PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 1 ), leftPrec, rightPrec );
+                break;
             default:
                 super.unparseCall( writer, call, leftPrec, rightPrec );
         }

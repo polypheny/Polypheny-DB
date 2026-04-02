@@ -83,7 +83,7 @@ import org.polypheny.db.util.PasswordGenerator;
 @AdapterSettingList(
         name        = "imageVariant",
         options     = { "Default", "pgvector", "PostGIS", "pgvector & PostGIS" },
-        defaultValue = "DEFAULT",
+        defaultValue = "pgvector & PostGIS",
         position    = 7,
         description = "PostgreSQL Docker image variant to deploy.",
         appliesTo   = DeploySetting.DOCKER
@@ -99,7 +99,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     public PostgresqlStore( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
-        super( storeId, uniqueName, settings, mode, PostgresqlSqlDialect.DEFAULT, true );
+        super( storeId, uniqueName, settings, mode, new PostgresqlSqlDialect(), true );
     }
 
 
@@ -112,21 +112,19 @@ public class PostgresqlStore extends AbstractJdbcStore {
         database = "postgres";
         username = "postgres";
 
+        PostgresqlImageVariant variant = PostgresqlImageVariant.valueOf(
+                settings.getOrDefault( "imageVariant", PostgresqlImageVariant.PGVECTOR_POSTGIS.name() ).toUpperCase().replace( " & ", "_" ) );
         if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {
             if ( settings.getOrDefault( "password", "polypheny" ).equals( "polypheny" ) ) {
                 settings.put( "password", PasswordGenerator.generatePassword() );
                 updateSettings( settings );
             }
-
             DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
                     .orElseThrow( () -> new GenericRuntimeException( "No docker instance with id " + instanceId ) );
             try {
-                PostgresqlImageVariant variant = PostgresqlImageVariant.valueOf(
-                        settings.getOrDefault( "imageVariant", PostgresqlImageVariant.DEFAULT.name() ).toUpperCase().replace( " & ", "_" ) );
                 container = instance.newBuilder( variant.imageName, getUniqueName() )
                         .withEnvironmentVariable( "POSTGRES_PASSWORD", settings.get( "password" ) )
                         .createAndStart();
-                dialect.addSupportedFeatures( variant.features );
             } catch ( IOException e ) {
                 throw new GenericRuntimeException( e );
             }
@@ -148,6 +146,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 throw new GenericRuntimeException( "Could not connect to container" );
             }
         }
+        dialect.addSupportedFeatures( variant.features );
 
         return createConnectionFactory();
     }
@@ -366,7 +365,10 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case DECIMAL -> "DECIMAL";
             case VARCHAR -> "VARCHAR";
             case JSON, TEXT -> "TEXT";
-            case GEOMETRY -> "GEOMETRY";
+            case GEOMETRY -> {
+                if ( !dialect.supportsPostGIS() ) throw new GenericRuntimeException( "GEOMETRY type requires PostGIS" );
+                yield "GEOMETRY";
+            }
             case DATE -> "DATE";
             case TIME -> "TIME";
             case TIMESTAMP -> "TIMESTAMP";
