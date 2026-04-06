@@ -836,23 +836,14 @@ public class SqlDialect {
 
 
     /**
-     * Reading an ARRAY column from a JDBC {@link ResultSet} when the default
-     * {@code getArray()} path is not appropriate.
+     * Override this to provide a custom Linq4j Expression when the JDBC driver does not
+     * support standard {@code java.sql.Array} retrieval for a specific column type.
      *
-     * <p>The default implementation returns {@link Optional#empty()}, causing the caller to fall back
-     * to the standard {@code java.sql.Array} path. Override this to return a Linq4j
-     * {@link Expression} that retrieves and converts the value directly — for example, when the
-     * driver returns a PGobject instead of a {@code java.sql.Array} (e.g. the case for pgvector).
-     *
-     * <p>The returned expression must evaluate to a {@code Collection<? extends PolyValue>} suitable
-     * for passing to {@link org.polypheny.db.type.entity.PolyList#of(java.util.Collection)}.
-     *
-     * @param resultSet represents {@link ResultSet}
-     * @param i         zero-based column index
-     * @param fieldType Polypheny type of the array column
-     * @return expression for the converted value, or empty to use default array path
+     * <p>If {@link Optional#empty()} is returned, the caller falls back to the default
+     * {@code getArray()} path. Any returned expression must evaluate to a
+     * {@code Collection<? extends PolyValue>} suitable for {@link org.polypheny.db.type.entity.PolyList#of}.
      */
-    public Optional<Expression> handleArrayRetrieval(ParameterExpression resultSet, int i, AlgDataType fieldType) {
+    public Optional<Expression> getCustomArrayRetrievalExpression(ParameterExpression resultSet, int i, AlgDataType fieldType) {
         return Optional.empty();
     }
 
@@ -892,6 +883,22 @@ public class SqlDialect {
      */
     public void initializeConnection( java.sql.Connection conn ) throws java.sql.SQLException {
 
+    }
+
+
+    /**
+     * Given on the properties that are passed as arguments this method returns if the combination of arguments is eligible to a vector pushdown and if yes to what type.
+     * <p><i>Examples</i>
+     * <ul>
+     *     <li>( PolyType.ARRAY, PolyType.REAL, 1 ) -> Optional.of( PolyType.VECTOR )</li>
+     *     <li>( PolyType.ARRAY, PolyType.BOOLEAN, 1 ) -> Optional.of( PolyType.BITVECTOR )</li>
+     * </ul>
+     * </p>
+     * @return An {@code Optional} containing the mapped {@link PolyType} if eligible for vector pushdown,
+     *  or {@code Optional.empty()} if not eligible.
+     */
+    public Optional<PolyType> resolveVectorPushdownType( PolyType collectionsType, PolyType type, Integer dimension ) {
+        return Optional.empty();
     }
 
 }

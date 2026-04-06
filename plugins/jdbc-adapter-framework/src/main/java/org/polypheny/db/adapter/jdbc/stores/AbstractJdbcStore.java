@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
@@ -258,9 +259,9 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
     protected void createColumnDefinition( PhysicalColumn column, StringBuilder builder ) {
         boolean supportsThisArray = column.collectionsType == PolyType.ARRAY && column.dimension != null && this.dialect.supportsArrays() && (this.dialect.supportsNestedArrays() || column.dimension == 1);
-        boolean supportsVector = column.collectionsType == PolyType.ARRAY && column.dimension != null && this.dialect.supportsVector() && column.dimension == 1 && ( column.type == PolyType.FLOAT || column.type == PolyType.DOUBLE);
-        if ( supportsVector ) {
-          builder.append( "vector").append( "(" ).append( column.cardinality ).append( ")" );
+        Optional<PolyType> vectorMapping = dialect.resolveVectorPushdownType( column.collectionsType, column.type, column.dimension );
+        if ( vectorMapping.isPresent() ) {
+          builder.append( getTypeString( vectorMapping.get() ) ).append( "(" ).append( column.cardinality > 0 ? column.cardinality : "" ).append( ")" );
         } else if ( supportsThisArray ) {
             // Returns e.g. TEXT if arrays are not supported
             builder.append( getTypeString( column.type ) ).append( " " ).append( getTypeString( PolyType.ARRAY ).repeat( column.dimension ) );

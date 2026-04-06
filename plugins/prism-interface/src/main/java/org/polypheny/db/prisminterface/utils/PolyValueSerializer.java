@@ -95,7 +95,7 @@ public class PolyValueSerializer {
             case CHAR, VARCHAR, TEXT -> serializeAsProtoString( polyValue.asString() );
             case BINARY, VARBINARY -> serializeAsProtoBinary( polyValue.asBinary() );
             case NULL -> serializeAsProtoNull();
-            case ARRAY -> serializeAsProtoList( polyValue.asList() );
+            case ARRAY, VECTOR, BITVECTOR -> serializeAsProtoList( polyValue.asList() );
             case DOCUMENT -> serializeAsProtoDocument( polyValue.asDocument() );
             case GEOMETRY -> serializeGeometry( polyValue.asGeometry() );
             case IMAGE, VIDEO, AUDIO, FILE -> serializeAsProtoFile( polyValue.asBlob() ); // used

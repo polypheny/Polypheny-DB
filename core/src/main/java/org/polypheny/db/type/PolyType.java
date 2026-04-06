@@ -199,6 +199,20 @@ public enum PolyType {
             Types.ARRAY,
             PolyTypeFamily.ARRAY ),
 
+    VECTOR(
+            PrecScale.NO_NO,
+            true,
+            Types.OTHER,
+            PolyTypeFamily.ARRAY
+    ),
+
+    BITVECTOR(
+            PrecScale.NO_NO,
+            true,
+            Types.OTHER,
+            PolyTypeFamily.ARRAY
+    ),
+
     MAP(
             PrecScale.NO_NO,
             false,

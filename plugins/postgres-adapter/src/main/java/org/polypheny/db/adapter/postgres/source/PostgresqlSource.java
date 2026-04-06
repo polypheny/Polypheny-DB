@@ -137,9 +137,9 @@ public class PostgresqlSource extends AbstractJdbcSource {
      * <p>Handled type names:
      * <ul>
      *   <li>{@code vector, halfvec}   — pgvector float4 and float2 vector, mapped to {@code
-    VECTOR<FLOAT>} - internally an array subtype</li>
+    ARRAY<REAL>}</li>
      *   <li>{@code _float4}  — PostgreSQL float4 array, mapped to {@code
-    ARRAY<FLOAT>}</li>
+    ARRAY<REAL>}</li>
      *   <li>{@code _float8}  — PostgreSQL float8 array, mapped to {@code
     ARRAY<DOUBLE>}</li>
      *   <li>{@code _int4}    — PostgreSQL int4 array, mapped to {@code
@@ -154,9 +154,11 @@ public class PostgresqlSource extends AbstractJdbcSource {
     protected Optional<ColumnTypeInfo> resolveNativeColumnType( Map<String, CollectionMetadata> metadata, String typeName, ResultSet columnRow ) throws SQLException {
         CollectionMetadata meta = metadata.get( columnRow.getString( "COLUMN_NAME" ).toLowerCase() );
         return switch ( typeName ) {
-            case "vector", "halfvec", "sparsevec" -> Optional.of(  new ColumnTypeInfo( PolyType.FLOAT, PolyType.ARRAY,
+            case "vector", "halfvec", "sparsevec" -> Optional.of(  new ColumnTypeInfo( PolyType.REAL, PolyType.ARRAY,
                     null, null, 1,  meta != null ? meta.typeModifier() : null) );
-            case "_float4" -> Optional.of( new ColumnTypeInfo( PolyType.FLOAT, PolyType.ARRAY,
+            case "bit" -> Optional.of(  new ColumnTypeInfo( PolyType.BOOLEAN, PolyType.ARRAY,
+                    null, null, 1,  meta != null ? meta.typeModifier() : null) );
+            case "_float4" -> Optional.of( new ColumnTypeInfo( PolyType.REAL, PolyType.ARRAY,
                     null, null, arrayDim( meta ), null ) );
             case "_float8" -> Optional.of( new ColumnTypeInfo( PolyType.DOUBLE, PolyType.ARRAY,
                     null, null, arrayDim( meta ), null ) );

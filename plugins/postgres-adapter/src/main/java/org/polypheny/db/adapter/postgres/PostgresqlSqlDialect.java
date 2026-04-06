@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import com.pgvector.PGbit;
 import com.pgvector.PGvector;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -52,6 +53,7 @@ import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.inference.ReturnTypes;
+import javax.swing.text.html.Option;
 
 @Slf4j
 /**
@@ -309,17 +311,17 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 }
                 break;
             case L1_DISTANCE:
-                ((SqlNode) call.operand(0)).unparse( writer, leftPrec, rightPrec );
+                PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 0 ), leftPrec, rightPrec );
                 writer.print( " <+> " );
                 PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 1 ), leftPrec, rightPrec );
                 break;
             case L2_DISTANCE:
-                ((SqlNode) call.operand(0)).unparse( writer, leftPrec, rightPrec );
+                PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 0 ), leftPrec, rightPrec );
                 writer.print( " <-> " );
                 PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 1 ), leftPrec, rightPrec );
                 break;
             case COS_DISTANCE:
-                ((SqlNode) call.operand(0)).unparse( writer, leftPrec, rightPrec );
+                PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 0 ), leftPrec, rightPrec );
                 writer.print( " <=> " );
                 PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 1 ), leftPrec, rightPrec );
                 break;
@@ -329,8 +331,12 @@ public class PostgresqlSqlDialect extends SqlDialect {
     }
 
 
+    /**
+     * Bypasses the default getArray() path because the PostgreSQL driver returns a PGobject
+     * instead of a standard java.sql.Array for pgvector columns.
+     */
     @Override
-    public Optional<Expression> handleArrayRetrieval( ParameterExpression resultSet, int i, AlgDataType fieldType ) {
+    public Optional<Expression> getCustomArrayRetrievalExpression( ParameterExpression resultSet, int i, AlgDataType fieldType ) {
         if ( !supportsVector() || fieldType.getPolyType() != PolyType.ARRAY ) {
             return Optional.empty();
         }
@@ -351,10 +357,23 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     @Override
-    public void initializeConnection ( java.sql.Connection conn ) throws java.sql.SQLException {
+    public void initializeConnection( java.sql.Connection conn ) throws java.sql.SQLException {
         if ( supportsVector() ) {
             PGvector.registerTypes( conn );
+            PGbit.registerType( conn );
         }
+    }
+
+
+    @Override
+    public Optional<PolyType> resolveVectorPushdownType( PolyType collectionsType, PolyType type, Integer dimension ) {
+       boolean allow = collectionsType == PolyType.ARRAY && dimension != null && supportsVector() && dimension == 1;
+       if ( type == PolyType.FLOAT || type == PolyType.DOUBLE || type == PolyType.REAL ) {
+           if ( allow ) return Optional.of( PolyType.VECTOR );
+       } else if ( type == PolyType.BOOLEAN ) {
+           if ( allow ) return Optional.of( PolyType.BITVECTOR );
+       }
+       return Optional.empty();
     }
 
 }

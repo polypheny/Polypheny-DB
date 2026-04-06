@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.postgres;
 
+import com.pgvector.PGbit;
 import com.pgvector.PGhalfvec;
 import com.pgvector.PGsparsevec;
 import com.pgvector.PGvector;
@@ -24,8 +25,8 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
-import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,35 +42,42 @@ public class PostgresqlVectorHelper {
             operand = castCall.operand( 0 );
         }
         operand.unparse( writer, leftPrec, rightPrec );
-        writer.print( "::float[]::vector" );
+        writer.print( "::vector " );
     }
 
 
     /**
      *
      * @param dbObject database Object that represents a vector.
-     * @return {@link List<PolyNumber>} representation of the vector.
-     * Possible PolyNumber values:
+     * @return {@code List<PolyValue>} representation of the vector.
+     *
+     * <p>
+     * Possible PolyValue objects:
      * <ul>
-     *     <li>{@link org.polypheny.db.type.entity.numerical.PolyDouble},</li>
-     *     <li>{@link org.polypheny.db.type.entity.numerical.PolyFloat},</li>
-     *     <li>{@link org.polypheny.db.type.entity.numerical.PolyInteger},</li>
-     *     <li>{@link org.polypheny.db.type.entity.numerical.PolyLong},</li>
-     *     <li>{@link org.polypheny.db.type.entity.numerical.PolyBigDecimal}.</li>
+     *     <li>{@link PolyFloat},</li>
+     *     <li>{@link PolyBoolean}</li>
      * </ul>
+     * </p>
      */
-    public static List<PolyNumber> parseVector( Object dbObject ) {
+    public static List<PolyValue> parseVector( Object dbObject ) {
         float[] vector = null;
+        boolean[] bitvector = null;
         if (dbObject instanceof PGvector vec) {
             vector = vec.toArray();
         } else if (dbObject instanceof PGhalfvec vec) {
             vector = vec.toArray();
         } else if (dbObject instanceof PGsparsevec vec) {
             vector = vec.toArray();
+        } else if (dbObject instanceof PGbit vec ) {
+            bitvector = vec.toArray();
         }
         if ( vector != null) {
-            List<PolyNumber> list = new ArrayList<>( vector.length );
+            List<PolyValue> list = new ArrayList<>( vector.length );
             for ( float f : vector ) list.add( PolyFloat.of( f ) );
+            return list;
+        } else if ( bitvector != null ) {
+            List<PolyValue> list = new ArrayList<>( bitvector.length );
+            for ( boolean b : bitvector ) list.add( PolyBoolean.of( b ) );
             return list;
         }
         return null;

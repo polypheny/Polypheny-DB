@@ -353,7 +353,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     @NonNull
     private static Expression getPreprocessArrayExpression( ParameterExpression resultSet_, int i, SqlDialect dialect, AlgDataType fieldType ) {
-        Optional<Expression> arrayRetrieval = dialect.handleArrayRetrieval( resultSet_, i, fieldType );
+        Optional<Expression> arrayRetrieval = dialect.getCustomArrayRetrievalExpression( resultSet_, i, fieldType );
         if ( dialect.supportsArrays() ) {
             ParameterExpression argument = Expressions.parameter( Object.class );
 
