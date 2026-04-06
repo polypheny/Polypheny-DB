@@ -17,20 +17,25 @@
 package org.polypheny.db.adapter.parquet;
 
 import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.parquet.document.ParquetDocumentSource;
+import org.polypheny.db.adapter.parquet.relational.ParquetRelationalSource;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 
 /**
  * Plugin entry point for the Parquet adapter.
  */
+@SuppressWarnings("unused")
 public class ParquetPlugin extends PolyPlugin {
 
-    private long id;
+    private long relationalId;
+    private long documentId;
 
     /**
      * Constructor
      * Create Plugin Instance
      */
+    @SuppressWarnings("unused")
     public ParquetPlugin( PluginContext context ) {
         super( context );
     }
@@ -40,7 +45,8 @@ public class ParquetPlugin extends PolyPlugin {
      */
     @Override
     public void afterCatalogInit() {
-        this.id = AdapterManager.addAdapterTemplate( ParquetSource.class, "Parquet", ParquetSource::new );
+        this.relationalId = AdapterManager.addAdapterTemplate( ParquetRelationalSource.class, ParquetRelationalSource.NAME, ParquetRelationalSource::new );
+        this.documentId = AdapterManager.addAdapterTemplate( ParquetDocumentSource.class, ParquetDocumentSource.NAME, ParquetDocumentSource::new );
     }
 
     /**
@@ -48,7 +54,8 @@ public class ParquetPlugin extends PolyPlugin {
      */
     @Override
     public void stop() {
-        AdapterManager.removeAdapterTemplate( id );
+        AdapterManager.removeAdapterTemplate( relationalId );
+        AdapterManager.removeAdapterTemplate( documentId );
     }
 
 }

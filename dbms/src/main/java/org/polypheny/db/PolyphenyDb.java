@@ -129,8 +129,7 @@ public class PolyphenyDb {
     public String defaultStoreName = "hsqldb";
 
     @Option(name = { "-defaultSource" }, description = "Type of default source")
-    //public static String defaultSourceName = "csv";
-    public static String defaultSourceName = "parquet";
+    public static String defaultSourceName = "csv";
 
     @Option(name = { "-c", "--config" }, description = "Path to the configuration file")
     protected String applicationConfPath;
