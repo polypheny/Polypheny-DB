@@ -25,6 +25,10 @@ import org.polypheny.db.adapter.parquet.shared.model.AdapterFilter;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
 
+/**
+ * Relational runtime enumerator.
+ * Reads projected Parquet rows and returns them as relational tuples
+ */
 public class ParquetRelEnumerator extends AbstractParquetEnumerator implements Enumerator<PolyValue[]> {
 
     public ParquetRelEnumerator(Source source, AtomicBoolean cancelFlag, int[] fields ) {

@@ -42,6 +42,11 @@ import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelFilterTra
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Source;
 
+/**
+ * low-level Parquet row-group reader.
+ * Opens the file, applies projection and native predicates,
+ * and streams groups to the enumerators
+ */
 public class ParquetGroupReader implements AutoCloseable {
 
     private final AtomicBoolean cancelFlag;
@@ -78,6 +83,7 @@ public class ParquetGroupReader implements AutoCloseable {
             var recordFilter = new ParquetRelFilterTranslator().translate( schema, filters == null ? List.of() : filters );
             this.useNativeFilter = FilterCompat.isFilteringRequired( recordFilter );
 
+            // create configuration for the native parquet filter
             ParquetReadOptions.Builder readOptionsBuilder = ParquetReadOptions.builder()
                     .useStatsFilter()
                     .useDictionaryFilter()
@@ -86,6 +92,7 @@ public class ParquetGroupReader implements AutoCloseable {
                     .useRecordFilter();
 
             if ( useNativeFilter ) {
+                // push down filter
                 readOptionsBuilder.withRecordFilter( recordFilter );
             }
 
@@ -129,6 +136,7 @@ public class ParquetGroupReader implements AutoCloseable {
             return true;
         }
 
+        // push down filters
         PageReadStore pages = useNativeFilter
                 ? fileReader.readNextFilteredRowGroup()
                 : fileReader.readNextRowGroup();

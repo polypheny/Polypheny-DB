@@ -9,7 +9,10 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
-
+/**
+ * Planner rule that rewrites compatible scans and projections to the Parquet-specific
+ * relational scan node.
+ */
 public class ParquetRelScanRule extends AlgOptRule {
 
     public static final ParquetRelScanRule INSTANCE = new ParquetRelScanRule( AlgFactories.LOGICAL_BUILDER );

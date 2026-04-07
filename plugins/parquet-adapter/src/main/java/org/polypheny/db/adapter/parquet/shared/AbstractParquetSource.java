@@ -50,6 +50,11 @@ import org.polypheny.db.type.PolyType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Base class for both source types.
+ * Handles settings, file discovery, exported schema derivation, information-page setup,
+ * name normalization, and shared restore behavior.
+ */
 public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog> implements Scannable {
 
     protected final ConnectionMethod connectionMethod;

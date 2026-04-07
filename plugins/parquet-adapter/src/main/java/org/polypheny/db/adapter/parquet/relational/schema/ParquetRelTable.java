@@ -42,7 +42,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
 /**
- * Base class for Parquet physical tables.
+ * Physical table wrapper for the relational model.
+ * Exposes the Parquet-backed table to Polypheny and ties the planner,
+ * scanner, and adapter metadata together.
  */
 public class ParquetRelTable extends PhysicalTable implements FilterableEntity, ScannableEntity, TranslatableEntity {
 

@@ -16,7 +16,10 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
-
+/**
+ * Conversion base class for mapping
+ * Parquet primitive and structured values into Polypheny values
+ */
 public abstract class AbstractParquetValueExtractor implements ParquetValueExtractor {
 
     protected final ParquetTypeConverter typeConverter = new ParquetTypeConverter();

@@ -45,6 +45,10 @@ import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
 
+/**
+ * Physical collection wrapper for the document model.
+ * Represents one Parquet-backed collection inside Polypheny
+ */
 public class ParquetDocument extends PhysicalCollection implements ScannableEntity, TranslatableEntity {
 
     private final Source source;
@@ -66,6 +70,13 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
     }
 
 
+    /**
+     * Build xpression tree:
+     * - get the adapter catalog from parquetSource
+     * - ask it for the physical entity with this document’s id
+     * - cast the result to ParquetDocument
+     * @return Expression
+     */
     @Override
     public Expression asExpression() {
         Expression argExp = Expressions.constant( this.id );
@@ -84,6 +95,12 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
     }
 
 
+    /**
+     * creates enumerable with resolve filters
+     * @param dataContext context
+     * @param filters - adapter filters
+     * @return ParquetDocEnumerator
+     */
     public Enumerable<PolyValue[]> scanFiltered( DataContext dataContext, List<AdapterFilter> filters ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( parquetSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
@@ -133,6 +150,12 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
     }
 
 
+    /**
+     * add dynamic parameters to adapter filter if needed
+     * @param dataContext context
+     * @param filter adapter filter
+     * @return AdapterFilter
+     */
     private AdapterFilter resolveFilter( DataContext dataContext, AdapterFilter filter ) {
         if ( filter.dynamicParamIndex() == null ) {
             return filter;

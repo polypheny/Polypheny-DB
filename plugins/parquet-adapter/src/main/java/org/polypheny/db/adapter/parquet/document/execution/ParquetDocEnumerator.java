@@ -27,6 +27,10 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.Source;
 
+/**
+ * Document enumerator.
+ * Reads Parquet rows and create from each row a single PolyDocument.
+ */
 public class ParquetDocEnumerator extends AbstractParquetEnumerator implements Enumerator<PolyValue[]> {
 
     private final String documentPrefix;
@@ -40,6 +44,11 @@ public class ParquetDocEnumerator extends AbstractParquetEnumerator implements E
     }
 
 
+    /**
+     * Creates document from parquet file row
+     * @param group - parquet file row
+     * @return document converted to PolyValue list
+     */
     @Override
     protected PolyValue[] extractRow( Group group ) {
         PolyDocument document = documentValueExtractor.extractDocument(

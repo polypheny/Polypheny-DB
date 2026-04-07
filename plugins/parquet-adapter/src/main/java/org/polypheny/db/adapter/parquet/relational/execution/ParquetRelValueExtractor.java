@@ -6,7 +6,10 @@ import org.apache.parquet.schema.Type;
 import org.polypheny.db.adapter.parquet.shared.execution.AbstractParquetValueExtractor;
 import org.polypheny.db.type.entity.PolyValue;
 
-
+/**
+ * Converts Parquet field values into Polypheny relational values
+ * with relational-specific scalar handling.
+ */
 public class ParquetRelValueExtractor extends AbstractParquetValueExtractor {
 
     @Override

@@ -42,6 +42,11 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 
+/**
+ * Document adapter implementation.
+ * Owns adapter metadata, performs discovery of Parquet-backed document collections,
+ * document restore, and delegation into the document scan APIs.
+ */
 @Extension
 @AdapterProperties(
         name = ParquetDocumentSource.NAME,

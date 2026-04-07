@@ -24,8 +24,17 @@ import org.polypheny.db.adapter.parquet.shared.model.AdapterFilter;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 
+/**
+ * Translates supported document filter expressions into adapter-level `AdapterFilter` instances.
+ */
 public class ParquetDocFilterTranslator {
 
+    /**
+     * Translate Polypheny filter to AdapterFilter
+     * @param columns - list of valid columns
+     * @param filter - RexNode
+     * @return AdapterFilter
+     */
     public AdapterFilter translate( List<ExportedColumn> columns, RexNode filter ) {
         ParquetFilterTranslationSupport.ParsedFilter parsed = ParquetFilterTranslationSupport.parse( filter );
         if ( parsed == null ) {

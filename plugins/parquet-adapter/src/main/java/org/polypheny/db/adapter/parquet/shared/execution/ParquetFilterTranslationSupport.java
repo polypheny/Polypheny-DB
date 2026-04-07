@@ -23,6 +23,10 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
+/**
+ * Helper for parsing supported Rex predicates and
+ * turning them into adapter-level filters
+ */
 public final class ParquetFilterTranslationSupport {
 
     private ParquetFilterTranslationSupport() {

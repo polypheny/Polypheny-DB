@@ -22,6 +22,10 @@ import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.polypheny.db.algebra.constant.Kind;
 
+/**
+ * Creates native Parquet filter predicates
+ * for the supported comparison operators and value types
+ */
 public class ParquetPredicateBuilder {
     public static FilterPredicate buildBoolean( Kind operator, String columnName, Object expected ) {
         if ( !(expected instanceof Boolean value) ) {

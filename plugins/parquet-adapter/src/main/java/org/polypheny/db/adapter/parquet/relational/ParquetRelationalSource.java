@@ -40,6 +40,11 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 
+/**
+ * Relational adapter implementation.
+ * Manages exported table discovery, schema registration, information-page content,
+ * and restore of relational Parquet tables.
+ */
 @Extension
 @AdapterProperties(
         name = ParquetRelationalSource.NAME,

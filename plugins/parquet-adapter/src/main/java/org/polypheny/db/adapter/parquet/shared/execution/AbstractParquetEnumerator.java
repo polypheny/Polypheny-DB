@@ -26,6 +26,11 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
 
+/**
+ * Enumerator base class.
+ * Manages row iteration, projection handling, cancellation support,
+ * and reader lifecycle for both models.
+ */
 public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[]> {
 
     protected final ParquetGroupReader reader;
@@ -51,7 +56,8 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
     public boolean moveNext() {
         try {
             for ( ; ; ) {
-                // group (single row) can be still filtered, while parquet filter works on the row group level
+                // group (single row) can be still filtered, while parquet filter
+                // works on the row group level
                 Group group = reader.next();
                 if ( group == null ) {
                     current = null;
@@ -81,12 +87,18 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
     }
 
 
-    /*
-    extractValue logic depends on source type (relational/document)
+    /**
+     * extractValue logic depends on source type (relational/document)
      */
     protected abstract PolyValue[] extractRow( Group group );
 
 
+    /**
+     * apply filter on adapter level for each row
+     * by calling matches()
+     * @param group - parquet row
+     * @return boolean
+     */
     protected boolean accept( Group group ) {
         for ( AdapterFilter filter : filters ) {
             if ( !matches( group, filter ) ) {

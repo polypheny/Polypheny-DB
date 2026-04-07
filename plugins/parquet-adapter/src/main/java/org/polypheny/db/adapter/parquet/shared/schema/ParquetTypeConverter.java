@@ -53,6 +53,9 @@ import java.util.Objects;
 
 import static io.activej.common.StringFormatUtils.parseLocalDateTime;
 
+/**
+ * converts Parquet schema types and runtime values into the Polypheny type system
+ */
 public class ParquetTypeConverter {
 
     /**

@@ -30,6 +30,10 @@ import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
+/**
+ * Enumerable filter node used when a document filter can stay
+ * inside the Parquet-specific execution path.
+ */
 @Getter
 public class ParquetDocFilter extends Filter implements EnumerableAlg {
 

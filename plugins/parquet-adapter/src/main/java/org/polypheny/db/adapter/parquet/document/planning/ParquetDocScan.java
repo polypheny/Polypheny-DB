@@ -44,6 +44,11 @@ import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.type.entity.PolyValue;
 
+/**
+ * The planner node that sets up document reading.
+ * The real read starts when the generated executable plan calls
+ * the entity’s scanFiltered() method
+ */
 @Getter
 public class ParquetDocScan extends DocumentScan<ParquetDocument> implements EnumerableAlg {
 
@@ -91,7 +96,7 @@ public class ParquetDocScan extends DocumentScan<ParquetDocument> implements Enu
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
         Expression runtimeFilters = EnumUtils.expressionList( filters.stream().map( ParquetDocScan::toFilterExpression ).toList() );
-
+        // create runtime code that will call scanFiltered() on the ParquetDocument entity
         return implementor.result(
                 physType,
                 Blocks.toBlock(

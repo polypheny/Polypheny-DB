@@ -31,6 +31,10 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
+/**
+ * Planner rule that recognizes supported document filters
+ * and rewrites them into `ParquetDocFilter` plus `ParquetDocScan`
+ */
 public class ParquetDocFilterRule extends AlgOptRule {
 
     private final ParquetDocFilterTranslator translator = new ParquetDocFilterTranslator();
@@ -43,11 +47,22 @@ public class ParquetDocFilterRule extends AlgOptRule {
     }
 
 
+    /**
+     * On match read the matched node as LogicalRelFilter filter:
+     * - split received filter information into predicates
+     * - translate them into AdapterFilters
+     * - produce a ParquetDocScan with those filters
+     * - wrap it in ParquetDocFilter
+     * @param call Rule call - passed in by query optimizer when this rule matches, re-written
+     */
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         LogicalRelFilter filter = call.alg( 0 );
 
+        // column list is needed because filter translation
+        // is done against actual exported field names and physical positions
         List<ExportedColumn> columns = document.getParquetSource().getExportedColumns().get( document.name );
+        // separate predicates - the rule validates each predicate individually
         List<RexNode> predicates = splitConjunctions( filter.getCondition() );
         if ( columns == null || predicates.isEmpty() ) {
             return;
@@ -62,6 +77,8 @@ public class ParquetDocFilterRule extends AlgOptRule {
             adapterFilters.add( adapterFilter );
         }
 
+        // replaces the generic logical filter with a new ParquetDocScan
+        // carrying the translated adapterFilter wrapped in a ParquetDocFilter
         call.transformTo(
                 new ParquetDocFilter(
                         filter.getCluster(),

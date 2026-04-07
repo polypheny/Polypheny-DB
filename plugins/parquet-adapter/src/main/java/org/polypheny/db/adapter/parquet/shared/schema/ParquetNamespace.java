@@ -16,6 +16,7 @@ import org.polypheny.db.util.Sources;
 
 /**
  * Create wrappers for parquet files
+ * either a relational table or a document collection.
  */
 public class ParquetNamespace extends Namespace {
 

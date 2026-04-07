@@ -35,31 +35,30 @@ During `restore()`, `Catalog.defaultSource` is populated from the configured ada
     - Registers the Parquet adapter template during startup.
     - Removes the template during shutdown.
 2. **Schema initialization**
-    - **Responsible classes:** `ParquetSource`, `ParquetFileDiscovery`, `ParquetTypeConverter`
+    - **Responsible classes:** `AbstractParquetSource`, `ParquetFileDiscovery`, `ParquetTypeConverter`
     - Resolves the configured Parquet directory or file location.
     - Discovers available `.parquet` files.
-    - Builds table schemas from Parquet file metadata.
+    - Builds relational table or document collection metadata from Parquet file metadata.
     - Maps Parquet field types to Polypheny types.
     - Normalizes physical table names and column names.
     - Initializes the information page from the extracted column definitions.
-3. **Namespace and table creation**
-    - **Responsible classes:** `ParquetSource`, `ParquetNamespace`, `ParquetTable`
-    - Creates table wrappers for discovered Parquet files.
-    - Table Wrapper implements Filterable, Scannable and Translatable functionality
-    - Registers physical tables in the adapter catalog.
-4. **Table restore during startup**
-    - **Responsible classes:** `ParquetSource`, `ParquetNamespace`
-    - During application startup, the adapter calls `restoreTable(...)` for persisted Parquet tables.
-    - The adapter recreates table wrappers and re-registers them in the adapter catalog.
+3. **Namespace and entity creation**
+    - **Responsible classes:** `ParquetNamespace`, `ParquetRelTable`, `ParquetDocument`
+    - Creates table or collection wrappers for discovered Parquet files.
+    - Registers physical entities in the adapter catalog.
+4. **Restore during startup**
+    - **Responsible classes:** `ParquetRelationalSource`, `ParquetDocumentSource`, `ParquetNamespace`
+    - Recreates relational tables and document collections from persisted adapter state.
+    - Re-registers the wrappers in the adapter catalog.
 5. **Query entry into the adapter**
-    - **Responsible class:** `ParquetFilterableTable`, `ParquetNamespace`, `ParquetTable`
-    - The query engine resolves the registered Parquet-backed physical table.
-    - The adapter uses the table metadata and source information to access the underlying .parquet file.
+    - **Responsible classes:** `ParquetRelScan`, `ParquetDocScan`, `AbstractParquetEnumerator`, `ParquetGroupReader`
+    - The query engine resolves the registered Parquet-backed physical entity.
     - Projection and supported filter information are passed into the Parquet execution layer.
+    - Rows are read from the Parquet file and converted into Polypheny relational tuples or documents.
 
 ## Supported Filter Conditions
 
-The active `FILTERABLE` execution path currently pushes only simple comparison conditions that can be translated into native Parquet predicates.
+The active predicate pushdown path currently supports only simple comparison conditions that can be translated into native Parquet predicates.
 
 Supported operators:
 - `=`
@@ -71,13 +70,14 @@ Supported operators:
 
 Supported condition shape:
 - `column OP literal`
+- `column OP dynamic-parameter`
 
 Notes:
 - The left-hand side must be a column reference.
-- The right-hand side must be a literal value.
-- Simple casts on the column side are accepted.
-- Only pushdown-safe conditions are removed from the outer filter list.
-- Unsupported conditions remain outside the adapter-specific filter flow.
+- The right-hand side must be a literal value or dynamic parameter.
+- Simple casts on either side are unwrapped before translation.
+- Only pushdown-safe conditions are translated into adapter-specific filters.
+- Unsupported conditions remain outside the Parquet-specific filter flow.
 
 Supported pushdown types:
 - `BOOLEAN`: `=` and `!=`
@@ -91,54 +91,86 @@ Notes:
 
 ## Package Structure and Responsibilities
 
-### `root`
-Core adapter entry points and lifecycle integration.
-- `ParquetPlugin`: registers and unregisters the adapter template.
-- `ParquetSource`: main adapter implementation; manages source settings, schema export, information-page setup, namespace updates, table creation, and table restore.
+### `org.polypheny.db.adapter.parquet`
 
-### `io`
-Parquet file access helpers.
-- `ParquetFileDiscovery`: discovers valid `.parquet` files in the configured source.
+Contains parquet functionality for Relational and Document data source.
 
-### `schema`
-Table wrappers and schema-related conversion logic.
-- `ParquetNamespace`: creates Parquet table wrappers.
-- `ParquetTable`: extends PhysicalTable and implements all 3 flavors.
-  - implements `scan()` functions
-- `ParquetTypeConverter`: converts Parquet schema types, runtime values, and filter literals into Polypheny-compatible representations.
-- `ParquetDocument`
-### `model`
-Internal data representation.
-- `FilterInfo`: immutable representation of a pushed filter condition.
+- `ParquetPlugin` - plugin entry point. Registers the relational and document adapter templates after catalog initialization and removes them again during shutdown.
 
-### `execution`
-Runtime data access and filter evaluation.
-Classes responsible for reading Parquet data and returning rows.
-- `AbstractParquetEnumerator`: basic enumerator functionality general for relational and document data source. Contains abstract `extractRow()` function that should be implemented in derived classes
-- `ParquetTableEnumerator`: implements extractRow() function for RELATIONAL data source.
-- `ParquetDocumentEnumerator`: implements extractRow() function for DOCUMENT data source.
+### `org.polypheny.db.adapter.parquet.document`
 
-- `ParquetGroupReader`: contains read row group logic
-  - creates native parquet file reader
-  - reads data by row groups
-  - pushes filters down
-  
-- `ParquetTableFilterTranslator`: Translates adapter filters into parquet-native predicates.
-- `ParquetTableFilterBuilder`: Translates a Rex filter into adapter filter when possible.
+Document-model integration for exposing Parquet files as read-only Polypheny document collections.
 
-- `ValueExtractor`: conversion layer between Parquet and Polypheny value representations.
+- `ParquetDocumentSource` - document adapter implementation. Owns adapter metadata, performs discovery of Parquet-backed document collections, document restore, and delegation into the document scan APIs.
 
-### `planning`
-Classes that integrate the Parquet adapter with Polypheny’s query planner.
-Handling query-plan representation and optimization.
-- `ParquetTableScan`: Parquet scan operator for the planning layer.
-- `ParquetTableScanRule`: planner rule for projection handling over Parquet scans.
-- `ParquetDocumentScan`: 
-- `ParquetDocumentScanRule`:
+#### `document.execution`
 
-### `util`
-Shared infrastructure helpers.
-- `HadoopConfigurationFactory`: builds Hadoop configuration objects for Parquet access inside the plugin environment.
+- `ParquetDocEnumerator` - document runtime enumerator. Reads Parquet rows and create from each row a single `PolyDocument`.
+- `ParquetDocFilterTranslator` - translates supported document filter expressions into adapter-level `AdapterFilter` instances.
+- `ParquetDocValueExtractor` - converts Parquet groups and nested values into Polypheny document values and synthesizes `_id` values when they are missing.
+
+#### `document.planning`
+
+- `ParquetDocFilter` - enumerable filter node used when a document filter can stay inside the Parquet-specific execution path.
+- `ParquetDocFilterRule` - planner rule that recognizes supported document filters and rewrites them into `ParquetDocFilter` plus `ParquetDocScan`.
+- `ParquetDocScan` - document scan algebra node that builds the enumerable execution call for reading Parquet-backed documents.
+
+#### `document.schema`
+
+- `ParquetDocument` - physical collection wrapper for the document model. Represents one Parquet-backed collection inside Polypheny and connects planning and execution to the source adapter.
+
+### `org.polypheny.db.adapter.parquet.relational`
+
+Relational-model integration for exposing Parquet files as source tables.
+
+- `ParquetRelationalSource` - relational adapter implementation. Manages exported table discovery, schema registration, information-page content, and restore of relational Parquet tables.
+
+#### `relational.execution`
+
+- `ParquetRelEnumerator` - relational runtime enumerator. Reads projected Parquet rows and returns them as relational tuples.
+- `ParquetRelFilterTranslator` - converts adapter-level filters into Parquet native predicates for relational scans.
+- `ParquetRelValueExtractor` - converts Parquet field values into Polypheny relational values with relational-specific scalar handling.
+
+#### `relational.planning`
+
+- `ParquetRelScan` - relational scan algebra node for Parquet-backed physical tables.
+- `ParquetRelScanRule` - planner rule that rewrites compatible scans and projections to the Parquet-specific relational scan node.
+
+#### `relational.schema`
+
+- `ParquetRelTable` - physical table wrapper for the relational model. Exposes the Parquet-backed table to Polypheny and ties the planner, scanner, and adapter metadata together.
+
+### `org.polypheny.db.adapter.parquet.shared`
+
+Shared infrastructure used by both the relational and document adapters.
+
+- `AbstractParquetSource` - common base class for both source types. Handles settings, file discovery, exported schema derivation, information-page setup, name normalization, and shared restore behavior.
+
+#### `shared.execution`
+
+- `AbstractParquetEnumerator` - common enumerator base. Manages row iteration, projection handling, cancellation support, and reader lifecycle for both models.
+- `AbstractParquetValueExtractor` - shared conversion base for mapping Parquet primitive and structured values into Polypheny values.
+- `ParquetFilterTranslationSupport` - reusable helper for parsing supported Rex predicates and turning them into adapter-level filters.
+- `ParquetGroupReader` - low-level Parquet row-group reader. Opens the file, applies projection and native predicates, and streams groups to the enumerators.
+- `ParquetPredicateBuilder` - creates native Parquet filter predicates for the supported comparison operators and value types.
+- `ParquetValueExtractor` - small interface implemented by value extractors that can convert a Parquet field into a `PolyValue`.
+
+#### `shared.io`
+
+- `ParquetFileDiscovery` - locates valid `.parquet` files below the configured source location and filters out unsupported files.
+
+#### `shared.model`
+
+- `AdapterFilter` - immutable filter description shared across planning and execution. Carries the target column index, comparison operator, literal value, and optional dynamic parameter index.
+
+#### `shared.schema`
+
+- `ParquetNamespace` - namespace helper that creates the correct Parquet-backed physical wrapper for either a relational table or a document collection.
+- `ParquetTypeConverter` - converts Parquet schema types and runtime values into the Polypheny type system.
+
+#### `shared.util`
+
+- `HadoopConfigurationFactory` - builds Hadoop `Configuration` instances that work correctly inside the plugin classloader environment.
 
 ## Schema Mapping Rules
 
@@ -152,17 +184,17 @@ Shared infrastructure helpers.
 
 The adapter supports different levels of integration with the query engine:
 
-- `SCANNABLE` is the simplest execution path. 
-It performs plain row scanning through `ParquetScannableTable` and delegates reading to `ParquetEnumerator` without adapter-side filter pushdown. 
+- `SCANNABLE` is the simplest execution path.
+It performs plain row scanning through `ParquetScannableTable` and delegates reading to `ParquetEnumerator` without adapter-side filter pushdown.
 
-- `FILTERABLE` extends the scan-based model by accepting supported filter conditions from the query engine. 
-In this path, `ParquetFilterableTable` translates supported expressions into `FilterInfo` objects,
+- `FILTERABLE` extends the scan-based model by accepting supported filter conditions from the query engine.
+In this path, translated filters are converted into adapter-level filter objects,
 `ParquetPredicateBuilder` converts them into native Parquet predicates,
-and `ParquetEnumerator` applies projection pushdown and native predicate pushdown through `ParquetFileReader`. 
+and the Parquet enumerators apply projection pushdown and native predicate pushdown through `ParquetGroupReader`.
 
-- `TRANSLATABLE` is the planner-oriented flavor. 
-Instead of only returning rows directly, it allows the adapter to expose adapter-specific relational nodes and planner rules. 
-This path is intended for deeper integration with query planning through `ParquetScan` and `ParquetProjectScanRule`.
+- `TRANSLATABLE` is the planner-oriented flavor.
+Instead of only returning rows directly, it allows the adapter to expose adapter-specific relational nodes and planner rules.
+This path is intended for deeper integration with query planning through `ParquetRelScan`, `ParquetRelScanRule`, `ParquetDocScan`, and `ParquetDocFilterRule`.
 
 
 ## Information Page
@@ -194,11 +226,11 @@ The following figure shows an example of the displayed schema information.
 To run tests for parquet adapter:
 - `.\gradlew.bat :plugins:parquet-adapter:test`
 
-`plugins/parquet-adapter/build.gradle` should contain: 
+`plugins/parquet-adapter/build.gradle` should contain:
 - DBMS as a test dependency
 - Polypheny JDBC driver dependency
 
-## `ParquetPluginTest.java` 
+## `ParquetPluginTest.java`
 contains the following tests:
 1. `importsAllTablesAndReadsRows()`
 2. `parquetSourceIsReadOnly()`

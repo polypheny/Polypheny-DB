@@ -22,7 +22,9 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 
-
+/**
+ * Relational scan algebra node for Parquet-backed physical tables
+ */
 public class ParquetRelScan extends RelScan<ParquetRelTable> implements EnumerableAlg {
 
     private final int[] fields;
