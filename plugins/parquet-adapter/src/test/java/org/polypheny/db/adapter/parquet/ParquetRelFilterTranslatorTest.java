@@ -21,8 +21,8 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Types;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.adapter.parquet.shared.model.AdapterFilter;
-import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelFilterTranslator;
+import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
+import org.polypheny.db.adapter.parquet.shared.filter.ParquetNativeFilterBuilder;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
@@ -37,10 +37,10 @@ class ParquetRelFilterTranslatorTest {
                 .named( "ts" )
                 .named( "test_schema" );
 
-        AdapterFilter filter = new AdapterFilter( 0, Kind.EQUALS, PolyTimestamp.of( 1_700_000_000_000L ) );
+        ParquetAdapterFilter filter = new ParquetAdapterFilter( 0, Kind.EQUALS, PolyTimestamp.of( 1_700_000_000_000L ) );
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new ParquetRelFilterTranslator().translate( schema, List.of( filter ) ) );
+                () -> ParquetNativeFilterBuilder.build( schema, List.of( filter ) ) );
     }
 }

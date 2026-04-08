@@ -71,6 +71,12 @@ class ActivityRegistryTest {
         assertTrue( serialized.length() > 100 ); // 100 is somewhat arbitrary, just ensure it has some content
     }
 
+    // validate Parquet Activity registration
+    @Test
+    public void extractParquetActivityIsRegistered() {
+        assertTrue( ActivityRegistry.getRegistry().containsKey( "extractParquet" ) );
+    }
+
 
     @Test
     public void checkActivityPortsTest() {

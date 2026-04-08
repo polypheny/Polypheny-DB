@@ -17,6 +17,8 @@ import org.polypheny.db.type.entity.document.PolyDocument;
  */
 public class ParquetDocValueExtractor extends AbstractParquetValueExtractor {
 
+    private static final PolyString ID_KEY = PolyString.of( "_id" );
+
     @Override
     public PolyValue extractValue( Group group, int index, Type type ) {
         return extractStructuredValue( group, index, type );
@@ -44,9 +46,8 @@ public class ParquetDocValueExtractor extends AbstractParquetValueExtractor {
         }
 
         // if _id is missing or null, insert the provided generatedId
-        PolyString idKey = PolyString.of( "_id" );
-        if ( !values.containsKey( idKey ) || values.get( idKey ).isNull() ) {
-            values.put( idKey, generatedId );
+        if ( !values.containsKey( ID_KEY ) || values.get( ID_KEY ).isNull() ) {
+            values.put( ID_KEY, generatedId );
         }
 
         return PolyDocument.ofDocument( values );

@@ -21,7 +21,7 @@ import java.util.List;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.parquet.document.execution.ParquetDocFilterTranslator;
 import org.polypheny.db.adapter.parquet.document.schema.ParquetDocument;
-import org.polypheny.db.adapter.parquet.shared.model.AdapterFilter;
+import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
@@ -50,7 +50,7 @@ public class ParquetDocFilterRule extends AlgOptRule {
     /**
      * On match read the matched node as LogicalRelFilter filter:
      * - split received filter information into predicates
-     * - translate them into AdapterFilters
+     * - translate them into ParquetFilters
      * - produce a ParquetDocScan with those filters
      * - wrap it in ParquetDocFilter
      * @param call Rule call - passed in by query optimizer when this rule matches, re-written
@@ -68,22 +68,22 @@ public class ParquetDocFilterRule extends AlgOptRule {
             return;
         }
 
-        List<AdapterFilter> adapterFilters = new ArrayList<>();
+        List<ParquetAdapterFilter> parquetAdapterFilters = new ArrayList<>();
         for ( RexNode predicate : predicates ) {
-            AdapterFilter adapterFilter = translator.translate( columns, predicate );
-            if ( adapterFilter == null ) {
+            ParquetAdapterFilter parquetAdapterFilter = translator.translate( columns, predicate );
+            if ( parquetAdapterFilter == null ) {
                 return;
             }
-            adapterFilters.add( adapterFilter );
+            parquetAdapterFilters.add( parquetAdapterFilter );
         }
 
         // replaces the generic logical filter with a new ParquetDocScan
-        // carrying the translated adapterFilter wrapped in a ParquetDocFilter
+        // carrying the translated parquet filter wrapped in a ParquetDocFilter
         call.transformTo(
                 new ParquetDocFilter(
                         filter.getCluster(),
                         filter.getTraitSet().replace( EnumerableConvention.INSTANCE ),
-                        new ParquetDocScan( filter.getCluster(), document, adapterFilters ),
+                        new ParquetDocScan( filter.getCluster(), document, parquetAdapterFilters ),
                         filter.getCondition(),
                         document ) );
     }

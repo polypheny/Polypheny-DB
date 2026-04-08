@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.parquet.shared.execution;
+package org.polypheny.db.adapter.parquet.shared.io;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.IntStream;
 import lombok.Getter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -29,43 +28,46 @@ import org.apache.parquet.column.page.PageReadStore;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.example.data.simple.convert.GroupRecordConverter;
 import org.apache.parquet.filter2.compat.FilterCompat;
-import org.apache.parquet.hadoop.ParquetFileReader;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.ColumnIOFactory;
 import org.apache.parquet.io.MessageColumnIO;
 import org.apache.parquet.io.RecordReader;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
-import org.polypheny.db.adapter.parquet.shared.model.AdapterFilter;
+import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
+import org.polypheny.db.adapter.parquet.shared.filter.ParquetNativeFilterBuilder;
 import org.polypheny.db.adapter.parquet.shared.util.HadoopConfigurationFactory;
-import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelFilterTranslator;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Source;
 
 /**
- * low-level Parquet row-group reader.
- * Opens the file, applies projection and native predicates,
- * and streams groups to the enumerators
+ * Shared low-level Parquet file reader used by plugin modules that need direct
+ * row access, projection support, and optional native Parquet filtering without
+ * depending on adapter-specific planning code.
  */
-public class ParquetGroupReader implements AutoCloseable {
+public class ParquetSourceReader implements AutoCloseable {
 
     private final AtomicBoolean cancelFlag;
-    private final ParquetFileReader fileReader;
+    private final org.apache.parquet.hadoop.ParquetFileReader fileReader;
     private final boolean useNativeFilter;
-
     @Getter
     private final MessageType projectionSchema;
 
     private RecordReader<Group> recordReader;
     private long rowCountInGroup;
     private long rowIndexInGroup;
-
     @Getter
     private long currentRowNumber = -1;
 
 
-    public ParquetGroupReader( Source source, AtomicBoolean cancelFlag, int[] fields, List<AdapterFilter> filters ) {
-        this.cancelFlag = cancelFlag;
+    public ParquetSourceReader(Source source ) {
+        this( source, null, null, null );
+    }
+
+
+    public ParquetSourceReader(Source source, AtomicBoolean cancelFlag, int[] fields, List<ParquetAdapterFilter> filters ) {
+        this.cancelFlag = cancelFlag == null ? new AtomicBoolean( false ) : cancelFlag;
 
         try {
             Path path = new Path( source.url().toURI() );
@@ -73,30 +75,25 @@ public class ParquetGroupReader implements AutoCloseable {
             var inputFile = HadoopInputFile.fromPath( path, conf );
 
             MessageType schema;
-            try ( ParquetFileReader schemaReader = ParquetFileReader.open( inputFile ) ) {
+            try ( org.apache.parquet.hadoop.ParquetFileReader schemaReader = org.apache.parquet.hadoop.ParquetFileReader.open( inputFile ) ) {
                 schema = schemaReader.getFooter().getFileMetaData().getSchema();
             }
 
             int[] projectedFields = buildProjectedFields( fields, schema.getFieldCount() );
             this.projectionSchema = buildProjectionSchema( schema, projectedFields );
-
-            var recordFilter = new ParquetRelFilterTranslator().translate( schema, filters == null ? List.of() : filters );
+            var recordFilter = ParquetNativeFilterBuilder.build( schema, filters == null ? List.of() : filters );
             this.useNativeFilter = FilterCompat.isFilteringRequired( recordFilter );
 
-            // create configuration for the native parquet filter
-            ParquetReadOptions.Builder readOptionsBuilder = ParquetReadOptions.builder()
+            ParquetReadOptions readOptions = ParquetReadOptions.builder()
                     .useStatsFilter()
                     .useDictionaryFilter()
                     .useColumnIndexFilter()
                     .useBloomFilter()
-                    .useRecordFilter();
+                    .useRecordFilter()
+                    .withRecordFilter( recordFilter )
+                    .build();
 
-            if ( useNativeFilter ) {
-                // push down filter
-                readOptionsBuilder.withRecordFilter( recordFilter );
-            }
-
-            this.fileReader = ParquetFileReader.open( inputFile, readOptionsBuilder.build() );
+            this.fileReader = org.apache.parquet.hadoop.ParquetFileReader.open( inputFile, readOptions );
             this.fileReader.setRequestedSchema( projectionSchema );
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Unable to open parquet file: " + source.path(), e );
@@ -110,7 +107,6 @@ public class ParquetGroupReader implements AutoCloseable {
                 if ( cancelFlag.get() ) {
                     return null;
                 }
-
                 if ( !ensureRecordReader() ) {
                     return null;
                 }
@@ -131,16 +127,40 @@ public class ParquetGroupReader implements AutoCloseable {
     }
 
 
+    public long getEstimatedRowCount() {
+        // use metadata to estimate row count
+        return fileReader.getFooter().getBlocks().stream().mapToLong( BlockMetaData::getRowCount ).sum();
+    }
+
+
+    public static MessageType readSchema( Source source ) {
+        try {
+            Path path = new Path( source.url().toURI() );
+            Configuration conf = HadoopConfigurationFactory.create( ParquetSourceReader.class.getClassLoader() );
+            var inputFile = HadoopInputFile.fromPath( path, conf );
+            try ( org.apache.parquet.hadoop.ParquetFileReader schemaReader = org.apache.parquet.hadoop.ParquetFileReader.open( inputFile ) ) {
+                return schemaReader.getFooter().getFileMetaData().getSchema();
+            }
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( "Unable to inspect parquet schema for " + source.path(), e );
+        }
+    }
+
+
+    @Override
+    public void close() throws IOException {
+        fileReader.close();
+    }
+
+
     private boolean ensureRecordReader() throws IOException {
         if ( recordReader != null && rowIndexInGroup < rowCountInGroup ) {
             return true;
         }
 
-        // push down filters
         PageReadStore pages = useNativeFilter
                 ? fileReader.readNextFilteredRowGroup()
                 : fileReader.readNextRowGroup();
-
         if ( pages == null ) {
             return false;
         }
@@ -155,7 +175,11 @@ public class ParquetGroupReader implements AutoCloseable {
 
     private static int[] buildProjectedFields( int[] projectedFields, int schemaFieldCount ) {
         if ( projectedFields == null || projectedFields.length == 0 ) {
-            return IntStream.range( 0, schemaFieldCount ).toArray();
+            int[] allFields = new int[schemaFieldCount];
+            for ( int i = 0; i < schemaFieldCount; i++ ) {
+                allFields[i] = i;
+            }
+            return allFields;
         }
         return projectedFields;
     }
@@ -171,16 +195,6 @@ public class ParquetGroupReader implements AutoCloseable {
             fields.add( fullSchema.getType( index ) );
         }
         return new MessageType( fullSchema.getName(), fields );
-    }
-
-
-    @Override
-    public void close() {
-        try {
-            fileReader.close();
-        } catch ( IOException e ) {
-            throw new GenericRuntimeException( "Error closing parquet reader", e );
-        }
     }
 
 }

@@ -21,7 +21,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.schema.Type;
-import org.polypheny.db.adapter.parquet.shared.model.AdapterFilter;
+import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
+import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceReader;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
@@ -33,16 +34,16 @@ import org.polypheny.db.util.Source;
  */
 public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[]> {
 
-    protected final ParquetGroupReader reader;
+    protected final ParquetSourceReader reader;
     protected final ParquetValueExtractor valueExtractor;
-    protected final List<AdapterFilter> filters;
+    protected final List<ParquetAdapterFilter> filters;
     private PolyValue[] current;
 
 
-    public AbstractParquetEnumerator( Source source, AtomicBoolean cancelFlag, int[] fields, List<AdapterFilter> filters, ParquetValueExtractor valueExtractor ) {
-        this.reader = new ParquetGroupReader( source, cancelFlag, fields, filters );
-        this.valueExtractor = valueExtractor;
+    public AbstractParquetEnumerator( Source source, AtomicBoolean cancelFlag, int[] fields, List<ParquetAdapterFilter> filters, ParquetValueExtractor valueExtractor ) {
         this.filters = filters == null ? List.of() : List.copyOf( filters );
+        this.reader = new ParquetSourceReader( source, cancelFlag, fields, this.filters );
+        this.valueExtractor = valueExtractor;
     }
 
 
@@ -83,7 +84,11 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
 
     @Override
     public void close() {
-        reader.close();
+        try {
+            reader.close();
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( "Error closing parquet reader", e );
+        }
     }
 
 
@@ -100,7 +105,7 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
      * @return boolean
      */
     protected boolean accept( Group group ) {
-        for ( AdapterFilter filter : filters ) {
+        for ( ParquetAdapterFilter filter : filters ) {
             if ( !matches( group, filter ) ) {
                 return false;
             }
@@ -109,7 +114,7 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
     }
 
 
-    private boolean matches( Group group, AdapterFilter filter ) {
+    private boolean matches( Group group, ParquetAdapterFilter filter ) {
         // if filter is invalid row should be displayed
         if ( filter.polyValue() == null || filter.columnIndex() < 0 || filter.columnIndex() >= reader.getProjectionSchema().getFieldCount() ) {
             return true;
@@ -141,7 +146,7 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
     }
 
 
-    protected PolyValue extractFilterValue( Group group, AdapterFilter filter ) {
+    protected PolyValue extractFilterValue( Group group, ParquetAdapterFilter filter ) {
         Type field = reader.getProjectionSchema().getType( filter.columnIndex() );
         return valueExtractor.extractValue( group, filter.columnIndex(), field );
     }

@@ -37,6 +37,7 @@ import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.Scannable;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetFileDiscovery;
 import org.polypheny.db.adapter.parquet.shared.schema.ParquetNamespace;
+import org.polypheny.db.adapter.parquet.shared.schema.ParquetFieldNameNormalizer;
 import org.polypheny.db.adapter.parquet.shared.schema.ParquetTypeConverter;
 import org.polypheny.db.adapter.parquet.shared.util.HadoopConfigurationFactory;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
@@ -132,7 +133,7 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
 
 
     public static String normalizeFieldName( String name ) {
-        return name.toLowerCase().trim().replaceAll( "[^a-z0-9_]+", "_" );
+        return ParquetFieldNameNormalizer.normalizeFieldName( name );
     }
 
 

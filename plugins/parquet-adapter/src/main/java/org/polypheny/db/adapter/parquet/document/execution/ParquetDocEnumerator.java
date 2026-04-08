@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.parquet.example.data.Group;
+import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.execution.AbstractParquetEnumerator;
-import org.polypheny.db.adapter.parquet.shared.model.AdapterFilter;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -37,7 +37,7 @@ public class ParquetDocEnumerator extends AbstractParquetEnumerator implements E
     private final ParquetDocValueExtractor documentValueExtractor;
 
 
-    public ParquetDocEnumerator( Source source, AtomicBoolean cancelFlag, List<AdapterFilter> filters ) {
+    public ParquetDocEnumerator( Source source, AtomicBoolean cancelFlag, List<ParquetAdapterFilter> filters ) {
         super( source, cancelFlag, null, filters, new ParquetDocValueExtractor() );
         this.documentValueExtractor = (ParquetDocValueExtractor) valueExtractor;
         this.documentPrefix = source.path();

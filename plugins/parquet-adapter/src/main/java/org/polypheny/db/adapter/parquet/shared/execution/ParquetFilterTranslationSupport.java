@@ -16,7 +16,7 @@
 
 package org.polypheny.db.adapter.parquet.shared.execution;
 
-import org.polypheny.db.adapter.parquet.shared.model.AdapterFilter;
+import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -51,16 +51,16 @@ public final class ParquetFilterTranslationSupport {
     }
 
 
-    public static AdapterFilter toAdapterFilter( int columnIndex, Kind operator, RexNode valueNode ) {
+    public static ParquetAdapterFilter toParquetAdapterFilter( int columnIndex, Kind operator, RexNode valueNode ) {
         if ( valueNode instanceof RexLiteral literal ) {
             if ( literal.getValue() == null ) {
                 return null;
             }
-            return new AdapterFilter( columnIndex, operator, literal.getValue() );
+            return new ParquetAdapterFilter( columnIndex, operator, literal.getValue() );
         }
 
         if ( valueNode instanceof RexDynamicParam dynamicParam ) {
-            return new AdapterFilter( columnIndex, operator, null, dynamicParam.getIndex() );
+            return new ParquetAdapterFilter( columnIndex, operator, null, dynamicParam.getIndex() );
         }
 
         return null;

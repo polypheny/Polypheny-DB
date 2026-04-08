@@ -68,7 +68,7 @@ public class ParquetTypeConverter {
 
         // treat nested types as string
         if ( !field.isPrimitive() ) {
-            return PolyType.TEXT;
+            return PolyType.DOCUMENT;
         }
 
         // not nested types

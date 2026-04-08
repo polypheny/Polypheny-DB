@@ -29,8 +29,8 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.parquet.document.execution.ParquetDocEnumerator;
 import org.polypheny.db.adapter.parquet.document.planning.ParquetDocScan;
+import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
-import org.polypheny.db.adapter.parquet.shared.model.AdapterFilter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -98,13 +98,13 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
     /**
      * creates enumerable with resolve filters
      * @param dataContext context
-     * @param filters - adapter filters
+     * @param filters - parquet filters
      * @return ParquetDocEnumerator
      */
-    public Enumerable<PolyValue[]> scanFiltered( DataContext dataContext, List<AdapterFilter> filters ) {
+    public Enumerable<PolyValue[]> scanFiltered( DataContext dataContext, List<ParquetAdapterFilter> filters ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( parquetSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
-        final List<AdapterFilter> resolvedFilters = filters.stream().map( filter -> resolveFilter( dataContext, filter ) ).toList();
+        final List<ParquetAdapterFilter> resolvedFilters = filters.stream().map( filter -> resolveFilter( dataContext, filter ) ).toList();
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
@@ -151,16 +151,16 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
 
 
     /**
-     * add dynamic parameters to adapter filter if needed
+     * add dynamic parameters to parquet filter if needed
      * @param dataContext context
-     * @param filter adapter filter
-     * @return AdapterFilter
+     * @param filter parquet filter
+     * @return ParquetFilter
      */
-    private AdapterFilter resolveFilter( DataContext dataContext, AdapterFilter filter ) {
+    private ParquetAdapterFilter resolveFilter( DataContext dataContext, ParquetAdapterFilter filter ) {
         if ( filter.dynamicParamIndex() == null ) {
             return filter;
         }
-        return new AdapterFilter(
+        return new ParquetAdapterFilter(
                 filter.columnIndex(),
                 filter.operator(),
                 dataContext.getParameterValue( filter.dynamicParamIndex() ) );

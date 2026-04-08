@@ -20,8 +20,8 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
-import org.polypheny.db.adapter.parquet.shared.model.AdapterFilter;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelEnumerator;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelFilterTranslator;
 import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelScan;
@@ -87,17 +87,17 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
     @Override
     public Enumerable<PolyValue[]> scan( DataContext dataContext, List<RexNode> polyFilters ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( parquetSource );
-        final List<AdapterFilter> adapterFilters = new ArrayList<>();
+        final List<ParquetAdapterFilter> parquetAdapterFilters = new ArrayList<>();
         polyFilters.removeIf( polyFilter -> {
-            var adapterFilter = filterTranslator.translate( fieldTypes, polyFilter );
-            if ( adapterFilter != null ) {
-                return adapterFilters.add( adapterFilter );
+            var parquetFilter = filterTranslator.translate( fieldTypes, polyFilter );
+            if ( parquetFilter != null ) {
+                return parquetAdapterFilters.add( parquetFilter );
             }
             return false;
         } );
 
         // check for dynamic filters
-        final List<AdapterFilter> resolvedFilters = resolveDynamicFilters( dataContext, adapterFilters );
+        final List<ParquetAdapterFilter> resolvedFilters = resolveDynamicFilters( dataContext, parquetAdapterFilters );
 
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<>() {
@@ -165,11 +165,11 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
      * Support parametrized queries
      * @param dataContext context
      * @param filters filters
-     * @return list of adapter filters
+     * @return list of parquet filters
      */
-    private List<AdapterFilter> resolveDynamicFilters( DataContext dataContext, List<AdapterFilter> filters ) {
-        List<AdapterFilter> resolved = new ArrayList<>( filters.size() );
-        for ( AdapterFilter filter : filters ) {
+    private List<ParquetAdapterFilter> resolveDynamicFilters( DataContext dataContext, List<ParquetAdapterFilter> filters ) {
+        List<ParquetAdapterFilter> resolved = new ArrayList<>( filters.size() );
+        for ( ParquetAdapterFilter filter : filters ) {
             if ( filter.dynamicParamIndex() == null ) {
                 // regular filter
                 resolved.add( filter );
@@ -177,7 +177,7 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
             }
             // get filter value by index
             PolyValue value = dataContext.getParameterValue( filter.dynamicParamIndex() );
-            resolved.add( new AdapterFilter( filter.columnIndex(), filter.operator(), value ) );
+            resolved.add( new ParquetAdapterFilter( filter.columnIndex(), filter.operator(), value ) );
         }
         return resolved;
     }

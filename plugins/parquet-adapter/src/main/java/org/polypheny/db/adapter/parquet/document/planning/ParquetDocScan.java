@@ -23,7 +23,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.adapter.parquet.document.schema.ParquetDocument;
-import org.polypheny.db.adapter.parquet.shared.model.AdapterFilter;
+import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -52,10 +52,10 @@ import org.polypheny.db.type.entity.PolyValue;
 @Getter
 public class ParquetDocScan extends DocumentScan<ParquetDocument> implements EnumerableAlg {
 
-    private final List<AdapterFilter> filters;
+    private final List<ParquetAdapterFilter> filters;
 
 
-    public ParquetDocScan( AlgCluster cluster, ParquetDocument entity, List<AdapterFilter> filters ) {
+    public ParquetDocScan( AlgCluster cluster, ParquetDocument entity, List<ParquetAdapterFilter> filters ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), entity );
         this.filters = List.copyOf( filters );
     }
@@ -108,9 +108,9 @@ public class ParquetDocScan extends DocumentScan<ParquetDocument> implements Enu
     }
 
 
-    private static Expression toFilterExpression( AdapterFilter filter ) {
+    private static Expression toFilterExpression( ParquetAdapterFilter filter ) {
         return Expressions.new_(
-                AdapterFilter.class,
+                ParquetAdapterFilter.class,
                 Expressions.constant( filter.columnIndex() ),
                 Expressions.constant( filter.operator(), Kind.class ),
                 filter.polyValue() == null ? Expressions.constant( null, PolyValue.class ) : filter.polyValue().asExpression(),
