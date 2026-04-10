@@ -210,161 +210,256 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     protected abstract boolean requiresSchema();
 
 
+    /**
+     * Reads the exported columns of all source tables.
+     * <p>
+     * The method obtains a connection from the connection factory, resolves the set of tables that should be inspected,
+     * and reads the metadata for each table individually.
+     *
+     * @return mapping from table name to its exported columns
+     * @throws GenericRuntimeException if metadata can't be read
+     */
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
-        Map<String, List<ExportedColumn>> map = new HashMap<>();
         PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
         try {
             ConnectionHandler connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
             java.sql.Statement statement = connectionHandler.getStatement();
             Connection connection = statement.getConnection();
-            DatabaseMetaData dbmd = connection.getMetaData();
-
-            String tablesSetting = settings.get( "tables" );
-            String[] tables;
-
-            if ( tablesSetting == null || tablesSetting.trim().isEmpty() ) {
-                log.info( "No tables configured manually. Discovering tables automatically..." );
-
-                String schemaPattern;
-                if ( requiresSchema() ) {
-                    schemaPattern = "%";
-                } else {
-                    schemaPattern = null;
-                }
-
-                String[] types = { "TABLE" }; // VIEW can be added here later
-
-                List<String> discoveredTables = new ArrayList<>();
-
-                try ( ResultSet rs = dbmd.getTables(
-                        settings.get( "database" ),
-                        schemaPattern,
-                        "%",
-                        types ) ) {
-                    while ( rs.next() ) {
-                        String schema;
-                        if (requiresSchema() ) {
-                            schema = rs.getString("TABLE_SCHEM");
-                        } else {
-                            schema = null;
-                        }
-
-                        String table = rs.getString("TABLE_NAME");
-
-                        if ( schema != null ) {
-                            log.info( "Discovered table: {}.{}", schema, table );
-                            discoveredTables.add( schema + "." + table );
-                        } else {
-                            log.info( "Discovered table: {}", table );
-                            discoveredTables.add( table );
-                        }
-                    }
-                } catch ( SQLException e ) {
-                    throw new GenericRuntimeException( "Error while discovering tables", e );
-                }
-
-                tables = discoveredTables.toArray( new String[0] );
-
-            } else {
-                tables = tablesSetting.split( "," );
-            }
-
-            for ( String str : tables ) {
-                str = str.trim();
-                if ( str.isEmpty() ) {
-                    continue;
-                }
-                String[] names = str.split( "\\." );
-                if ( names.length == 0 || names.length > 2 || (requiresSchema() && names.length == 1) ) {
-                    throw new GenericRuntimeException( "Invalid table name: " + str );
-                }
-                String tableName;
-                String schemaPattern;
-                if ( requiresSchema() ) {
-                    schemaPattern = names[0];
-                    tableName = names[1];
-                } else {
-                    schemaPattern = null;
-                    tableName = names[0];
-                }
-                List<String> primaryKeyColumns = new ArrayList<>();
-                try ( ResultSet row = dbmd.getPrimaryKeys( settings.get( "database" ), schemaPattern, tableName ) ) {
-                    while ( row.next() ) {
-                        primaryKeyColumns.add( row.getString( "COLUMN_NAME" ) );
-                    }
-                }
-                try ( ResultSet row = dbmd.getColumns( settings.get( "database" ), schemaPattern, tableName, "%" ) ) {
-                    List<ExportedColumn> list = new ArrayList<>();
-                    while ( row.next() ) {
-                        PolyType type = PolyType.getNameForJdbcType( row.getInt( "DATA_TYPE" ) );
-                        Integer length = null;
-                        Integer scale = null;
-                        Integer dimension = null;
-                        Integer cardinality = null;
-                        switch ( type ) {
-                            case BOOLEAN:
-                            case TINYINT:
-                            case SMALLINT:
-                            case INTEGER:
-                            case BIGINT:
-                            case FLOAT:
-                            case REAL:
-                            case DOUBLE:
-                            case DATE:
-                                break;
-                            case DECIMAL:
-                                length = row.getInt( "COLUMN_SIZE" );
-                                scale = row.getInt( "DECIMAL_DIGITS" );
-                                break;
-                            case TIME:
-                                length = row.getInt( "DECIMAL_DIGITS" );
-                                if ( length > 3 ) {
-                                    throw new GenericRuntimeException( "Unsupported precision for data type time: " + length );
-                                }
-                                break;
-                            case TIMESTAMP:
-                                length = row.getInt( "DECIMAL_DIGITS" );
-                                if ( length > 3 ) {
-                                    throw new GenericRuntimeException( "Unsupported precision for data type timestamp: " + length );
-                                }
-                                break;
-                            case CHAR:
-                            case VARCHAR:
-                                type = PolyType.VARCHAR;
-                                length = row.getInt( "COLUMN_SIZE" );
-                                break;
-                            case BINARY:
-                            case VARBINARY:
-                                type = PolyType.VARBINARY;
-                                length = row.getInt( "COLUMN_SIZE" );
-                                break;
-                            default:
-                                throw new GenericRuntimeException( "Unsupported data type: " + type.getName() );
-                        }
-                        list.add( new ExportedColumn(
-                                row.getString( "COLUMN_NAME" ).toLowerCase(),
-                                type,
-                                null,
-                                length,
-                                scale,
-                                dimension,
-                                cardinality,
-                                row.getString( "IS_NULLABLE" ).equalsIgnoreCase( "YES" ),
-                                requiresSchema() ? row.getString( "TABLE_SCHEM" ) : row.getString( "TABLE_CAT" ),
-                                row.getString( "TABLE_NAME" ),
-                                row.getString( "COLUMN_NAME" ),
-                                row.getInt( "ORDINAL_POSITION" ),
-                                primaryKeyColumns.contains( row.getString( "COLUMN_NAME" ) )
-                        ) );
-                    }
-                    map.put( tableName, list );
-                }
-            }
+            return readExportedColumns( connection );
         } catch ( SQLException | ConnectionHandlerException e ) {
             throw new GenericRuntimeException( "Exception while collecting schema information!", e );
         }
+    }
+
+
+    /**
+     * Reads the exported columns of one specific source table using a fresh connection.
+     * <p>
+     * This method is used for targeted schema refreshes, where only the currently opened table should be inspected instead
+     * of scanning the whole source.
+     *
+     * @param schema the schema name of the source table or {@code null} if the source doesn't use schemas
+     * @param table the physical table name
+     * @return the exported columns of the specified table
+     * @throws GenericRuntimeException if metadata can't be read
+     */
+    @Override
+    public List<ExportedColumn> getExportedColumnsForTable( String schema, String table ) {
+        try ( Connection connection = connectionFactory.getFreshConnection() ) {
+            return readExportedColumnsForSingleTable( connection, schema, table );
+        } catch ( SQLException e ) {
+            throw new GenericRuntimeException( "Exception while collecting fresh schema information for table!", e );
+        }
+    }
+
+
+    /**
+     * Reads the exported columns for all relevant source tables using the provided connection.
+     * <p>
+     * The list of tables is determined by {@link #resolveTableNames(Connection)}.
+     * For each resolved table, the actual metadata extraction is delegated to
+     * {@link #readExportedColumnsForSingleTable(Connection, String, String)}.
+     *
+     * @param connection the connection used to read metadata
+     * @return mapping from table name to its exported columns
+     * @throws SQLException if metadata access fails
+     */
+    private Map<String, List<ExportedColumn>> readExportedColumns( Connection connection ) throws SQLException {
+        Map<String, List<ExportedColumn>> map = new HashMap<>();
+
+        for ( String str : resolveTableNames( connection ) ) {
+            str = str.trim();
+            if ( str.isEmpty() ) {
+                continue;
+            }
+
+            String[] names = str.split( "\\." );
+            if ( names.length == 0 || names.length > 2 || (requiresSchema() && names.length == 1) ) {
+                throw new GenericRuntimeException( "Invalid table name: " + str );
+            }
+
+            String schemaPattern;
+            String tableName;
+            if ( requiresSchema() ) {
+                schemaPattern = names[0];
+                tableName = names[1];
+            } else {
+                schemaPattern = null;
+                tableName = names[0];
+            }
+
+            map.put( tableName, readExportedColumnsForSingleTable( connection, schemaPattern, tableName ) );
+        }
+
         return map;
+    }
+
+    /**
+     * Resolves the set of source tables whose metadata should be read.
+     * <p>
+     * If tables are explicitly specified in the adapter settings during deployment,
+     * this list is used directly. Otherwise, the available tables are discovered
+     * via JDBC metadata.
+     *
+     * @param connection the JDBC connection used for table discovery
+     * @return list of table identifiers as strings, e.g. {@code public.customers}
+     * @throws SQLException if JDBC metadata access fails
+     */
+    private List<String> resolveTableNames( Connection connection ) throws SQLException {
+        String tablesSetting = settings.get( "tables" );
+
+        // Use manually specified tables in adapter settings (if specified)
+        if ( tablesSetting != null && !tablesSetting.trim().isEmpty() ) {
+            List<String> configuredTables = new ArrayList<>();
+            for ( String table : tablesSetting.split( "," ) ) {
+                table = table.trim();
+                if ( !table.isEmpty() ) {
+                    configuredTables.add( table );
+                }
+            }
+            return configuredTables;
+        }
+
+        // Discover tables automatic via JDBC metadata
+        DatabaseMetaData dbmd = connection.getMetaData();
+
+        String schemaPattern;
+        if ( requiresSchema() ) {
+            schemaPattern = "%";
+        } else {
+            schemaPattern = null;
+        }
+
+        String[] types = { "TABLE" };
+
+        List<String> discoveredTables = new ArrayList<>();
+
+        try ( ResultSet rs = dbmd.getTables(
+                settings.get( "database" ),
+                schemaPattern,
+                "%",
+                types ) ) {
+            while ( rs.next() ) {
+                String schema;
+                if (requiresSchema() ) {
+                    schema = rs.getString("TABLE_SCHEM");
+                } else {
+                    schema = null;
+                }
+
+                String table = rs.getString( "TABLE_NAME" );
+
+                if ( schema != null ) {
+                    log.info( "Discovered table: {}.{}", schema, table );
+                    discoveredTables.add( schema + "." + table );
+                } else {
+                    log.info( "Discovered table: {}", table );
+                    discoveredTables.add( table );
+                }
+            }
+        }
+
+        return discoveredTables;
+    }
+
+
+    /**
+     * Reads the exported columns of a single source table from JDBC metadata.
+     *
+     * @param connection the connection used to read metadata
+     * @param schemaPattern the schema name or {@code null} if schemas are not required
+     * @param tableName the physical table name
+     * @return exported column metadata of the specified table
+     * @throws SQLException if metadata access fails
+     */
+    private List<ExportedColumn> readExportedColumnsForSingleTable(
+            Connection connection,
+            String schemaPattern,
+            String tableName ) throws SQLException {
+
+        DatabaseMetaData dbmd = connection.getMetaData();
+
+        List<String> primaryKeyColumns = new ArrayList<>();
+        try ( ResultSet row = dbmd.getPrimaryKeys( settings.get( "database" ), schemaPattern, tableName ) ) {
+            while ( row.next() ) {
+                primaryKeyColumns.add( row.getString( "COLUMN_NAME" ) );
+            }
+        }
+
+        List<ExportedColumn> list = new ArrayList<>();
+        try ( ResultSet row = dbmd.getColumns( settings.get( "database" ), schemaPattern, tableName, "%" ) ) {
+            while ( row.next() ) {
+                log.info(
+                        "Found source column: {}.{}.{}",
+                        requiresSchema() ? row.getString( "TABLE_SCHEM" ) : row.getString( "TABLE_CAT" ),
+                        row.getString( "TABLE_NAME" ),
+                        row.getString( "COLUMN_NAME" )
+                );
+
+                PolyType type = PolyType.getNameForJdbcType( row.getInt( "DATA_TYPE" ) );
+                Integer length = null;
+                Integer scale = null;
+                Integer dimension = null;
+                Integer cardinality = null;
+                switch ( type ) {
+                    case BOOLEAN:
+                    case TINYINT:
+                    case SMALLINT:
+                    case INTEGER:
+                    case BIGINT:
+                    case FLOAT:
+                    case REAL:
+                    case DOUBLE:
+                    case DATE:
+                        break;
+                    case DECIMAL:
+                        length = row.getInt( "COLUMN_SIZE" );
+                        scale = row.getInt( "DECIMAL_DIGITS" );
+                        break;
+                    case TIME:
+                        length = row.getInt( "DECIMAL_DIGITS" );
+                        if ( length > 3 ) {
+                            throw new GenericRuntimeException( "Unsupported precision for data type time: " + length );
+                        }
+                        break;
+                    case TIMESTAMP:
+                        length = row.getInt( "DECIMAL_DIGITS" );
+                        if ( length > 3 ) {
+                            throw new GenericRuntimeException( "Unsupported precision for data type timestamp: " + length );
+                        }
+                        break;
+                    case CHAR:
+                    case VARCHAR:
+                        type = PolyType.VARCHAR;
+                        length = row.getInt( "COLUMN_SIZE" );
+                        break;
+                    case BINARY:
+                    case VARBINARY:
+                        type = PolyType.VARBINARY;
+                        length = row.getInt( "COLUMN_SIZE" );
+                        break;
+                    default:
+                        throw new GenericRuntimeException( "Unsupported data type: " + type.getName() );
+                }
+                list.add( new ExportedColumn(
+                        row.getString( "COLUMN_NAME" ).toLowerCase(),
+                        type,
+                        null,
+                        length,
+                        scale,
+                        dimension,
+                        cardinality,
+                        row.getString( "IS_NULLABLE" ).equalsIgnoreCase( "YES" ),
+                        requiresSchema() ? row.getString( "TABLE_SCHEM" ) : row.getString( "TABLE_CAT" ),
+                        row.getString( "TABLE_NAME" ),
+                        row.getString( "COLUMN_NAME" ),
+                        row.getInt( "ORDINAL_POSITION" ),
+                        primaryKeyColumns.contains( row.getString( "COLUMN_NAME" ) )
+                ) );
+            }
+        }
+        return list;
     }
 
 

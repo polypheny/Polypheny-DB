@@ -408,17 +408,21 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    /**
+     * Adds a column to a source table based on a physical column name from the underlying data source.
+     * <p>
+     * This method performs a metadata-only update in the Polypheny catalog and does not trigger a rebuild of the physical table.
+     *
+     * @param table the table
+     * @param columnPhysicalName the physical name of the new column
+     * @param columnLogicalName the name of the new column
+     * @param beforeColumnName the name of the column before the column which is inserted; can be null
+     * @param afterColumnName the name of the column after the column, which is inserted; can be null
+     * @param defaultValue the default value of the inserted column
+     * @param statement used to execute the operation
+     */
     @Override
     public void addColumnToSourceTable( LogicalTable table, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, PolyValue defaultValue, Statement statement ) {
-
-        if ( catalog.getSnapshot().rel().getColumn( table.id, columnLogicalName ).isEmpty() ) {
-            throw new GenericRuntimeException( "There exist already a column with name %s on table %s", columnLogicalName, table.name );
-        }
-
-        LogicalColumn beforeColumn;
-        beforeColumn = beforeColumnName == null ? null : catalog.getSnapshot().rel().getColumn( table.id, beforeColumnName ).orElseThrow();
-        LogicalColumn afterColumn;
-        afterColumn = afterColumnName == null ? null : catalog.getSnapshot().rel().getColumn( table.id, afterColumnName ).orElseThrow();
 
         // Make sure that the table is of table type SOURCE
         if ( table.entityType != EntityType.SOURCE ) {
@@ -433,10 +437,16 @@ public class DdlManagerImpl extends DdlManager {
 
         AllocationEntity allocation = allocs.get( 0 );
 
-        long adapterId = allocation.adapterId;
-        DataSource<?> dataSource = AdapterManager.getInstance().getSource( adapterId ).orElseThrow();
+        DataSource<?> dataSource = AdapterManager.getInstance().getSource( allocation.adapterId ).orElseThrow();
         //String physicalTableName = catalog.getSnapshot().alloc().getPhysicalTable( catalogTable.id, adapterId ).name;
         List<ExportedColumn> exportedColumns = dataSource.asRelationalDataSource().getExportedColumns().get( table.name );
+
+        if ( exportedColumns == null ) {
+            throw new GenericRuntimeException(
+                    "Could not fetch exported columns for source table %s",
+                    table.name
+            );
+        }
 
         // Check if physicalColumnName is valid
         ExportedColumn exportedColumn = exportedColumns.stream()
@@ -444,8 +454,113 @@ public class DdlManagerImpl extends DdlManager {
                 .findAny()
                 .orElseThrow( () -> new GenericRuntimeException( "Invalid physical column name '%s'", columnPhysicalName ) );
 
+        addColumnToSourceTableInternal(
+                table,
+                exportedColumn,
+                columnLogicalName,
+                beforeColumnName,
+                afterColumnName,
+                defaultValue,
+                statement,
+                false
+        );
+    }
+
+
+    /**
+     * Adds a column to a source table using metadata retrieved from the underlying data source.
+     * <p>
+     * This method performs a full schema synchronization, including rebuilding the physical table to reflect the updated structure.
+     *
+     * @param table the logical table to which the column should be added
+     * @param exportedColumn the column metadata retrieved from the data source
+     * @param columnLogicalName the logical name of the new column in Polypheny
+     * @param beforeColumnName the name of the column before the column which is inserted; can be {@code null}
+     * @param afterColumnName the name of the column after the column, which is inserted; can be {@code null}
+     * @param defaultValue defaultValue the default value of the new column; can be {@code null}
+     * @param statement the statement used to execute the DDL operation
+     */
+    @Override
+    public void addColumnToSourceTableFromExportedColumn(
+            LogicalTable table,
+            ExportedColumn exportedColumn,
+            String columnLogicalName,
+            String beforeColumnName,
+            String afterColumnName,
+            PolyValue defaultValue,
+            Statement statement ) {
+
+        log.info("Adding column '{}' to source table {} (with physical rebuild)", columnLogicalName, table.name);
+
+        addColumnToSourceTableInternal(
+                table,
+                exportedColumn,
+                columnLogicalName,
+                beforeColumnName,
+                afterColumnName,
+                defaultValue,
+                statement,
+                true
+        );
+    }
+
+
+    /**
+     * Internal helper method to add a column to a source table.
+     * <p>
+     * This method performs the actual catalog updates and optionally triggers a rebuild
+     * of the physical table depending on the {@code rebuildPhysical} flag.
+     *
+     * @param table the logical table
+     * @param exportedColumn the column metadata from the data source
+     * @param columnLogicalName the logical name of the new column
+     * @param beforeColumnName optional column before which to insert
+     * @param afterColumnName optional column after which to insert
+     * @param defaultValue optional default value
+     * @param statement the statement used for execution
+     * @param rebuildPhysical whether to rebuild the physical table after adding the column
+     */
+    private void addColumnToSourceTableInternal(
+            LogicalTable table,
+            ExportedColumn exportedColumn,
+            String columnLogicalName,
+            String beforeColumnName,
+            String afterColumnName,
+            PolyValue defaultValue,
+            Statement statement,
+            boolean rebuildPhysical ) {
+
+        log.info("Processing column '{}' for table {} (rebuildPhysical={})",
+                columnLogicalName, table.name, rebuildPhysical);
+
+        if ( catalog.getSnapshot().rel().getColumn( table.id, columnLogicalName ).isPresent() ) {
+            throw new GenericRuntimeException(
+                    "There already exists a column with name %s on table %s",
+                    columnLogicalName,
+                    table.name
+            );
+        }
+
+        if ( table.entityType != EntityType.SOURCE ) {
+            throw new GenericRuntimeException( "Illegal operation on table of type %s", table.entityType );
+        }
+
+        LogicalColumn beforeColumn =
+                beforeColumnName == null ? null : catalog.getSnapshot().rel().getColumn( table.id, beforeColumnName ).orElseThrow();
+
+        LogicalColumn afterColumn =
+                afterColumnName == null ? null : catalog.getSnapshot().rel().getColumn( table.id, afterColumnName ).orElseThrow();
+
+        List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( table.id );
+        if ( allocs.size() != 1 ) {
+            throw new GenericRuntimeException( "The table has an unexpected number of placements!" );
+        }
+
+        AllocationEntity allocation = allocs.get( 0 );
+
         int position = updateAdjacentPositions( table, beforeColumn, afterColumn );
 
+        // Create logical column in catalog
         LogicalColumn addedColumn = catalog.getLogicalRel( table.namespaceId ).addColumn(
                 columnLogicalName,
                 table.id,
@@ -460,23 +575,82 @@ public class DdlManagerImpl extends DdlManager {
                 Collation.getDefaultCollation()
         );
 
-        // Add default value
+        // Add default value if provided
         addDefaultValue( table.namespaceId, defaultValue, addedColumn );
 
-        // Add column placement
+        // Register column placement for the adapter
         catalog.getAllocRel( table.namespaceId ).addColumn(
-                allocation.partitionId,
+                allocation.placementId,
                 table.id,
                 addedColumn.id,
-                dataSource.adapterId,
+                allocation.adapterId,
                 PlacementType.STATIC,
-                catalog.getSnapshot().alloc().getColumns( allocation.id ).size() );//Not a valid partitionID --> placeholder
+                exportedColumn.physicalPosition()
+        );
 
-        // Set column position
-        // catalog.getAllocRel( catalogTable.namespaceId ).updateColumnPlacementPhysicalPosition( adapterId, addedColumn.id, exportedColumn.physicalPosition );
+        catalog.updateSnapshot();
+
+        // Rebuild physical table only when required (e.g., schema refresh)
+        if ( rebuildPhysical ) {
+            rebuildPhysicalSourceTable(
+                    table,
+                    allocation.unwrapOrThrow( AllocationTable.class ),
+                    exportedColumn.physicalSchemaName()
+            );
+            catalog.updateSnapshot();
+        }
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
+    }
+
+    /**
+     * Rebuilds the physical representation of a source table on the underlying data source.
+     * <p>
+     * This method reconstructs the table using the current logical and allocation metadata, ensuring that the physical schema
+     * is fully synchronized with the Polypheny catalog.
+     *
+     * @param table the logical table
+     * @param allocationTable the allocation describing the placement
+     * @param physicalSchema the schema in the underlying data source
+     */
+    private void rebuildPhysicalSourceTable(
+            LogicalTable table,
+            AllocationTable allocationTable,
+            String physicalSchema ) {
+
+        log.info("Rebuilding physical source table {}.{}", physicalSchema, table.name);
+
+        DataSource<?> adapter = AdapterManager.getInstance()
+                .getSource( allocationTable.adapterId )
+                .orElseThrow( () -> new GenericRuntimeException(
+                        "No source adapter found for adapter %s", allocationTable.adapterId ) );
+
+        // Get current logical columns ordered by position
+        List<LogicalColumn> logicalColumns = catalog.getSnapshot().rel().getColumns( table.id ).stream()
+                .sorted( Comparator.comparingInt( c -> c.position ) )
+                .toList();
+
+        // Get current logical columns ordered by position
+        List<AllocationColumn> allocationColumns = catalog.getSnapshot().alloc().getColumns().stream()
+                .filter( c -> c.placementId == allocationTable.placementId && c.logicalTableId == table.id )
+                .sorted( Comparator.comparingInt( c -> c.position ) )
+                .toList();
+
+        // Collect primary key column ids
+        ImmutableList<Long> pkIds = ImmutableList.of();
+        if ( table.primaryKey != null ) {
+            pkIds = catalog.getSnapshot().rel().getPrimaryKey( table.primaryKey )
+                    .map( pk -> ImmutableList.copyOf( pk.fieldIds ) )
+                    .orElse( ImmutableList.of() );
+        }
+
+        // Recreate table in underlying data source
+        adapter.createTable(
+                null,
+                LogicalTableWrapper.of( table, logicalColumns, pkIds ),
+                AllocationTableWrapper.of( allocationTable, allocationColumns, physicalSchema )
+        );
     }
 
 
@@ -1689,7 +1863,7 @@ public class DdlManagerImpl extends DdlManager {
         LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
 
         if ( catalog.getSnapshot().rel().getColumn( table.id, newColumnName ).isPresent() ) {
-            throw new GenericRuntimeException( "There already exists a column with name %s on table %s", newColumnName, logicalColumn.getTableName() );
+            throw new GenericRuntimeException( "[RenameColumn] There already exists a column with name %s on table %s", newColumnName, logicalColumn.getTableName() );
         }
         // Check if views are dependent from this view
         checkViewDependencies( table );

@@ -24,6 +24,29 @@ public interface RelationalDataSource {
 
     Map<String, List<ExportedColumn>> getExportedColumns();
 
+    /**
+     * Returns the exported columns for a specific table, optionally filtered by schema.
+     *
+     * @param schema the schema name to filter by; may be {@code null}
+     * @param table the physical table name
+     * @return list of exported columns for the specified table, or {@code null} if the table is not found
+     */
+    default List<ExportedColumn> getExportedColumnsForTable( String schema, String table ) {
+        List<ExportedColumn> columns = getExportedColumns().get( table );
+
+        if ( columns == null ) {
+            return null;
+        }
+
+        if ( schema == null ) {
+            return columns;
+        }
+
+        return columns.stream()
+                .filter( c -> schema.equalsIgnoreCase( c.physicalSchemaName() ) )
+                .toList();
+    }
+
     record ExportedColumn( String name, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, String physicalSchemaName, String physicalTableName, String physicalColumnName, int physicalPosition, boolean primary ) {
 
         public String getDisplayType() {

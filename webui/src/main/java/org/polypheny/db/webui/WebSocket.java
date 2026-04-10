@@ -210,6 +210,59 @@ public class WebSocket implements Consumer<WsConfig> {
                 RegisterRequest registerRequest = ctx.messageAsClass( RegisterRequest.class );
                 crud.authCrud.register( registerRequest, ctx );
                 break;
+
+            // For relational entities, refresh first synchronizes the source schema and then reloads the data.
+            // For other data models, refresh currently behaves like EntityRequest.
+            case "RefreshRequest":
+                log.info( "Received a refresh request" );
+                Result<?, ?> refreshResult;
+                UIRequest refreshRequest = ctx.messageAsClass( UIRequest.class );
+                try {
+                    LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( refreshRequest.namespace ).orElse( null );
+                    refreshResult = switch ( namespace == null ? DataModel.RELATIONAL : namespace.dataModel ) {
+                        case RELATIONAL -> {
+                            crud.refreshSourceSchemaIfNeeded( refreshRequest );
+                            yield crud.getTable( refreshRequest );
+                        }
+                        case DOCUMENT -> {
+                            String entity = Catalog.snapshot().doc().getCollection( refreshRequest.entityId ).map( c -> c.name ).orElse( "" );
+                            yield LanguageCrud.anyQueryResult(
+                                    QueryContext.builder()
+                                            .query( String.format( "db.%s.find({})", entity ) )
+                                            .language( QueryLanguage.from( "mongo" ) )
+                                            .origin( POLYPHENY_UI )
+                                            .batch( refreshRequest.noLimit ? -1 : crud.getPageSize() )
+                                            .transactionManager( crud.getTransactionManager() )
+                                            .informationTarget( i -> i.setSession( ctx.session ) )
+                                            .namespaceId( namespace.id )
+                                            .build(), refreshRequest ).get( 0 );
+                        }
+                        case GRAPH -> LanguageCrud.anyQueryResult(
+                                QueryContext.builder()
+                                        .query( "MATCH (n) RETURN n" )
+                                        .language( QueryLanguage.from( "cypher" ) )
+                                        .origin( POLYPHENY_UI )
+                                        .batch( refreshRequest.noLimit ? -1 : crud.getPageSize() )
+                                        .namespaceId( namespace.id )
+                                        .transactionManager( crud.getTransactionManager() )
+                                        .informationTarget( i -> i.setSession( ctx.session ) )
+                                        .build(), refreshRequest ).get( 0 );
+                    };
+                    if ( refreshResult == null ) {
+                        throw new GenericRuntimeException( "Could not refresh data." );
+                    }
+
+                } catch ( Throwable t ) {
+                    ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
+                    return;
+                }
+                if ( refreshResult.xid != null ) {
+                    xIds.add( refreshResult.xid );
+                }
+                ctx.send( refreshResult );
+                break;
+
+
             case "EntityRequest":
                 Result<?, ?> result;
                 UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );

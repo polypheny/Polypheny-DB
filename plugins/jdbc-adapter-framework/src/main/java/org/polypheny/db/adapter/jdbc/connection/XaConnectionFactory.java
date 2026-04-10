@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.jdbc.connection;
 
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
@@ -82,6 +83,25 @@ public class XaConnectionFactory implements ConnectionFactory {
         return activeInstances.get( xid );
     }
 
+
+    /**
+     * Creates and returns a new, independent JDBC Connection.
+     *
+     * This method bypasses the connection pool and always obtains a fresh connection
+     * from the underlying XA data source. The returned connection is configured
+     * with auto-commit enabled and is intended for short-lived operations such as
+     * metadata access.
+     *
+     * @return a new JDBC connection
+     * @throws SQLException if connection can't be established
+     */
+    @Override
+    public Connection getFreshConnection() throws SQLException {
+        Connection connection = dataSource.getXAConnection().getConnection();
+        connection.setAutoCommit( true );
+        log.info( "Created fresh XA metadata connection." );
+        return connection;
+    }
 
     @Override
     public void close() throws SQLException {

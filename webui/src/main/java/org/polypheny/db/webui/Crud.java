@@ -83,6 +83,7 @@ import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
@@ -100,6 +101,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -110,6 +113,7 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
@@ -247,6 +251,122 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         for ( String xId : xIds ) {
             InformationManager.close( xId );
             TemporalFileManager.deleteFilesOfTransaction( xId );
+        }
+    }
+
+
+    /**
+     * Refreshes the schema of a source table if it is out of sync with the underlying data source.
+     * <p>
+     * The method retrieves the current table metadata from the catalog and compares it with the
+     * actual source schema obtained via the adapter. If new columns are detected in the source,
+     * they are added to the corresponding Polypheny table.
+     *
+     * @param request UI request containing the target entity identifier
+     * @throws GenericRuntimeException if the refresh fails
+     */
+    public void refreshSourceSchemaIfNeeded( UIRequest request ) {
+        var snapshot = Catalog.snapshot();
+        LogicalTable table = snapshot.rel().getTable( request.entityId ).orElseThrow();
+
+        log.info("Refreshing schema for table {}", table.name);
+
+        if ( table.entityType != EntityType.SOURCE ) {
+            log.info( "Refresh skipped: {} is not a source table.", table.name );
+            return;
+        }
+
+        List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( table.id );
+        if ( allocs.size() != 1 ) {
+            throw new GenericRuntimeException(
+                    "Expected exactly one placement for table '" + table.name +
+                            "', but found " + allocs.size()
+            );
+        }
+
+        AllocationEntity allocation = allocs.get( 0 );
+        long adapterId = allocation.adapterId;
+
+        DataSource<?> dataSource = AdapterManager.getInstance().getSource( adapterId ).orElseThrow();
+
+        AdapterCatalog adapterCatalog = Catalog.getInstance()
+                .getAdapterCatalog( adapterId )
+                .orElseThrow( () -> new GenericRuntimeException( "No adapter catalog found for adapter %s", adapterId ) );
+
+        PhysicalEntity currentRuntimeEntity = adapterCatalog.getPhysicalsFromAllocs( allocation.id ).stream()
+                .findFirst()
+                .orElseThrow( () -> new GenericRuntimeException( "No physical entity found for allocation %s", allocation.id ) );
+
+        PhysicalTable currentPhysicalTable = currentRuntimeEntity.unwrapOrThrow( PhysicalTable.class );
+
+        String sourceTableKey = currentPhysicalTable.name;
+        String sourceSchema = currentPhysicalTable.namespaceName;
+
+        List<ExportedColumn> sourceColumns =
+                dataSource.asRelationalDataSource()
+                        .getExportedColumnsForTable( sourceSchema, sourceTableKey );
+
+        if ( sourceColumns == null || sourceColumns.isEmpty() ) {
+            log.info( "No source columns found for table '{}.{}'", sourceSchema, sourceTableKey );
+            return;
+        }
+
+        // Keep only columns that belong to the expected schema
+        if ( sourceSchema != null ) {
+            sourceColumns = sourceColumns.stream()
+                    .filter( c -> sourceSchema.equalsIgnoreCase( c.physicalSchemaName() ) )
+                    .toList();
+        }
+
+        // Collect names of columns already known in Polypheny
+        Set<String> existingPhysicalColumnNames = currentPhysicalTable.columns.stream()
+                .map( c -> c.name.toLowerCase() )
+                .collect( Collectors.toSet() );
+
+        // Identify columns that exist in the source but not yet in Polypheny
+        List<ExportedColumn> missingColumns = sourceColumns.stream()
+                .filter( c -> !existingPhysicalColumnNames.contains( c.physicalColumnName().toLowerCase() ) )
+                .toList();
+
+        if ( missingColumns.isEmpty() ) {
+            log.info( "No schema refresh needed for table {}", table.name );
+            return;
+        }
+
+        Transaction transaction = getTransaction();
+        try {
+            Statement ddlStatement = transaction.createStatement();
+
+            for ( ExportedColumn missing : missingColumns ) {
+                log.info(
+                        "Adding missing source column '{}' to table '{}'",
+                        missing.physicalColumnName(),
+                        table.name
+                );
+
+                DdlManager.getInstance().addColumnToSourceTableFromExportedColumn(
+                        table,
+                        missing,
+                        missing.name(),
+                        null,
+                        null,
+                        null,
+                        ddlStatement
+                );
+            }
+
+            Catalog.getInstance().updateSnapshot();
+            transaction.commit();
+
+            log.info( "Catalog refresh committed successfully for table {}", table.name );
+        } catch ( Exception e ) {
+            try {
+                transaction.rollback( "Error while refreshing source catalog: " + e.getMessage() );
+            } catch ( Exception rollbackException ) {
+                log.error( "Rollback also failed", rollbackException );
+            }
+            throw new GenericRuntimeException(
+                    "Could not refresh source catalog for table " + table.name, e );
         }
     }
 
