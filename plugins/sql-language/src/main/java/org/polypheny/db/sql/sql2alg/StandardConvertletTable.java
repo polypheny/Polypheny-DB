@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
@@ -250,6 +251,27 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
         registerOp( OperatorRegistry.get( OperatorName.TIMESTAMP_ADD ), new TimestampAddConvertlet() );
         registerOp( OperatorRegistry.get( OperatorName.TIMESTAMP_DIFF ), new TimestampDiffConvertlet() );
+
+        /* Register special internal versions of distance functions */
+        registerOp( OperatorRegistry.get( OperatorName.DISTANCE ), (cx, call) -> {
+            List<SqlNode> operands = call.getSqlOperandList();
+            if ( operands.size() == 3 && operands.get( 2 ) instanceof SqlLiteral metric ) {
+                OperatorName name = switch ( metric.toValue().toUpperCase( Locale.ROOT ) ) {
+                    case "L1" -> OperatorName.L1_DISTANCE;
+                    case "L2" -> OperatorName.L2_DISTANCE;
+                    case "COSINE" -> OperatorName.COS_DISTANCE;
+                    default -> null;
+                };
+                if ( name != null ) {
+                    RexBuilder rb = cx.getRexBuilder();
+                    RexNode arg0 = cx.convertExpression( operands.get( 0 ) );
+                    RexNode arg1 = cx.convertExpression( operands.get( 1 ) );
+                    AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
+                    return rb.makeCall( returnType, OperatorRegistry.get( name ), ImmutableList.of( arg0, arg1 ) );
+                }
+            }
+            return convertCall( cx, call );
+        });
 
         // Convert "element(<expr>)" to "$element_slice(<expr>)", if the expression is a multiset of scalars.
         if ( false ) {
