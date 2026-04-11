@@ -890,14 +890,14 @@ public class SqlDialect {
      * Given on the properties that are passed as arguments this method returns if the combination of arguments is eligible to a vector pushdown and if yes to what type.
      * <p><i>Examples</i>
      * <ul>
-     *     <li>( PolyType.ARRAY, PolyType.REAL, 1 ) -> Optional.of( PolyType.VECTOR )</li>
-     *     <li>( PolyType.ARRAY, PolyType.BOOLEAN, 1 ) -> Optional.of( PolyType.BITVECTOR )</li>
+     *     <li>( PolyType.ARRAY, PolyType.REAL, 1 ) -> Optional.of( "VECTOR" )</li>
+     *     <li>( PolyType.ARRAY, PolyType.BOOLEAN, 1 ) -> Optional.of( "BITVECTOR" )</li>
      * </ul>
      * </p>
-     * @return An {@code Optional} containing the mapped {@link PolyType} if eligible for vector pushdown,
+     * @return An {@code Optional} containing the mapped String if eligible for vector pushdown,
      *  or {@code Optional.empty()} if not eligible.
      */
-    public Optional<PolyType> resolveVectorPushdownType( PolyType collectionsType, PolyType type, Long dimension ) {
+    public Optional<String> resolveVectorPushdownType( PolyType collectionsType, PolyType type, Long dimension ) {
         return Optional.empty();
     }
 

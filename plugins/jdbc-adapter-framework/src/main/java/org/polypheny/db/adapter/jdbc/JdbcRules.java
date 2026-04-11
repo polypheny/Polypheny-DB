@@ -1575,7 +1575,7 @@ public class JdbcRules {
                     AlgDataType comp = t.getComponentType();
                     if ( comp != null && t instanceof ArrayType arrayType) {
                         Long dim = arrayType.getDimension();
-                        Optional<PolyType> mapped = dialect.resolveVectorPushdownType( t.getPolyType(), comp.getPolyType(), dim );
+                        Optional<String> mapped = dialect.resolveVectorPushdownType( t.getPolyType(), comp.getPolyType(), dim );
                         if ( mapped.isPresent() ) {
                             supportsKnnFunction = true;
                         }

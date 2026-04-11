@@ -259,9 +259,9 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
     protected void createColumnDefinition( PhysicalColumn column, StringBuilder builder ) {
         boolean supportsThisArray = column.collectionsType == PolyType.ARRAY && column.dimension != null && this.dialect.supportsArrays() && (this.dialect.supportsNestedArrays() || column.dimension == 1);
-        Optional<PolyType> vectorMapping = dialect.resolveVectorPushdownType( column.collectionsType, column.type, column.dimension != null ? column.dimension.longValue() : null );
+        Optional<String> vectorMapping = dialect.resolveVectorPushdownType( column.collectionsType, column.type, column.dimension != null ? column.dimension.longValue() : null );
         if ( vectorMapping.isPresent() ) {
-          builder.append( getTypeString( vectorMapping.get() ) ).append( "(" ).append( column.cardinality > 0 ? column.cardinality : "" ).append( ")" );
+          builder.append( vectorMapping.get() ).append( "(" ).append( column.cardinality > 0 ? column.cardinality : "" ).append( ")" );
         } else if ( supportsThisArray ) {
             // Returns e.g. TEXT if arrays are not supported
             builder.append( getTypeString( column.type ) ).append( " " ).append( getTypeString( PolyType.ARRAY ).repeat( column.dimension ) );

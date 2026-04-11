@@ -374,8 +374,6 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case TIME -> "TIME";
             case TIMESTAMP -> "TIMESTAMP";
             case ARRAY -> "[]";
-            case VECTOR -> "VECTOR";
-            case BITVECTOR -> "BIT";
             default -> throw new GenericRuntimeException( "Unknown type: " + type.name() );
         };
     }

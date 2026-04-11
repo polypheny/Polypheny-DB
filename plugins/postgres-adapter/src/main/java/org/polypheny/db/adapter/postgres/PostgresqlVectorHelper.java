@@ -80,10 +80,6 @@ public class PostgresqlVectorHelper {
             List<PolyValue> list = new ArrayList<>( vector.length );
             for ( float f : vector ) list.add( PolyFloat.of( f ) );
             return list;
-        } else if ( bitvector != null ) {
-            List<PolyValue> list = new ArrayList<>( bitvector.length );
-            for ( boolean b : bitvector ) list.add( PolyBoolean.of( b ) );
-            return list;
         }
         return null;
     }

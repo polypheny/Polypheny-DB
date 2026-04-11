@@ -365,10 +365,10 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     @Override
-    public Optional<PolyType> resolveVectorPushdownType( PolyType collectionsType, PolyType type, Long dimension ) {
+    public Optional<String> resolveVectorPushdownType( PolyType collectionsType, PolyType type, Long dimension ) {
        boolean allow = collectionsType == PolyType.ARRAY && dimension != null && supportsVector() && dimension == 1;
        if ( type == PolyType.FLOAT || type == PolyType.DOUBLE || type == PolyType.REAL ) {
-           if ( allow ) return Optional.of( PolyType.VECTOR );
+           if ( allow ) return Optional.of( "VECTOR" );
        }
        return Optional.empty();
     }
