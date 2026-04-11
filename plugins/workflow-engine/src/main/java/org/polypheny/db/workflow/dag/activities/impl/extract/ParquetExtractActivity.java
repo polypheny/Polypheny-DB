@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.workflow.dag.activities.Activity;
@@ -118,14 +119,15 @@ public class ParquetExtractActivity implements Activity, Pipeable {
                     // no files found
                     throw new InvalidSettingException( "No parquet files found", "file" );
                 }
-                if ( previewSources.size() > 1 ) {
-                    throw new InvalidSettingException( "Multiple sources for relational output are not supported", "file" );
-                }
+                // allow multiple relational sources if all parquet schemas are identical
+                ParquetWorkflowExtractSupport.validateSharedRelationalSchema( previewSources );
                 boolean addNameField = settings.keysPresent( "nameField" ) && settings.getBool( "nameField" );
                 // read the Parquet schema and build a relational preview type
                 return RelType.of( ParquetWorkflowExtractSupport.getOutputType( previewSources.get( 0 ), outputModel, addNameField ) ).asOutTypes();
             } catch ( InvalidSettingException e ) {
                 throw e;
+            } catch ( GenericRuntimeException e ) {
+                throw new InvalidSettingException( e.getMessage(), "file" );
             } catch ( Exception e ) {
                 throw new InvalidSettingException( "Invalid location: " + e.getMessage(), "file" );
             }
@@ -152,6 +154,9 @@ public class ParquetExtractActivity implements Activity, Pipeable {
         sources = settings.get( "file", FileValue.class ).getSources( EXTENSIONS );
         if ( sources.isEmpty() ) {
             throw new InvalidSettingException( "No parquet files found", "file" );
+        }
+        if ( ParquetWorkflowExtractSupport.OUTPUT_RELATIONAL.equals( settings.getString( "outputModel" ) ) ) {
+            ParquetWorkflowExtractSupport.validateSharedRelationalSchema( sources );
         }
         return ParquetWorkflowExtractSupport.getOutputType( sources.get( 0 ), settings.getString( "outputModel" ), settings.getBool( "nameField" ) );
     }

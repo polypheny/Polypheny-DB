@@ -282,6 +282,9 @@ Workflow node definition for reading Parquet files into a workflow output pipe:
 - The concrete output type is determined from `outputModel`.
 - In relational mode, the schema is derived from the selected Parquet file.
 - In document mode, the output is a document stream with generated document IDs where needed.
+- Extract multiple files allowed only for Document model and Relational files with same schema
+
+![Schema display](images/extract_workflow_act_settings.png)
 
 - ### ParquetWorkflowExtractSupport
 
@@ -289,7 +292,7 @@ Workflow node definition for reading Parquet files into a workflow output pipe:
 
 Helper class contains Parquet extraction logic for the workflow engine.
 It maps Parquet schemas to workflow output types, estimates row counts, generates dynamic activity names, and converts Parquet rows into either Polypheny documents or relational tuples.
-
+Calls logic of Parquet Adapter Module
 
 
 ### Tests:
@@ -299,6 +302,9 @@ It maps Parquet schemas to workflow output types, estimates row counts, generate
 - Add file name as column
 - Add key id column
 - Set Maximum number of rows = 5 in Advanced settings
+- Extract multiple documents
+- Extract multiple relational - same schema
+- Extract multiple relational - different schema - not allowed
 
 
 ![Schema display](images/workflow1.png)
@@ -307,29 +313,161 @@ It maps Parquet schemas to workflow output types, estimates row counts, generate
 
 ## 2. Load to Parquet File
 
+- ### ParquetLoadActivity
+
+`org.polypheny.db.workflow.dag.activities.impl.load.ParquetLoadActivity`
+
+Workflow node definition for exporting workflow input into a Parquet file:
+1. It defines how the activity appears in the workflow UI using settings. This provides all needed information for the editor to show the available export options.
+2. It validates whether the connected workflow input is supported. Graph input is rejected and relational input is checked so that exporting without the workflow primary key does not produce an empty Parquet schema.
+3. It executes the export at runtime as follows: the activity resolves the configured target file and export settings, prepares the output path, and delegates the actual schema inference and data conversion work to `ParquetWorkflowLoadSupport.java`.
+
+#### ***Settings***
+
+#### `file`
+- Display name: `Target File`
+- Type: file setting
+- Required: yes
+- Multiple values: no
+- Supported source types:
+    - absolute file path
+- Purpose:
+  Select the Parquet file that should be written.
+
+#### `mode`
+- Display name: `Handling of Existing File`
+- Type: enum
+- Required: yes
+- Default: `fail`
+- Available values:
+    - `drop`
+    - `fail`
+- Purpose:
+  Defines the behavior if the selected output file already exists.
+- Behavior:
+    - `drop`: overwrite the existing file
+    - `fail`: abort the activity
+
+#### `compression`
+- Display name: `Compression`
+- Type: enum
+- Required: yes
+- Default: `snappy`
+- Available values:
+    - `snappy`
+    - `gzip`
+    - `uncompressed`
+- Purpose:
+  Selects the Parquet compression codec used for the generated file.
+
+#### `schemaSampleSize`
+- Display name: `Schema Sample Size`
+- Type: integer
+- Required: yes
+- Default: `100`
+- Minimum: `1`
+- Purpose:
+  Controls how many input tuples are sampled to infer the Parquet schema before writing starts.
+
+#### `conflictMode`
+- Display name: `Conflict Mode Handling`
+- Type: enum
+- Required: yes
+- Default: `stringify`
+- Available values:
+    - `stringify`
+    - `fail`
+- Purpose:
+  Defines how incompatible sampled values should be handled while inferring the Parquet schema.
+- Behavior:
+    - `stringify`: use a shared string field when incompatible sampled values are encountered
+    - `fail`: abort the activity when sampled values are incompatible
+
+#### `keepId`
+- Display name: `Include ID Field`
+- Type: boolean
+- Required: no
+- Default: `true`
+- Purpose:
+  Keeps the `_id` field when the activity receives document input.
+
+#### `keepPk`
+- Display name: `Keep Primary Key Column`
+- Type: boolean
+- Required: no
+- Default: `false`
+- Purpose:
+  Keeps the workflow primary key column when the activity receives relational input.
+
+#### ***Notes***
+
+- The activity has one input port of type `ANY` and no output ports.
+- Relational input and document input are both supported.
+- Graph input is not supported.
+- For relational input, the workflow primary key can optionally be excluded.
+- For document input, the schema is inferred from sampled documents because the document type does not provide field-level schema information.
+
+![Schema display](images/load_workflow_act_settings.png)
+
+![Schema display](images/extract_workflow_mult_validation.png)
+
+- ### ParquetWorkflowLoadSupport
+
+`org.polypheny.db.workflow.parquet.ParquetWorkflowLoadSupport`
+
+Helper class that contains Parquet export logic for the workflow engine.
+It prepares output files, builds dynamic activity names, infers Parquet schema from sampled workflow input, maps workflow values to Parquet schema definitions, and delegates low-level file writing to the shared Parquet adapter module.
+
+- ### ParquetSourceWriter
+
+`org.polypheny.db.adapter.parquet.shared.io.ParquetSourceWriter`
+
+Shared low-level Parquet writer used by workflow export functionality.
+It owns the Parquet writer lifecycle, creates Parquet row groups, writes rows to the target file, applies the configured compression codec, and exposes a small progress callback hook without depending on workflow-specific classes.
+
+- ### ParquetMessageTypeBuilder
+
+`org.polypheny.db.adapter.parquet.shared.schema.inference.ParquetMessageTypeBuilder`
+
+Builds a Parquet `MessageType` from inferred workflow field schemas, including primitive, repeated, and nested group fields.
+
+- ### Schema Inference Model
+
+`org.polypheny.db.adapter.parquet.shared.schema.inference.FieldSchema`
+
+Internal model for one exported Parquet field. It tracks the source field name, normalized Parquet field name, optional relational source index, and inferred value schema.
+
+`org.polypheny.db.adapter.parquet.shared.schema.inference.ValueSchema`
+
+Recursive internal model of a field value. It represents primitive values, nested groups, and repeated values before they are converted into a final Parquet schema.
+
+`org.polypheny.db.adapter.parquet.shared.schema.inference.SchemaState`
+
+Container for the currently inferred schema during export. It accumulates field definitions while sampled rows or documents are inspected.
+
+### Tests:
+
+- Read relational workflow input and export to Parquet file
+- Read document workflow input and export to Parquet file
+- Keep `_id` for document export
+- Keep workflow primary key for relational export
+- Write with different compression codecs
+- Use `schemaSampleSize = 5`
+- Export incompatible sampled values with `conflictMode = stringify`
+- Fail export on incompatible sampled values with `conflictMode = fail`
+
+![Schema display](images/workflow_parquet_parquet.png)
+
 # Unit Tests
+
+---
+
 To run tests for parquet adapter:
 - `.\gradlew.bat :plugins:parquet-adapter:test`
 
 `plugins/parquet-adapter/build.gradle` should contain:
 - DBMS as a test dependency
 - Polypheny JDBC driver dependency
-
-
-TODO: describe all properties of activities
-CONFLICT_MODE property
-How the modes behave:
-
-stringify
-
-if values are incompatible, fall back to ValueSchema.stringType()
-this means the field will be written as a Parquet string column/field
-later values are converted to string when written
-fail
-
-throw a GenericRuntimeException
-the export stops because the sampled values do not agree on a schema
-
 
 
 ## `ParquetPluginTest.java`

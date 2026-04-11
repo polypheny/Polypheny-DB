@@ -32,6 +32,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceReader;
 import org.polypheny.db.adapter.parquet.shared.schema.ParquetFieldNameNormalizer;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -64,6 +65,7 @@ public final class ParquetWorkflowExtractSupport {
 
     /**
      * Create dynamic name for activity node
+     *
      * @param outputModel - relational or document
      * @param sources - parquet files
      * @return String
@@ -104,11 +106,11 @@ public final class ParquetWorkflowExtractSupport {
         for ( Type field : schema.getFields() ) {
             var type = parquetTypeConverter.fromParquetTypeToPolyType( field );
             // PolyDocument type provided as json string
-            if (type == PolyType.DOCUMENT) {
+            if ( type == PolyType.DOCUMENT ) {
                 type = PolyType.TEXT;
             }
             String fieldName = ParquetFieldNameNormalizer.normalizeFieldName( field.getName() );
-            builder.add( fieldName, null, type);
+            builder.add( fieldName, null, type );
         }
         if ( addNameField ) {
             // add source file name to each row
@@ -119,7 +121,31 @@ public final class ParquetWorkflowExtractSupport {
 
 
     /**
+     * Read schemas from all selected sources and ensure they are identical for relational output.
+     *
+     * @param sources selected parquet sources
+     */
+    public static void validateSharedRelationalSchema( List<Source> sources ) {
+        if ( sources.isEmpty() ) {
+            throw new GenericRuntimeException( "No parquet files found." );
+        }
+
+        MessageType expectedSchema = ParquetSourceReader.readSchema( sources.get( 0 ) );
+        for ( int i = 1; i < sources.size(); i++ ) {
+            Source source = sources.get( i );
+            MessageType currentSchema = ParquetSourceReader.readSchema( source );
+            if ( !expectedSchema.equals( currentSchema ) ) {
+                throw new GenericRuntimeException(
+                        "All parquet sources must share the same schema for relational output. "
+                                + "Schema mismatch detected for: " + source.path() );
+            }
+        }
+    }
+
+
+    /**
      * Call reader functionality to estimate row count
+     *
      * @param sources - parquet files
      * @return long - estimation
      */
@@ -139,6 +165,7 @@ public final class ParquetWorkflowExtractSupport {
     /**
      * Read parquet file and write documents to the output pipe
      * Document created from each row of parquet file
+     *
      * @param output - OutputPipe
      * @param source - parquet file
      * @param addNameField - if add filename as column
@@ -196,7 +223,7 @@ public final class ParquetWorkflowExtractSupport {
                     Type field = schema.getType( i );
                     var polyValue = parquetRelValueExtractor.extractValue( row, i, field );
                     // PolyDocument type provided as json string
-                    if (polyValue instanceof PolyDocument document) {
+                    if ( polyValue instanceof PolyDocument document ) {
                         polyValue = document.toPolyJson();
                     }
                     values.add( polyValue );
@@ -211,4 +238,5 @@ public final class ParquetWorkflowExtractSupport {
             }
         }
     }
+
 }
