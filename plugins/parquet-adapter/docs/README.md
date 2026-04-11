@@ -1,5 +1,7 @@
 # Parquet Adapter Implementation
 
+---
+
 ## Overview
 
 The Parquet adapter exposes `.parquet` files as Polypheny source tables.
@@ -206,23 +208,89 @@ The following figure shows an example of the displayed schema information.
 ## Query Filter
 ![Schema display](images/query_filter.png)
 
+
+
+
 # Workflow
+
+---
 
 ## 1. Extract Parquet
 
-### Code Changes
+- ### ParquetExtractActivity
 
-- ### `org.polypheny.db.workflow.dag.activities.impl.extract.ExtractParquetActivity`
+`org.polypheny.db.workflow.dag.activities.impl.extract.ParquetExtractActivity`
 
 Workflow node definition for reading Parquet files into a workflow output pipe:
 1. It defines how the activity appears in the workflow UI using settings. This provides all needed information for editor to show options.
 2. It decides what type of data the node will output: Relational or Document
 3. It executes the extraction at runtime as follows: the activity resolves the input files, iterates over them, and delegates the actual reading/conversion work to `ParquetWorkflowSupport.java`, which turns Parquet rows into either documents or relational rows and pushes them into the workflow output pipe.
 
-- ### `org.polypheny.db.workflow.io.parquet.ParquetWorkflowSupport`
+#### ***Settings***
+
+#### `file`
+- Display name: `File Location`
+- Type: file setting
+- Required: yes
+- Multiple values: yes
+- Supported source types:
+    - absolute file path
+    - URL
+- Purpose:
+  Select one or more Parquet files, or a folder containing Parquet files, to extract from.
+- Behavior:
+  If multiple files are selected, the activity outputs the union of their rows.
+
+#### `outputModel`
+- Display name: `Output Type`
+- Type: enum
+- Required: yes
+- Default: `document`
+- Available values:
+    - `document`
+    - `relational`
+- Purpose:
+  Defines whether the extracted Parquet rows are exposed as workflow documents or as a relational table.
+
+#### `nameField`
+- Display name: `Add File Name Field`
+- Type: boolean
+- Required: no
+- Default: `false`
+- Purpose:
+  Adds the source file name to the output.
+- Behavior:
+    - in document mode: adds a `fileName` field
+    - in relational mode: adds a `fileName` column
+
+#### `maxCount`
+- Display name: `Maximum Row Count`
+- Type: integer
+- Required: no
+- Default: `-1`
+- Minimum: `-1`
+- Group: advanced
+- Purpose:
+  Limits how many rows are extracted per file.
+- Behavior:
+    - `-1`: extract all rows
+    - `>= 0`: extract at most that many rows from each selected file
+
+#### ***Notes***
+
+- The activity has no input ports and one output port of type `ANY`.
+- The concrete output type is determined from `outputModel`.
+- In relational mode, the schema is derived from the selected Parquet file.
+- In document mode, the output is a document stream with generated document IDs where needed.
+
+- ### ParquetWorkflowExtractSupport
+
+`org.polypheny.db.workflow.parquet.ParquetWorkflowExtractSupport`
 
 Helper class contains Parquet extraction logic for the workflow engine.
 It maps Parquet schemas to workflow output types, estimates row counts, generates dynamic activity names, and converts Parquet rows into either Polypheny documents or relational tuples.
+
+
 
 ### Tests:
 
@@ -230,6 +298,7 @@ It maps Parquet schemas to workflow output types, estimates row counts, generate
 - Read parquet file as Document Data Source and store to JSON file
 - Add file name as column
 - Add key id column
+- Set Maximum number of rows = 5 in Advanced settings
 
 
 ![Schema display](images/workflow1.png)
@@ -245,6 +314,23 @@ To run tests for parquet adapter:
 `plugins/parquet-adapter/build.gradle` should contain:
 - DBMS as a test dependency
 - Polypheny JDBC driver dependency
+
+
+TODO: describe all properties of activities
+CONFLICT_MODE property
+How the modes behave:
+
+stringify
+
+if values are incompatible, fall back to ValueSchema.stringType()
+this means the field will be written as a Parquet string column/field
+later values are converted to string when written
+fail
+
+throw a GenericRuntimeException
+the export stops because the sampled values do not agree on a schema
+
+
 
 ## `ParquetPluginTest.java`
 contains the following tests:

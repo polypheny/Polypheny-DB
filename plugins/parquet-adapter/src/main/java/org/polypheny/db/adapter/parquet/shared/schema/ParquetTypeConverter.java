@@ -166,6 +166,20 @@ public class ParquetTypeConverter {
     }
 
 
+    /**
+     * Convert PolyValue to PolyString
+     * @param value - to convert
+     * @return PolyString
+     */
+    public PolyString valueToPolyString( PolyValue value ) {
+        return switch ( value.getType() ) {
+            case NULL -> PolyString.of( null );
+            case ANY, DOCUMENT, GRAPH, NODE, EDGE, PATH, ARRAY, MAP -> value.toPolyJson();
+            default -> PolyString.convert( value );
+        };
+    }
+
+
     private Object fromStringToDate( PrimitiveType primitive, String literal ) {
         LogicalTypeAnnotation logical = primitive.getLogicalTypeAnnotation();
 

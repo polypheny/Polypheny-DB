@@ -49,7 +49,7 @@ import org.polypheny.db.workflow.engine.execution.context.PipeExecutionContext;
 import org.polypheny.db.workflow.engine.execution.pipe.InputPipe;
 import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 import org.polypheny.db.workflow.engine.storage.reader.CheckpointReader;
-import org.polypheny.db.workflow.io.parquet.ParquetWorkflowSupport;
+import org.polypheny.db.workflow.parquet.ParquetWorkflowExtractSupport;
 
 /**
  * Workflow node definition for reading Parquet files into a workflow.
@@ -68,18 +68,18 @@ import org.polypheny.db.workflow.io.parquet.ParquetWorkflowSupport;
         multi = true, modes = { SourceType.ABS_FILE, SourceType.URL },
         shortDescription = "Select the Parquet file or folder to extract. In case of multiple files, the union of their rows is computed.")
 @EnumSetting(key = "outputModel", displayName = "Output Type", pos = 1,
-        options = { ParquetWorkflowSupport.OUTPUT_DOCUMENT, ParquetWorkflowSupport.OUTPUT_RELATIONAL },
+        options = { ParquetWorkflowExtractSupport.OUTPUT_DOCUMENT, ParquetWorkflowExtractSupport.OUTPUT_RELATIONAL },
         displayOptions = { "Document", "Relational" },
-        defaultValue = ParquetWorkflowSupport.OUTPUT_DOCUMENT,
+        defaultValue = ParquetWorkflowExtractSupport.OUTPUT_DOCUMENT,
         shortDescription = "Choose whether the Parquet rows should be exposed as documents or as a relational table.")
 @BoolSetting(key = "nameField", displayName = "Add File Name Field", pos = 2,
         shortDescription = "Adds the source file name as a field or column in the output.")
 @IntSetting(key = "maxCount", displayName = "Maximum Row Count", defaultValue = -1, min = -1, pos = 3, group = ADVANCED_GROUP,
         shortDescription = "The maximum number of rows to extract per file or -1 to extract all rows.")
 @SuppressWarnings("unused")
-public class ExtractParquetActivity implements Activity, Pipeable {
+public class ParquetExtractActivity implements Activity, Pipeable {
 
-    private static final Set<String> EXTENSIONS = ParquetWorkflowSupport.EXTENSIONS;
+    private static final Set<String> EXTENSIONS = ParquetWorkflowExtractSupport.EXTENSIONS;
     private List<Source> sources;
 
 
@@ -102,7 +102,7 @@ public class ExtractParquetActivity implements Activity, Pipeable {
 
         String outputModel = settings.getString( "outputModel" );
         // Document -> no schema
-        if ( ParquetWorkflowSupport.OUTPUT_DOCUMENT.equals( outputModel ) ) {
+        if ( ParquetWorkflowExtractSupport.OUTPUT_DOCUMENT.equals( outputModel ) ) {
             if ( settings.keysPresent( "nameField" ) && settings.getBool( "nameField" ) ) {
                 return DocType.of( Set.of( "fileName" ) ).asOutTypes();
             }
@@ -118,9 +118,12 @@ public class ExtractParquetActivity implements Activity, Pipeable {
                     // no files found
                     throw new InvalidSettingException( "No parquet files found", "file" );
                 }
+                if ( previewSources.size() > 1 ) {
+                    throw new InvalidSettingException( "Multiple sources for relational output are not supported", "file" );
+                }
                 boolean addNameField = settings.keysPresent( "nameField" ) && settings.getBool( "nameField" );
                 // read the Parquet schema and build a relational preview type
-                return RelType.of( ParquetWorkflowSupport.getOutputType( previewSources.get( 0 ), outputModel, addNameField ) ).asOutTypes();
+                return RelType.of( ParquetWorkflowExtractSupport.getOutputType( previewSources.get( 0 ), outputModel, addNameField ) ).asOutTypes();
             } catch ( InvalidSettingException e ) {
                 throw e;
             } catch ( Exception e ) {
@@ -150,7 +153,7 @@ public class ExtractParquetActivity implements Activity, Pipeable {
         if ( sources.isEmpty() ) {
             throw new InvalidSettingException( "No parquet files found", "file" );
         }
-        return ParquetWorkflowSupport.getOutputType( sources.get( 0 ), settings.getString( "outputModel" ), settings.getBool( "nameField" ) );
+        return ParquetWorkflowExtractSupport.getOutputType( sources.get( 0 ), settings.getString( "outputModel" ), settings.getBool( "nameField" ) );
     }
 
 
@@ -171,10 +174,10 @@ public class ExtractParquetActivity implements Activity, Pipeable {
         for ( Source source : sources ) {
             ctx.logInfo( "Extracting " + source.path() + " as " + outputModel );
             // write for the next stage in pipe
-            if ( ParquetWorkflowSupport.OUTPUT_RELATIONAL.equals( outputModel ) ) {
-                ParquetWorkflowSupport.writeRows( output, source, addNameField, maxCount );
+            if ( ParquetWorkflowExtractSupport.OUTPUT_RELATIONAL.equals( outputModel ) ) {
+                ParquetWorkflowExtractSupport.writeRows( output, source, addNameField, maxCount );
             } else {
-                ParquetWorkflowSupport.writeDocuments( output, source, addNameField, maxCount );
+                ParquetWorkflowExtractSupport.writeDocuments( output, source, addNameField, maxCount );
             }
         }
     }
@@ -199,7 +202,7 @@ public class ExtractParquetActivity implements Activity, Pipeable {
                 List<Source> previewSources = settings.getOrThrow( "file", FileValue.class ).getSources( EXTENSIONS );
                 if ( !previewSources.isEmpty() ) {
                     // if file data found generate more specific activity name
-                    return ParquetWorkflowSupport.dynamicName( settings.getString( "outputModel" ), previewSources );
+                    return ParquetWorkflowExtractSupport.getDynamicName( settings.getString( "outputModel" ), previewSources );
                 }
             } catch ( Exception ignored ) {
             }
@@ -224,7 +227,7 @@ public class ExtractParquetActivity implements Activity, Pipeable {
                 // resolves the files from settings
                 sources = settings.get( "file", FileValue.class ).getSources( EXTENSIONS );
             }
-            return ParquetWorkflowSupport.estimateTupleCount( sources );
+            return ParquetWorkflowExtractSupport.estimateTupleCount( sources );
         } catch ( Exception e ) {
             return -1;
         }

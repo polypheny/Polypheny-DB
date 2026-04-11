@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.workflow.io.parquet;
+package org.polypheny.db.workflow.parquet;
 
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -45,7 +45,7 @@ import org.polypheny.db.workflow.engine.execution.pipe.OutputPipe;
 /**
  * Parquet-reading/conversion helper layer
  */
-public final class ParquetWorkflowSupport {
+public final class ParquetWorkflowExtractSupport {
 
     public static final Set<String> EXTENSIONS = Set.of( "parquet" );
     public static final String OUTPUT_DOCUMENT = "document";
@@ -69,7 +69,7 @@ public final class ParquetWorkflowSupport {
      * @return String
      * @throws URISyntaxException exception
      */
-    public static String dynamicName( String outputModel, List<Source> sources ) throws URISyntaxException {
+    public static String getDynamicName( String outputModel, List<Source> sources ) throws URISyntaxException {
         String prefix = OUTPUT_RELATIONAL.equals( outputModel ) ? "Extract Parquet Table" : "Extract Parquet Document";
         if ( sources.size() > 1 ) {
             return prefix + "s";

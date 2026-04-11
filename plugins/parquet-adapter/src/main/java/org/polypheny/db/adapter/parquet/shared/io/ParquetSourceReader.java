@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.parquet.shared.io;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -70,7 +71,8 @@ public class ParquetSourceReader implements AutoCloseable {
         this.cancelFlag = cancelFlag == null ? new AtomicBoolean( false ) : cancelFlag;
 
         try {
-            Path path = new Path( source.url().toURI() );
+            URI uri = source.isFile() ? source.file().toURI() : source.url().toURI();
+            Path path = new Path( uri );
             Configuration conf = HadoopConfigurationFactory.create( this.getClass().getClassLoader() );
             var inputFile = HadoopInputFile.fromPath( path, conf );
 
@@ -135,7 +137,8 @@ public class ParquetSourceReader implements AutoCloseable {
 
     public static MessageType readSchema( Source source ) {
         try {
-            Path path = new Path( source.url().toURI() );
+            URI uri = source.isFile() ? source.file().toURI() : source.url().toURI();
+            Path path = new Path( uri );
             Configuration conf = HadoopConfigurationFactory.create( ParquetSourceReader.class.getClassLoader() );
             var inputFile = HadoopInputFile.fromPath( path, conf );
             try ( org.apache.parquet.hadoop.ParquetFileReader schemaReader = org.apache.parquet.hadoop.ParquetFileReader.open( inputFile ) ) {
