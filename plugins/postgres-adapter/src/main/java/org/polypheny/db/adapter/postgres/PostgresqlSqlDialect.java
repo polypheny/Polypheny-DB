@@ -53,7 +53,6 @@ import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.inference.ReturnTypes;
-import javax.swing.text.html.Option;
 
 @Slf4j
 /**
@@ -366,12 +365,10 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     @Override
-    public Optional<PolyType> resolveVectorPushdownType( PolyType collectionsType, PolyType type, Integer dimension ) {
+    public Optional<PolyType> resolveVectorPushdownType( PolyType collectionsType, PolyType type, Long dimension ) {
        boolean allow = collectionsType == PolyType.ARRAY && dimension != null && supportsVector() && dimension == 1;
        if ( type == PolyType.FLOAT || type == PolyType.DOUBLE || type == PolyType.REAL ) {
            if ( allow ) return Optional.of( PolyType.VECTOR );
-       } else if ( type == PolyType.BOOLEAN ) {
-           if ( allow ) return Optional.of( PolyType.BITVECTOR );
        }
        return Optional.empty();
     }

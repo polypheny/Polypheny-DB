@@ -108,6 +108,7 @@ import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
@@ -1569,7 +1570,17 @@ public class JdbcRules {
             if ( operator instanceof Function
                     && ((SqlFunction) operator).getFunctionCategory().isKnn()
                     && dialect.supportedKnnFunctions().contains( operator.getOperatorName() ) ) {
-                supportsKnnFunction = true;
+                if ( !call.operands.isEmpty() ) {
+                    AlgDataType t = call.operands.get( 0 ).getType();
+                    AlgDataType comp = t.getComponentType();
+                    if ( comp != null && t instanceof ArrayType arrayType) {
+                        Long dim = arrayType.getDimension();
+                        Optional<PolyType> mapped = dialect.resolveVectorPushdownType( t.getPolyType(), comp.getPolyType(), dim );
+                        if ( mapped.isPresent() ) {
+                            supportsKnnFunction = true;
+                        }
+                    }
+                }
             }
             return super.visitCall( call );
         }

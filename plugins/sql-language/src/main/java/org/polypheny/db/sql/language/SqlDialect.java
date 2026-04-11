@@ -897,7 +897,7 @@ public class SqlDialect {
      * @return An {@code Optional} containing the mapped {@link PolyType} if eligible for vector pushdown,
      *  or {@code Optional.empty()} if not eligible.
      */
-    public Optional<PolyType> resolveVectorPushdownType( PolyType collectionsType, PolyType type, Integer dimension ) {
+    public Optional<PolyType> resolveVectorPushdownType( PolyType collectionsType, PolyType type, Long dimension ) {
         return Optional.empty();
     }
 

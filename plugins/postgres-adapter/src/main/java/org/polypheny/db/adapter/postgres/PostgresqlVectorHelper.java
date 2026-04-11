@@ -23,6 +23,7 @@ import com.pgvector.PGvector;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.sql.language.SqlCall;
+import org.polypheny.db.sql.language.SqlDynamicParam;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -42,7 +43,11 @@ public class PostgresqlVectorHelper {
             operand = castCall.operand( 0 );
         }
         operand.unparse( writer, leftPrec, rightPrec );
-        writer.print( "::vector " );
+        if ( operand instanceof SqlDynamicParam ) {
+            writer.print( "::float4[]::vector " );
+        } else {
+            writer.print( "::vector " );
+        }
     }
 
 

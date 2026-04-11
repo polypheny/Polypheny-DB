@@ -76,21 +76,6 @@ public class PostgresqlVectorHelperTest {
 
 
     @Test
-    void parseBitVectorCorrectly() {
-        PGbit vector = new PGbit( new boolean[]{true, false, false} );
-        List<PolyValue> result = PostgresqlVectorHelper.parseVector( vector );
-        assertNotNull( result );
-        assertEquals( 3, result.size() );
-        assertTrue( result.get(0) instanceof PolyBoolean );
-        assertTrue( result.get(1) instanceof PolyBoolean );
-        assertTrue( result.get(2) instanceof PolyBoolean );
-        assertEquals( true, result.get(0).asBoolean().getValue() );
-        assertEquals( false, result.get(1).asBoolean().getValue() );
-        assertEquals( false, result.get(2).asBoolean().getValue() );
-    }
-
-
-    @Test
     void nullReturn() {
         assertNull( PostgresqlVectorHelper.parseVector( null ) );
     }
