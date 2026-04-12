@@ -25,7 +25,6 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.LocalDate;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -230,16 +229,7 @@ public class ComplexViewTest {
             + "'fast'"
             + ")";
 
-    private final static Object[] ORDERS_TEST_DATA = new Object[]{
-            1,
-            1,
-            "A",
-            new BigDecimal( "65.15" ),
-            new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ),
-            "orderPriority",
-            "clerk",
-            1,
-            "fast" };
+    private static Object[] ORDERS_TEST_DATA;
 
     public final static String LINEITEM_TABLE = "CREATE TABLE lineitem ( "
             + "l_orderkey INTEGER NOT NULL,"
@@ -279,45 +269,16 @@ public class ComplexViewTest {
             + "'shipingComment'"
             + ")";
 
-    private final static Object[] LINEITEM_TEST_DATA = new Object[]{
-            1,
-            1,
-            1,
-            1,
-            new BigDecimal( "20.15" ),
-            new BigDecimal( "50.15" ),
-            new BigDecimal( "20.15" ),
-            new BigDecimal( "10.15" ),
-            "R",
-            "L",
-            new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ),
-            new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ),
-            new Date( LocalDate.of( 2020, 9, 3 ).toEpochDay() * 86_400_000L ),
-            "shipingstruct",
-            "mode",
-            "shipingComment" };
+    private static Object[] LINEITEM_TEST_DATA;
 
-    /*
-     * All dates must be calculated using the Date( long ) constructor - and not any Date.valueOf(...).
-     * Issue with Date.valueOf(...):
-     *  Date(int,int,int), which is used in any Date.valueOf(...) is deprecated and places midnight in JVM default time zone.
-     *  PolyphenyDb.runPolyphenyDb(), is called by TestHelper and sets the time zone to UTC.
-     *  On any machine with non-UTC time, this leads to a date shift by a day.
-     */
-    private final static Object[] date_TEST_DATA = new Object[]{
-            new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ) };
+    private static Object[] date_TEST_DATA;
 
     private final static Object[] decimal_TEST_DATA = new Object[]{
             new BigDecimal( "65.15" ) };
 
-    private final static Object[] decimalDate_TEST_DATA = new Object[]{
-            new BigDecimal( "65.15" ),
-            new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ) };
+    private static Object[] decimalDate_TEST_DATA;
 
-    private final static Object[] decimalDateInt_TEST_DATA = new Object[]{
-            new BigDecimal( "65.15" ),
-            new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ),
-            1 };
+    private static Object[] decimalDateInt_TEST_DATA;
 
     private final static Object[] q1_TEST_DATA = new Object[]{
             "R",
@@ -344,11 +305,7 @@ public class ComplexViewTest {
             1L,
             0 };
 
-    private final static Object[] q3_TEST_DATA = new Object[]{
-            1,
-            new BigDecimal( "-960.3725" ),
-            new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ),
-            1 };
+    private static Object[] q3_TEST_DATA;
 
     private final static Object[] q4_TEST_DATA = new Object[]{
             "orderPriority",
@@ -416,6 +373,67 @@ public class ComplexViewTest {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
+        initTimeZoneDependentQueries();
+    }
+
+
+    /**
+     * Initializes test data arrays that rely on {@link java.sql.Date} objects.
+     * <p>
+     * This initialization is deliberately deferred until <b>after</b> the test environment
+     * is set up. The {@code Date.valueOf(...)} method resolves midnight using the JVM's
+     * default time zone. Because {@code TestHelper.getInstance()} overrides the application
+     * time zone to UTC, statically initializing these arrays would capture the host machine's
+     * local time zone before the UTC override occurs, resulting in 1-day date shifts.
+     */
+    private static void initTimeZoneDependentQueries() {
+
+        ORDERS_TEST_DATA = new Object[]{
+                1,
+                1,
+                "A",
+                new BigDecimal( "65.15" ),
+                Date.valueOf( "2020-07-03" ),
+                "orderPriority",
+                "clerk",
+                1,
+                "fast" };
+
+        LINEITEM_TEST_DATA = new Object[]{
+                1,
+                1,
+                1,
+                1,
+                new BigDecimal( "20.15" ),
+                new BigDecimal( "50.15" ),
+                new BigDecimal( "20.15" ),
+                new BigDecimal( "10.15" ),
+                "R",
+                "L",
+                Date.valueOf( "2020-07-03" ),
+                Date.valueOf( "2020-07-03" ),
+                Date.valueOf( "2020-09-03" ),
+                "shipingstruct",
+                "mode",
+                "shipingComment" };
+
+        date_TEST_DATA = new Object[]{
+                Date.valueOf( "2020-07-03" ) };
+
+        decimalDate_TEST_DATA = new Object[]{
+                new BigDecimal( "65.15" ),
+                Date.valueOf( "2020-07-03" ) };
+
+        decimalDateInt_TEST_DATA = new Object[]{
+                new BigDecimal( "65.15" ),
+                Date.valueOf( "2020-07-03" ),
+                1 };
+
+        q3_TEST_DATA = new Object[]{
+                1,
+                new BigDecimal( "-960.3725" ),
+                Date.valueOf( "2020-07-03" ),
+                1 };
     }
 
 
@@ -668,7 +686,7 @@ public class ComplexViewTest {
                                     + "order by revenue desc, o_orderdate" ),
                             ImmutableList.of( new Object[]{
                                     new BigDecimal( "-990.3725" ),
-                                    new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L )
+                                    Date.valueOf( "2020-07-03" )
                             } )
                     );
 
@@ -682,7 +700,7 @@ public class ComplexViewTest {
                             statement.executeQuery( "SELECT * FROM dateOrderby_VIEW" ),
                             ImmutableList.of( new Object[]{
                                     new BigDecimal( "-990.3725" ),
-                                    new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L )
+                                    Date.valueOf( "2020-07-03" )
                             } )
                     );
 
@@ -1749,7 +1767,7 @@ public class ComplexViewTest {
                                                 o_totalprice DESC,
                                                 o_orderdate
                                             LIMIT 100""" ),
-                            ImmutableList.of( new Object[]{ "CName", 1, 1, new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ), 65.15, 20.15 } )
+                            ImmutableList.of( new Object[]{ "CName", 1, 1, Date.valueOf( "2020-07-03" ) , 65.15, 20.15 } )
                     );
 
                     connection.commit();
