@@ -36,6 +36,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
@@ -110,7 +111,7 @@ public class CypherLiteral extends CypherExpression {
             case NULL -> null;
             case LIST -> {
                 List<PolyValue> list = listValue.stream().map( CypherExpression::getComparable ).toList();
-                yield new PolyList<>( list );
+                yield new PolyListImpl<>( list );
             }
             case MAP -> {
                 Map<PolyString, PolyValue> map = mapValue.entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), e -> e.getValue().getComparable() ) );

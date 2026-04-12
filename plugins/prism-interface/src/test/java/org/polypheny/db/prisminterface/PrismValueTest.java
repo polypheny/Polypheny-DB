@@ -128,7 +128,7 @@ public class PrismValueTest {
 
     @Test
     public void polyListSerializationTest() {
-        PolyList<PolyInteger> expected = new PolyList<>(
+        PolyList<PolyInteger> expected = PolyList.of(
                 new PolyInteger( 1 ),
                 new PolyInteger( 2 ),
                 new PolyInteger( 3 ),
@@ -269,7 +269,7 @@ public class PrismValueTest {
 
     @Test
     public void polyListSerializationCorrectTypeTest() {
-        PolyList<PolyInteger> expected = new PolyList<>(
+        PolyList<PolyInteger> expected = PolyList.of(
                 new PolyInteger( 1 ),
                 new PolyInteger( 2 ),
                 new PolyInteger( 3 ),

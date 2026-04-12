@@ -58,6 +58,8 @@ import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
@@ -841,7 +843,7 @@ public class SqlDialect {
      *
      * <p>If {@link Optional#empty()} is returned, the caller falls back to the default
      * {@code getArray()} path. Any returned expression must evaluate to a
-     * {@code Collection<? extends PolyValue>} suitable for {@link org.polypheny.db.type.entity.PolyList#of}.
+     * {@code Collection<? extends PolyValue>} suitable for {@link PolyList#of}.
      */
     public Optional<Expression> getCustomArrayRetrievalExpression(ParameterExpression resultSet, int i, AlgDataType fieldType) {
         return Optional.empty();

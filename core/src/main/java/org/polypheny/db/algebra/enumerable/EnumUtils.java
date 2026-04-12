@@ -76,7 +76,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.BuiltInMethod;
@@ -338,8 +338,8 @@ public class EnumUtils {
     public static <T> Expression getExpression( T value, Class<T> clazz ) {
         if ( value instanceof PolyDictionary ) {
             return ((PolyDictionary) value).asExpression();
-        } else if ( value instanceof PolyList<?> ) {
-            return ((PolyList<?>) value).asExpression();
+        } else if ( value instanceof PolyListImpl<?> ) {
+            return ((PolyListImpl<?>) value).asExpression();
         }
         return Expressions.constant( value, clazz );
     }

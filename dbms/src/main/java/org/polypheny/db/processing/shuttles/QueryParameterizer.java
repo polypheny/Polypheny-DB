@@ -66,6 +66,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
@@ -482,7 +483,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
 
     private PolyList<PolyValue> createListForArrays( List<RexNode> operands ) {
-        PolyList<PolyValue> list = new PolyList<>();
+        PolyList<PolyValue> list = new PolyListImpl<>();
         for ( RexNode node : operands ) {
             if ( node instanceof RexLiteral ) {
                 list.add( ((RexLiteral) node).getValue() );

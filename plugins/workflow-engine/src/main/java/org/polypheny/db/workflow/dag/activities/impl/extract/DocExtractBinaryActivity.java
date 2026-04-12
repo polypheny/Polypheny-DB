@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -160,7 +161,7 @@ public class DocExtractBinaryActivity implements Activity, Pipeable {
             case "raw" -> PolyBinary.of( data );
             case "base64" -> PolyString.of( Base64.getEncoder().encodeToString( data ) );
             case "array" -> {
-                PolyList<PolyValue> list = new PolyList<>();
+                PolyList<PolyValue> list = new PolyListImpl<>();
                 for ( byte b : data ) {
                     list.add( PolyInteger.of( b ) );
                 }

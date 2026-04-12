@@ -106,6 +106,7 @@ import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -2059,17 +2060,17 @@ public class Functions {
         if ( value == null ) {
             return null;
         }
-        return PolyValue.fromTypedJson( value, PolyList.class );
+        return PolyValue.fromTypedJson( value, PolyListImpl.class );
     }
 
 
     @SuppressWarnings("unused")
-    public static PolyList<?> reparse( PolyString value ) {
+    public static PolyListImpl<?> reparse( PolyString value ) {
         //Type conversionType = PolyTypeUtil.createNestedListType( dimension, innerType );
         if ( value == null || value.isNull() ) {
             return null;
         }
-        return PolyValue.fromTypedJson( value.value, PolyList.class );
+        return PolyValue.fromTypedJson( value.value, PolyListImpl.class );
     }
 
 
@@ -2523,7 +2524,7 @@ public class Functions {
 
     private static PolyMap<PolyString, PolyValue> rebuildMap( PolyMap<PolyString, PolyValue> map, PolyList<PolyList<PolyString>> collect ) {
         Map<PolyString, PolyValue> newMap = new HashMap<>();
-        List<PolyValue> firsts = collect.value.stream().map( c -> c.get( 0 ) ).collect( Collectors.toList() );
+        List<PolyValue> firsts = collect.stream().map( c -> c.get( 0 ) ).collect( Collectors.toList() );
         for ( Entry<PolyString, PolyValue> entry : map.entrySet() ) {
             if ( firsts.contains( entry.getKey() ) ) {
                 List<PolyList<PolyString>> entries = new ArrayList<>();

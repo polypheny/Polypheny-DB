@@ -59,6 +59,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -533,7 +534,7 @@ public class BsonUtil {
 
                 return new PolyDocument( document );
             case ARRAY:
-                PolyList<PolyValue> list = new PolyList<>();
+                PolyList<PolyValue> list = new PolyListImpl<>();
 
                 for ( BsonValue value : input.asArray() ) {
 

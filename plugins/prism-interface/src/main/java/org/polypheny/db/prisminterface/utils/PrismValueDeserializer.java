@@ -123,7 +123,7 @@ public class PrismValueDeserializer {
         List<PolyValue> values = protoValue.getList().getValuesList().stream()
                 .map( PrismValueDeserializer::deserializeProtoValue )
                 .toList();
-        return new PolyList<>( values );
+        return PolyList.of( values );
     }
 
 

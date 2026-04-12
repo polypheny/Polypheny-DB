@@ -126,7 +126,7 @@ public class LpgFilterLabelsActivity implements Activity, Pipeable {
         Set<PolyString> nodes = new HashSet<>();
         if ( filterNodes ) {
             for ( PolyNode node : input.getNodeIterable() ) {
-                Set<String> labels = node.labels.getValue().stream().map( l -> l.value ).collect( Collectors.toSet() );
+                Set<String> labels = node.labels.stream().map( l -> l.value ).collect( Collectors.toSet() );
                 if ( nodeLabels.isSelected( labels, onNodeTie ) ) {
                     nodes.add( node.id );
                     if ( !output.put( node ) ) {
@@ -148,7 +148,7 @@ public class LpgFilterLabelsActivity implements Activity, Pipeable {
         for ( PolyEdge edge : input.getEdgeIterable() ) {
             if ( nodes.contains( edge.getLeft() ) && nodes.contains( edge.getRight() ) ) {
                 if ( filterEdges ) {
-                    Set<String> labels = edge.labels.getValue().stream().map( l -> l.value ).collect( Collectors.toSet() );
+                    Set<String> labels = edge.labels.stream().map( l -> l.value ).collect( Collectors.toSet() );
                     if ( !edgeLabels.isSelected( labels, onEdgeTie ) ) {
                         continue;
                     }

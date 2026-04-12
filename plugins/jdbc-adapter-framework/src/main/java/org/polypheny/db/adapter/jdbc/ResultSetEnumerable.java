@@ -63,6 +63,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
@@ -363,7 +364,9 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
 
         componentType = SqlType.valueOf( t.getComponentType().getPolyType().getJdbcOrdinal() );
         if ( t.getComponentType().getPolyType() == PolyType.ANY ) {
-            componentType = estimateFittingType( value.asList().value );
+            if ( value.asList() instanceof PolyListImpl polyList ) {
+                componentType = estimateFittingType( polyList.value );
+            }
         }
         Object[] array = (Object[]) PolyValue.wrapNullableIfNecessary( PolyValue.getPolyToJava( type, false ), type.isNullable() ).apply( value );
         return connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), array );

@@ -134,7 +134,7 @@ public class PolyValueSerializer {
 
     private static ProtoList serializeToProtoList( PolyList<PolyValue> polyList ) {
         return ProtoList.newBuilder()
-                .addAllValues( serializeList( polyList.getValue() ) )
+                .addAllValues( serializeList( polyList ) )
                 .build();
     }
 

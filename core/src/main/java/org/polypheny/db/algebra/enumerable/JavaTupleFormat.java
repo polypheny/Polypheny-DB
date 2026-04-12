@@ -47,6 +47,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.Unit;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -141,7 +142,7 @@ public enum JavaTupleFormat {
             if ( expressions.isEmpty() ) {
                 return Expressions.field(
                         null,
-                        PolyList.class,
+                        PolyListImpl.class,
                         "EMPTY_LIST" );
             }
             return Expressions.convert_(

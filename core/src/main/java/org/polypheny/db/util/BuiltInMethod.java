@@ -132,6 +132,7 @@ import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -507,10 +508,10 @@ public enum BuiltInMethod {
     MQL_UPDATE_RENAME( MqlFunctions.class, "docUpdateRename", PolyValue.class, List.class, List.class ),
     MQL_GET_ARRAY( MqlFunctions.class, "docGetArray", PolyValue.class ),
     MQL_EXISTS( MqlFunctions.class, "docExists", PolyValue.class, PolyValue.class, List.class ),
-    MQL_MERGE( MqlFunctions.class, "mergeDocument", PolyValue.class, PolyList.class, PolyValue[].class ),
+    MQL_MERGE( MqlFunctions.class, "mergeDocument", PolyValue.class, PolyListImpl.class, PolyValue[].class ),
     MQL_NOT_UNSET( MqlFunctions.class, "notUnset", PolyValue.class ),
 
-    MQL_PROJECT_INCLUDES( MqlFunctions.class, "projectIncludes", PolyValue.class, PolyList.class, PolyValue[].class ),
+    MQL_PROJECT_INCLUDES( MqlFunctions.class, "projectIncludes", PolyValue.class, PolyListImpl.class, PolyValue[].class ),
     MQL_REPLACE_ROOT( MqlFunctions.class, "replaceRoot", PolyValue.class ),
     CYPHER_LIKE( CypherFunctions.class, "like", PolyValue.class, PolyValue.class ),
     CYPHER_PATH_MATCH( CypherFunctions.class, "pathMatch", PolyGraph.class, PolyPath.class ),

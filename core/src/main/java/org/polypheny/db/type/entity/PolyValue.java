@@ -121,7 +121,7 @@ import org.polypheny.db.util.ByteString;
         PolyDictionary.class,
         PolyDate.class,
         PolyMap.class,
-        PolyList.class,
+        PolyListImpl.class,
         PolyGraph.class,
         PolyBoolean.class,
         PolyTime.class,
@@ -135,7 +135,7 @@ import org.polypheny.db.util.ByteString;
 }) // add on Constructor already exists exception
 @JsonTypeInfo(use = Id.NAME) // to allow typed json serialization
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = PolyList.class, name = "LIST"),
+        @JsonSubTypes.Type(value = PolyListImpl.class, name = "LIST"),
         @JsonSubTypes.Type(value = PolyBigDecimal.class, name = "DECIMAL"),
         @JsonSubTypes.Type(value = PolyNull.class, name = "NULL"),
         @JsonSubTypes.Type(value = PolyString.class, name = "STRING"),
@@ -171,7 +171,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyMap.class, ctx -> new PolyMapSerializerDef() )
             .with( PolyDocument.class, ctx -> new PolyDocumentSerializerDef() )
             .with( PolyDictionary.class, ctx -> new PolyDictionarySerializerDef() )
-            .with( PolyList.class, ctx -> new PolyListSerializerDef() )
+            .with( PolyListImpl.class, ctx -> new PolyListSerializerDef() )
             .with( PolyBigDecimal.class, ctx -> new PolyBigDecimalSerializerDef() )
             .with( PolyNode.class, ctx -> new PolyNodeSerializerDef() )
             .with( PolyEdge.class, ctx -> new PolyEdgeSerializerDef() )
@@ -239,8 +239,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 yield o -> o == null || o.isNull()
                         ? null
                         : arrayAsList
-                                ? (o.asList().value.stream().map( elTrans::apply ).toList())
-                                : o.asList().value.stream().map( elTrans::apply ).toList().toArray();
+                                ? (o.asList().stream().map( elTrans::apply ).toList())
+                                : o.asList().stream().map( elTrans::apply ).toList().toArray();
             }
             case FILE, IMAGE, AUDIO, VIDEO -> o -> o.asBlob().asByteArray();
             case DOCUMENT -> o -> o.asDocument().toJson();
@@ -267,8 +267,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case TIMESTAMP -> value.asTimestamp().millisSinceEpoch;
             case BOOLEAN -> value.asBoolean().value;
             case ARRAY -> arrayAsList
-                    ? (value.asList().value.stream().map( e -> getPolyToJavaRuntime( e, true ) ).toList())
-                    : value.asList().value.stream().map( e -> getPolyToJavaRuntime( e, false ) ).toList().toArray();
+                    ? (value.asList().stream().map( e -> getPolyToJavaRuntime( e, true ) ).toList())
+                    : value.asList().stream().map( e -> getPolyToJavaRuntime( e, false ) ).toList().toArray();
             case FILE, IMAGE, AUDIO, VIDEO -> value.asBlob().asByteArray();
             case DOCUMENT -> value.asDocument().toJson();
             default -> throw new NotImplementedException( "meta: " + value.type );
@@ -447,8 +447,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case NULL -> PolyNull.class;
             case ANY -> PolyValue.class;
             case SYMBOL -> PolySymbol.class;
-            case MULTISET -> PolyList.class;
-            case ARRAY -> PolyList.class;
+            case MULTISET -> PolyListImpl.class;
+            case ARRAY -> PolyListImpl.class;
             case MAP -> PolyMap.class;
             case DOCUMENT -> PolyDocument.class;
             case GRAPH -> PolyGraph.class;
@@ -457,10 +457,10 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case PATH -> PolyPath.class;
             case DISTINCT -> PolyValue.class;
             case STRUCTURED -> PolyValue.class;
-            case ROW -> PolyList.class;
+            case ROW -> PolyListImpl.class;
             case OTHER -> PolyValue.class;
             case CURSOR -> PolyValue.class;
-            case COLUMN_LIST -> PolyList.class;
+            case COLUMN_LIST -> PolyListImpl.class;
             case DYNAMIC_STAR -> PolyValue.class;
             case GEOMETRY -> PolyValue.class;
             case FILE, IMAGE, VIDEO, AUDIO -> PolyBlob.class;
@@ -484,7 +484,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case TIMESTAMP -> PolyTimestamp::convert;
             case CHAR, VARCHAR, JSON, TEXT -> PolyString::convert;
             case ANY -> Function.identity();
-            case MULTISET, ARRAY, ROW, COLUMN_LIST -> PolyList::convert;
+            case MULTISET, ARRAY, ROW, COLUMN_LIST -> PolyListImpl::convert;
             case DOCUMENT -> PolyDocument::convert;
             default -> throw new NotImplementedException( "Converter to " + targetType + " is not implemented" );
         };

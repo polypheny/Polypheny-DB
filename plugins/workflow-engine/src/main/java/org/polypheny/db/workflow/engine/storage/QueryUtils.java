@@ -54,7 +54,7 @@ import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
@@ -308,7 +308,7 @@ public class QueryUtils {
             case DATE -> 16L;
             case SYMBOL -> 0L; // ?
             case ARRAY -> {
-                if ( value instanceof PolyList<? extends PolyValue> polyList ) {
+                if ( value instanceof PolyListImpl<? extends PolyValue> polyList ) {
                     yield estimateByteSize( polyList.value );
                 }
                 yield DEFAULT_BYTE_SIZE;

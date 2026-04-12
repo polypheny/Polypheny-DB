@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -85,14 +86,14 @@ public class PolyValueSerializationTest {
 
     @Test
     public void deserializeEmptyListTest() {
-        PolyList<PolyString> a = new PolyList<>();
+        PolyList<PolyString> a = new PolyListImpl<>();
         assertEqualAfterSerialization( a );
     }
 
 
     @Test
     public void deserializeListTest() {
-        PolyList<PolyString> a = new PolyList<>( PolyString.of( "a" ), PolyString.of( "b" ) );
+        PolyList<PolyString> a = new PolyListImpl<>( PolyString.of( "a" ), PolyString.of( "b" ) );
         assertEqualAfterSerialization( a );
     }
 
@@ -107,7 +108,7 @@ public class PolyValueSerializationTest {
 
     @Test
     public void deserializeStringListTest() {
-        PolyList<PolyString> a = new PolyList<>( List.of( PolyString.of( "a" ), PolyString.of( "b" ) ) );
+        PolyListImpl<PolyString> a = new PolyListImpl<>( List.of( PolyString.of( "a" ), PolyString.of( "b" ) ) );
         assertEqualAfterSerialization( a );
     }
 

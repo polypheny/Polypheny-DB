@@ -66,7 +66,7 @@ import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInterval;
-import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;
 import org.polypheny.db.type.entity.PolyValue;
@@ -256,7 +256,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                     return PolyMap.class;
                 case ARRAY:
                 case MULTISET:
-                    return PolyList.class;
+                    return PolyListImpl.class;
                 case ANY:
                     return PolyValue.class;
 

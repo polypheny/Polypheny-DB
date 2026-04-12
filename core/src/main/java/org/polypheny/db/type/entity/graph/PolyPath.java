@@ -36,7 +36,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyList.PolyListDeserializer;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -49,23 +49,23 @@ public class PolyPath extends GraphObject {
 
     @JsonProperty
     @JsonDeserialize(using = PolyListDeserializer.class)
-    private final PolyList<PolyNode> nodes;
+    private final PolyListImpl<PolyNode> nodes;
 
     @JsonProperty
     @JsonDeserialize(using = PolyListDeserializer.class)
-    private final PolyList<PolyEdge> edges;
+    private final PolyListImpl<PolyEdge> edges;
 
     @JsonProperty
     @JsonDeserialize(using = PolyListDeserializer.class)
-    private final PolyList<PolyString> names;
+    private final PolyListImpl<PolyString> names;
 
     @JsonProperty
     @JsonDeserialize(using = PolyListDeserializer.class)
-    private final PolyList<GraphPropertyHolder> path;
+    private final PolyListImpl<GraphPropertyHolder> path;
 
     @JsonIgnore
     @Getter
-    private final PolyList<PolySegment> segments;
+    private final PolyListImpl<PolySegment> segments;
 
 
     public PolyPath( List<PolyNode> nodes, List<PolyEdge> edges, List<PolyString> names, List<GraphPropertyHolder> path, PolyString variableName ) {
@@ -84,10 +84,10 @@ public class PolyPath extends GraphObject {
         super( id, PolyType.PATH, variableName );
         assert nodes.size() == edges.size() + 1;
         assert nodes.size() + edges.size() == names.size();
-        this.nodes = new PolyList<>( nodes );
-        this.edges = new PolyList<>( edges );
-        this.names = new PolyList<>( names );
-        this.path = new PolyList<>( path );
+        this.nodes = new PolyListImpl<>( nodes );
+        this.edges = new PolyListImpl<>( edges );
+        this.names = new PolyListImpl<>( names );
+        this.path = new PolyListImpl<>( path );
 
         List<PolySegment> segments = new ArrayList<>();
         int i = 0;
@@ -96,7 +96,7 @@ public class PolyPath extends GraphObject {
             segments.add( new PolySegment( node.id, edge.id, nodes.get( i + 1 ).id, EdgeDirection.NONE ) );
             i++;
         }
-        this.segments = new PolyList<>( segments );
+        this.segments = new PolyListImpl<>( segments );
     }
 
 
@@ -197,7 +197,7 @@ public class PolyPath extends GraphObject {
         List<List<List<PolySegment>>> segments = new ArrayList<>();
         int i = 0;
 
-        PolyNode empty = new PolyNode( new PolyDictionary(), PolyList.of(), null );
+        PolyNode empty = new PolyNode( new PolyDictionary(), PolyListImpl.of(), null );
 
         for ( PolyEdge edge : edges ) {
             PolyNode node = nodes.get( i );

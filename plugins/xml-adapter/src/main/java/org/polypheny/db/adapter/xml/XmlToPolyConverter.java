@@ -18,7 +18,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -131,7 +131,7 @@ public final class XmlToPolyConverter {
             reader.next(); // get to next start element
             reader.next(); // skip empty characters element
         }
-        return new PolyList<>( values );
+        return new PolyListImpl<>( values );
     }
 
 }

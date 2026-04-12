@@ -62,6 +62,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
@@ -92,7 +93,7 @@ public class DocumentUtil {
             case 1 -> new Pair<>( BsonDouble.class, PolyDouble.class );
             case 2 -> new Pair<>( BsonString.class, PolyString.class );
             case 3 -> new Pair<>( BsonDocument.class, PolyDocument.class );
-            case 4 -> new Pair<>( BsonArray.class, PolyList.class );
+            case 4 -> new Pair<>( BsonArray.class, PolyListImpl.class );
             case 5 -> new Pair<>( BsonBinary.class, PolyBinary.class );
             case 6 -> throw new GenericRuntimeException( "DEPRECATED" );
             case 7 -> new Pair<>( BsonObjectId.class, ObjectId.class );

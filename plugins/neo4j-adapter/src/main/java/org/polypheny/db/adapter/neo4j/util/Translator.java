@@ -206,7 +206,7 @@ public class Translator extends RexVisitorImpl<String> {
         String identifier = call.operands.get( 0 ).accept( this );
         List<PolyValue> rexKeys = ((RexLiteral) call.operands.get( 1 )).value.asList();
         List<String> keys = rexKeys.stream().map( l -> l.asString().value ).toList();
-        List<PolyValue> rexValues = ((RexLiteral) call.operands.get( 2 )).value.asList().value;
+        List<PolyValue> rexValues = ((RexLiteral) call.operands.get( 2 )).value.asList();
         List<String> values = rexValues.stream().map( l -> {
             String literal = l.toJson();
             if ( l.isString() ) {

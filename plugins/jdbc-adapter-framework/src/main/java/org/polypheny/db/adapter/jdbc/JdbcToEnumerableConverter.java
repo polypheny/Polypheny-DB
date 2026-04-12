@@ -91,7 +91,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDefaults;
-import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
@@ -440,7 +440,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = Expressions.call( PolyBigDecimal.class, methodName, Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
                 break;
             case ARRAY:
-                poly = Expressions.call( PolyList.class, methodName, source );
+                poly = Expressions.call( PolyListImpl.class, methodName, source );
                 break;
             case VARBINARY:
                 if ( dialect.supportsComplexBinary() ) {

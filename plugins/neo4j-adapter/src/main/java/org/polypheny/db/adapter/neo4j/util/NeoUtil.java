@@ -56,6 +56,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;
@@ -110,7 +111,7 @@ public interface NeoUtil {
             case SYMBOL -> v -> PolySymbol.of( v.asObject() );
             case ARRAY -> {
                 if ( isNested ) {
-                    yield v -> PolyValue.fromTypedJson( v.asString(), PolyList.class );
+                    yield v -> PolyValue.fromTypedJson( v.asString(), PolyListImpl.class );
                 }
                 Function1<Value, PolyValue> componentFunc = getTypeFunction( type.asList().types.get( 0 ), true );
                 yield el -> PolyList.of( el.asList( componentFunc::apply ) );
@@ -186,7 +187,7 @@ public interface NeoUtil {
         } else if ( value instanceof FloatValue ) {
             return PolyString.of( String.valueOf( value.asDouble() ) );
         } else if ( value instanceof ListValue ) {
-            return new PolyList<>( value.asList( NeoUtil::getComparableOrString ) );
+            return PolyList.of( value.asList( NeoUtil::getComparableOrString ) );
         }
         throw new NotImplementedException( "Type not supported" );
     }
@@ -434,7 +435,7 @@ public interface NeoUtil {
             if ( isNested ) {
                 return value.toTypedJson();
             }
-            return value.asList().value.stream().map( e -> fixParameterValue( e, type.asList().types.get( 0 ), true ) ).toList();
+            return value.asList().stream().map( e -> fixParameterValue( e, type.asList().types.get( 0 ), true ) ).toList();
         }
 
         return switch ( type.getType() ) {
@@ -448,7 +449,7 @@ public interface NeoUtil {
             case FLOAT, REAL, DOUBLE -> value.asNumber().doubleValue();
             case DECIMAL -> value.asNumber().bigDecimalValue();
             case GEOMETRY -> value.asGeometry().toWKT();
-            case ARRAY -> value.asList().value.stream().map( e -> {
+            case ARRAY -> value.asList().stream().map( e -> {
                 if ( isNested ) {
                     return e.toTypedJson();
                 }
