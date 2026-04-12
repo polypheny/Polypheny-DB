@@ -25,6 +25,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -234,7 +235,7 @@ public class ComplexViewTest {
             1,
             "A",
             new BigDecimal( "65.15" ),
-            Date.valueOf( "2020-07-03" ),
+            new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ),
             "orderPriority",
             "clerk",
             1,
@@ -289,26 +290,33 @@ public class ComplexViewTest {
             new BigDecimal( "10.15" ),
             "R",
             "L",
-            Date.valueOf( "2020-07-03" ),
-            Date.valueOf( "2020-07-03" ),
-            Date.valueOf( "2020-09-03" ),
+            new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ),
+            new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ),
+            new Date( LocalDate.of( 2020, 9, 3 ).toEpochDay() * 86_400_000L ),
             "shipingstruct",
             "mode",
             "shipingComment" };
 
+    /*
+     * All dates must be calculated using the Date( long ) constructor - and not any Date.valueOf(...).
+     * Issue with Date.valueOf(...):
+     *  Date(int,int,int), which is used in any Date.valueOf(...) is deprecated and places midnight in JVM default time zone.
+     *  PolyphenyDb.runPolyphenyDb(), is called by TestHelper and sets the time zone to UTC.
+     *  On any machine with non-UTC time, this leads to a date shift by a day.
+     */
     private final static Object[] date_TEST_DATA = new Object[]{
-            Date.valueOf( "2020-07-03" ) };
+            new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ) };
 
     private final static Object[] decimal_TEST_DATA = new Object[]{
             new BigDecimal( "65.15" ) };
 
     private final static Object[] decimalDate_TEST_DATA = new Object[]{
             new BigDecimal( "65.15" ),
-            Date.valueOf( "2020-07-03" ) };
+            new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ) };
 
     private final static Object[] decimalDateInt_TEST_DATA = new Object[]{
             new BigDecimal( "65.15" ),
-            Date.valueOf( "2020-07-03" ),
+            new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ),
             1 };
 
     private final static Object[] q1_TEST_DATA = new Object[]{
@@ -339,7 +347,7 @@ public class ComplexViewTest {
     private final static Object[] q3_TEST_DATA = new Object[]{
             1,
             new BigDecimal( "-960.3725" ),
-            Date.valueOf( "2020-07-03" ),
+            new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ),
             1 };
 
     private final static Object[] q4_TEST_DATA = new Object[]{
@@ -660,7 +668,7 @@ public class ComplexViewTest {
                                     + "order by revenue desc, o_orderdate" ),
                             ImmutableList.of( new Object[]{
                                     new BigDecimal( "-990.3725" ),
-                                    Date.valueOf( "2020-07-03" )
+                                    new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L )
                             } )
                     );
 
@@ -674,7 +682,7 @@ public class ComplexViewTest {
                             statement.executeQuery( "SELECT * FROM dateOrderby_VIEW" ),
                             ImmutableList.of( new Object[]{
                                     new BigDecimal( "-990.3725" ),
-                                    Date.valueOf( "2020-07-03" )
+                                    new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L )
                             } )
                     );
 
@@ -1741,7 +1749,7 @@ public class ComplexViewTest {
                                                 o_totalprice DESC,
                                                 o_orderdate
                                             LIMIT 100""" ),
-                            ImmutableList.of( new Object[]{ "CName", 1, 1, Date.valueOf( "2020-07-03" ), 65.15, 20.15 } )
+                            ImmutableList.of( new Object[]{ "CName", 1, 1, new Date( LocalDate.of( 2020, 7, 3 ).toEpochDay() * 86_400_000L ), 65.15, 20.15 } )
                     );
 
                     connection.commit();
