@@ -67,6 +67,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary.ByteStringDeserializer;
 import org.polypheny.db.type.entity.PolyBinary.ByteStringSerializer;
 import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanSerializerDef;
+import org.polypheny.db.type.entity.PolyFloatList.PolyFloatListSerializerDef;
 import org.polypheny.db.type.entity.PolyList.PolyListSerializerDef;
 import org.polypheny.db.type.entity.PolyNull.PolyNullSerializerDef;
 import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
@@ -122,6 +123,7 @@ import org.polypheny.db.util.ByteString;
         PolyDate.class,
         PolyMap.class,
         PolyListImpl.class,
+        PolyFloatList.class,
         PolyGraph.class,
         PolyBoolean.class,
         PolyTime.class,
@@ -136,6 +138,7 @@ import org.polypheny.db.util.ByteString;
 @JsonTypeInfo(use = Id.NAME) // to allow typed json serialization
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PolyListImpl.class, name = "LIST"),
+        @JsonSubTypes.Type(value = PolyFloatList.class, name = "FLOAT_LIST"),
         @JsonSubTypes.Type(value = PolyBigDecimal.class, name = "DECIMAL"),
         @JsonSubTypes.Type(value = PolyNull.class, name = "NULL"),
         @JsonSubTypes.Type(value = PolyString.class, name = "STRING"),
@@ -172,6 +175,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyDocument.class, ctx -> new PolyDocumentSerializerDef() )
             .with( PolyDictionary.class, ctx -> new PolyDictionarySerializerDef() )
             .with( PolyListImpl.class, ctx -> new PolyListSerializerDef() )
+            .with( PolyFloatList.class, ctx -> new PolyFloatListSerializerDef() )
             .with( PolyBigDecimal.class, ctx -> new PolyBigDecimalSerializerDef() )
             .with( PolyNode.class, ctx -> new PolyNodeSerializerDef() )
             .with( PolyEdge.class, ctx -> new PolyEdgeSerializerDef() )

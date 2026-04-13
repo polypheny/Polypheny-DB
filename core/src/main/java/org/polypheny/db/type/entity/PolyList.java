@@ -51,17 +51,24 @@ import java.util.List;
 @JsonDeserialize(using = PolyList.PolyListDeserializer.class)
 public abstract class PolyList<E extends PolyValue> extends PolyValue implements List<E> {
 
-    public static final PolyList<?> EMPTY_LIST = new PolyListImpl<>();
-
     public PolyList( PolyType type ) {
         super( type );
     }
 
+    @SuppressWarnings("unchecked")
     public static <E extends PolyValue> PolyList<E> copyOf( List<E> value ) {
         if ( value == null ) return null;
-        if ( value.isEmpty() ) return (PolyList<E>) EMPTY_LIST;
-        //TODO: PolyFloatListImpl etc.
+        if ( value instanceof PolyFloatList<?> fl ) {
+            return (PolyList<E>) (PolyList<?>) new PolyFloatList<>( Arrays.copyOf( fl.getRawValue(), fl.size() ) );
+        }
+        if ( value.isEmpty() ) return  emptyList();
         return new PolyListImpl<>( value );
+    }
+
+
+    @SuppressWarnings("unchecked")
+    public static <E extends PolyValue> PolyList<E> emptyList() {
+        return (PolyList<E>) PolyListImpl.EMPTY_LIST;
     }
 
 
@@ -180,6 +187,7 @@ public abstract class PolyList<E extends PolyValue> extends PolyValue implements
 
 
         @Override
+        @SuppressWarnings("unchecked")
         public PolyList<PolyValue> deserialize(JsonParser p, DeserializationContext ctxt ) throws IOException {
             JsonNode node = p.getCodec().readTree( p );
             JsonNode nField = node.get( "isNull" );
@@ -187,7 +195,21 @@ public abstract class PolyList<E extends PolyValue> extends PolyValue implements
             if ( isNull ) {
                 return PolyList.copyOf( (List<PolyValue>) null );
             }
-
+            JsonNode typeNode = node.get( "@type" );
+            String listType = typeNode != null ? typeNode.asText() : "LIST";
+            if ( "FLOAT_LIST".equals( listType ) ) {
+                JsonNode fsNode = node.get( "_fs" );
+                if ( fsNode == null || !fsNode.isArray() ) {
+                    throw new IOException( "Malformed FLOAT_LIST: missing '_fs' array field"
+                    );
+                }
+                ArrayNode floatNodes = (ArrayNode) fsNode;
+                float[] floats = new float[floatNodes.size()];
+                for ( int i = 0; i < floatNodes.size(); i++ ) {
+                    floats[i] = (float) floatNodes.get( i ).doubleValue();
+                }
+                return (PolyList<PolyValue>) (PolyList<?>) new PolyFloatList<>( floats );
+            }
             List<PolyValue> values = new ArrayList<>();
             ArrayNode elements = node.withArray( "_es" );
             for ( JsonNode element : elements ) {
@@ -225,7 +247,20 @@ public abstract class PolyList<E extends PolyValue> extends PolyValue implements
                 return;
             }
             gen.writeBoolean( false );
-
+            // PolyFloatList case
+            if ( values instanceof PolyFloatList<?> pfl) {
+                gen.writeFieldName( "@type" );
+                gen.writeString( "FLOAT_LIST" );
+                gen.writeFieldName( "_fs" );
+                gen.writeStartArray();
+                for ( float f : pfl.getRawValue() ) {
+                    gen.writeNumber( f );
+                }
+                gen.writeEndArray();
+                gen.writeEndObject();
+                return;
+            }
+            // Generic case
             gen.writeFieldName( "@type" );
             gen.writeString( "LIST" );
             gen.writeFieldName( "_es" );

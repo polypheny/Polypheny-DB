@@ -50,6 +50,8 @@ public class PolyListImpl<E extends PolyValue> extends PolyList<E> {
     @Delegate
     public List<E> value;
 
+    public static final PolyList<?> EMPTY_LIST = new PolyListImpl<>();
+
     /**
      * Creates a PolyListImpl, which is the default generic implementation of a PolyList,
      * where the List, as well as all the elements are comparable.
