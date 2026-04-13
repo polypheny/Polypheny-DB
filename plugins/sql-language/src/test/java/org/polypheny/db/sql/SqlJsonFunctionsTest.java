@@ -47,6 +47,7 @@ import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.PathContext;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -210,21 +211,21 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
                 null,
                 errorMatches( new PolyphenyDbException( "Empty result of JSON_VALUE function is not allowed", null ) ) );
         assertJsonValueAny(
-                PathContext.withReturned( Functions.PathMode.LAX, PolyList.EMPTY_LIST ),
+                PathContext.withReturned( Functions.PathMode.LAX, PolyListImpl.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 nullValue() );
         assertJsonValueAny(
-                PathContext.withReturned( Functions.PathMode.LAX, PolyList.EMPTY_LIST ),
+                PathContext.withReturned( Functions.PathMode.LAX, PolyListImpl.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.DEFAULT,
                 PolyString.of( "empty" ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 is( PolyString.of( "empty" ) ) );
         assertJsonValueAnyFailed(
-                PathContext.withReturned( Functions.PathMode.LAX, PolyList.EMPTY_LIST ),
+                PathContext.withReturned( Functions.PathMode.LAX, PolyListImpl.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.ERROR,
                 null,
                 JsonValueEmptyOrErrorBehavior.NULL,
@@ -252,21 +253,21 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
                 null,
                 errorMatches( new GenericRuntimeException( "java.lang.Exception: test message" ) ) );
         assertJsonValueAny(
-                PathContext.withReturned( Functions.PathMode.STRICT, PolyList.EMPTY_LIST ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyListImpl.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 nullValue() );
         assertJsonValueAny(
-                PathContext.withReturned( Functions.PathMode.STRICT, PolyList.EMPTY_LIST ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyListImpl.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 JsonValueEmptyOrErrorBehavior.DEFAULT,
                 PolyString.of( "empty" ),
                 is( PolyString.of( "empty" ) ) );
         assertJsonValueAnyFailed(
-                PathContext.withReturned( Functions.PathMode.STRICT, PolyList.EMPTY_LIST ),
+                PathContext.withReturned( Functions.PathMode.STRICT, PolyListImpl.EMPTY_LIST ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 JsonValueEmptyOrErrorBehavior.ERROR,
@@ -417,7 +418,7 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
     @Test
     public void testDejsonize() {
         assertDejsonize( "{}", is( PolyDocument.EMPTY_DOCUMENT ) );
-        assertDejsonize( "[]", is( PolyList.EMPTY_LIST ) );
+        assertDejsonize( "[]", is( PolyListImpl.EMPTY_LIST ) );
 
         // expect exception thrown
         final String message = "JSON reader was expecting a value but found '}'.";

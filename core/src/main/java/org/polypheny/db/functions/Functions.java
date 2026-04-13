@@ -2060,17 +2060,17 @@ public class Functions {
         if ( value == null ) {
             return null;
         }
-        return PolyValue.fromTypedJson( value, PolyListImpl.class );
+        return PolyValue.fromTypedJson( value, PolyList.class );
     }
 
 
     @SuppressWarnings("unused")
-    public static PolyListImpl<?> reparse( PolyString value ) {
+    public static PolyList<?> reparse( PolyString value ) {
         //Type conversionType = PolyTypeUtil.createNestedListType( dimension, innerType );
         if ( value == null || value.isNull() ) {
             return null;
         }
-        return PolyValue.fromTypedJson( value.value, PolyListImpl.class );
+        return PolyValue.fromTypedJson( value.value, PolyList.class );
     }
 
 

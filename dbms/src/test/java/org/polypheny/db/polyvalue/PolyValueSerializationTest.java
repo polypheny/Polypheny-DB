@@ -17,6 +17,7 @@
 package org.polypheny.db.polyvalue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.type.entity.PolyFloatList;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyString;
@@ -103,6 +105,29 @@ public class PolyValueSerializationTest {
         PolyList<PolyString> list = PolyList.of( PolyString.of( "a" ) );
         PolyList<PolyList<PolyString>> a = PolyList.ofElements( list );
         assertEqualAfterSerialization( a );
+    }
+
+
+    @Test
+    public void deserializeFloatListTest() {
+        PolyList<PolyFloat> list = new PolyFloatList<>( new float[]{ 1f, 2f, -3.1f } );
+        assertEqualAfterSerialization( list );
+    }
+
+
+    @Test
+    public void deserializeFloatListPreservesTypeTest() {
+        PolyFloatList<PolyFloat> list = new PolyFloatList<>( new float[]{ 1f, 2f, -3.1f } );
+        PolyList<?> result = PolyValue.fromTypedJson( list.toTypedJson(), PolyList.class );
+        assertInstanceOf( PolyFloatList.class, result, "Type must be preserved through JSON round-trip" );
+        assertEquals( list, result );
+    }
+
+
+    @Test
+    public void deserializeEmptyFloatListTest() {
+        PolyList<PolyFloat> list = new PolyFloatList<>();
+        assertEqualAfterSerialization( list );
     }
 
 

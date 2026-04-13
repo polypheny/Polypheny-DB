@@ -111,7 +111,7 @@ public interface NeoUtil {
             case SYMBOL -> v -> PolySymbol.of( v.asObject() );
             case ARRAY -> {
                 if ( isNested ) {
-                    yield v -> PolyValue.fromTypedJson( v.asString(), PolyListImpl.class );
+                    yield v -> PolyValue.fromTypedJson( v.asString(), PolyList.class );
                 }
                 Function1<Value, PolyValue> componentFunc = getTypeFunction( type.asList().types.get( 0 ), true );
                 yield el -> PolyList.of( el.asList( componentFunc::apply ) );
