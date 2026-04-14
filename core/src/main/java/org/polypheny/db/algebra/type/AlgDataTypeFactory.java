@@ -136,6 +136,19 @@ public interface AlgDataTypeFactory {
     AlgDataType createArrayType( AlgDataType elementType, long maxCardinality, long dimension );
 
     /**
+     * Creates a vector type. A vector is a fixed-length, single-dimension array
+     of numeric values.
+     *
+     * @param elementType the numeric element type (typically FLOAT / REAL)
+     * @param dimension   the fixed number of elements in the vector
+     * @return canonical vector type descriptor
+     */
+    default AlgDataType createVectorType( AlgDataType elementType, long dimension
+    ) {
+        return createArrayType( elementType, dimension, 1 );
+    }
+
+    /**
      * Creates a map type. Maps are unordered collections of key/value pairs.
      *
      * @param keyType type of the keys of the map
