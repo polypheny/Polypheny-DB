@@ -145,4 +145,60 @@ public class DistanceFunctions {
         }
     }
 
+
+    // ------------------- Overloaded methods for float[] -------------------
+    protected static PolyDouble l1Metric( float[] value, float[] target ) {
+        double result = 0;
+        for ( int i = 0; i < value.length; ++i ) {
+            result += Math.abs( (double) value[i] - target[i] );
+        }
+        return PolyDouble.of( result );
+    }
+
+
+    protected static PolyDouble l2SquaredMetric( float[] value, float[] target ) {
+        double result = 0;
+        for ( int i = 0; i < value.length; ++i ) {
+            double diff = (double) value[i] - target[i];
+            result += diff * diff;
+        }
+        return PolyDouble.of( result );
+    }
+
+
+    protected static PolyDouble l2Metric( float[] value, float[] target ) {
+        return PolyDouble.of( Math.sqrt( l2SquaredMetric( value, target
+        ).doubleValue() ) );
+    }
+
+
+    protected static PolyDouble chiSquaredMetric( float[] value, float[] target ) {
+        double result = 0;
+        for ( int i = 0; i < value.length; ++i ) {
+            double a = value[i], b = target[i];
+            double sum = a + b;
+            if (sum > 0) {
+                result += ((a - b) * (a - b)) / sum;
+            }
+        }
+        return PolyDouble.of( result );
+    }
+
+
+    protected static PolyDouble cosineMetric( float[] value, float[] target ) {
+        double dot = 0, normA = 0, normB = 0;
+        for ( int i = 0; i < value.length; ++i ) {
+            dot  += (double) value[i] * target[i];
+            normA += (double) value[i] * value[i];
+            normB += (double) target[i] * target[i];
+        }
+        double denominator = Math.sqrt( normA ) * Math.sqrt( normB );
+        if ( denominator == 0 ) {
+            return (normA == 0 && normB == 0) ? PolyDouble.of( 0.0 ) : PolyDouble.of( 1.0 );
+        }
+        double similarity = dot / denominator;
+        similarity = Math.max( -1.0, Math.min( 1.0, similarity ) );
+        return PolyDouble.of( 1 - similarity);
+    }
+
 }

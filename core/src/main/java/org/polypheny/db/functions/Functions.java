@@ -104,9 +104,9 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyFloatList;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -184,6 +184,17 @@ public class Functions {
 
 
     public static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric ) {
+        if ( value instanceof PolyFloatList<?> vfl && target instanceof PolyFloatList<?> tfl ) {
+            float[] v = vfl.getRawValue(), t = tfl.getRawValue();
+            return switch ( metric.value ) {
+                case "L2"         -> DistanceFunctions.l2Metric( v, t );
+                case "L1"         -> DistanceFunctions.l1Metric( v, t );
+                case "L2SQUARED"  -> DistanceFunctions.l2SquaredMetric( v, t );
+                case "CHISQUARED" -> DistanceFunctions.chiSquaredMetric( v, t );
+                case "COSINE"     -> DistanceFunctions.cosineMetric( v, t );
+                default           -> PolyDouble.of( 0.0 );
+            };
+        }
         DistanceFunctions.verifyInputs( value, target, null );
         return switch ( metric.value ) {
             case "L2" -> DistanceFunctions.l2Metric( value, target );
@@ -197,16 +208,25 @@ public class Functions {
 
 
     public static PolyDouble l1Distance( List<PolyNumber> value, List<PolyNumber> target ) {
+        if ( value instanceof PolyFloatList<?> vfl && target instanceof PolyFloatList<?> tfl ) {
+            return DistanceFunctions.l1Metric( vfl.getRawValue(), tfl.getRawValue() );
+        }
         return DistanceFunctions.l1Metric( value, target );
     }
 
 
     public static PolyDouble l2Distance( List<PolyNumber> value, List<PolyNumber> target ) {
+        if ( value instanceof PolyFloatList<?> vfl && target instanceof PolyFloatList<?> tfl ) {
+            return DistanceFunctions.l2Metric( vfl.getRawValue(), tfl.getRawValue() );
+        }
         return DistanceFunctions.l2Metric( value, target );
     }
 
 
     public static PolyDouble cosDistance( List<PolyNumber> value, List<PolyNumber> target ) {
+        if ( value instanceof PolyFloatList<?> vfl && target instanceof PolyFloatList<?> tfl ) {
+            return DistanceFunctions.cosineMetric( vfl.getRawValue(), tfl.getRawValue() );
+        }
         return DistanceFunctions.cosineMetric( value, target );
     }
 
