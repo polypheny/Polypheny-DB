@@ -131,6 +131,14 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
 
 
     @Override
+    public AlgDataType createVectorType( AlgDataType elementType, long dimension )
+    {
+        VectorType newType = new VectorType( elementType, false, dimension );
+        return canonize( newType );
+    }
+
+
+    @Override
     public AlgDataType createMapType( AlgDataType keyType, AlgDataType valueType ) {
         MapPolyType newType = new MapPolyType( keyType, valueType, false );
         return canonize( newType );
@@ -222,6 +230,8 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
             newType = basicPolyType.createWithNullability( nullable );
         } else if ( type instanceof MapPolyType mapPolyType ) {
             newType = copyMapType( mapPolyType, nullable );
+        } else if ( type instanceof VectorType vectorType ) {
+            newType = copyVectorType( vectorType, nullable );
         } else if ( type instanceof ArrayType arrayType ) {
             newType = copyArrayType( arrayType, nullable );
         } else if ( type instanceof MultisetPolyType multisetPolyType ) {
@@ -505,6 +515,12 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
     private AlgDataType copyArrayType( ArrayType at, boolean nullable ) {
         AlgDataType elementType = copyType( at.getComponentType() );
         return new ArrayType( elementType, nullable, at.getCardinality(), at.getDimension() );
+    }
+
+
+    private AlgDataType copyVectorType( VectorType vt, boolean nullable ) {
+        AlgDataType elementType = copyType( vt.getComponentType() );
+        return new VectorType( elementType, nullable, vt.getVectorDimension() );
     }
 
 
