@@ -544,7 +544,7 @@ public class DdlManagerImpl extends DdlManager {
             );
         }
 
-        if ( table.entityType != EntityType.SOURCE ) {
+        if ( rebuildPhysical && table.entityType != EntityType.SOURCE ) {
             throw new GenericRuntimeException( "Illegal operation on table of type %s", table.entityType );
         }
 
@@ -1144,7 +1144,7 @@ public class DdlManagerImpl extends DdlManager {
             throw new GenericRuntimeException( "Cannot drop sole column of table %s", table.name );
         }
 
-        if ( table.entityType != EntityType.SOURCE ) {
+        if ( rebuildPhysical && table.entityType != EntityType.SOURCE ) {
             throw new GenericRuntimeException( "Illegal operation on table of type %s", table.entityType );
         }
 
@@ -1183,26 +1183,30 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( table.id );
-        if ( allocs.size() != 1 ) {
-            throw new GenericRuntimeException( "The table has an unexpected number of placements!" );
+        AllocationTable allocationTable = null;
+        String physicalSchema = null;
+        if ( rebuildPhysical ) {
+            List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( table.id );
+            if ( allocs.size() != 1 ) {
+                throw new GenericRuntimeException( "The table has an unexpected number of placements!" );
+            }
+
+            AllocationEntity allocation = allocs.get( 0 );
+            allocationTable = allocation.unwrapOrThrow( AllocationTable.class );
+
+            AdapterCatalog adapterCatalog = Catalog.getInstance()
+                    .getAdapterCatalog( allocation.adapterId )
+                    .orElseThrow( () -> new GenericRuntimeException(
+                            "No adapter catalog found for adapter %s", allocation.adapterId ) );
+
+            PhysicalEntity currentRuntimeEntity = adapterCatalog.getPhysicalsFromAllocs( allocation.id ).stream()
+                    .findFirst()
+                    .orElseThrow( () -> new GenericRuntimeException(
+                            "No physical entity found for allocation %s", allocation.id ) );
+
+            PhysicalTable currentPhysicalTable = currentRuntimeEntity.unwrapOrThrow( PhysicalTable.class );
+            physicalSchema = currentPhysicalTable.namespaceName;
         }
-
-        AllocationEntity allocation = allocs.get( 0 );
-        AllocationTable allocationTable = allocation.unwrapOrThrow( AllocationTable.class );
-
-        AdapterCatalog adapterCatalog = Catalog.getInstance()
-                .getAdapterCatalog( allocation.adapterId )
-                .orElseThrow( () -> new GenericRuntimeException(
-                        "No adapter catalog found for adapter %s", allocation.adapterId ) );
-
-        PhysicalEntity currentRuntimeEntity = adapterCatalog.getPhysicalsFromAllocs( allocation.id ).stream()
-                .findFirst()
-                .orElseThrow( () -> new GenericRuntimeException(
-                        "No physical entity found for allocation %s", allocation.id ) );
-
-        PhysicalTable currentPhysicalTable = currentRuntimeEntity.unwrapOrThrow( PhysicalTable.class );
-        String physicalSchema = currentPhysicalTable.namespaceName;
 
         for ( AllocationColumn allocationColumn : catalog.getSnapshot().alloc().getColumnFromLogical( column.id ).orElseThrow() ) {
             deleteAllocationColumn( table, statement, allocationColumn );
