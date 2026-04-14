@@ -270,6 +270,21 @@ public abstract class DdlManager {
      */
     public abstract void dropColumn( LogicalTable table, String columnName, Statement statement );
 
+
+    /**
+     * Drops a column from a source table during schema refresh.
+     * <p>
+     * This method is intended for use in schema synchronization scenarios where
+     * the underlying external data source has removed a column. In addition to
+     * updating the Polypheny catalog, this method may trigger a rebuild of the
+     * physical table representation to ensure consistency with the external source.
+     *
+     * @param table the logical source table from which the column should be removed
+     * @param columnName the name of the column to drop
+     * @param statement the statement used to execute the operation
+     */
+    public abstract void dropColumnFromSourceTableRefresh( LogicalTable table, String columnName, Statement statement );
+
     /**
      * Drop a specific constraint from a table
      *

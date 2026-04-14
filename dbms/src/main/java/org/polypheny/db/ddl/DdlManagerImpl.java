@@ -56,6 +56,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
@@ -82,6 +83,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
@@ -1070,17 +1073,85 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    /**
+     * Drops a column from a source table based on its column name.
+     * <p>
+     * This method performs a metadata-only update in the Polypheny catalog and does not trigger
+     * a rebuild of the physical table.
+     *
+     * @param table the table
+     * @param columnName the name of the column to drop
+     * @param statement used to execute the operation
+     */
     @Override
     public void dropColumn( LogicalTable table, String columnName, Statement statement ) {
+        dropColumnFromSourceTableInternal(
+                table,
+                columnName,
+                statement,
+                false
+        );
+    }
+
+    /**
+     * Drops a column from a source table during schema refresh.
+     * <p>
+     * This method performs a full schema synchronization, including rebuilding the physical table
+     * to reflect the updated structure.
+     *
+     * @param table the logical table from which the column should be removed
+     * @param columnName the name of the column to remove
+     * @param statement the statement used to execute the DDL operation
+     */
+    @Override
+    public void dropColumnFromSourceTableRefresh(
+            LogicalTable table,
+            String columnName,
+            Statement statement ) {
+
+        log.info( "Dropping column '{}' from source table {} (with physical rebuild)", columnName, table.name );
+
+        dropColumnFromSourceTableInternal(
+                table,
+                columnName,
+                statement,
+                true
+        );
+    }
+
+    /**
+     * Internal helper method to drop a column from a source table.
+     * <p>
+     * This method performs the actual catalog updates and optionally triggers a rebuild
+     * of the physical table depending on the {@code rebuildPhysical} flag.
+     *
+     * @param table the logical table
+     * @param columnName the name of the column to drop
+     * @param statement the statement used for execution
+     * @param rebuildPhysical whether to rebuild the physical table after dropping the column
+     */
+    private void dropColumnFromSourceTableInternal(
+            LogicalTable table,
+            String columnName,
+            Statement statement,
+            boolean rebuildPhysical ) {
+
+        log.info( "Processing drop of column '{}' for table {} (rebuildPhysical={})",
+                columnName, table.name, rebuildPhysical );
+
         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
         if ( columns.size() < 2 ) {
             throw new GenericRuntimeException( "Cannot drop sole column of table %s", table.name );
         }
 
+        if ( table.entityType != EntityType.SOURCE ) {
+            throw new GenericRuntimeException( "Illegal operation on table of type %s", table.entityType );
+        }
+
         // check if model permits operation
         checkModelLogic( table, columnName );
 
-        //check if views are dependent from this table
+        // check if views are dependent from this table
         checkViewDependencies( table );
 
         LogicalColumn column = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
@@ -1088,7 +1159,6 @@ public class DdlManagerImpl extends DdlManager {
         LogicalRelSnapshot snapshot = catalog.getSnapshot().rel();
 
         // Check if column is part of a key
-        List<LogicalKey> keys = snapshot.getTableKeys( table.id );
         for ( LogicalKey key : snapshot.getTableKeys( table.id ) ) {
             if ( key.fieldIds.contains( column.id ) ) {
                 if ( snapshot.isPrimaryKey( key.id ) ) {
@@ -1113,6 +1183,27 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
+        List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( table.id );
+        if ( allocs.size() != 1 ) {
+            throw new GenericRuntimeException( "The table has an unexpected number of placements!" );
+        }
+
+        AllocationEntity allocation = allocs.get( 0 );
+        AllocationTable allocationTable = allocation.unwrapOrThrow( AllocationTable.class );
+
+        AdapterCatalog adapterCatalog = Catalog.getInstance()
+                .getAdapterCatalog( allocation.adapterId )
+                .orElseThrow( () -> new GenericRuntimeException(
+                        "No adapter catalog found for adapter %s", allocation.adapterId ) );
+
+        PhysicalEntity currentRuntimeEntity = adapterCatalog.getPhysicalsFromAllocs( allocation.id ).stream()
+                .findFirst()
+                .orElseThrow( () -> new GenericRuntimeException(
+                        "No physical entity found for allocation %s", allocation.id ) );
+
+        PhysicalTable currentPhysicalTable = currentRuntimeEntity.unwrapOrThrow( PhysicalTable.class );
+        String physicalSchema = currentPhysicalTable.namespaceName;
+
         for ( AllocationColumn allocationColumn : catalog.getSnapshot().alloc().getColumnFromLogical( column.id ).orElseThrow() ) {
             deleteAllocationColumn( table, statement, allocationColumn );
         }
@@ -1124,6 +1215,17 @@ public class DdlManagerImpl extends DdlManager {
             for ( int i = column.position; i < columns.size(); i++ ) {
                 catalog.getLogicalRel( table.namespaceId ).setColumnPosition( columns.get( i ).id, i );
             }
+        }
+
+        catalog.updateSnapshot();
+
+        if ( rebuildPhysical ) {
+            rebuildPhysicalSourceTable(
+                    table,
+                    allocationTable,
+                    physicalSchema
+            );
+            catalog.updateSnapshot();
         }
 
         // Monitor dropColumn for statistics

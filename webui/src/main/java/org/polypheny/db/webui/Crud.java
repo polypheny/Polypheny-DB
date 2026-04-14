@@ -47,6 +47,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -260,7 +261,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      * <p>
      * The method retrieves the current table metadata from the catalog and compares it with the
      * actual source schema obtained via the adapter. If new columns are detected in the source,
-     * they are added to the corresponding Polypheny table.
+     * they are added to the corresponding Polypheny table. If columns no longer exist in the source,
+     * they are removed from the corresponding Polypheny table.
      *
      * @param request UI request containing the target entity identifier
      * @throws GenericRuntimeException if the refresh fails
@@ -269,7 +271,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         var snapshot = Catalog.snapshot();
         LogicalTable table = snapshot.rel().getTable( request.entityId ).orElseThrow();
 
-        log.info("Refreshing schema for table {}", table.name);
+        log.info( "Refreshing schema for table {}", table.name );
 
         if ( table.entityType != EntityType.SOURCE ) {
             log.info( "Refresh skipped: {} is not a source table.", table.name );
@@ -318,17 +320,28 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                     .toList();
         }
 
-        // Collect names of columns already known in Polypheny
+        // Current physical columns known to Polypheny
         Set<String> existingPhysicalColumnNames = currentPhysicalTable.columns.stream()
                 .map( c -> c.name.toLowerCase() )
                 .collect( Collectors.toSet() );
 
-        // Identify columns that exist in the source but not yet in Polypheny
+        // Current source columns reported by the adapter
+        Set<String> sourcePhysicalColumnNames = sourceColumns.stream()
+                .map( c -> c.physicalColumnName().toLowerCase() )
+                .collect( Collectors.toSet() );
+
+        // Columns that exist in the source but not yet in Polypheny
         List<ExportedColumn> missingColumns = sourceColumns.stream()
                 .filter( c -> !existingPhysicalColumnNames.contains( c.physicalColumnName().toLowerCase() ) )
                 .toList();
 
-        if ( missingColumns.isEmpty() ) {
+        // Columns that exist in Polypheny but no longer exist in the source
+        List<LogicalColumn> droppedColumns = snapshot.rel().getColumns( table.id ).stream()
+                .filter( logicalColumn -> !sourcePhysicalColumnNames.contains( logicalColumn.name.toLowerCase() ) )
+                .sorted( Comparator.comparingInt( LogicalColumn::getPosition ).reversed() )
+                .toList();
+
+        if ( missingColumns.isEmpty() && droppedColumns.isEmpty() ) {
             log.info( "No schema refresh needed for table {}", table.name );
             return;
         }
@@ -351,6 +364,20 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         null,
                         null,
                         null,
+                        ddlStatement
+                );
+            }
+
+            for ( LogicalColumn dropped : droppedColumns ) {
+                log.info(
+                        "Dropping removed source column '{}' from table '{}'",
+                        dropped.name,
+                        table.name
+                );
+
+                DdlManager.getInstance().dropColumnFromSourceTableRefresh(
+                        table,
+                        dropped.name,
                         ddlStatement
                 );
             }
