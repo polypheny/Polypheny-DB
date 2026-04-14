@@ -46,7 +46,6 @@ import java.util.Map;
 import org.locationtech.jts.geom.Geometry;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyDoubleList;
 import org.polypheny.db.type.entity.PolyFloatList;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyListImpl;
@@ -122,7 +121,6 @@ public class JavaToPolyTypeConversionRules {
                     .put( PolyList.class, PolyType.ARRAY )
                     .put( PolyListImpl.class, PolyType.ARRAY )
                     .put( PolyFloatList.class, PolyType.ARRAY )
-                    .put( PolyDoubleList.class, PolyType.ARRAY )
                     .put( PolyMap.class, PolyType.MAP )
                     .put( PolyNode.class, PolyType.NODE )
                     .put( PolyEdge.class, PolyType.EDGE )
