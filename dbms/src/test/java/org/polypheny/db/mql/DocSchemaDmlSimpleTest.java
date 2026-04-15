@@ -30,9 +30,6 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.webui.models.results.DocResult;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-
 /**
  * DML tests for document schemas.
  *
@@ -46,19 +43,7 @@ import org.junit.jupiter.api.BeforeAll;
 @Tag("adapter")
 public class DocSchemaDmlSimpleTest extends MqlTestTemplate {
 
-    private static final String USER = "user";
-
-    @BeforeAll
-    public static void useOwnNamespace() {
-        namespace = "test_docschema_dml_simple";
-        initDatabase();
-    }
-
-    @AfterAll
-    public static void cleanupOwnNamespace() {
-        dropDatabase();
-        namespace = "test";
-    }
+    private static final String USER = "user_dml_simple";
 
 
     private void dropUserCollectionIfExists() {
@@ -309,7 +294,7 @@ public class DocSchemaDmlSimpleTest extends MqlTestTemplate {
 
         assertThrows(
                 Exception.class,
-                () -> execute( "db.user.insertMany([" + String.join( ",", data ) + "])" )
+                () -> execute( "db." + USER + ".insertMany([" + String.join( ",", data ) + "])" )
         );
 
         DocResult result = find( "{}", "{}", USER );

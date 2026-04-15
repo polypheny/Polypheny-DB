@@ -23,9 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.bson.BsonArray;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.MongoConnection;
@@ -42,20 +40,7 @@ import org.polypheny.db.webui.models.results.DocResult;
 @Tag("adapter")
 public class DocSchemaDmlModesAndConstraintsTest extends MqlTestTemplate {
 
-    private static final String USER = "user";
-
-    @BeforeAll
-    public static void useOwnNamespace() {
-        namespace = "test_docschema_dml_modes";
-        initDatabase();
-    }
-
-    @AfterAll
-    public static void cleanupOwnNamespace() {
-        dropDatabase();
-        namespace = "test";
-    }
-
+    private static final String USER = "user_dml_modes";
 
     private void dropUserCollectionIfExists() {
         try {

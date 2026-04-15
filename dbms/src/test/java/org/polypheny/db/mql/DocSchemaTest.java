@@ -35,12 +35,14 @@ import org.junit.jupiter.api.Test;
 @Tag("adapter")
 public class DocSchemaTest extends MqlTestTemplate {
 
+    private static final String USER = "user";
+
     /**
      * Drop the collection, ignoring failures if it does not exist.
      */
     private void dropUserCollectionIfExists() {
         try {
-            dropCollection( "user" );
+            dropCollection(USER);
         } catch ( Exception ignored ) {
             // collection might not exist yet; that's fine
         }
@@ -53,7 +55,7 @@ public class DocSchemaTest extends MqlTestTemplate {
 
         assertDoesNotThrow(
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: { name: { type: \"text\" } }," +
@@ -74,7 +76,7 @@ public class DocSchemaTest extends MqlTestTemplate {
 
         assertDoesNotThrow(
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    properties: { name: { type: \"text\" } }," +
                                 "    required: [\"name\"]," +
@@ -95,7 +97,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: { name: { type: \"text\" } }" +
@@ -114,7 +116,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"wrongType\"," + // invalid root type
                                 "    properties: { name: { type: \"text\" } }," +
@@ -134,7 +136,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: { name: { type: \"wrongType\" } }," + // invalid property type
@@ -154,7 +156,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: \"not-an-object\"," +
@@ -174,7 +176,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: \"just-a-string\"," +
                                 "  validationAction: \"strict\"" +
                                 "})"
@@ -189,7 +191,7 @@ public class DocSchemaTest extends MqlTestTemplate {
 
         assertDoesNotThrow(
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
@@ -213,7 +215,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: { name: { type: \"text\" } }," +
@@ -233,7 +235,7 @@ public class DocSchemaTest extends MqlTestTemplate {
 
         assertDoesNotThrow(
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
@@ -262,7 +264,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
@@ -288,7 +290,7 @@ public class DocSchemaTest extends MqlTestTemplate {
 
         assertDoesNotThrow(
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
@@ -312,7 +314,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
@@ -333,7 +335,7 @@ public class DocSchemaTest extends MqlTestTemplate {
 
         assertDoesNotThrow(
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
@@ -362,7 +364,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
@@ -384,7 +386,7 @@ public class DocSchemaTest extends MqlTestTemplate {
 
         assertDoesNotThrow(
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
@@ -410,7 +412,7 @@ public class DocSchemaTest extends MqlTestTemplate {
 
         assertDoesNotThrow(
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
@@ -444,7 +446,7 @@ public class DocSchemaTest extends MqlTestTemplate {
 
         assertDoesNotThrow(
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    properties: {" +
                                 "      name: { type: \"text\" }," +
@@ -472,7 +474,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"wrongType\"," +
                                 "    properties: {" +
@@ -505,7 +507,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
@@ -529,7 +531,7 @@ public class DocSchemaTest extends MqlTestTemplate {
 
         assertDoesNotThrow(
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
@@ -556,7 +558,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
@@ -577,7 +579,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
@@ -598,7 +600,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
@@ -619,7 +621,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
@@ -640,7 +642,7 @@ public class DocSchemaTest extends MqlTestTemplate {
         assertThrows(
                 Exception.class,
                 () -> execute(
-                        "db.createCollection(\"user\", {" +
+                        "db.createCollection(\"" + USER + "\", {" +
                                 "  docSchema: {" +
                                 "    type: \"object\"," +
                                 "    properties: {" +
