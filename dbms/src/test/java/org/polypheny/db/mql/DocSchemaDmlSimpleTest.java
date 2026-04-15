@@ -30,6 +30,9 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.webui.models.results.DocResult;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+
 /**
  * DML tests for document schemas.
  *
@@ -44,6 +47,18 @@ import org.polypheny.db.webui.models.results.DocResult;
 public class DocSchemaDmlSimpleTest extends MqlTestTemplate {
 
     private static final String USER = "user";
+
+    @BeforeAll
+    public static void useOwnNamespace() {
+        namespace = "test_docschema_dml_simple";
+        initDatabase();
+    }
+
+    @AfterAll
+    public static void cleanupOwnNamespace() {
+        dropDatabase();
+        namespace = "test";
+    }
 
 
     private void dropUserCollectionIfExists() {
@@ -1318,6 +1333,80 @@ public class DocSchemaDmlSimpleTest extends MqlTestTemplate {
                         + "{\"name\":\"Alice\",\"items\":[{\"label\":\"a\",\"qty\":1,\"active\":true},{\"label\":\"b\",\"qty\":2,\"active\":false}]},"
                         + "{\"name\":\"Bob\",\"items\":[{\"label\":\"c\",\"qty\":3,\"active\":true}]}"
                         + "]" );
+    }
+
+
+    @Test
+    public void find_unknownNestedFilter_shouldReturnNoRows() {
+        List<String> data = List.of(
+                "{\"name\":\"Alice\",\"obj1\":{\"n1\":\"v1_1\",\"n2\":1,\"n3\":true,\"n4\":\"x\",\"n5\":2}}",
+                "{\"name\":\"Bob\",\"obj1\":{\"n1\":\"v1_2\",\"n2\":4,\"n3\":false,\"n4\":\"m\",\"n5\":5}}"
+        );
+        insertMany( data, USER );
+
+        String filter = "{\"obj1.unknownNested\":\"does_not_exist\"}";
+        DocResult result = find( filter, "{}", USER );
+
+        // Helpful while debugging
+        System.out.println( "DEBUG filter = " + filter );
+        System.out.println( "DEBUG result = " + result );
+
+        List<String> expected = List.of();
+
+        assertTrue(
+                MongoConnection.checkDocResultSet( result, expected, true, true ),
+                "Unknown nested field filter should match no documents, but got: " + result
+        );
+    }
+
+
+    @Test
+    public void update_unknownNestedFilter_shouldNotModifyAnyRows() {
+        List<String> data = List.of(
+                "{\"name\":\"Alice\",\"obj1\":{\"n1\":\"v1_1\",\"n2\":1,\"n3\":true,\"n4\":\"x\",\"n5\":2}}",
+                "{\"name\":\"Bob\",\"obj1\":{\"n1\":\"v1_2\",\"n2\":4,\"n3\":false,\"n4\":\"m\",\"n5\":5}}"
+        );
+        insertMany( data, USER );
+
+        String filter = "{\"obj1.unknownNested\":\"does_not_exist\"}";
+        String update = "{\"$set\":{\"obj1.n1\":\"changed\",\"obj1.n2\":111,\"obj1.n3\":true,\"obj1.n4\":\"ok\",\"obj1.n5\":222}}";
+
+        System.out.println( "DEBUG before = " + find( "{}", "{}", USER ) );
+        System.out.println( "DEBUG filtered = " + find( filter, "{}", USER ) );
+
+        assertDoesNotThrow( () -> update( filter, update, USER ) );
+
+        DocResult result = find( "{}", "{}", USER );
+
+        System.out.println( "DEBUG after = " + result );
+
+        List<String> expected = List.of(
+                "{\"name\":\"Alice\",\"obj1\":{\"n1\":\"v1_1\",\"n2\":1,\"n3\":true,\"n4\":\"x\",\"n5\":2}}",
+                "{\"name\":\"Bob\",\"obj1\":{\"n1\":\"v1_2\",\"n2\":4,\"n3\":false,\"n4\":\"m\",\"n5\":5}}"
+        );
+
+        assertTrue(
+                MongoConnection.checkDocResultSet( result, expected, true, true ),
+                "Unknown nested filter should not modify any rows, but got: " + result
+        );
+    }
+
+    @Test
+    public void find_unknownNestedFilter_insideExistingObject_shouldReturnNoRows() {
+        List<String> data = List.of(
+                "{\"name\":\"Alice\",\"obj1\":{\"n1\":\"v1_1\"}}",
+                "{\"name\":\"Bob\",\"obj1\":{\"n1\":\"v1_2\"}}"
+        );
+        insertMany( data, USER );
+
+        DocResult result = find( "{\"obj1.n999\":\"x\"}", "{}", USER );
+
+        System.out.println( "DEBUG result = " + result );
+
+        assertTrue(
+                MongoConnection.checkDocResultSet( result, List.of(), true, true ),
+                "Missing nested field obj1.n999 should not match any document"
+        );
     }
 
 }

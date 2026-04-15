@@ -16,7 +16,9 @@
 
 package org.polypheny.db.mql;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +34,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class DocSchemaAlterCollectionSchemaTest extends MqlTestTemplate {
 
     private static final String USER = "user";
+
+    @BeforeAll
+    public static void useOwnNamespace() {
+        namespace = "test_docschema_alter";
+        initDatabase();
+    }
+
+    @AfterAll
+    public static void cleanupOwnNamespace() {
+        dropDatabase();
+        namespace = "test";
+    }
 
 
     private void dropUserCollectionIfExists() {

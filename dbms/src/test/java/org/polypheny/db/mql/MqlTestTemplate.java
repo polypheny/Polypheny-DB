@@ -33,7 +33,7 @@ import org.polypheny.db.webui.models.results.DocResult;
  */
 public class MqlTestTemplate {
 
-    public static String namespace = "test";
+    protected static String namespace = "test";
 
 
     @BeforeAll
