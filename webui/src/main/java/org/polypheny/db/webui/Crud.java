@@ -333,6 +333,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         // Columns that exist in the source but not yet in Polypheny
         List<ExportedColumn> missingColumns = sourceColumns.stream()
                 .filter( c -> !existingPhysicalColumnNames.contains( c.physicalColumnName().toLowerCase() ) )
+                .sorted( Comparator.comparingInt( ExportedColumn::physicalPosition ) )
                 .toList();
 
         // Columns that exist in Polypheny but no longer exist in the source
@@ -357,11 +358,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         table.name
                 );
 
+                String beforeColumnName = getColumnNameAtOrAfterPosition( table.id, missing.physicalPosition() );
                 DdlManager.getInstance().addColumnToSourceTableFromExportedColumn(
                         table,
                         missing,
                         missing.name(),
-                        null,
+                        beforeColumnName,
                         null,
                         null,
                         ddlStatement
@@ -395,6 +397,23 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             throw new GenericRuntimeException(
                     "Could not refresh source catalog for table " + table.name, e );
         }
+    }
+
+
+    /**
+     * Returns the first logical column name whose position is at or after the requested position.
+     *
+     * @param tableId the logical table id
+     * @param targetPosition the requested 1-based column position
+     * @return the matching column name, or {@code null} if no column exists at or after that position
+     */
+    private String getColumnNameAtOrAfterPosition( long tableId, int targetPosition ) {
+        return Catalog.snapshot().rel().getColumns( tableId ).stream()
+                .sorted( Comparator.comparingInt( LogicalColumn::getPosition ) )
+                .filter( column -> column.position >= Math.max( 1, targetPosition ) )
+                .map( column -> column.name )
+                .findFirst()
+                .orElse( null );
     }
 
 
