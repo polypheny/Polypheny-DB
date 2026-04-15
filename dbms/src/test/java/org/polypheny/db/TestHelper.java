@@ -792,6 +792,24 @@ public class TestHelper {
     }
 
 
+    public static boolean isLinuxDockerDaemonAvailable() {
+        if ( !isDockerDaemonAvailable() ) {
+            return false;
+        }
+        try {
+            Process process = new ProcessBuilder( "docker", "info", "--format", "{{.OSType}}" ).redirectErrorStream( true ).start();
+            boolean finished = process.waitFor( 15, TimeUnit.SECONDS );
+            if ( !finished || process.exitValue() != 0 ) {
+                return false;
+            }
+            String output = new String( process.getInputStream().readAllBytes() ).trim();
+            return "linux".equalsIgnoreCase( output );
+        } catch ( Exception e ) {
+            return false;
+        }
+    }
+
+
     public static DockerPostgres startPostgresDocker( String database, String username, String password ) throws Exception {
         return DockerPostgres.start( database, username, password );
     }

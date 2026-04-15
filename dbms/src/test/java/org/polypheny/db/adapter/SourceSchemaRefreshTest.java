@@ -45,7 +45,7 @@ class SourceSchemaRefreshTest {
 
     @Test
     void refreshRequestUpdatesPolyphenyColumnsAfterExternalColumnsWereAdded() throws Exception {
-        Assumptions.assumeTrue( TestHelper.isDockerDaemonAvailable(), "Docker daemon is not available for integration tests" );
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
         TestHelper.getInstance();
 
         try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( DATABASE, USERNAME, PASSWORD ) ) {
@@ -82,7 +82,7 @@ class SourceSchemaRefreshTest {
 
     @Test
     void refreshRequestUpdatesPolyphenyColumnsAfterExternalColumnWasDropped() throws Exception {
-        Assumptions.assumeTrue( TestHelper.isDockerDaemonAvailable(), "Docker daemon is not available for integration tests" );
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
         TestHelper.getInstance();
 
         try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( DATABASE, USERNAME, PASSWORD ) ) {
@@ -118,7 +118,7 @@ class SourceSchemaRefreshTest {
 
     @Test
     void refreshRequestKeepsRenamedExternalColumnAtItsOriginalPosition() throws Exception {
-        Assumptions.assumeTrue( TestHelper.isDockerDaemonAvailable(), "Docker daemon is not available for integration tests" );
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
         TestHelper.getInstance();
 
         try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( DATABASE, USERNAME, PASSWORD ) ) {
