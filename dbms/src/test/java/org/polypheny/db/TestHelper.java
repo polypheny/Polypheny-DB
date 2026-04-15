@@ -25,7 +25,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Array;
 import java.sql.Connection;
@@ -41,6 +44,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
@@ -60,6 +64,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.processing.caching.ImplementationCache;
@@ -82,6 +87,8 @@ import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
+import org.polypheny.db.webui.models.results.RelationalResult;
+import org.polypheny.db.webui.models.requests.UIRequest;
 
 
 @Slf4j
@@ -218,6 +225,23 @@ public class TestHelper {
     }
 
 
+    public static void addPostgresSource( String name, String host, int port, String database, String username, String password, String table ) throws SQLException {
+        executeSQL(
+                "ALTER ADAPTERS ADD \"" + name + "\" USING 'PostgreSQL' AS 'Source' WITH "
+                        + "'{"
+                        + "\"mode\":\"remote\","
+                        + "\"host\":\"" + host + "\","
+                        + "\"port\":\"" + port + "\","
+                        + "\"database\":\"" + database + "\","
+                        + "\"username\":\"" + username + "\","
+                        + "\"password\":\"" + password + "\","
+                        + "\"maxConnections\":\"25\","
+                        + "\"transactionIsolation\":\"SERIALIZABLE\","
+                        + "\"tables\":\"" + table + "\""
+                        + "}'" );
+    }
+
+
     public static void executeSQL( Statement statement, String sql ) throws SQLException {
         statement.execute( sql );
     }
@@ -229,6 +253,29 @@ public class TestHelper {
                 statement.execute( sql );
             }
         }
+    }
+
+
+    public static LogicalTable awaitLogicalTable( long namespaceId, String tableName, int timeoutSeconds ) {
+        for ( int i = 0; i < timeoutSeconds; i++ ) {
+            var table = Catalog.snapshot().rel().getTable( namespaceId, tableName );
+            if ( table.isPresent() ) {
+                return table.orElseThrow();
+            }
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch ( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( "Interrupted while waiting for table " + tableName, e );
+            }
+        }
+        throw new IllegalStateException( "Table was not created in time: " + tableName );
+    }
+
+
+    public static List<String> getCatalogColumnNames( long entityId ) {
+
+        return Catalog.snapshot().rel().getColumns( entityId ).stream().map( c -> c.name ).toList();
     }
 
 
@@ -711,6 +758,45 @@ public class TestHelper {
     }
 
 
+    public static RelationalResult sendRefreshRequest( long entityId ) throws Exception {
+        Object httpServer = HttpServer.getInstance();
+        Field crudField = httpServer.getClass().getDeclaredField( "crud" );
+        crudField.setAccessible( true );
+        Object crud = crudField.get( httpServer );
+
+        UIRequest request = UIRequest.builder()
+                .type( "RefreshRequest" )
+                .entityId( entityId )
+                .namespace( Catalog.DEFAULT_NAMESPACE_NAME )
+                .currentPage( 1 )
+                .noLimit( false )
+                .build();
+
+        Method refreshMethod = crud.getClass().getMethod( "refreshSourceSchemaIfNeeded", UIRequest.class );
+        refreshMethod.invoke( crud, request );
+
+        Method getTableMethod = crud.getClass().getDeclaredMethod( "getTable", UIRequest.class );
+        getTableMethod.setAccessible( true );
+        return (RelationalResult) getTableMethod.invoke( crud, request );
+    }
+
+
+    public static boolean isDockerDaemonAvailable() {
+        try {
+            Process process = new ProcessBuilder( "docker", "info" ).redirectErrorStream( true ).start();
+            boolean finished = process.waitFor( 15, TimeUnit.SECONDS );
+            return finished && process.exitValue() == 0;
+        } catch ( Exception e ) {
+            return false;
+        }
+    }
+
+
+    public static DockerPostgres startPostgresDocker( String database, String username, String password ) throws Exception {
+        return DockerPostgres.start( database, username, password );
+    }
+
+
     @Getter
     public static class JdbcConnection implements AutoCloseable {
 
@@ -813,6 +899,136 @@ public class TestHelper {
         }
 
         T getThrows() throws SQLException;
+
+    }
+
+
+    public static final class DockerPostgres implements AutoCloseable {
+
+        private final String containerName;
+        @Getter
+        private final int port;
+        private final String database;
+        private final String username;
+        private final String password;
+
+
+        private DockerPostgres( String containerName, int port, String database, String username, String password ) {
+            this.containerName = containerName;
+            this.port = port;
+            this.database = database;
+            this.username = username;
+            this.password = password;
+        }
+
+
+        public static DockerPostgres start( String database, String username, String password ) throws Exception {
+            int port = findFreePort();
+            String containerName = "polypheny-refresh-test-" + UUID.randomUUID().toString().replace( "-", "" ).substring( 0, 8 );
+            DockerPostgres postgres = new DockerPostgres( containerName, port, database, username, password );
+            postgres.runDockerCommand(
+                    "run",
+                    "-d",
+                    "--name",
+                    containerName,
+                    "-e",
+                    "POSTGRES_DB=" + database,
+                    "-e",
+                    "POSTGRES_USER=" + username,
+                    "-e",
+                    "POSTGRES_PASSWORD=" + password,
+                    "-p",
+                    "127.0.0.1:" + port + ":5432",
+                    "postgres:16-alpine" );
+            postgres.awaitReady();
+            return postgres;
+        }
+
+
+        public void execute( String sql ) throws Exception {
+            runDockerCommand(
+                    "exec",
+                    containerName,
+                    "psql",
+                    "-U",
+                    username,
+                    "-d",
+                    database,
+                    "-c",
+                    sql );
+        }
+
+
+        private void awaitReady() throws Exception {
+            int consecutiveSuccesses = 0;
+            for ( int i = 0; i < 60; i++ ) {
+                try {
+                    runDockerCommand(
+                            "exec",
+                            containerName,
+                            "psql",
+                            "-U",
+                            username,
+                            "-d",
+                            database,
+                            "-c",
+                            "SELECT 1" );
+                    consecutiveSuccesses++;
+                    if ( consecutiveSuccesses >= 2 ) {
+                        return;
+                    }
+                } catch ( IllegalStateException e ) {
+                    consecutiveSuccesses = 0;
+                    TimeUnit.SECONDS.sleep( 1 );
+                }
+            }
+            throw new IllegalStateException( "PostgreSQL container did not become ready in time" );
+        }
+
+
+        @Override
+        public void close() throws Exception {
+            try {
+                runDockerCommand( "rm", "-f", containerName );
+            } catch ( Exception ignored ) {
+                // Ignore cleanup failures to avoid masking test failures.
+            }
+        }
+
+
+        private String runDockerCommand( String... args ) throws Exception {
+            Process process = new ProcessBuilder( buildDockerCommand( args ) ).redirectErrorStream( true ).start();
+            boolean finished = process.waitFor( 60, TimeUnit.SECONDS );
+            String output = new String( process.getInputStream().readAllBytes() ).trim();
+
+            if ( !finished ) {
+                process.destroyForcibly();
+                throw new IllegalStateException( "Docker command timed out: " + String.join( " ", buildDockerCommand( args ) ) );
+            }
+            if ( process.exitValue() != 0 ) {
+                throw new IllegalStateException(
+                        "Docker command failed (" + process.exitValue() + "): "
+                                + String.join( " ", buildDockerCommand( args ) )
+                                + System.lineSeparator()
+                                + output );
+            }
+            return output;
+        }
+
+
+        private static List<String> buildDockerCommand( String... args ) {
+            List<String> command = new ArrayList<>();
+            command.add( "docker" );
+            command.addAll( List.of( args ) );
+            return command;
+        }
+
+
+        private static int findFreePort() throws IOException {
+            try ( ServerSocket socket = new ServerSocket( 0 ) ) {
+                return socket.getLocalPort();
+            }
+        }
 
     }
 
