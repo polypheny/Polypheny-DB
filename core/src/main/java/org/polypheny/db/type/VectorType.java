@@ -16,13 +16,25 @@
 
 package org.polypheny.db.type;
 
+import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataType;
 
+/**
+ * Marker for Arrays of the form (dim, card) = (1, n) and entries in {@link ElementType}.
+ */
 public class VectorType extends ArrayType {
 
+    public enum ElementType {
+        FLOAT, DOUBLE, INTEGER, BIT
+    }
+
+    @Getter
+    private final ElementType vectorElementType;
+
     public VectorType( AlgDataType elementType, boolean isNullable, long
-            dimension ) {
+            dimension, ElementType vectorElementType ) {
         super( elementType, isNullable, dimension, 1 );
+        this.vectorElementType = vectorElementType;
     }
 
     public long getVectorDimension() {

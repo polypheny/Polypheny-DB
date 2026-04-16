@@ -57,10 +57,12 @@ import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.VectorType;
+import org.polypheny.db.type.VectorType.ElementType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.temporal.DateTimeUtils;
@@ -889,18 +891,35 @@ public class SqlDialect {
 
 
     /**
-     * Given on the properties that are passed as arguments this method returns if the combination of arguments is eligible to a vector pushdown and if yes to what type.
-     * <p><i>Examples</i>
-     * <ul>
-     *     <li>( PolyType.ARRAY, PolyType.REAL, 1 ) -> Optional.of( "VECTOR" )</li>
-     *     <li>( PolyType.ARRAY, PolyType.BOOLEAN, 1 ) -> Optional.of( "BITVECTOR" )</li>
-     * </ul>
-     * </p>
-     * @return An {@code Optional} containing the mapped String if eligible for vector pushdown,
-     *  or {@code Optional.empty()} if not eligible.
+     * Returns whether the underlying database supports a vector with the given {@link ElementType}.
      */
-    public Optional<String> resolveVectorPushdownType( PolyType collectionsType, PolyType type, Long dimension ) {
-        return Optional.empty();
+    public boolean vectorPushdownTypeIsPresent( VectorType.ElementType vectorType ) {
+        return false;
+    }
+
+
+    /**
+     * <p>Takes a vector type, i.e. the {@link ElementType} of a vector and returns the database specific object for that vector type.</p>
+     * <p>Each dialect needs to overwrite this method, if providing dedicated vectors requiring non-standard vector database objects, in order to implement correct handling.</p>
+     * <p>It is strongly advised to first check {@link SqlDialect#vectorPushdownTypeIsPresent(ElementType)} since otherwise the object will be null.</p>
+     * @param vectorType The type of the vector elements.
+     * @param vectorAsList A {@link PolyList} representing the vector values.
+     * @return The database specific representation of the vector. Can be {@code null}.
+     */
+    public Object getVectorDbObject( VectorType.ElementType vectorType, PolyList<PolyValue> vectorAsList ) {
+        return null;
+    }
+
+
+    /**
+     * <p>Takes a vector type, i.e. the {@link ElementType} and returns the type string of the vector type.</p>
+     * <p>Each dialect needs to overwrite this method, if providing dedicated vectors with non-standard type definitions, in order to implement correct handling.</p>
+     * <p>It is strongly advised to first check {@link SqlDialect#vectorPushdownTypeIsPresent(ElementType)} since otherwise the string will be null.</p>
+     * @param vectorType the element type of the vector indicating the vector type
+     * @return type string of the vector type
+     */
+    public String getTypeString( VectorType.ElementType vectorType ) {
+        return null;
     }
 
 }
