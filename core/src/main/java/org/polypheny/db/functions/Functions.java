@@ -184,6 +184,7 @@ public class Functions {
 
 
     public static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric ) {
+        DistanceFunctions.verifyInputs( value, target, null );
         if ( value instanceof PolyFloatList<?> vfl && target instanceof PolyFloatList<?> tfl ) {
             float[] v = vfl.getRawValue(), t = tfl.getRawValue();
             return switch ( metric.value ) {
@@ -195,7 +196,6 @@ public class Functions {
                 default           -> PolyDouble.of( 0.0 );
             };
         }
-        DistanceFunctions.verifyInputs( value, target, null );
         return switch ( metric.value ) {
             case "L2" -> DistanceFunctions.l2Metric( value, target );
             case "L1" -> DistanceFunctions.l1Metric( value, target );
@@ -208,6 +208,7 @@ public class Functions {
 
 
     public static PolyDouble l1Distance( List<PolyNumber> value, List<PolyNumber> target ) {
+        DistanceFunctions.verifyInputs( value, target, null );
         if ( value instanceof PolyFloatList<?> vfl && target instanceof PolyFloatList<?> tfl ) {
             return DistanceFunctions.l1Metric( vfl.getRawValue(), tfl.getRawValue() );
         }
@@ -216,6 +217,7 @@ public class Functions {
 
 
     public static PolyDouble l2Distance( List<PolyNumber> value, List<PolyNumber> target ) {
+        DistanceFunctions.verifyInputs( value, target, null );
         if ( value instanceof PolyFloatList<?> vfl && target instanceof PolyFloatList<?> tfl ) {
             return DistanceFunctions.l2Metric( vfl.getRawValue(), tfl.getRawValue() );
         }
@@ -224,10 +226,23 @@ public class Functions {
 
 
     public static PolyDouble cosDistance( List<PolyNumber> value, List<PolyNumber> target ) {
+        DistanceFunctions.verifyInputs( value, target, null );
         if ( value instanceof PolyFloatList<?> vfl && target instanceof PolyFloatList<?> tfl ) {
             return DistanceFunctions.cosineMetric( vfl.getRawValue(), tfl.getRawValue() );
         }
         return DistanceFunctions.cosineMetric( value, target );
+    }
+
+
+    @SuppressWarnings( "unchecked" )
+    public static List<PolyValue> arrayToPolyFloatList( final java.sql.Array a ) {
+        if ( a == null ) return null;
+        List<?> raw = arrayToList( a );
+        float[] result = new float[raw.size()];
+        for ( int i = 0; i < raw.size(); ++i ) {
+            result[i] = ((Number) raw.get( i )).floatValue();
+        }
+        return (List<PolyValue>) (List<?>) new PolyFloatList<>( result );
     }
 
 

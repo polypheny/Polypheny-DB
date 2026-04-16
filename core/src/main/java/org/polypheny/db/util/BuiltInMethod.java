@@ -355,6 +355,7 @@ public enum BuiltInMethod {
 
     JDBC_DEEP_ARRAY_TO_POLY_LIST( Functions.class, "arrayToPolyList", java.sql.Array.class, Function1.class, int.class ),
     JDBC_ARRAY_TO_LIST( Functions.class, "arrayToList", java.sql.Array.class ),
+    JDBC_ARRAY_TO_POLY_FLOAT_LIST( Functions.class, "arrayToPolyFloatList", java.sql.Array.class),
     JDBC_DEEP_ARRAY_TO_LIST( Functions.class, "deepArrayToList", java.sql.Array.class ),
     OBJECT_TO_STRING( Object.class, "toString" ),
     OBJECTS_EQUAL( Objects.class, "equals", Object.class, Object.class ),
