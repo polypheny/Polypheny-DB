@@ -107,10 +107,10 @@ Calls logic of Parquet Adapter Module
 #### 1.2 Determine workflow-side Output Schema
 - call `lockOutputType(...)`  
 - ##### Make validations:
-  - DOCUMENT
+  - *DOCUMENT*
       - validate that source exists
       - no detailed field schema from the Parquet file needed
-  - RELATIONAL
+  - *RELATIONAL*
       - validate that source is a parquet file
       - for multiple source
           - `ParquetSourceReader.readSchema(source)` called to read source schemas
