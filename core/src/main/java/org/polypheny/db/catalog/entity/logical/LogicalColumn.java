@@ -152,7 +152,13 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
         }
 
         if ( collectionsType == PolyType.ARRAY ) {
-            elementType = typeFactory.createArrayType( elementType, cardinality != null ? cardinality : -1, dimension != null ? dimension : -1 );
+            long card = cardinality != null ? cardinality : -1;
+            long dim  = dimension  != null ? dimension  : -1;
+            if ( (type == PolyType.FLOAT || type == PolyType.REAL) && card > 0 && dim == 1 ) {
+                elementType = typeFactory.createVectorType( elementType, card );
+            } else {
+                elementType = typeFactory.createArrayType( elementType, card, dim );
+            }
         } else if ( collectionsType == PolyType.MAP ) {
             elementType = typeFactory.createMapType( typeFactory.createPolyType( PolyType.ANY ), elementType );
         }

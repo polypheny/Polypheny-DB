@@ -108,8 +108,9 @@ import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.tools.AlgBuilderFactory;
-import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Quadruple;
@@ -1565,25 +1566,31 @@ public class JdbcRules {
 
 
         @Override
-        public Void visitCall( RexCall call ) {
+        public Void visitCall(RexCall call) {
             Operator operator = call.getOperator();
-            if ( operator instanceof Function
-                    && ((SqlFunction) operator).getFunctionCategory().isKnn()
-                    && dialect.supportedKnnFunctions().contains( operator.getOperatorName() ) ) {
-                if ( !call.operands.isEmpty() ) {
-                    AlgDataType t = call.operands.get( 0 ).getType();
-                    AlgDataType comp = t.getComponentType();
-                    if ( comp != null && t instanceof ArrayType arrayType) {
-                        Long dim = arrayType.getDimension();
-                        Optional<String> mapped = dialect.resolveVectorPushdownType( t.getPolyType(), comp.getPolyType(), dim );
-                        if ( mapped.isPresent() ) {
-                            supportsKnnFunction = true;
-                        }
-                    }
+            if (operator instanceof SqlFunction sqlFunction
+                    && sqlFunction.getFunctionCategory().isKnn()
+                    && dialect.supportedKnnFunctions().contains(sqlFunction.getOperatorName())
+                    && call.operands.size() >= 2) {
+                AlgDataType t1 = call.operands.get(0).getType();
+                AlgDataType t2 = call.operands.get(1).getType();
+                if (t1 instanceof VectorType vectorType
+                        && isCompatibleQueryVector( t2 )
+                        && dialect.vectorPushdownTypeIsPresent( vectorType.getVectorElementType() )) {
+                    supportsKnnFunction = true;
                 }
             }
-            return super.visitCall( call );
+            return super.visitCall(call);
         }
+
+
+        private static boolean isCompatibleQueryVector( AlgDataType t2 ) {
+            if ( t2 instanceof VectorType ) return true;
+            if ( t2.getPolyType() != PolyType.ARRAY ) return false;
+            AlgDataType comp = t2.getComponentType();
+            return comp != null && PolyTypeUtil.isNumeric( comp );
+        }
+
     }
 
 

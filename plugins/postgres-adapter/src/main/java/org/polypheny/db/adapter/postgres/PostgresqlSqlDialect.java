@@ -51,6 +51,10 @@ import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.fun.SqlFloorFunction;
 import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
+import org.polypheny.db.type.VectorType.ElementType;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.inference.ReturnTypes;
 
@@ -336,12 +340,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
      */
     @Override
     public Optional<Expression> getCustomArrayRetrievalExpression( ParameterExpression resultSet, int i, AlgDataType fieldType ) {
-        if ( !supportsVector() || fieldType.getPolyType() != PolyType.ARRAY ) {
-            return Optional.empty();
-        }
-        // Nested arrays are not vectors and need to be ignored.
-        AlgDataType component = fieldType.getComponentType();
-        if ( component == null || component.getPolyType() == PolyType.ARRAY ) {
+        if ( !supportsVector() || fieldType.getPolyType() != PolyType.ARRAY || !(fieldType instanceof VectorType)) {
             return Optional.empty();
         }
         Expression object = Expressions.call( resultSet, "getObject", Expressions.constant( i + 1 ) );
@@ -359,18 +358,39 @@ public class PostgresqlSqlDialect extends SqlDialect {
     public void initializeConnection( java.sql.Connection conn ) throws java.sql.SQLException {
         if ( supportsVector() ) {
             PGvector.registerTypes( conn );
-            PGbit.registerType( conn );
+            // TODO: Uncomment if support implemented
+            //PGbit.registerType( conn );
         }
     }
 
 
     @Override
-    public Optional<String> resolveVectorPushdownType( PolyType collectionsType, PolyType type, Long dimension ) {
-       boolean allow = collectionsType == PolyType.ARRAY && dimension != null && supportsVector() && dimension == 1;
-       if ( type == PolyType.FLOAT || type == PolyType.DOUBLE || type == PolyType.REAL ) {
-           if ( allow ) return Optional.of( "VECTOR" );
-       }
-       return Optional.empty();
+    public boolean vectorPushdownTypeIsPresent( VectorType.ElementType vectorType ) {
+        return supportsVector() && vectorType == ElementType.FLOAT;
+    }
+
+
+    @Override
+    public Object getVectorDbObject( VectorType.ElementType vectorType, PolyList<PolyValue> vectorAsList ) {
+        return switch ( vectorType ) {
+            case FLOAT -> {
+                float[] fa = new float[vectorAsList.size()];
+                for ( int i = 0; i < vectorAsList.size(); ++i ) fa[i] = vectorAsList.get( i ).asFloat().floatValue();
+                yield new PGvector( fa );
+            }
+            case BIT, DOUBLE, INTEGER -> null;
+        };
+    }
+
+
+    @Override
+    public String getTypeString( VectorType.ElementType vectorType ) {
+        return switch ( vectorType ) {
+            case FLOAT -> "vector";
+            case BIT -> "bit";
+            case DOUBLE, INTEGER -> throw new UnsupportedOperationException("Vectors of type " + vectorType
+                    + " are not supported by PG and do therefore not have a dedicated type string");
+        };
     }
 
 }
