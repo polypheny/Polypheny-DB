@@ -83,7 +83,14 @@ public abstract class PolyList<E extends PolyValue> extends PolyValue implements
 
 
     public static <E extends PolyValue> PolyList<E> of( Collection<E> value ) {
+        if ( value instanceof PolyFloatList<?> ) return copyOf( (PolyList<E>) value );
         return copyOf( new ArrayList<>( value ) );
+    }
+
+
+    @SuppressWarnings( "unchecked" )
+    public static PolyList<PolyValue> of( float[] floats ) {
+        return  (PolyList<PolyValue>) (PolyList<?>) new PolyFloatList<>( floats );
     }
 
 
@@ -93,9 +100,10 @@ public abstract class PolyList<E extends PolyValue> extends PolyValue implements
     }
 
 
-    @SuppressWarnings("unused")
     public static <E extends PolyValue> PolyList<E> ofNullable( Collection<E> value ) {
-        return value == null ? null : copyOf( new ArrayList<>( value ) );
+        if ( value == null ) return null;
+        if ( value instanceof PolyFloatList<?> ) return copyOf( (PolyList<E>) value );
+        return copyOf( new ArrayList<>( value ) );
     }
 
 

@@ -61,8 +61,12 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
+import org.polypheny.db.type.entity.PolyFloatList;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
@@ -302,7 +306,27 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 handleBinary( preparedStatement, i, value, connectionHandler );
                 break;
             case ARRAY:
-                if ( (type.getComponentType().getPolyType() == PolyType.ARRAY && connectionHandler.getDialect().supportsNestedArrays()) || (type.getComponentType().getPolyType() != PolyType.ARRAY) && connectionHandler.getDialect().supportsArrays() ) {
+                SqlDialect dialect = connectionHandler.getDialect();
+                if ( type instanceof VectorType vecType && dialect.vectorPushdownTypeIsPresent( vecType.getVectorElementType() ) ) {
+                    switch ( vecType.getVectorElementType() ) {
+                        case FLOAT -> {
+                            float[] raw;
+                            if ( value instanceof PolyFloatList<?> pfl ) {
+                                raw = pfl.getRawValue();
+                            } else {
+                                List<? extends PolyValue> list = value.asList();
+                                raw = new float[list.size()];
+                                for ( int j = 0; j < list.size(); ++j ) {
+                                    raw[j] = list.get( j ).asNumber().floatValue();
+                                }
+                            }
+                            preparedStatement.setObject( i, dialect.getVectorDbObject( vecType.getVectorElementType(), PolyList.of( raw ) ) );
+                        }
+                        case DOUBLE, INTEGER, BIT -> throw new UnsupportedOperationException(
+                                "VectorType " + vecType.getVectorElementType() + " is not yet implemented." );
+                    }
+                }
+                else if ( (type.getComponentType().getPolyType() == PolyType.ARRAY && dialect.supportsNestedArrays()) || (type.getComponentType().getPolyType() != PolyType.ARRAY) && dialect.supportsArrays() ) {
                     Array array = getArray( value, type, connectionHandler );
                     preparedStatement.setArray( i, array );
                     array.free(); // according to documentation this is advised to not hog the memory

@@ -86,12 +86,12 @@ import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialect.CalendarPolicy;
 import org.polypheny.db.sql.language.util.SqlString;
-import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDefaults;
-import org.polypheny.db.type.entity.PolyListImpl;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
@@ -353,53 +353,80 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     @NonNull
     private static Expression getPreprocessArrayExpression( ParameterExpression resultSet_, int i, SqlDialect dialect, AlgDataType fieldType ) {
-        Optional<Expression> arrayRetrieval = dialect.getCustomArrayRetrievalExpression( resultSet_, i, fieldType );
-        if ( dialect.supportsArrays() ) {
-            ParameterExpression argument = Expressions.parameter( Object.class );
+            if ( !dialect.supportsArrays() ) {
+                // dialect stores arrays as JSON text (e.g., HSQLDB)
+                return Expressions.call(
+                        BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
+                        Expressions.call( resultSet_, "getString", Expressions.constant( i + 1
+                        ) ) );
+            }
 
+            if ( fieldType instanceof VectorType vecType ) {
+                // standard JDBC-array path (used when the column returns java.sql.Array)
+                Expression standardMethod;
+                switch ( vecType.getVectorElementType() ) {
+                    case FLOAT -> standardMethod = Expressions.call(
+                            BuiltInMethod.JDBC_ARRAY_TO_POLY_FLOAT_LIST.method,
+                            Expressions.call( resultSet_, "getArray", Expressions.constant( i
+                                    + 1 ) ) );
+                    case DOUBLE, INTEGER, BIT -> throw new UnsupportedOperationException(
+                            "VectorType " + vecType.getVectorElementType() + " is not yet implemented." );
+                    default -> throw new IllegalStateException( "Unknown VectorType: " +
+                            vecType.getVectorElementType() );
+                }
+
+                if ( dialect.supportsVector() ) {
+                    // pgvector stores the column as a native vector type: getObject() returnsPGvector,
+                    // not java.sql.Array -> custom retrieval expression.
+                            Optional<Expression> arrayRetrieval =
+                                    dialect.getCustomArrayRetrievalExpression( resultSet_, i, fieldType );
+                    return arrayRetrieval.map( parseVectorExpr ->
+                            Expressions.condition(
+                                    Expressions.typeIs(
+                                            Expressions.call( resultSet_, "getObject",
+                                                    Expressions.constant( i + 1 ) ),
+                                            java.sql.Array.class ),
+                                    standardMethod,
+                                    parseVectorExpr )
+                    ).orElse( standardMethod );
+                }
+                // Non-vector dialect that supports arrays: always returns java.sql.Array
+                return standardMethod;
+            }
+
+            // Regular (non-vector) ARRAY type
+            ParameterExpression argument = Expressions.parameter( Object.class );
             AlgDataType componentType = fieldType.getComponentType();
             int depth = 1;
             while ( componentType.getComponentType() != null ) {
                 componentType = componentType.getComponentType();
                 depth++;
             }
-
             Expression standardMethod = Expressions.call(
                     BuiltInMethod.JDBC_DEEP_ARRAY_TO_POLY_LIST.method,
                     Expressions.call( resultSet_, "getArray", Expressions.constant( i + 1 ) ),
-                    Expressions.lambda( getOfPolyExpression( componentType, argument, resultSet_, i, dialect ), argument ),
-                    Expressions.constant( depth )
-            );
-            Expression textFallback = Expressions.call(
-                    BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
-                    Expressions.call( resultSet_, "getString", Expressions.constant( i + 1 ) )
-            );
-            // If not of type java.sql.Array, use dialect specific handling for vector type
-            if ( fieldType.unwrapOrThrow( ArrayType.class ).getDimension() == 1 && dialect.supportsVector()|| dialect.supportsNestedArrays() ) {
-                log.debug( "Parsing array as vector" );
-                return arrayRetrieval.map( expression -> Expressions.condition(
-                        Expressions.typeIs(
-                                Expressions.call( resultSet_, "getObject", Expressions.constant( i + 1 ) ),
-                                java.sql.Array.class ),
-                        standardMethod,
-                        expression ) ).orElse( standardMethod );
+                    Expressions.lambda( getOfPolyExpression( componentType, argument,
+                            resultSet_, i, dialect ), argument ),
+                    Expressions.constant( depth ) );
+
+            if ( dialect.supportsNestedArrays() ) {
+                return standardMethod;
             }
+            // Dialect supports flat arrays but not nested — fall back to text if the column is not an Array object
             return Expressions.condition(
                     Expressions.typeIs(
-                            Expressions.call( resultSet_, "getObject", Expressions.constant( i + 1 ) ),
+                            Expressions.call( resultSet_, "getObject", Expressions.constant( i
+                                    + 1 ) ),
                             java.sql.Array.class ),
                     standardMethod,
-                    textFallback );
+                    Expressions.call(
+                            BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
+                            Expressions.call( resultSet_, "getString", Expressions.constant( i
+                                    + 1 ) ) ) );
         }
-        return Expressions.call(
-                BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
-                Expressions.call( resultSet_, "getString", Expressions.constant( i + 1 ) )
-        );
-
-    }
 
 
-    private static Expression getOfPolyExpression( AlgDataType fieldType, Expression source, ParameterExpression resultSet_, int i, SqlDialect dialect ) {
+        private static Expression getOfPolyExpression( AlgDataType fieldType, Expression source, ParameterExpression resultSet_, int i, SqlDialect dialect ) {
         final Expression poly;
         String methodName = fieldType.isNullable() ? "ofNullable" : "of";
         switch ( fieldType.getPolyType() ) {
@@ -440,7 +467,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = Expressions.call( PolyBigDecimal.class, methodName, Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
                 break;
             case ARRAY:
-                poly = Expressions.call( PolyListImpl.class, methodName, source );
+                poly = Expressions.call( PolyList.class, methodName, source );
                 break;
             case VARBINARY:
                 if ( dialect.supportsComplexBinary() ) {

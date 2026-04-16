@@ -39,6 +39,11 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
+/**
+ * <p>Special list type for {@code PolyList<PolyFloat>}. </p>
+ * <p>This list is specifically used where performance matters.</p>
+ * @param <E> PolyFloat
+ */
 @EqualsAndHashCode(callSuper = false)
 public class PolyFloatList<E extends PolyFloat> extends PolyList<E> {
 
@@ -339,7 +344,7 @@ public class PolyFloatList<E extends PolyFloat> extends PolyList<E> {
         for ( float f : value ) {
             list.add( PolyFloat.of( f ).asExpression() );
         }
-        return Expressions.call( PolyList.class, "ofExpression", list );
+        return Expressions.new_( PolyFloatList.class, Expressions.newArrayInit( float.class, list) );
     }
 
 
