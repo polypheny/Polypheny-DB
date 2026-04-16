@@ -1,0 +1,109 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.6.1 Chrome/142.0.7444.265 Electron/39.8.0 Safari/537.36" version="29.6.1">
+  <diagram id="parquet-workflow-load" name="Parquet Workflow Load">
+    <mxGraphModel dx="1558" dy="912" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" value="&lt;b&gt;ParquetLoadActivity&lt;/b&gt;&lt;br&gt;workflow node&lt;br&gt;validates input&lt;br&gt;dispatches export" vertex="1">
+          <mxGeometry height="100" width="220" x="70" y="629" as="geometry" />
+        </mxCell>
+        <mxCell id="3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" value="&lt;b&gt;ParquetWorkflowLoadSupport&lt;/b&gt;&lt;br&gt;workflow helper&lt;br&gt;prepares target file,&amp;nbsp;infers schema,&amp;nbsp;&lt;div&gt;calls writing functionality&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="260" x="360" y="629" as="geometry" />
+        </mxCell>
+        <mxCell id="4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" value="&lt;b&gt;SchemaState&lt;/b&gt;&lt;br&gt;accumulates inferred&lt;br&gt;field definitions" vertex="1">
+          <mxGeometry height="90" width="190" x="737" y="435" as="geometry" />
+        </mxCell>
+        <mxCell id="6Bm5j8vTThmp4rjQpBF9-22" edge="1" parent="1" source="5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6Bm5j8vTThmp4rjQpBF9-23" connectable="0" parent="6Bm5j8vTThmp4rjQpBF9-22" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="contains" vertex="1">
+          <mxGeometry relative="1" x="-0.2013" y="1" as="geometry">
+            <mxPoint y="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" value="&lt;b&gt;FieldSchema&lt;/b&gt;&lt;br&gt;single field info" vertex="1">
+          <mxGeometry height="90" width="190" x="1039" y="434" as="geometry" />
+        </mxCell>
+        <mxCell id="6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" value="&lt;b&gt;ValueSchema&lt;/b&gt;&lt;br&gt;single value info:&lt;div&gt;primitive / group / repeated&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="90" width="220" x="1024" y="278" as="geometry" />
+        </mxCell>
+        <mxCell id="7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" value="&lt;b&gt;ValueKind&lt;/b&gt;&lt;br&gt;logical value&lt;div&gt;categorization&lt;/div&gt;" vertex="1">
+          <mxGeometry height="90" width="126" x="1071" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;" value="&lt;b&gt;ParquetMessageTypeBuilder&lt;/b&gt;&lt;br&gt;builds MessageType&lt;br&gt;from inferred schema" vertex="1">
+          <mxGeometry height="90" width="230" x="170" y="829" as="geometry" />
+        </mxCell>
+        <mxCell id="9" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;" value="&lt;b&gt;BufferedIterator&lt;/b&gt;&lt;br&gt;replays sampled rows/documents&lt;br&gt;then remaining input" vertex="1">
+          <mxGeometry height="90" width="250" x="546" y="830" as="geometry" />
+        </mxCell>
+        <mxCell id="10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;" value="&lt;b&gt;ParquetSourceWriter&lt;/b&gt;&lt;br&gt;low-level Parquet writer&lt;br&gt;creates groups,&amp;nbsp;writes rows" vertex="1">
+          <mxGeometry height="100" width="230" x="716" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;" value="&lt;b&gt;ParquetTypeConverter&lt;/b&gt;&lt;br&gt;types and values conversion" vertex="1">
+          <mxGeometry height="100" width="220" x="1038" y="629" as="geometry" />
+        </mxCell>
+        <mxCell id="12" edge="1" parent="1" source="2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;" target="3" value="uses">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="13" edge="1" parent="1" source="3" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;exitX=0.5;exitY=0;exitDx=0;exitDy=0;edgeStyle=orthogonalEdgeStyle;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="4" value="builds / updates">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="490" y="480" />
+            </Array>
+            <mxPoint x="490" y="729" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="14" edge="1" parent="1" source="4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;" target="5" value="contains">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="16" edge="1" parent="1" source="6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;" target="7" value="classified by">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="17" edge="1" parent="1" source="3" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;" target="8" value="builds schema for">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="18" edge="1" parent="1" source="3" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;" target="9" value="creates">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="19" edge="1" parent="1" source="3" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="10" value="writes&amp;nbsp;&lt;div&gt;through&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="620" y="709" as="sourcePoint" />
+            <mxPoint x="980" y="698.0000000000002" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="20" edge="1" parent="1" source="10" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="4" value="uses field/value schema">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="878" y="980" as="sourcePoint" />
+            <mxPoint x="858" y="414" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="21" edge="1" parent="1" source="10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;" target="11" value="consumes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6Bm5j8vTThmp4rjQpBF9-25" edge="1" parent="1" source="10" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.691;entryY=-0.022;entryDx=0;entryDy=0;entryPerimeter=0;" target="9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6Bm5j8vTThmp4rjQpBF9-26" connectable="0" parent="6Bm5j8vTThmp4rjQpBF9-25" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="uses" vertex="1">
+          <mxGeometry relative="1" x="-0.1074" y="-5" as="geometry">
+            <mxPoint y="6" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6Bm5j8vTThmp4rjQpBF9-27" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" value="&lt;span style=&quot;color: rgb(13, 13, 13); font-family: -apple-system, BlinkMacSystemFont, &amp;quot;Segoe UI&amp;quot;, sans-serif; font-size: 13px; text-align: start;&quot;&gt;schema inference model&lt;/span&gt;" vertex="1">
+          <mxGeometry height="30" width="203" x="117" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="6Bm5j8vTThmp4rjQpBF9-28" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;" value="&lt;span style=&quot;color: rgb(13, 13, 13); font-family: -apple-system, BlinkMacSystemFont, &amp;quot;Segoe UI&amp;quot;, sans-serif; font-size: 13px; text-align: start;&quot;&gt;shared Parquet infrastructure&lt;/span&gt;" vertex="1">
+          <mxGeometry height="30" width="203" x="117" y="161" as="geometry" />
+        </mxCell>
+        <mxCell id="6Bm5j8vTThmp4rjQpBF9-29" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" value="&lt;span style=&quot;color: rgb(13, 13, 13); font-family: -apple-system, BlinkMacSystemFont, &amp;quot;Segoe UI&amp;quot;, sans-serif; font-size: 13px; text-align: start;&quot;&gt;workflow helper&lt;/span&gt;" vertex="1">
+          <mxGeometry height="30" width="203" x="117" y="203" as="geometry" />
+        </mxCell>
+        <mxCell id="6Bm5j8vTThmp4rjQpBF9-30" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" value="&lt;span style=&quot;color: rgb(13, 13, 13); font-family: -apple-system, BlinkMacSystemFont, &amp;quot;Segoe UI&amp;quot;, sans-serif; font-size: 13px; text-align: start;&quot;&gt;workflow activity&lt;/span&gt;" vertex="1">
+          <mxGeometry height="30" width="203" x="117" y="245" as="geometry" />
+        </mxCell>
+        <mxCell id="6Bm5j8vTThmp4rjQpBF9-31" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;" value="&lt;span style=&quot;color: rgb(13, 13, 13); font-family: -apple-system, BlinkMacSystemFont, &amp;quot;Segoe UI&amp;quot;, sans-serif; font-size: 13px; text-align: start;&quot;&gt;utility/helper&lt;/span&gt;" vertex="1">
+          <mxGeometry height="26" width="203" x="117" y="289" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -31,6 +31,9 @@ import java.util.Map;
 
 import static org.polypheny.db.adapter.parquet.shared.schema.ParquetFieldNameNormalizer.uniquifyParquetNames;
 
+/**
+ * Contains inferred schema: all fields definitions
+ */
 @Getter
 public class SchemaState {
 
