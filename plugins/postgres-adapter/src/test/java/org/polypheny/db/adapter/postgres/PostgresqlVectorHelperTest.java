@@ -19,12 +19,11 @@ package org.polypheny.db.adapter.postgres;
 
 import java.sql.SQLException;
 import java.util.List;
-import com.pgvector.PGbit;
 import com.pgvector.PGhalfvec;
 import com.pgvector.PGvector;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyFloatList;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.postgresql.jdbc.PgArray;
@@ -32,9 +31,9 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class PostgresqlVectorHelperTest {
@@ -49,29 +48,40 @@ public class PostgresqlVectorHelperTest {
 
     @Test
     void parsesVectorCorrectly() {
-        PGvector obj = new PGvector(new float[]{1f, 2.5f, 3f});
+        PGvector obj = new PGvector(new float[]{ 1f, 2.5f, 3f });
         List<PolyValue> result = PostgresqlVectorHelper.parseVector( obj );
         assertNotNull( result );
-        assertTrue( result.get(0) instanceof PolyFloat );
-        assertTrue( result.get(1) instanceof PolyFloat );
-        assertTrue( result.get(2) instanceof PolyFloat );
+        assertInstanceOf( PolyFloat.class, result.get( 0 ) );
+        assertInstanceOf( PolyFloat.class, result.get( 1 ) );
+        assertInstanceOf( PolyFloat.class, result.get( 2 ) );
         assertEquals( 1.0f, ((PolyFloat) result.get(0)).floatValue() );
         assertEquals( 2.5f, ((PolyFloat) result.get(1)).floatValue() );
         assertEquals( 3f, ((PolyFloat) result.get(2)).floatValue() );
+
+        // optimized raw behavior
+        assertInstanceOf( PolyFloatList.class, result );
+        assertEquals( 1.0f, ((PolyFloatList<?>) result).getRaw( 0 ) );
+        assertEquals( 2.5f, ((PolyFloatList<?>) result).getRaw( 1 ) );
+        assertEquals( 3.0f, ((PolyFloatList<?>) result).getRaw( 2 ) );
     }
 
 
     @Test
     void parsesHalfvecCorrectly() {
-        PGhalfvec obj = new PGhalfvec(new float[]{1f, 2.5f, 3f});
+        PGhalfvec obj = new PGhalfvec(new float[]{ 1f, 2.5f, 3f });
         List<PolyValue> result = PostgresqlVectorHelper.parseVector( obj );
         assertNotNull( result );
-        assertTrue( result.get(0) instanceof PolyFloat );
-        assertTrue( result.get(1) instanceof PolyFloat );
-        assertTrue( result.get(2) instanceof PolyFloat );
+        assertInstanceOf( PolyFloat.class, result.get( 0 ) );
+        assertInstanceOf( PolyFloat.class, result.get( 1 ) );
+        assertInstanceOf( PolyFloat.class, result.get( 2 ) );
         assertEquals( 1.0f, ((PolyFloat) result.get(0)).floatValue() );
         assertEquals( 2.5f, ((PolyFloat) result.get(1)).floatValue() );
         assertEquals( 3f, ((PolyFloat) result.get(2)).floatValue() );
+
+        assertInstanceOf( PolyFloatList.class, result );
+        assertEquals( 1.0f, ((PolyFloatList<?>) result).getRaw( 0 ) );
+        assertEquals( 2.5f, ((PolyFloatList<?>) result).getRaw( 1 ) );
+        assertEquals( 3.0f, ((PolyFloatList<?>) result).getRaw( 2 ) );
     }
 
 
@@ -89,42 +99,54 @@ public class PostgresqlVectorHelperTest {
 
     @Test
     void parsesNegativeVectorCorrectly() {
-        PGvector obj = new PGvector(new float[]{-1f, -2.5f, -3f});
+        PGvector obj = new PGvector(new float[]{ -1f, -2.5f, -3f });
         List<PolyValue> result = PostgresqlVectorHelper.parseVector( obj );
         assertNotNull( result );
         assertEquals( 3, result.size() );
-        assertTrue( result.get(0) instanceof PolyFloat );
-        assertTrue( result.get(1) instanceof PolyFloat );
-        assertTrue( result.get(2) instanceof PolyFloat );
+        assertInstanceOf( PolyFloat.class, result.get( 0 ) );
+        assertInstanceOf( PolyFloat.class, result.get( 1 ) );
+        assertInstanceOf( PolyFloat.class, result.get( 2 ) );
         assertEquals( -1.0f, ((PolyFloat) result.get(0)).floatValue() );
         assertEquals( -2.5f, ((PolyFloat) result.get(1)).floatValue() );
         assertEquals( -3f, ((PolyFloat) result.get(2)).floatValue() );
+
+        assertInstanceOf( PolyFloatList.class, result );
+        assertEquals( -1.0f, ((PolyFloatList<?>) result).getRaw( 0 ) );
+        assertEquals( -2.5f, ((PolyFloatList<?>) result).getRaw( 1 ) );
+        assertEquals( -3f, ((PolyFloatList<?>) result).getRaw( 2 ) );
     }
 
 
     @Test
     void parsesNegativeHalfvecCorrectly() {
-        PGhalfvec obj = new PGhalfvec(new float[]{-1f, -2.5f, -3f});
+        PGhalfvec obj = new PGhalfvec(new float[]{ -1f, -2.5f, -3f });
         List<PolyValue> result = PostgresqlVectorHelper.parseVector( obj );
         assertNotNull( result );
-        assertTrue( result.get(0) instanceof PolyFloat );
-        assertTrue( result.get(1) instanceof PolyFloat );
-        assertTrue( result.get(2) instanceof PolyFloat );
+        assertInstanceOf( PolyFloat.class, result.get( 0 ) );
+        assertInstanceOf( PolyFloat.class, result.get( 1 ) );
+        assertInstanceOf( PolyFloat.class, result.get( 2 ) );
         assertEquals( -1.0f, ((PolyFloat) result.get(0)).floatValue() );
         assertEquals( -2.5f, ((PolyFloat) result.get(1)).floatValue() );
         assertEquals( -3f, ((PolyFloat) result.get(2)).floatValue() );
+
+        assertInstanceOf( PolyFloatList.class, result );
+        assertEquals( -1.0f, ((PolyFloatList<?>) result).getRaw( 0 ) );
+        assertEquals( -2.5f, ((PolyFloatList<?>) result).getRaw( 1 ) );
+        assertEquals( -3f, ((PolyFloatList<?>) result).getRaw( 2 ) );
     }
 
 
     @Test
     void parseSingleEntryVector() {
-        PGvector vector = new PGvector( new float[]{-1f} );
+        PGvector vector = new PGvector( new float[]{ -1f } );
         List<PolyValue> result = PostgresqlVectorHelper.parseVector( vector );
         assertNotNull( result );
         assertEquals( 1, result.size() );
-        assertTrue( result.get(0) instanceof PolyFloat );
+        assertInstanceOf( PolyFloat.class, result.get( 0 ) );
         assertEquals( -1.0f, ((PolyFloat) result.get(0)).floatValue() );
 
+        assertInstanceOf( PolyFloatList.class, result );
+        assertEquals( -1.0f, ((PolyFloatList<?>) result).getRaw( 0 ) );
     }
 
 }

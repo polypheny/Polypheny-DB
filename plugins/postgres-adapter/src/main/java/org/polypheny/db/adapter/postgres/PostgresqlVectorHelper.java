@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.postgres;
 
-import com.pgvector.PGbit;
 import com.pgvector.PGhalfvec;
 import com.pgvector.PGsparsevec;
 import com.pgvector.PGvector;
@@ -26,11 +25,11 @@ import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDynamicParam;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
-import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyFloatList;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
-import java.util.ArrayList;
 import java.util.List;
+
 
 @Slf4j
 public class PostgresqlVectorHelper {
@@ -59,27 +58,18 @@ public class PostgresqlVectorHelper {
      * <p>
      * Possible PolyValue objects:
      * <ul>
-     *     <li>{@link PolyFloat},</li>
-     *     <li>{@link PolyBoolean}</li>
+     *     <li>{@link PolyFloat}</li>
      * </ul>
      * </p>
      */
+    @SuppressWarnings( "unchecked" )
     public static List<PolyValue> parseVector( Object dbObject ) {
         float[] vector = null;
-        boolean[] bitvector = null;
-        if (dbObject instanceof PGvector vec) {
-            vector = vec.toArray();
-        } else if (dbObject instanceof PGhalfvec vec) {
-            vector = vec.toArray();
-        } else if (dbObject instanceof PGsparsevec vec) {
-            vector = vec.toArray();
-        } else if (dbObject instanceof PGbit vec ) {
-            bitvector = vec.toArray();
-        }
+        if (dbObject instanceof PGvector vec) vector = vec.toArray();
+        else if (dbObject instanceof PGhalfvec vec) vector = vec.toArray();
+        else if (dbObject instanceof PGsparsevec vec) vector = vec.toArray();
         if ( vector != null) {
-            List<PolyValue> list = new ArrayList<>( vector.length );
-            for ( float f : vector ) list.add( PolyFloat.of( f ) );
-            return list;
+            return (List<PolyValue>) (List<?>) new PolyFloatList<>( vector );
         }
         return null;
     }
