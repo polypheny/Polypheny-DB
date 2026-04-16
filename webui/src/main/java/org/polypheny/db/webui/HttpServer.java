@@ -361,7 +361,6 @@ public class HttpServer implements Runnable {
         webuiServer.get( "/isReady", ctx -> ctx.result( String.valueOf( isReady ) ) );
 
         webuiServer.post( "/validateDocuments", DocumentSchemaCrud::validateDocuments );
-
     }
 
 

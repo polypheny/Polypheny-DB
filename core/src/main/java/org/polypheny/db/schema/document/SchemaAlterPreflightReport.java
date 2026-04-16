@@ -38,9 +38,6 @@ public final class SchemaAlterPreflightReport {
     }
 
 
-    /**
-     * Convenience: compact human-readable summary of violations.
-     */
     public String compactSummary( int maxItems ) {
         if ( ok || sample == null || sample.isEmpty() ) {
             return "ok";

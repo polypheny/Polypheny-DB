@@ -262,8 +262,6 @@ public class DocumentUtil {
     }
 
 
-
-
     public static RexLiteral getNestedStringArrayLiteral( List<String> elements, AlgCluster cluster ) {
         AlgDataType charType = cluster.getTypeFactory().createPolyType( PolyType.CHAR, 255 );
         AlgDataType type = getNestedArrayType( cluster, 2, charType );
@@ -278,6 +276,7 @@ public class DocumentUtil {
 
         return new RexLiteral( value, type, PolyType.ARRAY );
     }
+
 
     public static AlgDataType getNestedArrayType( AlgCluster cluster, int depth, AlgDataType componentType ) {
         if ( depth == 0 ) {

@@ -1,5 +1,3 @@
-package org.polypheny.db.algebra.logical.document;
-
 /*
  * Copyright 2019-2025 The Polypheny Project
  *
@@ -16,11 +14,12 @@ package org.polypheny.db.algebra.logical.document;
  * limitations under the License.
  */
 
+package org.polypheny.db.algebra.logical.document;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonValue;
@@ -30,6 +29,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.document.DocumentSchema;
 import org.polypheny.db.schema.document.DocumentSchema.AdditionalProperties;
@@ -38,61 +39,45 @@ import org.polypheny.db.schema.document.SchemaJson;
 import org.polypheny.db.schema.document.SchemaMeta;
 import org.polypheny.db.schema.document.SchemaValidator;
 import org.polypheny.db.schema.document.SchemaValidator.ValidationResult;
-import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.type.entity.numerical.PolyDouble;
-import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.polypheny.db.type.PolyType;
-
 
 public final class DocumentSchemaWriteEnforcer {
 
     private static final Logger LOG = LoggerFactory.getLogger( DocumentSchemaWriteEnforcer.class );
 
+    private static final int INSERT_SUMMARY_LIMIT = 3;
+    private static final int MAX_LOG_DETAIL_LENGTH = 500;
+
+
     private DocumentSchemaWriteEnforcer() {
     }
 
-    /**
-     * Schema + enforcement mode bundle.
-     */
-    private record SchemaContext( DocumentSchema schema, EnforcementMode mode ) {
+
+    private record SchemaContext(DocumentSchema schema, EnforcementMode mode) {
+
     }
 
-    private record ResolvedSchemaNode( DocumentSchema.Node node, AdditionalProperties inheritedAp ) {
+
+    private record ResolvedSchemaNode(DocumentSchema.Node node, AdditionalProperties inheritedAp) {
+
     }
 
-    /**
-     * Entry point called from LogicalDocumentModify.create(...).
-     *
-     * If there is no schema or enforcement is OFF, this is a no-op.
-     * Otherwise it:
-     *  - preflights literal INSERTs (if possible)
-     *  - performs static checks on update/remove/rename specs
-     */
-    public static void enforce(
-            Entity entity,
-            AlgNode input,
-            LogicalDocumentModify.Operation operation,
-            Map<String, ? extends RexNode> updates,
-            List<String> removes,
-            Map<String, String> renames ) {
 
-        Optional<SchemaContext> ctxOpt = loadSchemaContext( entity );
-        if ( ctxOpt.isEmpty() ) {
-            // no schema, or enforcement=OFF, or not a LogicalCollection
+    public static void enforce( Entity entity, AlgNode input, LogicalDocumentModify.Operation operation, Map<String, ? extends RexNode> updates, List<String> removes, Map<String, String> renames ) {
+
+        Optional<SchemaContext> schemaContext = loadSchemaContext( entity );
+        if ( schemaContext.isEmpty() ) {
             return;
         }
 
-        SchemaContext ctx = ctxOpt.get();
-        DocumentSchema schema = ctx.schema();
-        EnforcementMode mode = ctx.mode();
+        SchemaContext context = schemaContext.get();
+        DocumentSchema schema = context.schema();
+        EnforcementMode mode = context.mode();
 
-        // INSERT: preflight literal values when we can see the documents statically
         if ( operation == LogicalDocumentModify.Operation.INSERT ) {
             preflightLiteralInsert( input, entity, schema, mode );
         }
@@ -101,74 +86,55 @@ public final class DocumentSchemaWriteEnforcer {
             validateUpdateTypes( entity, schema, mode, updates );
         }
 
-        // UPDATE / generic MODIFY: static spec checks (unknown top-level fields)
         validateUpdateSpec( entity, schema, mode, updates, removes, renames );
-
-        validateRequiredFieldsNotRemoved(entity, schema, mode, removes, renames);
+        validateRequiredFieldsNotRemoved( entity, schema, mode, removes, renames );
     }
 
-    // -------------------------------------------------------------------------
-    // Schema loading (mirrors MqlSchemaEnforcer)
-    // -------------------------------------------------------------------------
 
     /**
-     * Load active schema + enforcement for a logical collection.
-     *
-     * Returns empty if:
-     *  - entity is not a LogicalCollection
-     *  - there is no SchemaMeta
-     *  - schema JSON is null/blank
-     *  - enforcement resolves to OFF
+     * Schema metadata is stored for logical collections, so this resolves from the planner entity
+     * back to the logical collection id when possible.
      */
     private static Optional<SchemaContext> loadSchemaContext( Entity entity ) {
         if ( entity == null ) {
             return Optional.empty();
         }
 
-        // We must resolve the LOGICAL collection id (SchemaMeta is stored under LogicalCollection.id)
-        Long nsId = tryGetNamespaceId( entity );
-        if ( nsId == null ) {
+        Long namespaceId = tryGetNamespaceId( entity );
+        if ( namespaceId == null ) {
             return Optional.empty();
         }
 
-        // Resolve collection by name in the doc snapshot (most reliable)
-        String name = entity.getName();
-        String adjusted = adjustNameForNamespace( name, nsId );
+        String adjustedName = adjustNameForNamespace( entity.getName(), namespaceId );
 
-        var snap = Catalog.getInstance().getSnapshot();
-        var collOpt = snap.doc().getCollection( nsId, adjusted );
+        Catalog catalog = Catalog.getInstance();
+        Optional<LogicalCollection> logicalCollection = catalog.getSnapshot().doc().getCollection( namespaceId, adjustedName );
 
-        if ( collOpt.isPresent() ) {
-            // Use the logical collection id (this is what createCollectionWS stored under)
-            return loadFromIds( nsId, collOpt.get().id );
+        if ( logicalCollection.isPresent() ) {
+            return loadFromIds( namespaceId, logicalCollection.get().id );
         }
 
-        // Fallback: if entity itself is a LogicalCollection, use it directly
-        if ( entity instanceof LogicalCollection lc ) {
-            return loadFromIds( lc.namespaceId, lc.id );
+        if ( entity instanceof LogicalCollection collection ) {
+            return loadFromIds( collection.namespaceId, collection.id );
         }
 
-        // Last resort: try whatever id the entity exposes (may still be wrong for allocations)
-        Long rawId = tryGetId( entity );
-        if ( rawId != null ) {
-            return loadFromIds( nsId, rawId );
+        Long entityId = tryGetId( entity );
+        if ( entityId != null ) {
+            return loadFromIds( namespaceId, entityId );
         }
 
         return Optional.empty();
     }
 
-    private static Optional<SchemaContext> loadFromIds( long namespaceId, long collectionId ) {
-        Optional<SchemaMeta> metaOpt = SchemaMeta.readCurrent(
-                Catalog.getInstance(),
-                namespaceId,
-                collectionId
-        );
 
-        if ( metaOpt.isEmpty() ) {
+    private static Optional<SchemaContext> loadFromIds( long namespaceId, long collectionId ) {
+        Optional<SchemaMeta> schemaMeta = SchemaMeta.readCurrent( Catalog.getInstance(), namespaceId, collectionId );
+
+        if ( schemaMeta.isEmpty() ) {
             return Optional.empty();
         }
 
-        SchemaMeta meta = metaOpt.get();
+        SchemaMeta meta = schemaMeta.get();
         if ( meta.schemaJson == null || meta.schemaJson.isBlank() ) {
             return Optional.empty();
         }
@@ -182,82 +148,58 @@ public final class DocumentSchemaWriteEnforcer {
         return Optional.of( new SchemaContext( schema, mode ) );
     }
 
-    private static String adjustNameForNamespace( String name, long nsId ) {
-        var ns = Catalog.getInstance().getSnapshot().getNamespace( nsId ).orElseThrow();
-        return ns.caseSensitive ? name : name.toLowerCase( Locale.ROOT );
+
+    private static String adjustNameForNamespace( String name, long namespaceId ) {
+        Catalog catalog = Catalog.getInstance();
+        var namespace = catalog.getSnapshot().getNamespace( namespaceId ).orElseThrow();
+        return namespace.caseSensitive ? name : name.toLowerCase( Locale.ROOT );
     }
 
-// ---- helpers to extract ids from non-logical entity types (best-effort)
 
-    private static Long tryGetNamespaceId( Entity e ) {
-        try {
-            // common in catalog entities
-            var f = e.getClass().getDeclaredField( "namespaceId" );
-            f.setAccessible( true );
-            Object v = f.get( e );
-            return (v instanceof Number n) ? n.longValue() : null;
-        } catch ( Exception ignored ) { }
+    private static Long tryGetNamespaceId( Entity entity ) {
+        Optional<Long> namespaceId = readLong( entity, "namespaceId", "getNamespaceId" );
+        if ( namespaceId.isPresent() ) {
+            return namespaceId.get();
+        }
 
-        try {
-            var m = e.getClass().getMethod( "getNamespaceId" );
-            Object v = m.invoke( e );
-            return (v instanceof Number n) ? n.longValue() : null;
-        } catch ( Exception ignored ) { }
-
-        // If it’s LogicalCollection we can read it directly
-        if ( e instanceof LogicalCollection lc ) {
-            return lc.namespaceId;
+        if ( entity instanceof LogicalCollection collection ) {
+            return collection.namespaceId;
         }
 
         return null;
     }
 
-    private static Long tryGetId( Entity e ) {
-        try {
-            var f = e.getClass().getDeclaredField( "id" );
-            f.setAccessible( true );
-            Object v = f.get( e );
-            return (v instanceof Number n) ? n.longValue() : null;
-        } catch ( Exception ignored ) { }
 
-        try {
-            var m = e.getClass().getMethod( "getId" );
-            Object v = m.invoke( e );
-            return (v instanceof Number n) ? n.longValue() : null;
-        } catch ( Exception ignored ) { }
-
-        return null;
+    private static Long tryGetId( Entity entity ) {
+        return readLong( entity, "id", "getId" ).orElse( null );
     }
 
 
-    /**
-     * Reads a long from either a field or a no-arg getter. Tries candidates in order.
-     */
     private static Optional<Long> readLong( Object target, String... candidates ) {
-        Class<?> c = target.getClass();
+        Class<?> targetClass = target.getClass();
 
-        for ( String name : candidates ) {
-            // 1) field
+        for ( String candidate : candidates ) {
             try {
-                var f = c.getDeclaredField( name );
-                f.setAccessible( true );
-                Object v = f.get( target );
-                if ( v instanceof Number n ) {
-                    return Optional.of( n.longValue() );
+                java.lang.reflect.Field field = targetClass.getDeclaredField( candidate );
+                field.setAccessible( true );
+                Object value = field.get( target );
+
+                if ( value instanceof Number number ) {
+                    return Optional.of( number.longValue() );
                 }
             } catch ( Exception ignored ) {
-                // ignore
+                // Ignore and try the next candidate.
             }
 
-            // 2) method
             try {
-                var m = c.getMethod( name );
-                Object v = m.invoke( target );
-                if ( v instanceof Number n ) {
-                    return Optional.of( n.longValue() );
+                java.lang.reflect.Method method = targetClass.getMethod( candidate );
+                Object value = method.invoke( target );
+
+                if ( value instanceof Number number ) {
+                    return Optional.of( number.longValue() );
                 }
             } catch ( Exception ignored ) {
-                // ignore
+                // Ignore and try the next candidate.
             }
         }
 
@@ -265,515 +207,445 @@ public final class DocumentSchemaWriteEnforcer {
     }
 
 
-    /**
-     * Same semantics as MqlSchemaEnforcer.resolveMode:
-     *  - null -> OFF
-     *  - value is uppercased and parsed
-     *  - invalid -> OFF
-     */
     private static EnforcementMode resolveMode( SchemaMeta meta ) {
         try {
-            return EnforcementMode.valueOf(
-                    (meta.enforcement == null ? "OFF" : meta.enforcement).trim().toUpperCase( Locale.ROOT )
-            );
-        } catch ( IllegalArgumentException iae ) {
+            String mode = meta.enforcement == null ? "OFF" : meta.enforcement;
+            return EnforcementMode.valueOf( mode.trim().toUpperCase( Locale.ROOT ) );
+        } catch ( IllegalArgumentException ignored ) {
             return EnforcementMode.OFF;
         }
     }
 
-    /**
-     * Same semantics as MqlSchemaEnforcer.parseSchemaOrThrow.
-     */
+
     private static DocumentSchema parseSchemaOrThrow( String json ) {
         try {
-            DocumentSchema s = SchemaJson.parse( json );
-            s.validateOrThrow();
-            return s;
+            DocumentSchema schema = SchemaJson.parse( json );
+            schema.validateOrThrow();
+            return schema;
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Stored collection schema is invalid", e );
         }
     }
 
-    // -------------------------------------------------------------------------
-    // INSERT preflight (literal values only), using SchemaValidator
-    // -------------------------------------------------------------------------
 
     /**
-     * Plan-time validation for literal INSERTs.
-     *
-     * Only runs if:
-     *  - operation == INSERT (checked by caller)
-     *  - the input AlgNode is a LogicalDocumentValues with literal docs
-     *
-     * For INSERT .. SELECT and other non-literal sources, nothing happens here;
-     * those must be enforced at execution time (adapter or constraint enforcer).
+     * This only validates literal INSERT values visible at planning time.
+     * Non-literal sources still need runtime enforcement.
      */
-    private static void preflightLiteralInsert(
-            AlgNode input,
-            Entity entity,
-            DocumentSchema schema,
-            EnforcementMode mode ) {
+    private static void preflightLiteralInsert( AlgNode input, Entity entity, DocumentSchema schema, EnforcementMode mode ) {
 
         if ( mode == EnforcementMode.OFF ) {
             return;
         }
 
         if ( !(input instanceof LogicalDocumentValues values) ) {
-            // Not a VALUES-style literal insert
             return;
         }
 
-        // STATIC documents only; dynamicDocuments are parameters evaluated at runtime.
-        List<PolyDocument> docs = values.getDocuments();
+        List<PolyDocument> documents = values.getDocuments();
+        for ( PolyDocument document : documents ) {
+            BsonDocument rawDocument = BsonDocument.parse( document.toJson() );
+            BsonDocument documentToCheck = stripIdForValidation( rawDocument );
 
-        for ( PolyDocument doc : docs ) {
-            // Convert PolyDocument -> BSON for validation.
-            // PolyDocument has toJson(), so we can safely parse that.
-            BsonDocument raw = BsonDocument.parse( doc.toJson() );
-            BsonDocument toCheck = stripIdForValidation( raw );
-
-            ValidationResult res = SchemaValidator.validate( schema, toCheck );
-            if ( !res.ok() ) {
-                String msg = "Inserted document does not conform to the collection schema: "
-                        + res.compactSummary( 3 );
-                handleViolation( mode, msg, entity.getName(), raw );
+            ValidationResult validationResult = SchemaValidator.validate( schema, documentToCheck );
+            if ( !validationResult.ok() ) {
+                String message = "Inserted document does not conform to the collection schema: " + validationResult.compactSummary( INSERT_SUMMARY_LIMIT );
+                handleViolation( mode, message, entity.getName(), rawDocument );
             }
         }
     }
 
-    /**
-     * Remove internal _id before validation, if present, to mirror other tools.
-     */
-    private static BsonDocument stripIdForValidation( BsonDocument doc ) {
-        if ( doc == null ) {
+
+    private static BsonDocument stripIdForValidation( BsonDocument document ) {
+        if ( document == null ) {
             return null;
         }
-        if ( !doc.containsKey( DocumentType.DOCUMENT_ID ) ) {
-            return doc;
+
+        if ( !document.containsKey( DocumentType.DOCUMENT_ID ) ) {
+            return document;
         }
-        BsonDocument clone = doc.clone();
+
+        BsonDocument clone = document.clone();
         clone.remove( DocumentType.DOCUMENT_ID );
         return clone;
     }
 
-    // -------------------------------------------------------------------------
-    // UPDATE / MODIFY spec checks (static)
-    // -------------------------------------------------------------------------
 
-    /**
-     * Static validation of update/remove/rename specs.
-     *
-     * This does *not* see row values; it only checks that top-level fields being
-     * touched exist in the schema when additionalProperties=FORBID.
-     *
-     * Full post-image validation (types, nested structures) requires runtime
-     * enforcement (adapter or ConstraintEnforcer-like node) where the final
-     * document is visible.
-     */
-    private static void validateUpdateSpec(
-            Entity entity,
-            DocumentSchema schema,
-            EnforcementMode mode,
-            Map<String, ? extends RexNode> updates,
-            List<String> removes,
-            Map<String, String> renames ) {
+    private static void validateUpdateSpec( Entity entity, DocumentSchema schema, EnforcementMode mode, Map<String, ? extends RexNode> updates, List<String> removes, Map<String, String> renames ) {
 
         if ( schema.additionalProperties() == AdditionalProperties.ALLOW ) {
             return;
         }
 
-        var allowedTop = schema.root().properties.keySet();
+        var allowedTopLevelFields = schema.root().properties.keySet();
 
-        // Updates: no unknown top-level paths
         if ( updates != null ) {
             for ( String path : updates.keySet() ) {
-                String top = topLevelSegment( path );
-                if ( !allowedTop.contains( top ) ) {
-                    String msg = "Update touches undeclared field '" + top + "'";
-                    handleViolation( mode, msg, entity.getName(), path );
+                String topLevelField = topLevelSegment( path );
+                if ( !allowedTopLevelFields.contains( topLevelField ) ) {
+                    String message = "Update touches undeclared field '" + topLevelField + "'";
+                    handleViolation( mode, message, entity.getName(), path );
                 }
             }
         }
 
-        // Removes: same idea
         if ( removes != null ) {
             for ( String path : removes ) {
-                String top = topLevelSegment( path );
-                if ( !allowedTop.contains( top ) ) {
-                    String msg = "Remove touches undeclared field '" + top + "'";
-                    handleViolation( mode, msg, entity.getName(), path );
+                String topLevelField = topLevelSegment( path );
+                if ( !allowedTopLevelFields.contains( topLevelField ) ) {
+                    String message = "Remove touches undeclared field '" + topLevelField + "'";
+                    handleViolation( mode, message, entity.getName(), path );
                 }
             }
         }
 
-        // Renames: check both source and target
         if ( renames != null ) {
-            for ( Map.Entry<String, String> e : renames.entrySet() ) {
-                String fromTop = topLevelSegment( e.getKey() );
-                String toTop = topLevelSegment( e.getValue() );
+            for ( Map.Entry<String, String> entry : renames.entrySet() ) {
+                String sourceTopLevelField = topLevelSegment( entry.getKey() );
+                String targetTopLevelField = topLevelSegment( entry.getValue() );
 
-                if ( !allowedTop.contains( fromTop ) || !allowedTop.contains( toTop ) ) {
-                    String msg = "Rename between undeclared fields '"
-                            + fromTop + "' -> '" + toTop + "'";
-                    handleViolation( mode, msg, entity.getName(), e );
+                if ( !allowedTopLevelFields.contains( sourceTopLevelField ) || !allowedTopLevelFields.contains( targetTopLevelField ) ) {
+                    String message = "Rename between undeclared fields '" + sourceTopLevelField + "' -> '" + targetTopLevelField + "'";
+                    handleViolation( mode, message, entity.getName(), entry );
                 }
             }
         }
     }
 
-    private static void validateRequiredFieldsNotRemoved(
-            Entity entity,
-            DocumentSchema schema,
-            EnforcementMode mode,
-            List<String> removes,
-            Map<String, String> renames ) {
+
+    private static void validateRequiredFieldsNotRemoved( Entity entity, DocumentSchema schema, EnforcementMode mode, List<String> removes, Map<String, String> renames ) {
 
         if ( mode == EnforcementMode.OFF ) {
             return;
         }
 
-        // Dialect rule: if "required" is omitted, all declared properties are treated as required.
-        // Therefore, removing/renaming a declared root property violates requiredness.
-        var requiredTop = schema.root().effectiveRequired();
+        var requiredTopLevelFields = schema.root().effectiveRequired();
 
-        // $unset / removes
         if ( removes != null ) {
             for ( String path : removes ) {
-                String top = topLevelSegment( path );
-                if ( requiredTop.contains( top ) ) {
-                    String msg = "Update removes required field '" + top + "'";
-                    handleViolation( mode, msg, entity.getName(), path );
+                String topLevelField = topLevelSegment( path );
+                if ( requiredTopLevelFields.contains( topLevelField ) ) {
+                    String message = "Update removes required field '" + topLevelField + "'";
+                    handleViolation( mode, message, entity.getName(), path );
                 }
             }
         }
 
-        // $rename
         if ( renames != null ) {
-            for ( Map.Entry<String, String> e : renames.entrySet() ) {
-                String fromTop = topLevelSegment( e.getKey() );
-
-                // Renaming a required property means it disappears from its original name
-                if ( requiredTop.contains( fromTop ) ) {
-                    String msg = "Update renames required field '" + fromTop + "'";
-                    handleViolation( mode, msg, entity.getName(), e );
+            for ( Map.Entry<String, String> entry : renames.entrySet() ) {
+                String sourceTopLevelField = topLevelSegment( entry.getKey() );
+                if ( requiredTopLevelFields.contains( sourceTopLevelField ) ) {
+                    String message = "Update renames required field '" + sourceTopLevelField + "'";
+                    handleViolation( mode, message, entity.getName(), entry );
                 }
             }
         }
     }
 
 
-    /**
-     * Type-aware validation of UPDATE expressions against the JSON schema.
-     *
-     * This catches mismatches for:
-     *  - $set  (normal assignment)
-     *  - $inc  (encoded as PLUS(...) RexCall)
-     *  - $mul  (encoded as MULTIPLY/TIMES(...) RexCall)
-     *  - $min/$max (encoded as special MQL_UPDATE_MIN/MAX operators)
-     */
-    private static void validateUpdateTypes(
-            Entity entity,
-            DocumentSchema schema,
-            EnforcementMode mode,
-            Map<String, ? extends RexNode> updates ) {
+    private static void validateUpdateTypes( Entity entity, DocumentSchema schema, EnforcementMode mode, Map<String, ? extends RexNode> updates ) {
 
-        for ( Map.Entry<String, ? extends RexNode> e : updates.entrySet() ) {
-            String path = e.getKey();
-            RexNode expr = e.getValue();
+        for ( Map.Entry<String, ? extends RexNode> entry : updates.entrySet() ) {
+            String path = entry.getKey();
+            RexNode expression = entry.getValue();
 
-            // $unset may appear as null expression in some converters
-            if ( expr == null ) {
+            if ( expression == null ) {
                 continue;
             }
 
-            var resolvedOpt = resolveNode( schema, path );
-            if ( resolvedOpt.isEmpty() ) {
-                // unknown path: handled elsewhere for FORBID, or allowed for ALLOW
+            Optional<ResolvedSchemaNode> resolvedSchemaNode = resolveNode( schema, path );
+            if ( resolvedSchemaNode.isEmpty() ) {
                 continue;
             }
 
-            ResolvedSchemaNode resolved = resolvedOpt.get();
-            DocumentSchema.Node node = resolved.node();
+            ResolvedSchemaNode resolvedNode = resolvedSchemaNode.get();
+            DocumentSchema.Node schemaNode = resolvedNode.node();
+            String updateOperator = inferUpdateOperator( expression );
 
-            // Infer which Mongo update operator this expression represents
-            String semantic = "$set";
-            if ( expr instanceof org.polypheny.db.rex.RexCall call
-                    && call.getOperator() != null
-                    && call.getOperator().getName() != null ) {
-
-                String n = call.getOperator().getName().trim().toLowerCase( Locale.ROOT );
-
-                if ( n.contains( "mql_update_min" ) || n.equals( "$min" ) ) {
-                    semantic = "$min";
-                } else if ( n.contains( "mql_update_max" ) || n.equals( "$max" ) ) {
-                    semantic = "$max";
-                } else if ( n.equals( "+" ) || n.contains( "plus" ) || n.contains( "add" ) ) {
-                    semantic = "$inc";
-                } else if ( n.equals( "*" ) || n.contains( "multiply" ) || n.contains( "times" ) ) {
-                    semantic = "$mul";
-                } else {
-                    semantic = "$set";
-                }
-            }
-
-            // For literal $set assignments, validate the whole assigned value against the exact schema subtree.
-            // This fixes whole-object / whole-array updates and also rejects literal objects assigned to scalar fields.
-            if ( "$set".equals( semantic ) ) {
-                Optional<BsonValue> literalValue = tryExtractLiteralBsonValue( expr );
+            if ( "$set".equals( updateOperator ) ) {
+                Optional<BsonValue> literalValue = tryExtractLiteralBsonValue( expression );
                 if ( literalValue.isPresent() ) {
-                    ValidationResult res = SchemaValidator.validateNodeValue( node, literalValue.get(), resolved.inheritedAp() );
-                    if ( !res.ok() ) {
-                        String msg = "Update value for field '" + path + "' does not conform to the collection schema: "
-                                + res.compactSummary( 3 );
-                        handleViolation( mode, msg, entity.getName(), path );
+                    ValidationResult validationResult = SchemaValidator.validateNodeValue( schemaNode, literalValue.get(), resolvedNode.inheritedAp() );
+
+                    if ( !validationResult.ok() ) {
+                        String message = "Update value for field '" + path + "' does not conform to the collection schema: " + validationResult.compactSummary( INSERT_SUMMARY_LIMIT );
+                        handleViolation( mode, message, entity.getName(), path );
                     }
                     continue;
                 }
             }
 
-            // Non-scalar checks beyond literal $set need post-image validation; skip here.
-            if ( !(node instanceof DocumentSchema.ScalarNode sn) ) {
+            if ( !(schemaNode instanceof DocumentSchema.ScalarNode scalarNode) ) {
                 continue;
             }
 
-            List<PolyType> expectedTypes = sn.types;
+            List<PolyType> expectedTypes = scalarNode.types;
+            PolyType actualType = inferScalarType( expression );
 
-            // Helpers (inline, no extra methods needed)
-            final java.util.function.Predicate<PolyType> isText = t -> {
-                if ( t == null ) return false;
-                return switch ( t ) {
-                    case TEXT, VARCHAR, CHAR -> true;
-                    default -> false;
-                };
-            };
-
-            final java.util.function.Predicate<PolyType> isNumeric = t -> {
-                if ( t == null ) return false;
-                return switch ( t ) {
-                    case TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, REAL, FLOAT, DOUBLE -> true;
-                    default -> false;
-                };
-            };
-
-            // Extract a better "actual" type for literals that the converter wraps as DOCUMENT
-            final java.util.function.Function<RexNode, PolyType> scalarTypeFromRex = n -> {
-                if ( n == null ) {
-                    return null;
-                }
-
-                // 1) Start with the normal AlgDataType
-                PolyType t = null;
-                try {
-                    t = (n.getType() != null) ? n.getType().getPolyType() : null;
-                } catch ( Exception ignored ) {
-                    // keep null
-                }
-
-                // 2) If converter forced DOCUMENT, recover from RexLiteral payload (PolyValue)
-                if ( t == PolyType.DOCUMENT && n instanceof org.polypheny.db.rex.RexLiteral lit ) {
-                    org.polypheny.db.type.entity.PolyValue v = lit.getValue();
-
-                    if ( v == null || v.isNull() ) {
-                        return PolyType.NULL;
-                    }
-
-                    // If the payload isn't actually a document, use its real scalar PolyType
-                    if ( !v.isDocument() ) {
-                        PolyType vt = v.getType();
-                        // Normalize string family to TEXT for schema comparisons
-                        return switch ( vt ) {
-                            case CHAR, VARCHAR, TEXT -> PolyType.TEXT;
-                            default -> vt;
-                        };
-                    }
-
-                    return PolyType.DOCUMENT;
-                }
-
-                return t;
-            };
-
-            PolyType actual = scalarTypeFromRex.apply( expr );
-
-            // If this is a computed update ($inc/$mul/$min/$max) and the call itself is typed DOCUMENT,
-            // try to recover a numeric "actual" from literal operands (e.g. PLUS(field, 1)).
-            if ( actual == PolyType.DOCUMENT
-                    && (semantic.equals( "$inc" ) || semantic.equals( "$mul" ) || semantic.equals( "$min" ) || semantic.equals( "$max" ))
-                    && expr instanceof org.polypheny.db.rex.RexCall call ) {
-
-                for ( RexNode op : call.getOperands() ) {
-                    PolyType ot = scalarTypeFromRex.apply( op );
-                    if ( ot != null && isNumeric.test( ot ) ) {
-                        actual = ot;
-                        break;
-                    }
-                }
+            if ( actualType == PolyType.DOCUMENT && isNumericOperator( updateOperator ) && expression instanceof RexCall call ) {
+                actualType = inferNumericOperandType( call ).orElse( actualType );
             }
 
-            // Operator-specific rules: $inc/$mul/$min/$max require numeric targets + numeric operand
-            if ( semantic.equals( "$inc" ) || semantic.equals( "$mul" ) || semantic.equals( "$min" ) || semantic.equals( "$max" ) ) {
+            if ( isNumericOperator( updateOperator ) ) {
+                boolean targetNumeric = expectedTypes != null && expectedTypes.stream().anyMatch( DocumentSchemaWriteEnforcer::isNumericType );
 
-                boolean targetNumeric = expectedTypes != null && expectedTypes.stream().anyMatch( isNumeric );
                 if ( !targetNumeric ) {
-                    String msg = "Update operator " + semantic
-                            + " cannot be applied to non-numeric field '" + path
-                            + "' (schema expects one of " + expectedTypes + ")";
-                    handleViolation( mode, msg, entity.getName(), path );
+                    String message = "Update operator " + updateOperator + " cannot be applied to non-numeric field '" + path + "' (schema expects one of " + expectedTypes + ")";
+                    handleViolation( mode, message, entity.getName(), path );
                     continue;
                 }
 
-                // Also ensure the update expression contributes a numeric value (best-effort static check)
-                boolean operandNumeric = false;
-                if ( expr instanceof org.polypheny.db.rex.RexCall call ) {
-                    for ( RexNode op : call.getOperands() ) {
-                        PolyType ot = scalarTypeFromRex.apply( op );
-                        if ( ot != null && isNumeric.test( ot ) ) {
-                            operandNumeric = true;
-                            break;
-                        }
-                    }
+                boolean operandNumeric;
+                if ( expression instanceof RexCall call ) {
+                    operandNumeric = inferNumericOperandType( call ).isPresent();
                 } else {
-                    operandNumeric = (actual != null && isNumeric.test( actual ));
+                    operandNumeric = actualType != null && isNumericType( actualType );
                 }
 
                 if ( !operandNumeric ) {
-                    String msg = "Update operator " + semantic
-                            + " for field '" + path + "' requires a numeric value"
-                            + ", but expression is typed " + actual;
-                    handleViolation( mode, msg, entity.getName(), path );
+                    String message = "Update operator " + updateOperator + " for field '" + path + "' requires a numeric value" + ", but expression is typed " + actualType;
+                    handleViolation( mode, message, entity.getName(), path );
                     continue;
                 }
             }
 
-            // Generic scalar compatibility ($set and also the final type of computed ops)
-            if ( actual != null ) {
-
-                boolean ok = true;
-
-                if ( actual == PolyType.DOCUMENT ) {
-                    // For non-literal computed expressions we cannot infer more safely here.
-                    // Literal object assignments were already validated above and would have continued.
-                    ok = !(expr instanceof org.polypheny.db.rex.RexLiteral);
-                } else if ( expectedTypes != null && !expectedTypes.isEmpty() ) {
-
-                    boolean allowsNull = expectedTypes.contains( PolyType.NULL );
-                    boolean allowsText = expectedTypes.stream().anyMatch( isText );
-                    boolean allowsNumeric = expectedTypes.stream().anyMatch( isNumeric );
-                    boolean allowsBoolean = expectedTypes.contains( PolyType.BOOLEAN );
-
-                    if ( actual == PolyType.NULL ) {
-                        ok = allowsNull;
-                    } else if ( isText.test( actual ) ) {
-                        ok = allowsText;
-                    } else if ( isNumeric.test( actual ) ) {
-                        ok = allowsNumeric;
-                    } else if ( actual == PolyType.BOOLEAN ) {
-                        ok = allowsBoolean;
-                    } else {
-                        ok = expectedTypes.contains( actual );
-                    }
-                }
-
-                if ( !ok ) {
-                    String msg = "Update expression for field '" + path
-                            + "' has type " + actual
-                            + ", but schema expects one of " + expectedTypes
-                            + " (operator: " + semantic + ")";
-                    handleViolation( mode, msg, entity.getName(), path );
-                }
+            if ( actualType != null && !isCompatibleScalarType( expression, actualType, expectedTypes ) ) {
+                String message = "Update expression for field '" + path + "' has type " + actualType + ", but schema expects one of " + expectedTypes + " (operator: " + updateOperator + ")";
+                handleViolation( mode, message, entity.getName(), path );
             }
         }
     }
 
 
+    private static String inferUpdateOperator( RexNode expression ) {
+        if ( !(expression instanceof RexCall call) || call.getOperator() == null || call.getOperator().getName() == null ) {
+            return "$set";
+        }
 
-    /**
-     * First segment of a dotted path (e.g., "a.b.c" -> "a").
-     */
+        String operatorName = call.getOperator().getName().trim().toLowerCase( Locale.ROOT );
+
+        if ( operatorName.contains( "mql_update_min" ) || operatorName.equals( "$min" ) ) {
+            return "$min";
+        }
+        if ( operatorName.contains( "mql_update_max" ) || operatorName.equals( "$max" ) ) {
+            return "$max";
+        }
+        if ( operatorName.equals( "+" ) || operatorName.contains( "plus" ) || operatorName.contains( "add" ) ) {
+            return "$inc";
+        }
+        if ( operatorName.equals( "*" ) || operatorName.contains( "multiply" ) || operatorName.contains( "times" ) ) {
+            return "$mul";
+        }
+
+        return "$set";
+    }
+
+
+    private static boolean isNumericOperator( String updateOperator ) {
+        return "$inc".equals( updateOperator ) || "$mul".equals( updateOperator ) || "$min".equals( updateOperator ) || "$max".equals( updateOperator );
+    }
+
+
+    private static PolyType inferScalarType( RexNode expression ) {
+        if ( expression == null ) {
+            return null;
+        }
+
+        PolyType type = null;
+        try {
+            type = expression.getType() != null ? expression.getType().getPolyType() : null;
+        } catch ( Exception ignored ) {
+            // Keep null.
+        }
+
+        if ( type == PolyType.DOCUMENT && expression instanceof RexLiteral literal ) {
+            PolyValue value = literal.getValue();
+
+            if ( value == null || value.isNull() ) {
+                return PolyType.NULL;
+            }
+
+            if ( !value.isDocument() ) {
+                PolyType valueType = value.getType();
+                return switch ( valueType ) {
+                    case CHAR, VARCHAR, TEXT -> PolyType.TEXT;
+                    default -> valueType;
+                };
+            }
+
+            return PolyType.DOCUMENT;
+        }
+
+        return type;
+    }
+
+
+    private static Optional<PolyType> inferNumericOperandType( RexCall call ) {
+        for ( RexNode operand : call.getOperands() ) {
+            PolyType operandType = inferScalarType( operand );
+            if ( operandType != null && isNumericType( operandType ) ) {
+                return Optional.of( operandType );
+            }
+        }
+
+        return Optional.empty();
+    }
+
+
+    private static boolean isCompatibleScalarType( RexNode expression, PolyType actualType, List<PolyType> expectedTypes ) {
+
+        if ( actualType == PolyType.DOCUMENT ) {
+            return !(expression instanceof RexLiteral);
+        }
+
+        if ( expectedTypes == null || expectedTypes.isEmpty() ) {
+            return true;
+        }
+
+        boolean allowsNull = expectedTypes.contains( PolyType.NULL );
+        boolean allowsText = expectedTypes.stream().anyMatch( DocumentSchemaWriteEnforcer::isTextType );
+        boolean allowsNumeric = expectedTypes.stream().anyMatch( DocumentSchemaWriteEnforcer::isNumericType );
+        boolean allowsBoolean = expectedTypes.contains( PolyType.BOOLEAN );
+
+        if ( actualType == PolyType.NULL ) {
+            return allowsNull;
+        }
+        if ( isTextType( actualType ) ) {
+            return allowsText;
+        }
+        if ( isNumericType( actualType ) ) {
+            return allowsNumeric;
+        }
+        if ( actualType == PolyType.BOOLEAN ) {
+            return allowsBoolean;
+        }
+
+        return expectedTypes.contains( actualType );
+    }
+
+
+    private static boolean isTextType( PolyType type ) {
+        if ( type == null ) {
+            return false;
+        }
+
+        return switch ( type ) {
+            case TEXT, VARCHAR, CHAR -> true;
+            default -> false;
+        };
+    }
+
+
+    private static boolean isNumericType( PolyType type ) {
+        if ( type == null ) {
+            return false;
+        }
+
+        return switch ( type ) {
+            case TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, REAL, FLOAT, DOUBLE -> true;
+            default -> false;
+        };
+    }
+
+
     private static String topLevelSegment( String path ) {
         if ( path == null ) {
             return "";
         }
-        int dot = path.indexOf( '.' );
-        return dot < 0 ? path : path.substring( 0, dot );
+
+        int dotIndex = path.indexOf( '.' );
+        return dotIndex < 0 ? path : path.substring( 0, dotIndex );
     }
 
-    // -------------------------------------------------------------------------
-    // Violation handling (mirrors MqlSchemaEnforcer.handle)
-    // -------------------------------------------------------------------------
 
     /**
-     * Resolve a dotted JSON path (e.g. "a.b[0].c" or "a.0.b") against the schema,
-     * using the same semantics as in MqlSchemaEnforcer:
-     *
-     *  - object: step into named properties
-     *  - array: step into "items", numeric segments are treated as indexes
-     *  - scalar: cannot have children
+     * Resolves a dotted schema path through object properties and array items.
      */
     private static Optional<ResolvedSchemaNode> resolveNode( DocumentSchema schema, String path ) {
-        DocumentSchema.Node cur = schema.root();
-        AdditionalProperties inheritedAp =
-                schema.additionalProperties() != null ? schema.additionalProperties() : AdditionalProperties.ALLOW;
+        DocumentSchema.Node currentNode = schema.root();
+        AdditionalProperties inheritedAdditionalProperties = schema.additionalProperties() != null ? schema.additionalProperties() : AdditionalProperties.ALLOW;
 
         if ( path == null || path.isEmpty() ) {
             return Optional.empty();
         }
 
-        String[] segs = path.split( "\\." );
-        for ( String seg : segs ) {
+        String[] segments = path.split( "\\." );
+        for ( String segment : segments ) {
+            if ( currentNode instanceof DocumentSchema.ObjectNode objectNode ) {
+                AdditionalProperties effectiveAdditionalProperties = effectiveAdditionalProperties( objectNode.additionalProperties, inheritedAdditionalProperties );
 
-            if ( cur instanceof DocumentSchema.ObjectNode on ) {
-                AdditionalProperties effectiveAp =
-                        (on.additionalProperties == null || on.additionalProperties == AdditionalProperties.INHERIT)
-                                ? inheritedAp
-                                : on.additionalProperties;
-
-                DocumentSchema.Node nxt = on.properties.get( seg );
-                if ( nxt == null ) {
+                DocumentSchema.Node nextNode = objectNode.properties.get( segment );
+                if ( nextNode == null ) {
                     return Optional.empty();
                 }
-                cur = nxt;
-                inheritedAp = effectiveAp;
 
-            } else if ( cur instanceof DocumentSchema.ArrayNode an ) {
-                // step into items; allow numeric index segments (e.g. "tags.0")
-                cur = an.items;
-                if ( seg.matches( "\\d+" ) ) {
-                    // consumed an index; continue with next segment
+                currentNode = nextNode;
+                inheritedAdditionalProperties = effectiveAdditionalProperties;
+                continue;
+            }
+
+            if ( currentNode instanceof DocumentSchema.ArrayNode arrayNode ) {
+                currentNode = arrayNode.items;
+
+                if ( isNumericPathSegment( segment ) ) {
                     continue;
-                } else {
-                    if ( cur instanceof DocumentSchema.ObjectNode aon ) {
-                        AdditionalProperties effectiveAp =
-                                (aon.additionalProperties == null || aon.additionalProperties == AdditionalProperties.INHERIT)
-                                        ? inheritedAp
-                                        : aon.additionalProperties;
-
-                        DocumentSchema.Node nxt = aon.properties.get( seg );
-                        if ( nxt == null ) {
-                            return Optional.empty();
-                        }
-                        cur = nxt;
-                        inheritedAp = effectiveAp;
-                    } else {
-                        return Optional.empty();
-                    }
                 }
 
-            } else {
-                // scalar cannot have children
+                if ( currentNode instanceof DocumentSchema.ObjectNode objectNode ) {
+                    AdditionalProperties effectiveAdditionalProperties = effectiveAdditionalProperties( objectNode.additionalProperties, inheritedAdditionalProperties );
+
+                    DocumentSchema.Node nextNode = objectNode.properties.get( segment );
+                    if ( nextNode == null ) {
+                        return Optional.empty();
+                    }
+
+                    currentNode = nextNode;
+                    inheritedAdditionalProperties = effectiveAdditionalProperties;
+                    continue;
+                }
+
                 return Optional.empty();
             }
-        }
 
-        return Optional.of( new ResolvedSchemaNode( cur, inheritedAp ) );
-    }
-
-    private static Optional<BsonValue> tryExtractLiteralBsonValue( RexNode expr ) {
-        if ( !(expr instanceof org.polypheny.db.rex.RexLiteral lit) ) {
             return Optional.empty();
         }
 
-        PolyValue value = lit.getValue();
+        return Optional.of( new ResolvedSchemaNode( currentNode, inheritedAdditionalProperties ) );
+    }
+
+
+    private static AdditionalProperties effectiveAdditionalProperties( AdditionalProperties nodeAdditionalProperties, AdditionalProperties inheritedAdditionalProperties ) {
+
+        if ( nodeAdditionalProperties == null || nodeAdditionalProperties == AdditionalProperties.INHERIT ) {
+            return inheritedAdditionalProperties;
+        }
+
+        return nodeAdditionalProperties;
+    }
+
+
+    private static boolean isNumericPathSegment( String segment ) {
+        if ( segment == null || segment.isEmpty() ) {
+            return false;
+        }
+
+        for ( int i = 0; i < segment.length(); i++ ) {
+            char ch = segment.charAt( i );
+            if ( ch < '0' || ch > '9' ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+
+    private static Optional<BsonValue> tryExtractLiteralBsonValue( RexNode expression ) {
+        if ( !(expression instanceof RexLiteral literal) ) {
+            return Optional.empty();
+        }
+
+        PolyValue value = literal.getValue();
         if ( value == null || value.isNull() ) {
             return Optional.of( BsonNull.VALUE );
         }
@@ -788,30 +660,27 @@ public final class DocumentSchemaWriteEnforcer {
     }
 
 
-    private static void handleViolation(
-            EnforcementMode mode,
-            String msg,
-            String entityName,
-            Object detail ) {
+    private static void handleViolation( EnforcementMode mode, String message, String entityName, Object detail ) {
 
         switch ( mode ) {
-            case STRICT -> throw new GenericRuntimeException( msg );
+            case STRICT -> throw new GenericRuntimeException( message );
             case WARN -> {
                 if ( LOG.isWarnEnabled() ) {
-                    LOG.warn( "{}; allowed due to WARN. Entity='{}' Detail={}", msg, entityName, summarize( detail ) );
+                    LOG.warn( "{}; allowed due to WARN. Entity='{}' Detail={}", message, entityName, summarize( detail ) );
                 }
             }
             case OFF -> {
-                // filtered earlier; nothing to do
+                // Filtered earlier.
             }
         }
     }
 
+
     private static String summarize( Object value ) {
         try {
-            String s = String.valueOf( value );
-            return s.length() > 500 ? s.substring( 0, 500 ) + "…" : s;
-        } catch ( Exception e ) {
+            String summary = String.valueOf( value );
+            return summary.length() > MAX_LOG_DETAIL_LENGTH ? summary.substring( 0, MAX_LOG_DETAIL_LENGTH ) + "…" : summary;
+        } catch ( Exception ignored ) {
             return "<unprintable>";
         }
     }

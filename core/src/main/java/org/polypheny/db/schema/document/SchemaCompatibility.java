@@ -15,8 +15,8 @@
  */
 package org.polypheny.db.schema.document;
 
-import com.mongodb.lang.Nullable;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.mongodb.lang.Nullable;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
@@ -33,327 +33,305 @@ import org.polypheny.db.schema.document.DocumentSchema.ScalarNode;
 import org.polypheny.db.type.PolyType;
 
 /**
- * Fast compatibility heuristic for schema evolution.
- *
- * <p>If this returns {@code true}, the engine can often skip a full preflight scan.
- * If it returns {@code false}, a scan is required to avoid invalidating existing documents.</p>
- *
- * <p>This implementation is conservative, especially for composition nodes.</p>
+ * Compatibility checks for schema changes.
  */
 public final class SchemaCompatibility {
 
     private SchemaCompatibility() {
     }
 
+
     public static boolean isCompatible( @Nullable DocumentSchema current, @Nullable DocumentSchema proposed ) {
         if ( proposed == null ) {
             return true;
         }
+
         if ( current == null ) {
-            return false; // force preflight when no current schema
-        }
-
-        DocumentSchema.AdditionalProperties curRootAp =
-                current.additionalProperties() != null ? current.additionalProperties() : DocumentSchema.AdditionalProperties.ALLOW;
-        DocumentSchema.AdditionalProperties propRootAp =
-                proposed.additionalProperties() != null ? proposed.additionalProperties() : curRootAp;
-
-        // Root-level AP tightening is unsafe (requires preflight)
-        if ( curRootAp == DocumentSchema.AdditionalProperties.ALLOW
-                && propRootAp == DocumentSchema.AdditionalProperties.FORBID ) {
             return false;
         }
 
-        return isObjectCompatible(current.root(), proposed.root(), curRootAp, propRootAp);
+        DocumentSchema.AdditionalProperties currentRootAdditionalProperties = current.additionalProperties() != null ? current.additionalProperties() : DocumentSchema.AdditionalProperties.ALLOW;
+
+        DocumentSchema.AdditionalProperties proposedRootAdditionalProperties = proposed.additionalProperties() != null ? proposed.additionalProperties() : currentRootAdditionalProperties;
+
+        if ( currentRootAdditionalProperties == DocumentSchema.AdditionalProperties.ALLOW && proposedRootAdditionalProperties == DocumentSchema.AdditionalProperties.FORBID ) {
+            return false;
+        }
+
+        return isObjectCompatible( current.root(), proposed.root(), currentRootAdditionalProperties, proposedRootAdditionalProperties );
     }
 
-    private static boolean isObjectCompatible(
-            ObjectNode cur,
-            ObjectNode prop,
-            DocumentSchema.AdditionalProperties inheritedCurAp,
-            DocumentSchema.AdditionalProperties inheritedPropAp ) {
 
-        DocumentSchema.AdditionalProperties curAp = effectiveAp(cur.additionalProperties, inheritedCurAp);
-        DocumentSchema.AdditionalProperties propAp = effectiveAp(prop.additionalProperties, inheritedPropAp);
+    private static boolean isObjectCompatible( ObjectNode current, ObjectNode proposed, DocumentSchema.AdditionalProperties inheritedCurrentAdditionalProperties, DocumentSchema.AdditionalProperties inheritedProposedAdditionalProperties ) {
 
-        // requiredness comparison (explicit required vs default-all)
-        Set<String> curReq = cur.effectiveRequired();
-        Set<String> propReq = prop.effectiveRequired();
+        DocumentSchema.AdditionalProperties currentAdditionalProperties = effectiveAdditionalProperties( current.additionalProperties, inheritedCurrentAdditionalProperties );
+        DocumentSchema.AdditionalProperties proposedAdditionalProperties = effectiveAdditionalProperties( proposed.additionalProperties, inheritedProposedAdditionalProperties );
 
-        // New required fields are unsafe if not previously required
-        for ( String k : propReq ) {
-            if ( !curReq.contains(k) ) {
-                // field newly required
+        Set<String> currentRequired = current.effectiveRequired();
+        Set<String> proposedRequired = proposed.effectiveRequired();
+
+        for ( String key : proposedRequired ) {
+            if ( !currentRequired.contains( key ) ) {
                 return false;
             }
         }
 
-        // Properties present in proposed
-        for ( Map.Entry<String, Node> e : prop.properties.entrySet() ) {
-            String k = e.getKey();
-            Node curChild = cur.properties.get(k);
+        for ( Map.Entry<String, Node> entry : proposed.properties.entrySet() ) {
+            String key = entry.getKey();
+            Node currentChild = current.properties.get( key );
 
-            if ( curChild == null ) {
-                // Field added. Safe ONLY if optional in proposed.
-                boolean newlyRequired = propReq.contains(k);
-                if ( newlyRequired ) {
+            if ( currentChild == null ) {
+                if ( proposedRequired.contains( key ) ) {
                     return false;
                 }
-                // Optional field addition is OK.
                 continue;
             }
 
-            if ( !isNodeCompatible(curChild, e.getValue(), curAp, propAp) ) {
+            if ( !isNodeCompatible( currentChild, entry.getValue(), currentAdditionalProperties, proposedAdditionalProperties ) ) {
                 return false;
             }
         }
 
-        // Properties removed in proposed: safe only if proposed allows extras at that object
-        if ( propAp == DocumentSchema.AdditionalProperties.FORBID ) {
-            for ( String k : cur.properties.keySet() ) {
-                if ( !prop.properties.containsKey(k) ) {
+        if ( proposedAdditionalProperties == DocumentSchema.AdditionalProperties.FORBID ) {
+            for ( String key : current.properties.keySet() ) {
+                if ( !proposed.properties.containsKey( key ) ) {
                     return false;
                 }
             }
         }
 
-        // Tightening per-object additionalProperties from allow->forbid is unsafe
-        if ( curAp == DocumentSchema.AdditionalProperties.ALLOW && propAp == DocumentSchema.AdditionalProperties.FORBID ) {
+        if ( currentAdditionalProperties == DocumentSchema.AdditionalProperties.ALLOW && proposedAdditionalProperties == DocumentSchema.AdditionalProperties.FORBID ) {
             return false;
         }
 
-        // Object size constraints tightening
-        if ( tightensLowerBound(cur.minProperties, prop.minProperties) ) {
+        if ( tightensLowerBound( current.minProperties, proposed.minProperties ) ) {
             return false;
         }
-        if ( tightensUpperBound(cur.maxProperties, prop.maxProperties) ) {
+
+        if ( tightensUpperBound( current.maxProperties, proposed.maxProperties ) ) {
             return false;
         }
 
         return true;
     }
 
-    private static boolean isNodeCompatible(
-            Node cur,
-            Node prop,
-            DocumentSchema.AdditionalProperties inheritedCurAp,
-            DocumentSchema.AdditionalProperties inheritedPropAp ) {
 
-        // Composition nodes are conservative: force preflight
-        if ( cur instanceof AnyOfNode || cur instanceof OneOfNode || cur instanceof AllOfNode || cur instanceof NotNode ) {
-            return false;
-        }
-        if ( prop instanceof AnyOfNode || prop instanceof OneOfNode || prop instanceof AllOfNode || prop instanceof NotNode ) {
+    private static boolean isNodeCompatible( Node current, Node proposed, DocumentSchema.AdditionalProperties inheritedCurrentAdditionalProperties, DocumentSchema.AdditionalProperties inheritedProposedAdditionalProperties ) {
+
+        if ( isCompositionNode( current ) || isCompositionNode( proposed ) ) {
             return false;
         }
 
-        if ( cur instanceof ScalarNode cs && prop instanceof ScalarNode ps ) {
-            return isScalarCompatible(cs, ps);
+        if ( current instanceof ScalarNode currentScalar && proposed instanceof ScalarNode proposedScalar ) {
+            return isScalarCompatible( currentScalar, proposedScalar );
         }
 
-        if ( cur instanceof ObjectNode co && prop instanceof ObjectNode po ) {
-            return isObjectCompatible(co, po, inheritedCurAp, inheritedPropAp);
+        if ( current instanceof ObjectNode currentObject && proposed instanceof ObjectNode proposedObject ) {
+            return isObjectCompatible( currentObject, proposedObject, inheritedCurrentAdditionalProperties, inheritedProposedAdditionalProperties );
         }
 
-        if ( cur instanceof ArrayNode ca && prop instanceof ArrayNode pa ) {
-            return isArrayCompatible(ca, pa, inheritedCurAp, inheritedPropAp);
+        if ( current instanceof ArrayNode currentArray && proposed instanceof ArrayNode proposedArray ) {
+            return isArrayCompatible( currentArray, proposedArray, inheritedCurrentAdditionalProperties, inheritedProposedAdditionalProperties );
         }
 
-        // Changing node kind (scalar<->object/array, object<->array) is unsafe
         return false;
     }
 
-    private static boolean isArrayCompatible(
-            ArrayNode cur,
-            ArrayNode prop,
-            DocumentSchema.AdditionalProperties inheritedCurAp,
-            DocumentSchema.AdditionalProperties inheritedPropAp ) {
 
-        // items schema must be compatible (propagate AP)
-        if ( !isNodeCompatible(cur.items, prop.items, inheritedCurAp, inheritedPropAp) ) {
+    private static boolean isCompositionNode( Node node ) {
+        return node instanceof AnyOfNode || node instanceof OneOfNode || node instanceof AllOfNode || node instanceof NotNode;
+    }
+
+
+    private static boolean isArrayCompatible( ArrayNode current, ArrayNode proposed, DocumentSchema.AdditionalProperties inheritedCurrentAdditionalProperties, DocumentSchema.AdditionalProperties inheritedProposedAdditionalProperties ) {
+
+        if ( !isNodeCompatible( current.items, proposed.items, inheritedCurrentAdditionalProperties, inheritedProposedAdditionalProperties ) ) {
             return false;
         }
 
-        // minItems must NOT increase (tightening)
-        if ( tightensLowerBound(cur.minItems, prop.minItems) ) {
+        if ( tightensLowerBound( current.minItems, proposed.minItems ) ) {
             return false;
         }
 
-        // maxItems must NOT decrease (tightening)
-        if ( tightensUpperBound(cur.maxItems, prop.maxItems) ) {
+        if ( tightensUpperBound( current.maxItems, proposed.maxItems ) ) {
             return false;
         }
 
-        // uniqueItems must NOT turn false/null -> true
-        boolean curUnique = Boolean.TRUE.equals(cur.uniqueItems);
-        boolean propUnique = Boolean.TRUE.equals(prop.uniqueItems);
-        if ( !curUnique && propUnique ) {
+        boolean currentUniqueItems = Boolean.TRUE.equals( current.uniqueItems );
+        boolean proposedUniqueItems = Boolean.TRUE.equals( proposed.uniqueItems );
+
+        if ( !currentUniqueItems && proposedUniqueItems ) {
             return false;
         }
 
         return true;
     }
 
-    // -----------------------------------------------------------------------------------------
-    // Scalars
-    // -----------------------------------------------------------------------------------------
 
-    private static boolean isScalarCompatible(ScalarNode cur, ScalarNode prop) {
-        // type widening: proposed types must include all current types (or numeric widening)
-        if ( !isTypeSupersetOrWidening(cur.types, prop.types) ) {
+    private static boolean isScalarCompatible( ScalarNode current, ScalarNode proposed ) {
+        if ( !isTypeSupersetOrWidening( current.types, proposed.types ) ) {
             return false;
         }
 
-        // Constraint tightening => requires scan
-        if ( tightensLowerBound(cur.minLength, prop.minLength) ) {
-            return false;
-        }
-        if ( tightensUpperBound(cur.maxLength, prop.maxLength) ) {
-            return false;
-        }
-        if ( cur.pattern == null && prop.pattern != null ) {
-            return false;
-        }
-        if ( cur.pattern != null && prop.pattern != null && !cur.pattern.equals(prop.pattern) ) {
-            // pattern change is risky; require scan
+        if ( tightensLowerBound( current.minLength, proposed.minLength ) ) {
             return false;
         }
 
-        if ( tightensLowerBound(cur.minimum, prop.minimum) ) {
-            return false;
-        }
-        if ( tightensUpperBound(cur.maximum, prop.maximum) ) {
-            return false;
-        }
-        if ( cur.multipleOf == null && prop.multipleOf != null ) {
-            return false;
-        }
-        if ( cur.multipleOf != null && prop.multipleOf != null && cur.multipleOf.compareTo(prop.multipleOf) != 0 ) {
-            // changing multipleOf is risky; require scan
+        if ( tightensUpperBound( current.maxLength, proposed.maxLength ) ) {
             return false;
         }
 
-        // const / enum tightening
-        if ( cur.constValue == null && prop.constValue != null ) {
-            return false;
-        }
-        if ( cur.constValue != null && prop.constValue != null && !cur.constValue.equals(prop.constValue) ) {
+        if ( current.pattern == null && proposed.pattern != null ) {
             return false;
         }
 
-        if ( cur.enumValues == null && prop.enumValues != null ) {
+        if ( current.pattern != null && proposed.pattern != null && !current.pattern.equals( proposed.pattern ) ) {
             return false;
         }
-        if ( cur.enumValues != null && prop.enumValues != null ) {
-            if ( !enumIsSuperset(cur.enumValues, prop.enumValues) ) {
-                // prop must be a superset (relaxing). If it removes values => tightening
-                return false;
-            }
+
+        if ( tightensLowerBound( current.minimum, proposed.minimum ) ) {
+            return false;
+        }
+
+        if ( tightensUpperBound( current.maximum, proposed.maximum ) ) {
+            return false;
+        }
+
+        if ( current.multipleOf == null && proposed.multipleOf != null ) {
+            return false;
+        }
+
+        if ( current.multipleOf != null && proposed.multipleOf != null && current.multipleOf.compareTo( proposed.multipleOf ) != 0 ) {
+            return false;
+        }
+
+        if ( current.constValue == null && proposed.constValue != null ) {
+            return false;
+        }
+
+        if ( current.constValue != null && proposed.constValue != null && !current.constValue.equals( proposed.constValue ) ) {
+            return false;
+        }
+
+        if ( current.enumValues == null && proposed.enumValues != null ) {
+            return false;
+        }
+
+        if ( current.enumValues != null && proposed.enumValues != null && !enumIsSuperset( current.enumValues, proposed.enumValues ) ) {
+            return false;
         }
 
         return true;
     }
 
-    private static boolean enumIsSuperset(List<JsonNode> oldEnum, List<JsonNode> newEnum) {
-        Set<JsonNode> newSet = new HashSet<>(newEnum);
-        // If newEnum contains all old values, it's relaxing; otherwise tightening.
-        return newSet.containsAll(oldEnum);
+
+    private static boolean enumIsSuperset( List<JsonNode> currentEnumValues, List<JsonNode> proposedEnumValues ) {
+        Set<JsonNode> proposedValues = new HashSet<>( proposedEnumValues );
+        return proposedValues.containsAll( currentEnumValues );
     }
 
-    private static boolean isTypeSupersetOrWidening(List<PolyType> oldTypes, List<PolyType> newTypes) {
-        if ( oldTypes == null || oldTypes.isEmpty() ) {
+
+    private static boolean isTypeSupersetOrWidening( List<PolyType> currentTypes, List<PolyType> proposedTypes ) {
+        if ( currentTypes == null || currentTypes.isEmpty() ) {
             return true;
         }
-        if ( newTypes == null || newTypes.isEmpty() ) {
+
+        if ( proposedTypes == null || proposedTypes.isEmpty() ) {
             return false;
         }
 
-        Set<PolyType> newSet = new HashSet<>(newTypes);
-        for ( PolyType ot : oldTypes ) {
-            if ( newSet.contains(ot) ) {
+        Set<PolyType> proposedTypeSet = new HashSet<>( proposedTypes );
+
+        for ( PolyType currentType : currentTypes ) {
+            if ( proposedTypeSet.contains( currentType ) ) {
                 continue;
             }
-            // allow numeric widening: old int -> new contains numeric
-            if ( isInt(ot) ) {
-                boolean hasNumeric = false;
-                for ( PolyType nt : newTypes ) {
-                    if ( isNumeric(nt) ) {
-                        hasNumeric = true;
+
+            if ( isIntegerType( currentType ) ) {
+                boolean hasNumericType = false;
+
+                for ( PolyType proposedType : proposedTypes ) {
+                    if ( isNumericType( proposedType ) ) {
+                        hasNumericType = true;
                         break;
                     }
                 }
-                if ( hasNumeric ) {
+
+                if ( hasNumericType ) {
                     continue;
                 }
             }
+
             return false;
         }
 
         return true;
     }
 
-    private static boolean isInt(PolyType t) {
-        return t == PolyType.TINYINT
-                || t == PolyType.SMALLINT
-                || t == PolyType.INTEGER
-                || t == PolyType.BIGINT;
+
+    private static boolean isIntegerType( PolyType type ) {
+        return type == PolyType.TINYINT || type == PolyType.SMALLINT || type == PolyType.INTEGER || type == PolyType.BIGINT;
     }
 
-    private static boolean isNumeric(PolyType t) {
-        return isInt(t)
-                || t == PolyType.DECIMAL
-                || t == PolyType.FLOAT
-                || t == PolyType.REAL
-                || t == PolyType.DOUBLE;
+
+    private static boolean isNumericType( PolyType type ) {
+        return isIntegerType( type ) || type == PolyType.DECIMAL || type == PolyType.FLOAT || type == PolyType.REAL || type == PolyType.DOUBLE;
     }
 
-    // -----------------------------------------------------------------------------------------
-    // Bounds + AP helpers
-    // -----------------------------------------------------------------------------------------
 
-    private static DocumentSchema.AdditionalProperties effectiveAp(
-            DocumentSchema.AdditionalProperties nodeAp,
-            DocumentSchema.AdditionalProperties inherited ) {
+    private static DocumentSchema.AdditionalProperties effectiveAdditionalProperties( DocumentSchema.AdditionalProperties nodeAdditionalProperties, DocumentSchema.AdditionalProperties inheritedAdditionalProperties ) {
 
-        if ( nodeAp == null || nodeAp == DocumentSchema.AdditionalProperties.INHERIT ) {
-            return inherited;
+        if ( nodeAdditionalProperties == null || nodeAdditionalProperties == DocumentSchema.AdditionalProperties.INHERIT ) {
+            return inheritedAdditionalProperties;
         }
-        return nodeAp;
+
+        return nodeAdditionalProperties;
     }
 
-    private static boolean tightensLowerBound(Integer cur, Integer prop) {
-        int c = cur == null ? 0 : cur;
-        int p = prop == null ? 0 : prop;
-        return p > c;
+
+    private static boolean tightensLowerBound( Integer current, Integer proposed ) {
+        int currentValue = current == null ? 0 : current;
+        int proposedValue = proposed == null ? 0 : proposed;
+        return proposedValue > currentValue;
     }
 
-    private static boolean tightensUpperBound(Integer cur, Integer prop) {
-        if ( prop == null ) {
-            return false; // removing upper bound is relaxing
-        }
-        if ( cur == null ) {
-            return true; // adding upper bound is tightening
-        }
-        return prop < cur;
-    }
 
-    private static boolean tightensLowerBound(BigDecimal cur, BigDecimal prop) {
-        if ( prop == null ) {
+    private static boolean tightensUpperBound( Integer current, Integer proposed ) {
+        if ( proposed == null ) {
             return false;
         }
-        if ( cur == null ) {
-            return true; // adding a minimum is tightening
+
+        if ( current == null ) {
+            return true;
         }
-        return prop.compareTo(cur) > 0;
+
+        return proposed < current;
     }
 
-    private static boolean tightensUpperBound(BigDecimal cur, BigDecimal prop) {
-        if ( prop == null ) {
+
+    private static boolean tightensLowerBound( BigDecimal current, BigDecimal proposed ) {
+        if ( proposed == null ) {
             return false;
         }
-        if ( cur == null ) {
-            return true; // adding a maximum is tightening
+
+        if ( current == null ) {
+            return true;
         }
-        return prop.compareTo(cur) < 0;
+
+        return proposed.compareTo( current ) > 0;
     }
+
+
+    private static boolean tightensUpperBound( BigDecimal current, BigDecimal proposed ) {
+        if ( proposed == null ) {
+            return false;
+        }
+
+        if ( current == null ) {
+            return true;
+        }
+
+        return proposed.compareTo( current ) < 0;
+    }
+
 }

@@ -20,6 +20,9 @@ import com.mongodb.lang.Nullable;
 import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+/**
+ * MQL: db.getCollectionSchema("<collectionName>")
+ */
 @Getter
 public class MqlGetCollectionSchema extends MqlCollectionStatement {
 

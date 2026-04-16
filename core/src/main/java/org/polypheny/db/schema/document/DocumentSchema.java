@@ -31,7 +31,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -44,32 +43,13 @@ import java.util.Set;
 import org.polypheny.db.type.PolyType;
 
 /**
- * Canonical representation of a document collection schema.
- *
- * <p>This is a JSON-Schema-inspired (but intentionally smaller) dialect that is
- * optimized for PolyDBMS enforcement + evolution.</p>
- *
- * <p>Key dialect features implemented here:</p>
- * <ul>
- *   <li>Per-object {@code required} (if omitted, defaults to "all declared properties required" for backward compatibility)</li>
- *   <li>Per-object {@code additionalProperties} override (INHERIT/ALLOW/FORBID)</li>
- *   <li>Scalar union types via {@code type: ["text","null"]}</li>
- *   <li>Composition: {@code anyOf}/{@code oneOf}/{@code allOf}/{@code not}</li>
- *   <li>More constraints: enum/const/multipleOf, maxItems, min/maxProperties</li>
- * </ul>
+ * Canonical document schema representation.
  */
 public final class DocumentSchema {
 
-    /**
-     * Policy for handling undeclared properties on object nodes.
-     *
-     * <ul>
-     *   <li>{@code INHERIT}: inherit from parent (root inherits from schema wrapper)</li>
-     *   <li>{@code ALLOW}: accept unknown properties</li>
-     *   <li>{@code FORBID}: reject unknown properties</li>
-     * </ul>
-     */
-    public enum AdditionalProperties {INHERIT, ALLOW, FORBID}
+    public enum AdditionalProperties {
+        INHERIT, ALLOW, FORBID
+    }
 
 
     @JsonSerialize(using = NodeSerDeSer.Serializer.class)
@@ -78,54 +58,31 @@ public final class DocumentSchema {
 
     }
 
-    // -----------------------------------------------------------------------------------------
-    // Scalar
-    // -----------------------------------------------------------------------------------------
 
     public static final class ScalarNode implements Node {
 
-        /**
-         * Backward-compatible single-type view (first element of {@link #types}).
-         * Prefer using {@link #types}.
-         */
         public final PolyType type;
-
-        /**
-         * Allowed scalar types (union). Must be non-empty.
-         */
         public final List<PolyType> types;
 
-        // ---- Scalar constraints (subset) ----
-        // Strings
         public final Integer minLength;
         public final Integer maxLength;
         public final String pattern;
 
-        // Numbers
         public final BigDecimal minimum;
         public final BigDecimal maximum;
         public final BigDecimal multipleOf;
 
-        // Equality / set constraints
-        public final JsonNode constValue;          // optional
-        public final List<JsonNode> enumValues;    // optional
+        public final JsonNode constValue;
+        public final List<JsonNode> enumValues;
 
 
         @JsonCreator
-        public ScalarNode(
-                @JsonProperty("types") List<PolyType> types,
-                @JsonProperty("minLength") Integer minLength,
-                @JsonProperty("maxLength") Integer maxLength,
-                @JsonProperty("pattern") String pattern,
-                @JsonProperty("minimum") BigDecimal minimum,
-                @JsonProperty("maximum") BigDecimal maximum,
-                @JsonProperty("multipleOf") BigDecimal multipleOf,
-                @JsonProperty("const") JsonNode constValue,
-                @JsonProperty("enum") List<JsonNode> enumValues ) {
+        public ScalarNode( @JsonProperty("types") List<PolyType> types, @JsonProperty("minLength") Integer minLength, @JsonProperty("maxLength") Integer maxLength, @JsonProperty("pattern") String pattern, @JsonProperty("minimum") BigDecimal minimum, @JsonProperty("maximum") BigDecimal maximum, @JsonProperty("multipleOf") BigDecimal multipleOf, @JsonProperty("const") JsonNode constValue, @JsonProperty("enum") List<JsonNode> enumValues ) {
 
-            List<PolyType> t = (types == null || types.isEmpty()) ? null : List.copyOf(types);
-            this.types = Objects.requireNonNull(t, "types");
-            this.type = this.types.get(0);
+            List<PolyType> resolvedTypes = types == null || types.isEmpty() ? null : List.copyOf( types );
+
+            this.types = Objects.requireNonNull( resolvedTypes, "types" );
+            this.type = this.types.get( 0 );
 
             this.minLength = minLength;
             this.maxLength = maxLength;
@@ -136,12 +93,12 @@ public final class DocumentSchema {
             this.multipleOf = multipleOf;
 
             this.constValue = constValue;
-            this.enumValues = enumValues == null ? null : List.copyOf(enumValues);
+            this.enumValues = enumValues == null ? null : List.copyOf( enumValues );
         }
 
 
-        public static ScalarNode of( PolyType t ) {
-            return new ScalarNode( List.of(t), null, null, null, null, null, null, null, null );
+        public static ScalarNode of( PolyType type ) {
+            return new ScalarNode( List.of( type ), null, null, null, null, null, null, null, null );
         }
 
 
@@ -152,15 +109,7 @@ public final class DocumentSchema {
 
     }
 
-    // -----------------------------------------------------------------------------------------
-    // Array
-    // -----------------------------------------------------------------------------------------
 
-    /**
-     * Node representing a JSON array.
-     * Contains the {@code items} schema and optional constraints such as {@code minItems}, {@code maxItems}
-     * and {@code uniqueItems}.
-     */
     public static final class ArrayNode implements Node {
 
         public final Node items;
@@ -170,11 +119,7 @@ public final class DocumentSchema {
 
 
         @JsonCreator
-        public ArrayNode(
-                @JsonProperty("items") Node items,
-                @JsonProperty("minItems") Integer minItems,
-                @JsonProperty("maxItems") Integer maxItems,
-                @JsonProperty("uniqueItems") Boolean uniqueItems ) {
+        public ArrayNode( @JsonProperty("items") Node items, @JsonProperty("minItems") Integer minItems, @JsonProperty("maxItems") Integer maxItems, @JsonProperty("uniqueItems") Boolean uniqueItems ) {
 
             this.items = Objects.requireNonNull( items, "items" );
             this.minItems = minItems;
@@ -190,47 +135,22 @@ public final class DocumentSchema {
 
     }
 
-    // -----------------------------------------------------------------------------------------
-    // Object
-    // -----------------------------------------------------------------------------------------
 
-    /**
-     * Node representing a JSON object with a map of named properties.
-     * Property order is preserved to provide stable serialization and UI presentation.
-     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class ObjectNode implements Node {
 
         public final Map<String, Node> properties;
-
-        /**
-         * Required properties for this object.
-         * <ul>
-         *   <li>If {@code null}: dialect-default = all declared properties are required (backward compatible)</li>
-         *   <li>If non-null: only these properties are required (may be empty)</li>
-         * </ul>
-         */
         public final Set<String> required;
-
-        /**
-         * Per-object additionalProperties policy. If INHERIT, uses parent policy.
-         */
         public final AdditionalProperties additionalProperties;
-
         public final Integer minProperties;
         public final Integer maxProperties;
 
 
         @JsonCreator
-        public ObjectNode(
-                @JsonProperty("properties") Map<String, Node> properties,
-                @JsonProperty("required") Set<String> required,
-                @JsonProperty("additionalProperties") AdditionalProperties additionalProperties,
-                @JsonProperty("minProperties") Integer minProperties,
-                @JsonProperty("maxProperties") Integer maxProperties ) {
+        public ObjectNode( @JsonProperty("properties") Map<String, Node> properties, @JsonProperty("required") Set<String> required, @JsonProperty("additionalProperties") AdditionalProperties additionalProperties, @JsonProperty("minProperties") Integer minProperties, @JsonProperty("maxProperties") Integer maxProperties ) {
 
             this.properties = properties == null ? Map.of() : Map.copyOf( properties );
-            this.required = required == null ? null : Set.copyOf(required);
+            this.required = required == null ? null : Set.copyOf( required );
             this.additionalProperties = additionalProperties == null ? AdditionalProperties.INHERIT : additionalProperties;
             this.minProperties = minProperties;
             this.maxProperties = maxProperties;
@@ -249,66 +169,72 @@ public final class DocumentSchema {
 
     }
 
-    // -----------------------------------------------------------------------------------------
-    // Composition
-    // -----------------------------------------------------------------------------------------
 
     public static final class AnyOfNode implements Node {
+
         public final List<Node> anyOf;
 
+
         @JsonCreator
-        public AnyOfNode(@JsonProperty("anyOf") List<Node> anyOf) {
-            this.anyOf = anyOf == null ? List.of() : List.copyOf(anyOf);
+        public AnyOfNode( @JsonProperty("anyOf") List<Node> anyOf ) {
+            this.anyOf = anyOf == null ? List.of() : List.copyOf( anyOf );
         }
+
     }
+
 
     public static final class OneOfNode implements Node {
+
         public final List<Node> oneOf;
 
+
         @JsonCreator
-        public OneOfNode(@JsonProperty("oneOf") List<Node> oneOf) {
-            this.oneOf = oneOf == null ? List.of() : List.copyOf(oneOf);
+        public OneOfNode( @JsonProperty("oneOf") List<Node> oneOf ) {
+            this.oneOf = oneOf == null ? List.of() : List.copyOf( oneOf );
         }
+
     }
+
 
     public static final class AllOfNode implements Node {
+
         public final List<Node> allOf;
 
+
         @JsonCreator
-        public AllOfNode(@JsonProperty("allOf") List<Node> allOf) {
-            this.allOf = allOf == null ? List.of() : List.copyOf(allOf);
+        public AllOfNode( @JsonProperty("allOf") List<Node> allOf ) {
+            this.allOf = allOf == null ? List.of() : List.copyOf( allOf );
         }
+
     }
+
 
     public static final class NotNode implements Node {
+
         public final Node not;
 
+
         @JsonCreator
-        public NotNode(@JsonProperty("not") Node not) {
-            this.not = Objects.requireNonNull(not, "not");
+        public NotNode( @JsonProperty("not") Node not ) {
+            this.not = Objects.requireNonNull( not, "not" );
         }
+
     }
 
-    // -----------------------------------------------------------------------------------------
-    // Schema wrapper
-    // -----------------------------------------------------------------------------------------
 
     private final ObjectNode root;
 
     /**
-     * Root-level additionalProperties policy (default policy for all object nodes that INHERIT).
-     * May be {@code null} only for PATCH schema fragments (resolved during merge).
+     * May be null only for PATCH schema fragments.
      */
     private final AdditionalProperties additionalProperties;
 
 
     @JsonCreator
-    public DocumentSchema(
-            @JsonProperty("root") ObjectNode root,
-            @JsonProperty("additionalProperties") AdditionalProperties additionalProperties ) {
+    public DocumentSchema( @JsonProperty("root") ObjectNode root, @JsonProperty("additionalProperties") AdditionalProperties additionalProperties ) {
 
         this.root = Objects.requireNonNull( root, "root" );
-        this.additionalProperties = additionalProperties; // may be null for PATCH fragments
+        this.additionalProperties = additionalProperties;
     }
 
 
@@ -324,449 +250,517 @@ public final class DocumentSchema {
     }
 
 
-    /**
-     * Validates the consistency of the schema.
-     */
     public void validateOrThrow() {
         validateNode( root );
     }
 
-    private static void validateNode( Node n ) {
-        if ( n instanceof ObjectNode o ) {
-            validateObject( o );
-        } else if ( n instanceof ArrayNode a ) {
-            validateArray( a );
-        } else if ( n instanceof ScalarNode s ) {
-            validateScalar( s );
-        } else if ( n instanceof AnyOfNode ao ) {
-            if ( ao.anyOf.isEmpty() ) {
-                throw new IllegalArgumentException("Schema invalid: anyOf must contain at least one subschema.");
-            }
-            ao.anyOf.forEach(DocumentSchema::validateNode);
-        } else if ( n instanceof OneOfNode oo ) {
-            if ( oo.oneOf.isEmpty() ) {
-                throw new IllegalArgumentException("Schema invalid: oneOf must contain at least one subschema.");
-            }
-            oo.oneOf.forEach(DocumentSchema::validateNode);
-        } else if ( n instanceof AllOfNode al ) {
-            if ( al.allOf.isEmpty() ) {
-                throw new IllegalArgumentException("Schema invalid: allOf must contain at least one subschema.");
-            }
-            al.allOf.forEach(DocumentSchema::validateNode);
-        } else if ( n instanceof NotNode nn ) {
-            validateNode(nn.not);
+
+    private static void validateNode( Node node ) {
+        if ( node instanceof ObjectNode objectNode ) {
+            validateObject( objectNode );
+        } else if ( node instanceof ArrayNode arrayNode ) {
+            validateArray( arrayNode );
+        } else if ( node instanceof ScalarNode scalarNode ) {
+            validateScalar( scalarNode );
+        } else if ( node instanceof AnyOfNode anyOfNode ) {
+            validateCompositeNode( anyOfNode.anyOf, "anyOf" );
+        } else if ( node instanceof OneOfNode oneOfNode ) {
+            validateCompositeNode( oneOfNode.oneOf, "oneOf" );
+        } else if ( node instanceof AllOfNode allOfNode ) {
+            validateCompositeNode( allOfNode.allOf, "allOf" );
+        } else if ( node instanceof NotNode notNode ) {
+            validateNode( notNode.not );
         } else {
-            throw new IllegalStateException("Unknown node kind: " + n);
+            throw new IllegalStateException( "Unknown node kind: " + node );
         }
     }
 
-    private static void validateObject( ObjectNode obj ) {
-        // required sanity (if explicitly specified)
-        if ( obj.required != null ) {
-            for ( String r : obj.required ) {
-                if ( r == null || r.isBlank() ) {
-                    throw new IllegalArgumentException("Schema invalid: required contains blank property name.");
+
+    private static void validateCompositeNode( List<Node> nodes, String name ) {
+        if ( nodes.isEmpty() ) {
+            throw new IllegalArgumentException( "Schema invalid: " + name + " must contain at least one subschema." );
+        }
+
+        for ( Node node : nodes ) {
+            validateNode( node );
+        }
+    }
+
+
+    private static void validateObject( ObjectNode objectNode ) {
+        if ( objectNode.required != null ) {
+            for ( String requiredProperty : objectNode.required ) {
+                if ( requiredProperty == null || requiredProperty.isBlank() ) {
+                    throw new IllegalArgumentException( "Schema invalid: required contains blank property name." );
                 }
-                if ( !obj.properties.containsKey( r ) ) {
-                    throw new IllegalArgumentException("Schema invalid: required refers to undeclared property '" + r + "'");
+
+                if ( !objectNode.properties.containsKey( requiredProperty ) ) {
+                    throw new IllegalArgumentException( "Schema invalid: required refers to undeclared property '" + requiredProperty + "'" );
                 }
             }
         }
 
-        if ( obj.minProperties != null && obj.minProperties < 0 ) {
-            throw new IllegalArgumentException("minProperties must be >= 0");
-        }
-        if ( obj.maxProperties != null && obj.maxProperties < 0 ) {
-            throw new IllegalArgumentException("maxProperties must be >= 0");
-        }
-        if ( obj.minProperties != null && obj.maxProperties != null && obj.minProperties > obj.maxProperties ) {
-            throw new IllegalArgumentException("minProperties must be <= maxProperties");
+        if ( objectNode.minProperties != null && objectNode.minProperties < 0 ) {
+            throw new IllegalArgumentException( "minProperties must be >= 0" );
         }
 
-        for ( Node child : obj.properties.values() ) {
-            validateNode( child );
+        if ( objectNode.maxProperties != null && objectNode.maxProperties < 0 ) {
+            throw new IllegalArgumentException( "maxProperties must be >= 0" );
+        }
+
+        if ( objectNode.minProperties != null && objectNode.maxProperties != null && objectNode.minProperties > objectNode.maxProperties ) {
+            throw new IllegalArgumentException( "minProperties must be <= maxProperties" );
+        }
+
+        for ( Node childNode : objectNode.properties.values() ) {
+            validateNode( childNode );
         }
     }
 
-    private static void validateArray( ArrayNode a ) {
-        if ( a.items == null ) {
+
+    private static void validateArray( ArrayNode arrayNode ) {
+        if ( arrayNode.items == null ) {
             throw new IllegalArgumentException( "Schema invalid: array 'items' must be specified." );
         }
-        if ( a.minItems != null && a.minItems < 0 ) {
-            throw new IllegalArgumentException("minItems must be >= 0");
+
+        if ( arrayNode.minItems != null && arrayNode.minItems < 0 ) {
+            throw new IllegalArgumentException( "minItems must be >= 0" );
         }
-        if ( a.maxItems != null && a.maxItems < 0 ) {
-            throw new IllegalArgumentException("maxItems must be >= 0");
+
+        if ( arrayNode.maxItems != null && arrayNode.maxItems < 0 ) {
+            throw new IllegalArgumentException( "maxItems must be >= 0" );
         }
-        if ( a.minItems != null && a.maxItems != null && a.minItems > a.maxItems ) {
-            throw new IllegalArgumentException("minItems must be <= maxItems");
+
+        if ( arrayNode.minItems != null && arrayNode.maxItems != null && arrayNode.minItems > arrayNode.maxItems ) {
+            throw new IllegalArgumentException( "minItems must be <= maxItems" );
         }
-        validateNode( a.items );
+
+        validateNode( arrayNode.items );
     }
 
-    private static void validateScalar( ScalarNode s ) {
 
-        if ( s.types == null || s.types.isEmpty() ) {
-            throw new IllegalArgumentException("Scalar node must declare at least one type.");
+    private static void validateScalar( ScalarNode scalarNode ) {
+        if ( scalarNode.types == null || scalarNode.types.isEmpty() ) {
+            throw new IllegalArgumentException( "Scalar node must declare at least one type." );
         }
 
-        boolean hasString = s.types.stream().anyMatch(DocumentSchema::isStringType);
-        boolean hasNumber = s.types.stream().anyMatch(DocumentSchema::isNumberType);
+        boolean hasStringType = scalarNode.types.stream().anyMatch( DocumentSchema::isStringType );
+        boolean hasNumberType = scalarNode.types.stream().anyMatch( DocumentSchema::isNumberType );
 
-        if ( (s.minLength != null || s.maxLength != null || s.pattern != null) && !hasString ) {
-            throw new IllegalArgumentException("String constraints require a string type (TEXT/VARCHAR/CHAR) to be allowed.");
-        }
-
-        if ( (s.minimum != null || s.maximum != null || s.multipleOf != null) && !hasNumber ) {
-            throw new IllegalArgumentException("Numeric constraints require a numeric type to be allowed.");
+        if ( (scalarNode.minLength != null || scalarNode.maxLength != null || scalarNode.pattern != null) && !hasStringType ) {
+            throw new IllegalArgumentException( "String constraints require a string type (TEXT/VARCHAR/CHAR) to be allowed." );
         }
 
-        if ( s.minLength != null && s.minLength < 0 ) {
-            throw new IllegalArgumentException("minLength must be >= 0");
-        }
-        if ( s.maxLength != null && s.maxLength < 0 ) {
-            throw new IllegalArgumentException("maxLength must be >= 0");
-        }
-        if ( s.minLength != null && s.maxLength != null && s.minLength > s.maxLength ) {
-            throw new IllegalArgumentException("minLength must be <= maxLength");
+        if ( (scalarNode.minimum != null || scalarNode.maximum != null || scalarNode.multipleOf != null) && !hasNumberType ) {
+            throw new IllegalArgumentException( "Numeric constraints require a numeric type to be allowed." );
         }
 
-        if ( s.minimum != null && s.maximum != null && s.minimum.compareTo(s.maximum) > 0 ) {
-            throw new IllegalArgumentException("minimum must be <= maximum");
+        if ( scalarNode.minLength != null && scalarNode.minLength < 0 ) {
+            throw new IllegalArgumentException( "minLength must be >= 0" );
         }
 
-        if ( s.multipleOf != null && s.multipleOf.compareTo(BigDecimal.ZERO) <= 0 ) {
-            throw new IllegalArgumentException("multipleOf must be > 0");
+        if ( scalarNode.maxLength != null && scalarNode.maxLength < 0 ) {
+            throw new IllegalArgumentException( "maxLength must be >= 0" );
         }
 
-        if ( s.constValue != null && s.enumValues != null ) {
-            boolean ok = s.enumValues.stream().anyMatch(ev -> Objects.equals(ev, s.constValue));
-            if ( !ok ) {
-                throw new IllegalArgumentException("Schema invalid: const must be one of enum values when both are specified.");
+        if ( scalarNode.minLength != null && scalarNode.maxLength != null && scalarNode.minLength > scalarNode.maxLength ) {
+            throw new IllegalArgumentException( "minLength must be <= maxLength" );
+        }
+
+        if ( scalarNode.minimum != null && scalarNode.maximum != null && scalarNode.minimum.compareTo( scalarNode.maximum ) > 0 ) {
+            throw new IllegalArgumentException( "minimum must be <= maximum" );
+        }
+
+        if ( scalarNode.multipleOf != null && scalarNode.multipleOf.compareTo( BigDecimal.ZERO ) <= 0 ) {
+            throw new IllegalArgumentException( "multipleOf must be > 0" );
+        }
+
+        if ( scalarNode.constValue != null && scalarNode.enumValues != null ) {
+            boolean containsConst = scalarNode.enumValues.stream().anyMatch( enumValue -> Objects.equals( enumValue, scalarNode.constValue ) );
+
+            if ( !containsConst ) {
+                throw new IllegalArgumentException( "Schema invalid: const must be one of enum values when both are specified." );
             }
         }
     }
 
-    private static boolean isStringType( PolyType t ) {
-        return t == PolyType.TEXT || t == PolyType.VARCHAR || t == PolyType.CHAR;
+
+    private static boolean isStringType( PolyType type ) {
+        return type == PolyType.TEXT || type == PolyType.VARCHAR || type == PolyType.CHAR;
     }
 
-    private static boolean isNumberType( PolyType t ) {
-        // Keep consistent with existing dialect which treated DOUBLE as "number".
-        // (If your JsonTypeTokens maps "number" to DOUBLE, this aligns.)
-        return t == PolyType.DOUBLE
-                || t == PolyType.DECIMAL
-                || t == PolyType.FLOAT
-                || t == PolyType.REAL
-                || t == PolyType.INTEGER
-                || t == PolyType.BIGINT
-                || t == PolyType.SMALLINT
-                || t == PolyType.TINYINT;
+
+    private static boolean isNumberType( PolyType type ) {
+        return type == PolyType.DOUBLE || type == PolyType.DECIMAL || type == PolyType.FLOAT || type == PolyType.REAL || type == PolyType.INTEGER || type == PolyType.BIGINT || type == PolyType.SMALLINT || type == PolyType.TINYINT;
     }
 
-    // -----------------------------------------------------------------------------------------
-    // Jackson Node SerDe
-    // -----------------------------------------------------------------------------------------
 
     static final class NodeSerDeSer {
+
+        private NodeSerDeSer() {
+        }
+
 
         static final class Serializer extends JsonSerializer<Node> {
 
             @Override
-            public void serialize( Node value, JsonGenerator gen, SerializerProvider sp ) throws IOException {
-                if ( value instanceof ScalarNode s ) {
-                    gen.writeStartObject();
-
-                    // type: string or array
-                    if ( s.types.size() == 1 ) {
-                        gen.writeStringField( "type", JsonTypeTokens.toJsonToken( s.types.get(0) ) );
-                    } else {
-                        gen.writeArrayFieldStart("type");
-                        for ( PolyType t : s.types ) {
-                            gen.writeString( JsonTypeTokens.toJsonToken( t ) );
-                        }
-                        gen.writeEndArray();
-                    }
-
-                    // String constraints
-                    if ( s.minLength != null ) {
-                        gen.writeNumberField( "minLength", s.minLength );
-                    }
-                    if ( s.maxLength != null ) {
-                        gen.writeNumberField( "maxLength", s.maxLength );
-                    }
-                    if ( s.pattern != null ) {
-                        gen.writeStringField( "pattern", s.pattern );
-                    }
-
-                    // Numeric constraints
-                    if ( s.minimum != null ) {
-                        gen.writeNumberField( "minimum", s.minimum );
-                    }
-                    if ( s.maximum != null ) {
-                        gen.writeNumberField( "maximum", s.maximum );
-                    }
-                    if ( s.multipleOf != null ) {
-                        gen.writeNumberField( "multipleOf", s.multipleOf );
-                    }
-
-                    if ( s.constValue != null ) {
-                        gen.writeFieldName("const");
-                        gen.writeTree(s.constValue);
-                    }
-                    if ( s.enumValues != null ) {
-                        gen.writeArrayFieldStart("enum");
-                        for ( JsonNode ev : s.enumValues ) {
-                            gen.writeTree(ev);
-                        }
-                        gen.writeEndArray();
-                    }
-
-                    gen.writeEndObject();
+            public void serialize( Node value, JsonGenerator generator, SerializerProvider serializerProvider ) throws IOException {
+                if ( value instanceof ScalarNode scalarNode ) {
+                    writeScalarNode( scalarNode, generator );
                     return;
                 }
 
-                if ( value instanceof ArrayNode a ) {
-                    gen.writeStartObject();
-                    gen.writeStringField("type", "array");
-                    gen.writeFieldName( "items" );
-                    sp.defaultSerializeValue( a.items, gen );
-                    if ( a.minItems != null ) {
-                        gen.writeNumberField( "minItems", a.minItems );
-                    }
-                    if ( a.maxItems != null ) {
-                        gen.writeNumberField( "maxItems", a.maxItems );
-                    }
-                    if ( a.uniqueItems != null ) {
-                        gen.writeBooleanField( "uniqueItems", a.uniqueItems );
-                    }
-                    gen.writeEndObject();
+                if ( value instanceof ArrayNode arrayNode ) {
+                    writeArrayNode( arrayNode, generator, serializerProvider );
                     return;
                 }
 
-                if ( value instanceof ObjectNode o ) {
-                    gen.writeStartObject();
-                    gen.writeStringField("type", "object");
-
-                    // object attributes
-                    if ( o.additionalProperties != null && o.additionalProperties != AdditionalProperties.INHERIT ) {
-                        gen.writeStringField("additionalProperties", o.additionalProperties.name());
-                    }
-                    if ( o.minProperties != null ) {
-                        gen.writeNumberField("minProperties", o.minProperties);
-                    }
-                    if ( o.maxProperties != null ) {
-                        gen.writeNumberField("maxProperties", o.maxProperties);
-                    }
-                    if ( o.required != null ) {
-                        gen.writeArrayFieldStart("required");
-                        for ( String r : o.required ) {
-                            gen.writeString(r);
-                        }
-                        gen.writeEndArray();
-                    }
-
-                    gen.writeObjectFieldStart( "properties" );
-                    for ( Map.Entry<String, Node> e : o.properties.entrySet() ) {
-                        gen.writeFieldName( e.getKey() );
-                        sp.defaultSerializeValue( e.getValue(), gen );
-                    }
-                    gen.writeEndObject(); // properties
-                    gen.writeEndObject();
+                if ( value instanceof ObjectNode objectNode ) {
+                    writeObjectNode( objectNode, generator, serializerProvider );
                     return;
                 }
 
-                if ( value instanceof AnyOfNode ao ) {
-                    gen.writeStartObject();
-                    gen.writeArrayFieldStart("anyOf");
-                    for ( Node n : ao.anyOf ) {
-                        sp.defaultSerializeValue(n, gen);
-                    }
-                    gen.writeEndArray();
-                    gen.writeEndObject();
+                if ( value instanceof AnyOfNode anyOfNode ) {
+                    writeNodeArrayField( "anyOf", anyOfNode.anyOf, generator, serializerProvider );
                     return;
                 }
 
-                if ( value instanceof OneOfNode oo ) {
-                    gen.writeStartObject();
-                    gen.writeArrayFieldStart("oneOf");
-                    for ( Node n : oo.oneOf ) {
-                        sp.defaultSerializeValue(n, gen);
-                    }
-                    gen.writeEndArray();
-                    gen.writeEndObject();
+                if ( value instanceof OneOfNode oneOfNode ) {
+                    writeNodeArrayField( "oneOf", oneOfNode.oneOf, generator, serializerProvider );
                     return;
                 }
 
-                if ( value instanceof AllOfNode al ) {
-                    gen.writeStartObject();
-                    gen.writeArrayFieldStart("allOf");
-                    for ( Node n : al.allOf ) {
-                        sp.defaultSerializeValue(n, gen);
-                    }
-                    gen.writeEndArray();
-                    gen.writeEndObject();
+                if ( value instanceof AllOfNode allOfNode ) {
+                    writeNodeArrayField( "allOf", allOfNode.allOf, generator, serializerProvider );
                     return;
                 }
 
-                if ( value instanceof NotNode nn ) {
-                    gen.writeStartObject();
-                    gen.writeFieldName("not");
-                    sp.defaultSerializeValue(nn.not, gen);
-                    gen.writeEndObject();
+                if ( value instanceof NotNode notNode ) {
+                    generator.writeStartObject();
+                    generator.writeFieldName( "not" );
+                    serializerProvider.defaultSerializeValue( notNode.not, generator );
+                    generator.writeEndObject();
                     return;
                 }
 
                 throw new IllegalStateException( "Unknown node kind: " + value );
             }
 
+
+            private static void writeScalarNode( ScalarNode scalarNode, JsonGenerator generator ) throws IOException {
+                generator.writeStartObject();
+
+                if ( scalarNode.types.size() == 1 ) {
+                    generator.writeStringField( "type", JsonTypeTokens.toJsonToken( scalarNode.types.get( 0 ) ) );
+                } else {
+                    generator.writeArrayFieldStart( "type" );
+                    for ( PolyType type : scalarNode.types ) {
+                        generator.writeString( JsonTypeTokens.toJsonToken( type ) );
+                    }
+                    generator.writeEndArray();
+                }
+
+                if ( scalarNode.minLength != null ) {
+                    generator.writeNumberField( "minLength", scalarNode.minLength );
+                }
+                if ( scalarNode.maxLength != null ) {
+                    generator.writeNumberField( "maxLength", scalarNode.maxLength );
+                }
+                if ( scalarNode.pattern != null ) {
+                    generator.writeStringField( "pattern", scalarNode.pattern );
+                }
+                if ( scalarNode.minimum != null ) {
+                    generator.writeNumberField( "minimum", scalarNode.minimum );
+                }
+                if ( scalarNode.maximum != null ) {
+                    generator.writeNumberField( "maximum", scalarNode.maximum );
+                }
+                if ( scalarNode.multipleOf != null ) {
+                    generator.writeNumberField( "multipleOf", scalarNode.multipleOf );
+                }
+                if ( scalarNode.constValue != null ) {
+                    generator.writeFieldName( "const" );
+                    generator.writeTree( scalarNode.constValue );
+                }
+                if ( scalarNode.enumValues != null ) {
+                    generator.writeArrayFieldStart( "enum" );
+                    for ( JsonNode enumValue : scalarNode.enumValues ) {
+                        generator.writeTree( enumValue );
+                    }
+                    generator.writeEndArray();
+                }
+
+                generator.writeEndObject();
+            }
+
+
+            private static void writeArrayNode( ArrayNode arrayNode, JsonGenerator generator, SerializerProvider serializerProvider ) throws IOException {
+                generator.writeStartObject();
+                generator.writeStringField( "type", "array" );
+                generator.writeFieldName( "items" );
+                serializerProvider.defaultSerializeValue( arrayNode.items, generator );
+
+                if ( arrayNode.minItems != null ) {
+                    generator.writeNumberField( "minItems", arrayNode.minItems );
+                }
+                if ( arrayNode.maxItems != null ) {
+                    generator.writeNumberField( "maxItems", arrayNode.maxItems );
+                }
+                if ( arrayNode.uniqueItems != null ) {
+                    generator.writeBooleanField( "uniqueItems", arrayNode.uniqueItems );
+                }
+
+                generator.writeEndObject();
+            }
+
+
+            private static void writeObjectNode( ObjectNode objectNode, JsonGenerator generator, SerializerProvider serializerProvider ) throws IOException {
+                generator.writeStartObject();
+                generator.writeStringField( "type", "object" );
+
+                if ( objectNode.additionalProperties != null && objectNode.additionalProperties != AdditionalProperties.INHERIT ) {
+                    generator.writeStringField( "additionalProperties", objectNode.additionalProperties.name() );
+                }
+                if ( objectNode.minProperties != null ) {
+                    generator.writeNumberField( "minProperties", objectNode.minProperties );
+                }
+                if ( objectNode.maxProperties != null ) {
+                    generator.writeNumberField( "maxProperties", objectNode.maxProperties );
+                }
+                if ( objectNode.required != null ) {
+                    generator.writeArrayFieldStart( "required" );
+                    for ( String requiredProperty : objectNode.required ) {
+                        generator.writeString( requiredProperty );
+                    }
+                    generator.writeEndArray();
+                }
+
+                generator.writeObjectFieldStart( "properties" );
+                for ( Map.Entry<String, Node> entry : objectNode.properties.entrySet() ) {
+                    generator.writeFieldName( entry.getKey() );
+                    serializerProvider.defaultSerializeValue( entry.getValue(), generator );
+                }
+                generator.writeEndObject();
+                generator.writeEndObject();
+            }
+
+
+            private static void writeNodeArrayField( String fieldName, List<Node> nodes, JsonGenerator generator, SerializerProvider serializerProvider ) throws IOException {
+                generator.writeStartObject();
+                generator.writeArrayFieldStart( fieldName );
+                for ( Node node : nodes ) {
+                    serializerProvider.defaultSerializeValue( node, generator );
+                }
+                generator.writeEndArray();
+                generator.writeEndObject();
+            }
+
         }
 
 
-        /**
-         * Reads a Node from its schema-shaped JSON.
-         */
         static final class Deserializer extends JsonDeserializer<Node> {
 
             @Override
-            public Node deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-                JsonNode n = p.readValueAsTree();
-                if ( !n.isObject() ) {
+            public Node deserialize( JsonParser parser, DeserializationContext context ) throws IOException {
+                JsonNode node = parser.readValueAsTree();
+                if ( !node.isObject() ) {
                     throw new IOException( "DocumentSchema.Node must be a JSON object" );
                 }
 
-                // composition first
-                if ( n.has("anyOf") ) {
-                    JsonNode arr = n.get("anyOf");
-                    if ( !arr.isArray() ) {
-                        throw new IOException("'anyOf' must be an array");
-                    }
-                    List<Node> opts = new ArrayList<>();
-                    for ( JsonNode el : arr ) {
-                        opts.add( p.getCodec().treeToValue( el, Node.class ) );
-                    }
-                    return new AnyOfNode(opts);
-                }
-                if ( n.has("oneOf") ) {
-                    JsonNode arr = n.get("oneOf");
-                    if ( !arr.isArray() ) {
-                        throw new IOException("'oneOf' must be an array");
-                    }
-                    List<Node> opts = new ArrayList<>();
-                    for ( JsonNode el : arr ) {
-                        opts.add( p.getCodec().treeToValue( el, Node.class ) );
-                    }
-                    return new OneOfNode(opts);
-                }
-                if ( n.has("allOf") ) {
-                    JsonNode arr = n.get("allOf");
-                    if ( !arr.isArray() ) {
-                        throw new IOException("'allOf' must be an array");
-                    }
-                    List<Node> opts = new ArrayList<>();
-                    for ( JsonNode el : arr ) {
-                        opts.add( p.getCodec().treeToValue( el, Node.class ) );
-                    }
-                    return new AllOfNode(opts);
-                }
-                if ( n.has("not") ) {
-                    JsonNode child = n.get("not");
-                    Node cn = p.getCodec().treeToValue(child, Node.class);
-                    return new NotNode(cn);
+                Node compositionNode = tryDeserializeCompositionNode( node, parser );
+                if ( compositionNode != null ) {
+                    return compositionNode;
                 }
 
-                JsonNode props = n.get( "properties" );
-                if ( props != null && props.isObject() ) {
-                    Map<String, Node> map = new LinkedHashMap<>();
-                    for ( Iterator<Entry<String, JsonNode>> it = props.fields(); it.hasNext(); ) {
-                        Map.Entry<String, JsonNode> e = it.next();
-                        Node child = p.getCodec().treeToValue( e.getValue(), Node.class );
-                        map.put( e.getKey(), child );
-                    }
-
-                    // object attrs
-                    Set<String> required = null;
-                    if ( n.has("required") && n.get("required").isArray() ) {
-                        required = new LinkedHashSet<>();
-                        for ( JsonNode r : n.get("required") ) {
-                            if ( r.isTextual() ) {
-                                required.add(r.asText());
-                            }
-                        }
-                    }
-
-                    AdditionalProperties ap = AdditionalProperties.INHERIT;
-                    if ( n.has("additionalProperties") ) {
-                        JsonNode apn = n.get("additionalProperties");
-                        if ( apn.isBoolean() ) {
-                            ap = apn.asBoolean() ? AdditionalProperties.ALLOW : AdditionalProperties.FORBID;
-                        } else if ( apn.isTextual() ) {
-                            String s = apn.asText().trim().toUpperCase(Locale.ROOT);
-                            if ( "ALLOW".equals(s) || "TRUE".equals(s) ) {
-                                ap = AdditionalProperties.ALLOW;
-                            } else if ( "FORBID".equals(s) || "FALSE".equals(s) ) {
-                                ap = AdditionalProperties.FORBID;
-                            } else if ( "INHERIT".equals(s) ) {
-                                ap = AdditionalProperties.INHERIT;
-                            } else {
-                                throw new IOException("Invalid additionalProperties: " + apn);
-                            }
-                        }
-                    }
-
-                    Integer minProps = n.has("minProperties") && n.get("minProperties").canConvertToInt() ? n.get("minProperties").intValue() : null;
-                    Integer maxProps = n.has("maxProperties") && n.get("maxProperties").canConvertToInt() ? n.get("maxProperties").intValue() : null;
-
-                    return new ObjectNode(map, required, ap, minProps, maxProps);
+                JsonNode propertiesNode = node.get( "properties" );
+                if ( propertiesNode != null && propertiesNode.isObject() ) {
+                    return deserializeObjectNode( node, propertiesNode, parser );
                 }
 
-                JsonNode items = n.get( "items" );
-                if ( items != null ) {
-                    Node item = p.getCodec().treeToValue( items, Node.class );
-                    Integer minItems = n.has( "minItems" ) && n.get( "minItems" ).canConvertToInt() ? n.get( "minItems" ).intValue() : null;
-                    Integer maxItems = n.has( "maxItems" ) && n.get( "maxItems" ).canConvertToInt() ? n.get( "maxItems" ).intValue() : null;
-                    Boolean unique = n.has( "uniqueItems" ) ? n.get( "uniqueItems" ).asBoolean() : null;
-                    return new ArrayNode( item, minItems, maxItems, unique );
+                JsonNode itemsNode = node.get( "items" );
+                if ( itemsNode != null ) {
+                    return deserializeArrayNode( node, itemsNode, parser );
                 }
 
-                // scalar
-                JsonNode t = n.get( "type" );
-                if ( t == null ) {
+                return deserializeScalarNode( node );
+            }
+
+
+            private static Node tryDeserializeCompositionNode( JsonNode node, JsonParser parser ) throws IOException {
+                if ( node.has( "anyOf" ) ) {
+                    return new AnyOfNode( readNodeArray( node.get( "anyOf" ), "anyOf", parser ) );
+                }
+
+                if ( node.has( "oneOf" ) ) {
+                    return new OneOfNode( readNodeArray( node.get( "oneOf" ), "oneOf", parser ) );
+                }
+
+                if ( node.has( "allOf" ) ) {
+                    return new AllOfNode( readNodeArray( node.get( "allOf" ), "allOf", parser ) );
+                }
+
+                if ( node.has( "not" ) ) {
+                    Node childNode = parser.getCodec().treeToValue( node.get( "not" ), Node.class );
+                    return new NotNode( childNode );
+                }
+
+                return null;
+            }
+
+
+            private static List<Node> readNodeArray( JsonNode node, String fieldName, JsonParser parser ) throws IOException {
+                if ( !node.isArray() ) {
+                    throw new IOException( "'" + fieldName + "' must be an array" );
+                }
+
+                List<Node> nodes = new ArrayList<>();
+                for ( JsonNode element : node ) {
+                    nodes.add( parser.getCodec().treeToValue( element, Node.class ) );
+                }
+                return nodes;
+            }
+
+
+            private static ObjectNode deserializeObjectNode( JsonNode node, JsonNode propertiesNode, JsonParser parser ) throws IOException {
+                Map<String, Node> properties = new LinkedHashMap<>();
+
+                for ( Iterator<Entry<String, JsonNode>> iterator = propertiesNode.fields(); iterator.hasNext(); ) {
+                    Map.Entry<String, JsonNode> entry = iterator.next();
+                    Node childNode = parser.getCodec().treeToValue( entry.getValue(), Node.class );
+                    properties.put( entry.getKey(), childNode );
+                }
+
+                Set<String> required = readRequiredProperties( node );
+                AdditionalProperties additionalProperties = readAdditionalProperties( node );
+                Integer minProperties = readIntegerField( node, "minProperties" );
+                Integer maxProperties = readIntegerField( node, "maxProperties" );
+
+                return new ObjectNode( properties, required, additionalProperties, minProperties, maxProperties );
+            }
+
+
+            private static Set<String> readRequiredProperties( JsonNode node ) {
+                if ( !node.has( "required" ) || !node.get( "required" ).isArray() ) {
+                    return null;
+                }
+
+                Set<String> required = new LinkedHashSet<>();
+                for ( JsonNode requiredNode : node.get( "required" ) ) {
+                    if ( requiredNode.isTextual() ) {
+                        required.add( requiredNode.asText() );
+                    }
+                }
+                return required;
+            }
+
+
+            private static AdditionalProperties readAdditionalProperties( JsonNode node ) throws IOException {
+                AdditionalProperties additionalProperties = AdditionalProperties.INHERIT;
+
+                if ( !node.has( "additionalProperties" ) ) {
+                    return additionalProperties;
+                }
+
+                JsonNode additionalPropertiesNode = node.get( "additionalProperties" );
+                if ( additionalPropertiesNode.isBoolean() ) {
+                    return additionalPropertiesNode.asBoolean() ? AdditionalProperties.ALLOW : AdditionalProperties.FORBID;
+                }
+
+                if ( additionalPropertiesNode.isTextual() ) {
+                    String value = additionalPropertiesNode.asText().trim().toUpperCase( Locale.ROOT );
+
+                    if ( "ALLOW".equals( value ) || "TRUE".equals( value ) ) {
+                        return AdditionalProperties.ALLOW;
+                    }
+                    if ( "FORBID".equals( value ) || "FALSE".equals( value ) ) {
+                        return AdditionalProperties.FORBID;
+                    }
+                    if ( "INHERIT".equals( value ) ) {
+                        return AdditionalProperties.INHERIT;
+                    }
+
+                    throw new IOException( "Invalid additionalProperties: " + additionalPropertiesNode );
+                }
+
+                return additionalProperties;
+            }
+
+
+            private static ArrayNode deserializeArrayNode( JsonNode node, JsonNode itemsNode, JsonParser parser ) throws IOException {
+                Node itemNode = parser.getCodec().treeToValue( itemsNode, Node.class );
+                Integer minItems = readIntegerField( node, "minItems" );
+                Integer maxItems = readIntegerField( node, "maxItems" );
+                Boolean uniqueItems = node.has( "uniqueItems" ) ? node.get( "uniqueItems" ).asBoolean() : null;
+
+                return new ArrayNode( itemNode, minItems, maxItems, uniqueItems );
+            }
+
+
+            private static ScalarNode deserializeScalarNode( JsonNode node ) throws IOException {
+                JsonNode typeNode = node.get( "type" );
+                if ( typeNode == null ) {
                     throw new IOException( "Scalar node requires 'type'" );
                 }
 
-                List<PolyType> types = new ArrayList<>();
-                if ( t.isTextual() ) {
-                    types.add( JsonTypeTokens.toPolyType( t.asText() ) );
-                } else if ( t.isArray() ) {
-                    for ( JsonNode el : t ) {
-                        if ( !el.isTextual() ) {
-                            throw new IOException("Scalar node requires textual type tokens");
-                        }
-                        types.add( JsonTypeTokens.toPolyType( el.asText() ) );
-                    }
-                } else {
-                    throw new IOException( "Scalar node requires textual or array 'type'" );
-                }
+                List<PolyType> types = readScalarTypes( typeNode );
 
-                Integer minLength = n.has( "minLength" ) && n.get( "minLength" ).canConvertToInt() ? n.get( "minLength" ).intValue() : null;
-                Integer maxLength = n.has( "maxLength" ) && n.get( "maxLength" ).canConvertToInt() ? n.get( "maxLength" ).intValue() : null;
-                String pattern = n.has( "pattern" ) && n.get( "pattern" ).isTextual() ? n.get( "pattern" ).asText() : null;
+                Integer minLength = readIntegerField( node, "minLength" );
+                Integer maxLength = readIntegerField( node, "maxLength" );
+                String pattern = node.has( "pattern" ) && node.get( "pattern" ).isTextual() ? node.get( "pattern" ).asText() : null;
 
-                BigDecimal minimum = n.has( "minimum" ) && n.get( "minimum" ).isNumber() ? n.get( "minimum" ).decimalValue() : null;
-                BigDecimal maximum = n.has( "maximum" ) && n.get( "maximum" ).isNumber() ? n.get( "maximum" ).decimalValue() : null;
-                BigDecimal multipleOf = n.has( "multipleOf" ) && n.get( "multipleOf" ).isNumber() ? n.get( "multipleOf" ).decimalValue() : null;
+                BigDecimal minimum = readDecimalField( node, "minimum" );
+                BigDecimal maximum = readDecimalField( node, "maximum" );
+                BigDecimal multipleOf = readDecimalField( node, "multipleOf" );
 
-                JsonNode constValue = n.get("const");
-                List<JsonNode> enumValues = null;
-                if ( n.has("enum") && n.get("enum").isArray() ) {
-                    enumValues = new ArrayList<>();
-                    for ( JsonNode ev : n.get("enum") ) {
-                        enumValues.add(ev);
-                    }
-                }
+                JsonNode constValue = node.get( "const" );
+                List<JsonNode> enumValues = readEnumValues( node );
 
                 return new ScalarNode( types, minLength, maxLength, pattern, minimum, maximum, multipleOf, constValue, enumValues );
+            }
+
+
+            private static List<PolyType> readScalarTypes( JsonNode typeNode ) throws IOException {
+                List<PolyType> types = new ArrayList<>();
+
+                if ( typeNode.isTextual() ) {
+                    types.add( JsonTypeTokens.toPolyType( typeNode.asText() ) );
+                    return types;
+                }
+
+                if ( typeNode.isArray() ) {
+                    for ( JsonNode typeElement : typeNode ) {
+                        if ( !typeElement.isTextual() ) {
+                            throw new IOException( "Scalar node requires textual type tokens" );
+                        }
+                        types.add( JsonTypeTokens.toPolyType( typeElement.asText() ) );
+                    }
+                    return types;
+                }
+
+                throw new IOException( "Scalar node requires textual or array 'type'" );
+            }
+
+
+            private static Integer readIntegerField( JsonNode node, String fieldName ) {
+                return node.has( fieldName ) && node.get( fieldName ).canConvertToInt() ? node.get( fieldName ).intValue() : null;
+            }
+
+
+            private static BigDecimal readDecimalField( JsonNode node, String fieldName ) {
+                return node.has( fieldName ) && node.get( fieldName ).isNumber() ? node.get( fieldName ).decimalValue() : null;
+            }
+
+
+            private static List<JsonNode> readEnumValues( JsonNode node ) {
+                if ( !node.has( "enum" ) || !node.get( "enum" ).isArray() ) {
+                    return null;
+                }
+
+                List<JsonNode> enumValues = new ArrayList<>();
+                for ( JsonNode enumValue : node.get( "enum" ) ) {
+                    enumValues.add( enumValue );
+                }
+                return enumValues;
             }
 
         }

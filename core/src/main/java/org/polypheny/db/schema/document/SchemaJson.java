@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,58 +16,44 @@
 
 package org.polypheny.db.schema.document;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * JSON utilities for {@link DocumentSchema}.
- * Provides parsing from a JSON string to a {@code DocumentSchema} and serialization
- * from a {@code DocumentSchema} to its canonical JSON form.
+ * JSON helpers for DocumentSchema.
  */
 public final class SchemaJson {
 
-    private static final ObjectMapper M = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 
     private SchemaJson() {
     }
 
 
-    /**
-     * Parses a JSON string into a {@link DocumentSchema}.
-     *
-     * @param json schema JSON as text
-     * @return parsed {@code DocumentSchema}
-     * @throws IllegalArgumentException if the input cannot be parsed into a schema
-     */
     public static DocumentSchema parse( String json ) {
         try {
-            // accept {"root": {...}} or bare {...}
-            var node = M.readTree( json );
-            if ( node.isTextual() ) {
-                node = M.readTree( node.asText() );
+            JsonNode schemaNode = OBJECT_MAPPER.readTree( json );
+
+            if ( schemaNode.isTextual() ) {
+                schemaNode = OBJECT_MAPPER.readTree( schemaNode.asText() );
             }
-            if ( !node.has( "root" ) ) {
-                var wrapper = M.createObjectNode();
-                wrapper.set( "root", node );
-                node = wrapper;
+
+            if ( !schemaNode.has( "root" ) ) {
+                JsonNode wrappedSchemaNode = OBJECT_MAPPER.createObjectNode().set( "root", schemaNode );
+                schemaNode = wrappedSchemaNode;
             }
-            return M.treeToValue( node, DocumentSchema.class );
+
+            return OBJECT_MAPPER.treeToValue( schemaNode, DocumentSchema.class );
         } catch ( Exception e ) {
             throw new IllegalArgumentException( "Invalid DocumentSchema JSON: " + e.getMessage(), e );
         }
     }
 
 
-    /**
-     * Serializes a {@link DocumentSchema} to its canonical JSON representation.
-     *
-     * @param schema schema instance to serialize
-     * @return canonical JSON string
-     * @throws IllegalStateException if serialization fails
-     */
     public static String toJson( DocumentSchema schema ) {
         try {
-            return M.writeValueAsString( schema ); // canonical {"root": {...}}
+            return OBJECT_MAPPER.writeValueAsString( schema );
         } catch ( Exception e ) {
             throw new IllegalStateException( "Failed to serialize DocumentSchema: " + e.getMessage(), e );
         }

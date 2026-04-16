@@ -16,9 +16,7 @@
 
 package org.polypheny.db.mql;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.ImmutableList;
@@ -34,7 +32,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.schema.document.SchemaMeta;
 import org.polypheny.db.webui.models.results.DocResult;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
@@ -212,7 +209,5 @@ public class DdlTest extends MqlTestTemplate {
             }
         }
     }
-
-
 
 }

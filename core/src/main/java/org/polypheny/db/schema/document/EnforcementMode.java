@@ -20,7 +20,7 @@ package org.polypheny.db.schema.document;
  * Enforcement level for schema validation on writes.
  */
 public enum EnforcementMode {
-    OFF,   // do not enforce
-    WARN,  // warn & allow
-    STRICT // reject violating writes
+    OFF,
+    WARN,
+    STRICT
 }

@@ -17,41 +17,58 @@ import org.polypheny.db.schema.document.SchemaJson;
 import org.polypheny.db.schema.document.SchemaMeta;
 import org.polypheny.db.schema.document.SchemaValidator;
 
+/**
+ * WebUI helper for the /validateDocuments route in HttpServer.
+ * Validates JSON documents against the stored collection schema without inserting them.
+ */
 @Slf4j
 public class DocumentSchemaCrud {
+
+    private static final String OFF = "OFF";
+
 
     private DocumentSchemaCrud() {
     }
 
-    // -----------------------------
-    // Request / Response DTOs (POJOs)
-    // -----------------------------
 
     public static final class ValidateDocumentsRequest {
+
         public String namespace;
         public String collection;
         public JsonNode documents;
         public Integer maxViolationsPerDocument;
+
     }
 
+
     public static final class DocResult {
+
         public int index;
         public boolean ok;
         public List<SchemaValidator.Violation> violations;
         public String parseError;
 
+
         public DocResult() {
         }
 
-        public DocResult( int index, boolean ok, List<SchemaValidator.Violation> violations, String parseError ) {
+
+        public DocResult(
+                int index,
+                boolean ok,
+                List<SchemaValidator.Violation> violations,
+                String parseError ) {
             this.index = index;
             this.ok = ok;
             this.violations = violations;
             this.parseError = parseError;
         }
+
     }
 
+
     public static final class ValidateDocumentsResponse {
+
         public boolean ok;
         public boolean allowed;
         public boolean hasSchema;
@@ -59,8 +76,10 @@ public class DocumentSchemaCrud {
         public List<DocResult> results;
         public String error;
 
+
         public ValidateDocumentsResponse() {
         }
+
 
         public ValidateDocumentsResponse(
                 boolean ok,
@@ -68,8 +87,7 @@ public class DocumentSchemaCrud {
                 boolean hasSchema,
                 String enforcement,
                 List<DocResult> results,
-                String error
-        ) {
+                String error ) {
             this.ok = ok;
             this.allowed = allowed;
             this.hasSchema = hasSchema;
@@ -77,67 +95,83 @@ public class DocumentSchemaCrud {
             this.results = results;
             this.error = error;
         }
+
     }
 
-    // -----------------------------
-    // Route handler
-    // -----------------------------
 
-    public static void validateDocuments( final Context ctx ) {
-        final ValidateDocumentsRequest request;
+    /**
+     * Validates one or more JSON documents against the stored collection schema.
+     */
+    public static void validateDocuments( Context ctx ) {
+        ValidateDocumentsRequest request;
 
         try {
             request = ctx.bodyAsClass( ValidateDocumentsRequest.class );
-        } catch ( Exception e ) {
+        } catch ( Exception ignored ) {
             ctx.status( 400 ).json( new ValidateDocumentsResponse(
-                    false, false, false, "OFF", List.of(), "Invalid request payload."
-            ) );
+                    false,
+                    false,
+                    false,
+                    OFF,
+                    List.of(),
+                    "Invalid request payload." ) );
             return;
         }
 
         if ( request == null || request.namespace == null || request.collection == null ) {
             ctx.status( 400 ).json( new ValidateDocumentsResponse(
-                    false, false, false, "OFF", List.of(), "Missing 'namespace' or 'collection'."
-            ) );
+                    false,
+                    false,
+                    false,
+                    OFF,
+                    List.of(),
+                    "Missing 'namespace' or 'collection'." ) );
             return;
         }
 
-        final int maxViolations = clamp( request.maxViolationsPerDocument, 1, 500, 25 );
+        int maxViolations = clamp( request.maxViolationsPerDocument, 1, 500, 25 );
 
-        final LogicalNamespace ns;
+        LogicalNamespace namespace;
         try {
-            ns = Catalog.snapshot().getNamespace( request.namespace ).orElseThrow();
-        } catch ( Exception e ) {
+            namespace = Catalog.snapshot().getNamespace( request.namespace ).orElseThrow();
+        } catch ( Exception ignored ) {
             ctx.status( 400 ).json( new ValidateDocumentsResponse(
-                    false, false, false, "OFF", List.of(), "Unknown namespace: " + request.namespace
-            ) );
+                    false,
+                    false,
+                    false,
+                    OFF,
+                    List.of(),
+                    "Unknown namespace: " + request.namespace ) );
             return;
         }
 
-        final long nsId = ns.id;
-        final String collName = adjustNameForNamespace( request.collection, ns );
+        long namespaceId = namespace.id;
+        String collectionName = adjustNameForNamespace( request.collection, namespace );
 
-        final Optional<LogicalCollection> collOpt =
-                Catalog.getInstance().getSnapshot().doc().getCollection( nsId, collName );
+        Optional<LogicalCollection> collection =
+                Catalog.getInstance().getSnapshot().doc().getCollection( namespaceId, collectionName );
 
-        if ( collOpt.isEmpty() ) {
+        if ( collection.isEmpty() ) {
             ctx.status( 400 ).json( new ValidateDocumentsResponse(
-                    false, false, false, "OFF", List.of(), "Unknown collection: " + request.collection
-            ) );
+                    false,
+                    false,
+                    false,
+                    OFF,
+                    List.of(),
+                    "Unknown collection: " + request.collection ) );
             return;
         }
 
-        final LogicalCollection coll = collOpt.get();
-
-        // Load schema meta + enforcement
         DocumentSchema schema = null;
         EnforcementMode mode = EnforcementMode.OFF;
         boolean hasSchema = false;
 
         try {
-            Optional<SchemaMeta> metaOpt = SchemaMeta.readCurrent( Catalog.getInstance(), nsId, coll.id );
-            if ( metaOpt.isPresent() ) {
-                SchemaMeta meta = metaOpt.get();
+            Optional<SchemaMeta> schemaMeta =
+                    SchemaMeta.readCurrent( Catalog.getInstance(), namespaceId, collection.get().id );
+
+            if ( schemaMeta.isPresent() ) {
+                SchemaMeta meta = schemaMeta.get();
                 mode = resolveMode( meta.enforcement );
 
                 if ( meta.schemaJson != null && !meta.schemaJson.isBlank() ) {
@@ -148,104 +182,144 @@ public class DocumentSchemaCrud {
         } catch ( Exception e ) {
             log.warn( "Failed to load schema meta for {}.{}", request.namespace, request.collection, e );
             ctx.status( 500 ).json( new ValidateDocumentsResponse(
-                    false, false, false, "OFF", List.of(), "Could not load schema meta."
-            ) );
+                    false,
+                    false,
+                    false,
+                    OFF,
+                    List.of(),
+                    "Could not load schema meta." ) );
             return;
         }
 
-        // Normalize documents input: object or array
         if ( request.documents == null || request.documents.isNull() ) {
             ctx.status( 400 ).json( new ValidateDocumentsResponse(
-                    false, false, hasSchema, mode.name(), List.of(), "Missing 'documents'."
-            ) );
+                    false,
+                    false,
+                    hasSchema,
+                    mode.name(),
+                    List.of(),
+                    "Missing 'documents'." ) );
             return;
         }
 
-        final List<JsonNode> docs = new ArrayList<>();
-        if ( request.documents.isArray() ) {
-            ((ArrayNode) request.documents).forEach( docs::add );
+        List<JsonNode> documents = normalizeDocuments( request.documents );
+        List<DocResult> results = validateDocuments( documents, schema, maxViolations );
+
+        boolean allConform = results.stream().allMatch( result -> result.ok );
+        boolean allowed = mode != EnforcementMode.STRICT || allConform;
+
+        ctx.status( 200 ).json( new ValidateDocumentsResponse(
+                allConform,
+                allowed,
+                hasSchema,
+                mode.name(),
+                results,
+                null ) );
+    }
+
+
+    private static List<JsonNode> normalizeDocuments( JsonNode documentsNode ) {
+        List<JsonNode> documents = new ArrayList<>();
+
+        if ( documentsNode.isArray() ) {
+            ((ArrayNode) documentsNode).forEach( documents::add );
         } else {
-            docs.add( request.documents );
+            documents.add( documentsNode );
         }
 
-        final List<DocResult> results = new ArrayList<>();
+        return documents;
+    }
 
-        for ( int i = 0; i < docs.size(); i++ ) {
-            JsonNode dn = docs.get( i );
 
-            if ( dn == null || dn.isNull() || !dn.isObject() ) {
+    private static List<DocResult> validateDocuments(
+            List<JsonNode> documents,
+            DocumentSchema schema,
+            int maxViolations ) {
+        List<DocResult> results = new ArrayList<>();
+
+        for ( int i = 0; i < documents.size(); i++ ) {
+            JsonNode documentNode = documents.get( i );
+
+            if ( documentNode == null || documentNode.isNull() || !documentNode.isObject() ) {
                 results.add( new DocResult( i, false, List.of(), "Expected a JSON object." ) );
                 continue;
             }
 
             if ( schema == null ) {
-                // No schema -> everything conforms
                 results.add( new DocResult( i, true, List.of(), null ) );
                 continue;
             }
 
             try {
-                // JSON->BSON conversion happens in core (SchemaValidator.validateJson)
-                SchemaValidator.ValidationResult res = SchemaValidator.validateJson( schema, dn );
+                SchemaValidator.ValidationResult validationResult =
+                        SchemaValidator.validateJson( schema, documentNode );
 
-                List<SchemaValidator.Violation> violations = res.violations() == null ? List.of() : res.violations();
+                List<SchemaValidator.Violation> violations =
+                        validationResult.violations() == null
+                                ? List.of()
+                                : validationResult.violations();
+
                 if ( violations.size() > maxViolations ) {
                     violations = violations.subList( 0, maxViolations );
                 }
 
-                results.add( new DocResult( i, res.ok(), violations, null ) );
+                results.add( new DocResult( i, validationResult.ok(), violations, null ) );
             } catch ( Exception e ) {
-                results.add( new DocResult( i, false, List.of(), "Could not parse/validate document: " + e.getMessage() ) );
+                results.add( new DocResult(
+                        i,
+                        false,
+                        List.of(),
+                        "Could not parse/validate document: " + e.getMessage() ) );
             }
         }
 
-        boolean allConform = results.stream().allMatch( r -> r.ok );
-        boolean allowed = (mode != EnforcementMode.STRICT) || allConform;
-
-        ctx.status( 200 ).json( new ValidateDocumentsResponse(
-                allConform, allowed, hasSchema, mode.name(), results, null
-        ) );
+        return results;
     }
 
-    // -----------------------------
-    // Helpers
-    // -----------------------------
 
-    private static int clamp( Integer v, int min, int max, int fallback ) {
-        if ( v == null ) {
+    private static int clamp( Integer value, int min, int max, int fallback ) {
+        if ( value == null ) {
             return fallback;
         }
-        return Math.max( min, Math.min( max, v ) );
+
+        return Math.max( min, Math.min( max, value ) );
     }
 
-    private static String adjustNameForNamespace( String name, LogicalNamespace ns ) {
+
+    private static String adjustNameForNamespace( String name, LogicalNamespace namespace ) {
         if ( name == null ) {
             return null;
         }
-        if ( ns != null && !ns.caseSensitive ) {
+
+        if ( namespace != null && !namespace.caseSensitive ) {
             return name.toLowerCase( Locale.ROOT );
         }
+
         return name;
     }
+
 
     private static EnforcementMode resolveMode( String enforcement ) {
         if ( enforcement == null ) {
             return EnforcementMode.OFF;
         }
+
         try {
             return EnforcementMode.valueOf( enforcement.trim().toUpperCase( Locale.ROOT ) );
-        } catch ( IllegalArgumentException iae ) {
+        } catch ( IllegalArgumentException ignored ) {
             return EnforcementMode.OFF;
         }
     }
 
+
     private static DocumentSchema parseSchemaOrThrow( String json ) {
         try {
-            DocumentSchema s = SchemaJson.parse( json );
-            s.validateOrThrow();
-            return s;
+            DocumentSchema schema = SchemaJson.parse( json );
+            schema.validateOrThrow();
+            return schema;
         } catch ( Exception e ) {
             throw new RuntimeException( "Stored collection schema is invalid", e );
         }
     }
+
 }

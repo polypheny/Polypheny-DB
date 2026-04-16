@@ -29,38 +29,44 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BsonUtil;
 
 /**
- * MQL: db.alterCollectionSchema("<name>", { docSchema: {...} }, validationAction: "strict|warn|off" )
+ * MQL: db.alterCollectionSchema("<collectionName>", { docSchema: {...} }, validationAction: "strict|warn|off" )
  */
 public class MqlAlterCollectionSchema extends MqlNode implements ExecutableStatement {
 
     private final String name;
     private final BsonDocument options;
 
-    public MqlAlterCollectionSchema(ParserPos pos, String name, String namespace, BsonDocument options) {
-        super(pos, namespace);
+
+    public MqlAlterCollectionSchema( ParserPos pos, String name, String namespace, BsonDocument options ) {
+        super( pos, namespace );
         this.name = name;
         this.options = options;
     }
+
 
     @Override
     public Type getMqlKind() {
         return Type.ALTER_COLLECTION_SCHEMA;
     }
 
+
     @Override
     public @Nullable String getEntity() {
         return name;
     }
 
+
     @Override
-    public void execute(Context context, Statement statement, ParsedQueryContext parsedQueryContext) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         long namespaceId = parsedQueryContext.getNamespaceId();
         PolyValue polyValue = options != null ? BsonUtil.toPolyValue( options ) : null;
-        DdlManager.getInstance().alterCollectionSchema(namespaceId, name, statement, polyValue);
+        DdlManager.getInstance().alterCollectionSchema( namespaceId, name, statement, polyValue );
     }
+
 
     @Override
     public String toString() {
         return "MqlAlterCollectionSchema{name='" + name + "'}";
     }
+
 }

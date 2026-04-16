@@ -17,7 +17,6 @@
 package org.polypheny.db.functions;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -54,104 +53,18 @@ public class MqlFunctions {
         // empty on purpose
     }
 
-    private static List<PolyString> tokenizePath( String path ) {
-        if ( path == null || path.isBlank() ) {
-            return List.of();
-        }
-        List<PolyString> out = new ArrayList<>();
-        StringBuilder buf = new StringBuilder();
-        for ( int i = 0; i < path.length(); i++ ) {
-            char c = path.charAt( i );
-            if ( c == '.' ) {
-                if ( buf.length() > 0 ) {
-                    out.add( PolyString.of( buf.toString() ) );
-                    buf.setLength( 0 );
-                }
-                continue;
-            }
-            if ( c == '[' ) {
-                if ( buf.length() > 0 ) {
-                    out.add( PolyString.of( buf.toString() ) );
-                    buf.setLength( 0 );
-                }
-                int end = path.indexOf( ']', i );
-                if ( end < 0 ) {
-                    throw new GenericRuntimeException( "Invalid path: unclosed '[' in '" + path + "'" );
-                }
-                String idx = path.substring( i + 1, end ).trim();
-                if ( !idx.matches( "\\d+" ) ) {
-                    throw new GenericRuntimeException( "Invalid array index in path '" + path + "': '" + idx + "'" );
-                }
-                out.add( PolyString.of( idx ) );
-                i = end;
-                continue;
-            }
-            buf.append( c );
-        }
-        if ( buf.length() > 0 ) {
-            out.add( PolyString.of( buf.toString() ) );
-        }
-        return out;
-    }
 
-
-    private static boolean isNumericSegment( PolyString segment ) {
-        return segment != null && segment.value != null && segment.value.matches( "\\d+" );
-    }
-
-    private static int toIndex( PolyString segment ) {
-        return Integer.parseInt( segment.value );
-    }
-
-    private static PolyValue getPathValue( PolyValue current, List<PolyString> path, int pos ) {
-        if ( current == null ) {
-            return null;
-        }
-        if ( pos >= path.size() ) {
-            return current;
-        }
-
-        PolyString seg = path.get( pos );
-
-        if ( current.isDocument() ) {
-            return getPathValue( current.asDocument().get( seg ), path, pos + 1 );
-        }
-
-        if ( current.isList() ) {
-            PolyList<PolyValue> list = current.asList();
-
-            if ( isNumericSegment( seg ) ) {
-                int idx = toIndex( seg );
-                if ( idx < 0 || idx >= list.size() ) {
-                    return null;
-                }
-                return getPathValue( list.get( idx ), path, pos + 1 );
-            }
-
-            PolyList<PolyValue> projected = PolyList.of();
-            for ( PolyValue element : list ) {
-                PolyValue child = getPathValue( element, path, pos );
-                if ( child != null && !(child.isDocument() && child.asDocument().isUnset) ) {
-                    projected.add( child );
-                }
-            }
-            return projected.isEmpty() ? null : projected;
-        }
-
-        return null;
-    }
-
-    private static PolyValue getPathValue( PolyValue input, List<PolyString> path ) {
-        return getPathValue( input, path, 0 );
-    }
-
+    /**
+     * Reads a nested value from a document or list path and returns an unset marker if it is missing.
+     */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyValue docQueryValue( PolyValue input, List<PolyString> filters ) {
         if ( input == null || (!input.isDocument() && !input.isList()) ) {
             return null;
         }
-        PolyValue temp = getPathValue( input, filters );
-        return temp == null ? PolyDocument.ofUnset() : temp;
+
+        PolyValue value = getPathValue( input, filters );
+        return value == null ? PolyDocument.ofUnset() : value;
     }
 
 
@@ -254,45 +167,6 @@ public class MqlFunctions {
     }
 
 
-    private static void removePath( PolyValue current, List<PolyString> path, int pos ) {
-        if ( current == null || pos >= path.size() ) {
-            return;
-        }
-
-        PolyString seg = path.get( pos );
-        boolean last = pos == path.size() - 1;
-
-        if ( current.isDocument() ) {
-            PolyDocument doc = current.asDocument();
-            PolyValue child = doc.get( seg );
-            if ( child == null ) {
-                return;
-            }
-            if ( last ) {
-                doc.remove( seg );
-                return;
-            }
-            removePath( child, path, pos + 1 );
-            return;
-        }
-
-        if ( current.isList() ) {
-            if ( !isNumericSegment( seg ) ) {
-                return;
-            }
-            PolyList<PolyValue> list = current.asList();
-            int idx = toIndex( seg );
-            if ( idx < 0 || idx >= list.size() ) {
-                return;
-            }
-            if ( last ) {
-                list.remove( idx );
-                return;
-            }
-            removePath( list.get( idx ), path, pos + 1 );
-        }
-    }
-
     @SuppressWarnings("UnusedDeclaration")
     public static PolyDocument docUpdateReplace( PolyValue input, List<PolyString> names, List<PolyValue> values ) {
         if ( !input.isDocument() ) {
@@ -303,59 +177,6 @@ public class MqlFunctions {
         }
 
         return input.asDocument();
-    }
-
-
-    private static void ensureListSize( PolyList<PolyValue> list, int index ) {
-        while ( list.size() <= index ) {
-            list.add( PolyNull.NULL );
-        }
-    }
-
-    private static void updateValue( PolyValue value, PolyValue container, List<PolyString> splitName ) {
-        PolyValue current = container;
-
-        for ( int i = 0; i < splitName.size(); i++ ) {
-            PolyString segment = splitName.get( i );
-            boolean last = i == splitName.size() - 1;
-            PolyString next = last ? null : splitName.get( i + 1 );
-
-            if ( current.isDocument() ) {
-                PolyDocument doc = current.asDocument();
-                if ( last ) {
-                    doc.put( segment, value );
-                    return;
-                }
-
-                PolyValue child = doc.get( segment );
-                if ( child == null || child == PolyNull.NULL ) {
-                    child = isNumericSegment( next ) ? PolyList.of() : PolyDocument.ofDocument( Map.of() );
-                    doc.put( segment, child );
-                }
-                current = child;
-            } else if ( current.isList() ) {
-                if ( !isNumericSegment( segment ) ) {
-                    throw new GenericRuntimeException( "Array segments must use numeric path components." );
-                }
-                PolyList<PolyValue> list = current.asList();
-                int index = toIndex( segment );
-                ensureListSize( list, index );
-
-                if ( last ) {
-                    list.set( index, value );
-                    return;
-                }
-
-                PolyValue child = list.get( index );
-                if ( child == null || child == PolyNull.NULL ) {
-                    child = isNumericSegment( next ) ? PolyList.of() : PolyDocument.ofDocument( Map.of() );
-                    list.set( index, child );
-                }
-                current = child;
-            } else {
-                throw new GenericRuntimeException( "Cannot traverse non-container value while updating document path." );
-            }
-        }
     }
 
 
@@ -616,10 +437,7 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docGt( PolyValue b0, PolyValue b1 ) {
-        return compNullExecute(
-                b0,
-                b1,
-                () -> Functions.gt( b0, b1 ).value );
+        return compNullExecute( b0, b1, () -> Functions.gt( b0, b1 ).value );
     }
 
 
@@ -633,10 +451,7 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docGte( PolyValue b0, PolyValue b1 ) {
-        return compNullExecute(
-                b0,
-                b1,
-                () -> (Functions.gt( b0, b1 ).value || Functions.eq( b0, b1 ).value) );
+        return compNullExecute( b0, b1, () -> (Functions.gt( b0, b1 ).value || Functions.eq( b0, b1 ).value) );
     }
 
 
@@ -659,10 +474,7 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docLt( PolyValue b0, PolyValue b1 ) {
-        return compNullExecute(
-                b0,
-                b1,
-                () -> Functions.lt( b0, b1 ).value );
+        return compNullExecute( b0, b1, () -> Functions.lt( b0, b1 ).value );
     }
 
 
@@ -676,10 +488,7 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docLte( PolyValue b0, PolyValue b1 ) {
-        return compNullExecute(
-                b0,
-                b1,
-                () -> (Functions.lt( b0, b1 ).value || Functions.eq( b0, b1 ).value) );
+        return compNullExecute( b0, b1, () -> (Functions.lt( b0, b1 ).value || Functions.eq( b0, b1 ).value) );
     }
 
 
@@ -729,6 +538,253 @@ public class MqlFunctions {
                 start = Math.max( 0, end + elements.intValue() );
             }
             return PolyList.copyOf( list.subList( start, end ) );
+        }
+    }
+
+
+    /**
+     * Splits dotted and bracketed Mongo-style paths into normalized path segments.
+     */
+    private static List<PolyString> tokenizePath( String path ) {
+        if ( path == null || path.isBlank() ) {
+            return List.of();
+        }
+
+        List<PolyString> segments = new ArrayList<>();
+        StringBuilder currentSegment = new StringBuilder();
+
+        for ( int i = 0; i < path.length(); i++ ) {
+            char currentChar = path.charAt( i );
+
+            if ( currentChar == '.' ) {
+                if ( currentSegment.length() > 0 ) {
+                    segments.add( PolyString.of( currentSegment.toString() ) );
+                    currentSegment.setLength( 0 );
+                }
+                continue;
+            }
+
+            if ( currentChar == '[' ) {
+                if ( currentSegment.length() > 0 ) {
+                    segments.add( PolyString.of( currentSegment.toString() ) );
+                    currentSegment.setLength( 0 );
+                }
+
+                int closingBracketIndex = path.indexOf( ']', i );
+                if ( closingBracketIndex < 0 ) {
+                    throw new GenericRuntimeException( "Invalid path: unclosed '[' in '" + path + "'" );
+                }
+
+                String indexText = path.substring( i + 1, closingBracketIndex ).trim();
+                if ( indexText.isEmpty() ) {
+                    throw new GenericRuntimeException( "Invalid array index in path '" + path + "': '" + indexText + "'" );
+                }
+
+                for ( int j = 0; j < indexText.length(); j++ ) {
+                    char digit = indexText.charAt( j );
+                    if ( digit < '0' || digit > '9' ) {
+                        throw new GenericRuntimeException( "Invalid array index in path '" + path + "': '" + indexText + "'" );
+                    }
+                }
+
+                segments.add( PolyString.of( indexText ) );
+                i = closingBracketIndex;
+                continue;
+            }
+
+            currentSegment.append( currentChar );
+        }
+
+        if ( currentSegment.length() > 0 ) {
+            segments.add( PolyString.of( currentSegment.toString() ) );
+        }
+
+        return segments;
+    }
+
+
+    private static boolean isNumericSegment( PolyString segment ) {
+        if ( segment == null || segment.value == null || segment.value.isEmpty() ) {
+            return false;
+        }
+
+        for ( int i = 0; i < segment.value.length(); i++ ) {
+            char currentChar = segment.value.charAt( i );
+            if ( currentChar < '0' || currentChar > '9' ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+
+    private static int toIndex( PolyString segment ) {
+        return Integer.parseInt( segment.value );
+    }
+
+
+    /**
+     * Resolves nested document and array paths for reads, projections, and rename/remove operations.
+     */
+    private static PolyValue getPathValue( PolyValue current, List<PolyString> path, int pos ) {
+        if ( current == null ) {
+            return null;
+        }
+
+        if ( pos >= path.size() ) {
+            return current;
+        }
+
+        PolyString segment = path.get( pos );
+
+        if ( current.isDocument() ) {
+            PolyValue childValue = current.asDocument().get( segment );
+            return getPathValue( childValue, path, pos + 1 );
+        }
+
+        if ( current.isList() ) {
+            PolyList<PolyValue> list = current.asList();
+
+            if ( isNumericSegment( segment ) ) {
+                int index = toIndex( segment );
+                if ( index < 0 || index >= list.size() ) {
+                    return null;
+                }
+
+                return getPathValue( list.get( index ), path, pos + 1 );
+            }
+
+            PolyList<PolyValue> projectedValues = PolyList.of();
+            for ( PolyValue element : list ) {
+                PolyValue childValue = getPathValue( element, path, pos );
+                if ( childValue != null && !(childValue.isDocument() && childValue.asDocument().isUnset) ) {
+                    projectedValues.add( childValue );
+                }
+            }
+
+            return projectedValues.isEmpty() ? null : projectedValues;
+        }
+
+        return null;
+    }
+
+
+    private static PolyValue getPathValue( PolyValue input, List<PolyString> path ) {
+        return getPathValue( input, path, 0 );
+    }
+
+
+    /**
+     * Removes a nested path without failing when intermediate containers are missing.
+     */
+    private static void removePath( PolyValue current, List<PolyString> path, int pos ) {
+        if ( current == null || pos >= path.size() ) {
+            return;
+        }
+
+        PolyString segment = path.get( pos );
+        boolean isLastSegment = pos == path.size() - 1;
+
+        if ( current.isDocument() ) {
+            PolyDocument document = current.asDocument();
+            PolyValue childValue = document.get( segment );
+
+            if ( childValue == null ) {
+                return;
+            }
+
+            if ( isLastSegment ) {
+                document.remove( segment );
+                return;
+            }
+
+            removePath( childValue, path, pos + 1 );
+            return;
+        }
+
+        if ( current.isList() ) {
+            if ( !isNumericSegment( segment ) ) {
+                return;
+            }
+
+            PolyList<PolyValue> list = current.asList();
+            int index = toIndex( segment );
+            if ( index < 0 || index >= list.size() ) {
+                return;
+            }
+
+            if ( isLastSegment ) {
+                list.remove( index );
+                return;
+            }
+
+            removePath( list.get( index ), path, pos + 1 );
+        }
+    }
+
+
+    private static void ensureListSize( PolyList<PolyValue> list, int index ) {
+        while ( list.size() <= index ) {
+            list.add( PolyNull.NULL );
+        }
+    }
+
+
+    /**
+     * Creates missing intermediate containers so nested updates can be applied in place.
+     */
+    private static void updateValue( PolyValue value, PolyValue container, List<PolyString> splitName ) {
+        PolyValue current = container;
+
+        for ( int i = 0; i < splitName.size(); i++ ) {
+            PolyString segment = splitName.get( i );
+            boolean isLastSegment = i == splitName.size() - 1;
+            PolyString nextSegment = isLastSegment ? null : splitName.get( i + 1 );
+
+            if ( current.isDocument() ) {
+                PolyDocument document = current.asDocument();
+
+                if ( isLastSegment ) {
+                    document.put( segment, value );
+                    return;
+                }
+
+                PolyValue childValue = document.get( segment );
+                if ( childValue == null || childValue == PolyNull.NULL ) {
+                    childValue = isNumericSegment( nextSegment ) ? PolyList.of() : PolyDocument.ofDocument( Map.of() );
+                    document.put( segment, childValue );
+                }
+
+                current = childValue;
+                continue;
+            }
+
+            if ( current.isList() ) {
+                if ( !isNumericSegment( segment ) ) {
+                    throw new GenericRuntimeException( "Array segments must use numeric path components." );
+                }
+
+                PolyList<PolyValue> list = current.asList();
+                int index = toIndex( segment );
+                ensureListSize( list, index );
+
+                if ( isLastSegment ) {
+                    list.set( index, value );
+                    return;
+                }
+
+                PolyValue childValue = list.get( index );
+                if ( childValue == null || childValue == PolyNull.NULL ) {
+                    childValue = isNumericSegment( nextSegment ) ? PolyList.of() : PolyDocument.ofDocument( Map.of() );
+                    list.set( index, childValue );
+                }
+
+                current = childValue;
+                continue;
+            }
+
+            throw new GenericRuntimeException( "Cannot traverse non-container value while updating document path." );
         }
     }
 

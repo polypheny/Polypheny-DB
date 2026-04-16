@@ -16,6 +16,12 @@
 
 package org.polypheny.db.schema.document;
 
+import static java.util.Objects.requireNonNull;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -23,38 +29,17 @@ import org.polypheny.db.schema.document.DocumentSchema.Node;
 import org.polypheny.db.schema.document.SchemaOptionsResolver.AlterMode;
 import org.polypheny.db.transaction.Statement;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static java.util.Objects.requireNonNull;
-
 /**
- * ALTER COLLECTION SCHEMA planning + preflight policy.
- * - Computes final schema (respecting PATCH/REPLACE)
- * - Decides if a scan (preflight) is required
- * - Applies allow/deny policy based on preflight result
+ * Plans ALTER SCHEMA operations and applies preflight policy.
  */
 public final class SchemaAlterEngine {
 
-    public record Plan(
-            DocumentSchema currentSchema,           // may be null if none persisted
-            EnforcementMode currentMode,
-            DocumentSchema finalSchema,             // null for enforcement-only update
-            EnforcementMode finalMode,
-            boolean isPatch,
-            boolean needsPreflight                  // engine decision
-    ) {
+    public record Plan(DocumentSchema currentSchema, EnforcementMode currentMode, DocumentSchema finalSchema, EnforcementMode finalMode, boolean isPatch, boolean needsPreflight) {
 
     }
 
 
-    /**
-     * Outcome of policy application. Indicates whether the change was accepted
-     * and includes the preflight report that motivated the decision.
-     */
-    public record Outcome( boolean applied, SchemaAlterPreflightReport preflight ) {
+    public record Outcome(boolean applied, SchemaAlterPreflightReport preflight) {
 
     }
 
@@ -63,259 +48,151 @@ public final class SchemaAlterEngine {
     }
 
 
-    /**
-     * Builds a plan for the requested ALTER operation.
-     * <p>
-     * Determines the target enforcement mode, computes the final schema
-     * (merging when PATCH is requested), validates the schema, and decides whether
-     * a preflight scan is required based on compatibility heuristics.
-     *
-     * @param r resolved options from {@link SchemaOptionsResolver}
-     * @param current currently persisted document schema (nullable)
-     * @param currentMode currently persisted enforcement mode
-     * @return a {@link Plan} describing how to proceed
-     */
-    public Plan plan(
-            final SchemaOptionsResolver.Resolved r,
-            final DocumentSchema current,
-            final EnforcementMode currentMode ) {
+    public Plan plan( SchemaOptionsResolver.Resolved resolved, DocumentSchema currentSchema, EnforcementMode currentMode ) {
 
-        final EnforcementMode targetMode = (r.mode != null) ? r.mode : currentMode;
+        EnforcementMode targetMode = resolved.mode != null ? resolved.mode : currentMode;
 
-        // Enforcement-only change?
-        if ( r.schema == null ) {
-            final boolean needsPreflight = (current != null) && isTightening( currentMode, targetMode );
-            return new Plan( current, currentMode, null, targetMode, false, needsPreflight );
+        if ( resolved.schema == null ) {
+            boolean needsPreflight = currentSchema != null && isTightening( currentMode, targetMode );
+            return new Plan( currentSchema, currentMode, null, targetMode, false, needsPreflight );
         }
 
-        // PATCH without base schema is not well-defined -> reject.
-        if ( r.alterMode == AlterMode.PATCH && current == null ) {
-            throw new GenericRuntimeException("Cannot PATCH schema: collection has no persisted schema to patch.");
+        if ( resolved.alterMode == AlterMode.PATCH && currentSchema == null ) {
+            throw new GenericRuntimeException( "Cannot PATCH schema: collection has no persisted schema to patch." );
         }
 
-        // Build final schema (PATCH or REPLACE)
-        final DocumentSchema finalSchema =
-                (r.alterMode == AlterMode.PATCH)
-                        ? mergePatch( requireNonNull(current, "current schema"), r.schema )
-                        : requireNonNull( r.schema, "schema" );
+        DocumentSchema finalSchema = resolved.alterMode == AlterMode.PATCH ? mergePatch( requireNonNull( currentSchema, "current schema" ), resolved.schema ) : requireNonNull( resolved.schema, "schema" );
 
         finalSchema.validateOrThrow();
 
-        // ---------- Decide preflight ----------
-        boolean needsPreflight = false;
-
-        if ( current == null ) {
-            // Adding schema to an existing collection: only *required* if we're going STRICT.
-            needsPreflight = (targetMode == EnforcementMode.STRICT);
+        boolean needsPreflight;
+        if ( currentSchema == null ) {
+            needsPreflight = targetMode == EnforcementMode.STRICT;
         } else {
-            boolean compatible = SchemaCompatibility.isCompatible( current, finalSchema );
+            boolean compatible = SchemaCompatibility.isCompatible( currentSchema, finalSchema );
+            boolean additionalPropertiesTightened = currentSchema.additionalProperties() == DocumentSchema.AdditionalProperties.ALLOW && finalSchema.additionalProperties() == DocumentSchema.AdditionalProperties.FORBID;
 
-            boolean apTighten =
-                    current.additionalProperties() == DocumentSchema.AdditionalProperties.ALLOW
-                            && finalSchema.additionalProperties() == DocumentSchema.AdditionalProperties.FORBID;
+            needsPreflight = !compatible || additionalPropertiesTightened;
 
-            // Base heuristic: scan if not compatible / AP tightened
-            needsPreflight = !compatible || apTighten;
-
-            // Critical rule for correctness:
-            // If we are going STRICT but the collection was NOT previously STRICT,
-            // we must scan even if schemas look "compatible" (data may already violate current schema).
+            // Moving to STRICT requires a scan even if the schemas look compatible,
+            // because existing data may already violate the current schema.
             if ( targetMode == EnforcementMode.STRICT && currentMode != EnforcementMode.STRICT ) {
                 needsPreflight = true;
             }
         }
 
-        return new Plan( current, currentMode, finalSchema, targetMode, r.alterMode == AlterMode.PATCH, needsPreflight );
+        return new Plan( currentSchema, currentMode, finalSchema, targetMode, resolved.alterMode == AlterMode.PATCH, needsPreflight );
     }
 
 
-
-    /**
-     * Runs a preflight scan when the plan requires it.
-     *
-     * @param catalog catalog handle
-     * @param coll logical collection to check
-     * @param plan produced plan
-     * @param stmt transactional statement context
-     * @return preflight report (OK or with violations)
-     */
-    public SchemaAlterPreflightReport preflightIfRequired(
-            final Catalog catalog,
-            final LogicalCollection coll,
-            final Plan plan,
-            final Statement stmt ) {
+    public SchemaAlterPreflightReport preflightIfRequired( Catalog catalog, LogicalCollection collection, Plan plan, Statement statement ) {
 
         if ( !plan.needsPreflight() || plan.finalSchema() == null ) {
-            return new SchemaAlterPreflightReport( true, 0, 0, java.util.List.of() );
-        }
-
-        return SchemaAlterPreflight.run( catalog, coll, plan.finalSchema(), stmt );
-    }
-
-
-    /**
-     * Runs an enforcement-only preflight when tightening to STRICT.
-     *
-     * @param catalog catalog handle
-     * @param coll logical collection
-     * @param plan plan with current and final enforcement mode
-     * @param stmt transactional statement context
-     * @return preflight report (OK or with violations)
-     */
-    public SchemaAlterPreflightReport preflightForEnforcementOnlyIfRequired(
-            final Catalog catalog,
-            final LogicalCollection coll,
-            final Plan plan,
-            final Statement stmt ) {
-
-        final EnforcementMode current = plan.currentMode();
-        final EnforcementMode target = plan.finalMode();
-        if ( !isTightening( current, target ) ) {
             return new SchemaAlterPreflightReport( true, 0, 0, List.of() );
         }
 
-        // Need a persisted schema to validate against
-        Optional<SchemaMeta> metaOpt = SchemaMeta.readCurrent( catalog, coll.namespaceId, coll.id );
-
-        if ( metaOpt.isEmpty() ) {
-            // Changing validationAction without a persisted schema is handled earlier; no preflight needed here.
-            return new SchemaAlterPreflightReport( true, 0, 0, List.of() );
-        }
-
-        DocumentSchema currentSchema = SchemaJson.parse( metaOpt.get().schemaJson );
-        return SchemaAlterPreflight.run( catalog, coll, currentSchema, stmt );
+        return SchemaAlterPreflight.run( catalog, collection, plan.finalSchema(), statement );
     }
 
 
-    /**
-     * Applies allow/deny policy based on the preflight report.
-     * <p>
-     * For schema changes, denies application when violations exist.
-     * For enforcement-only tightening, denies application when violations exist under the current schema.
-     *
-     * @param rep preflight report
-     * @param isSchemaChange whether the operation changes the schema
-     * @param currentMode current enforcement mode
-     * @param finalMode target enforcement mode
-     * @return outcome indicating acceptance and including the report
-     * @throws GenericRuntimeException when the policy denies the change
-     */
-    public Outcome applyPolicyOrThrow(
-            final SchemaAlterPreflightReport rep,
-            final boolean isSchemaChange,
-            final EnforcementMode currentMode,
-            final EnforcementMode finalMode ) {
+    public SchemaAlterPreflightReport preflightForEnforcementOnlyIfRequired( Catalog catalog, LogicalCollection collection, Plan plan, Statement statement ) {
+
+        EnforcementMode currentMode = plan.currentMode();
+        EnforcementMode targetMode = plan.finalMode();
+
+        if ( !isTightening( currentMode, targetMode ) ) {
+            return new SchemaAlterPreflightReport( true, 0, 0, List.of() );
+        }
+
+        Optional<SchemaMeta> schemaMeta = SchemaMeta.readCurrent( catalog, collection.namespaceId, collection.id );
+
+        if ( schemaMeta.isEmpty() ) {
+            return new SchemaAlterPreflightReport( true, 0, 0, List.of() );
+        }
+
+        DocumentSchema currentSchema = SchemaJson.parse( schemaMeta.get().schemaJson );
+        return SchemaAlterPreflight.run( catalog, collection, currentSchema, statement );
+    }
+
+
+    public Outcome applyPolicyOrThrow( SchemaAlterPreflightReport preflightReport, boolean isSchemaChange, EnforcementMode currentMode, EnforcementMode finalMode ) {
 
         if ( isSchemaChange ) {
-            if ( !rep.ok ) {
-                // Allow schema changes that have violations when we are NOT moving to STRICT.
-                // Under WARN/OFF, legacy violations are tolerated and future writes will be warned/allowed.
-                if ( finalMode != EnforcementMode.STRICT ) {
-                    return new Outcome( true, rep ); // apply despite violations
-                }
-                // Target is STRICT -> block
-                throw new GenericRuntimeException(
-                        String.format(
-                                "ALTER SCHEMA would invalidate %d/%d documents; examples: %s",
-                                rep.failing, rep.scanned, rep.compactSummary( 5 ) ) );
+            if ( preflightReport.ok ) {
+                return new Outcome( true, preflightReport );
             }
-            return new Outcome( true, rep );
+
+            if ( finalMode != EnforcementMode.STRICT ) {
+                return new Outcome( true, preflightReport );
+            }
+
+            throw new GenericRuntimeException( String.format( "ALTER SCHEMA would invalidate %d/%d documents; examples: %s", preflightReport.failing, preflightReport.scanned, preflightReport.compactSummary( 5 ) ) );
         }
 
-        if ( isTightening( currentMode, finalMode ) && !rep.ok ) {
-            throw new GenericRuntimeException(
-                    String.format(
-                            "Cannot set validationAction=STRICT: %d/%d documents violate the current schema; examples: %s",
-                            rep.failing, rep.scanned, rep.compactSummary( 5 ) ) );
+        if ( isTightening( currentMode, finalMode ) && !preflightReport.ok ) {
+            throw new GenericRuntimeException( String.format( "Cannot set validationAction=STRICT: %d/%d documents violate the current schema; examples: %s", preflightReport.failing, preflightReport.scanned, preflightReport.compactSummary( 5 ) ) );
         }
 
-        return new Outcome( true, rep );
+        return new Outcome( true, preflightReport );
     }
 
 
-    /**
-     * Checks whether enforcement mode is being tightened to STRICT.
-     *
-     * @param cur current mode
-     * @param fin final mode
-     * @return {@code true} when moving to STRICT from a non-STRICT mode
-     */
-    private static boolean isTightening( final EnforcementMode cur, final EnforcementMode fin ) {
-        if ( fin == null ) {
+    private static boolean isTightening( EnforcementMode currentMode, EnforcementMode finalMode ) {
+        if ( finalMode == null ) {
             return false;
         }
-        if ( cur == EnforcementMode.STRICT ) {
+
+        if ( currentMode == EnforcementMode.STRICT ) {
             return false;
         }
-        return fin == EnforcementMode.STRICT;
+
+        return finalMode == EnforcementMode.STRICT;
     }
 
 
     /**
-     * Builds a merged schema for PATCH operations.
-     *
-     * @param current current schema
-     * @param patch patch schema
-     * @return merged schema
+     * Merges a PATCH schema into the current schema.
      */
-    public static DocumentSchema mergePatch( final DocumentSchema current, final DocumentSchema patch ) {
+    public static DocumentSchema mergePatch( DocumentSchema currentSchema, DocumentSchema patchSchema ) {
+        DocumentSchema.ObjectNode mergedRoot = mergeObject( currentSchema.root(), patchSchema.root() );
 
-        // merge properties trees + object attributes; choose AP at schema wrapper root
-        DocumentSchema.ObjectNode mergedRoot = mergeObject( current.root(), patch.root() );
+        DocumentSchema.AdditionalProperties additionalProperties = patchSchema.additionalProperties() != null ? patchSchema.additionalProperties() : currentSchema.additionalProperties();
 
-        DocumentSchema.AdditionalProperties ap =
-                patch.additionalProperties() != null ? patch.additionalProperties() : current.additionalProperties();
-
-        return new DocumentSchema( mergedRoot, ap );
+        return new DocumentSchema( mergedRoot, additionalProperties );
     }
 
 
     /**
-     * Merges two object nodes for PATCH semantics.
-     *
-     * <p>For each property:
-     * if both sides are objects, merge recursively; otherwise the patch value replaces the current value.</p>
-     *
-     * <p>Object-level attributes ({@code required}, {@code additionalProperties}, {@code minProperties}, {@code maxProperties})
-     * are merged with "patch overrides current when specified".</p>
-     *
-     * @param cur current object node
-     * @param p patch object node
-     * @return merged object node
+     * PATCH merges nested object nodes recursively. Other node types replace the current value.
      */
-    private static DocumentSchema.ObjectNode mergeObject(
-            final DocumentSchema.ObjectNode cur,
-            final DocumentSchema.ObjectNode p ) {
+    private static DocumentSchema.ObjectNode mergeObject( DocumentSchema.ObjectNode currentObject, DocumentSchema.ObjectNode patchObject ) {
 
-        if ( p == null ) {
-            return cur;
+        if ( patchObject == null ) {
+            return currentObject;
         }
 
-        Map<String, DocumentSchema.Node> props = new LinkedHashMap<>( cur.properties );
-        for ( var e : p.properties.entrySet() ) {
-            String k = e.getKey();
-            DocumentSchema.Node pn = e.getValue();
-            DocumentSchema.Node cn = cur.properties.get( k );
+        Map<String, Node> mergedProperties = new LinkedHashMap<>( currentObject.properties );
 
-            if ( pn instanceof DocumentSchema.ObjectNode && cn instanceof DocumentSchema.ObjectNode ) {
-                props.put( k, mergeObject( (DocumentSchema.ObjectNode) cn, (DocumentSchema.ObjectNode) pn ) );
+        for ( Map.Entry<String, Node> entry : patchObject.properties.entrySet() ) {
+            String key = entry.getKey();
+            Node patchNode = entry.getValue();
+            Node currentNode = currentObject.properties.get( key );
+
+            if ( patchNode instanceof DocumentSchema.ObjectNode patchChildObject && currentNode instanceof DocumentSchema.ObjectNode currentChildObject ) {
+                mergedProperties.put( key, mergeObject( currentChildObject, patchChildObject ) );
             } else {
-                props.put( k, pn );
+                mergedProperties.put( key, patchNode );
             }
         }
 
-        // Merge attributes
-        java.util.Set<String> required = (p.required != null) ? p.required : cur.required;
+        Set<String> required = patchObject.required != null ? patchObject.required : currentObject.required;
 
-        DocumentSchema.AdditionalProperties ap =
-                (p.additionalProperties != null && p.additionalProperties != DocumentSchema.AdditionalProperties.INHERIT)
-                        ? p.additionalProperties
-                        : cur.additionalProperties;
+        DocumentSchema.AdditionalProperties additionalProperties = patchObject.additionalProperties != null && patchObject.additionalProperties != DocumentSchema.AdditionalProperties.INHERIT ? patchObject.additionalProperties : currentObject.additionalProperties;
 
-        Integer minProps = (p.minProperties != null) ? p.minProperties : cur.minProperties;
-        Integer maxProps = (p.maxProperties != null) ? p.maxProperties : cur.maxProperties;
+        Integer minProperties = patchObject.minProperties != null ? patchObject.minProperties : currentObject.minProperties;
+        Integer maxProperties = patchObject.maxProperties != null ? patchObject.maxProperties : currentObject.maxProperties;
 
-        return new DocumentSchema.ObjectNode( props, required, ap, minProps, maxProps );
+        return new DocumentSchema.ObjectNode( mergedProperties, required, additionalProperties, minProperties, maxProperties );
     }
 
 }

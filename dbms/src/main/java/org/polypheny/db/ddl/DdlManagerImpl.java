@@ -16,8 +16,6 @@
 
 package org.polypheny.db.ddl;
 
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -131,8 +129,6 @@ public class DdlManagerImpl extends DdlManager {
 
     public static final String UNPARTITIONED = "part0";
     private final Catalog catalog;
-
-    private static final ObjectMapper MAPPER = new ObjectMapper(); // === NEW ===
 
 
     public DdlManagerImpl( Catalog catalog ) {
@@ -2199,97 +2195,121 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void createCollection(
-            long namespaceId, String name, boolean ifNotExists,
-            List<DataStore<?>> stores, PlacementType placementType,
-            Statement statement, @Nullable PolyValue polyValue // opaque
-    ) {
+            long namespaceId,
+            String name,
+            boolean ifNotExists,
+            List<DataStore<?>> stores,
+            PlacementType placementType,
+            Statement statement,
+            @Nullable PolyValue polyValue ) {
 
-        // Normalize + validate context once
         String adjustedName = adjustNameIfNeeded( name, namespaceId );
         checkModelLangCompatibility( DataModel.DOCUMENT, namespaceId );
 
-        // Fail fast (or early-return if IF NOT EXISTS)
         if ( assertEntityExists( namespaceId, adjustedName, ifNotExists ) ) {
             return;
         }
 
-        // 1) resolve schema
         DocumentSchema schema = null;
-        EnforcementMode mode = EnforcementMode.OFF;
+        EnforcementMode enforcementMode = EnforcementMode.OFF;
+
         if ( polyValue != null ) {
-            var resolved = SchemaOptionsResolver.resolve( polyValue );
+            SchemaOptionsResolver.Resolved resolved = SchemaOptionsResolver.resolve( polyValue );
             schema = resolved.schema;
-            mode = resolved.mode;
+            enforcementMode = resolved.mode;
         }
 
         if ( schema == null ) {
-            // fallback to existing behavior
-            createCollectionWOS( namespaceId, name, ifNotExists, stores, statement, adjustedName );
+            createCollectionWithoutSchema( namespaceId, stores, statement, adjustedName );
             return;
         }
 
-        // 2) otherwise run the schema-aware path
-        createCollectionWS( namespaceId, name, ifNotExists, stores, statement, schema, mode, adjustedName );
+        createCollectionWithSchema( namespaceId, stores, statement, schema, enforcementMode, adjustedName );
     }
 
 
-    private void createCollectionWOS( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, Statement statement, String adjustedName ) {
+    private void createCollectionWithoutSchema(
+            long namespaceId,
+            List<DataStore<?>> stores,
+            Statement statement,
+            String adjustedName ) {
 
         if ( stores == null ) {
-            // Ask router on which storeId(s) the table should be placed
             stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewEntity();
         }
 
-        // addLTable
-        LogicalCollection logical = catalog.getLogicalDoc( namespaceId ).addCollection(
+        LogicalCollection logicalCollection = catalog.getLogicalDoc( namespaceId ).addCollection(
                 adjustedName,
                 EntityType.ENTITY,
                 true );
 
-        AllocationPartition partition = catalog.getAllocDoc( namespaceId ).addPartition( logical, PartitionType.NONE, "undefined" );
+        AllocationPartition partition = catalog.getAllocDoc( namespaceId ).addPartition(
+                logicalCollection,
+                PartitionType.NONE,
+                "undefined" );
 
         for ( DataStore<?> store : stores ) {
-            AllocationPlacement placement = catalog.getAllocDoc( namespaceId ).addPlacement( logical, store.adapterId );
-            AllocationCollection alloc = catalog.getAllocDoc( namespaceId ).addAllocation( logical, placement.id, partition.id, store.getAdapterId() );
+            AllocationPlacement placement = catalog.getAllocDoc( namespaceId ).addPlacement(
+                    logicalCollection,
+                    store.adapterId );
+            AllocationCollection allocation = catalog.getAllocDoc( namespaceId ).addAllocation(
+                    logicalCollection,
+                    placement.id,
+                    partition.id,
+                    store.getAdapterId() );
 
-            store.createCollection( statement.getPrepareContext(), logical, alloc );
+            store.createCollection( statement.getPrepareContext(), logicalCollection, allocation );
         }
 
         catalog.updateSnapshot();
-
     }
 
 
-    private void createCollectionWS(
-            long namespaceId, String name, boolean ifNotExists,
+    private void createCollectionWithSchema(
+            long namespaceId,
             List<DataStore<?>> stores,
-            Statement statement, DocumentSchema schema, EnforcementMode mode, String adjusted
-    ) {
+            Statement statement,
+            DocumentSchema schema,
+            EnforcementMode enforcementMode,
+            String adjustedName ) {
 
         schema.validateOrThrow();
-        final String schemaJson = SchemaJson.toJson(schema);
-        final String enforcement = (mode == null ? EnforcementMode.OFF : mode).name();
+
+        String schemaJson = SchemaJson.toJson( schema );
+        String enforcement = (enforcementMode == null ? EnforcementMode.OFF : enforcementMode).name();
+
         if ( stores == null ) {
             stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewEntity();
         }
 
-        LogicalCollection logical = catalog.getLogicalDoc( namespaceId ).addCollection( adjusted, EntityType.ENTITY, true );
+        LogicalCollection logicalCollection = catalog.getLogicalDoc( namespaceId ).addCollection(
+                adjustedName,
+                EntityType.ENTITY,
+                true );
 
-        AllocationPartition partition = catalog.getAllocDoc( namespaceId ).addPartition( logical, PartitionType.NONE, "undefined" );
+        AllocationPartition partition = catalog.getAllocDoc( namespaceId ).addPartition(
+                logicalCollection,
+                PartitionType.NONE,
+                "undefined" );
+
         for ( DataStore<?> store : stores ) {
-            AllocationPlacement placement = catalog.getAllocDoc( namespaceId ).addPlacement( logical, store.getAdapterId() );
-            AllocationCollection alloc = catalog.getAllocDoc( namespaceId ).addAllocation( logical, placement.id, partition.id, store.getAdapterId() );
-            store.createCollection( statement.getPrepareContext(), logical, alloc );
+            AllocationPlacement placement = catalog.getAllocDoc( namespaceId ).addPlacement(
+                    logicalCollection,
+                    store.getAdapterId() );
+            AllocationCollection allocation = catalog.getAllocDoc( namespaceId ).addAllocation(
+                    logicalCollection,
+                    placement.id,
+                    partition.id,
+                    store.getAdapterId() );
+
+            store.createCollection( statement.getPrepareContext(), logicalCollection, allocation );
         }
 
-        // persist canonical JSON
-        schema.validateOrThrow();
         SchemaMeta.writeCurrent(
                 catalog,
-                logical.namespaceId,
-                logical.id,
-                new SchemaMeta(schemaJson, enforcement, 1L)
-        );
+                logicalCollection.namespaceId,
+                logicalCollection.id,
+                new SchemaMeta( schemaJson, enforcement, 1L ) );
         catalog.updateSnapshot();
     }
 
@@ -2304,178 +2324,191 @@ public class DdlManagerImpl extends DdlManager {
                     "ALTER COLLECTION SCHEMA requires an options document (docSchema and/or validationAction)." );
         }
 
-        // Parse
-        SchemaOptionsResolver.Resolved r = SchemaOptionsResolver.resolveAlter( polyValue );
+        SchemaOptionsResolver.Resolved resolved = SchemaOptionsResolver.resolveAlter( polyValue );
 
-        // Orchestrate
-        alterCollectionSchemaInternal( namespaceId, name, r, statement );
+        alterCollectionSchemaInternal( namespaceId, name, resolved, statement );
         safeResetCaches( statement );
     }
 
 
-    private void alterCollectionSchemaInternal( long nsId, String name, SchemaOptionsResolver.Resolved r, @Nullable Statement statement ) {
-        final String adjusted = adjustNameIfNeeded( name, nsId );
-        checkModelLangCompatibility( DataModel.DOCUMENT, nsId );
+    private void alterCollectionSchemaInternal(
+            long namespaceId,
+            String name,
+            SchemaOptionsResolver.Resolved resolved,
+            @Nullable Statement statement ) {
 
-        final var snapshot = catalog.getSnapshot();
-        final LogicalCollection coll = snapshot.doc()
-                .getCollection( nsId, adjusted )
-                .orElseThrow( () -> new GenericRuntimeException( "Collection %s does not exist.", adjusted ) );
+        String adjustedName = adjustNameIfNeeded( name, namespaceId );
+        checkModelLangCompatibility( DataModel.DOCUMENT, namespaceId );
 
-        // Read current persisted schema (if any)
-        final Optional<SchemaMeta> metaOpt = SchemaMeta.readCurrent( catalog, coll.namespaceId, coll.id );
+        Snapshot snapshot = catalog.getSnapshot();
+        LogicalCollection logicalCollection = snapshot.doc()
+                .getCollection( namespaceId, adjustedName )
+                .orElseThrow( () -> new GenericRuntimeException( "Collection %s does not exist.", adjustedName ) );
+
+        Optional<SchemaMeta> schemaMeta = SchemaMeta.readCurrent(
+                catalog,
+                logicalCollection.namespaceId,
+                logicalCollection.id );
 
         DocumentSchema currentSchema = null;
-        if ( metaOpt.isPresent() ) {
+        if ( schemaMeta.isPresent() ) {
             try {
-                currentSchema = SchemaJson.parse( metaOpt.get().schemaJson );
+                currentSchema = SchemaJson.parse( schemaMeta.get().schemaJson );
             } catch ( Exception e ) {
                 throw new GenericRuntimeException(
                         "Stored schema for collection %s is invalid: %s",
-                        adjusted,
-                        e.getMessage()
-                );
+                        adjustedName,
+                        e.getMessage() );
             }
         }
 
-        final EnforcementMode currentMode = metaOpt
-                .map( m -> safeEnum( m.enforcement, EnforcementMode.OFF ) )
+        EnforcementMode currentMode = schemaMeta
+                .map( meta -> safeEnum( meta.enforcement, EnforcementMode.OFF ) )
                 .orElse( EnforcementMode.OFF );
 
-        // PATCH must have a base schema
-        if ( r != null && r.alterMode == SchemaOptionsResolver.AlterMode.PATCH && currentSchema == null ) {
+        if ( resolved.alterMode == SchemaOptionsResolver.AlterMode.PATCH && currentSchema == null ) {
             throw new GenericRuntimeException(
                     "Cannot PATCH schema for collection %s because it has no persisted schema.",
-                    adjusted
-            );
+                    adjustedName );
         }
 
-        // Build plan (merge/validate/decide preflight)
-        final SchemaAlterEngine.Plan plan = schemaAlterEngine.plan( r, currentSchema, currentMode );
-        final EnforcementMode targetMode = plan.finalMode() != null ? plan.finalMode() : currentMode;
+        SchemaAlterEngine.Plan plan = schemaAlterEngine.plan( resolved, currentSchema, currentMode );
+        EnforcementMode targetMode = plan.finalMode() != null ? plan.finalMode() : currentMode;
 
-        // ----------------------------------------------------------------------
-        // Enforcement-only (no schema section supplied)
-        // ----------------------------------------------------------------------
         if ( plan.finalSchema() == null ) {
-            // no-op (nothing requested / no change)
             if ( targetMode == currentMode ) {
                 return;
             }
 
-            // cannot set validationAction without a persisted schema (except OFF, which is effectively a no-op)
-            if ( metaOpt.isEmpty() ) {
+            if ( schemaMeta.isEmpty() ) {
                 if ( targetMode == EnforcementMode.OFF ) {
                     return;
                 }
+
                 throw new GenericRuntimeException(
-                        "Cannot set validationAction without a persisted schema. Create/attach a schema first."
-                );
+                        "Cannot set validationAction without a persisted schema. Create/attach a schema first." );
             }
 
             if ( plan.needsPreflight() && statement == null ) {
                 throw new GenericRuntimeException(
-                        "ALTER COLLECTION SCHEMA requires a Statement when tightening validation to STRICT (preflight scan required)."
-                );
+                        "ALTER COLLECTION SCHEMA requires a Statement when tightening validation to STRICT (preflight scan required)." );
             }
 
-            final SchemaAlterPreflightReport rep = plan.needsPreflight()
-                    ? schemaAlterEngine.preflightForEnforcementOnlyIfRequired( catalog, coll, plan, statement )
-                    : new SchemaAlterPreflightReport( true, 0, 0, java.util.List.of() );
+            SchemaAlterPreflightReport preflightReport = plan.needsPreflight()
+                    ? schemaAlterEngine.preflightForEnforcementOnlyIfRequired(
+                    catalog,
+                    logicalCollection,
+                    plan,
+                    statement )
+                    : new SchemaAlterPreflightReport( true, 0, 0, List.of() );
 
-            schemaAlterEngine.applyPolicyOrThrow( rep, /*isSchemaChange*/ false, currentMode, targetMode );
+            schemaAlterEngine.applyPolicyOrThrow(
+                    preflightReport,
+                    false,
+                    currentMode,
+                    targetMode );
 
-            if ( r != null && r.dryRun ) {
+            if ( resolved.dryRun ) {
                 return;
             }
 
-            // Persist enforcement change
-            final String newEnf = targetMode.name();
-            final String oldEnf = safeEnum( metaOpt.get().enforcement, EnforcementMode.OFF ).name();
+            String newEnforcement = targetMode.name();
+            String oldEnforcement = safeEnum(
+                    schemaMeta.get().enforcement,
+                    EnforcementMode.OFF ).name();
 
-            if ( !oldEnf.equals( newEnf ) ) {
-                final long newVersion = metaOpt.get().version + 1L;
+            if ( !oldEnforcement.equals( newEnforcement ) ) {
+                long newVersion = schemaMeta.get().version + 1L;
+
                 SchemaMeta.writeCurrent(
                         catalog,
-                        coll.namespaceId,
-                        coll.id,
+                        logicalCollection.namespaceId,
+                        logicalCollection.id,
                         new SchemaMeta(
-                                metaOpt.get().schemaJson, // schema unchanged
-                                newEnf,
-                                newVersion
-                        )
-                );
+                                schemaMeta.get().schemaJson,
+                                newEnforcement,
+                                newVersion ) );
                 catalog.updateSnapshot();
             }
+
             return;
         }
 
-        // ----------------------------------------------------------------------
-        // Schema-changing path
-        // ----------------------------------------------------------------------
-        plan.finalSchema().validateOrThrow(); // extra safety
-        final String newSchemaJson = SchemaJson.toJson( plan.finalSchema() );
-        final String newEnforcement = targetMode.name();
+        plan.finalSchema().validateOrThrow();
 
-        // No-op guard: schema + enforcement unchanged
-        if ( metaOpt.isPresent() ) {
-            final String oldSchemaJson = metaOpt.get().schemaJson;
-            final String oldEnf = safeEnum( metaOpt.get().enforcement, EnforcementMode.OFF ).name();
-            if ( oldSchemaJson != null && oldSchemaJson.equals( newSchemaJson ) && oldEnf.equals( newEnforcement ) ) {
+        String newSchemaJson = SchemaJson.toJson( plan.finalSchema() );
+        String newEnforcement = targetMode.name();
+
+        if ( schemaMeta.isPresent() ) {
+            String oldSchemaJson = schemaMeta.get().schemaJson;
+            String oldEnforcement = safeEnum(
+                    schemaMeta.get().enforcement,
+                    EnforcementMode.OFF ).name();
+
+            if ( oldSchemaJson != null
+                    && oldSchemaJson.equals( newSchemaJson )
+                    && oldEnforcement.equals( newEnforcement ) ) {
                 return;
             }
         }
 
         if ( plan.needsPreflight() && statement == null ) {
             throw new GenericRuntimeException(
-                    "ALTER COLLECTION SCHEMA requires a Statement when a preflight scan is required."
-            );
+                    "ALTER COLLECTION SCHEMA requires a Statement when a preflight scan is required." );
         }
 
-        final SchemaAlterPreflightReport rep = plan.needsPreflight()
-                ? schemaAlterEngine.preflightIfRequired( catalog, coll, plan, statement )
-                : new SchemaAlterPreflightReport( true, 0, 0, java.util.List.of() );
+        SchemaAlterPreflightReport preflightReport = plan.needsPreflight()
+                ? schemaAlterEngine.preflightIfRequired(
+                catalog,
+                logicalCollection,
+                plan,
+                statement )
+                : new SchemaAlterPreflightReport( true, 0, 0, List.of() );
 
-        // STRICT denies when violations exist; WARN/OFF may allow (engine policy)
-        schemaAlterEngine.applyPolicyOrThrow( rep, /*isSchemaChange*/ true, currentMode, targetMode );
+        schemaAlterEngine.applyPolicyOrThrow(
+                preflightReport,
+                true,
+                currentMode,
+                targetMode );
 
-        if ( r != null && r.dryRun ) {
+        if ( resolved.dryRun ) {
             return;
         }
 
-        final long newVersion = metaOpt.map( m -> m.version + 1L ).orElse( 1L );
+        long newVersion = schemaMeta.map( meta -> meta.version + 1L ).orElse( 1L );
+
         SchemaMeta.writeCurrent(
                 catalog,
-                coll.namespaceId,
-                coll.id,
+                logicalCollection.namespaceId,
+                logicalCollection.id,
                 new SchemaMeta(
                         newSchemaJson,
                         newEnforcement,
-                        newVersion
-                )
-        );
+                        newVersion ) );
         catalog.updateSnapshot();
     }
+
 
     private static void safeResetCaches( @Nullable Statement statement ) {
         if ( statement == null ) {
             return;
         }
+
         try {
             statement.getQueryProcessor().resetCaches();
-        } catch ( Throwable ignore ) {
+        } catch ( Throwable ignored ) {
         }
     }
 
 
-    // Normalize a stored enforcement string to the enum, falling back to `def` if null/invalid.
-    private static EnforcementMode safeEnum( final String s, final EnforcementMode fallback ) {
-        if ( s == null || s.isBlank() ) {
+    private static EnforcementMode safeEnum( String value, EnforcementMode fallback ) {
+        if ( value == null || value.isBlank() ) {
             return fallback;
         }
+
         try {
-            return EnforcementMode.valueOf( s.toUpperCase( java.util.Locale.ROOT ) );
-        } catch ( Exception ignore ) {
+            return EnforcementMode.valueOf( value.toUpperCase( java.util.Locale.ROOT ) );
+        } catch ( Exception ignored ) {
             return fallback;
         }
     }
@@ -2495,7 +2528,6 @@ public class DdlManagerImpl extends DdlManager {
         return false;
     }
 
-
     @Override
     public void dropCollection( LogicalCollection collection, Statement statement ) {
         Snapshot snapshot = catalog.getSnapshot();
@@ -2510,10 +2542,6 @@ public class DdlManagerImpl extends DdlManager {
             catalog.getAllocDoc( allocation.namespaceId ).removePlacement( allocation.placementId );
         }
         catalog.getAllocDoc( collection.namespaceId ).removePartition( snapshot.alloc().getPartitionsFromLogical( collection.id ).get( 0 ).id );
-
-        // gets deleted in DocumentCatalog.deleteCollection(...)
-        //SchemaMeta.clear(catalog, collection.namespaceId, collection.id);
-
         catalog.getLogicalDoc( collection.namespaceId ).deleteCollection( collection.id );
 
         catalog.updateSnapshot();

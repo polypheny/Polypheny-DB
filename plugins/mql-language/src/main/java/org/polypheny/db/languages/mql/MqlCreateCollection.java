@@ -33,6 +33,12 @@
     import org.polypheny.db.type.entity.PolyValue;
     import org.polypheny.db.util.BsonUtil;
 
+    /**
+     * without schema:
+     * db.createCollection("<collectionName>")
+     * OR with schema:
+     * db.createCollection("<collectionName>", {docSchema: {<schema>}})
+     */
     public class MqlCreateCollection extends MqlNode implements ExecutableStatement {
 
         private final BsonDocument options;
@@ -74,12 +80,10 @@
 
             PlacementType placementType = PlacementType.AUTOMATIC;
             PolyValue test = null;
-            if(this.options != null){
+            if ( this.options != null ) {
                 BsonDocument raw = this.options.toBsonDocument();
                 test = BsonUtil.toPolyValue( raw );
             }
-            //BsonDocument raw = this.options != null ? this.options : new BsonDocument();
-            //String json = raw.toJson();
 
             List<DataStore<?>> dataStores = stores
                     .stream()
@@ -88,11 +92,11 @@
             DdlManager.getInstance().createCollection(
                     namespaceId,
                     name,
-                    true, //TODO: should it really always be true?
+                    true,
                     dataStores.isEmpty() ? null : dataStores,
                     placementType,
                     statement,
-                    test);
+                    test );
 
         }
 

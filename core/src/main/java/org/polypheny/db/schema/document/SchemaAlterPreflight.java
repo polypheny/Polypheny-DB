@@ -16,6 +16,9 @@
 
 package org.polypheny.db.schema.document;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.LongAdder;
 import org.bson.BsonDocument;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.type.DocumentType;
@@ -28,121 +31,158 @@ import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.schema.document.SchemaValidator.Violation;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.LongAdder;
 
 /**
- * Preflight validator for schema alterations.
- * <p>
- * Streams existing documents from readable placements, validates them against a proposed
- * {@link DocumentSchema}, and returns a {@link SchemaAlterPreflightReport} containing counters
- * and a small representative sample of violations.
+ * Preflight validation for ALTER SCHEMA.
  */
 public final class SchemaAlterPreflight {
+
+    private static final int FETCH_SIZE = 10_000;
+    private static final int MAX_SAMPLE_SIZE = 16;
+
 
     private SchemaAlterPreflight() {
     }
 
 
-    public static SchemaAlterPreflightReport run(
-            final Catalog catalog,
-            final LogicalCollection coll,
-            final DocumentSchema targetSchema,
-            final Statement stmt ) {
+    public static SchemaAlterPreflightReport run( Catalog catalog, LogicalCollection collection, DocumentSchema targetSchema, Statement statement ) {
 
-        // Fast exit if the entity has no placements (nothing to scan)
-        var snap = catalog.getSnapshot();
-        var allocs = new ArrayList<>(snap.alloc().getFromLogical(coll.id));
-        if (allocs.isEmpty()) {
-            return new SchemaAlterPreflightReport(true, 0, 0, List.of());
+        List<?> allocations = new ArrayList<>( catalog.getSnapshot().alloc().getFromLogical( collection.id ) );
+        if ( allocations.isEmpty() ) {
+            return new SchemaAlterPreflightReport( true, 0, 0, List.of() );
         }
 
-        final LongAdder scanned = new LongAdder();
-        final LongAdder failing = new LongAdder();
-        final List<Violation> sample = new ArrayList<>(16);
+        LongAdder scanned = new LongAdder();
+        LongAdder failing = new LongAdder();
+        List<Violation> sample = new ArrayList<>( MAX_SAMPLE_SIZE );
 
-        // Build an MQL full-collection scan in the entity's namespace (DOCUMENT or RELATIONAL)
-        final String mql = "db." + coll.name + ".find({})";
+        String mql = "db." + collection.name + ".find({})";
 
-        QueryContext ctx = QueryContext.builder()
-                .query(mql)
-                .language(QueryLanguage.from("mql"))
-                .origin("SchemaAlterPreflight")
-                .statement(stmt)                      // reuse current statement/transaction
-                .namespaceId(coll.namespaceId)        // << important: execute in the entity's namespace
-                .build()
-                .addTransaction(stmt.getTransaction());
+        QueryContext queryContext = QueryContext.builder().query( mql ).language( QueryLanguage.from( "mql" ) ).origin( "SchemaAlterPreflight" ).statement( statement ).namespaceId( collection.namespaceId ).build().addTransaction( statement.getTransaction() );
 
-        final List<ExecutedContext> execs = LanguageManager.getINSTANCE().anyQuery(ctx);
-        for (ExecutedContext ex : execs) {
-            if (ex.getException().isPresent()) {
-                throw new RuntimeException("Document scan failed: " + ex.getException().get().getMessage(),
-                        ex.getException().get());
+        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( queryContext );
+        for ( ExecutedContext executedContext : executedContexts ) {
+            if ( executedContext.getException().isPresent() ) {
+                Throwable exception = executedContext.getException().get();
+                throw new RuntimeException( "Document scan failed: " + exception.getMessage(), exception );
             }
 
-            ResultIterator ri = ex.getIterator();
-            final int fetchSize = 10_000;
+            ResultIterator iterator = executedContext.getIterator();
 
             try {
-                while (true) {
-                    // Batch API: each row is a List<PolyValue>; for find({}) it’s a single column = the whole document
-                    List<List<PolyValue>> batch = ri.getNextBatch(fetchSize);
-                    if (batch.isEmpty()) break;
-
-                    for (List<PolyValue> row : batch) {
-                        if (row == null || row.isEmpty()) continue;
-
-                        String json;
-                        try {
-                            json = row.get(0).toJson(); // PolyValue → canonical JSON
-                        } catch (Throwable t) {
-                            String s = String.valueOf(row.get(0)).trim();
-                            if (!(s.startsWith("{") || s.startsWith("["))) continue; // not a document row
-                            json = s;
-                        }
-
-                        final BsonDocument doc;
-                        try {
-                            doc = BsonDocument.parse(json);
-                        } catch (Exception badJson) {
-                            failing.increment();
-                            if (sample.size() < 16) {
-                                sample.add(new Violation("$", "notValidJson", "Unparseable JSON row"));
-                            }
-                            continue;
-                        }
-
-                        scanned.increment();
-
-                        BsonDocument docForValidation = doc; // default to original
-                        if (doc.containsKey( DocumentType.DOCUMENT_ID)) {
-                            // avoid mutating the row object
-                            docForValidation = doc.clone();
-                            docForValidation.remove(DocumentType.DOCUMENT_ID);
-                        }
-                        var res = SchemaValidator.validate(targetSchema, docForValidation);
-
-                        if (!res.ok()) {
-                            failing.increment();
-                            if (sample.size() < 16) {
-                                var vs = res.violations();
-                                int room = 16 - sample.size();
-                                sample.addAll(vs.subList(0, Math.min(vs.size(), room)));
-                            }
-                        }
-                    }
-                }
+                scanIterator( iterator, targetSchema, scanned, failing, sample );
             } finally {
-                try { ri.close(); } catch (Throwable ignore) {}
+                closeIteratorQuietly( iterator );
             }
         }
 
-        return new SchemaAlterPreflightReport(
-                /*ok*/ failing.sum() == 0L,
-                /*scanned*/ scanned.sum(),
-                /*failing*/ failing.sum(),
-                /*sample*/ sample
-        );
+        return new SchemaAlterPreflightReport( failing.sum() == 0L, scanned.sum(), failing.sum(), sample );
     }
+
+
+    private static void scanIterator( ResultIterator iterator, DocumentSchema targetSchema, LongAdder scanned, LongAdder failing, List<Violation> sample ) {
+
+        while ( true ) {
+            List<List<PolyValue>> batch = iterator.getNextBatch( FETCH_SIZE );
+            if ( batch.isEmpty() ) {
+                break;
+            }
+
+            for ( List<PolyValue> row : batch ) {
+                processRow( row, targetSchema, scanned, failing, sample );
+            }
+        }
+    }
+
+
+    private static void processRow( List<PolyValue> row, DocumentSchema targetSchema, LongAdder scanned, LongAdder failing, List<Violation> sample ) {
+
+        String json = extractJson( row );
+        if ( json == null ) {
+            return;
+        }
+
+        BsonDocument document = parseDocument( json, failing, sample );
+        if ( document == null ) {
+            return;
+        }
+
+        scanned.increment();
+
+        BsonDocument documentForValidation = removeDocumentIdIfPresent( document );
+        SchemaValidator.ValidationResult validationResult = SchemaValidator.validate( targetSchema, documentForValidation );
+
+        if ( !validationResult.ok() ) {
+            failing.increment();
+            addSampleViolations( sample, validationResult.violations() );
+        }
+    }
+
+
+    private static String extractJson( List<PolyValue> row ) {
+        if ( row == null || row.isEmpty() ) {
+            return null;
+        }
+
+        PolyValue value = row.get( 0 );
+
+        try {
+            return value.toJson();
+        } catch ( Throwable throwable ) {
+            String stringValue = String.valueOf( value ).trim();
+            if ( !(stringValue.startsWith( "{" ) || stringValue.startsWith( "[" )) ) {
+                return null;
+            }
+            return stringValue;
+        }
+    }
+
+
+    private static BsonDocument parseDocument( String json, LongAdder failing, List<Violation> sample ) {
+        try {
+            return BsonDocument.parse( json );
+        } catch ( Exception ignored ) {
+            failing.increment();
+            addSampleViolation( sample, new Violation( "$", "notValidJson", "Unparseable JSON row" ) );
+            return null;
+        }
+    }
+
+
+    private static BsonDocument removeDocumentIdIfPresent( BsonDocument document ) {
+        if ( !document.containsKey( DocumentType.DOCUMENT_ID ) ) {
+            return document;
+        }
+
+        BsonDocument clone = document.clone();
+        clone.remove( DocumentType.DOCUMENT_ID );
+        return clone;
+    }
+
+
+    private static void addSampleViolation( List<Violation> sample, Violation violation ) {
+        if ( sample.size() < MAX_SAMPLE_SIZE ) {
+            sample.add( violation );
+        }
+    }
+
+
+    private static void addSampleViolations( List<Violation> sample, List<Violation> violations ) {
+        if ( sample.size() >= MAX_SAMPLE_SIZE || violations.isEmpty() ) {
+            return;
+        }
+
+        int remainingCapacity = MAX_SAMPLE_SIZE - sample.size();
+        sample.addAll( violations.subList( 0, Math.min( violations.size(), remainingCapacity ) ) );
+    }
+
+
+    private static void closeIteratorQuietly( ResultIterator iterator ) {
+        try {
+            iterator.close();
+        } catch ( Throwable ignored ) {
+            // Ignore close failures.
+        }
+    }
+
 }

@@ -461,10 +461,7 @@ public abstract class DdlManager {
 
     /**
      * Creates a new document collection.
-     * <p>
-     * Resolves optional schema options from {@code polyValue}.
-     * - If schema is provided: runs CreateCollectionWS(...)
-     * - If no schema is provided: runs CreateCollectionWOS(...)
+     * Resolves optional schema options from polyValue
      *
      * @param namespaceId the id of the namespace to which the collection belongs
      * @param name requested collection name
@@ -474,20 +471,17 @@ public abstract class DdlManager {
      * @param statement the used Statement
      * @param polyVal JSON-like options; may include docSchema and validationAction
      */
-    public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement, @Nullable PolyValue polyVal);
+    public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement, @Nullable PolyValue polyVal );
 
     /**
      * Alters a collection's schema or enforcement settings.
-     * <p>
-     * Parses options, orchestrates the alteration (including preflight when required),
-     * and resets relevant caches.
      *
      * @param namespaceId the id of the namespace to which the collection belongs
      * @param name collection name
      * @param statement the used Statement
      * @param polyVal JSON-like options for ALTER
      */
-    public abstract void alterCollectionSchema(long namespaceId, String name, Statement statement, PolyValue polyVal);
+    public abstract void alterCollectionSchema( long namespaceId, String name, Statement statement, PolyValue polyVal );
 
     public abstract void createCollectionPlacement( long namespaceId, String name, List<DataStore<?>> stores, Statement statement );
 
@@ -591,11 +585,12 @@ public abstract class DdlManager {
 
     public abstract void dropCollectionPlacement( long namespaceId, LogicalCollection collection, List<DataStore<?>> dataStores, Statement statement );
 
+
     /**
      * Helper class which holds all information required for creating a column,
      * decoupled from a specific query language
      */
-    public record FieldInformation( String name, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, int position ) {
+    public record FieldInformation(String name, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, int position) {
 
     }
 
@@ -636,16 +631,9 @@ public abstract class DdlManager {
      * decoupled from the used query language
      */
 
-    public record ColumnTypeInformation( PolyType type, @Nullable PolyType collectionType, Integer precision, Integer scale, Integer dimension, Integer cardinality, Boolean nullable ) {
+    public record ColumnTypeInformation(PolyType type, @Nullable PolyType collectionType, Integer precision, Integer scale, Integer dimension, Integer cardinality, Boolean nullable) {
 
-        public ColumnTypeInformation(
-                PolyType type,
-                @Nullable PolyType collectionType,
-                Integer precision,
-                Integer scale,
-                Integer dimension,
-                Integer cardinality,
-                Boolean nullable ) {
+        public ColumnTypeInformation( PolyType type, @Nullable PolyType collectionType, Integer precision, Integer scale, Integer dimension, Integer cardinality, Boolean nullable ) {
             this.type = type;
             this.collectionType = collectionType == type ? null : collectionType;
             this.precision = precision == null || precision == -1 ? null : precision;
@@ -657,14 +645,7 @@ public abstract class DdlManager {
 
 
         public static ColumnTypeInformation fromDataTypeSpec( DataTypeSpec sqlDataType ) {
-            return new ColumnTypeInformation(
-                    sqlDataType.getType(),
-                    sqlDataType.getCollectionsType(),
-                    sqlDataType.getPrecision(),
-                    sqlDataType.getScale(),
-                    sqlDataType.getDimension(),
-                    sqlDataType.getCardinality(),
-                    sqlDataType.getNullable() );
+            return new ColumnTypeInformation( sqlDataType.getType(), sqlDataType.getCollectionsType(), sqlDataType.getPrecision(), sqlDataType.getScale(), sqlDataType.getDimension(), sqlDataType.getCardinality(), sqlDataType.getNullable() );
         }
 
     }
@@ -684,15 +665,7 @@ public abstract class DdlManager {
         public RawPartitionInformation rawPartitionInformation;
 
 
-        public PartitionInformation(
-                LogicalTable table,
-                String typeName,
-                String columnName,
-                List<String> partitionGroupNames,
-                int numberOfPartitionGroups,
-                int numberOfPartitions,
-                List<List<String>> qualifiers,
-                RawPartitionInformation rawPartitionInformation ) {
+        public PartitionInformation( LogicalTable table, String typeName, String columnName, List<String> partitionGroupNames, int numberOfPartitionGroups, int numberOfPartitions, List<List<String>> qualifiers, RawPartitionInformation rawPartitionInformation ) {
             this.table = table;
             this.typeName = typeName;
             this.columnName = columnName;
@@ -704,23 +677,9 @@ public abstract class DdlManager {
         }
 
 
-        public static PartitionInformation fromNodeLists(
-                LogicalTable table,
-                String typeName,
-                String columnName,
-                List<Identifier> partitionGroupNames,
-                int numberOfPartitionGroups,
-                int numberOfPartitions,
-                List<List<Node>> partitionQualifierList,
-                RawPartitionInformation rawPartitionInformation ) {
-            List<String> names = partitionGroupNames
-                    .stream()
-                    .map( Identifier::getSimple )
-                    .toList();
-            List<List<String>> qualifiers = partitionQualifierList
-                    .stream()
-                    .map( qs -> qs.stream().map( PartitionInformation::getValueOfSqlNode ).toList() )
-                    .toList();
+        public static PartitionInformation fromNodeLists( LogicalTable table, String typeName, String columnName, List<Identifier> partitionGroupNames, int numberOfPartitionGroups, int numberOfPartitions, List<List<Node>> partitionQualifierList, RawPartitionInformation rawPartitionInformation ) {
+            List<String> names = partitionGroupNames.stream().map( Identifier::getSimple ).toList();
+            List<List<String>> qualifiers = partitionQualifierList.stream().map( qs -> qs.stream().map( PartitionInformation::getValueOfSqlNode ).toList() ).toList();
             return new PartitionInformation( table, typeName, columnName, names, numberOfPartitionGroups, numberOfPartitions, qualifiers, rawPartitionInformation );
         }
 

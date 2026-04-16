@@ -30,17 +30,14 @@ import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.webui.models.results.DocResult;
 
 /**
- * Additional DML coverage for document schemas.
- *
- * Focus:
- *  - validationAction WARN / OFF on writes
- *  - extended scalar/object/array constraints
- *    (pattern, minLength/maxLength, enum, const, multipleOf, minItems/maxItems, min/maxProperties)
+ * Covers DML behavior for validationAction warn and off, plus scalar, array, and object constraints
+ * such as pattern, length, enum, const, multipleOf, item-count limits, and property-count limits.
  */
 @Tag("adapter")
 public class DocSchemaDmlModesAndConstraintsTest extends MqlTestTemplate {
 
     private static final String USER = "user_dml_modes";
+
 
     private void dropUserCollectionIfExists() {
         try {
@@ -58,37 +55,37 @@ public class DocSchemaDmlModesAndConstraintsTest extends MqlTestTemplate {
 
 
     private void createUserCollectionWithSimpleSchema( String validationAction ) {
-        recreateUserCollection( "{" +
-                "  docSchema: {" +
-                "    type: \"object\"," +
-                "    properties: {" +
-                "      name: { type: \"text\" }" +
-                "    }," +
-                "    required: [\"name\"]," +
-                "    additionalProperties: true" +
-                "  }," +
-                "  validationAction: \"" + validationAction + "\"" +
-                "}" );
+        recreateUserCollection( "{"
+                + "  docSchema: {"
+                + "    type: \"object\","
+                + "    properties: {"
+                + "      name: { type: \"text\" }"
+                + "    },"
+                + "    required: [\"name\"],"
+                + "    additionalProperties: true"
+                + "  },"
+                + "  validationAction: \"" + validationAction + "\""
+                + "}" );
     }
 
 
     private void createUserCollectionWithExtendedConstraintSchema( String validationAction ) {
-        recreateUserCollection( "{" +
-                "  docSchema: {" +
-                "    type: \"object\"," +
-                "    properties: {" +
-                "      code: { type: \"text\", minLength: 3, maxLength: 5, pattern: \"^[a-z]+$\" }," +
-                "      role: { type: \"text\", enum: [\"admin\",\"user\"] }," +
-                "      status: { type: \"text\", const: \"active\" }," +
-                "      amount: { type: \"number\", multipleOf: 0.5 }," +
-                "      tags: { type: \"array\", items: { type: \"text\" }, minItems: 1, maxItems: 2 }," +
-                "      metadata: { type: \"object\", properties: {}, required: [], additionalProperties: true, minProperties: 1, maxProperties: 2 }" +
-                "    }," +
-                "    required: [\"code\",\"role\",\"status\",\"amount\",\"tags\",\"metadata\"]," +
-                "    additionalProperties: false" +
-                "  }," +
-                "  validationAction: \"" + validationAction + "\"" +
-                "}" );
+        recreateUserCollection( "{"
+                + "  docSchema: {"
+                + "    type: \"object\","
+                + "    properties: {"
+                + "      code: { type: \"text\", minLength: 3, maxLength: 5, pattern: \"^[a-z]+$\" },"
+                + "      role: { type: \"text\", enum: [\"admin\",\"user\"] },"
+                + "      status: { type: \"text\", const: \"active\" },"
+                + "      amount: { type: \"number\", multipleOf: 0.5 },"
+                + "      tags: { type: \"array\", items: { type: \"text\" }, minItems: 1, maxItems: 2 },"
+                + "      metadata: { type: \"object\", properties: {}, required: [], additionalProperties: true, minProperties: 1, maxProperties: 2 }"
+                + "    },"
+                + "    required: [\"code\",\"role\",\"status\",\"amount\",\"tags\",\"metadata\"],"
+                + "    additionalProperties: false"
+                + "  },"
+                + "  validationAction: \"" + validationAction + "\""
+                + "}" );
     }
 
 

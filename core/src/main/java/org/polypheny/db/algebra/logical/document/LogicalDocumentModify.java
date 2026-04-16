@@ -50,7 +50,7 @@ public class LogicalDocumentModify extends DocumentModify<Entity> implements Rel
 
 
     public static LogicalDocumentModify create( Entity entity, AlgNode input, Operation operation, Map<String, ? extends RexNode> updates, List<String> removes, Map<String, String> renames ) {
-        //TODO: VALIDATE IN HERE, SINCE ANY INSERT, CREATE, MODIFY HAVE TO GO THROUGH THIS STEP!
+        //Document schema validation
         DocumentSchemaWriteEnforcer.enforce( entity, input, operation, updates, removes, renames );
 
         return new LogicalDocumentModify( input.getTraitSet(), entity, input, operation, updates, removes, renames );

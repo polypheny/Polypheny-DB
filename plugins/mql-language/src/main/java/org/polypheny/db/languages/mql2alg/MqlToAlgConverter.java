@@ -16,7 +16,6 @@
 
 package org.polypheny.db.languages.mql2alg;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,8 +33,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.polypheny.db.languages.mql.MqlGetCollectionSchema;
 import org.polypheny.db.schema.document.EnforcementMode;
 import org.polypheny.db.schema.document.SchemaJson;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.BsonArray;
@@ -107,7 +104,6 @@ import org.polypheny.db.schema.document.DocumentSchema;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.schema.document.DocumentUtil.UpdateOperation;
 import org.polypheny.db.schema.document.SchemaMeta;
-import org.polypheny.db.schema.document.SchemaValidator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
@@ -179,8 +175,6 @@ public class MqlToAlgConverter {
 
     private final AlgDataType jsonType;
 
-    private final MqlSchemaEnforcer schemaEnforcer;
-
 
     private static final Map<String, Operator> singleMathOperators = new HashMap<>() {{
         put( "$abs", OperatorRegistry.get( OperatorName.ABS ) );
@@ -236,7 +230,6 @@ public class MqlToAlgConverter {
         this.nullableAny = this.cluster.getTypeFactory().createTypeWithNullability( any, true );
 
         this.jsonType = this.cluster.getTypeFactory().createPolyType( PolyType.JSON );
-        this.schemaEnforcer = new MqlSchemaEnforcer();
 
         resetDefaults();
     }
@@ -332,7 +325,6 @@ public class MqlToAlgConverter {
      * Starts converting a db.collection.update();
      */
     private AlgNode convertUpdate( MqlUpdate query, Entity entity, AlgNode node ) {
-        //schemaEnforcer.validateUpdate(query, entity);
         if ( !query.getQuery().isEmpty() ) {
             node = convertQuery( query, entity.getTupleType(), node );
             if ( query.isOnlyOne() ) {
@@ -360,37 +352,8 @@ public class MqlToAlgConverter {
         Map<String, RexNode> removes = new HashMap<>();
         Map<String, String> renames = new HashMap<>();
 
-        BsonDocument updateDocument = query.getUpdate().asDocument();
-        boolean replacementUpdate = !updateDocument.isEmpty()
-                && updateDocument.keySet().stream().noneMatch( k -> k.startsWith( "$" ) );
-
-        if ( replacementUpdate ) {
-            if ( query.isOnlyOne() ) {
-                node = wrapLimit( node, 1 );
-            }
-
-            Map<String, RexNode> replacementFields = translateSet( updateDocument, rowType );
-            List<String> fieldsToRemove = new ArrayList<>();
-
-            tryLoadCurrentSchema().ifPresent( schema -> {
-                for ( String declared : schema.root().properties.keySet() ) {
-                    if ( !updateDocument.containsKey( declared ) ) {
-                        fieldsToRemove.add( declared );
-                    }
-                }
-            } );
-
-            return LogicalDocumentModify.create(
-                    entity,
-                    node,
-                    Operation.UPDATE,
-                    replacementFields,
-                    fieldsToRemove,
-                    Map.of() );
-        }
-
         UpdateOperation updateOp;
-        for ( Entry<String, BsonValue> entry : updateDocument.entrySet() ) {
+        for ( Entry<String, BsonValue> entry : query.getUpdate().asDocument().entrySet() ) {
             String op = entry.getKey();
             if ( !entry.getValue().isDocument() ) {
                 throw new GenericRuntimeException( "After a update statement a document is needed" );
@@ -580,14 +543,26 @@ public class MqlToAlgConverter {
      * Start translation of db.collection.update({$set: {"key":3}})
      * this adds a field with key "key" and value to the document
      */
+    /**
+     * Start translation of db.collection.update({$set: {"key": 3}})
+     * this adds or replaces a field with the provided literal/document/array value.
+     *
+     * IMPORTANT:
+     * Document values in $set must be treated as document literals, not as filter
+     * expressions. Using translateDocument(...) here turns nested object values into
+     * boolean predicate trees, which later surfaces as values like "false" instead
+     * of the intended nested document.
+     *
+     * Future note:
+     * If the Mongo adapter is later extended to support richer native update
+     * serialization, this method can still stay as-is because document and array
+     * values should remain literals on the update side.
+     */
     private Map<String, RexNode> translateSet( BsonDocument doc, AlgDataType rowType ) {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
-            // IMPORTANT: update values are literals, not filter expressions.
-            // Using translateDocument(...) here turns a document like
-            // {"profile": {"first": "foo", "last": "bar"}}
-            // into a BOOLEAN conjunction, which later materializes as false/true
-            // instead of the intended nested object.
+            // On the update side, BSON documents and arrays are values, not query/filter
+            // expressions. Therefore they must be converted as literals.
             updates.put( entry.getKey(), convertLiteral( entry.getValue() ) );
         }
         return updates;
@@ -732,7 +707,6 @@ public class MqlToAlgConverter {
      * @return the modified AlgNode
      */
     private AlgNode convertInsert( MqlInsert query, Entity entity ) {
-        //schemaEnforcer.validateInsert(query, entity);
         return LogicalDocumentModify.create(
                 entity,
                 convertMultipleValues( query.getValues() ),
@@ -1232,29 +1206,6 @@ public class MqlToAlgConverter {
     }
 
 
-    private Optional<DocumentSchema> tryLoadCurrentSchema() {
-        if ( !(this.entity instanceof LogicalCollection coll) ) {
-            return Optional.empty();
-        }
-
-        Optional<SchemaMeta> metaOpt = SchemaMeta.readCurrent( Catalog.getInstance(), namespaceId, coll.id );
-        if ( metaOpt.isEmpty() ) {
-            return Optional.empty();
-        }
-
-        SchemaMeta meta = metaOpt.get();
-        if ( meta.schemaJson == null || meta.schemaJson.isBlank() ) {
-            return Optional.empty();
-        }
-
-        try {
-            return Optional.of( SchemaJson.parse( meta.schemaJson ) );
-        } catch ( Exception ignored ) {
-            return Optional.empty();
-        }
-    }
-
-
     private boolean isFilterStaticallyUnsatisfiable( BsonDocument filter, DocumentSchema schema ) {
         for ( Entry<String, BsonValue> entry : filter.entrySet() ) {
             String key = entry.getKey();
@@ -1392,10 +1343,6 @@ public class MqlToAlgConverter {
 
         if ( node instanceof DocumentSchema.ArrayNode arr ) {
             // Support Mongo-style dotted traversal through arrays of objects.
-            // Both "items.label" and "items.0.label" must be considered possible.
-            if ( index < path.length && path[index].matches( "\\d+" ) ) {
-                return mayPathExist( arr.items, path, index + 1, inheritedAp );
-            }
             return mayPathExist( arr.items, path, index, inheritedAp );
         }
 

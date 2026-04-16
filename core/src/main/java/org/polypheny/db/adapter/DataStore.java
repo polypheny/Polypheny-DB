@@ -98,12 +98,5 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
         return AdapterType.STORE;
     }
 
-    public void streamCollectionAsJson(
-            final AllocationCollection alloc,
-            final Consumer<CharSequence> sink,
-            final Statement statement) {
-        throw new GenericRuntimeException(
-                "Store " + getUniqueName() + " does not support document scans (streamCollectionAsJson).");
-    }
 
 }

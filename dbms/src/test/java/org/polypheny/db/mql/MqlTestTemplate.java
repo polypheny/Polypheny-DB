@@ -35,6 +35,7 @@ public class MqlTestTemplate {
 
     public static String namespace = "test";
 
+
     @BeforeAll
     public static void start() {
         TestHelper.getInstance();

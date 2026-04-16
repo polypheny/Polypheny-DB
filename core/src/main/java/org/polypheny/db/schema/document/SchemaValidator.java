@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2026 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.polypheny.db.schema.document;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -51,482 +52,568 @@ import org.polypheny.db.schema.document.DocumentSchema.ScalarNode;
 import org.polypheny.db.type.PolyType;
 
 /**
- * Validates BSON documents against a {@link DocumentSchema}.
- *
- * <p>Supports:
- * required, per-object additionalProperties, scalar union types, anyOf/oneOf/allOf/not,
- * and extended constraints (enum/const/multipleOf/maxItems/min/maxProperties).</p>
+ * Validates BSON documents against a DocumentSchema.
  */
 public final class SchemaValidator {
 
     private SchemaValidator() {
     }
 
-    public record Violation( String path, String code, String message ) { }
 
-    public record ValidationResult( boolean ok, List<Violation> violations ) {
+    public record Violation(String path, String code, String message) {
+
+    }
+
+
+    public record ValidationResult(boolean ok, List<Violation> violations) {
 
         public String compactSummary( int maxItems ) {
             if ( ok || violations.isEmpty() ) {
                 return "ok";
             }
-            return violations.stream()
-                    .limit( Math.max( 1, maxItems ) )
-                    .map( v -> v.code + "@" + v.path + "(" + v.message + ")" )
-                    .collect( Collectors.joining( "; " ) )
-                    + (violations.size() > maxItems ? " … +" + (violations.size() - maxItems) + " more" : "");
+
+            int effectiveMaxItems = Math.max( 1, maxItems );
+
+            String summary = violations.stream().limit( effectiveMaxItems ).map( violation -> violation.code + "@" + violation.path + "(" + violation.message + ")" ).collect( Collectors.joining( "; " ) );
+
+            if ( violations.size() <= effectiveMaxItems ) {
+                return summary;
+            }
+
+            return summary + " … +" + (violations.size() - effectiveMaxItems) + " more";
         }
+
     }
 
+
     public static ValidationResult validate( DocumentSchema schema, BsonDocument doc ) {
-        List<Violation> out = new ArrayList<>();
-        DocumentSchema.AdditionalProperties rootAp =
-                schema.additionalProperties() != null ? schema.additionalProperties() : DocumentSchema.AdditionalProperties.ALLOW;
-        validateNode( "$", schema.root(), doc, out, rootAp );
-        return new ValidationResult( out.isEmpty(), out );
+        List<Violation> violations = new ArrayList<>();
+        DocumentSchema.AdditionalProperties inheritedAdditionalProperties = defaultAdditionalProperties( schema.additionalProperties() );
+
+        validateNode( "$", schema.root(), doc, violations, inheritedAdditionalProperties );
+        return new ValidationResult( violations.isEmpty(), violations );
     }
+
 
     public static boolean conformsTo( DocumentSchema schema, BsonDocument doc ) {
         return validate( schema, doc ).ok();
     }
 
 
-    /**
-     * Validates an arbitrary schema node against a BSON value.
-     * This is used by update-time validation for whole-object / whole-array literal assignments.
-     */
-    public static ValidationResult validateNodeValue(
-            DocumentSchema.Node node,
-            BsonValue value,
-            DocumentSchema.AdditionalProperties inheritedAp ) {
-        List<Violation> out = new ArrayList<>();
-        DocumentSchema.AdditionalProperties effectiveInheritedAp =
-                inheritedAp != null ? inheritedAp : DocumentSchema.AdditionalProperties.ALLOW;
-        validateNode( "$", node, value, out, effectiveInheritedAp );
-        return new ValidationResult( out.isEmpty(), out );
+    public static ValidationResult validateNodeValue( Node node, BsonValue value, DocumentSchema.AdditionalProperties inheritedAdditionalProperties ) {
+
+        List<Violation> violations = new ArrayList<>();
+        DocumentSchema.AdditionalProperties effectiveInheritedAdditionalProperties = defaultAdditionalProperties( inheritedAdditionalProperties );
+
+        validateNode( "$", node, value, violations, effectiveInheritedAdditionalProperties );
+        return new ValidationResult( violations.isEmpty(), violations );
     }
 
-    // -----------------------------------------------------------------------------------------
-    // Generic dispatch
-    // -----------------------------------------------------------------------------------------
 
-    private static void validateNode(
-            String path,
-            Node schemaNode,
-            BsonValue value,
-            List<Violation> out,
-            DocumentSchema.AdditionalProperties inheritedAp ) {
+    private static void validateNode( String path, Node schemaNode, BsonValue value, List<Violation> violations, DocumentSchema.AdditionalProperties inheritedAdditionalProperties ) {
 
-        if ( schemaNode instanceof ObjectNode on ) {
-            if ( !(value instanceof BsonDocument bd) ) {
-                out.add( v( path, "TYPE", "Expected object, got " + bsonTypeName( value ) ) );
-            } else {
-                validateObject(path, on, bd, out, inheritedAp);
-            }
-            return;
+        if ( schemaNode instanceof ObjectNode objectNode ) {
+            validateObjectNode( path, objectNode, value, violations, inheritedAdditionalProperties );
+        } else if ( schemaNode instanceof ArrayNode arrayNode ) {
+            validateArrayNode( path, arrayNode, value, violations, inheritedAdditionalProperties );
+        } else if ( schemaNode instanceof ScalarNode scalarNode ) {
+            validateScalar( path, scalarNode, value, violations );
+        } else if ( schemaNode instanceof AnyOfNode anyOfNode ) {
+            validateAnyOf( path, anyOfNode, value, violations, inheritedAdditionalProperties );
+        } else if ( schemaNode instanceof OneOfNode oneOfNode ) {
+            validateOneOf( path, oneOfNode, value, violations, inheritedAdditionalProperties );
+        } else if ( schemaNode instanceof AllOfNode allOfNode ) {
+            validateAllOf( path, allOfNode, value, violations, inheritedAdditionalProperties );
+        } else if ( schemaNode instanceof NotNode notNode ) {
+            validateNot( path, notNode, value, violations, inheritedAdditionalProperties );
+        } else {
+            violations.add( violation( path, "INTERNAL", "Unknown schema node" ) );
         }
-
-        if ( schemaNode instanceof ArrayNode an ) {
-            if ( !(value instanceof BsonArray ba) ) {
-                out.add( v( path, "TYPE", "Expected array, got " + bsonTypeName( value ) ) );
-            } else {
-                validateArray(path, an, ba, out, inheritedAp);
-            }
-            return;
-        }
-
-        if ( schemaNode instanceof ScalarNode sn ) {
-            validateScalar(path, sn, value, out);
-            return;
-        }
-
-        if ( schemaNode instanceof AnyOfNode ao ) {
-            validateAnyOf(path, ao, value, out, inheritedAp);
-            return;
-        }
-
-        if ( schemaNode instanceof OneOfNode oo ) {
-            validateOneOf(path, oo, value, out, inheritedAp);
-            return;
-        }
-
-        if ( schemaNode instanceof AllOfNode al ) {
-            validateAllOf(path, al, value, out, inheritedAp);
-            return;
-        }
-
-        if ( schemaNode instanceof NotNode nn ) {
-            validateNot(path, nn, value, out, inheritedAp);
-            return;
-        }
-
-        out.add( v( path, "INTERNAL", "Unknown schema node" ) );
     }
 
-    // -----------------------------------------------------------------------------------------
-    // Object
-    // -----------------------------------------------------------------------------------------
 
-    private static void validateObject(
-            String path,
-            ObjectNode schemaNode,
-            BsonDocument doc,
-            List<Violation> out,
-            DocumentSchema.AdditionalProperties inheritedAp ) {
+    private static void validateObjectNode( String path, ObjectNode schemaNode, BsonValue value, List<Violation> violations, DocumentSchema.AdditionalProperties inheritedAdditionalProperties ) {
 
-        DocumentSchema.AdditionalProperties effectiveAp =
-                (schemaNode.additionalProperties == null || schemaNode.additionalProperties == DocumentSchema.AdditionalProperties.INHERIT)
-                        ? inheritedAp
-                        : schemaNode.additionalProperties;
-
-        // min/maxProperties apply to the actual object size (including extras)
-        if ( schemaNode.minProperties != null && doc.size() < schemaNode.minProperties ) {
-            out.add( v( path, "MIN_PROPERTIES", "Expected at least " + schemaNode.minProperties + " properties" ) );
-        }
-        if ( schemaNode.maxProperties != null && doc.size() > schemaNode.maxProperties ) {
-            out.add( v( path, "MAX_PROPERTIES", "Expected at most " + schemaNode.maxProperties + " properties" ) );
+        if ( value instanceof BsonDocument bsonDocument ) {
+            validateObject( path, schemaNode, bsonDocument, violations, inheritedAdditionalProperties );
+            return;
         }
 
-        // required (if omitted -> dialect default = all declared properties required)
-        Set<String> required = schemaNode.effectiveRequired();
-        for ( String key : required ) {
-            if ( !doc.containsKey( key ) ) {
-                out.add( v( pathDot(path, key), "REQUIRED_MISSING", "Required field is missing" ) );
-            }
+        violations.add( violation( path, "TYPE", "Expected object, got " + bsonTypeName( value ) ) );
+    }
+
+
+    private static void validateArrayNode( String path, ArrayNode schemaNode, BsonValue value, List<Violation> violations, DocumentSchema.AdditionalProperties inheritedAdditionalProperties ) {
+
+        if ( value instanceof BsonArray bsonArray ) {
+            validateArray( path, schemaNode, bsonArray, violations, inheritedAdditionalProperties );
+            return;
         }
 
-        // Validate declared properties when present
-        for ( Map.Entry<String, Node> e : schemaNode.properties.entrySet() ) {
-            String key = e.getKey();
-            Node child = e.getValue();
-            if ( !doc.containsKey(key) ) {
-                continue; // optional missing OK
-            }
-            BsonValue bv = doc.get(key);
-            validateNode( pathDot(path, key), child, bv, out, effectiveAp );
+        violations.add( violation( path, "TYPE", "Expected array, got " + bsonTypeName( value ) ) );
+    }
+
+
+    private static void validateObject( String path, ObjectNode schemaNode, BsonDocument document, List<Violation> violations, DocumentSchema.AdditionalProperties inheritedAdditionalProperties ) {
+
+        DocumentSchema.AdditionalProperties effectiveAdditionalProperties = resolveAdditionalProperties( schemaNode.additionalProperties, inheritedAdditionalProperties );
+
+        validateObjectSize( path, schemaNode, document, violations );
+        validateRequiredProperties( path, schemaNode, document, violations );
+        validateDeclaredProperties( path, schemaNode, document, violations, effectiveAdditionalProperties );
+
+        if ( effectiveAdditionalProperties == DocumentSchema.AdditionalProperties.FORBID ) {
+            validateForbiddenAdditionalProperties( path, schemaNode, document, violations );
+        }
+    }
+
+
+    private static void validateObjectSize( String path, ObjectNode schemaNode, BsonDocument document, List<Violation> violations ) {
+
+        if ( schemaNode.minProperties != null && document.size() < schemaNode.minProperties ) {
+            violations.add( violation( path, "MIN_PROPERTIES", "Expected at least " + schemaNode.minProperties + " properties" ) );
         }
 
-        // additional properties
-        if ( effectiveAp == DocumentSchema.AdditionalProperties.FORBID ) {
-            for ( String k : doc.keySet() ) {
-                if ( !schemaNode.properties.containsKey( k ) ) {
-                    out.add( v( pathDot( path, k ), "ADDITIONAL_PROPERTY", "Unexpected field" ) );
-                }
+        if ( schemaNode.maxProperties != null && document.size() > schemaNode.maxProperties ) {
+            violations.add( violation( path, "MAX_PROPERTIES", "Expected at most " + schemaNode.maxProperties + " properties" ) );
+        }
+    }
+
+
+    private static void validateRequiredProperties( String path, ObjectNode schemaNode, BsonDocument document, List<Violation> violations ) {
+
+        Set<String> requiredProperties = schemaNode.effectiveRequired();
+
+        for ( String key : requiredProperties ) {
+            if ( !document.containsKey( key ) ) {
+                violations.add( violation( pathDot( path, key ), "REQUIRED_MISSING", "Required field is missing" ) );
             }
         }
     }
 
-    // -----------------------------------------------------------------------------------------
-    // Array
-    // -----------------------------------------------------------------------------------------
 
-    private static void validateArray(
-            String path,
-            ArrayNode schema,
-            BsonArray arr,
-            List<Violation> out,
-            DocumentSchema.AdditionalProperties inheritedAp ) {
+    private static void validateDeclaredProperties( String path, ObjectNode schemaNode, BsonDocument document, List<Violation> violations, DocumentSchema.AdditionalProperties inheritedAdditionalProperties ) {
 
-        if ( schema.minItems != null && arr.size() < schema.minItems ) {
-            out.add( v( path, "MIN_ITEMS", "Expected at least " + schema.minItems + " items" ) );
-        }
-        if ( schema.maxItems != null && arr.size() > schema.maxItems ) {
-            out.add( v( path, "MAX_ITEMS", "Expected at most " + schema.maxItems + " items" ) );
-        }
-        if ( Boolean.TRUE.equals( schema.uniqueItems ) ) {
-            Set<String> uniq = new HashSet<>();
-            for ( int i = 0; i < arr.size(); i++ ) {
-                String key = bsonToJsonNode(arr.get(i)).toString();
-                if ( !uniq.add( key ) ) {
-                    out.add( v( pathDot( path, Integer.toString( i ) ), "UNIQUE", "Duplicate array item" ) );
-                }
+        for ( Map.Entry<String, Node> entry : schemaNode.properties.entrySet() ) {
+            String key = entry.getKey();
+
+            if ( !document.containsKey( key ) ) {
+                continue;
             }
-        }
 
-        for ( int i = 0; i < arr.size(); i++ ) {
-            BsonValue v = arr.get( i );
-            String ip = pathDot( path, Integer.toString( i ) );
-            validateNode( ip, schema.items, v, out, inheritedAp );
+            Node childNode = entry.getValue();
+            BsonValue childValue = document.get( key );
+
+            validateNode( pathDot( path, key ), childNode, childValue, violations, inheritedAdditionalProperties );
         }
     }
 
-    // -----------------------------------------------------------------------------------------
-    // Scalar
-    // -----------------------------------------------------------------------------------------
 
-    private static void validateScalar(
-            String path,
-            ScalarNode schema,
-            BsonValue v,
-            List<Violation> out ) {
+    private static void validateForbiddenAdditionalProperties( String path, ObjectNode schemaNode, BsonDocument document, List<Violation> violations ) {
 
-        if ( v == null ) {
-            out.add( v( path, "TYPE", "Value is null" ) );
-            return;
-        }
-
-        // type check (union)
-        if ( !matchesAnyType(v, schema.types) ) {
-            out.add( v( path, "TYPE_MISMATCH", "Expected " + schema.types + " but got " + bsonTypeName( v ) ) );
-            return;
-        }
-
-        // const/enum check first (works for all scalar types, including null)
-        if ( schema.constValue != null ) {
-            JsonNode inst = bsonToJsonNode(v);
-            if ( !schema.constValue.equals(inst) ) {
-                out.add( v(path, "CONST", "Value does not match const") );
-                return;
-            }
-        }
-
-        if ( schema.enumValues != null ) {
-            JsonNode inst = bsonToJsonNode(v);
-            boolean ok = false;
-            for ( JsonNode allowed : schema.enumValues ) {
-                if ( allowed.equals(inst) ) {
-                    ok = true;
-                    break;
-                }
-            }
-            if ( !ok ) {
-                out.add( v(path, "ENUM", "Value is not in enum") );
-                return;
-            }
-        }
-
-        // ---- String constraints (only if instance is string) ----
-        if ( (schema.minLength != null || schema.maxLength != null || schema.pattern != null) && (v instanceof BsonString bs) ) {
-            String s = bs.getValue();
-            int len = s.codePointCount(0, s.length());
-
-            if ( schema.minLength != null && len < schema.minLength ) {
-                out.add(v(path, "MIN_LENGTH", "Expected length >= " + schema.minLength + " but was " + len));
-            }
-
-            if ( schema.maxLength != null && len > schema.maxLength ) {
-                out.add(v(path, "MAX_LENGTH", "Expected length <= " + schema.maxLength + " but was " + len));
-            }
-
-            if ( schema.pattern != null ) {
-                if (!Pattern.compile(schema.pattern).matcher(s).find()) {
-                    out.add(v(path, "PATTERN", "Value does not match pattern"));
-                }
-            }
-        }
-
-        // ---- Numeric constraints (only if instance is numeric) ----
-        if ( schema.minimum != null || schema.maximum != null || schema.multipleOf != null ) {
-            BigDecimal num = asBigDecimal(v);
-            if ( num != null ) {
-                if ( schema.minimum != null && num.compareTo(schema.minimum) < 0 ) {
-                    out.add(v(path, "MINIMUM", "Expected >= " + schema.minimum + " but was " + num));
-                }
-                if ( schema.maximum != null && num.compareTo(schema.maximum) > 0 ) {
-                    out.add(v(path, "MAXIMUM", "Expected <= " + schema.maximum + " but was " + num));
-                }
-                if ( schema.multipleOf != null ) {
-                    if ( !isMultipleOf(num, schema.multipleOf) ) {
-                        out.add(v(path, "MULTIPLE_OF", "Expected multipleOf " + schema.multipleOf + " but was " + num));
-                    }
-                }
+        for ( String key : document.keySet() ) {
+            if ( !schemaNode.properties.containsKey( key ) ) {
+                violations.add( violation( pathDot( path, key ), "ADDITIONAL_PROPERTY", "Unexpected field" ) );
             }
         }
     }
 
-    private static boolean matchesAnyType(BsonValue v, List<PolyType> allowed) {
-        if ( allowed == null || allowed.isEmpty() ) {
+
+    private static void validateArray( String path, ArrayNode schemaNode, BsonArray array, List<Violation> violations, DocumentSchema.AdditionalProperties inheritedAdditionalProperties ) {
+
+        validateArraySize( path, schemaNode, array, violations );
+
+        if ( Boolean.TRUE.equals( schemaNode.uniqueItems ) ) {
+            validateUniqueItems( path, array, violations );
+        }
+
+        validateArrayItems( path, schemaNode, array, violations, inheritedAdditionalProperties );
+    }
+
+
+    private static void validateArraySize( String path, ArrayNode schemaNode, BsonArray array, List<Violation> violations ) {
+
+        if ( schemaNode.minItems != null && array.size() < schemaNode.minItems ) {
+            violations.add( violation( path, "MIN_ITEMS", "Expected at least " + schemaNode.minItems + " items" ) );
+        }
+
+        if ( schemaNode.maxItems != null && array.size() > schemaNode.maxItems ) {
+            violations.add( violation( path, "MAX_ITEMS", "Expected at most " + schemaNode.maxItems + " items" ) );
+        }
+    }
+
+
+    private static void validateUniqueItems( String path, BsonArray array, List<Violation> violations ) {
+
+        Set<String> uniqueValues = new HashSet<>();
+
+        for ( int i = 0; i < array.size(); i++ ) {
+            String key = bsonToJsonNode( array.get( i ) ).toString();
+
+            if ( !uniqueValues.add( key ) ) {
+                violations.add( violation( pathDot( path, Integer.toString( i ) ), "UNIQUE", "Duplicate array item" ) );
+            }
+        }
+    }
+
+
+    private static void validateArrayItems( String path, ArrayNode schemaNode, BsonArray array, List<Violation> violations, DocumentSchema.AdditionalProperties inheritedAdditionalProperties ) {
+
+        for ( int i = 0; i < array.size(); i++ ) {
+            String itemPath = pathDot( path, Integer.toString( i ) );
+            BsonValue itemValue = array.get( i );
+
+            validateNode( itemPath, schemaNode.items, itemValue, violations, inheritedAdditionalProperties );
+        }
+    }
+
+
+    private static void validateScalar( String path, ScalarNode schemaNode, BsonValue value, List<Violation> violations ) {
+
+        if ( value == null ) {
+            violations.add( violation( path, "TYPE", "Value is null" ) );
+            return;
+        }
+
+        if ( !matchesAnyType( value, schemaNode.types ) ) {
+            violations.add( violation( path, "TYPE_MISMATCH", "Expected " + schemaNode.types + " but got " + bsonTypeName( value ) ) );
+            return;
+        }
+
+        if ( !matchesConstValue( schemaNode, value ) ) {
+            violations.add( violation( path, "CONST", "Value does not match const" ) );
+            return;
+        }
+
+        if ( !matchesEnumValue( schemaNode, value ) ) {
+            violations.add( violation( path, "ENUM", "Value is not in enum" ) );
+            return;
+        }
+
+        validateStringConstraints( path, schemaNode, value, violations );
+        validateNumericConstraints( path, schemaNode, value, violations );
+    }
+
+
+    private static boolean matchesConstValue( ScalarNode schemaNode, BsonValue value ) {
+        if ( schemaNode.constValue == null ) {
             return true;
         }
-        for ( PolyType t : allowed ) {
-            if ( matchesPolyType(v, t) ) {
+
+        JsonNode instanceValue = bsonToJsonNode( value );
+        return schemaNode.constValue.equals( instanceValue );
+    }
+
+
+    private static boolean matchesEnumValue( ScalarNode schemaNode, BsonValue value ) {
+        if ( schemaNode.enumValues == null ) {
+            return true;
+        }
+
+        JsonNode instanceValue = bsonToJsonNode( value );
+
+        for ( JsonNode allowedValue : schemaNode.enumValues ) {
+            if ( allowedValue.equals( instanceValue ) ) {
                 return true;
             }
         }
+
         return false;
     }
 
-    private static boolean matchesPolyType(BsonValue v, PolyType t) {
-        if ( t == PolyType.NULL ) {
-            return v == null || v.isNull();
+
+    private static void validateStringConstraints( String path, ScalarNode schemaNode, BsonValue value, List<Violation> violations ) {
+
+        boolean hasStringConstraints = schemaNode.minLength != null || schemaNode.maxLength != null || schemaNode.pattern != null;
+
+        if ( !hasStringConstraints || !(value instanceof BsonString bsonString) ) {
+            return;
         }
-        return JsonTypeTokens.matchesJson(v, t);
+
+        String stringValue = bsonString.getValue();
+        int length = stringValue.codePointCount( 0, stringValue.length() );
+
+        if ( schemaNode.minLength != null && length < schemaNode.minLength ) {
+            violations.add( violation( path, "MIN_LENGTH", "Expected length >= " + schemaNode.minLength + " but was " + length ) );
+        }
+
+        if ( schemaNode.maxLength != null && length > schemaNode.maxLength ) {
+            violations.add( violation( path, "MAX_LENGTH", "Expected length <= " + schemaNode.maxLength + " but was " + length ) );
+        }
+
+        if ( schemaNode.pattern != null && !Pattern.compile( schemaNode.pattern ).matcher( stringValue ).find() ) {
+            violations.add( violation( path, "PATTERN", "Value does not match pattern" ) );
+        }
     }
 
-    private static boolean isMultipleOf(BigDecimal value, BigDecimal step) {
-        if ( step == null || step.compareTo(BigDecimal.ZERO) == 0 ) {
+
+    private static void validateNumericConstraints( String path, ScalarNode schemaNode, BsonValue value, List<Violation> violations ) {
+
+        boolean hasNumericConstraints = schemaNode.minimum != null || schemaNode.maximum != null || schemaNode.multipleOf != null;
+
+        if ( !hasNumericConstraints ) {
+            return;
+        }
+
+        BigDecimal numericValue = asBigDecimal( value );
+        if ( numericValue == null ) {
+            return;
+        }
+
+        if ( schemaNode.minimum != null && numericValue.compareTo( schemaNode.minimum ) < 0 ) {
+            violations.add( violation( path, "MINIMUM", "Expected >= " + schemaNode.minimum + " but was " + numericValue ) );
+        }
+
+        if ( schemaNode.maximum != null && numericValue.compareTo( schemaNode.maximum ) > 0 ) {
+            violations.add( violation( path, "MAXIMUM", "Expected <= " + schemaNode.maximum + " but was " + numericValue ) );
+        }
+
+        if ( schemaNode.multipleOf != null && !isMultipleOf( numericValue, schemaNode.multipleOf ) ) {
+            violations.add( violation( path, "MULTIPLE_OF", "Expected multipleOf " + schemaNode.multipleOf + " but was " + numericValue ) );
+        }
+    }
+
+
+    private static boolean matchesAnyType( BsonValue value, List<PolyType> allowedTypes ) {
+        if ( allowedTypes == null || allowedTypes.isEmpty() ) {
             return true;
         }
 
-        // Try exact remainder first
+        for ( PolyType allowedType : allowedTypes ) {
+            if ( matchesPolyType( value, allowedType ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    private static boolean matchesPolyType( BsonValue value, PolyType polyType ) {
+        if ( polyType == PolyType.NULL ) {
+            return value == null || value.isNull();
+        }
+
+        return JsonTypeTokens.matchesJson( value, polyType );
+    }
+
+
+    private static boolean isMultipleOf( BigDecimal value, BigDecimal step ) {
+        if ( step == null || step.compareTo( BigDecimal.ZERO ) == 0 ) {
+            return true;
+        }
+
         try {
-            BigDecimal rem = value.remainder(step);
-            if ( rem.compareTo(BigDecimal.ZERO) == 0 ) {
+            BigDecimal remainder = value.remainder( step );
+            if ( remainder.compareTo( BigDecimal.ZERO ) == 0 ) {
                 return true;
             }
         } catch ( ArithmeticException ignored ) {
-            // fall through
+            // Fall through to the scaled comparison below.
         }
 
-        // Fallback: scale-aware comparison
-        int scale = Math.max(value.scale(), step.scale());
-        BigDecimal scaledValue = value.setScale(scale, RoundingMode.HALF_UP);
-        BigDecimal scaledStep = step.setScale(scale, RoundingMode.HALF_UP);
-        BigDecimal rem2 = scaledValue.remainder(scaledStep);
-        return rem2.compareTo(BigDecimal.ZERO) == 0;
+        int scale = Math.max( value.scale(), step.scale() );
+        BigDecimal scaledValue = value.setScale( scale, RoundingMode.HALF_UP );
+        BigDecimal scaledStep = step.setScale( scale, RoundingMode.HALF_UP );
+        BigDecimal scaledRemainder = scaledValue.remainder( scaledStep );
+
+        return scaledRemainder.compareTo( BigDecimal.ZERO ) == 0;
     }
 
-    private static BigDecimal asBigDecimal(BsonValue v) {
-        if ( v instanceof BsonInt32 i ) {
-            return BigDecimal.valueOf(i.getValue());
+
+    private static BigDecimal asBigDecimal( BsonValue value ) {
+        if ( value instanceof BsonInt32 bsonInt32 ) {
+            return BigDecimal.valueOf( bsonInt32.getValue() );
         }
-        if ( v instanceof BsonInt64 l ) {
-            return BigDecimal.valueOf(l.getValue());
+
+        if ( value instanceof BsonInt64 bsonInt64 ) {
+            return BigDecimal.valueOf( bsonInt64.getValue() );
         }
-        if ( v instanceof BsonDouble d ) {
-            return BigDecimal.valueOf(d.getValue());
+
+        if ( value instanceof BsonDouble bsonDouble ) {
+            return BigDecimal.valueOf( bsonDouble.getValue() );
         }
-        if ( v instanceof BsonDecimal128 dec ) {
-            Decimal128 d = dec.getValue();
-            return d == null ? null : d.bigDecimalValue();
+
+        if ( value instanceof BsonDecimal128 bsonDecimal128 ) {
+            Decimal128 decimal128 = bsonDecimal128.getValue();
+            return decimal128 == null ? null : decimal128.bigDecimalValue();
         }
+
         return null;
     }
 
-    // -----------------------------------------------------------------------------------------
-    // Composition
-    // -----------------------------------------------------------------------------------------
 
-    private static void validateAnyOf(String path, AnyOfNode node, BsonValue value, List<Violation> out, DocumentSchema.AdditionalProperties inheritedAp) {
-        for ( Node opt : node.anyOf ) {
-            List<Violation> tmp = new ArrayList<>();
-            validateNode(path, opt, value, tmp, inheritedAp);
-            if ( tmp.isEmpty() ) {
-                return; // anyOf: first success is enough
+    private static void validateAnyOf( String path, AnyOfNode schemaNode, BsonValue value, List<Violation> violations, DocumentSchema.AdditionalProperties inheritedAdditionalProperties ) {
+
+        for ( Node option : schemaNode.anyOf ) {
+            List<Violation> optionViolations = new ArrayList<>();
+            validateNode( path, option, value, optionViolations, inheritedAdditionalProperties );
+
+            if ( optionViolations.isEmpty() ) {
+                return;
             }
         }
-        out.add(v(path, "ANY_OF", "Value does not match anyOf options"));
+
+        violations.add( violation( path, "ANY_OF", "Value does not match anyOf options" ) );
     }
 
-    private static void validateOneOf(String path, OneOfNode node, BsonValue value, List<Violation> out, DocumentSchema.AdditionalProperties inheritedAp) {
-        int ok = 0;
-        for ( Node opt : node.oneOf ) {
-            List<Violation> tmp = new ArrayList<>();
-            validateNode(path, opt, value, tmp, inheritedAp);
-            if ( tmp.isEmpty() ) {
-                ok++;
+
+    private static void validateOneOf( String path, OneOfNode schemaNode, BsonValue value, List<Violation> violations, DocumentSchema.AdditionalProperties inheritedAdditionalProperties ) {
+
+        int matchCount = 0;
+
+        for ( Node option : schemaNode.oneOf ) {
+            List<Violation> optionViolations = new ArrayList<>();
+            validateNode( path, option, value, optionViolations, inheritedAdditionalProperties );
+
+            if ( optionViolations.isEmpty() ) {
+                matchCount++;
             }
         }
-        if ( ok != 1 ) {
-            out.add(v(path, "ONE_OF", "Value must match exactly one option but matched " + ok));
+
+        if ( matchCount != 1 ) {
+            violations.add( violation( path, "ONE_OF", "Value must match exactly one option but matched " + matchCount ) );
         }
     }
 
-    private static void validateAllOf(String path, AllOfNode node, BsonValue value, List<Violation> out, DocumentSchema.AdditionalProperties inheritedAp) {
-        for ( Node opt : node.allOf ) {
-            validateNode(path, opt, value, out, inheritedAp);
+
+    private static void validateAllOf( String path, AllOfNode schemaNode, BsonValue value, List<Violation> violations, DocumentSchema.AdditionalProperties inheritedAdditionalProperties ) {
+
+        for ( Node option : schemaNode.allOf ) {
+            validateNode( path, option, value, violations, inheritedAdditionalProperties );
         }
     }
 
-    private static void validateNot(String path, NotNode node, BsonValue value, List<Violation> out, DocumentSchema.AdditionalProperties inheritedAp) {
-        List<Violation> tmp = new ArrayList<>();
-        validateNode(path, node.not, value, tmp, inheritedAp);
-        if ( tmp.isEmpty() ) {
-            out.add(v(path, "NOT", "Value must not match schema"));
+
+    private static void validateNot( String path, NotNode schemaNode, BsonValue value, List<Violation> violations, DocumentSchema.AdditionalProperties inheritedAdditionalProperties ) {
+
+        List<Violation> nestedViolations = new ArrayList<>();
+        validateNode( path, schemaNode.not, value, nestedViolations, inheritedAdditionalProperties );
+
+        if ( nestedViolations.isEmpty() ) {
+            violations.add( violation( path, "NOT", "Value must not match schema" ) );
         }
     }
 
-    // -----------------------------------------------------------------------------------------
-    // Helpers
-    // -----------------------------------------------------------------------------------------
 
-    private static Violation v( String path, String code, String msg ) {
-        return new Violation( path, code, msg );
+    private static DocumentSchema.AdditionalProperties defaultAdditionalProperties(
+            DocumentSchema.AdditionalProperties additionalProperties ) {
+
+        return additionalProperties != null ? additionalProperties : DocumentSchema.AdditionalProperties.ALLOW;
     }
+
+
+    private static DocumentSchema.AdditionalProperties resolveAdditionalProperties( DocumentSchema.AdditionalProperties localAdditionalProperties, DocumentSchema.AdditionalProperties inheritedAdditionalProperties ) {
+
+        if ( localAdditionalProperties == null || localAdditionalProperties == DocumentSchema.AdditionalProperties.INHERIT ) {
+            return inheritedAdditionalProperties;
+        }
+
+        return localAdditionalProperties;
+    }
+
+
+    private static Violation violation( String path, String code, String message ) {
+        return new Violation( path, code, message );
+    }
+
 
     private static String pathDot( String base, String next ) {
         return base.equals( "$" ) ? "$." + next : base + "." + next;
     }
 
-    private static String bsonTypeName( BsonValue v ) {
-        return v == null ? "NULL" : v.getBsonType().name();
+
+    private static String bsonTypeName( BsonValue value ) {
+        return value == null ? "NULL" : value.getBsonType().name();
     }
 
+
     /**
-     * Converts a BsonValue to a Jackson JsonNode for enum/const comparisons.
-     * Covers the most common BSON scalar types + objects/arrays.
+     * Converts a BSON value to a Jackson JsonNode for enum and const comparisons.
      */
-    private static JsonNode bsonToJsonNode(BsonValue v) {
-        if ( v == null || v instanceof BsonNull || v.isNull() ) {
+    private static JsonNode bsonToJsonNode( BsonValue value ) {
+        if ( value == null || value instanceof BsonNull || value.isNull() ) {
             return JsonNodeFactory.instance.nullNode();
         }
-        if ( v instanceof BsonString s ) {
-            return JsonNodeFactory.instance.textNode(s.getValue());
+
+        if ( value instanceof BsonString bsonString ) {
+            return JsonNodeFactory.instance.textNode( bsonString.getValue() );
         }
-        if ( v instanceof BsonBoolean b ) {
-            return JsonNodeFactory.instance.booleanNode(b.getValue());
+
+        if ( value instanceof BsonBoolean bsonBoolean ) {
+            return JsonNodeFactory.instance.booleanNode( bsonBoolean.getValue() );
         }
-        if ( v instanceof BsonInt32 i ) {
-            return JsonNodeFactory.instance.numberNode(i.getValue());
+
+        if ( value instanceof BsonInt32 bsonInt32 ) {
+            return JsonNodeFactory.instance.numberNode( bsonInt32.getValue() );
         }
-        if ( v instanceof BsonInt64 l ) {
-            return JsonNodeFactory.instance.numberNode(l.getValue());
+
+        if ( value instanceof BsonInt64 bsonInt64 ) {
+            return JsonNodeFactory.instance.numberNode( bsonInt64.getValue() );
         }
-        if ( v instanceof BsonDouble d ) {
-            return JsonNodeFactory.instance.numberNode(d.getValue());
+
+        if ( value instanceof BsonDouble bsonDouble ) {
+            return JsonNodeFactory.instance.numberNode( bsonDouble.getValue() );
         }
-        if (v instanceof BsonDecimal128 dec) {
-            Decimal128 d = dec.getValue();
-            BigDecimal bd = (d == null) ? BigDecimal.ZERO : d.bigDecimalValue();
-            return JsonNodeFactory.instance.numberNode(bd);
+
+        if ( value instanceof BsonDecimal128 bsonDecimal128 ) {
+            Decimal128 decimal128 = bsonDecimal128.getValue();
+            BigDecimal decimalValue = decimal128 == null ? BigDecimal.ZERO : decimal128.bigDecimalValue();
+            return JsonNodeFactory.instance.numberNode( decimalValue );
         }
-        if ( v instanceof BsonDateTime dt ) {
-            return JsonNodeFactory.instance.numberNode(dt.getValue());
+
+        if ( value instanceof BsonDateTime bsonDateTime ) {
+            return JsonNodeFactory.instance.numberNode( bsonDateTime.getValue() );
         }
-        if ( v instanceof BsonObjectId oid ) {
-            return JsonNodeFactory.instance.textNode(oid.getValue().toHexString());
+
+        if ( value instanceof BsonObjectId bsonObjectId ) {
+            return JsonNodeFactory.instance.textNode( bsonObjectId.getValue().toHexString() );
         }
-        if ( v instanceof BsonBinary bin ) {
-            return JsonNodeFactory.instance.binaryNode(bin.getData());
+
+        if ( value instanceof BsonBinary bsonBinary ) {
+            return JsonNodeFactory.instance.binaryNode( bsonBinary.getData() );
         }
-        if ( v instanceof BsonArray arr ) {
-            com.fasterxml.jackson.databind.node.ArrayNode an = JsonNodeFactory.instance.arrayNode();
-            for ( BsonValue el : arr ) {
-                an.add(bsonToJsonNode(el));
+
+        if ( value instanceof BsonArray bsonArray ) {
+            com.fasterxml.jackson.databind.node.ArrayNode arrayNode = JsonNodeFactory.instance.arrayNode();
+
+            for ( BsonValue element : bsonArray ) {
+                arrayNode.add( bsonToJsonNode( element ) );
             }
-            return an;
+
+            return arrayNode;
         }
-        if ( v instanceof BsonDocument doc ) {
-            com.fasterxml.jackson.databind.node.ObjectNode on = JsonNodeFactory.instance.objectNode();
-            for ( String k : doc.keySet() ) {
-                on.set(k, bsonToJsonNode(doc.get(k)));
+
+        if ( value instanceof BsonDocument bsonDocument ) {
+            com.fasterxml.jackson.databind.node.ObjectNode objectNode = JsonNodeFactory.instance.objectNode();
+
+            for ( String key : bsonDocument.keySet() ) {
+                objectNode.set( key, bsonToJsonNode( bsonDocument.get( key ) ) );
             }
-            return on;
+
+            return objectNode;
         }
-        return JsonNodeFactory.instance.textNode(String.valueOf(v));
+
+        return JsonNodeFactory.instance.textNode( String.valueOf( value ) );
     }
+
 
     /**
-     * Validate a JSON string against a {@link DocumentSchema}.
-     *
-     * @param stripId if true, removes "_id" before validation (mirrors insert enforcement behavior)
+     * Validates a JSON string against a DocumentSchema.
      */
     public static ValidationResult validateJson( DocumentSchema schema, String json, boolean stripId ) {
-        BsonDocument doc = BsonDocument.parse( json );
-        if ( stripId && doc.containsKey( "_id" ) ) {
-            BsonDocument clone = doc.clone();
+        BsonDocument document = BsonDocument.parse( json );
+
+        if ( stripId && document.containsKey( "_id" ) ) {
+            BsonDocument clone = document.clone();
             clone.remove( "_id" );
-            doc = clone;
+            document = clone;
         }
-        return validate( schema, doc );
+
+        return validate( schema, document );
     }
 
-    /** Validate JSON string, stripping "_id" by default. */
-    public static ValidationResult validateJson( DocumentSchema schema, String json ) {
-        return validateJson( schema, json, true );
-    }
 
-    /** Validate a Jackson JsonNode, stripping "_id" by default. */
     public static ValidationResult validateJson( DocumentSchema schema, JsonNode jsonNode ) {
         return validateJson( schema, jsonNode.toString(), true );
     }

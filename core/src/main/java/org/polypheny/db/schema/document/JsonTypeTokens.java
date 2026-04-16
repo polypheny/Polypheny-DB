@@ -16,6 +16,7 @@
 
 package org.polypheny.db.schema.document;
 
+import java.util.Locale;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
@@ -24,93 +25,93 @@ import org.bson.BsonString;
 import org.bson.BsonType;
 import org.bson.BsonValue;
 import org.polypheny.db.type.PolyType;
-import java.util.Locale;
 
+/**
+ * Maps JSON schema type tokens to PolyType and BSON values.
+ */
 public final class JsonTypeTokens {
-    private JsonTypeTokens() {}
 
-    // --- Legacy normalization (READ path) ---
-    private static String normalizeToJsonToken(String raw) {
-        if (raw == null) return null;
-        String s = raw.trim();
-        int paren = s.indexOf('('); // tolerate legacy e.g. VARCHAR(50)
-        if (paren >= 0) s = s.substring(0, paren);
-        String t = s.toLowerCase(Locale.ROOT);
-
-        // Strict JSON tokens pass through
-        switch (t) {
-            case "string": case "text":
-            case "number":
-            case "boolean": case "bool":
-            case "null":
-            case "object": case "array":
-                return t;
-        }
-        // Minimal legacy compatibility for already-persisted schemas
-        switch (t) {
-            case "double":           return "number";
-            case "varchar":
-            case "char":
-            case "json":
-            case "text":             return "string";
-            case "boolean":          return "boolean";
-            case "null":             return "null";
-            default:                 return t; // anything else should still error
-        }
+    private JsonTypeTokens() {
     }
 
-    // Map user/stored token -> PolyType (READ)
-    public static PolyType toPolyType(String raw) {
-        if (raw == null) throw new IllegalArgumentException("Type token must be provided");
-        String t = normalizeToJsonToken(raw);
-        switch (t) {
-            case "string": case "text":
-                return PolyType.TEXT;      // JSON string
-            case "number":
-                return PolyType.DOUBLE;    // JSON number (validator accepts all BSON numeric encodings)
-            case "boolean": case "bool":
-                return PolyType.BOOLEAN;
-            case "null":
-                return PolyType.NULL;
-            case "object": case "array":
-                throw new IllegalArgumentException(
-                        "Structural types require nested specification: object/array with properties/items");
-            default:
-                throw new IllegalArgumentException(
-                        "Unsupported type '" + raw + "'. Allowed: string (text), number, boolean, null, object, array.");
+
+    /**
+     * Accepts canonical JSON tokens and a small set of legacy persisted aliases.
+     */
+    private static String normalizeToJsonToken( String rawToken ) {
+        if ( rawToken == null ) {
+            return null;
         }
+
+        String normalized = rawToken.trim();
+        int parenthesisIndex = normalized.indexOf( '(' );
+        if ( parenthesisIndex >= 0 ) {
+            normalized = normalized.substring( 0, parenthesisIndex );
+        }
+
+        String token = normalized.toLowerCase( Locale.ROOT );
+
+        return switch ( token ) {
+            case "string", "text", "number", "boolean", "bool", "null", "object", "array" -> token;
+            case "double" -> "number";
+            case "varchar", "char", "json" -> "string";
+            default -> token;
+        };
     }
 
-    // Canonical JSON token for a PolyType (WRITE)
-    public static String toJsonToken(PolyType t) {
-        return switch (t) {
+
+    public static PolyType toPolyType( String rawToken ) {
+        if ( rawToken == null ) {
+            throw new IllegalArgumentException( "Type token must be provided" );
+        }
+
+        String token = normalizeToJsonToken( rawToken );
+
+        return switch ( token ) {
+            case "string", "text" -> PolyType.TEXT;
+            case "number" -> PolyType.DOUBLE;
+            case "boolean", "bool" -> PolyType.BOOLEAN;
+            case "null" -> PolyType.NULL;
+            case "object", "array" -> throw new IllegalArgumentException( "Structural types require nested specification: object/array with properties/items" );
+            default -> throw new IllegalArgumentException( "Unsupported type '" + rawToken + "'. Allowed: string (text), number, boolean, null, object, array." );
+        };
+    }
+
+
+    public static String toJsonToken( PolyType polyType ) {
+        return switch ( polyType ) {
             case TEXT, CHAR, VARCHAR -> "string";
-            case DOUBLE             -> "number";
-            case BOOLEAN            -> "boolean";
-            case NULL               -> "null";
-            default                 -> throw new IllegalArgumentException("Cannot serialize non-JSON PolyType: " + t);
+            case DOUBLE -> "number";
+            case BOOLEAN -> "boolean";
+            case NULL -> "null";
+            default -> throw new IllegalArgumentException( "Cannot serialize non-JSON PolyType: " + polyType );
         };
     }
 
-    // Shared scalar check used by validator/enforcer
-    public static boolean isBsonNumeric(BsonValue v) {
-        return v instanceof BsonNumber
-                || (v != null && v.getBsonType() == BsonType.DECIMAL128);
+
+    public static boolean isBsonNumeric( BsonValue value ) {
+        return value instanceof BsonNumber || value != null && value.getBsonType() == BsonType.DECIMAL128;
     }
 
-    public static boolean matchesJson(BsonValue v, PolyType t) {
-        if (t == PolyType.NULL) return v == null || v.isNull();
-        return switch (t) {
-            case BOOLEAN -> v instanceof BsonBoolean;
-            case CHAR, VARCHAR, TEXT -> v instanceof BsonString; // JSON string
-            case DOUBLE -> isBsonNumeric(v);                     // JSON number
-            case ARRAY -> v instanceof BsonArray;                // defensive
-            case MAP   -> v instanceof BsonDocument;             // defensive
-            default    -> false;
+
+    public static boolean matchesJson( BsonValue value, PolyType polyType ) {
+        if ( polyType == PolyType.NULL ) {
+            return value == null || value.isNull();
+        }
+
+        return switch ( polyType ) {
+            case BOOLEAN -> value instanceof BsonBoolean;
+            case CHAR, VARCHAR, TEXT -> value instanceof BsonString;
+            case DOUBLE -> isBsonNumeric( value );
+            case ARRAY -> value instanceof BsonArray;
+            case MAP -> value instanceof BsonDocument;
+            default -> false;
         };
     }
 
-    public static boolean isJsonNumberPolyType(PolyType t) {
-        return t == PolyType.DOUBLE;
+
+    public static boolean isJsonNumberPolyType( PolyType polyType ) {
+        return polyType == PolyType.DOUBLE;
     }
+
 }
