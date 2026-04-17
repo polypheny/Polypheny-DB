@@ -63,8 +63,11 @@ import org.polypheny.db.type.AbstractPolyType;
 import org.polypheny.db.type.JavaToPolyTypeConversionRules;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.VectorType;
+import org.polypheny.db.type.VectorType.ElementType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyFloatList;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyString;
@@ -255,6 +258,13 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case MAP:
                     return PolyMap.class;
                 case ARRAY:
+                    if ( type instanceof VectorType vt) {
+                        if ( vt.getVectorElementType() == ElementType.FLOAT ) {
+                            return PolyFloatList.class;
+                        }
+                    } else {
+                        return PolyListImpl.class;
+                    }
                 case MULTISET:
                     return PolyListImpl.class;
                 case ANY:

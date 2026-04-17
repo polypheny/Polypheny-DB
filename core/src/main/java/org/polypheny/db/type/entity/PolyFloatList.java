@@ -342,7 +342,7 @@ public class PolyFloatList<E extends PolyFloat> extends PolyList<E> {
     public Expression asExpression() {
         List<Expression> list = new ArrayList<>();
         for ( float f : value ) {
-            list.add( PolyFloat.of( f ).asExpression() );
+            list.add( Expressions.constant( f, float.class ) );
         }
         return Expressions.new_( PolyFloatList.class, Expressions.newArrayInit( float.class, list) );
     }
@@ -351,6 +351,21 @@ public class PolyFloatList<E extends PolyFloat> extends PolyList<E> {
     @Override
     public PolySerializable copy() {
         return new PolyFloatList<>( Arrays.copyOf( value, value.length ) );
+    }
+
+
+    public static PolyFloatList<?> convert( @Nullable PolyValue object ) {
+        if ( object == null || object.isNull() ) return null;
+        if ( object instanceof PolyFloatList<?> pfl ) return pfl;
+        if ( object.isList() ) {
+            PolyList<?> list = object.asList();
+            float[] arr = new float[list.size()];
+            for ( int i = 0; i < list.size(); ++i ) {
+                arr[i] = list.get( i ).asNumber().floatValue();
+            }
+            return new PolyFloatList<>( arr );
+        }
+        throw new org.polypheny.db.catalog.exceptions.GenericRuntimeException( "Could not convert to PolyFloatList: " + object );
     }
 
 

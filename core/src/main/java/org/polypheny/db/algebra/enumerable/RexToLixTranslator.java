@@ -92,6 +92,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyFloatList;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyString;
@@ -817,6 +818,8 @@ public class RexToLixTranslator {
                 return Expressions.call( PolyBoolean.class, "convert", operand );
             } else if ( toType == PolyListImpl.class ) {
                 return Expressions.call( PolyListImpl.class, "convert", operand );
+            } else if ( toType == PolyFloatList.class ) {
+                return Expressions.call( PolyFloatList.class, "convert", operand );
             } else if ( toType == PolyDocument.class ) {
                 return Expressions.call( PolyDocument.class, "convert", operand );
             } else if ( toType == PolyValue.class ) {

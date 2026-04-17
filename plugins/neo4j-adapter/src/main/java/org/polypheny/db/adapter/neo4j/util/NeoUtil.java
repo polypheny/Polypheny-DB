@@ -56,7 +56,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;

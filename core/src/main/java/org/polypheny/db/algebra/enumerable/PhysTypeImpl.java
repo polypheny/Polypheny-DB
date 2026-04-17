@@ -62,7 +62,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyListImpl;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.CoreUtil;
