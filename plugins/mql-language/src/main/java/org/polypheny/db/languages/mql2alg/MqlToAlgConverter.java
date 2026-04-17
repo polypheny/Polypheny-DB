@@ -1260,6 +1260,12 @@ public class MqlToAlgConverter {
             return false;
         }
 
+        // _id is implicitly present for document collections even when it is not
+        // explicitly declared in a closed JSON schema. Do not prune such filters.
+        if ( DocumentType.DOCUMENT_ID.equals( fieldPath ) || "_id".equals( fieldPath ) ) {
+            return false;
+        }
+
         String[] parts = fieldPath.split( "\\." );
         DocumentSchema.AdditionalProperties rootAp =
                 schema.additionalProperties() == null
@@ -1331,6 +1337,12 @@ public class MqlToAlgConverter {
         if ( node instanceof DocumentSchema.ObjectNode obj ) {
             DocumentSchema.AdditionalProperties effectiveAp = resolveAdditionalProperties( obj, inheritedAp );
             String segment = path[index];
+
+            // _id is implicitly present on stored documents even if not declared
+            // in the schema.
+            if ( index == 0 && (DocumentType.DOCUMENT_ID.equals( segment ) || "_id".equals( segment )) ) {
+                return path.length == 1;
+            }
 
             DocumentSchema.Node child = obj.properties.get( segment );
             if ( child != null ) {

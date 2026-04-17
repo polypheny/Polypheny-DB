@@ -41,11 +41,44 @@ public class DocumentSchemaCrud {
     }
 
 
+    /**
+     * Plain DTO used for JSON serialization.
+     * Do not expose SchemaValidator.Violation directly because the WebUI Jackson mapper
+     * disables getter-based visibility and serializes Java records as empty objects.
+     */
+    public static final class ViolationDto {
+
+        public String path;
+        public String code;
+        public String message;
+
+
+        public ViolationDto() {
+        }
+
+
+        public ViolationDto( String path, String code, String message ) {
+            this.path = path;
+            this.code = code;
+            this.message = message;
+        }
+
+
+        public static ViolationDto from( SchemaValidator.Violation violation ) {
+            if ( violation == null ) {
+                return new ViolationDto( "$", "UNKNOWN", "Unknown violation" );
+            }
+            return new ViolationDto( violation.path(), violation.code(), violation.message() );
+        }
+
+    }
+
+
     public static final class DocResult {
 
         public int index;
         public boolean ok;
-        public List<SchemaValidator.Violation> violations;
+        public List<ViolationDto> violations;
         public String parseError;
 
 
@@ -56,7 +89,7 @@ public class DocumentSchemaCrud {
         public DocResult(
                 int index,
                 boolean ok,
-                List<SchemaValidator.Violation> violations,
+                List<ViolationDto> violations,
                 String parseError ) {
             this.index = index;
             this.ok = ok;
@@ -241,7 +274,11 @@ public class DocumentSchemaCrud {
             JsonNode documentNode = documents.get( i );
 
             if ( documentNode == null || documentNode.isNull() || !documentNode.isObject() ) {
-                results.add( new DocResult( i, false, List.of(), "Expected a JSON object." ) );
+                results.add( new DocResult(
+                        i,
+                        false,
+                        List.of( new ViolationDto( "$", "PARSE", "Expected a JSON object." ) ),
+                        "Expected a JSON object." ) );
                 continue;
             }
 
@@ -254,22 +291,24 @@ public class DocumentSchemaCrud {
                 SchemaValidator.ValidationResult validationResult =
                         SchemaValidator.validateJson( schema, documentNode );
 
-                List<SchemaValidator.Violation> violations =
-                        validationResult.violations() == null
-                                ? List.of()
-                                : validationResult.violations();
+                List<ViolationDto> violations = new ArrayList<>();
+                List<SchemaValidator.Violation> rawViolations = validationResult.violations() == null
+                        ? List.of()
+                        : validationResult.violations();
 
-                if ( violations.size() > maxViolations ) {
-                    violations = violations.subList( 0, maxViolations );
+                int limit = Math.min( rawViolations.size(), maxViolations );
+                for ( int j = 0; j < limit; j++ ) {
+                    violations.add( ViolationDto.from( rawViolations.get( j ) ) );
                 }
 
                 results.add( new DocResult( i, validationResult.ok(), violations, null ) );
             } catch ( Exception e ) {
+                String message = "Could not parse/validate document: " + e.getMessage();
                 results.add( new DocResult(
                         i,
                         false,
-                        List.of(),
-                        "Could not parse/validate document: " + e.getMessage() ) );
+                        List.of( new ViolationDto( "$", "PARSE", message ) ),
+                        message ) );
             }
         }
 
