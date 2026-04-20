@@ -509,6 +509,147 @@ public class DdlManagerImpl extends DdlManager {
 
 
     /**
+     * Refreshes the schema of a source table if it is out of sync with the underlying data source.
+     *
+     * @param entityId the logical table id
+     * @param statement the statement used to execute the DDL operations
+     */
+    @Override
+    public void refreshSourceSchemaIfNeeded( long entityId, Statement statement ) {
+        Snapshot snapshot = catalog.getSnapshot();
+        LogicalTable table = snapshot.rel().getTable( entityId ).orElseThrow();
+
+        log.info( "Refreshing schema for table {}", table.name );
+
+        if ( table.entityType != EntityType.SOURCE ) {
+            log.info( "Refresh skipped: {} is not a source table.", table.name );
+            return;
+        }
+
+        List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( table.id );
+        if ( allocs.size() != 1 ) {
+            throw new GenericRuntimeException(
+                    "Expected exactly one placement for table '" + table.name +
+                            "', but found " + allocs.size()
+            );
+        }
+
+        AllocationEntity allocation = allocs.get( 0 );
+        long adapterId = allocation.adapterId;
+
+        DataSource<?> dataSource = AdapterManager.getInstance().getSource( adapterId ).orElseThrow();
+
+        AdapterCatalog adapterCatalog = catalog
+                .getAdapterCatalog( adapterId )
+                .orElseThrow( () -> new GenericRuntimeException( "No adapter catalog found for adapter %s", adapterId ) );
+
+        PhysicalEntity currentRuntimeEntity = adapterCatalog.getPhysicalsFromAllocs( allocation.id ).stream()
+                .findFirst()
+                .orElseThrow( () -> new GenericRuntimeException( "No physical entity found for allocation %s", allocation.id ) );
+
+        PhysicalTable currentPhysicalTable = currentRuntimeEntity.unwrapOrThrow( PhysicalTable.class );
+
+        String sourceTableKey = currentPhysicalTable.name;
+        String sourceSchema = currentPhysicalTable.namespaceName;
+
+        List<ExportedColumn> sourceColumns =
+                dataSource.asRelationalDataSource()
+                        .getExportedColumnsForTable( sourceSchema, sourceTableKey );
+
+        if ( sourceColumns == null || sourceColumns.isEmpty() ) {
+            log.info( "No source columns found for table '{}.{}'", sourceSchema, sourceTableKey );
+            return;
+        }
+
+        // Keep only columns that belong to the expected schema
+        if ( sourceSchema != null ) {
+            sourceColumns = sourceColumns.stream()
+                    .filter( c -> sourceSchema.equalsIgnoreCase( c.physicalSchemaName() ) )
+                    .toList();
+        }
+
+        // Current physical columns known to Polypheny
+        Set<String> existingPhysicalColumnNames = currentPhysicalTable.columns.stream()
+                .map( c -> c.name.toLowerCase() )
+                .collect( Collectors.toSet() );
+
+        // Current source columns reported by the adapter
+        Set<String> sourcePhysicalColumnNames = sourceColumns.stream()
+                .map( c -> c.physicalColumnName().toLowerCase() )
+                .collect( Collectors.toSet() );
+
+        // Columns that exist in the source but not yet in Polypheny
+        List<ExportedColumn> missingColumns = sourceColumns.stream()
+                .filter( c -> !existingPhysicalColumnNames.contains( c.physicalColumnName().toLowerCase() ) )
+                .sorted( Comparator.comparingInt( ExportedColumn::physicalPosition ) )
+                .toList();
+
+        // Columns that exist in Polypheny but no longer exist in the source
+        List<LogicalColumn> droppedColumns = snapshot.rel().getColumns( table.id ).stream()
+                .filter( logicalColumn -> !sourcePhysicalColumnNames.contains( logicalColumn.name.toLowerCase() ) )
+                .sorted( Comparator.comparingInt( LogicalColumn::getPosition ).reversed() )
+                .toList();
+
+        if ( missingColumns.isEmpty() && droppedColumns.isEmpty() ) {
+            log.info( "No schema refresh needed for table {}", table.name );
+            return;
+        }
+
+        for ( ExportedColumn missing : missingColumns ) {
+            log.info(
+                    "Adding missing source column '{}' to table '{}'",
+                    missing.physicalColumnName(),
+                    table.name
+            );
+
+            String beforeColumnName = getColumnNameAtOrAfterPosition( table.id, missing.physicalPosition() );
+            addColumnToSourceTableFromExportedColumn(
+                    table,
+                    missing,
+                    missing.name(),
+                    beforeColumnName,
+                    null,
+                    null,
+                    statement
+            );
+        }
+
+        for ( LogicalColumn dropped : droppedColumns ) {
+            log.info(
+                    "Dropping removed source column '{}' from table '{}'",
+                    dropped.name,
+                    table.name
+            );
+
+            dropColumnFromSourceTableRefresh(
+                    table,
+                    dropped.name,
+                    statement
+            );
+        }
+
+        log.info( "Catalog refresh finished successfully for table {}", table.name );
+    }
+
+
+    /**
+     * Returns the first logical column name whose position is at or after the requested position.
+     *
+     * @param tableId the logical table id
+     * @param targetPosition the requested 1-based column position
+     * @return the matching column name, or {@code null} if no column exists at or after that position
+     */
+    private String getColumnNameAtOrAfterPosition( long tableId, int targetPosition ) {
+        return catalog.getSnapshot().rel().getColumns( tableId ).stream()
+                .sorted( Comparator.comparingInt( LogicalColumn::getPosition ) )
+                .filter( column -> column.position >= Math.max( 1, targetPosition ) )
+                .map( column -> column.name )
+                .findFirst()
+                .orElse( null );
+    }
+
+
+    /**
      * Internal helper method to add a column to a source table.
      * <p>
      * This method performs the actual catalog updates and optionally triggers a rebuild

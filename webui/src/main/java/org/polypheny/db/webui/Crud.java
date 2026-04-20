@@ -47,7 +47,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,7 +83,6 @@ import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
@@ -102,8 +100,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -268,126 +264,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      * @throws GenericRuntimeException if the refresh fails
      */
     public void refreshSourceSchemaIfNeeded( UIRequest request ) {
-        var snapshot = Catalog.snapshot();
-        LogicalTable table = snapshot.rel().getTable( request.entityId ).orElseThrow();
-
-        log.info( "Refreshing schema for table {}", table.name );
-
-        if ( table.entityType != EntityType.SOURCE ) {
-            log.info( "Refresh skipped: {} is not a source table.", table.name );
-            return;
-        }
-
-        List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( table.id );
-        if ( allocs.size() != 1 ) {
-            throw new GenericRuntimeException(
-                    "Expected exactly one placement for table '" + table.name +
-                            "', but found " + allocs.size()
-            );
-        }
-
-        AllocationEntity allocation = allocs.get( 0 );
-        long adapterId = allocation.adapterId;
-
-        DataSource<?> dataSource = AdapterManager.getInstance().getSource( adapterId ).orElseThrow();
-
-        AdapterCatalog adapterCatalog = Catalog.getInstance()
-                .getAdapterCatalog( adapterId )
-                .orElseThrow( () -> new GenericRuntimeException( "No adapter catalog found for adapter %s", adapterId ) );
-
-        PhysicalEntity currentRuntimeEntity = adapterCatalog.getPhysicalsFromAllocs( allocation.id ).stream()
-                .findFirst()
-                .orElseThrow( () -> new GenericRuntimeException( "No physical entity found for allocation %s", allocation.id ) );
-
-        PhysicalTable currentPhysicalTable = currentRuntimeEntity.unwrapOrThrow( PhysicalTable.class );
-
-        String sourceTableKey = currentPhysicalTable.name;
-        String sourceSchema = currentPhysicalTable.namespaceName;
-
-        List<ExportedColumn> sourceColumns =
-                dataSource.asRelationalDataSource()
-                        .getExportedColumnsForTable( sourceSchema, sourceTableKey );
-
-        if ( sourceColumns == null || sourceColumns.isEmpty() ) {
-            log.info( "No source columns found for table '{}.{}'", sourceSchema, sourceTableKey );
-            return;
-        }
-
-        // Keep only columns that belong to the expected schema
-        if ( sourceSchema != null ) {
-            sourceColumns = sourceColumns.stream()
-                    .filter( c -> sourceSchema.equalsIgnoreCase( c.physicalSchemaName() ) )
-                    .toList();
-        }
-
-        // Current physical columns known to Polypheny
-        Set<String> existingPhysicalColumnNames = currentPhysicalTable.columns.stream()
-                .map( c -> c.name.toLowerCase() )
-                .collect( Collectors.toSet() );
-
-        // Current source columns reported by the adapter
-        Set<String> sourcePhysicalColumnNames = sourceColumns.stream()
-                .map( c -> c.physicalColumnName().toLowerCase() )
-                .collect( Collectors.toSet() );
-
-        // Columns that exist in the source but not yet in Polypheny
-        List<ExportedColumn> missingColumns = sourceColumns.stream()
-                .filter( c -> !existingPhysicalColumnNames.contains( c.physicalColumnName().toLowerCase() ) )
-                .sorted( Comparator.comparingInt( ExportedColumn::physicalPosition ) )
-                .toList();
-
-        // Columns that exist in Polypheny but no longer exist in the source
-        List<LogicalColumn> droppedColumns = snapshot.rel().getColumns( table.id ).stream()
-                .filter( logicalColumn -> !sourcePhysicalColumnNames.contains( logicalColumn.name.toLowerCase() ) )
-                .sorted( Comparator.comparingInt( LogicalColumn::getPosition ).reversed() )
-                .toList();
-
-        if ( missingColumns.isEmpty() && droppedColumns.isEmpty() ) {
-            log.info( "No schema refresh needed for table {}", table.name );
-            return;
-        }
-
         Transaction transaction = getTransaction();
         try {
             Statement ddlStatement = transaction.createStatement();
-
-            for ( ExportedColumn missing : missingColumns ) {
-                log.info(
-                        "Adding missing source column '{}' to table '{}'",
-                        missing.physicalColumnName(),
-                        table.name
-                );
-
-                String beforeColumnName = getColumnNameAtOrAfterPosition( table.id, missing.physicalPosition() );
-                DdlManager.getInstance().addColumnToSourceTableFromExportedColumn(
-                        table,
-                        missing,
-                        missing.name(),
-                        beforeColumnName,
-                        null,
-                        null,
-                        ddlStatement
-                );
-            }
-
-            for ( LogicalColumn dropped : droppedColumns ) {
-                log.info(
-                        "Dropping removed source column '{}' from table '{}'",
-                        dropped.name,
-                        table.name
-                );
-
-                DdlManager.getInstance().dropColumnFromSourceTableRefresh(
-                        table,
-                        dropped.name,
-                        ddlStatement
-                );
-            }
-
+            DdlManager.getInstance().refreshSourceSchemaIfNeeded( request.entityId, ddlStatement );
             Catalog.getInstance().updateSnapshot();
             transaction.commit();
-
-            log.info( "Catalog refresh committed successfully for table {}", table.name );
         } catch ( Exception e ) {
             try {
                 transaction.rollback( "Error while refreshing source catalog: " + e.getMessage() );
@@ -395,25 +277,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 log.error( "Rollback also failed", rollbackException );
             }
             throw new GenericRuntimeException(
-                    "Could not refresh source catalog for table " + table.name, e );
+                    "Could not refresh source catalog for entity " + request.entityId, e );
         }
-    }
-
-
-    /**
-     * Returns the first logical column name whose position is at or after the requested position.
-     *
-     * @param tableId the logical table id
-     * @param targetPosition the requested 1-based column position
-     * @return the matching column name, or {@code null} if no column exists at or after that position
-     */
-    private String getColumnNameAtOrAfterPosition( long tableId, int targetPosition ) {
-        return Catalog.snapshot().rel().getColumns( tableId ).stream()
-                .sorted( Comparator.comparingInt( LogicalColumn::getPosition ) )
-                .filter( column -> column.position >= Math.max( 1, targetPosition ) )
-                .map( column -> column.name )
-                .findFirst()
-                .orElse( null );
     }
 
 

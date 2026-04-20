@@ -178,6 +178,14 @@ public abstract class DdlManager {
             PolyValue defaultValue,
             Statement statement );
 
+    /**
+     * Refreshes the catalog schema of a source table if it differs from the underlying source.
+     *
+     * @param entityId the id of the logical source table to refresh
+     * @param statement the statement used to execute the DDL operations
+     */
+    public abstract void refreshSourceSchemaIfNeeded( long entityId, Statement statement );
+
 
     /**
      * Add a column to an existing table
