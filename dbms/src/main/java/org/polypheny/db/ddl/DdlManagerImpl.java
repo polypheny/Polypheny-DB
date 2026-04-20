@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -83,6 +84,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -517,94 +519,120 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void refreshSourceSchemaIfNeeded( long entityId, Statement statement ) {
         Snapshot snapshot = catalog.getSnapshot();
-        LogicalTable table = snapshot.rel().getTable( entityId ).orElseThrow();
+        LogicalTable logicalTable = snapshot.rel().getTable( entityId ).orElseThrow();
 
-        log.info( "Refreshing schema for table {}", table.name );
+        log.info( "Refreshing schema for table {}", logicalTable.name );
 
-        if ( table.entityType != EntityType.SOURCE ) {
-            log.info( "Refresh skipped: {} is not a source table.", table.name );
+        if ( logicalTable.entityType != EntityType.SOURCE ) {
+            log.info( "Refresh skipped: {} is not a source table.", logicalTable.name );
             return;
         }
 
-        List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( table.id );
+        List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( logicalTable.id );
         if ( allocs.size() != 1 ) {
             throw new GenericRuntimeException(
-                    "Expected exactly one placement for table '" + table.name +
+                    "Expected exactly one placement for table '" + logicalTable.name +
                             "', but found " + allocs.size()
             );
         }
 
-        AllocationEntity allocation = allocs.get( 0 );
-        long adapterId = allocation.adapterId;
+        AllocationEntity sourceAllocation = allocs.get( 0 );
+        long sourceAdapterId = sourceAllocation.adapterId;
 
-        DataSource<?> dataSource = AdapterManager.getInstance().getSource( adapterId ).orElseThrow();
+        DataSource<?> sourceAdapter = AdapterManager.getInstance().getSource( sourceAdapterId ).orElseThrow();
 
-        AdapterCatalog adapterCatalog = catalog
-                .getAdapterCatalog( adapterId )
-                .orElseThrow( () -> new GenericRuntimeException( "No adapter catalog found for adapter %s", adapterId ) );
+        AdapterCatalog sourceAdapterCatalog = catalog
+                .getAdapterCatalog( sourceAdapterId )
+                .orElseThrow( () -> new GenericRuntimeException( "No adapter catalog found for adapter %s", sourceAdapterId ) );
 
-        PhysicalEntity currentRuntimeEntity = adapterCatalog.getPhysicalsFromAllocs( allocation.id ).stream()
+        PhysicalEntity currentPhysicalEntity = sourceAdapterCatalog.getPhysicalsFromAllocs( sourceAllocation.id ).stream()
                 .findFirst()
-                .orElseThrow( () -> new GenericRuntimeException( "No physical entity found for allocation %s", allocation.id ) );
+                .orElseThrow( () -> new GenericRuntimeException( "No physical entity found for allocation %s", sourceAllocation.id ) );
 
-        PhysicalTable currentPhysicalTable = currentRuntimeEntity.unwrapOrThrow( PhysicalTable.class );
+        PhysicalTable currentPolyphenyPhyiscalTable = currentPhysicalEntity.unwrapOrThrow( PhysicalTable.class );
 
-        String sourceTableKey = currentPhysicalTable.name;
-        String sourceSchema = currentPhysicalTable.namespaceName;
+        String sourceTableName = currentPolyphenyPhyiscalTable.name;
+        String sourceSchemaName = currentPolyphenyPhyiscalTable.namespaceName;
 
-        List<ExportedColumn> sourceColumns =
-                dataSource.asRelationalDataSource()
-                        .getExportedColumnsForTable( sourceSchema, sourceTableKey );
+        // Columns currently reported by the external source for this table
+        List<ExportedColumn> currentSourceColumns =
+                sourceAdapter.asRelationalDataSource()
+                        .getExportedColumnsForTable( sourceSchemaName, sourceTableName );
 
-        if ( sourceColumns == null || sourceColumns.isEmpty() ) {
-            log.info( "No source columns found for table '{}.{}'", sourceSchema, sourceTableKey );
+        if ( currentSourceColumns == null || currentSourceColumns.isEmpty() ) {
+            log.info( "No source columns found for table '{}.{}'", sourceSchemaName, sourceTableName );
             return;
         }
 
         // Keep only columns that belong to the expected schema
-        if ( sourceSchema != null ) {
-            sourceColumns = sourceColumns.stream()
-                    .filter( c -> sourceSchema.equalsIgnoreCase( c.physicalSchemaName() ) )
+        if ( sourceSchemaName != null ) {
+            currentSourceColumns = currentSourceColumns.stream()
+                    .filter( c -> sourceSchemaName.equalsIgnoreCase( c.physicalSchemaName() ) )
                     .toList();
         }
 
-        // Current physical columns known to Polypheny
-        Set<String> existingPhysicalColumnNames = currentPhysicalTable.columns.stream()
+        // Names of columns currently known in Polypheny's physical representation
+        Set<String> polyphenyPhysicalColumnNames = currentPolyphenyPhyiscalTable.columns.stream()
                 .map( c -> c.name.toLowerCase() )
                 .collect( Collectors.toSet() );
 
-        // Current source columns reported by the adapter
-        Set<String> sourcePhysicalColumnNames = sourceColumns.stream()
+        // Names of columns currently reported by the external source
+        Set<String> sourcePhysicalColumnNames = currentSourceColumns.stream()
                 .map( c -> c.physicalColumnName().toLowerCase() )
                 .collect( Collectors.toSet() );
 
+        // Lookup map for source column metadata by column name
+        Map<String, ExportedColumn> sourceColumnsByPhysicalName = currentSourceColumns.stream()
+                .collect( Collectors.toMap( c -> c.physicalColumnName().toLowerCase(), c -> c, ( left, right ) -> left ) );
+
         // Columns that exist in the source but not yet in Polypheny
-        List<ExportedColumn> missingColumns = sourceColumns.stream()
-                .filter( c -> !existingPhysicalColumnNames.contains( c.physicalColumnName().toLowerCase() ) )
+        List<ExportedColumn> missingColumns = currentSourceColumns.stream()
+                .filter( c -> !polyphenyPhysicalColumnNames.contains( c.physicalColumnName().toLowerCase() ) )
                 .sorted( Comparator.comparingInt( ExportedColumn::physicalPosition ) )
                 .toList();
 
         // Columns that exist in Polypheny but no longer exist in the source
-        List<LogicalColumn> droppedColumns = snapshot.rel().getColumns( table.id ).stream()
+        List<LogicalColumn> droppedColumns = snapshot.rel().getColumns( logicalTable.id ).stream()
                 .filter( logicalColumn -> !sourcePhysicalColumnNames.contains( logicalColumn.name.toLowerCase() ) )
                 .sorted( Comparator.comparingInt( LogicalColumn::getPosition ).reversed() )
                 .toList();
 
-        if ( missingColumns.isEmpty() && droppedColumns.isEmpty() ) {
-            log.info( "No schema refresh needed for table {}", table.name );
+        // Columns that exist in both systems but whose type differs
+        List<PhysicalColumn> changedTypeColumns = currentPolyphenyPhyiscalTable.columns.stream()
+                .filter( physicalColumn -> sourceColumnsByPhysicalName.containsKey( physicalColumn.name.toLowerCase() ) )
+                .filter( physicalColumn -> hasDifferentType( physicalColumn, sourceColumnsByPhysicalName.get( physicalColumn.name.toLowerCase() ) ) )
+                .sorted( Comparator.comparingInt( PhysicalColumn::getPosition ) )
+                .toList();
+
+        if ( missingColumns.isEmpty() && droppedColumns.isEmpty() && changedTypeColumns.isEmpty() ) {
+            log.info( "No schema refresh needed for table {}", logicalTable.name );
             return;
+        }
+
+        for ( LogicalColumn dropped : droppedColumns ) {
+            log.info(
+                    "Dropping removed source column '{}' from table '{}'",
+                    dropped.name,
+                    logicalTable.name
+            );
+
+            dropColumnFromSourceTableRefresh(
+                    logicalTable,
+                    dropped.name,
+                    statement
+            );
         }
 
         for ( ExportedColumn missing : missingColumns ) {
             log.info(
                     "Adding missing source column '{}' to table '{}'",
                     missing.physicalColumnName(),
-                    table.name
+                    logicalTable.name
             );
 
-            String beforeColumnName = getColumnNameAtOrAfterPosition( table.id, missing.physicalPosition() );
+            String beforeColumnName = getColumnNameAtOrAfterPosition( logicalTable.id, missing.physicalPosition() );
             addColumnToSourceTableFromExportedColumn(
-                    table,
+                    logicalTable,
                     missing,
                     missing.name(),
                     beforeColumnName,
@@ -614,21 +642,60 @@ public class DdlManagerImpl extends DdlManager {
             );
         }
 
-        for ( LogicalColumn dropped : droppedColumns ) {
-            log.info(
-                    "Dropping removed source column '{}' from table '{}'",
-                    dropped.name,
-                    table.name
-            );
+        if ( !changedTypeColumns.isEmpty() ) {
+            for ( PhysicalColumn changedTypeColumn : changedTypeColumns ) {
+                ExportedColumn sourceColumn = sourceColumnsByPhysicalName.get( changedTypeColumn.name.toLowerCase() );
+                log.info(
+                        "Updating type of source column '{}' on table '{}'",
+                        sourceColumn.physicalColumnName(),
+                        logicalTable.name
+                );
 
-            dropColumnFromSourceTableRefresh(
-                    table,
-                    dropped.name,
-                    statement
+                updateSourceColumnTypeFromExportedColumn(
+                        logicalTable,
+                        changedTypeColumn.logicalName,
+                        sourceColumn
+                );
+            }
+
+            rebuildPhysicalSourceTable(
+                    logicalTable,
+                    sourceAllocation.unwrapOrThrow( AllocationTable.class ),
+                    sourceSchemaName
             );
+            catalog.updateSnapshot();
+            statement.getQueryProcessor().resetCaches();
         }
 
-        log.info( "Catalog refresh finished successfully for table {}", table.name );
+        log.info( "Catalog refresh finished successfully for table {}", logicalTable.name );
+    }
+
+
+    private boolean hasDifferentType( PhysicalColumn physicalColumn, ExportedColumn sourceColumn ) {
+        return physicalColumn.type != sourceColumn.type()
+                || physicalColumn.collectionsType != sourceColumn.collectionsType()
+                || !Objects.equals( physicalColumn.length, sourceColumn.length() )
+                || !Objects.equals( physicalColumn.scale, sourceColumn.scale() )
+                || !Objects.equals( physicalColumn.dimension, sourceColumn.dimension() )
+                || !Objects.equals( physicalColumn.cardinality, sourceColumn.cardinality() )
+                || physicalColumn.nullable != sourceColumn.nullable();
+    }
+
+
+    private void updateSourceColumnTypeFromExportedColumn( LogicalTable table, String columnName, ExportedColumn sourceColumn ) {
+        LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
+
+        catalog.getLogicalRel( table.namespaceId ).setColumnType(
+                logicalColumn.id,
+                sourceColumn.type(),
+                sourceColumn.collectionsType(),
+                sourceColumn.length(),
+                sourceColumn.scale(),
+                sourceColumn.dimension(),
+                sourceColumn.cardinality() );
+        catalog.getLogicalRel( table.namespaceId ).setNullable( logicalColumn.id, sourceColumn.nullable() );
+
+        catalog.updateSnapshot();
     }
 
 

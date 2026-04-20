@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.webui.models.results.RelationalResult;
 
 
@@ -151,4 +152,97 @@ class SourceSchemaRefreshTest {
         }
     }
 
+
+    @Test
+    void refreshRequestUpdatesPolyphenyColumnTypeAfterExternalColumnTypeChanged() throws Exception {
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
+        TestHelper.getInstance();
+
+        try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( DATABASE, USERNAME, PASSWORD ) ) {
+            postgres.execute( "CREATE TABLE public." + SOURCE_TABLE + " (id INTEGER PRIMARY KEY, age INTEGER)" );
+            postgres.execute( "INSERT INTO public." + SOURCE_TABLE + " (id, age) VALUES (1, 30)" );
+
+            TestHelper.addPostgresSource(
+                    ADAPTER_NAME,
+                    postgres.getHost(),
+                    postgres.getPort(),
+                    DATABASE,
+                    USERNAME,
+                    PASSWORD,
+                    "public." + SOURCE_TABLE );
+
+            try {
+                long entityId = TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, SOURCE_TABLE, 30 ).id;
+                assertEquals( PolyType.INTEGER, Catalog.snapshot().rel().getColumn( entityId, "age" ).orElseThrow().type );
+
+                postgres.execute( "ALTER TABLE public." + SOURCE_TABLE + " ALTER COLUMN age TYPE BIGINT" );
+
+                RelationalResult refreshed = TestHelper.sendRefreshRequest( entityId );
+                assertNotNull( refreshed );
+                assertTrue( refreshed.getError() == null || refreshed.getError().isBlank(), "Refresh returned error: " + refreshed.getError() );
+                assertEquals( List.of( "id", "age" ), Arrays.stream( refreshed.getHeader() ).map( h -> h.getName() ).toList() );
+                assertEquals( PolyType.BIGINT.getName(), refreshed.getHeader()[1].dataType );
+                assertEquals( PolyType.BIGINT, Catalog.snapshot().rel().getColumn( entityId, "age" ).orElseThrow().type );
+            } finally {
+                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + ADAPTER_NAME + "\"" );
+            }
+        }
+    }
+
+
+    @Test
+    void refreshRequestAppliesMixedExternalSchemaChanges() throws Exception {
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
+        TestHelper.getInstance();
+
+        try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( DATABASE, USERNAME, PASSWORD ) ) {
+            postgres.execute( "CREATE TABLE public." + SOURCE_TABLE + " (code VARCHAR(16) PRIMARY KEY, name VARCHAR(255), age INTEGER, city VARCHAR(255))" );
+            postgres.execute( "INSERT INTO public." + SOURCE_TABLE + " (code, name, age, city) VALUES " +
+                    "('1', 'Alice', 30, 'Basel'), " +
+                    "('2', 'Bob', 31, 'Zurich'), " +
+                    "('3', 'Carol', 32, 'Bern'), " +
+                    "('4', 'Dave', 33, 'Geneva'), " +
+                    "('5', 'Eve', 34, 'Lausanne'), " +
+                    "('6', 'Frank', 35, 'Lugano'), " +
+                    "('7', 'Grace', 36, 'St. Gallen'), " +
+                    "('8', 'Heidi', 37, 'Lucerne'), " +
+                    "('9', 'Ivan', 38, 'Winterthur'), " +
+                    "('10', 'Judy', 39, 'Biel')" );
+
+            TestHelper.addPostgresSource(
+                    ADAPTER_NAME,
+                    postgres.getHost(),
+                    postgres.getPort(),
+                    DATABASE,
+                    USERNAME,
+                    PASSWORD,
+                    "public." + SOURCE_TABLE );
+
+            try {
+                long entityId = TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, SOURCE_TABLE, 30 ).id;
+                assertEquals( List.of( "code", "name", "age", "city" ), TestHelper.getCatalogColumnNames( entityId ) );
+                assertEquals( PolyType.VARCHAR, Catalog.snapshot().rel().getColumn( entityId, "code" ).orElseThrow().type );
+                assertTrue( Catalog.snapshot().rel().getColumn( entityId, "city" ).orElseThrow().nullable );
+
+                postgres.execute( "ALTER TABLE public." + SOURCE_TABLE + " DROP COLUMN name" );
+                postgres.execute( "ALTER TABLE public." + SOURCE_TABLE + " DROP COLUMN age" );
+                postgres.execute( "ALTER TABLE public." + SOURCE_TABLE + " ADD COLUMN country VARCHAR(255) DEFAULT 'CH' NOT NULL" );
+                postgres.execute( "ALTER TABLE public." + SOURCE_TABLE + " ALTER COLUMN code TYPE INTEGER USING code::integer" );
+                postgres.execute( "ALTER TABLE public." + SOURCE_TABLE + " ALTER COLUMN city SET NOT NULL" );
+
+                RelationalResult refreshed = TestHelper.sendRefreshRequest( entityId );
+                assertNotNull( refreshed );
+                assertTrue( refreshed.getError() == null || refreshed.getError().isBlank(), "Refresh returned error: " + refreshed.getError() );
+                assertEquals( List.of( "code", "city", "country" ), Arrays.stream( refreshed.getHeader() ).map( h -> h.getName() ).toList() );
+                assertEquals( PolyType.INTEGER.getName(), refreshed.getHeader()[0].dataType );
+                assertEquals( 10, refreshed.getData().length );
+                assertEquals( List.of( "code", "city", "country" ), TestHelper.getCatalogColumnNames( entityId ) );
+                assertEquals( PolyType.INTEGER, Catalog.snapshot().rel().getColumn( entityId, "code" ).orElseThrow().type );
+                assertTrue( !Catalog.snapshot().rel().getColumn( entityId, "city" ).orElseThrow().nullable );
+                assertTrue( !Catalog.snapshot().rel().getColumn( entityId, "country" ).orElseThrow().nullable );
+            } finally {
+                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + ADAPTER_NAME + "\"" );
+            }
+        }
+    }
 }

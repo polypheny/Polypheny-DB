@@ -25,6 +25,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -995,11 +996,9 @@ public class TestHelper {
 
 
         private boolean testConnection() {
-            try ( Connection connection = DriverManager.getConnection( String.format( "jdbc:postgresql://%s:%d/%s", host, port, database ), username, password );
-                    Statement statement = connection.createStatement();
-                    ResultSet resultSet = statement.executeQuery( "SELECT 1" ) ) {
-                return resultSet.next();
-            } catch ( SQLException e ) {
+            try {
+                return container.execute( List.of( "psql", "-U", username, "-d", database, "-c", "SELECT 1" ) ) == 0;
+            } catch ( IOException e ) {
                 // Ignore during startup polling.
             }
             return false;
