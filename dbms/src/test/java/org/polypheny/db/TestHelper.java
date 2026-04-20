@@ -25,8 +25,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -66,6 +64,10 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.impl.PolyCatalog;
+import org.polypheny.db.docker.DockerContainer;
+import org.polypheny.db.docker.DockerContainer.HostAndPort;
+import org.polypheny.db.docker.DockerInstance;
+import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.processing.caching.ImplementationCache;
 import org.polypheny.db.processing.caching.QueryPlanCache;
@@ -923,7 +925,12 @@ public class TestHelper {
 
     public static final class DockerPostgres implements AutoCloseable {
 
-        private final String containerName;
+        private static final int POSTGRES_PORT = 5432;
+        private static final long STARTUP_TIMEOUT_MS = TimeUnit.SECONDS.toMillis( 60 );
+
+        private final DockerContainer container;
+        @Getter
+        private final String host;
         @Getter
         private final int port;
         private final String database;
@@ -931,8 +938,9 @@ public class TestHelper {
         private final String password;
 
 
-        private DockerPostgres( String containerName, int port, String database, String username, String password ) {
-            this.containerName = containerName;
+        private DockerPostgres( DockerContainer container, String host, int port, String database, String username, String password ) {
+            this.container = container;
+            this.host = host;
             this.port = port;
             this.database = database;
             this.username = username;
@@ -941,111 +949,60 @@ public class TestHelper {
 
 
         public static DockerPostgres start( String database, String username, String password ) throws Exception {
-            int port = findFreePort();
             String containerName = "polypheny-refresh-test-" + UUID.randomUUID().toString().replace( "-", "" ).substring( 0, 8 );
-            DockerPostgres postgres = new DockerPostgres( containerName, port, database, username, password );
-            postgres.runDockerCommand(
-                    "run",
-                    "-d",
-                    "--name",
-                    containerName,
-                    "-e",
-                    "POSTGRES_DB=" + database,
-                    "-e",
-                    "POSTGRES_USER=" + username,
-                    "-e",
-                    "POSTGRES_PASSWORD=" + password,
-                    "-p",
-                    "127.0.0.1:" + port + ":5432",
-                    "postgres:16-alpine" );
-            postgres.awaitReady();
-            return postgres;
+            DockerInstance instance = DockerManager.getInstance()
+                    .getInstanceById( 0 )
+                    .orElseThrow( () -> new IllegalStateException( "No docker instance with id 0" ) );
+
+            DockerContainer container = instance.newBuilder( "postgres:16-alpine", containerName )
+                    .withEnvironmentVariable( "POSTGRES_DB", database )
+                    .withEnvironmentVariable( "POSTGRES_USER", username )
+                    .withEnvironmentVariable( "POSTGRES_PASSWORD", password )
+                    .createAndStart();
+
+            try {
+                HostAndPort connection = container.connectToContainer( POSTGRES_PORT );
+                String host = connection.host();
+                int port = connection.port();
+                DockerPostgres postgres = new DockerPostgres( container, host, port, database, username, password );
+                if ( !container.waitTillStarted( postgres::testConnection, STARTUP_TIMEOUT_MS ) ) {
+                    throw new IllegalStateException( "PostgreSQL container did not become ready in time" );
+                }
+                return postgres;
+            } catch ( Exception e ) {
+                container.destroy();
+                throw e;
+            }
         }
 
 
         public void execute( String sql ) throws Exception {
-            runDockerCommand(
-                    "exec",
-                    containerName,
-                    "psql",
-                    "-U",
-                    username,
-                    "-d",
-                    database,
-                    "-c",
-                    sql );
-        }
-
-
-        private void awaitReady() throws Exception {
-            int consecutiveSuccesses = 0;
-            for ( int i = 0; i < 60; i++ ) {
-                try {
-                    runDockerCommand(
-                            "exec",
-                            containerName,
-                            "psql",
-                            "-U",
-                            username,
-                            "-d",
-                            database,
-                            "-c",
-                            "SELECT 1" );
-                    consecutiveSuccesses++;
-                    if ( consecutiveSuccesses >= 2 ) {
-                        return;
-                    }
-                } catch ( IllegalStateException e ) {
-                    consecutiveSuccesses = 0;
-                    TimeUnit.SECONDS.sleep( 1 );
-                }
+            int exitCode = container.execute( List.of( "psql", "-U", username, "-d", database, "-c", sql ) );
+            if ( exitCode != 0 ) {
+                throw new IllegalStateException( "PostgreSQL command failed with exit code " + exitCode + ": " + sql );
             }
-            throw new IllegalStateException( "PostgreSQL container did not become ready in time" );
         }
 
 
         @Override
-        public void close() throws Exception {
+        public void close() {
             try {
-                runDockerCommand( "rm", "-f", containerName );
+                container.destroy();
             } catch ( Exception ignored ) {
                 // Ignore cleanup failures to avoid masking test failures.
             }
         }
 
 
-        private String runDockerCommand( String... args ) throws Exception {
-            Process process = new ProcessBuilder( buildDockerCommand( args ) ).redirectErrorStream( true ).start();
-            boolean finished = process.waitFor( 60, TimeUnit.SECONDS );
-            String output = new String( process.getInputStream().readAllBytes() ).trim();
-
-            if ( !finished ) {
-                process.destroyForcibly();
-                throw new IllegalStateException( "Docker command timed out: " + String.join( " ", buildDockerCommand( args ) ) );
+        private boolean testConnection() {
+            try ( Connection connection = DriverManager.getConnection( String.format( "jdbc:postgresql://%s:%d/%s", host, port, database ), username, password );
+                    Statement statement = connection.createStatement();
+                    ResultSet resultSet = statement.executeQuery( "SELECT 1" ) ) {
+                return resultSet.next();
+            } catch ( SQLException e ) {
+                // Ignore during startup polling.
             }
-            if ( process.exitValue() != 0 ) {
-                throw new IllegalStateException(
-                        "Docker command failed (" + process.exitValue() + "): "
-                                + String.join( " ", buildDockerCommand( args ) )
-                                + System.lineSeparator()
-                                + output );
-            }
-            return output;
-        }
-
-
-        private static List<String> buildDockerCommand( String... args ) {
-            List<String> command = new ArrayList<>();
-            command.add( "docker" );
-            command.addAll( List.of( args ) );
-            return command;
-        }
-
-
-        private static int findFreePort() throws IOException {
-            try ( ServerSocket socket = new ServerSocket( 0 ) ) {
-                return socket.getLocalPort();
-            }
+            return false;
         }
 
     }

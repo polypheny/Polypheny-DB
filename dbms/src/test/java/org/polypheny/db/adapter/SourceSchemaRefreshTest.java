@@ -54,7 +54,7 @@ class SourceSchemaRefreshTest {
 
             TestHelper.addPostgresSource(
                     ADAPTER_NAME,
-                    "127.0.0.1",
+                    postgres.getHost(),
                     postgres.getPort(),
                     DATABASE,
                     USERNAME,
@@ -91,7 +91,7 @@ class SourceSchemaRefreshTest {
 
             TestHelper.addPostgresSource(
                     ADAPTER_NAME,
-                    "127.0.0.1",
+                    postgres.getHost(),
                     postgres.getPort(),
                     DATABASE,
                     USERNAME,
@@ -127,7 +127,7 @@ class SourceSchemaRefreshTest {
 
             TestHelper.addPostgresSource(
                     ADAPTER_NAME,
-                    "127.0.0.1",
+                    postgres.getHost(),
                     postgres.getPort(),
                     DATABASE,
                     USERNAME,
