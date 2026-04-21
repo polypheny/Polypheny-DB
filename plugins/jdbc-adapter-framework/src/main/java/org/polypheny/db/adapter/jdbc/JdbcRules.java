@@ -248,9 +248,17 @@ public class JdbcRules {
                 }
                 newInputs.add( input );
             }
-            if ( convertInputTraits && !canJoinOnCondition( join.getCondition() ) ) {
-                return null;
+            if ( convertInputTraits ) {
+                if ( join.getCondition().isAlwaysTrue() ) {
+                    if ( !out.dialect.supportsVector() || !hasVectorColumn( newInputs.get( 0 ) )
+                            || !hasVectorColumn( newInputs.get( 1 ) ) ) {
+                        return null;
+                    }
+                } else if ( !canJoinOnCondition( join.getCondition() ) ) {
+                    return null;
+                }
             }
+
             if ( containsAggregateSubquery( join.getLeft() ) || containsAggregateSubquery( join.getRight() ) ) {
                 return null;
             }
@@ -267,6 +275,12 @@ public class JdbcRules {
                 LOGGER.debug( e.toString() );
                 return null;
             }
+        }
+
+
+        private boolean hasVectorColumn( AlgNode input ) {
+            return input.getTupleType().getFields().stream()
+                    .anyMatch( f -> f.getType() instanceof VectorType );
         }
 
 
@@ -605,7 +619,7 @@ public class JdbcRules {
             CheckingKnnFunctionSupportVisitor visitor = new CheckingKnnFunctionSupportVisitor( dialect );
             for ( RexNode node : project.getChildExps() ) {
                 node.accept( visitor );
-                if ( visitor.supportsKNNFunction() ) {
+                if ( visitor.supportsKnnFunction() ) {
                     return true;
                 }
             }
@@ -738,7 +752,7 @@ public class JdbcRules {
             CheckingKnnFunctionSupportVisitor visitor = new CheckingKnnFunctionSupportVisitor( dialect );
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );
-                if ( visitor.supportsKNNFunction() ) {
+                if ( visitor.supportsKnnFunction() ) {
                     return true;
                 }
             }
@@ -796,7 +810,8 @@ public class JdbcRules {
 
         private static boolean isStringComparableArrayType( Filter filter ) {
             for ( AlgDataTypeField dataTypeField : filter.getTupleType().getFields() ) {
-                if ( dataTypeField.getType().getPolyType() == PolyType.ARRAY ) {
+                if ( dataTypeField.getType().getPolyType() == PolyType.ARRAY
+                        && !(dataTypeField.getType() instanceof VectorType) ) {
                     switch ( dataTypeField.getType().getComponentType().getPolyType() ) {
                         case BOOLEAN:
                         case TINYINT:
@@ -1560,7 +1575,7 @@ public class JdbcRules {
         }
 
 
-        public boolean supportsKNNFunction() {
+        public boolean supportsKnnFunction() {
             return supportsKnnFunction;
         }
 
