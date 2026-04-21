@@ -143,10 +143,7 @@ public interface AlgDataTypeFactory {
      * @param dimension   the fixed number of elements in the vector
      * @return canonical vector type descriptor
      */
-    default AlgDataType createVectorType( AlgDataType elementType, long dimension
-    ) {
-        return createArrayType( elementType, dimension, 1 );
-    }
+    AlgDataType createVectorType( AlgDataType elementType, long dimension );
 
     /**
      * Creates a map type. Maps are unordered collections of key/value pairs.
