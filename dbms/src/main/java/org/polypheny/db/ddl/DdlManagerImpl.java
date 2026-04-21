@@ -604,7 +604,9 @@ public class DdlManagerImpl extends DdlManager {
                 .sorted( Comparator.comparingInt( PhysicalColumn::getPosition ) )
                 .toList();
 
-        if ( missingColumns.isEmpty() && droppedColumns.isEmpty() && changedTypeColumns.isEmpty() ) {
+        boolean hasReorderedColumns = hasReorderedColumns( logicalTable, currentSourceColumns );
+
+        if ( missingColumns.isEmpty() && droppedColumns.isEmpty() && changedTypeColumns.isEmpty() && !hasReorderedColumns ) {
             log.info( "No schema refresh needed for table {}", logicalTable.name );
             return;
         }
@@ -667,7 +669,79 @@ public class DdlManagerImpl extends DdlManager {
             statement.getQueryProcessor().resetCaches();
         }
 
+        if ( syncSourceColumnPositions( logicalTable, sourceAllocation, sourceSchemaName, currentSourceColumns, statement ) ) {
+            log.info( "Updated source column order for table '{}'", logicalTable.name );
+        }
+
         log.info( "Catalog refresh finished successfully for table {}", logicalTable.name );
+    }
+
+
+    private boolean hasReorderedColumns( LogicalTable table, List<ExportedColumn> sourceColumns ) {
+        Map<String, LogicalColumn> logicalColumnsByName = catalog.getSnapshot().rel().getColumns( table.id ).stream()
+                .collect( Collectors.toMap( c -> c.name.toLowerCase(), c -> c, ( left, right ) -> left ) );
+
+        List<ExportedColumn> sortedSourceColumns = sourceColumns.stream()
+                .filter( c -> logicalColumnsByName.containsKey( c.physicalColumnName().toLowerCase() ) )
+                .sorted( Comparator.comparingInt( ExportedColumn::physicalPosition ) )
+                .toList();
+
+        for ( int i = 0; i < sortedSourceColumns.size(); i++ ) {
+            LogicalColumn logicalColumn = logicalColumnsByName.get( sortedSourceColumns.get( i ).physicalColumnName().toLowerCase() );
+            if ( logicalColumn.position != i + 1 ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    private boolean syncSourceColumnPositions( LogicalTable table, AllocationEntity allocation, String sourceSchemaName, List<ExportedColumn> sourceColumns, Statement statement ) {
+        Map<String, LogicalColumn> logicalColumnsByName = catalog.getSnapshot().rel().getColumns( table.id ).stream()
+                .collect( Collectors.toMap( c -> c.name.toLowerCase(), c -> c, ( left, right ) -> left ) );
+
+        Map<Long, AllocationColumn> allocationColumnsByColumnId = catalog.getSnapshot().alloc().getColumns( allocation.placementId ).stream()
+                .collect( Collectors.toMap( c -> c.columnId, c -> c, ( left, right ) -> left ) );
+
+        List<ExportedColumn> sortedSourceColumns = sourceColumns.stream()
+                .filter( c -> logicalColumnsByName.containsKey( c.physicalColumnName().toLowerCase() ) )
+                .sorted( Comparator.comparingInt( ExportedColumn::physicalPosition ) )
+                .toList();
+
+        boolean changed = false;
+        for ( int i = 0; i < sortedSourceColumns.size(); i++ ) {
+            int position = i + 1;
+            LogicalColumn logicalColumn = logicalColumnsByName.get( sortedSourceColumns.get( i ).physicalColumnName().toLowerCase() );
+            if ( logicalColumn.position != position ) {
+                catalog.getLogicalRel( table.namespaceId ).setColumnPosition( logicalColumn.id, position );
+                changed = true;
+            }
+
+            AllocationColumn allocationColumn = allocationColumnsByColumnId.get( logicalColumn.id );
+            if ( allocationColumn != null && allocationColumn.position != position ) {
+                catalog.getAllocRel( table.namespaceId ).deleteColumn( allocationColumn.placementId, allocationColumn.columnId );
+                catalog.getAllocRel( table.namespaceId ).addColumn(
+                        allocationColumn.placementId,
+                        allocationColumn.logicalTableId,
+                        allocationColumn.columnId,
+                        allocationColumn.adapterId,
+                        allocationColumn.placementType,
+                        position );
+                changed = true;
+            }
+        }
+
+        if ( changed ) {
+            catalog.updateSnapshot();
+            rebuildPhysicalSourceTable(
+                    table,
+                    allocation.unwrapOrThrow( AllocationTable.class ),
+                    sourceSchemaName
+            );
+            catalog.updateSnapshot();
+            statement.getQueryProcessor().resetCaches();
+        }
+        return changed;
     }
 
 
