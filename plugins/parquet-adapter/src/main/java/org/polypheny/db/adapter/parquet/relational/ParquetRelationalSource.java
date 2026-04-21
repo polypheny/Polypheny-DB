@@ -208,9 +208,18 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
     }
 
 
+    /**
+     * converts DiscoveredTableBinding into ParquetTableBinding
+     * @param tableName - generated table name
+     * @param table - physical table
+     * @return ParquetTableBinding - column bindings are stored by physical column id
+     */
     private ParquetTableBinding getDiscoveredTableBinding( String tableName, PhysicalTable table ) {
+        // Get or build normalized schema
         ParquetNormalizedSchema normalizedSchema = getNormalizedSchema();
+        // find binding for this table
         DiscoveredTableBinding binding = normalizedSchema.getBinding( tableName );
+        // if missing in normalized mode - rebuild
         if ( binding == null && getConfiguredSchemaMode() == ParquetSchemaMode.NORMALIZED ) {
             clearNormalizedExportCache();
             normalizedSchema = getNormalizedSchema();
@@ -220,13 +229,25 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
             if ( getConfiguredSchemaMode() == ParquetSchemaMode.NORMALIZED ) {
                 throw new GenericRuntimeException( "Missing normalized Parquet binding for generated table: %s", tableName );
             }
+            // Flat tables do not have DiscoveredTableBinding,
+            // because they come from AbstractParquetSource.getExportedColumns() not ParquetSchemaNormalizer
             return createFlatTableBinding( tableName, table );
         }
+        // Convert discovered bindings to final ParquetTableBinding, where column bindings are stored by physical column id
         return ParquetTableBinding.createTableBindingFromColumnPaths( binding.sourceUrl(), binding.parentTableName(), binding.sourcePathElements(), table, binding.columnPaths() );
     }
 
 
+    /**
+     * Creates a ParquetTableBinding for a flat-mode table.
+     * Flat-mode tables do not come from ParquetSchemaNormalizer, so they do not have a DiscoveredTableBinding.
+     * But we still want a persisted ParquetTableBinding for them so restore/scanning uses the same binding infrastructure.
+     * @param tableName - generated table name
+     * @param table - physical table
+     * @return - ParquetTableBinding
+     */
     private ParquetTableBinding createFlatTableBinding( String tableName, PhysicalTable table ) {
+        // flat mode is implemented in AbstractParquetSource
         List<ExportedColumn> exportedColumns = super.getExportedColumns().get( tableName );
         if ( exportedColumns == null || exportedColumns.isEmpty() ) {
             return currentNamespace.createRootBinding( table );
@@ -234,6 +255,7 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
 
         try {
             Map<String, List<String>> columnPaths = new LinkedHashMap<>();
+            // Build column path map like order_id -> ["order_id"]
             exportedColumns.forEach( column -> columnPaths.put( column.name(), List.of( column.physicalColumnName() ) ) );
             String sourceUrl = ParquetUrlResolver.resolveFile( parquetDir, exportedColumns.get( 0 ).physicalSchemaName() ).toString();
             return ParquetTableBinding.createTableBindingFromColumnPaths( sourceUrl, null, List.of(), table, columnPaths );
@@ -247,6 +269,11 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
         normalizedSchema = null;
     }
 
+
+    /**
+     * get normalized schema from ParquetSchemaNormalizer
+     * @return ParquetNormalizedSchema
+     */
     private ParquetNormalizedSchema getNormalizedSchema() {
         if ( connectionMethod == ConnectionMethod.UPLOAD && normalizedSchema != null ) {
             return normalizedSchema;

@@ -45,6 +45,7 @@ public class ParquetNamespace extends Namespace {
      */
     public ParquetRelTable createParquetTable( long id, PhysicalTable table, ParquetTableBinding binding, AbstractParquetSource sourceAdapter ) {
         try {
+            // source file comes from the binding, not from the generated table name
             Source parquetSource = Sources.of( new URL( binding.sourceUrl() ) );
             return new ParquetRelTable( id, parquetSource, table, binding, sourceAdapter );
 

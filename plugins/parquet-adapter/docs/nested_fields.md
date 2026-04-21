@@ -7,16 +7,16 @@ orders.parquet
 root
 |- order_id: int64
 |- customer: string
-`- items: repeated group
+ - items: repeated group
    |- sku: string
    |- quantity: int32
-   `- discounts: repeated group
+   - discounts: repeated group
       |- code: string
-      `- amount: decimal
+      |- amount: decimal
 ```
 
 ## Flat Mode
-preserve the Parquet file as one table
+- Preserve the Parquet file as one table
 
 **_orders_**
 
@@ -33,7 +33,8 @@ orders.parquet
 ```
 
 ## Normalized Mode
-split nested structures into generated relational child tables
+- Split nested structures into generated relational child tables
+- NEED TO STORE ADDITIONAL INFORMATION
 
 **_orders_**
 
@@ -72,6 +73,21 @@ JOIN orders__items i
   ON i.__polypheny_parent_row_id = o.__polypheny_row_id;
 
 ```
+## Example with unique table names:
+
+### Flat result:
+```
+parquetrelational1__orders -> [order_id, customer_id, status, ...]
+```
+
+### Normalized result:
+```
+parquetrelational1__orders -> [order_id, customer_id, status, total_price]
+parquetrelational1__orders__items -> [order_item_id, product_id, quantity, price]
+parquetrelational1__orders__items__discounts -> [code, amount]
+```
+
+
 ## Behavior:
 
 - All relational Parquet table names are adapter-prefixed, both flat and normalized. <br>
@@ -224,3 +240,9 @@ ParquetRelTable changed from a simple wrapper that always scanned Parquet column
 ### ParquetNamespace
 `Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\shared\schema\ParquetNamespace.java`
 Make relational table creation binding-aware.
+
+## Flow
+
+![Schema display](diagrams/nested_fields_flow_simple.png)
+
+![Schema display](diagrams/nested_fields_flow.png)
