@@ -245,6 +245,23 @@ public class TestHelper {
     }
 
 
+    public static void addMysqlSource( String name, String host, int port, String database, String username, String password, String table ) throws SQLException {
+        executeSQL(
+                "ALTER ADAPTERS ADD \"" + name + "\" USING 'MySQL' AS 'Source' WITH "
+                        + "'{"
+                        + "\"mode\":\"remote\","
+                        + "\"host\":\"" + host + "\","
+                        + "\"port\":\"" + port + "\","
+                        + "\"database\":\"" + database + "\","
+                        + "\"username\":\"" + username + "\","
+                        + "\"password\":\"" + password + "\","
+                        + "\"maxConnections\":\"25\","
+                        + "\"transactionIsolation\":\"SERIALIZABLE\","
+                        + "\"tables\":\"" + table + "\""
+                        + "}'" );
+    }
+
+
     public static void executeSQL( Statement statement, String sql ) throws SQLException {
         statement.execute( sql );
     }
@@ -818,6 +835,11 @@ public class TestHelper {
     }
 
 
+    public static DockerMysql startMysqlDocker( String database, String username, String password ) throws Exception {
+        return DockerMysql.start( database, username, password );
+    }
+
+
     @Getter
     public static class JdbcConnection implements AutoCloseable {
 
@@ -998,6 +1020,91 @@ public class TestHelper {
         private boolean testConnection() {
             try {
                 return container.execute( List.of( "psql", "-U", username, "-d", database, "-c", "SELECT 1" ) ) == 0;
+            } catch ( IOException e ) {
+                // Ignore during startup polling.
+            }
+            return false;
+        }
+
+    }
+
+
+    public static final class DockerMysql implements AutoCloseable {
+
+        private static final int MYSQL_PORT = 3306;
+        private static final long STARTUP_TIMEOUT_MS = TimeUnit.SECONDS.toMillis( 60 );
+        private static final String ROOT_PASSWORD = "polypheny-root";
+
+        private final DockerContainer container;
+        @Getter
+        private final String host;
+        @Getter
+        private final int port;
+        private final String database;
+        private final String username;
+        private final String password;
+
+
+        private DockerMysql( DockerContainer container, String host, int port, String database, String username, String password ) {
+            this.container = container;
+            this.host = host;
+            this.port = port;
+            this.database = database;
+            this.username = username;
+            this.password = password;
+        }
+
+
+        public static DockerMysql start( String database, String username, String password ) throws Exception {
+            String containerName = "polypheny-refresh-mysql-test-" + UUID.randomUUID().toString().replace( "-", "" ).substring( 0, 8 );
+            DockerInstance instance = DockerManager.getInstance()
+                    .getInstanceById( 0 )
+                    .orElseThrow( () -> new IllegalStateException( "No docker instance with id 0" ) );
+
+            DockerContainer container = instance.newBuilder( "mysql:8.4", containerName )
+                    .withEnvironmentVariable( "MYSQL_DATABASE", database )
+                    .withEnvironmentVariable( "MYSQL_USER", username )
+                    .withEnvironmentVariable( "MYSQL_PASSWORD", password )
+                    .withEnvironmentVariable( "MYSQL_ROOT_PASSWORD", ROOT_PASSWORD )
+                    .createAndStart();
+
+            try {
+                HostAndPort connection = container.connectToContainer( MYSQL_PORT );
+                String host = connection.host();
+                int port = connection.port();
+                DockerMysql mysql = new DockerMysql( container, host, port, database, username, password );
+                if ( !container.waitTillStarted( mysql::testConnection, STARTUP_TIMEOUT_MS ) ) {
+                    throw new IllegalStateException( "MySQL container did not become ready in time" );
+                }
+                return mysql;
+            } catch ( Exception e ) {
+                container.destroy();
+                throw e;
+            }
+        }
+
+
+        public void execute( String sql ) throws Exception {
+            int exitCode = container.execute( List.of( "mysql", "-u", username, "-p" + password, database, "-e", sql ) );
+            if ( exitCode != 0 ) {
+                throw new IllegalStateException( "MySQL command failed with exit code " + exitCode + ": " + sql );
+            }
+        }
+
+
+        @Override
+        public void close() {
+            try {
+                container.destroy();
+            } catch ( Exception ignored ) {
+                // Ignore cleanup failures to avoid masking test failures.
+            }
+        }
+
+
+        private boolean testConnection() {
+            try {
+                return container.execute( List.of( "mysql", "-u", username, "-p" + password, database, "-e", "SELECT 1" ) ) == 0;
             } catch ( IOException e ) {
                 // Ignore during startup polling.
             }

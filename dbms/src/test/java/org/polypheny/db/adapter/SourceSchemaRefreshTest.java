@@ -191,6 +191,46 @@ class SourceSchemaRefreshTest {
 
 
     @Test
+    void refreshRequestUpdatesPolyphenyColumnOrderAfterExternalColumnsWereReordered() throws Exception {
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for MySQL integration tests" );
+        TestHelper.getInstance();
+
+        try ( TestHelper.DockerMysql mysql = TestHelper.startMysqlDocker( DATABASE, USERNAME, PASSWORD ) ) {
+            mysql.execute( "CREATE TABLE " + SOURCE_TABLE + " (id INTEGER PRIMARY KEY, name VARCHAR(255), city VARCHAR(255))" );
+            mysql.execute( "INSERT INTO " + SOURCE_TABLE + " (id, name, city) VALUES " +
+                    "(1, 'Alice', 'Basel'), " +
+                    "(2, 'Bob', 'Zurich'), " +
+                    "(3, 'Carol', 'Bern')" );
+
+            TestHelper.addMysqlSource(
+                    ADAPTER_NAME,
+                    mysql.getHost(),
+                    mysql.getPort(),
+                    DATABASE,
+                    USERNAME,
+                    PASSWORD,
+                    SOURCE_TABLE );
+
+            try {
+                long entityId = TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, SOURCE_TABLE, 30 ).id;
+                assertEquals( List.of( "id", "name", "city" ), TestHelper.getCatalogColumnNames( entityId ) );
+
+                mysql.execute( "ALTER TABLE " + SOURCE_TABLE + " MODIFY COLUMN city VARCHAR(255) FIRST" );
+
+                RelationalResult refreshed = TestHelper.sendRefreshRequest( entityId );
+                assertNotNull( refreshed );
+                assertTrue( refreshed.getError() == null || refreshed.getError().isBlank(), "Refresh returned error: " + refreshed.getError() );
+                assertEquals( List.of( "city", "id", "name" ), Arrays.stream( refreshed.getHeader() ).map( h -> h.getName() ).toList() );
+                assertEquals( 3, refreshed.getData().length );
+                assertEquals( List.of( "city", "id", "name" ), TestHelper.getCatalogColumnNames( entityId ) );
+            } finally {
+                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + ADAPTER_NAME + "\"" );
+            }
+        }
+    }
+
+
+    @Test
     void refreshRequestAppliesMixedExternalSchemaChanges() throws Exception {
         Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
         TestHelper.getInstance();
