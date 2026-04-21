@@ -24,7 +24,6 @@ import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -159,26 +158,6 @@ public abstract class DdlManager {
     public abstract void addColumnToSourceTable( LogicalTable table, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, PolyValue defaultValue, Statement statement );
 
     /**
-     * Adds a new column to a source table based on metadata retrieved from the underlying data source.
-     *
-     * @param table the logical table to which the column should be added
-     * @param exportedColumn the column metadata retrieved from the data source
-     * @param columnLogicalName the logical name of the new column in Polypheny
-     * @param beforeColumnName the name of the column before the column which is inserted; can be {@code null}
-     * @param afterColumnName the name of the column after the column, which is inserted; can be {@code null}
-     * @param defaultValue defaultValue the default value of the new column; can be {@code null}
-     * @param statement the statement used to execute the DDL operation
-     */
-    public abstract void addColumnToSourceTableFromExportedColumn(
-            LogicalTable table,
-            ExportedColumn exportedColumn,
-            String columnLogicalName,
-            String beforeColumnName,
-            String afterColumnName,
-            PolyValue defaultValue,
-            Statement statement );
-
-    /**
      * Refreshes the catalog schema of a source table if it differs from the underlying source.
      *
      * @param entityId the id of the logical source table to refresh
@@ -278,20 +257,6 @@ public abstract class DdlManager {
      */
     public abstract void dropColumn( LogicalTable table, String columnName, Statement statement );
 
-
-    /**
-     * Drops a column from a source table during schema refresh.
-     * <p>
-     * This method is intended for use in schema synchronization scenarios where
-     * the underlying external data source has removed a column. In addition to
-     * updating the Polypheny catalog, this method may trigger a rebuild of the
-     * physical table representation to ensure consistency with the external source.
-     *
-     * @param table the logical source table from which the column should be removed
-     * @param columnName the name of the column to drop
-     * @param statement the statement used to execute the operation
-     */
-    public abstract void dropColumnFromSourceTableRefresh( LogicalTable table, String columnName, Statement statement );
 
     /**
      * Drop a specific constraint from a table

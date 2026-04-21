@@ -268,7 +268,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         try {
             Statement ddlStatement = transaction.createStatement();
             DdlManager.getInstance().refreshSourceSchemaIfNeeded( request.entityId, ddlStatement );
-            Catalog.getInstance().updateSnapshot();
             transaction.commit();
         } catch ( Exception e ) {
             try {
