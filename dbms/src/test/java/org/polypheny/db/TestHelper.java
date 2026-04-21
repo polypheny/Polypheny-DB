@@ -1104,7 +1104,14 @@ public class TestHelper {
 
         private boolean testConnection() {
             try {
-                return container.execute( List.of( "mysql", "-u", username, "-p" + password, database, "-e", "SELECT 1" ) ) == 0;
+                return container.execute( List.of(
+                        "mysql",
+                        "-u",
+                        username,
+                        "-p" + password,
+                        database,
+                        "-e",
+                        "CREATE TABLE IF NOT EXISTS __polypheny_ready_check (id INT); DROP TABLE __polypheny_ready_check" ) ) == 0;
             } catch ( IOException e ) {
                 // Ignore during startup polling.
             }
