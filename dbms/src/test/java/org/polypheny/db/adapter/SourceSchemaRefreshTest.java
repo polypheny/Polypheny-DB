@@ -231,6 +231,48 @@ class SourceSchemaRefreshTest {
 
 
     @Test
+    void refreshRequestUpdatesPrimaryKeyAfterExternalPrimaryKeyChanged() throws Exception {
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
+        TestHelper.getInstance();
+
+        try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( DATABASE, USERNAME, PASSWORD ) ) {
+            postgres.execute( "CREATE TABLE public." + SOURCE_TABLE + " (id INTEGER, name VARCHAR(255) NOT NULL, city VARCHAR(255), CONSTRAINT refresh_pk PRIMARY KEY (id))" );
+            postgres.execute( "INSERT INTO public." + SOURCE_TABLE + " (id, name, city) VALUES " +
+                    "(1, 'Alice', 'Basel'), " +
+                    "(2, 'Bob', 'Zurich'), " +
+                    "(3, 'Carol', 'Bern')" );
+
+            TestHelper.addPostgresSource(
+                    ADAPTER_NAME,
+                    postgres.getHost(),
+                    postgres.getPort(),
+                    DATABASE,
+                    USERNAME,
+                    PASSWORD,
+                    "public." + SOURCE_TABLE );
+
+            try {
+                long entityId = TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, SOURCE_TABLE, 30 ).id;
+                assertEquals( List.of( "id" ), getPrimaryKeyColumnNames( entityId ) );
+
+                postgres.execute( "ALTER TABLE public." + SOURCE_TABLE + " DROP CONSTRAINT refresh_pk" );
+                postgres.execute( "ALTER TABLE public." + SOURCE_TABLE + " ADD CONSTRAINT refresh_pk PRIMARY KEY (name)" );
+                postgres.execute( "ALTER TABLE public." + SOURCE_TABLE + " DROP COLUMN id" );
+
+                RelationalResult refreshed = TestHelper.sendRefreshRequest( entityId );
+                assertNotNull( refreshed );
+                assertTrue( refreshed.getError() == null || refreshed.getError().isBlank(), "Refresh returned error: " + refreshed.getError() );
+                assertEquals( List.of( "name", "city" ), Arrays.stream( refreshed.getHeader() ).map( h -> h.getName() ).toList() );
+                assertEquals( List.of( "name", "city" ), TestHelper.getCatalogColumnNames( entityId ) );
+                assertEquals( List.of( "name" ), getPrimaryKeyColumnNames( entityId ) );
+            } finally {
+                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + ADAPTER_NAME + "\"" );
+            }
+        }
+    }
+
+
+    @Test
     void refreshRequestAppliesMixedExternalSchemaChanges() throws Exception {
         Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
         TestHelper.getInstance();
@@ -284,5 +326,16 @@ class SourceSchemaRefreshTest {
                 TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + ADAPTER_NAME + "\"" );
             }
         }
+    }
+
+
+    private static List<String> getPrimaryKeyColumnNames( long entityId ) {
+        Long primaryKey = Catalog.snapshot().rel().getTable( entityId ).orElseThrow().primaryKey;
+        if ( primaryKey == null ) {
+            return List.of();
+        }
+        return Catalog.snapshot().rel().getPrimaryKey( primaryKey ).orElseThrow().fieldIds.stream()
+                .map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow().name )
+                .toList();
     }
 }

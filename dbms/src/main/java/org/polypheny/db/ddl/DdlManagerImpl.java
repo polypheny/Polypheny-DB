@@ -584,8 +584,9 @@ public class DdlManagerImpl extends DdlManager {
                 .toList();
 
         boolean hasReorderedColumns = hasReorderedColumns( currentLogicalColumns, orderedSourceColumns );
+        boolean hasChangedPrimaryKey = hasChangedPrimaryKey( logicalTable, currentLogicalColumns, orderedSourceColumns, snapshot.rel() );
 
-        if ( missingColumns.isEmpty() && droppedColumns.isEmpty() && changedTypeColumns.isEmpty() && !hasReorderedColumns ) {
+        if ( missingColumns.isEmpty() && droppedColumns.isEmpty() && changedTypeColumns.isEmpty() && !hasReorderedColumns && !hasChangedPrimaryKey ) {
             log.info( "No schema refresh needed for table {}", logicalTable.name );
             return;
         }
@@ -595,31 +596,6 @@ public class DdlManagerImpl extends DdlManager {
                 .filter( c -> c.logicalTableId == logicalTable.id )
                 .sorted( Comparator.comparingInt( AllocationColumn::getPosition ) )
                 .collect( Collectors.toCollection( ArrayList::new ) );
-
-        ImmutableList<Long> refreshedPkIds = ImmutableList.of();
-        if ( logicalTable.primaryKey != null ) {
-            refreshedPkIds = snapshot.rel().getPrimaryKey( logicalTable.primaryKey )
-                    .map( pk -> ImmutableList.copyOf( pk.fieldIds ) )
-                    .orElse( ImmutableList.of() );
-        }
-
-        for ( LogicalColumn dropped : droppedColumns ) {
-            log.info(
-                    "Dropping removed source column '{}' from table '{}'",
-                    dropped.name,
-                    logicalTable.name
-            );
-
-            dropRemovedSourceColumnForRefresh(
-                    logicalTable,
-                    dropped,
-                    statement,
-                    snapshot.rel(),
-                    snapshot.alloc().getColumnFromLogical( dropped.id ).orElse( List.of() ),
-                    refreshedLogicalColumns,
-                    refreshedAllocationColumns
-            );
-        }
 
         for ( ExportedColumn missing : missingColumns ) {
             log.info(
@@ -657,6 +633,27 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
+        ImmutableList<Long> refreshedPkIds = syncSourcePrimaryKeyForRefresh( logicalTable, orderedSourceColumns, refreshedLogicalColumns, statement );
+
+        for ( LogicalColumn dropped : droppedColumns ) {
+            log.info(
+                    "Dropping removed source column '{}' from table '{}'",
+                    dropped.name,
+                    logicalTable.name
+            );
+
+            dropRemovedSourceColumnForRefresh(
+                    logicalTable,
+                    dropped,
+                    statement,
+                    snapshot.rel(),
+                    snapshot.alloc().getColumnFromLogical( dropped.id ).orElse( List.of() ),
+                    refreshedLogicalColumns,
+                    refreshedAllocationColumns,
+                    refreshedPkIds
+            );
+        }
+
         if ( syncSourceColumnPositionsForRefresh( logicalTable, sourceAllocation, orderedSourceColumns, refreshedLogicalColumns, refreshedAllocationColumns ) ) {
             log.info( "Updated source column order for table '{}'", logicalTable.name );
         }
@@ -683,9 +680,10 @@ public class DdlManagerImpl extends DdlManager {
             LogicalRelSnapshot relSnapshot,
             List<AllocationColumn> allocationColumnsForDroppedColumn,
             List<LogicalColumn> refreshedLogicalColumns,
-            List<AllocationColumn> refreshedAllocationColumns ) {
+            List<AllocationColumn> refreshedAllocationColumns,
+            List<Long> refreshedPkIds ) {
 
-        validateDropColumn( table, column, statement, relSnapshot, refreshedLogicalColumns );
+        validateDropColumn( table, column, statement, relSnapshot, refreshedLogicalColumns, refreshedPkIds );
         deleteColumnFromCatalog( table, statement, column, allocationColumnsForDroppedColumn );
         refreshedLogicalColumns.removeIf( c -> c.id == column.id );
         refreshedAllocationColumns.removeIf( c -> c.columnId == column.id );
@@ -891,7 +889,8 @@ public class DdlManagerImpl extends DdlManager {
             LogicalColumn column,
             Statement statement,
             LogicalRelSnapshot snapshot,
-            List<LogicalColumn> columns ) {
+            List<LogicalColumn> columns,
+            List<Long> refreshedPkIds ) {
 
         if ( columns.size() < 2 ) {
             throw new GenericRuntimeException( "Cannot drop sole column of table %s", table.name );
@@ -903,7 +902,10 @@ public class DdlManagerImpl extends DdlManager {
         for ( LogicalKey key : snapshot.getTableKeys( table.id ) ) {
             if ( key.fieldIds.contains( column.id ) ) {
                 if ( snapshot.isPrimaryKey( key.id ) ) {
-                    throw new GenericRuntimeException( "Cannot drop column '" + column.name + "' because it is part of the primary key." );
+                    if ( refreshedPkIds.contains( column.id ) ) {
+                        throw new GenericRuntimeException( "Cannot drop column '" + column.name + "' because it is part of the primary key." );
+                    }
+                    continue;
                 } else if ( snapshot.isIndex( key.id ) ) {
                     throw new GenericRuntimeException( "Cannot drop column '" + column.name + "' because it is part of the index with the name: '" + snapshot.getIndexes( key ).get( 0 ).name + "'." );
                 } else if ( snapshot.isForeignKey( key.id ) ) {
@@ -944,6 +946,60 @@ public class DdlManagerImpl extends DdlManager {
                 return;
             }
         }
+    }
+
+
+    private ImmutableList<Long> syncSourcePrimaryKeyForRefresh(
+            LogicalTable table,
+            List<ExportedColumn> orderedSourceColumns,
+            List<LogicalColumn> refreshedLogicalColumns,
+            Statement statement ) {
+
+        List<Long> sourcePkIds = getSourcePrimaryKeyIds( orderedSourceColumns, refreshedLogicalColumns );
+        List<Long> currentPkIds = getCurrentPrimaryKeyIds( table, catalog.getSnapshot().rel() );
+
+        if ( sourcePkIds.equals( currentPkIds ) ) {
+            return ImmutableList.copyOf( sourcePkIds );
+        }
+
+        LogicalRelationalCatalog logicalCatalog = catalog.getLogicalRel( table.namespaceId );
+        if ( sourcePkIds.isEmpty() ) {
+            log.info( "Dropping removed source primary key on table '{}'", table.name );
+            logicalCatalog.deletePrimaryKey( table.id );
+            return ImmutableList.of();
+        }
+
+        log.info( "Updating source primary key on table '{}'", table.name );
+        logicalCatalog.addPrimaryKey( table.id, sourcePkIds, statement );
+        return ImmutableList.copyOf( sourcePkIds );
+    }
+
+
+    private boolean hasChangedPrimaryKey( LogicalTable table, List<LogicalColumn> currentLogicalColumns, List<ExportedColumn> orderedSourceColumns, LogicalRelSnapshot snapshot ) {
+        return !getSourcePrimaryKeyIds( orderedSourceColumns, currentLogicalColumns ).equals( getCurrentPrimaryKeyIds( table, snapshot ) );
+    }
+
+
+    private List<Long> getSourcePrimaryKeyIds( List<ExportedColumn> orderedSourceColumns, List<LogicalColumn> logicalColumns ) {
+        Map<String, LogicalColumn> logicalColumnsByName = logicalColumns.stream()
+                .collect( Collectors.toMap( c -> normalizeIdentifier( c.name ), c -> c, ( left, right ) -> left ) );
+
+        return orderedSourceColumns.stream()
+                .filter( ExportedColumn::primary )
+                .map( c -> logicalColumnsByName.get( normalizeIdentifier( c.physicalColumnName() ) ) )
+                .filter( Objects::nonNull )
+                .map( c -> c.id )
+                .toList();
+    }
+
+
+    private List<Long> getCurrentPrimaryKeyIds( LogicalTable table, LogicalRelSnapshot snapshot ) {
+        if ( table.primaryKey == null ) {
+            return List.of();
+        }
+        return snapshot.getPrimaryKey( table.primaryKey )
+                .map( pk -> List.copyOf( pk.fieldIds ) )
+                .orElse( List.of() );
     }
 
 
@@ -1437,7 +1493,7 @@ public class DdlManagerImpl extends DdlManager {
         LogicalColumn column = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
         LogicalRelSnapshot snapshot = catalog.getSnapshot().rel();
 
-        validateDropColumn( table, column, statement, snapshot, columns );
+        validateDropColumn( table, column, statement, snapshot, columns, getCurrentPrimaryKeyIds( table, snapshot ) );
         deleteColumnFromCatalog( table, statement, column, catalog.getSnapshot().alloc().getColumnFromLogical( column.id ).orElseThrow() );
         if ( column.position != columns.size() ) {
             // Update position of the other columns
