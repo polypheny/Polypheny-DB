@@ -547,8 +547,18 @@ public class DdlManagerImpl extends DdlManager {
                     .toList();
         }
 
+        List<ExportedColumn> orderedSourceColumns = currentSourceColumns.stream()
+                .sorted( Comparator.comparingInt( ExportedColumn::physicalPosition ) )
+                .toList();
+
+        Set<String> sourcePhysicalColumnNames = orderedSourceColumns.stream()
+                .map( c -> normalizeIdentifier( c.physicalColumnName() ) )
+                .collect( Collectors.toSet() );
+
+        Map<String, ExportedColumn> sourceColumnsByPhysicalName = orderedSourceColumns.stream()
+                .collect( Collectors.toMap( c -> normalizeIdentifier( c.physicalColumnName() ), c -> c, ( left, right ) -> left ) );
+
         List<LogicalColumn> currentLogicalColumns = sortByPosition( snapshot.rel().getColumns( logicalTable.id ) );
-        DesiredSourceLayout desiredSourceLayout = buildDesiredSourceLayout( currentSourceColumns, currentLogicalColumns );
 
         // Names of columns currently known in Polypheny's physical representation
         Set<String> polyphenyPhysicalColumnNames = currentPolyphenyPhysicalTable.columns.stream()
@@ -556,24 +566,24 @@ public class DdlManagerImpl extends DdlManager {
                 .collect( Collectors.toSet() );
 
         // Columns that exist in the source but not yet in Polypheny
-        List<ExportedColumn> missingColumns = desiredSourceLayout.orderedColumns().stream()
+        List<ExportedColumn> missingColumns = orderedSourceColumns.stream()
                 .filter( c -> !polyphenyPhysicalColumnNames.contains( normalizeIdentifier( c.physicalColumnName() ) ) )
                 .toList();
 
         // Columns that exist in Polypheny but no longer exist in the source
         List<LogicalColumn> droppedColumns = currentLogicalColumns.stream()
-                .filter( logicalColumn -> !desiredSourceLayout.physicalColumnNames().contains( normalizeIdentifier( logicalColumn.name ) ) )
+                .filter( logicalColumn -> !sourcePhysicalColumnNames.contains( normalizeIdentifier( logicalColumn.name ) ) )
                 .sorted( Comparator.comparingInt( LogicalColumn::getPosition ).reversed() )
                 .toList();
 
         // Columns that exist in both systems but whose type differs
         List<PhysicalColumn> changedTypeColumns = currentPolyphenyPhysicalTable.columns.stream()
-                .filter( physicalColumn -> desiredSourceLayout.columnsByPhysicalName().containsKey( normalizeIdentifier( physicalColumn.name ) ) )
-                .filter( physicalColumn -> hasDifferentType( physicalColumn, desiredSourceLayout.columnsByPhysicalName().get( normalizeIdentifier( physicalColumn.name ) ) ) )
+                .filter( physicalColumn -> sourceColumnsByPhysicalName.containsKey( normalizeIdentifier( physicalColumn.name ) ) )
+                .filter( physicalColumn -> hasDifferentType( physicalColumn, sourceColumnsByPhysicalName.get( normalizeIdentifier( physicalColumn.name ) ) ) )
                 .sorted( Comparator.comparingInt( PhysicalColumn::getPosition ) )
                 .toList();
 
-        boolean hasReorderedColumns = hasReorderedColumns( desiredSourceLayout );
+        boolean hasReorderedColumns = hasReorderedColumns( currentLogicalColumns, orderedSourceColumns );
 
         if ( missingColumns.isEmpty() && droppedColumns.isEmpty() && changedTypeColumns.isEmpty() && !hasReorderedColumns ) {
             log.info( "No schema refresh needed for table {}", logicalTable.name );
@@ -631,7 +641,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( !changedTypeColumns.isEmpty() ) {
             for ( PhysicalColumn changedTypeColumn : changedTypeColumns ) {
-                ExportedColumn sourceColumn = desiredSourceLayout.columnsByPhysicalName().get( normalizeIdentifier( changedTypeColumn.name ) );
+                ExportedColumn sourceColumn = sourceColumnsByPhysicalName.get( normalizeIdentifier( changedTypeColumn.name ) );
                 log.info(
                         "Updating type of source column '{}' on table '{}'",
                         sourceColumn.physicalColumnName(),
@@ -647,7 +657,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        if ( syncSourceColumnPositionsForRefresh( logicalTable, sourceAllocation, desiredSourceLayout.orderedColumns(), refreshedLogicalColumns, refreshedAllocationColumns ) ) {
+        if ( syncSourceColumnPositionsForRefresh( logicalTable, sourceAllocation, orderedSourceColumns, refreshedLogicalColumns, refreshedAllocationColumns ) ) {
             log.info( "Updated source column order for table '{}'", logicalTable.name );
         }
 
@@ -937,46 +947,21 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private DesiredSourceLayout buildDesiredSourceLayout( List<ExportedColumn> sourceColumns, List<LogicalColumn> currentLogicalColumns ) {
-        List<ExportedColumn> orderedColumns = sourceColumns.stream()
-                .sorted( Comparator.comparingInt( ExportedColumn::physicalPosition ) )
-                .toList();
-
-        Set<String> physicalColumnNames = orderedColumns.stream()
-                .map( c -> normalizeIdentifier( c.physicalColumnName() ) )
-                .collect( Collectors.toSet() );
-
-        Map<String, ExportedColumn> columnsByPhysicalName = orderedColumns.stream()
-                .collect( Collectors.toMap( c -> normalizeIdentifier( c.physicalColumnName() ), c -> c, ( left, right ) -> left ) );
-
+    private boolean hasReorderedColumns( List<LogicalColumn> currentLogicalColumns, List<ExportedColumn> orderedSourceColumns ) {
         Map<String, LogicalColumn> currentLogicalColumnsByName = currentLogicalColumns.stream()
                 .collect( Collectors.toMap( c -> normalizeIdentifier( c.name ), c -> c, ( left, right ) -> left ) );
 
-        return new DesiredSourceLayout( orderedColumns, physicalColumnNames, columnsByPhysicalName, currentLogicalColumnsByName );
-    }
-
-
-    private boolean hasReorderedColumns( DesiredSourceLayout desiredSourceLayout ) {
-        List<ExportedColumn> existingSourceColumnsInTargetOrder = desiredSourceLayout.orderedColumns().stream()
-                .filter( c -> desiredSourceLayout.currentLogicalColumnsByName().containsKey( normalizeIdentifier( c.physicalColumnName() ) ) )
+        List<ExportedColumn> existingSourceColumnsInTargetOrder = orderedSourceColumns.stream()
+                .filter( c -> currentLogicalColumnsByName.containsKey( normalizeIdentifier( c.physicalColumnName() ) ) )
                 .toList();
 
         for ( int i = 0; i < existingSourceColumnsInTargetOrder.size(); i++ ) {
-            LogicalColumn logicalColumn = desiredSourceLayout.currentLogicalColumnsByName().get( normalizeIdentifier( existingSourceColumnsInTargetOrder.get( i ).physicalColumnName() ) );
+            LogicalColumn logicalColumn = currentLogicalColumnsByName.get( normalizeIdentifier( existingSourceColumnsInTargetOrder.get( i ).physicalColumnName() ) );
             if ( logicalColumn.position != i + 1 ) {
                 return true;
             }
         }
         return false;
-    }
-
-
-    private record DesiredSourceLayout(
-            List<ExportedColumn> orderedColumns,
-            Set<String> physicalColumnNames,
-            Map<String, ExportedColumn> columnsByPhysicalName,
-            Map<String, LogicalColumn> currentLogicalColumnsByName ) {
-
     }
 
 
