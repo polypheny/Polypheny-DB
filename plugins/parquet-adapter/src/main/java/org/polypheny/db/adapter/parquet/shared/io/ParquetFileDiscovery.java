@@ -20,6 +20,7 @@ import java.io.File;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Sources;
@@ -45,7 +46,7 @@ public class ParquetFileDiscovery {
         if ( files == null ) {
             throw new GenericRuntimeException( "No .parquet files were found." );
         }
-        return Arrays.stream( files ).map( File::getName ).collect( Collectors.toSet() );
+        return Arrays.stream( files ).map( File::getName ).collect( Collectors.toCollection( TreeSet::new ) );
     }
 
 

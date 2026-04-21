@@ -1,0 +1,103 @@
+/*
+ * Copyright 2019-2026 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.polypheny.db.adapter.parquet.relational.schema;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Collections;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+
+/**
+ * Table-level metadata, describes the whole table
+ * @param sourceUrl - real Parquet file URL to read from
+ * @param parentTableName - generated parent relational table name, or null for root tables
+ * @param sourcePathElements - table-level path inside the Parquet file, For root: List.of(), for nested: List.of("items")
+ * @param columnsByColumnId - Map<Long, ParquetColumnBinding> - maps Polypheny physical column ids to column bindings
+ */
+public record ParquetTableBinding(
+        String sourceUrl,
+        String parentTableName,
+        List<String> sourcePathElements,
+        Map<Long, ParquetColumnBinding> columnsByColumnId ) {
+
+    public ParquetTableBinding {
+        sourcePathElements = sourcePathElements == null ? List.of() : List.copyOf( sourcePathElements );
+        columnsByColumnId = columnsByColumnId == null ? Map.of() : Collections.unmodifiableMap( new LinkedHashMap<>( columnsByColumnId ) );
+    }
+
+
+    /**
+     * Factory Method
+     * creates a simple binding for a root/flat table
+     * @param sourceUrl - file
+     * @param table - table name
+     * @return ParquetTableBinding object
+     */
+    public static ParquetTableBinding createRootTableBinding( String sourceUrl, PhysicalTable table ) {
+        // create map of column level bindings
+        Map<Long, ParquetColumnBinding> columnBindings = new LinkedHashMap<>();
+        // For each physical column create a DATA column binding with a one-element source path equal to the column name
+        table.columns.forEach( column -> columnBindings.put(
+                column.id,
+                new ParquetColumnBinding( column.id, column.name, ParquetColumnRole.DATA, List.of( column.name ) ) ) );
+
+        // create table level binding
+        return new ParquetTableBinding(
+                sourceUrl,
+                null, // parentTableName is null
+                List.of(), // sourcePathElements empty
+                columnBindings );
+    }
+
+
+    /**
+     * Factory Method
+     * creates a binding when exact Parquet paths for columns discovered
+     * @param sourceUrl - real Parquet file URL
+     * @param parentTableName - generated parent relational table name, or null for root tables
+     * @param sourcePathElements - table-level path inside the Parquet file
+     * @param table - Polypheny physical table object contains the physical columns that were created in the adapter catalog.
+     * @param columnPaths - map relational column name to Parquet source path ("amount" -> ["items", "discounts", "amount"])
+     * @return ParquetTableBinding
+     */
+    public static ParquetTableBinding createTableBindingFromColumnPaths( String sourceUrl, String parentTableName, List<String> sourcePathElements, PhysicalTable table, Map<String, List<String>> columnPaths ) {
+        Map<Long, ParquetColumnBinding> columnBindings = new LinkedHashMap<>();
+        // create ParquetColumnBinding object for each column and store in map by id
+        table.columns.forEach( column -> columnBindings.put(
+                column.id,
+                new ParquetColumnBinding( column.id, column.name, ParquetColumnRole.DATA, columnPaths.getOrDefault( column.name, List.of( column.name ) ) ) ) );
+
+        // create table level binding
+        return new ParquetTableBinding(
+                sourceUrl,
+                parentTableName,
+                sourcePathElements,
+                columnBindings );
+    }
+
+
+    /**
+     * getter
+     * @param columnId - column
+     * @return ParquetColumnBinding for columnId
+     */
+    public ParquetColumnBinding getColumnBinding( long columnId ) {
+        return columnsByColumnId.get( columnId );
+    }
+
+}

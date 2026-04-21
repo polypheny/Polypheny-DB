@@ -24,20 +24,25 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.schema.Type;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.Scannable;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetBindingSerializer;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetTableBinding;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetFileDiscovery;
+import org.polypheny.db.adapter.parquet.shared.io.ParquetUrlResolver;
 import org.polypheny.db.adapter.parquet.shared.schema.ParquetNamespace;
-import org.polypheny.db.adapter.parquet.shared.schema.ParquetFieldNameNormalizer;
+import org.polypheny.db.adapter.parquet.shared.schema.ParquetNameNormalizer;
 import org.polypheny.db.adapter.parquet.shared.schema.ParquetTypeConverter;
 import org.polypheny.db.adapter.parquet.shared.util.HadoopConfigurationFactory;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
@@ -58,12 +63,15 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog> implements Scannable {
 
+    private static final String PARQUET_BINDINGS_SETTING = "__polypheny_parquet_bindings";
+
     protected final ConnectionMethod connectionMethod;
     protected final ParquetTypeConverter parquetTypeConverter;
     protected URL parquetDir;
 
     protected ParquetNamespace currentNamespace;
     private Map<String, List<ExportedColumn>> exportedColumns;
+    private final Map<Long, ParquetTableBinding> parquetBindings;
 
     protected static final Logger log = LoggerFactory.getLogger( AbstractParquetSource.class );
 
@@ -71,6 +79,8 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
     protected AbstractParquetSource( long storeId, String uniqueName, Map<String, String> settings, DeployMode mode, Set<DataModel> supportedModels ) {
         super( storeId, uniqueName, settings, mode, true, new DocAdapterCatalog( storeId ), supportedModels );
         this.parquetTypeConverter = new ParquetTypeConverter();
+        // Recover binding metadata through adapter settings
+        this.parquetBindings = new HashMap<>( ParquetBindingSerializer.deserialize( settings.get( PARQUET_BINDINGS_SETTING ) ) );
         this.connectionMethod = settings.containsKey( "method" )
                 ? ConnectionMethod.from( settings.get( "method" ).toUpperCase() )
                 : ConnectionMethod.UPLOAD;
@@ -80,6 +90,10 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
     }
 
 
+    /**
+     * populate parquet directory variable according to settings
+     * @param settings Settings Map
+     */
     protected void setParquetDir( Map<String, String> settings ) {
         switch ( connectionMethod ) {
             case LINK -> {
@@ -88,7 +102,7 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
                     parquetDir = this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
                 } else {
                     try {
-                        parquetDir = new File( dir ).toURI().toURL();
+                        parquetDir = ParquetUrlResolver.asSourceUrl( new File( dir ).toURI().toURL() );
                     } catch ( MalformedURLException e ) {
                         throw new org.polypheny.db.catalog.exceptions.GenericRuntimeException( e );
                     }
@@ -100,7 +114,7 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
                     parquetDir = this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
                 } else {
                     try {
-                        parquetDir = new File( dir ).toURI().toURL();
+                        parquetDir = ParquetUrlResolver.asSourceUrl( new File( dir ).toURI().toURL() );
                     } catch ( MalformedURLException e ) {
                         throw new org.polypheny.db.catalog.exceptions.GenericRuntimeException( e );
                     }
@@ -109,7 +123,7 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
             case URL -> {
                 String dir = settings.get( "url" );
                 try {
-                    parquetDir = new URL( dir );
+                    parquetDir = ParquetUrlResolver.asSourceUrl( new URL( dir ) );
                 } catch ( MalformedURLException e ) {
                     throw new org.polypheny.db.catalog.exceptions.GenericRuntimeException( e );
                 }
@@ -118,33 +132,15 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
     }
 
 
-    protected static String getValidTableName( String name ) {
-        return name.trim().replaceAll( "[^a-z0-9_]+", "" );
-    }
-
-
-    protected static String computePhysicalTableName( String fileName ) {
-        String physicalTableName = fileName.toLowerCase();
-        if ( physicalTableName.endsWith( ".parquet" ) ) {
-            physicalTableName = physicalTableName.substring( 0, physicalTableName.length() - ".parquet".length() );
-        }
-        return getValidTableName( physicalTableName );
-    }
-
-
-    public static String normalizeFieldName( String name ) {
-        return ParquetFieldNameNormalizer.normalizeFieldName( name );
-    }
-
-
-    protected String getValidColumnNameFromField( Type field ) {
-        return normalizeFieldName( field.getName() );
-    }
-
-
+    /**
+     * Get list of columns from parquet file using metadata
+     * @param fileName - parquet file name
+     * @param physicalTableName - physical Table Name
+     * @return List<ExportedColumn> - list of columns
+     */
     private List<ExportedColumn> getExportedColumnsFromFile( String fileName, String physicalTableName ) {
         try {
-            Path path = new Path( new URL( parquetDir, fileName ).toURI() );
+            Path path = new Path( ParquetUrlResolver.resolveFile( parquetDir, fileName ).toURI() );
             Configuration conf = HadoopConfigurationFactory.create( this.getClass().getClassLoader() );
             try ( ParquetFileReader reader = ParquetFileReader.open( HadoopInputFile.fromPath( path, conf ) ) ) {
                 List<Type> schemaFields = reader.getFooter().getFileMetaData().getSchema().getFields();
@@ -161,8 +157,16 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
     }
 
 
+    /**
+     * Create exported column object from parquet file field
+     * @param field - parquet file column
+     * @param fileName - name of parquet file
+     * @param physicalTableName - the table name that Polypheny should create/export for this Parquet file
+     * @param position - column position
+     * @return ExportedColumn object
+     */
     private ExportedColumn getExportedColumnFromField( Type field, String fileName, String physicalTableName, int position ) {
-        String columnName = getValidColumnNameFromField( field );
+        String columnName = ParquetNameNormalizer.normalizeFieldName( field.getName() );
         PolyType polyType = parquetTypeConverter.fromParquetTypeToPolyType( field );
         return new ExportedColumn(
                 columnName,
@@ -181,6 +185,12 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
     }
 
 
+    /**
+     * Return exported column map if exists
+     * Otherwise creates hashmap:
+     * for each filename - store exported columns list
+     * @return Map<String, List<ExportedColumn>>
+     */
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         if ( connectionMethod == ConnectionMethod.UPLOAD && exportedColumns != null ) {
             return exportedColumns;
@@ -189,11 +199,64 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
         Map<String, List<ExportedColumn>> columns = new HashMap<>();
         Set<String> fileNames = ParquetFileDiscovery.listParquetFiles( parquetDir );
         for ( String fileName : fileNames ) {
-            String physicalTableName = computePhysicalTableName( fileName );
+            String physicalTableName = getPrefixedTableName( ParquetNameNormalizer.computePhysicalTableName( fileName ) );
             columns.put( physicalTableName, getExportedColumnsFromFile( fileName, physicalTableName ) );
         }
         this.exportedColumns = columns;
         return columns;
+    }
+
+
+    /**
+     * Add prefix to the table names to allow deployment multiple Parquet relational adapters
+     * over the same files, for example one flat and one normalized, without logical table name collisions
+     * @param tableName table-name produced from the Parquet file name
+     * @return normalized name containing prefix - adapter unique name
+     */
+    protected String getPrefixedTableName( String tableName ) {
+        return ParquetNameNormalizer.normalizeFieldName( getUniqueName() ) + "__" + tableName;
+    }
+
+
+    /**
+     * Allows ParquetRelationalSource to clear the flat exported-column cache when settings such as
+     * schemaMode or directory change.
+     */
+    protected void clearExportedColumnsCache() {
+        exportedColumns = null;
+    }
+
+
+    /**
+     * Add binding to the parquet bindings map and call for persistence to store map in settings
+     * @param physicalTableId - key in Map<Long, ParquetTableBinding>
+     * @param binding ParquetTableBinding to store
+     */
+    protected void registerParquetBinding( long physicalTableId, ParquetTableBinding binding ) {
+        // for this physical table id, remember this Parquet binding
+        parquetBindings.put( physicalTableId, binding );
+        persistParquetBindings();
+    }
+
+
+    protected Optional<ParquetTableBinding> getParquetBinding( long physicalTableId ) {
+        return Optional.ofNullable( parquetBindings.get( physicalTableId ) );
+    }
+
+
+    protected void removeParquetBinding( long physicalTableId ) {
+        if ( parquetBindings.remove( physicalTableId ) != null ) {
+            persistParquetBindings();
+        }
+    }
+
+
+    /**
+     * Store parquet bindings map in settings
+     */
+    private void persistParquetBindings() {
+        settings.put( PARQUET_BINDINGS_SETTING, ParquetBindingSerializer.serialize( parquetBindings ) );
+        Catalog.getInstance().updateAdapterSettings( adapterId, new HashMap<>( settings ) );
     }
 
 
@@ -277,8 +340,9 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
 
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
-        if ( updatedSettings.contains( "directory" ) || updatedSettings.contains( "directoryName" ) ) {
+        if ( updatedSettings.contains( "directory" ) || updatedSettings.contains( "directoryName" ) || updatedSettings.contains( "url" ) ) {
             setParquetDir( settings );
+            clearExportedColumnsCache();
         }
     }
 

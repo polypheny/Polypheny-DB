@@ -5,8 +5,8 @@ import java.util.Map;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
-import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 import org.polypheny.db.adapter.parquet.shared.execution.AbstractParquetValueExtractor;
+import org.polypheny.db.adapter.parquet.shared.schema.ParquetNameNormalizer;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -42,7 +42,7 @@ public class ParquetDocValueExtractor extends AbstractParquetValueExtractor {
                 continue;
             }
             // store result in the map under the normalized name
-            values.put( PolyString.of( AbstractParquetSource.normalizeFieldName( field.getName() ) ), extractValue( group, i, field ) );
+            values.put( PolyString.of( ParquetNameNormalizer.normalizeFieldName( field.getName() ) ), extractValue( group, i, field ) );
         }
 
         // if _id is missing or null, insert the provided generatedId

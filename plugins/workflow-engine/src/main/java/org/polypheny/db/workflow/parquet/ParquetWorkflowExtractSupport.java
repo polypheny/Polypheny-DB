@@ -31,7 +31,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceReader;
-import org.polypheny.db.adapter.parquet.shared.schema.ParquetFieldNameNormalizer;
+import org.polypheny.db.adapter.parquet.shared.schema.ParquetNameNormalizer;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
@@ -109,7 +109,7 @@ public final class ParquetWorkflowExtractSupport {
             if ( type == PolyType.DOCUMENT ) {
                 type = PolyType.TEXT;
             }
-            String fieldName = ParquetFieldNameNormalizer.normalizeFieldName( field.getName() );
+            String fieldName = ParquetNameNormalizer.normalizeFieldName( field.getName() );
             builder.add( fieldName, null, type );
         }
         if ( addNameField ) {

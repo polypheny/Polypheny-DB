@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.polypheny.db.adapter.parquet.shared.schema.ParquetFieldNameNormalizer.uniquifyParquetNames;
+import static org.polypheny.db.adapter.parquet.shared.schema.ParquetNameNormalizer.uniquifyParquetFieldNames;
 
 /**
  * Contains inferred schema: all fields definitions
@@ -71,7 +71,7 @@ public class SchemaState {
             this.fields.add( new FieldSchema( sourceName, sourceName, i, false, valueSchema ) );
         }
         // normalize and uniquify names of parquet file columns
-        uniquifyParquetNames( this.fields );
+        uniquifyParquetFieldNames( this.fields );
     }
 
 
@@ -130,7 +130,7 @@ public class SchemaState {
             mergeFieldValueSchema( sourceName, inferred );
         }
         // normalize and uniquify names of parquet file columns
-        uniquifyParquetNames( this.fields );
+        uniquifyParquetFieldNames( this.fields );
     }
 
 

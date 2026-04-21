@@ -30,7 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.polypheny.db.adapter.parquet.shared.schema.ParquetFieldNameNormalizer.uniquifyParquetNames;
+import static org.polypheny.db.adapter.parquet.shared.schema.ParquetNameNormalizer.uniquifyParquetFieldNames;
 
 
 /**
@@ -197,7 +197,7 @@ public record ValueSchema( ValueKind kind, PrimitiveType.PrimitiveTypeName primi
                     }
                 }
                 merged.nested.addAll( mergedFields.values() );
-                uniquifyParquetNames( merged.nested );
+                uniquifyParquetFieldNames( merged.nested );
                 return merged;
             }
             return this;
@@ -269,7 +269,7 @@ public record ValueSchema( ValueKind kind, PrimitiveType.PrimitiveTypeName primi
             }
             group.mergeNested( entry.getKey().value, fieldSchema, conflictMode );
         }
-        uniquifyParquetNames( group.nested() );
+        uniquifyParquetFieldNames( group.nested() );
         return group.nested().isEmpty() ? null : group;
     }
 

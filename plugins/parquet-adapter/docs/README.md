@@ -253,15 +253,3 @@ Current test coverage includes:
 1. `rejectsInt96TimestampPredicatePushdown()`
 
 
-## Current Gaps and Future Work
-### Relational Parquet data source implementation
-- Add writable Parquet source support in the adapter itself.
-  Current write support exists only for workflow export and does not make the Parquet adapter writable as a Polypheny source.
-- Add partition-aware file discovery and query pruning for partitioned Parquet datasets.
-- Add support for remote files.
-- Extend filter support beyond simple comparisons of the form `column OP literal`.
-  Planned examples include `BETWEEN`, `IN`, `IS NULL`, `IS NOT NULL`, and more complex boolean combinations such as `AND` and `OR`.
-- Add optional native predicate support for additional Parquet physical encodings where safe and well-tested.
-  One current example is legacy `INT96` timestamps, which are intentionally excluded from pushdown.
-- Improve handling of nested and complex Parquet schemas instead of treating them only as textual representations.
-- Document and strengthen error handling for invalid files, unsupported schema constructs, and conversion failures.

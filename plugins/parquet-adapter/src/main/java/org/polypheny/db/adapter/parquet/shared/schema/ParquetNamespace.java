@@ -4,8 +4,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.parquet.document.schema.ParquetDocument;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetTableBinding;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetRelTable;
+import org.polypheny.db.adapter.parquet.shared.io.ParquetUrlResolver;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -33,13 +35,18 @@ public class ParquetNamespace extends Namespace {
     }
 
 
+    public ParquetTableBinding createRootBinding( PhysicalTable table ) {
+        Source parquetSource = Sources.of( ParquetUrlResolver.resolveFile( directoryUrl, table.name + ".parquet" ) );
+        return ParquetTableBinding.createRootTableBinding( parquetSource.url().toString(), table );
+    }
+
     /**
      * Creates a Parquet table wrapper for a physical table entry.
      */
-    public ParquetRelTable createParquetTable( long id, PhysicalTable table, AbstractParquetSource sourceAdapter ) {
+    public ParquetRelTable createParquetTable( long id, PhysicalTable table, ParquetTableBinding binding, AbstractParquetSource sourceAdapter ) {
         try {
-            Source parquetSource = Sources.of( new URL( directoryUrl, table.name + ".parquet" ) );
-            return new ParquetRelTable( id, parquetSource, table, sourceAdapter );
+            Source parquetSource = Sources.of( new URL( binding.sourceUrl() ) );
+            return new ParquetRelTable( id, parquetSource, table, binding, sourceAdapter );
 
         } catch ( MalformedURLException e ) {
             throw new GenericRuntimeException( e );
@@ -48,12 +55,8 @@ public class ParquetNamespace extends Namespace {
 
 
     public ParquetDocument createParquetCollection( PhysicalCollection collection, AbstractParquetSource sourceAdapter ) {
-        try {
-            Source parquetSource = Sources.of( new URL( directoryUrl, collection.name + ".parquet" ) );
-            return new ParquetDocument( collection, parquetSource, sourceAdapter );
-        } catch ( MalformedURLException e ) {
-            throw new GenericRuntimeException( e );
-        }
+        Source parquetSource = Sources.of( ParquetUrlResolver.resolveFile( directoryUrl, collection.name + ".parquet" ) );
+        return new ParquetDocument( collection, parquetSource, sourceAdapter );
     }
 
 

@@ -8,7 +8,7 @@ import org.apache.parquet.example.data.Group;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
-import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
+import org.polypheny.db.adapter.parquet.shared.schema.ParquetNameNormalizer;
 import org.polypheny.db.adapter.parquet.shared.schema.ParquetTypeConverter;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyNull;
@@ -59,7 +59,7 @@ public abstract class AbstractParquetValueExtractor implements ParquetValueExtra
             if ( group.getFieldRepetitionCount( i ) == 0 ) {
                 continue;
             }
-            values.put( PolyString.of( AbstractParquetSource.normalizeFieldName( nestedField.getName() ) ), extractStructuredValue( group, i, nestedField ) );
+            values.put( PolyString.of( ParquetNameNormalizer.normalizeFieldName( nestedField.getName() ) ), extractStructuredValue( group, i, nestedField ) );
         }
         return PolyDocument.ofDocument( values );
     }
