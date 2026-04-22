@@ -53,7 +53,7 @@ public class SqlNamedDistanceFunction extends SqlFunction {
     }
 
 
-    private static final PolyOperandTypeChecker TWO_NUMERIC_ARRAYS = new PolyOperandTypeChecker() {
+    public static final PolyOperandTypeChecker TWO_NUMERIC_ARRAYS = new PolyOperandTypeChecker() {
 
         /**
          * This method is similar to {@link SqlDistanceFunction#getOperandTypeChecker()#checkOperandTypes(CallBinding, boolean)}.

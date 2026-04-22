@@ -273,6 +273,26 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             return convertCall( cx, call );
         });
 
+        /* pgvector binary operator to non-parameterized distance functions */
+        registerOp( OperatorRegistry.get( OperatorName.PGVECTOR_L1 ), (cx, call) -> {
+            RexNode arg0 = cx.convertExpression( call.operand( 0 ) );
+            RexNode arg1 = cx.convertExpression( call.operand( 1 ) );
+            AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
+            return cx.getRexBuilder().makeCall( returnType, OperatorRegistry.get( OperatorName.L1_DISTANCE ), ImmutableList.of( arg0, arg1 ) );
+        } );
+        registerOp( OperatorRegistry.get( OperatorName.PGVECTOR_L2 ), (cx, call) -> {
+            RexNode arg0 = cx.convertExpression( call.operand( 0 ) );
+            RexNode arg1 = cx.convertExpression( call.operand( 1 ) );
+            AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
+            return cx.getRexBuilder().makeCall( returnType, OperatorRegistry.get( OperatorName.L2_DISTANCE ), ImmutableList.of( arg0, arg1 ) );
+        } );
+        registerOp( OperatorRegistry.get( OperatorName.PGVECTOR_COS ), (cx, call) -> {
+            RexNode arg0 = cx.convertExpression( call.operand( 0 ) );
+            RexNode arg1 = cx.convertExpression( call.operand( 1 ) );
+            AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
+            return cx.getRexBuilder().makeCall( returnType, OperatorRegistry.get( OperatorName.COS_DISTANCE ), ImmutableList.of( arg0, arg1 ) );
+        } );
+
         // Convert "element(<expr>)" to "$element_slice(<expr>)", if the expression is a multiset of scalars.
         if ( false ) {
             registerOp(

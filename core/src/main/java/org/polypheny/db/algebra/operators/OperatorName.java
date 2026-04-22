@@ -1587,6 +1587,15 @@ public enum OperatorName {
 
     COS_DISTANCE(Function.class ),
 
+
+    // PostgreSQL pgvector Operators
+
+    PGVECTOR_L2( BinaryOperator.class ),
+
+    PGVECTOR_L1( BinaryOperator.class ),
+
+    PGVECTOR_COS( BinaryOperator.class ),
+
     //-------------------------------------------------------------
     //                   SET OPERATORS
     //-------------------------------------------------------------
