@@ -980,7 +980,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         log.info( "Updating source primary key on table '{}'", table.name );
-        logicalCatalog.addPrimaryKey( table.id, sourcePkIds, statement );
+        logicalCatalog.addPrimaryKeyRefresh( table.id, sourcePkIds, statement );
         return ImmutableList.copyOf( sourcePkIds );
     }
 
@@ -1060,7 +1060,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void addForeignKeyForRefresh( LogicalTable table, ForeignKeySignature foreignKey, Statement statement, LogicalRelationalCatalog logicalCatalog ) {
-        long keyId = logicalCatalog.addForeignKey(
+        long keyId = logicalCatalog.addForeignKeyRefresh(
                 table.id,
                 foreignKey.columnIds(),
                 foreignKey.referencedTableId(),
@@ -1185,7 +1185,7 @@ public class DdlManagerImpl extends DdlManager {
                 .filter( constraint -> constraint.keyId == foreignKey.id )
                 .toList()
                 .forEach( constraint -> logicalCatalog.deleteConstraint( constraint.id ) );
-        logicalCatalog.deleteForeignKey( foreignKey.id );
+        logicalCatalog.deleteForeignKeyRefresh( foreignKey.id );
     }
 
 

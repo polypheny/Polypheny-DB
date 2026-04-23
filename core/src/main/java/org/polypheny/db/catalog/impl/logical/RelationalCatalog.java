@@ -60,6 +60,7 @@ import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.IndexType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.util.CatalogEvent;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.transaction.Statement;
@@ -259,6 +260,22 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     }
     
     private Optional<Long> getKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) {
+        return Catalog.snapshot()
+                .rel()
+                .getKeys( columnIds.stream().mapToLong( Long::longValue ).toArray() )
+                .filter( k -> k.entityId == tableId )
+                .filter( k -> k.enforcementTime == enforcementTime )
+                .map( k -> k.id );
+    }
+
+
+    private long getOrAddKeyRefresh( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) {
+        return getKeyRefresh( tableId, columnIds, enforcementTime )
+                .orElse( addKey( tableId, columnIds, enforcementTime ) );
+    }
+
+
+    private Optional<Long> getKeyRefresh( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) {
         Set<Long> columnIdSet = new HashSet<>( columnIds );
         return keys.values().stream()
                 .filter( k -> k.entityId == tableId )
@@ -377,6 +394,17 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Override
     public void addPrimaryKey( long tableId, List<Long> columnIds, Statement statement ) {
+        addPrimaryKey( tableId, columnIds, false );
+    }
+
+
+    @Override
+    public void addPrimaryKeyRefresh( long tableId, List<Long> columnIds, Statement statement ) {
+        addPrimaryKey( tableId, columnIds, true );
+    }
+
+
+    private void addPrimaryKey( long tableId, List<Long> columnIds, boolean refresh ) {
         if ( columnIds.stream().anyMatch( id -> columns.get( id ).nullable ) ) {
             throw new GenericRuntimeException( "Primary key is not allowed to use nullable columns." );
         }
@@ -394,7 +422,9 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
                 deleteKeyIfNoLongerUsed( table.primaryKey );
             }
         }
-        long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
+        long keyId = refresh
+                ? getOrAddKeyRefresh( tableId, columnIds, EnforcementTime.ON_QUERY )
+                : getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         setPrimaryKey( tableId, keyId );
 
         change( CatalogEvent.PRIMARY_KEY_CREATED, tableId, keyId );
@@ -457,14 +487,26 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Override
     public long addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) {
+        return addForeignKey( tableId, columnIds, referencesTableId, referencesIds, constraintName, onUpdate, onDelete, false );
+    }
+
+
+    @Override
+    public long addForeignKeyRefresh( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) {
+        return addForeignKey( tableId, columnIds, referencesTableId, referencesIds, constraintName, onUpdate, onDelete, true );
+    }
+
+
+    private long addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete, boolean refresh ) {
         if ( tableId == referencesTableId ) {
             throw new GenericRuntimeException( "A foreign key can not reference the same table." );
         }
 
         LogicalTable table = tables.get( tableId );
-        List<LogicalKey> childKeys = keys.values().stream()
-                .filter( key -> key.entityId == referencesTableId )
-                .toList();
+        Snapshot snapshot = Catalog.snapshot();
+        List<LogicalKey> childKeys = refresh
+                ? keys.values().stream().filter( key -> key.entityId == referencesTableId ).toList()
+                : snapshot.rel().getTableKeys( referencesTableId );
 
         for ( LogicalKey refKey : childKeys ) {
             if ( refKey.fieldIds.size() != referencesIds.size() || !refKey.fieldIds.containsAll( referencesIds ) || !new HashSet<>( referencesIds ).containsAll( refKey.fieldIds ) ) {
@@ -472,13 +514,19 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             }
             int i = 0;
             for ( long referencedColumnId : refKey.fieldIds ) {
-                LogicalColumn referencingColumn = Objects.requireNonNull( columns.get( columnIds.get( i++ ) ) );
-                LogicalColumn referencedColumn = Objects.requireNonNull( columns.get( referencedColumnId ) );
+                LogicalColumn referencingColumn = refresh
+                        ? Objects.requireNonNull( columns.get( columnIds.get( i++ ) ) )
+                        : snapshot.rel().getColumn( columnIds.get( i++ ) ).orElseThrow();
+                LogicalColumn referencedColumn = refresh
+                        ? Objects.requireNonNull( columns.get( referencedColumnId ) )
+                        : snapshot.rel().getColumn( referencedColumnId ).orElseThrow();
                 if ( referencedColumn.type != referencingColumn.type ) {
                     throw new GenericRuntimeException( "The data type of the referenced columns does not match the data type of the referencing column: %s != %s", referencingColumn.type.name(), referencedColumn.type );
                 }
             }
-            long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_COMMIT );
+            long keyId = refresh
+                    ? getOrAddKeyRefresh( tableId, columnIds, EnforcementTime.ON_COMMIT )
+                    : getOrAddKey( tableId, columnIds, EnforcementTime.ON_COMMIT );
 
             LogicalForeignKey key = new LogicalForeignKey(
                     keyId,
@@ -562,6 +610,16 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Override
     public void deleteForeignKey( long foreignKeyId ) {
+        LogicalForeignKey logicalForeignKey = (LogicalForeignKey) keys.get( foreignKeyId );
+        synchronized ( this ) {
+            deleteKeyIfNoLongerUsed( logicalForeignKey.id );
+        }
+        change( CatalogEvent.FOREIGN_KEY_DROPPED, foreignKeyId, null );
+    }
+
+
+    @Override
+    public void deleteForeignKeyRefresh( long foreignKeyId ) {
         LogicalForeignKey logicalForeignKey = (LogicalForeignKey) keys.get( foreignKeyId );
         if ( logicalForeignKey == null ) {
             return;
