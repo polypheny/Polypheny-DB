@@ -18,6 +18,7 @@ package org.polypheny.db.adapter;
 
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.type.PolyType;
 
 public interface RelationalDataSource {
@@ -47,6 +48,17 @@ public interface RelationalDataSource {
                 .toList();
     }
 
+    /**
+     * Returns the imported foreign keys for a specific table, optionally filtered by schema.
+     *
+     * @param schema the schema name to filter by; may be {@code null}
+     * @param table the physical table name
+     * @return list of imported foreign keys for the specified table
+     */
+    default List<ExportedForeignKey> getExportedForeignKeysForTable( String schema, String table ) {
+        return List.of();
+    }
+
     record ExportedColumn( String name, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, String physicalSchemaName, String physicalTableName, String physicalColumnName, int physicalPosition, boolean primary ) {
 
         public String getDisplayType() {
@@ -67,6 +79,11 @@ public interface RelationalDataSource {
             }
             return typeStr;
         }
+
+    }
+
+
+    record ExportedForeignKey( String name, String physicalSchemaName, String physicalTableName, List<String> physicalColumnNames, String referencedPhysicalSchemaName, String referencedPhysicalTableName, List<String> referencedPhysicalColumnNames, ForeignKeyOption updateRule, ForeignKeyOption deleteRule ) {
 
     }
 

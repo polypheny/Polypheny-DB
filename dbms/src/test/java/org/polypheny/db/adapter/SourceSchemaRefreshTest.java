@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.webui.models.results.RelationalResult;
 
@@ -273,6 +274,109 @@ class SourceSchemaRefreshTest {
 
 
     @Test
+    void refreshRequestUpdatesForeignKeysAfterExternalForeignKeysChanged() throws Exception {
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
+        TestHelper.getInstance();
+
+        String parentTable = SOURCE_TABLE + "_parent";
+        String childTable = SOURCE_TABLE + "_child";
+
+        try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( DATABASE, USERNAME, PASSWORD ) ) {
+            postgres.execute( "CREATE TABLE public." + parentTable + " (id INTEGER PRIMARY KEY, name VARCHAR(255))" );
+            postgres.execute( "CREATE TABLE public." + childTable + " (id INTEGER PRIMARY KEY, parent_id INTEGER)" );
+            postgres.execute( "INSERT INTO public." + parentTable + " (id, name) VALUES (1, 'Alice')" );
+            postgres.execute( "INSERT INTO public." + childTable + " (id, parent_id) VALUES (1, 1)" );
+
+            TestHelper.addPostgresSource(
+                    ADAPTER_NAME,
+                    postgres.getHost(),
+                    postgres.getPort(),
+                    DATABASE,
+                    USERNAME,
+                    PASSWORD,
+                    "public." + parentTable + ",public." + childTable );
+
+            try {
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, parentTable, 30 );
+                long childEntityId = TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, childTable, 30 ).id;
+                assertEquals( List.of(), getForeignKeyNames( childEntityId ) );
+
+                postgres.execute( "ALTER TABLE public." + childTable + " ADD CONSTRAINT refresh_fk_parent FOREIGN KEY (parent_id) REFERENCES public." + parentTable + " (id)" );
+
+                RelationalResult refreshed = TestHelper.sendRefreshRequest( childEntityId );
+                assertNotNull( refreshed );
+                assertTrue( refreshed.getError() == null || refreshed.getError().isBlank(), "Refresh returned error: " + refreshed.getError() );
+                assertEquals( List.of( "refresh_fk_parent" ), getForeignKeyNames( childEntityId ) );
+
+                postgres.execute( "ALTER TABLE public." + childTable + " DROP CONSTRAINT refresh_fk_parent" );
+
+                refreshed = TestHelper.sendRefreshRequest( childEntityId );
+                assertNotNull( refreshed );
+                assertTrue( refreshed.getError() == null || refreshed.getError().isBlank(), "Refresh returned error: " + refreshed.getError() );
+                assertEquals( List.of(), getForeignKeyNames( childEntityId ) );
+            } finally {
+                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + ADAPTER_NAME + "\"" );
+            }
+        }
+    }
+
+
+    @Test
+    void refreshRequestTracksForeignKeyAcrossColumnAdditionAndRemoval()throws Exception {
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
+        TestHelper.getInstance();
+
+        String professorTable = SOURCE_TABLE + "_professor";
+        String enrollmentTable = SOURCE_TABLE + "_enrollment";
+
+        try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( DATABASE, USERNAME, PASSWORD ) ) {
+            postgres.execute( "CREATE TABLE public." + professorTable + " (id INTEGER PRIMARY KEY, name VARCHAR(255))" );
+            postgres.execute( "CREATE TABLE public." + enrollmentTable + " (id INTEGER PRIMARY KEY, course_id INTEGER, semester VARCHAR(16), attempt INTEGER, note VARCHAR(255))" );
+            postgres.execute( "INSERT INTO public." + professorTable + " (id, name) VALUES (1, 'Ada')" );
+            postgres.execute( "INSERT INTO public." + enrollmentTable + " (id, course_id, semester, attempt, note) VALUES (1, 10, 'FS26', 1, 'initial')" );
+
+            TestHelper.addPostgresSource(
+                    ADAPTER_NAME,
+                    postgres.getHost(),
+                    postgres.getPort(),
+                    DATABASE,
+                    USERNAME,
+                    PASSWORD,
+                    "public." + professorTable + ",public." + enrollmentTable );
+
+            try {
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, professorTable, 30 );
+                long enrollmentEntityId = TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, enrollmentTable, 30 ).id;
+                assertEquals( List.of( "id", "course_id", "semester", "attempt", "note" ), TestHelper.getCatalogColumnNames( enrollmentEntityId ) );
+                assertEquals( List.of(), getForeignKeyNames( enrollmentEntityId ) );
+
+                postgres.execute( "ALTER TABLE public." + enrollmentTable + " ADD COLUMN professor_id INTEGER" );
+                postgres.execute( "ALTER TABLE public." + enrollmentTable + " ADD CONSTRAINT refresh_fk_professor FOREIGN KEY (professor_id) REFERENCES public." + professorTable + " (id)" );
+
+                RelationalResult refreshed = TestHelper.sendRefreshRequest( enrollmentEntityId );
+                assertNotNull( refreshed );
+                assertTrue( refreshed.getError() == null || refreshed.getError().isBlank(), "Refresh returned error: " + refreshed.getError() );
+                assertEquals( List.of( "id", "course_id", "semester", "attempt", "note", "professor_id" ), Arrays.stream( refreshed.getHeader() ).map( h -> h.getName() ).toList() );
+                assertEquals( List.of( "id", "course_id", "semester", "attempt", "note", "professor_id" ), TestHelper.getCatalogColumnNames( enrollmentEntityId ) );
+                assertEquals( List.of( "refresh_fk_professor" ), getForeignKeyNames( enrollmentEntityId ) );
+
+                postgres.execute( "ALTER TABLE public." + enrollmentTable + " DROP CONSTRAINT refresh_fk_professor" );
+                postgres.execute( "ALTER TABLE public." + enrollmentTable + " DROP COLUMN professor_id" );
+
+                refreshed = TestHelper.sendRefreshRequest( enrollmentEntityId );
+                assertNotNull( refreshed );
+                assertTrue( refreshed.getError() == null || refreshed.getError().isBlank(), "Refresh returned error: " + refreshed.getError() );
+                assertEquals( List.of( "id", "course_id", "semester", "attempt", "note" ), Arrays.stream( refreshed.getHeader() ).map( h -> h.getName() ).toList() );
+                assertEquals( List.of( "id", "course_id", "semester", "attempt", "note" ), TestHelper.getCatalogColumnNames( enrollmentEntityId ) );
+                assertEquals( List.of(), getForeignKeyNames( enrollmentEntityId ) );
+            } finally {
+                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + ADAPTER_NAME + "\"" );
+            }
+        }
+    }
+
+
+    @Test
     void refreshRequestAppliesMixedExternalSchemaChanges() throws Exception {
         Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
         TestHelper.getInstance();
@@ -336,6 +440,13 @@ class SourceSchemaRefreshTest {
         }
         return Catalog.snapshot().rel().getPrimaryKey( primaryKey ).orElseThrow().fieldIds.stream()
                 .map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow().name )
+                .toList();
+    }
+
+
+    private static List<String> getForeignKeyNames( long entityId ) {
+        return Catalog.snapshot().rel().getForeignKeys( entityId ).stream()
+                .map( LogicalForeignKey::getName )
                 .toList();
     }
 }

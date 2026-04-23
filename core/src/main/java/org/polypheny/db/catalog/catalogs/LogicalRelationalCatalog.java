@@ -212,7 +212,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param onUpdate The option for updates
      * @param onDelete The option for deletes
      */
-    void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete );
+    long addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete );
 
     /**
      * Adds a unique constraint.
@@ -235,6 +235,17 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param statement
      */
     long addConstraint( long tableId, String constraintName, List<Long> columnIds, ConstraintType type, Statement statement );
+
+    /**
+     * Add generic constraint for an existing key.
+     *
+     * @param tableId The id of the table
+     * @param constraintName The name of the constraint
+     * @param keyId The id of the existing key
+     * @param type The type of the constraint
+     * @param statement
+     */
+    long addConstraint( long tableId, String constraintName, long keyId, ConstraintType type, Statement statement );
 
     /**
      * Deletes the specified primary key (including the entry in the key table). If there is an index on this key, make sure to delete it first.

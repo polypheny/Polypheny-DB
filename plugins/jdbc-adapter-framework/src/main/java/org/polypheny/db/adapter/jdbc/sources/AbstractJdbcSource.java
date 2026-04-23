@@ -22,7 +22,9 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,6 +52,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
@@ -250,6 +253,16 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
             return readExportedColumnsForSingleTable( connection, schema, table );
         } catch ( SQLException e ) {
             throw new GenericRuntimeException( "Exception while collecting fresh schema information for table!", e );
+        }
+    }
+
+
+    @Override
+    public List<ExportedForeignKey> getExportedForeignKeysForTable( String schema, String table ) {
+        try ( Connection connection = connectionFactory.getFreshConnection() ) {
+            return readExportedForeignKeysForSingleTable( connection, schema, table );
+        } catch ( SQLException e ) {
+            throw new GenericRuntimeException( "Exception while collecting fresh foreign key schema information for table!", e );
         }
     }
 
@@ -460,6 +473,79 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
             }
         }
         return list;
+    }
+
+
+    private List<ExportedForeignKey> readExportedForeignKeysForSingleTable(
+            Connection connection,
+            String schemaPattern,
+            String tableName ) throws SQLException {
+
+        DatabaseMetaData dbmd = connection.getMetaData();
+        Map<String, List<ImportedForeignKeyColumn>> foreignKeyColumns = new LinkedHashMap<>();
+        try ( ResultSet row = dbmd.getImportedKeys( settings.get( "database" ), schemaPattern, tableName ) ) {
+            while ( row.next() ) {
+                String name = row.getString( "FK_NAME" );
+                String groupKey = name == null || name.isBlank()
+                        ? row.getString( "FKTABLE_NAME" ) + "_" + row.getString( "PKTABLE_NAME" ) + "_" + row.getString( "PK_NAME" )
+                        : name;
+                    foreignKeyColumns.computeIfAbsent( groupKey, k -> new ArrayList<>() ).add( new ImportedForeignKeyColumn(
+                        name,
+                        requiresSchema() ? row.getString( "FKTABLE_SCHEM" ) : row.getString( "FKTABLE_CAT" ),
+                        row.getString( "FKTABLE_NAME" ),
+                        row.getString( "FKCOLUMN_NAME" ),
+                        requiresSchema() ? row.getString( "PKTABLE_SCHEM" ) : row.getString( "PKTABLE_CAT" ),
+                        row.getString( "PKTABLE_NAME" ),
+                        row.getString( "PKCOLUMN_NAME" ),
+                        row.getShort( "KEY_SEQ" ),
+                        toForeignKeyOption( row.getShort( "UPDATE_RULE" ) ),
+                        toForeignKeyOption( row.getShort( "DELETE_RULE" ) ) ) );
+            }
+        }
+
+        List<ExportedForeignKey> foreignKeys = new ArrayList<>();
+        for ( List<ImportedForeignKeyColumn> columns : foreignKeyColumns.values() ) {
+            columns.sort( Comparator.comparingInt( ImportedForeignKeyColumn::keySeq ) );
+            ImportedForeignKeyColumn first = columns.get( 0 );
+            String name = first.name();
+            if ( name == null || name.isBlank() ) {
+                name = "fk_" + first.physicalTableName() + "_" + first.referencedPhysicalTableName();
+            }
+            foreignKeys.add( new ExportedForeignKey(
+                    name,
+                    first.physicalSchemaName(),
+                    first.physicalTableName(),
+                    columns.stream().map( ImportedForeignKeyColumn::physicalColumnName ).toList(),
+                    first.referencedPhysicalSchemaName(),
+                    first.referencedPhysicalTableName(),
+                    columns.stream().map( ImportedForeignKeyColumn::referencedPhysicalColumnName ).toList(),
+                    first.updateRule(),
+                    first.deleteRule() ) );
+        }
+        return foreignKeys;
+    }
+
+
+    private ForeignKeyOption toForeignKeyOption( short jdbcRule ) {
+        return switch ( jdbcRule ) {
+            case DatabaseMetaData.importedKeyRestrict, DatabaseMetaData.importedKeyNoAction -> ForeignKeyOption.RESTRICT;
+            default -> throw new GenericRuntimeException( "Unsupported foreign key rule from source: " + jdbcRule );
+        };
+    }
+
+
+    private record ImportedForeignKeyColumn(
+            String name,
+            String physicalSchemaName,
+            String physicalTableName,
+            String physicalColumnName,
+            String referencedPhysicalSchemaName,
+            String referencedPhysicalTableName,
+            String referencedPhysicalColumnName,
+            short keySeq,
+            ForeignKeyOption updateRule,
+            ForeignKeyOption deleteRule ) {
+
     }
 
 
