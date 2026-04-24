@@ -18,17 +18,43 @@ package org.polypheny.db.adapter.parquet.shared.filter;
 
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.type.entity.PolyValue;
+import java.util.List;
 
 /**
  * Immutable filter description
+ *
  * @param columnIndex - index of filter column
  * @param operator - filter operation
  * @param polyValue - filter value
  */
-public record ParquetAdapterFilter(int columnIndex, Kind operator, PolyValue polyValue, Long dynamicParamIndex ) {
+public record ParquetAdapterFilter( int columnIndex, List<String> pathElements, Kind operator, PolyValue polyValue, Long dynamicParamIndex ) {
 
-    public ParquetAdapterFilter(int columnIndex, Kind operator, PolyValue polyValue ) {
-        this( columnIndex, operator, polyValue, null );
+    public ParquetAdapterFilter( int columnIndex, Kind operator, PolyValue polyValue ) {
+        this( columnIndex, List.of(), operator, polyValue, null );
+    }
+
+
+    public ParquetAdapterFilter( int columnIndex, List<String> pathElements, Kind operator, PolyValue polyValue ) {
+        this( columnIndex, pathElements, operator, polyValue, null );
+    }
+
+    // validation performed in main constructor
+    public ParquetAdapterFilter {
+        pathElements = pathElements == null ? List.of() : List.copyOf( pathElements );
+    }
+
+
+    /**
+     * Creates new {@link ParquetAdapterFilter} that contain sub path starting from the provided index.
+     *
+     * @param startIndex the index to copy path elements from.
+     * @return a new instance of {@link ParquetAdapterFilter}.
+     */
+    public ParquetAdapterFilter makeNested( int startIndex ) {
+        if ( startIndex >= pathElements.size() ) {
+            return this;
+        }
+        return new ParquetAdapterFilter( columnIndex, pathElements.subList( startIndex, pathElements.size() ), operator, polyValue, dynamicParamIndex );
     }
 
 }

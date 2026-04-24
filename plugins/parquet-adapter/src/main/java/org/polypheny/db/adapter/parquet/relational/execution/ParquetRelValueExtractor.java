@@ -6,6 +6,7 @@ import org.apache.parquet.schema.Type;
 import org.polypheny.db.adapter.parquet.shared.execution.AbstractParquetValueExtractor;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
+import java.util.List;
 
 /**
  * Converts Parquet field values into Polypheny relational values
@@ -25,5 +26,12 @@ public class ParquetRelValueExtractor extends AbstractParquetValueExtractor {
         Object value = extractPrimitiveValue( group, index, primitive, 0 );
         return typeConverter.fromObjToPolyValue( type, value );
     }
+
+
+    @Override
+    public PolyValue extractValue( Group group, List<String> path ) {
+        throw new UnsupportedOperationException( ParquetRelValueExtractor.class.getName() + " does not support extracting value via path." );
+    }
+
 
 }

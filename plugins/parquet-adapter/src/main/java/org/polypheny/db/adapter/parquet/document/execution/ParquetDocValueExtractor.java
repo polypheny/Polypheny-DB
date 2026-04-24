@@ -1,6 +1,7 @@
 package org.polypheny.db.adapter.parquet.document.execution;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.schema.MessageType;
@@ -19,14 +20,22 @@ public class ParquetDocValueExtractor extends AbstractParquetValueExtractor {
 
     private static final PolyString ID_KEY = PolyString.of( "_id" );
 
+
     @Override
     public PolyValue extractValue( Group group, int index, Type type ) {
         return extractStructuredValue( group, index, type );
     }
 
 
+    @Override
+    public PolyValue extractValue( Group group, List<String> path ) {
+        throw new UnsupportedOperationException( ParquetDocValueExtractor.class.getName() + " does not support extracting value via path." );
+    }
+
+
     /**
      * Convert one Parquet row (Group) into one Polypheny document (PolyDocument)
+     *
      * @param group - parquet row
      * @param schema - file schema (fields)
      * @param generatedId - id for the row

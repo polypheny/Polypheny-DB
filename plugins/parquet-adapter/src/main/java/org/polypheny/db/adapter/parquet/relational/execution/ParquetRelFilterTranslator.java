@@ -20,7 +20,9 @@ import java.util.List;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.execution.ParquetFilterTranslationSupport;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 
@@ -66,7 +68,6 @@ public class ParquetRelFilterTranslator {
             case BOOLEAN, VARCHAR, CHAR, TEXT -> kind == Kind.EQUALS || kind == Kind.NOT_EQUALS;
             case INTEGER, BIGINT, FLOAT, DOUBLE, DATE, TIME, TIMESTAMP -> true;
             default -> false;
-        } && (valueNode instanceof org.polypheny.db.rex.RexDynamicParam
-                || (valueNode instanceof org.polypheny.db.rex.RexLiteral literal && literal.getValue() != null));
+        } && (valueNode instanceof RexDynamicParam || (valueNode instanceof RexLiteral literal && literal.getValue() != null));
     }
 }

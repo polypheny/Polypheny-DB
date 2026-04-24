@@ -16,13 +16,16 @@
 
 package org.polypheny.db.adapter.parquet.shared.execution;
 
+import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.schema.Type;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceReader;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
@@ -37,6 +40,7 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
     protected final ParquetSourceReader reader;
     protected final ParquetValueExtractor valueExtractor;
     protected final List<ParquetAdapterFilter> filters;
+    private final Queue<PolyValue[]> rows = new ArrayDeque<>();
     private PolyValue[] current;
 
 
@@ -56,20 +60,26 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
     @Override
     public boolean moveNext() {
         try {
-            for ( ; ; ) {
-                // group (single row) can be still filtered, while parquet filter
-                // works on the row group level
-                Group group = reader.next();
-                if ( group == null ) {
-                    current = null;
-                    return false;
+            // fill rows queue from parquet queue/row
+            while ( rows.isEmpty() ) {
+                for ( ; ; ) {
+                    // group (single row) can be still filtered, while parquet filter
+                    // works on the row group level
+                    Group group = reader.next();
+                    if ( group == null ) {
+                        current = null;
+                        return false;
+                    }
+                    // turn single parquet row (group) into multiple rows for nested repeated fields and store them in queue rows
+                    enqueueRows( group, rows );
+                    if ( rows.isEmpty() ) {
+                        continue;
+                    }
+                    break;
                 }
-                if ( !accept( group ) ) {
-                    continue;
-                }
-                current = extractRow( group );
-                return true;
             }
+            current = rows.remove();
+            return true;
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Error while reading parquet data", e );
         }
@@ -99,13 +109,46 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
 
 
     /**
+     * The function that turns one input Parquet row into zero (filtered), one, or many output relational rows
+     * It lets the shared enumerator support both simple one-row scans and repeated nested scans that emit multiple rows.
+     * @param group - parquet group/row
+     * @param rows - Queue<PolyValue[]> - output to fill
+     */
+    protected void enqueueRows( Group group, Queue<PolyValue[]> rows ) {
+        for ( var row : expandRow( group ) ) {
+            if ( !accept( row ) ) { //apply filter on adapter level
+                continue;
+            }
+            // converts the accepted Parquet row/group into PolyValue[]
+            PolyValue[] extracted = extractRow( row );
+            if ( extracted != null ) {
+                rows.add( extracted ); // stores produced rows into queue
+            }
+        }
+    }
+
+
+    /**
+     * decides how many logical rows come from this input row
+     * default implementation - return
+     * repeated nested enumerator overrides this and returns all nested groups
+     * @param group - parquet group/row
+     * @return List<Group>
+     */
+    protected List<Group> expandRow( Group group ) {
+        return List.of( group );
+    }
+
+
+    /**
      * apply filter on adapter level for each row
      * by calling matches()
+     *
      * @param group - parquet row
      * @return boolean
      */
     protected boolean accept( Group group ) {
-        for ( ParquetAdapterFilter filter : filters ) {
+        for ( var filter : filters ) {
             if ( !matches( group, filter ) ) {
                 return false;
             }
@@ -126,7 +169,7 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
         }
 
         // call overloaded functionality
-        PolyValue actual = extractFilterValue( group, filter );
+        PolyValue actual = extractValue( group, filter );
         PolyValue expected = filter.polyValue();
 
         if ( actual == null || actual.isNull() || expected.isNull() ) {
@@ -134,7 +177,17 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
         }
 
         // apply filter on the row level
-        return switch ( filter.operator() ) {
+        return matches( actual, filter.operator(), expected );
+    }
+
+
+    protected boolean matches( PolyValue actual, Kind operator, PolyValue expected ) {
+        if ( actual == null || actual.isNull() || expected == null || expected.isNull() ) {
+            return false;
+        }
+
+        // apply filter on the row level
+        return switch ( operator ) {
             case EQUALS -> actual.equals( expected );
             case NOT_EQUALS -> !actual.equals( expected );
             case GREATER_THAN -> compare( actual, expected ) > 0;
@@ -146,9 +199,18 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
     }
 
 
-    protected PolyValue extractFilterValue( Group group, ParquetAdapterFilter filter ) {
-        Type field = reader.getProjectionSchema().getType( filter.columnIndex() );
-        return valueExtractor.extractValue( group, filter.columnIndex(), field );
+    /**
+     * Extract value from parquet group according to filter column index
+     * @param group - parquet group
+     * @param filter - ParquetAdapterFilter
+     * @return - PolyValue
+     */
+    protected PolyValue extractValue( Group group, ParquetAdapterFilter filter ) {
+        if ( filter.pathElements().isEmpty() ) {
+            Type field = reader.getProjectionSchema().getType( filter.columnIndex() );
+            return valueExtractor.extractValue( group, filter.columnIndex(), field );
+        }
+        return valueExtractor.extractValue( group, filter.pathElements() );
     }
 
 

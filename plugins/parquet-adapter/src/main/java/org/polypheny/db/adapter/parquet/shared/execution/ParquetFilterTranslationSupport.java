@@ -22,6 +22,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import java.util.List;
 
 /**
  * Helper for parsing supported Rex predicates and
@@ -60,7 +61,7 @@ public final class ParquetFilterTranslationSupport {
         }
 
         if ( valueNode instanceof RexDynamicParam dynamicParam ) {
-            return new ParquetAdapterFilter( columnIndex, operator, null, dynamicParam.getIndex() );
+            return new ParquetAdapterFilter( columnIndex, List.of(), operator, null, dynamicParam.getIndex() );
         }
 
         return null;

@@ -17,16 +17,20 @@
 package org.polypheny.db.adapter.parquet.shared.filter;
 
 import java.util.List;
+import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.filter2.compat.FilterCompat;
 import org.apache.parquet.filter2.predicate.FilterApi;
 import org.apache.parquet.filter2.predicate.FilterPredicate;
 import org.apache.parquet.io.api.Binary;
+import org.apache.parquet.hadoop.metadata.ColumnPath;
+import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 import org.polypheny.db.adapter.parquet.shared.schema.ParquetTypeConverter;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.type.entity.PolyValue;
 
 /**
  * Builds native Parquet predicates from shared filter descriptions.
@@ -52,44 +56,104 @@ public final class ParquetNativeFilterBuilder {
         }
 
         FilterPredicate predicate = null;
-        for ( ParquetAdapterFilter filter : filters ) {
+
+        for ( var filter : filters ) {
             FilterPredicate next = buildPredicate( schema, filter );
             if ( next == null ) {
-                throw new IllegalArgumentException( "Unsupported parquet predicate: " + filter );
+                continue;
             }
             predicate = predicate == null ? next : FilterApi.and( predicate, next );
         }
-        return FilterCompat.get( predicate );
+
+        return predicate == null ? FilterCompat.NOOP : FilterCompat.get( predicate );
     }
 
 
     private static FilterPredicate buildPredicate( MessageType schema, ParquetAdapterFilter filter ) {
-        int index = filter.columnIndex();
-        if ( index < 0 || index >= schema.getFieldCount() ) {
-            return null;
-        }
+        if ( filter.pathElements().isEmpty() ) {
+            int index = filter.columnIndex();
+            if ( index < 0 || index >= schema.getFieldCount() ) {
+                return null;
+            }
 
-        Type type = schema.getType( index );
-        if ( !type.isPrimitive() ) {
-            return null;
-        }
+            Type type = schema.getType( index );
+            if ( !type.isPrimitive() ) {
+                return null;
+            }
 
+            String columnName = schema.getFieldName( index );
+            return buildPredicatePrimitive( filter.operator(), filter.polyValue(), type, columnName );
+        } else {
+            // build native filter to push down for nested fields
+            Type type = resolveType( schema, filter.pathElements() );
+            if ( type == null || !type.isPrimitive() ) {
+                return null;
+            }
+
+            if ( isRepeatedPath( schema, filter.pathElements() ) ) {
+                return null;
+            }
+
+            String columnName = String.join( ".", filter.pathElements() );
+            return buildPredicatePrimitive( filter.operator(), filter.polyValue(), type, columnName );
+        }
+    }
+
+
+    private static FilterPredicate buildPredicatePrimitive( Kind operator, PolyValue value, Type type, String columnName ) {
         PrimitiveType primitive = type.asPrimitiveType();
-        Object expected = TYPE_CONVERTER.fromPolyValueToParquetObj( primitive, filter.polyValue() );
+        Object expected = TYPE_CONVERTER.fromPolyValueToParquetObj( primitive, value );
         if ( expected == null ) {
             return null;
         }
 
-        String columnName = schema.getFieldName( index );
         return switch ( primitive.getPrimitiveTypeName() ) {
-            case BOOLEAN -> buildBoolean( filter.operator(), columnName, expected );
-            case INT32 -> buildInt( filter.operator(), columnName, expected );
-            case INT64 -> buildLong( filter.operator(), columnName, expected );
-            case FLOAT -> buildFloat( filter.operator(), columnName, expected );
-            case DOUBLE -> buildDouble( filter.operator(), columnName, expected );
-            case BINARY, FIXED_LEN_BYTE_ARRAY, INT96 -> buildBinary( filter.operator(), columnName, expected, primitive.getLogicalTypeAnnotation() );
+            case BOOLEAN -> buildBoolean( operator, columnName, expected );
+            case INT32 -> buildInt( operator, columnName, expected );
+            case INT64 -> buildLong( operator, columnName, expected );
+            case FLOAT -> buildFloat( operator, columnName, expected );
+            case DOUBLE -> buildDouble( operator, columnName, expected );
+            case BINARY, FIXED_LEN_BYTE_ARRAY, INT96 -> buildBinary( operator, columnName, expected, primitive.getLogicalTypeAnnotation() );
         };
     }
+
+
+    private static Type resolveType( GroupType groupType, List<String> path ) {
+        GroupType current = groupType;
+        for ( int i = 0; i < path.size(); i++ ) {
+            Type type = null;
+            for ( int fieldIndex = 0; fieldIndex < current.getFieldCount(); fieldIndex++ ) {
+                Type candidate = current.getType( fieldIndex );
+                if ( candidate.getName().equals( path.get( i ) ) ) {
+                    type = candidate;
+                    break;
+                }
+            }
+            if ( type == null ) {
+                return null;
+            }
+            if ( i == path.size() - 1 ) {
+                return type;
+            }
+            if ( type.isPrimitive() ) {
+                return null;
+            }
+            current = type.asGroupType();
+        }
+        return null;
+    }
+
+
+    private static boolean isRepeatedPath( MessageType schema, List<String> path ) {
+        ColumnPath columnPath = ColumnPath.get( path.toArray( String[]::new ) );
+        for ( ColumnDescriptor descriptor : schema.getColumns() ) {
+            if ( ColumnPath.get( descriptor.getPath() ).equals( columnPath ) ) {
+                return descriptor.getMaxRepetitionLevel() > 0;
+            }
+        }
+        return true;
+    }
+
 
     private static FilterPredicate buildBoolean( Kind operator, String columnName, Object expected ) {
         if ( !(expected instanceof Boolean value) ) {
