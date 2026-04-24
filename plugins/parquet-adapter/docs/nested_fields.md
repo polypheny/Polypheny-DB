@@ -12,7 +12,7 @@ In NORMALIZED mode, Polypheny reads the Parquet schema and recursively splits it
 
 All relational Parquet table names are adapter-prefixed, both flat and normalized.
 
-_Example:_ `parquetrelational1__orders`, not just `orders`. This allows create different adapters for flat and normalized schema modes.
+_Example:_ `pn__orders`, not just `orders`. This allows creating different adapters for flat and normalized schema modes.
 
 ## Example of Parquet shape
 
@@ -52,25 +52,25 @@ orders.parquet
 
 **_orders_**
 
-| polypheny_row_id | order_id | customer |
-|------------------|----------|----------|
-| 1                | 1001     | Alice    |
-| 2                | 1002     | Bob      |
+| __polypheny_row_id | order_id | customer |
+|--------------------|----------|----------|
+| 0                  | 1001     | Alice    |
+| 1                  | 1002     | Bob      |
 
 **_orders__items_**
 
-| polypheny_row_id | polypheny_parent_row_id | polypheny_elem_ordinal | product_id | quantity |
-|------------------|-------------------------|------------------------|------------|----------|
-| 10               | 1                       | 0                      | A-1        | 2        |
-| 11               | 1                       | 1                      | B-5        | 1        |
-| 12               | 2                       | 0                      | C-9        | 4        |
+| __polypheny_row_id | __polypheny_parent_row_id | __polypheny_elem_ordinal | product_id | quantity |
+|--------------------|---------------------------|--------------------------|------------|----------|
+| 0/items[0]         | 0                         | 0                        | A-1        | 2        |
+| 0/items[1]         | 0                         | 1                        | B-5        | 1        |
+| 1/items[0]         | 1                         | 0                        | C-9        | 4        |
 
 **_orders__items__discounts_**
 
-| polypheny_row_id | polypheny_parent_row_id | polypheny_elem_ordinal | code   | amount |
-|------------------|-------------------------|------------------------|--------|--------|
-| 20               | 10                      | 0                      | SUMMER | 5.00   |
-| 21               | 10                      | 1                      | VIP    | 2.00   |
+| __polypheny_row_id        | __polypheny_parent_row_id | __polypheny_elem_ordinal | code   | amount |
+|---------------------------|---------------------------|--------------------------|--------|--------|
+| 0/items[0]/discounts[0]   | 0/items[0]               | 0                        | SUMMER | 5.00   |
+| 0/items[0]/discounts[1]   | 0/items[0]               | 1                        | VIP    | 2.00   |
 
 ```text
 orders.parquet
@@ -92,50 +92,57 @@ JOIN orders__items i
 ### Flat result
 
 ```text
-parquetrelational1__orders -> [order_id, customer_id, status, ...]
+pf__orders -> [order_id, customer_id, status, ...]
 ```
 
 ### Normalized result
 
 ```text
-parquetrelational1__orders -> [order_id, customer_id, status, total_price]
-parquetrelational1__orders__items -> [order_item_id, product_id, quantity, price]
-parquetrelational1__orders__items__discounts -> [code, amount]
+pn__orders -> [order_id, customer_id, status, total_price]
+pn__orders__items -> [__polypheny_row_id, __polypheny_parent_row_id, __polypheny_elem_ordinal, order_item_id, product_id, quantity, price]
+pn__orders__items__discounts -> [__polypheny_row_id, __polypheny_parent_row_id, __polypheny_elem_ordinal, code, amount]
 ```
 
 ## Synthetic Columns
 
 - Normalized tables include visible _synthetic key columns_:
-  - polypheny_row_id
-  - polypheny_parent_row_id
-  - polypheny_elem_ordinal
+  - __polypheny_row_id
+  - __polypheny_parent_row_id
+  - __polypheny_elem_ordinal
 - Root tables have:
-  - polypheny_row_id
+  - __polypheny_row_id
 - Child tables have:
-  - polypheny_row_id
-  - polypheny_parent_row_id
-  - polypheny_elem_ordinal - for repeated children
+  - __polypheny_row_id
+  - __polypheny_parent_row_id
+  - __polypheny_elem_ordinal
 - Non-repeated child tables still have:
-  - polypheny_parent_row_id
-  - polypheny_elem_ordinal is always 0
+  - __polypheny_parent_row_id
+  - __polypheny_elem_ordinal is always 0
+
+Synthetic row ids are generated as deterministic structural path identifiers.
+Examples:
+
+- root row: `0`
+- repeated child row: `0/items[1]`
+- deeper repeated child row: `0/items[1]/discounts[0]`
 
 **_Sql Example:_**
 
 ```sql
 SELECT o.order_id, i.product_id, i.quantity
-FROM parquetrelational1__orders o
-JOIN parquetrelational1__orders__items i
-  ON i.polypheny_parent_row_id = o.polypheny_row_id;
+FROM pn__orders o
+JOIN pn__orders__items i
+  ON i.__polypheny_parent_row_id = o.__polypheny_row_id;
 
 ```
 
-For deeper nesting, the same rule applies at each level. A row in parquetrelational1__orders__items__discounts points to its parent item row, not directly to the root order row:
+For deeper nesting, the same rule applies at each level. A row in pn__orders__items__discounts points to its parent item row, not directly to the root order row:
 
 ```sql
 SELECT i.product_id, d.code, d.amount
-FROM parquetrelational1__orders__items i
-JOIN parquetrelational1__orders__items__discounts d
-  ON d.polypheny_parent_row_id = i.polypheny_row_id;
+FROM pn__orders__items i
+JOIN pn__orders__items__discounts d
+  ON d.__polypheny_parent_row_id = i.__polypheny_row_id;
 ```
 
 ## BINDINGS
@@ -164,9 +171,9 @@ Bindings describe:
 
 | Generated column          | Source Parquet field path                              | Column role           |
 |---------------------------|--------------------------------------------------------|-----------------------|
-| `polypheny_row_id`        | generated by Polypheny                                 | synthetic primary key |
-| `polypheny_parent_row_id` | generated by Polypheny from parent item row            | synthetic parent key  |
-| `polypheny_elem_ordinal`  | generated by Polypheny from repeated discount position | synthetic ordinal     |
+| `__polypheny_row_id`      | generated by Polypheny from row structure              | synthetic primary key |
+| `__polypheny_parent_row_id` | generated by Polypheny from parent item row          | synthetic parent key  |
+| `__polypheny_elem_ordinal` | generated by Polypheny from repeated discount position | synthetic ordinal     |
 | `code`                    | `items.discounts.code`                                 | data                  |
 | `amount`                  | `items.discounts.amount`                               | data                  |
 
@@ -222,7 +229,7 @@ Example:
 
 ```text
 sourceUrl: orders.parquet
-parentTableName: parquetrelational1__orders
+parentTableName: pn__orders
 sourcePathElements: ["items"]
 
 columnPaths:
@@ -251,6 +258,10 @@ Contains the main normalization logic. It builds ParquetNormalizedSchema with:
 
 - `Map<String, List<ExportedColumn>>` tables
 - `Map<String, DiscoveredTableBinding>` bindings
+- Adds normalized synthetic columns:
+  - `__polypheny_row_id`
+  - `__polypheny_parent_row_id`
+  - `__polypheny_elem_ordinal`
 
 ### ParquetNormalizedSchema
 
@@ -276,15 +287,28 @@ Saves and restores ParquetTableBinding metadata through adapter settings.
 `Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\shared\execution\AbstractParquetEnumerator.java`
 Shared base for relational scans.
 
+- Manages reader lifecycle, row iteration, and row queueing
+- Supports turning one input Parquet row into zero, one, or many output relational rows
+- Applies exact row-level filtering after native Parquet row-group pruning
+- Reused by flat, non-repeated nested, and repeated nested relational scans
+
 ### ParquetNestedRepeatedRelEnumerator
 
 `Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\relational\execution\ParquetNestedRepeatedRelEnumerator.java`
 Used for tables that do not have their own Parquet file, but are created from a nested group inside a Parquet file.
 
+- Expands one root Parquet row into multiple relational rows by following `tablePath`
+- Creates hierarchical synthetic row ids such as `0/items[1]/discounts[0]`
+- Reads data columns by Parquet path and synthetic columns from execution metadata
+
 ### ParquetNestedNonRepeatedRelEnumerator
 
 `Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\relational\execution\ParquetNestedNonRepeatedRelEnumerator.java`
 Used to handle virtual table that was created from nested non-repeated types.
+
+- Keeps one relational row per root Parquet row
+- Wraps rows into execution-time virtual rows with synthetic metadata
+- Reads data columns by Parquet path and synthetic columns from execution metadata
 
 ### ParquetRelationalSource
 
@@ -313,6 +337,7 @@ Current scan strategies:
 
 `ParquetRelTable` uses `ParquetTableBinding` to decide which scanner to create.
 This allows Polypheny to read both flat tables and generated normalized tables from the same original Parquet file.
+Synthetic id columns are not stored in Parquet files; they are exposed during scan through virtual execution rows.
 
 ### ParquetNamespace
 
@@ -351,6 +376,36 @@ Native Parquet filtering is only supported for primitive non-repeated leaf field
 If a filter cannot be pushed down safely, it is ignored at the native Parquet level and must still be applied during row scanning.
 
 This means native filtering is used as an optimization, while exact correctness is preserved by enumerator-level filtering.
+
+
+### VirtualGroup
+
+`Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\shared\execution\VirtualGroup.java`
+
+Execution-time wrapper around a Parquet `Group`.
+
+- Delegates all `Group` operations to the original Parquet row/group
+- Carries `GroupMetadata`
+- Used by normalized scans so data columns can still be read from the original Parquet structure while synthetic columns are generated from metadata
+
+### GroupMetadata
+
+`Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\shared\execution\GroupMetadata.java`
+
+Stores synthetic metadata for normalized relational rows:
+
+- `rowId`
+- `parentRowId`
+- `ordinal`
+
+These values are generated during scan and are used to expose:
+
+- `__polypheny_row_id`
+- `__polypheny_parent_row_id`
+- `__polypheny_elem_ordinal`
+
+
+
 
 ## Flow
 

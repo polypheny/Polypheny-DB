@@ -21,8 +21,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.parquet.example.data.Group;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
 import org.polypheny.db.adapter.parquet.shared.execution.AbstractParquetEnumerator;
+import org.polypheny.db.adapter.parquet.shared.execution.VirtualGroup;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Source;
 
 /**
@@ -33,12 +37,12 @@ public class ParquetNestedNonRepeatedRelEnumerator extends AbstractParquetEnumer
     private final List<ParquetColumnBinding> columnBindings;
 
 
-    public ParquetNestedNonRepeatedRelEnumerator(Source source, AtomicBoolean cancelFlag, List<ParquetColumnBinding> columnBindings ) {
+    public ParquetNestedNonRepeatedRelEnumerator( Source source, AtomicBoolean cancelFlag, List<ParquetColumnBinding> columnBindings ) {
         this( source, cancelFlag, columnBindings, List.of() );
     }
 
 
-    public ParquetNestedNonRepeatedRelEnumerator(Source source, AtomicBoolean cancelFlag, List<ParquetColumnBinding> columnBindings, List<ParquetAdapterFilter> filters ) {
+    public ParquetNestedNonRepeatedRelEnumerator( Source source, AtomicBoolean cancelFlag, List<ParquetColumnBinding> columnBindings, List<ParquetAdapterFilter> filters ) {
         // read full root rows from the Parquet file
         super( source, cancelFlag, null, filters, new ParquetPathValueExtractor() );
         this.columnBindings = List.copyOf( columnBindings );
@@ -49,11 +53,28 @@ public class ParquetNestedNonRepeatedRelEnumerator extends AbstractParquetEnumer
     protected PolyValue[] extractRow( Group group ) {
         PolyValue[] row = new PolyValue[columnBindings.size()];
         for ( int i = 0; i < columnBindings.size(); i++ ) {
-            // extract value by path
-            // if the binding path is: List.of("shipping_address", "city") it walks: "root -> shipping_address -> city"
-            row[i] = valueExtractor.extractValue( group, columnBindings.get( i ).sourcePathElements() );
+            row[i] = extractValueByColumnRole( (VirtualGroup) group, columnBindings.get( i ) );
         }
         return row;
+    }
+
+
+    @Override
+    protected List<Group> expandRow( Group group ) {
+        var virtualGroup = new VirtualGroup( group, String.valueOf( reader.getCurrentRowNumber() ), null, 0 );
+        return super.expandRow( virtualGroup );
+    }
+
+
+    private PolyValue extractValueByColumnRole( VirtualGroup virtualGroup, ParquetColumnBinding binding ) {
+        return switch ( binding.role() ) {
+            case DATA -> valueExtractor.extractValue( virtualGroup, binding.sourcePathElements() );
+            case PRIMARY_KEY -> PolyString.of( virtualGroup.getMetadata().getRowId() );
+            case PARENT_KEY -> virtualGroup.getMetadata().getParentRowId() == null
+                    ? PolyNull.NULL
+                    : PolyString.of( virtualGroup.getMetadata().getParentRowId() );
+            case ORDINAL -> PolyLong.of( virtualGroup.getMetadata().getOrdinal() );
+        };
     }
 
 }

@@ -35,6 +35,7 @@ import org.polypheny.db.adapter.parquet.shared.schema.ParquetNameNormalizer;
 import org.polypheny.db.adapter.parquet.shared.schema.ParquetTypeConverter;
 import org.polypheny.db.adapter.parquet.shared.util.HadoopConfigurationFactory;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.type.PolyType;
 
 /**
  * Class turns Parquet nested schema into multiple relational tables for normalized mode:
@@ -123,7 +124,8 @@ public class ParquetSchemaNormalizer {
             ParquetNormalizedSchema normalizedSchema ) {
         // maps relational column name to Parquet source path
         Map<String, List<String>> columnPaths = new LinkedHashMap<>();
-
+        // add synthetic columns to normalized schema
+        normalizedSchema.addColumns( tableName, syntheticColumns( fileName, tableName, parentTableName, normalizedSchema, tablePath, columnPaths ) );
         collectNormalizedColumns( fields, sourceUrl, fileName, tableName, tableName, tablePath, columnPaths, normalizedSchema );
         // each generated table gets table definition and binding metadata
         normalizedSchema.addBinding( tableName, new DiscoveredTableBinding( sourceUrl, parentTableName, tablePath, columnPaths ) );
@@ -154,8 +156,7 @@ public class ParquetSchemaNormalizer {
             ParquetNormalizedSchema normalizedSchema ) {
 
         Map<String, Integer> seenColumnNames = new HashMap<>();
-        for ( int fieldIndex = 0; fieldIndex < fields.size(); fieldIndex++ ) {
-            Type field = fields.get( fieldIndex );
+        for ( Type field : fields ) {
             List<String> sourcePath = appendPath( currentPath, field.getName() );
 
             if ( field.isRepetition( Type.Repetition.REPEATED ) ) {
@@ -173,7 +174,7 @@ public class ParquetSchemaNormalizer {
             // primitive - add field as a column to the current table
             if ( field.isPrimitive() ) {
                 String columnName = uniqueColumnName( seenColumnNames, ParquetNameNormalizer.normalizeFieldName( field.getName() ) );
-                normalizedSchema.addColumns( tableName, List.of( exportedColumn( field, fileName, tableName, columnName, sourcePath, fieldIndex ) ) );
+                normalizedSchema.addColumns( tableName, List.of( exportedColumn( field, fileName, tableName, columnName, sourcePath, nextPosition( normalizedSchema, tableName ) ) ) );
                 columnPaths.put( columnName, sourcePath );
                 continue;
             }
@@ -194,9 +195,12 @@ public class ParquetSchemaNormalizer {
             List<String> sourcePath,
             ParquetNormalizedSchema normalizedSchema ) {
         String columnName = ParquetNameNormalizer.normalizeFieldName( field.getName() );
-        List<ExportedColumn> columns = List.of( exportedColumn( field, fileName, tableName, columnName, sourcePath, 0 ) );
+        Map<String, List<String>> columnPaths = new HashMap<>();
+        List<ExportedColumn> columns = new ArrayList<>( syntheticColumns( fileName, tableName, parentTableName, normalizedSchema, sourcePath, columnPaths ) );
+        columns.add( exportedColumn( field, fileName, tableName, columnName, sourcePath, columns.size() ) );
+        columnPaths.put( columnName, sourcePath );
         normalizedSchema.addColumns( tableName, columns );
-        normalizedSchema.addBinding( tableName, new DiscoveredTableBinding( sourceUrl, parentTableName, sourcePath, Map.of( columnName, sourcePath ) ) );
+        normalizedSchema.addBinding( tableName, new DiscoveredTableBinding( sourceUrl, parentTableName, sourcePath, columnPaths ) );
     }
 
 
@@ -226,6 +230,43 @@ public class ParquetSchemaNormalizer {
                 String.join( ".", sourcePath ),
                 position,
                 false );
+    }
+
+
+    private List<ExportedColumn> syntheticColumns( String fileName, String tableName, String parentTableName, ParquetNormalizedSchema normalizedSchema, List<String> sourcePath, Map<String, List<String>> columnPaths ) {
+        List<ExportedColumn> columns = new ArrayList<>();
+        columns.add( syntheticColumn( fileName, tableName, ParquetSyntheticColumns.ROW_ID, PolyType.VARCHAR, nextPosition( normalizedSchema, tableName ), true ) );
+        columnPaths.put( ParquetSyntheticColumns.ROW_ID, sourcePath );
+        if ( parentTableName != null ) {
+            columns.add( syntheticColumn( fileName, tableName, ParquetSyntheticColumns.PARENT_ROW_ID, PolyType.VARCHAR, nextPosition( normalizedSchema, tableName ) + columns.size(), false ) );
+            columnPaths.put( ParquetSyntheticColumns.PARENT_ROW_ID, sourcePath );
+            columns.add( syntheticColumn( fileName, tableName, ParquetSyntheticColumns.ELEM_ORDINAL, PolyType.BIGINT, nextPosition( normalizedSchema, tableName ) + columns.size(), false ) );
+            columnPaths.put( ParquetSyntheticColumns.ELEM_ORDINAL, sourcePath );
+        }
+        return columns;
+    }
+
+
+    private ExportedColumn syntheticColumn( String fileName, String tableName, String columnName, PolyType type, int position, boolean primary ) {
+        return new ExportedColumn(
+                columnName,
+                type,
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+                fileName,
+                tableName,
+                columnName,
+                position,
+                primary );
+    }
+
+
+    private int nextPosition( ParquetNormalizedSchema normalizedSchema, String tableName ) {
+        return normalizedSchema.getTables().getOrDefault( tableName, List.of() ).size();
     }
 
 

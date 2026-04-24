@@ -164,7 +164,7 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
         }
 
         // this row does not have a value for that Parquet field
-        if ( group.getFieldRepetitionCount( filter.columnIndex() ) == 0 ) {
+        if ( filter.pathElements().isEmpty() && group.getFieldRepetitionCount( filter.columnIndex() ) == 0 ) {
             return false;
         }
 

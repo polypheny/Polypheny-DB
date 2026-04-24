@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.parquet.relational.execution;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.parquet.example.data.Group;
@@ -24,9 +25,13 @@ import org.apache.parquet.schema.Type;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetTableBinding;
 import org.polypheny.db.adapter.parquet.shared.execution.AbstractParquetEnumerator;
+import org.polypheny.db.adapter.parquet.shared.execution.VirtualGroup;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Source;
 
 /**
@@ -38,12 +43,12 @@ public class ParquetNestedRepeatedRelEnumerator extends AbstractParquetEnumerato
     private final List<ParquetColumnBinding> columnBindings;
 
 
-    public ParquetNestedRepeatedRelEnumerator(Source source, AtomicBoolean cancelFlag, ParquetTableBinding binding, List<ParquetColumnBinding> columnBindings ) {
+    public ParquetNestedRepeatedRelEnumerator( Source source, AtomicBoolean cancelFlag, ParquetTableBinding binding, List<ParquetColumnBinding> columnBindings ) {
         this( source, cancelFlag, binding, columnBindings, List.of() );
     }
 
 
-    public ParquetNestedRepeatedRelEnumerator(Source source, AtomicBoolean cancelFlag, ParquetTableBinding binding, List<ParquetColumnBinding> columnBindings, List<ParquetAdapterFilter> filters ) {
+    public ParquetNestedRepeatedRelEnumerator( Source source, AtomicBoolean cancelFlag, ParquetTableBinding binding, List<ParquetColumnBinding> columnBindings, List<ParquetAdapterFilter> filters ) {
         super( source, cancelFlag, null, filters, new ParquetPathValueExtractor() );
 
         this.tablePath = binding.sourcePathElements();
@@ -62,7 +67,8 @@ public class ParquetNestedRepeatedRelEnumerator extends AbstractParquetEnumerato
      */
     @Override
     protected List<Group> expandRow( Group group ) {
-        return resolveNested( group, group.getType(), 0 );
+        var virtualGroup = new VirtualGroup( group, String.valueOf( reader.getCurrentRowNumber() ), null, 0 );
+        return resolveNested( virtualGroup, group.getType(), 0 );
     }
 
 
@@ -70,8 +76,7 @@ public class ParquetNestedRepeatedRelEnumerator extends AbstractParquetEnumerato
     protected PolyValue[] extractRow( Group group ) {
         PolyValue[] row = new PolyValue[columnBindings.size()];
         for ( int i = 0; i < columnBindings.size(); i++ ) {
-            var path = columnBindings.get( i ).sourcePathElements();
-            row[i] = valueExtractor.extractValue( group, path.subList( tablePath.size(), path.size() ) );
+            row[i] = extractValueByColumnRole( (VirtualGroup) group, columnBindings.get( i ) );
         }
         return row;
     }
@@ -79,17 +84,19 @@ public class ParquetNestedRepeatedRelEnumerator extends AbstractParquetEnumerato
 
     @Override
     protected PolyValue extractValue( Group group, ParquetAdapterFilter filter ) {
-        return super.extractValue( group, filter.makeNested( tablePath.size() ) );
+        var virtualGroup = (VirtualGroup) group;
+        var binding = columnBindings.get( filter.columnIndex() );
+        return extractValueByColumnRole(virtualGroup, binding);
     }
 
 
-    private List<Group> resolveNested( Group group, GroupType groupType, int pathIndex ) {
+    private List<Group> resolveNested( VirtualGroup virtualGroup, GroupType groupType, int pathIndex ) {
         if ( pathIndex >= tablePath.size() ) {
-            return List.of( group );
+            return List.of( virtualGroup );
         }
 
         int fieldIndex = fieldIndex( groupType, tablePath.get( pathIndex ) );
-        if ( fieldIndex < 0 || group.getFieldRepetitionCount( fieldIndex ) == 0 ) {
+        if ( fieldIndex < 0 || virtualGroup.getFieldRepetitionCount( fieldIndex ) == 0 ) {
             return List.of();
         }
 
@@ -98,13 +105,29 @@ public class ParquetNestedRepeatedRelEnumerator extends AbstractParquetEnumerato
             return List.of();
         }
 
-        List<Group> groups = new java.util.ArrayList<>();
-        int count = group.getFieldRepetitionCount( fieldIndex );
+        List<Group> groups = new ArrayList<>();
+        int count = virtualGroup.getFieldRepetitionCount( fieldIndex );
         for ( int occurrence = 0; occurrence < count; occurrence++ ) {
-            Group child = group.getGroup( fieldIndex, occurrence );
-            groups.addAll( resolveNested( child, fieldType.asGroupType(), pathIndex + 1 ) );
+            Group child = virtualGroup.getGroup( fieldIndex, occurrence );
+
+            String childRowId = virtualGroup.getMetadata().getRowId() + "/" + tablePath.get( pathIndex ) + "[" + occurrence + "]";
+            VirtualGroup childGroup = new VirtualGroup( child, childRowId, virtualGroup.getMetadata().getRowId(), occurrence );
+            groups.addAll( resolveNested( childGroup, fieldType.asGroupType(), pathIndex + 1 ) );
         }
         return groups;
+    }
+
+
+    private PolyValue extractValueByColumnRole( VirtualGroup virtualGroup, ParquetColumnBinding binding ) {
+        return switch ( binding.role() ) {
+            case DATA -> {
+                var path = binding.sourcePathElements();
+                yield valueExtractor.extractValue( virtualGroup, path.subList( tablePath.size(), path.size() ) );
+            }
+            case PRIMARY_KEY -> PolyString.of( virtualGroup.getMetadata().getRowId() );
+            case PARENT_KEY -> virtualGroup.getMetadata().getParentRowId() == null ? PolyNull.NULL : PolyString.of( virtualGroup.getMetadata().getParentRowId() );
+            case ORDINAL -> PolyLong.of( virtualGroup.getMetadata().getOrdinal() );
+        };
     }
 
 

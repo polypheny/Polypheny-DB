@@ -80,7 +80,11 @@ public record ParquetTableBinding(
         // create ParquetColumnBinding object for each column and store in map by id
         table.columns.forEach( column -> columnBindings.put(
                 column.id,
-                new ParquetColumnBinding( column.id, column.name, ParquetColumnRole.DATA, columnPaths.getOrDefault( column.name, List.of( column.name ) ) ) ) );
+                new ParquetColumnBinding(
+                        column.id,
+                        column.name,
+                        inferRole( column.name ),
+                        inferSourcePath( column.name, columnPaths ) ) ) );
 
         // create table level binding
         return new ParquetTableBinding(
@@ -98,6 +102,24 @@ public record ParquetTableBinding(
      */
     public ParquetColumnBinding getColumnBinding( long columnId ) {
         return columnsByColumnId.get( columnId );
+    }
+
+
+    private static ParquetColumnRole inferRole( String columnName ) {
+        return switch ( columnName ) {
+            case ParquetSyntheticColumns.ROW_ID -> ParquetColumnRole.PRIMARY_KEY;
+            case ParquetSyntheticColumns.PARENT_ROW_ID -> ParquetColumnRole.PARENT_KEY;
+            case ParquetSyntheticColumns.ELEM_ORDINAL -> ParquetColumnRole.ORDINAL;
+            default -> ParquetColumnRole.DATA;
+        };
+    }
+
+
+    private static List<String> inferSourcePath( String columnName, Map<String, List<String>> columnPaths ) {
+        if ( columnPaths.containsKey( columnName ) ) {
+            return columnPaths.get( columnName );
+        }
+        return List.of();
     }
 
 }
