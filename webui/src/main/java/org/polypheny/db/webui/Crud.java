@@ -281,6 +281,30 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    public boolean isSourceSchemaRefreshNeeded( UIRequest request ) {
+        Transaction transaction = getTransaction();
+        try {
+            boolean refreshNeeded = DdlManager.getInstance().isSourceSchemaRefreshNeeded( request.entityId );
+            transaction.commit();
+            return refreshNeeded;
+        } catch ( Exception e ) {
+            try {
+                transaction.rollback( "Error while checking source catalog refresh: " + e.getMessage() );
+            } catch ( Exception rollbackException ) {
+                log.error( "Rollback also failed", rollbackException );
+            }
+            throw new GenericRuntimeException(
+                    "Could not check source catalog for entity " + request.entityId, e );
+        }
+    }
+
+
+    public void checkSourceSchemaRefresh( final Context ctx ) {
+        UIRequest request = ctx.bodyAsClass( UIRequest.class );
+        ctx.json( Map.of( "refreshNeeded", isSourceSchemaRefreshNeeded( request ) ) );
+    }
+
+
     /**
      * Returns the content of a table with a maximum of PAGESIZE elements.
      */

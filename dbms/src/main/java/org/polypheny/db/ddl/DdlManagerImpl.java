@@ -487,6 +487,116 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    @Override
+    public boolean isSourceSchemaRefreshNeeded( long entityId ) {
+        Snapshot snapshot = catalog.getSnapshot();
+        LogicalTable logicalTable = snapshot.rel().getTable( entityId ).orElseThrow();
+
+        log.info( "Checking whether schema refresh is needed for table {}", logicalTable.name );
+
+        if ( logicalTable.entityType != EntityType.SOURCE ) {
+            log.info( "Refresh check skipped: {} is not a source table.", logicalTable.name );
+            return false;
+        }
+
+        List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( logicalTable.id );
+        if ( allocs.size() != 1 ) {
+            throw new GenericRuntimeException(
+                    "Expected exactly one placement for table '" + logicalTable.name +
+                            "', but found " + allocs.size()
+            );
+        }
+
+        AllocationEntity sourceAllocation = allocs.get( 0 );
+        long sourceAdapterId = sourceAllocation.adapterId;
+
+        DataSource<?> sourceAdapter = AdapterManager.getInstance().getSource( sourceAdapterId ).orElseThrow();
+
+        AdapterCatalog sourceAdapterCatalog = catalog
+                .getAdapterCatalog( sourceAdapterId )
+                .orElseThrow( () -> new GenericRuntimeException( "No adapter catalog found for adapter %s", sourceAdapterId ) );
+
+        PhysicalEntity currentPhysicalEntity = sourceAdapterCatalog.getPhysicalsFromAllocs( sourceAllocation.id ).stream()
+                .findFirst()
+                .orElseThrow( () -> new GenericRuntimeException( "No physical entity found for allocation %s", sourceAllocation.id ) );
+
+        PhysicalTable currentPolyphenyPhysicalTable = currentPhysicalEntity.unwrapOrThrow( PhysicalTable.class );
+
+        String sourceTableName = currentPolyphenyPhysicalTable.name;
+        String sourceSchemaName = currentPolyphenyPhysicalTable.namespaceName;
+
+        List<ExportedColumn> currentSourceColumns =
+                sourceAdapter.asRelationalDataSource()
+                        .getExportedColumnsForTable( sourceSchemaName, sourceTableName );
+
+        if ( currentSourceColumns == null || currentSourceColumns.isEmpty() ) {
+            log.info( "No source columns found for table '{}.{}'", sourceSchemaName, sourceTableName );
+            return false;
+        }
+
+        if ( sourceSchemaName != null ) {
+            currentSourceColumns = currentSourceColumns.stream()
+                    .filter( c -> sourceSchemaName.equalsIgnoreCase( c.physicalSchemaName() ) )
+                    .toList();
+        }
+        List<ExportedForeignKey> currentSourceForeignKeys = sourceAdapter.asRelationalDataSource()
+                .getExportedForeignKeysForTable( sourceSchemaName, sourceTableName );
+
+        List<ExportedColumn> orderedSourceColumns = currentSourceColumns.stream()
+                .sorted( Comparator.comparingInt( ExportedColumn::physicalPosition ) )
+                .toList();
+
+        Set<String> sourcePhysicalColumnNames = orderedSourceColumns.stream()
+                .map( c -> normalizeIdentifier( c.physicalColumnName() ) )
+                .collect( Collectors.toSet() );
+
+        Map<String, ExportedColumn> sourceColumnsByPhysicalName = orderedSourceColumns.stream()
+                .collect( Collectors.toMap( c -> normalizeIdentifier( c.physicalColumnName() ), c -> c, ( left, right ) -> left ) );
+
+        List<LogicalColumn> currentLogicalColumns = sortByPosition( snapshot.rel().getColumns( logicalTable.id ) );
+
+        Set<String> polyphenyPhysicalColumnNames = currentPolyphenyPhysicalTable.columns.stream()
+                .map( c -> normalizeIdentifier( c.name ) )
+                .collect( Collectors.toSet() );
+
+        List<ExportedColumn> missingColumns = orderedSourceColumns.stream()
+                .filter( c -> !polyphenyPhysicalColumnNames.contains( normalizeIdentifier( c.physicalColumnName() ) ) )
+                .toList();
+
+        List<LogicalColumn> droppedColumns = currentLogicalColumns.stream()
+                .filter( logicalColumn -> !sourcePhysicalColumnNames.contains( normalizeIdentifier( logicalColumn.name ) ) )
+                .sorted( Comparator.comparingInt( LogicalColumn::getPosition ).reversed() )
+                .toList();
+
+        List<PhysicalColumn> changedTypeColumns = currentPolyphenyPhysicalTable.columns.stream()
+                .filter( physicalColumn -> sourceColumnsByPhysicalName.containsKey( normalizeIdentifier( physicalColumn.name ) ) )
+                .filter( physicalColumn -> hasDifferentType( physicalColumn, sourceColumnsByPhysicalName.get( normalizeIdentifier( physicalColumn.name ) ) ) )
+                .sorted( Comparator.comparingInt( PhysicalColumn::getPosition ) )
+                .toList();
+
+        boolean hasReorderedColumns = hasReorderedColumns( currentLogicalColumns, orderedSourceColumns );
+        boolean hasChangedPrimaryKey = hasChangedPrimaryKey( logicalTable, currentLogicalColumns, orderedSourceColumns, snapshot.rel() );
+        boolean hasChangedForeignKeys = hasChangedForeignKeys( logicalTable, currentSourceForeignKeys, currentLogicalColumns, snapshot, sourceAdapterCatalog, sourceAdapterId );
+
+        if ( missingColumns.isEmpty() && droppedColumns.isEmpty() && changedTypeColumns.isEmpty() && !hasReorderedColumns && !hasChangedPrimaryKey && !hasChangedForeignKeys ) {
+            log.info( "No schema refresh needed for table {}", logicalTable.name );
+            return false;
+        }
+
+        log.info(
+                "Schema refresh is needed for table {}. missingColumns={}, droppedColumns={}, changedTypeColumns={}, hasReorderedColumns={}, hasChangedPrimaryKey={}, hasChangedForeignKeys={}",
+                logicalTable.name,
+                missingColumns.stream().map( ExportedColumn::physicalColumnName ).toList(),
+                droppedColumns.stream().map( LogicalColumn::getName ).toList(),
+                changedTypeColumns.stream().map( PhysicalColumn::getName ).toList(),
+                hasReorderedColumns,
+                hasChangedPrimaryKey,
+                hasChangedForeignKeys
+        );
+        return true;
+    }
+
+
     /**
      * Refreshes the schema of a source table if it is out of sync with the underlying data source.
      *
