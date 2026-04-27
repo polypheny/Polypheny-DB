@@ -16,43 +16,37 @@
 
 package org.polypheny.db.adapter.parquet.shared.execution;
 
+import java.util.List;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import java.util.List;
 
-/**
- * Helper for parsing supported Rex predicates and
- * turning them into adapter-level filters
- */
-public final class ParquetFilterTranslationSupport {
+public abstract class AbstractFilterTranslator {
 
-    private ParquetFilterTranslationSupport() {
-    }
-
-
-    public static ParsedFilter parse( RexNode filter ) {
+    protected ParsedFilter parse( RexNode filter ) {
         if ( !(filter instanceof RexCall call) || !isSupportedOperator( filter.getKind() ) || call.getOperands().size() != 2 ) {
             return null;
         }
 
         RexNode left = unwrapCast( call.getOperands().get( 0 ) );
         RexNode right = unwrapCast( call.getOperands().get( 1 ) );
+        Kind operator = filter.getKind();
 
         if ( isValueOperand( left ) && !isValueOperand( right ) ) {
             RexNode tmp = left;
             left = right;
             right = tmp;
+            operator = reverse( operator );
         }
 
-        return new ParsedFilter( left, right );
+        return new ParsedFilter( left, right, operator );
     }
 
 
-    public static ParquetAdapterFilter toParquetAdapterFilter( int columnIndex, Kind operator, RexNode valueNode ) {
+    protected ParquetAdapterFilter toParquetAdapterFilter( int columnIndex, Kind operator, RexNode valueNode ) {
         if ( valueNode instanceof RexLiteral literal ) {
             if ( literal.getValue() == null ) {
                 return null;
@@ -68,12 +62,12 @@ public final class ParquetFilterTranslationSupport {
     }
 
 
-    public static boolean isValueOperand( RexNode node ) {
+    protected boolean isValueOperand( RexNode node ) {
         return node instanceof RexLiteral || node instanceof RexDynamicParam;
     }
 
 
-    public static boolean isSupportedOperator( Kind kind ) {
+    protected boolean isSupportedOperator( Kind kind ) {
         return kind == Kind.EQUALS
                 || kind == Kind.NOT_EQUALS
                 || kind == Kind.GREATER_THAN
@@ -83,7 +77,18 @@ public final class ParquetFilterTranslationSupport {
     }
 
 
-    public static RexNode unwrapCast( RexNode node ) {
+    protected Kind reverse( Kind kind ) {
+        return switch ( kind ) {
+            case GREATER_THAN -> Kind.LESS_THAN;
+            case GREATER_THAN_OR_EQUAL -> Kind.LESS_THAN_OR_EQUAL;
+            case LESS_THAN -> Kind.GREATER_THAN;
+            case LESS_THAN_OR_EQUAL -> Kind.GREATER_THAN_OR_EQUAL;
+            default -> kind;
+        };
+    }
+
+
+    protected RexNode unwrapCast( RexNode node ) {
         while ( node.isA( Kind.CAST ) ) {
             node = ((RexCall) node).getOperands().get( 0 );
         }
@@ -91,7 +96,8 @@ public final class ParquetFilterTranslationSupport {
     }
 
 
-    public record ParsedFilter(RexNode left, RexNode right) {
+    protected record ParsedFilter( RexNode left, RexNode right, Kind operator ) {
+
     }
 
 }

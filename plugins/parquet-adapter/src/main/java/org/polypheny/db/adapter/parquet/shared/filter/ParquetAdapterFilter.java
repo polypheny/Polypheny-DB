@@ -16,9 +16,9 @@
 
 package org.polypheny.db.adapter.parquet.shared.filter;
 
+import java.util.List;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.type.entity.PolyValue;
-import java.util.List;
 
 /**
  * Immutable filter description
@@ -27,34 +27,37 @@ import java.util.List;
  * @param operator - filter operation
  * @param polyValue - filter value
  */
-public record ParquetAdapterFilter( int columnIndex, List<String> pathElements, Kind operator, PolyValue polyValue, Long dynamicParamIndex ) {
+public record ParquetAdapterFilter( int columnIndex, List<String> pathElements, Kind operator, PolyValue polyValue, Long dynamicParamIndex, List<ParquetAdapterFilter> operands ) {
 
     public ParquetAdapterFilter( int columnIndex, Kind operator, PolyValue polyValue ) {
-        this( columnIndex, List.of(), operator, polyValue, null );
+        this( columnIndex, List.of(), operator, polyValue, null, List.of() );
     }
 
 
     public ParquetAdapterFilter( int columnIndex, List<String> pathElements, Kind operator, PolyValue polyValue ) {
-        this( columnIndex, pathElements, operator, polyValue, null );
+        this( columnIndex, pathElements, operator, polyValue, null, List.of() );
     }
+
+
+    public ParquetAdapterFilter( int columnIndex, List<String> pathElements, Kind operator, PolyValue polyValue, Long dynamicParamIndex ) {
+        this( columnIndex, pathElements, operator, polyValue, dynamicParamIndex, List.of() );
+    }
+
 
     // validation performed in main constructor
     public ParquetAdapterFilter {
         pathElements = pathElements == null ? List.of() : List.copyOf( pathElements );
+        operands = operands == null ? List.of() : List.copyOf( operands );
     }
 
 
-    /**
-     * Creates new {@link ParquetAdapterFilter} that contain sub path starting from the provided index.
-     *
-     * @param startIndex the index to copy path elements from.
-     * @return a new instance of {@link ParquetAdapterFilter}.
-     */
-    public ParquetAdapterFilter makeNested( int startIndex ) {
-        if ( startIndex >= pathElements.size() ) {
-            return this;
-        }
-        return new ParquetAdapterFilter( columnIndex, pathElements.subList( startIndex, pathElements.size() ), operator, polyValue, dynamicParamIndex );
+    public static ParquetAdapterFilter logical( Kind operator, List<ParquetAdapterFilter> operands ) {
+        return new ParquetAdapterFilter( -1, List.of(), operator, null, null, operands );
+    }
+
+
+    public boolean isLogical() {
+        return operator == Kind.AND || operator == Kind.OR || operator == Kind.NOT;
     }
 
 }

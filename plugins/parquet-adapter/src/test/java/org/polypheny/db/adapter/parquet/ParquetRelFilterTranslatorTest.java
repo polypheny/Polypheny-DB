@@ -20,18 +20,105 @@ import java.util.List;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Types;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelFilterTranslator;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetNativeFilterBuilder;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.nodes.SpecialOperator;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.util.RunMode;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ParquetRelFilterTranslatorTest {
 
+    private AlgDataType intType;
+    private AlgDataType boolType;
+    private ParquetRelFilterTranslator translator;
+
+
+    @BeforeAll
+    static void initHomeDir() {
+        try {
+            PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
+        } catch ( Exception e ) {
+            // Already initialized by another test.
+        }
+    }
+
+
+    @BeforeEach
+    void setUp() {
+        AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        intType = typeFactory.createPolyType( PolyType.INTEGER );
+        boolType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        translator = new ParquetRelFilterTranslator();
+    }
+
+
     @Test
-    void rejectsInt96TimestampPredicatePushdown() {
+    void translatesAndOrTree() {
+        RexNode filter = call(
+                Kind.AND,
+                call( Kind.GREATER_THAN, ref( 0 ), param( 10 ) ),
+                call(
+                        Kind.OR,
+                        call( Kind.EQUALS, ref( 1 ), param( 20 ) ),
+                        call( Kind.EQUALS, ref( 1 ), param( 30 ) ) ) );
+
+        ParquetAdapterFilter translated = translator.translate( List.of( PolyType.INTEGER, PolyType.INTEGER ), filter );
+
+        assertNotNull( translated );
+        assertEquals( Kind.AND, translated.operator() );
+        assertEquals( 2, translated.operands().size() );
+        assertEquals( Kind.GREATER_THAN, translated.operands().get( 0 ).operator() );
+        assertEquals( Kind.OR, translated.operands().get( 1 ).operator() );
+        assertEquals( 2, translated.operands().get( 1 ).operands().size() );
+    }
+
+
+    @Test
+    void translatesInAsOrOfEquals() {
+        RexNode filter = call( Kind.IN, ref( 0 ), param( 10 ), param( 20 ), param( 30 ) );
+
+        ParquetAdapterFilter translated = translator.translate( List.of( PolyType.INTEGER ), filter );
+
+        assertNotNull( translated );
+        assertEquals( Kind.OR, translated.operator() );
+        assertEquals( 3, translated.operands().size() );
+        assertTrue( translated.operands().stream().allMatch( operand -> operand.operator() == Kind.EQUALS && operand.columnIndex() == 0 ) );
+    }
+
+
+    @Test
+    void reversesComparisonWhenLiteralIsOnTheLeft() {
+        RexNode filter = call( Kind.LESS_THAN, param( 10 ), ref( 0 ) );
+
+        ParquetAdapterFilter translated = translator.translate( List.of( PolyType.INTEGER ), filter );
+
+        assertNotNull( translated );
+        assertEquals( Kind.GREATER_THAN, translated.operator() );
+    }
+
+
+    @Test
+    void ignoresUnsupportedInt96TimestampPredicatePushdown() {
         MessageType schema = Types.buildMessage()
                 .optional( PrimitiveTypeName.INT96 )
                 .named( "ts" )
@@ -39,8 +126,22 @@ class ParquetRelFilterTranslatorTest {
 
         ParquetAdapterFilter filter = new ParquetAdapterFilter( 0, Kind.EQUALS, PolyTimestamp.of( 1_700_000_000_000L ) );
 
-        assertThrows(
-                IllegalArgumentException.class,
+        assertDoesNotThrow(
                 () -> ParquetNativeFilterBuilder.build( schema, List.of( filter ) ) );
+    }
+
+
+    private RexNode ref( int index ) {
+        return new RexIndexRef( index, intType );
+    }
+
+
+    private RexNode param( int index ) {
+        return new RexDynamicParam( intType, index );
+    }
+
+
+    private RexNode call( Kind kind, RexNode... operands ) {
+        return new RexCall( boolType, new SpecialOperator( kind.name(), kind ), operands );
     }
 }

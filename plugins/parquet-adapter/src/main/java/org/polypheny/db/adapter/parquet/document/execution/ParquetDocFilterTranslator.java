@@ -19,24 +19,25 @@ package org.polypheny.db.adapter.parquet.document.execution;
 
 import java.util.List;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
+import org.polypheny.db.adapter.parquet.shared.execution.AbstractFilterTranslator;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
-import org.polypheny.db.adapter.parquet.shared.execution.ParquetFilterTranslationSupport;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 
 /**
  * Translates supported document filter expressions into Parquet filter instances.
  */
-public class ParquetDocFilterTranslator {
+public class ParquetDocFilterTranslator extends AbstractFilterTranslator {
 
     /**
      * Translate Polypheny filter to ParquetFilter
+     *
      * @param columns - list of valid columns
      * @param filter - RexNode
      * @return ParquetFilter
      */
     public ParquetAdapterFilter translate( List<ExportedColumn> columns, RexNode filter ) {
-        ParquetFilterTranslationSupport.ParsedFilter parsed = ParquetFilterTranslationSupport.parse( filter );
+        ParsedFilter parsed = parse( filter );
         if ( parsed == null ) {
             return null;
         }
@@ -53,13 +54,13 @@ public class ParquetDocFilterTranslator {
         }
 
         String fieldName = nameRef.names.get( 0 );
-        if ( !ParquetFilterTranslationSupport.isValueOperand( right ) ) {
+        if ( !isValueOperand( right ) ) {
             return null;
         }
 
         for ( ExportedColumn column : columns ) {
             if ( column.name().equalsIgnoreCase( fieldName ) ) {
-                return ParquetFilterTranslationSupport.toParquetAdapterFilter( column.physicalPosition(), filter.getKind(), right );
+                return toParquetAdapterFilter( column.physicalPosition(), parsed.operator(), right );
             }
         }
         return null;

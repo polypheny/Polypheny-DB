@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.parquet.shared.filter;
 
 import java.util.List;
+import java.util.Objects;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.filter2.compat.FilterCompat;
 import org.apache.parquet.filter2.predicate.FilterApi;
@@ -70,6 +71,10 @@ public final class ParquetNativeFilterBuilder {
 
 
     private static FilterPredicate buildPredicate( MessageType schema, ParquetAdapterFilter filter ) {
+        if ( filter.isLogical() ) {
+            return buildLogicalPredicate( schema, filter );
+        }
+
         if ( filter.pathElements().isEmpty() ) {
             int index = filter.columnIndex();
             if ( index < 0 || index >= schema.getFieldCount() ) {
@@ -97,6 +102,42 @@ public final class ParquetNativeFilterBuilder {
             String columnName = String.join( ".", filter.pathElements() );
             return buildPredicatePrimitive( filter.operator(), filter.polyValue(), type, columnName );
         }
+    }
+
+
+    private static FilterPredicate buildLogicalPredicate( MessageType schema, ParquetAdapterFilter filter ) {
+        List<FilterPredicate> operands = filter.operands().stream()
+                .map( operand -> buildPredicate( schema, operand ) )
+                .toList();
+
+        if ( operands.stream().anyMatch( Objects::isNull ) ) {
+            return null;
+        }
+
+        return switch ( filter.operator() ) {
+            case AND -> combineAnd( operands );
+            case OR -> combineOr( operands );
+            case NOT -> operands.size() == 1 ? FilterApi.not( operands.get( 0 ) ) : null;
+            default -> null;
+        };
+    }
+
+
+    private static FilterPredicate combineAnd( List<FilterPredicate> operands ) {
+        FilterPredicate predicate = null;
+        for ( FilterPredicate operand : operands ) {
+            predicate = predicate == null ? operand : FilterApi.and( predicate, operand );
+        }
+        return predicate;
+    }
+
+
+    private static FilterPredicate combineOr( List<FilterPredicate> operands ) {
+        FilterPredicate predicate = null;
+        for ( FilterPredicate operand : operands ) {
+            predicate = predicate == null ? operand : FilterApi.or( predicate, operand );
+        }
+        return predicate;
     }
 
 

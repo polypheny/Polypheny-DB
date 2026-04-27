@@ -158,6 +158,15 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
 
 
     private boolean matches( Group group, ParquetAdapterFilter filter ) {
+        if ( filter.isLogical() ) {
+            return switch ( filter.operator() ) {
+                case AND -> filter.operands().stream().allMatch( operand -> matches( group, operand ) );
+                case OR -> filter.operands().stream().anyMatch( operand -> matches( group, operand ) );
+                case NOT -> filter.operands().size() == 1 && !matches( group, filter.operands().get( 0 ) );
+                default -> true;
+            };
+        }
+
         // if filter is invalid row should be displayed
         if ( filter.polyValue() == null || filter.columnIndex() < 0 || filter.columnIndex() >= reader.getProjectionSchema().getFieldCount() ) {
             return true;

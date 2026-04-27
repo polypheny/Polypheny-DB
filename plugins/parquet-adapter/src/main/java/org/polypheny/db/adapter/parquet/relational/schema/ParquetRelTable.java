@@ -236,14 +236,25 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
     private List<ParquetAdapterFilter> resolveFilters( DataContext dataContext, List<ParquetAdapterFilter> filters ) {
         List<ParquetAdapterFilter> resolved = new ArrayList<>( filters.size() );
         for ( ParquetAdapterFilter filter : filters ) {
-            PolyValue value = filter.dynamicParamIndex() == null
-                    ? filter.polyValue()
-                    : dataContext.getParameterValue( filter.dynamicParamIndex() );
-
-            ParquetColumnBinding columnBinding = Objects.requireNonNull( binding.getColumnBinding( columns.get( filter.columnIndex() ).id ), "Missing parquet column binding" );
-            resolved.add( new ParquetAdapterFilter( filter.columnIndex(), columnBinding.sourcePathElements(), filter.operator(), value ) );
+            resolved.add( resolveFilter( dataContext, filter ) );
         }
         return resolved;
+    }
+
+
+    private ParquetAdapterFilter resolveFilter( DataContext dataContext, ParquetAdapterFilter filter ) {
+        if ( filter.isLogical() ) {
+            return ParquetAdapterFilter.logical( filter.operator(), filter.operands().stream()
+                    .map( operand -> resolveFilter( dataContext, operand ) )
+                    .toList() );
+        }
+
+        PolyValue value = filter.dynamicParamIndex() == null
+                ? filter.polyValue()
+                : dataContext.getParameterValue( filter.dynamicParamIndex() );
+
+        ParquetColumnBinding columnBinding = Objects.requireNonNull( binding.getColumnBinding( columns.get( filter.columnIndex() ).id ), "Missing parquet column binding" );
+        return new ParquetAdapterFilter( filter.columnIndex(), columnBinding.sourcePathElements(), filter.operator(), value );
     }
 
 
