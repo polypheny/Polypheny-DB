@@ -16,19 +16,30 @@
 
 package org.polypheny.db.adapter.parquet.relational.schema;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.IntStream;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetNestedNonRepeatedRelEnumerator;
-import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
-import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetNestedRepeatedRelEnumerator;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelEnumerator;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelFilterTranslator;
 import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelScan;
-import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceReader;
+import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
+import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
+import org.polypheny.db.adapter.parquet.shared.io.ParquetSchemaReader;
+import org.polypheny.db.adapter.parquet.shared.statistics.ParquetStatisticsReader;
+import org.polypheny.db.adapter.statistics.ProvidedColumnStatistics;
+import org.polypheny.db.adapter.statistics.ProvidedEntityStatistics;
+import org.polypheny.db.adapter.statistics.AdapterStatisticsProvider;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -39,33 +50,28 @@ import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.IntStream;
-import org.apache.parquet.schema.MessageType;
 
 /**
  * Physical table wrapper for the relational model.
  * Exposes the Parquet-backed table to Polypheny and ties the planner,
  * scanner, and adapter metadata together.
  */
-public class ParquetRelTable extends PhysicalTable implements FilterableEntity, ScannableEntity, TranslatableEntity {
+public class ParquetRelTable extends PhysicalTable implements FilterableEntity, ScannableEntity, TranslatableEntity, AdapterStatisticsProvider {
 
-    protected final Source source;
-    protected final int[] fieldIndexes;
+    private final Source source;
+    private final int[] fieldIndexes;
+    private final AbstractParquetSource parquetSource;
+    private final ParquetRelFilterTranslator filterTranslator;
+    private final ParquetTableBinding binding;
     private final List<PolyType> fieldTypes;
-    private final MessageType parquetSchema;
-    protected final AbstractParquetSource parquetSource;
-    protected final ParquetRelFilterTranslator filterTranslator;
-    protected final ParquetTableBinding binding;
+    private final ParquetSchemaReader schemaReader;
+    private final ParquetStatisticsReader statisticsReader;
 
 
     /**
      * Creates a Parquet table wrapper from a physical table definition and source binding.
      */
-    public ParquetRelTable(long id, Source source, PhysicalTable table, ParquetTableBinding binding, AbstractParquetSource parquetSource ) {
+    public ParquetRelTable( long id, Source source, PhysicalTable table, ParquetTableBinding binding, AbstractParquetSource parquetSource ) {
         super(
                 id,
                 table.allocationId,
@@ -80,11 +86,43 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
         this.binding = binding;
         this.fieldIndexes = IntStream.range( 0, table.columns.size() ).toArray();
         this.fieldTypes = columns.stream().map( c -> c.type ).toList();
-        this.parquetSchema = ParquetSourceReader.readSchema( source );
+        this.schemaReader = new ParquetSchemaReader( source );
+        this.statisticsReader = new ParquetStatisticsReader( schemaReader, binding );
         this.parquetSource = parquetSource;
         this.filterTranslator = new ParquetRelFilterTranslator();
     }
 
+    // Statics provider interface functions
+
+
+    /**
+     * Gets table statistics
+     * @param logicalEntityId - logical table id
+     * @return statistics from parquet file
+     */
+    @Override
+    public Optional<ProvidedEntityStatistics> getEntityStatistics( long logicalEntityId ) {
+        if ( logicalId != logicalEntityId ) {
+            return Optional.empty();
+        }
+        return statisticsReader.getEntityStatistics( isNestedTable() );
+    }
+
+
+    /**
+     * Gets column statistics (range values for example)
+     * @param column - logical column
+     * @param uniqueValueLimit - limit
+     * @return column statistics calculated from parquet file
+     */
+    @Override
+    public Optional<ProvidedColumnStatistics> getColumnStatistics( LogicalColumn column, int uniqueValueLimit ) {
+        if ( logicalId != column.tableId ) {
+            return Optional.empty();
+        }
+        return statisticsReader.getColumnStatistics( column, uniqueValueLimit );
+    }
+    // endregion
 
     /**
      * Returns enumerable for FilterableEntity.
@@ -190,6 +228,7 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
 
     /**
      * Support parametrized queries
+     *
      * @param dataContext context
      * @param filters filters
      * @return list of parquet filters
@@ -231,7 +270,8 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
             if ( columnBinding.sourcePathElements().size() > 1 ) {
                 return true;
             }
-            if ( field >= parquetSchema.getFieldCount() || !parquetSchema.getType( field ).getName().equals( columnBinding.sourcePathElements().get( 0 ) ) ) {
+            var schema = schemaReader.getSchema();
+            if ( field >= schema.getFieldCount() || !schema.getType( field ).getName().equals( columnBinding.sourcePathElements().get( 0 ) ) ) {
                 return true;
             }
         }
@@ -239,5 +279,4 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
     }
 
 }
-
 

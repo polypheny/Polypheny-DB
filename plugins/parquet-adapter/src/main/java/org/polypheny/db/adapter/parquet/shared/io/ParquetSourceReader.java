@@ -29,7 +29,7 @@ import org.apache.parquet.column.page.PageReadStore;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.example.data.simple.convert.GroupRecordConverter;
 import org.apache.parquet.filter2.compat.FilterCompat;
-import org.apache.parquet.hadoop.metadata.BlockMetaData;
+import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.ColumnIOFactory;
 import org.apache.parquet.io.MessageColumnIO;
@@ -62,24 +62,20 @@ public class ParquetSourceReader implements AutoCloseable {
     private long currentRowNumber = -1;
 
 
-    public ParquetSourceReader(Source source ) {
+    public ParquetSourceReader( Source source ) {
         this( source, null, null, null );
     }
 
 
-    public ParquetSourceReader(Source source, AtomicBoolean cancelFlag, int[] fields, List<ParquetAdapterFilter> filters ) {
+    public ParquetSourceReader( Source source, AtomicBoolean cancelFlag, int[] fields, List<ParquetAdapterFilter> filters ) {
         this.cancelFlag = cancelFlag == null ? new AtomicBoolean( false ) : cancelFlag;
 
         try {
             URI uri = source.isFile() ? source.file().toURI() : source.url().toURI();
             Path path = new Path( uri );
             Configuration conf = HadoopConfigurationFactory.create( this.getClass().getClassLoader() );
-            var inputFile = HadoopInputFile.fromPath( path, conf );
 
-            MessageType schema;
-            try ( org.apache.parquet.hadoop.ParquetFileReader schemaReader = org.apache.parquet.hadoop.ParquetFileReader.open( inputFile ) ) {
-                schema = schemaReader.getFooter().getFileMetaData().getSchema();
-            }
+            MessageType schema = new ParquetSchemaReader( source ).getSchema();
 
             int[] projectedFields = buildProjectedFields( fields, schema.getFieldCount() );
             this.projectionSchema = buildProjectionSchema( schema, projectedFields );
@@ -95,11 +91,36 @@ public class ParquetSourceReader implements AutoCloseable {
                     .withRecordFilter( recordFilter )
                     .build();
 
-            this.fileReader = org.apache.parquet.hadoop.ParquetFileReader.open( inputFile, readOptions );
+            this.fileReader = ParquetFileReader.open( HadoopInputFile.fromPath( path, conf ), readOptions );
             this.fileReader.setRequestedSchema( projectionSchema );
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Unable to open parquet file: " + source.path(), e );
         }
+    }
+
+
+    private static int[] buildProjectedFields( int[] projectedFields, int schemaFieldCount ) {
+        if ( projectedFields == null || projectedFields.length == 0 ) {
+            int[] allFields = new int[schemaFieldCount];
+            for ( int i = 0; i < schemaFieldCount; i++ ) {
+                allFields[i] = i;
+            }
+            return allFields;
+        }
+        return projectedFields;
+    }
+
+
+    private static MessageType buildProjectionSchema( MessageType fullSchema, int[] projectedFieldIndexes ) {
+        if ( projectedFieldIndexes.length == 0 ) {
+            return fullSchema;
+        }
+
+        List<Type> fields = new ArrayList<>( projectedFieldIndexes.length );
+        for ( int index : projectedFieldIndexes ) {
+            fields.add( fullSchema.getType( index ) );
+        }
+        return new MessageType( fullSchema.getName(), fields );
     }
 
 
@@ -129,27 +150,6 @@ public class ParquetSourceReader implements AutoCloseable {
     }
 
 
-    public long getEstimatedRowCount() {
-        // use metadata to estimate row count
-        return fileReader.getFooter().getBlocks().stream().mapToLong( BlockMetaData::getRowCount ).sum();
-    }
-
-
-    public static MessageType readSchema( Source source ) {
-        try {
-            URI uri = source.isFile() ? source.file().toURI() : source.url().toURI();
-            Path path = new Path( uri );
-            Configuration conf = HadoopConfigurationFactory.create( ParquetSourceReader.class.getClassLoader() );
-            var inputFile = HadoopInputFile.fromPath( path, conf );
-            try ( org.apache.parquet.hadoop.ParquetFileReader schemaReader = org.apache.parquet.hadoop.ParquetFileReader.open( inputFile ) ) {
-                return schemaReader.getFooter().getFileMetaData().getSchema();
-            }
-        } catch ( Exception e ) {
-            throw new GenericRuntimeException( "Unable to inspect parquet schema for " + source.path(), e );
-        }
-    }
-
-
     @Override
     public void close() throws IOException {
         fileReader.close();
@@ -173,31 +173,6 @@ public class ParquetSourceReader implements AutoCloseable {
         this.rowCountInGroup = pages.getRowCount();
         this.rowIndexInGroup = 0;
         return true;
-    }
-
-
-    private static int[] buildProjectedFields( int[] projectedFields, int schemaFieldCount ) {
-        if ( projectedFields == null || projectedFields.length == 0 ) {
-            int[] allFields = new int[schemaFieldCount];
-            for ( int i = 0; i < schemaFieldCount; i++ ) {
-                allFields[i] = i;
-            }
-            return allFields;
-        }
-        return projectedFields;
-    }
-
-
-    private static MessageType buildProjectionSchema( MessageType fullSchema, int[] projectedFieldIndexes ) {
-        if ( projectedFieldIndexes.length == 0 ) {
-            return fullSchema;
-        }
-
-        List<Type> fields = new ArrayList<>( projectedFieldIndexes.length );
-        for ( int index : projectedFieldIndexes ) {
-            fields.add( fullSchema.getType( index ) );
-        }
-        return new MessageType( fullSchema.getName(), fields );
     }
 
 }

@@ -25,13 +25,14 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.polypheny.db.adapter.parquet.document.execution.ParquetDocValueExtractor;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelValueExtractor;
+import org.polypheny.db.adapter.parquet.shared.io.ParquetSchemaReader;
+import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceReader;
+import org.polypheny.db.adapter.parquet.shared.schema.ParquetNameNormalizer;
 import org.polypheny.db.adapter.parquet.shared.schema.ParquetTypeConverter;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceReader;
-import org.polypheny.db.adapter.parquet.shared.schema.ParquetNameNormalizer;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
@@ -98,7 +99,7 @@ public final class ParquetWorkflowExtractSupport {
             return DocumentType.ofId();
         }
 
-        MessageType schema = ParquetSourceReader.readSchema( source );
+        MessageType schema = new ParquetSchemaReader( source ).getSchema();
 
         Builder builder = FACTORY.builder();
         // PK added by the workflow layer, it does not come from file
@@ -130,10 +131,10 @@ public final class ParquetWorkflowExtractSupport {
             throw new GenericRuntimeException( "No parquet files found." );
         }
 
-        MessageType expectedSchema = ParquetSourceReader.readSchema( sources.get( 0 ) );
+        MessageType expectedSchema = new ParquetSchemaReader( sources.get( 0 ) ).getSchema();
         for ( int i = 1; i < sources.size(); i++ ) {
             Source source = sources.get( i );
-            MessageType currentSchema = ParquetSourceReader.readSchema( source );
+            MessageType currentSchema = new ParquetSchemaReader( source ).getSchema();
             if ( !expectedSchema.equals( currentSchema ) ) {
                 throw new GenericRuntimeException(
                         "All parquet sources must share the same schema for relational output. "
@@ -152,8 +153,9 @@ public final class ParquetWorkflowExtractSupport {
     public static long estimateTupleCount( List<Source> sources ) {
         long estimate = 0;
         for ( Source source : sources ) {
-            try ( ParquetSourceReader reader = new ParquetSourceReader( source ) ) {
-                estimate += Math.max( reader.getEstimatedRowCount(), 0 );
+            try {
+                var schemaReader = new ParquetSchemaReader( source );
+                estimate += Math.max( schemaReader.getEstimatedRowCount(), 0 );
             } catch ( Exception e ) {
                 return -1;
             }
