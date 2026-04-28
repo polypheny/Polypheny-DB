@@ -197,6 +197,7 @@ import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
 import org.polypheny.db.webui.models.requests.PolyAlgRequest;
 import org.polypheny.db.webui.models.requests.RenameEntityRequest;
+import org.polypheny.db.webui.models.requests.SourceRefreshRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.requests.UpdateAdapterRequest;
 import org.polypheny.db.webui.models.results.RelationalResult;
@@ -302,6 +303,35 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     public void checkSourceSchemaRefresh( final Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
         ctx.json( Map.of( "refreshNeeded", isSourceSchemaRefreshNeeded( request ) ) );
+    }
+
+
+    public void refreshSelectedSources( final Context ctx ) {
+        SourceRefreshRequest request = ctx.bodyAsClass( SourceRefreshRequest.class );
+        List<String> refreshedSources = refreshSelectedSources( request.getSourceIds() );
+        ctx.json( Map.of(
+                "success", true,
+                "refreshedSources", refreshedSources,
+                "refreshedCount", refreshedSources.size() ) );
+    }
+
+
+    public List<String> refreshSelectedSources( List<Long> sourceIds ) {
+        Transaction transaction = getTransaction();
+        try {
+            Statement ddlStatement = transaction.createStatement();
+            List<String> refreshedSources = DdlManager.getInstance().refreshSelectedSources( sourceIds, ddlStatement );
+
+            transaction.commit();
+            return refreshedSources;
+        } catch ( Exception e ) {
+            try {
+                transaction.rollback( "Error while refreshing selected sources: " + e.getMessage() );
+            } catch ( Exception rollbackException ) {
+                log.error( "Rollback also failed", rollbackException );
+            }
+            throw new GenericRuntimeException( "Could not refresh selected sources", e );
+        }
     }
 
 

@@ -174,6 +174,9 @@ public abstract class DdlManager {
     public abstract boolean isSourceSchemaRefreshNeeded( long entityId );
 
 
+    public abstract List<String> refreshSelectedSources( List<Long> sourceIds, Statement statement );
+
+
     /**
      * Add a column to an existing table
      *

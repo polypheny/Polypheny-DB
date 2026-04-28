@@ -597,6 +597,29 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    @Override
+    public List<String> refreshSelectedSources( List<Long> sourceIds, Statement statement ) {
+        Snapshot snapshot = catalog.getSnapshot();
+
+        List<LogicalTable> sourceTables = snapshot.rel().getTables( (Pattern) null, (Pattern) null ).stream()
+                .filter( table -> table.entityType == EntityType.SOURCE )
+                .filter( table -> snapshot.alloc().getFromLogical( table.id ).stream().anyMatch( alloc -> sourceIds.contains( alloc.adapterId ) ) )
+                .toList();
+
+        List<String> refreshedSources = sourceTables.stream()
+                .map( table -> table.name )
+                .toList();
+
+        log.info( "Refreshing selected sources {} with tables {}", sourceIds, refreshedSources );
+
+        for ( LogicalTable sourceTable : sourceTables ) {
+            refreshSourceSchemaIfNeeded( sourceTable.id, statement );
+        }
+
+        return refreshedSources;
+    }
+
+
     /**
      * Refreshes the schema of a source table if it is out of sync with the underlying data source.
      *
