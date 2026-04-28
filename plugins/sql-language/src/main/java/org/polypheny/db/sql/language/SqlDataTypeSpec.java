@@ -28,6 +28,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.DataTypeSpec;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
+import org.polypheny.db.sql.language.SqlWriter.FrameTypeEnum;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorScope;
 import org.polypheny.db.type.PolyType;
@@ -255,9 +256,25 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
             // We're generating a type for an alien system. For example, UNSIGNED is a built-in type in MySQL.
             // (Need a more elegant way than '_' of flagging this.)
             writer.keyword( name.substring( 1 ) );
+            unparsePrecision( writer );
         } else {
             // else we have a user defined type
             typeName.unparse( writer, leftPrec, rightPrec );
+            unparsePrecision( writer );
+        }
+    }
+
+
+    private void unparsePrecision( SqlWriter writer ) {
+        if ( precision >= 0 ) {
+            final SqlWriter.Frame frame = writer.startList(
+                    FrameTypeEnum.FUN_CALL, "(", ")" );
+            writer.print( precision );
+            if ( scale >= 0 ) {
+                writer.sep(",", true);
+                writer.print( scale );
+            }
+            writer.endList( frame );
         }
     }
 

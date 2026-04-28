@@ -922,4 +922,13 @@ public class SqlDialect {
         return null;
     }
 
+
+    /**
+     * Returns a SqlNode that represents a vector literal for this dialect.
+     * Returns null if the dialect does not have a special syntax for vectors.
+     */
+    public SqlNode getVectorLiteral( VectorType vectorType, PolyList<PolyValue> vectorAsList, ParserPos pos) {
+        return null;
+    }
+
 }

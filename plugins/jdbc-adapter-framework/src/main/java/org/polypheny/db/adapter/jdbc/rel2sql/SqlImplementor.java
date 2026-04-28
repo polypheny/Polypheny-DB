@@ -114,6 +114,7 @@ import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Util;
@@ -534,6 +535,10 @@ public abstract class SqlImplementor {
                         case BINARY:
                             return SqlBinaryStringLiteral.createBinaryString( literal.value.asBinary(), POS );
                         case ARRAY:
+                            if ( literal.getType() instanceof VectorType vectorType ) {
+                                SqlNode vectorNode = dialect.getVectorLiteral( vectorType, literal.getValue().asList(), POS );
+                                if ( vectorNode != null ) return vectorNode;
+                            }
                             if ( dialect.supportsNestedArrays() ) {
                                 List<PolyValue> array = literal.getValue().asList();
                                 return SqlLiteral.createArray( array, literal.getType(), POS );
