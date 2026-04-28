@@ -114,7 +114,7 @@ public class PostgresqlSqlDialectTest {
 
     @Test
     void bitVectorAlwaysUsesGetString() {
-        // bit(n) is a native PostgreSQL type — no pgvector required
+        // bit(n) is a native PostgreSQL type - no pgvector required
         PostgresqlSqlDialect dialect = new PostgresqlSqlDialect();
         AlgDataType bitVec = bitVectorType( 3 );
         ParameterExpression rs = Expressions.parameter( ResultSet.class, "rs" );
@@ -167,7 +167,7 @@ public class PostgresqlSqlDialectTest {
 
     @Test
     void bitPushdownAlwaysPresent() {
-        // bit(n) is native PostgreSQL — pushdown does not depend on pgvector
+        // bit(n) is native PostgreSQL - pushdown does not depend on pgvector
         PostgresqlSqlDialect dialect = new PostgresqlSqlDialect();
         assertTrue( dialect.vectorPushdownTypeIsPresent( VectorType.ElementType.BIT ) );
     }

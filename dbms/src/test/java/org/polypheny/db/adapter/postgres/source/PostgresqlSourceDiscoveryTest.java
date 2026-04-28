@@ -18,92 +18,96 @@ package org.polypheny.db.adapter.postgres.source;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.docker.DockerContainer;
-import org.polypheny.db.docker.DockerContainer.HostAndPort;
-import org.polypheny.db.docker.DockerInstance;
-import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.type.VectorType;
 
 /**
- * Integration test for PostgreSQL source column-type discovery.
  *
- * <p>Starts a Postgres container, prepopulates it with {@code boolean[]} and
- * {@code bit(n)} columns, attaches it as a Polypheny source, then asserts that the
- * catalog reflects the correct internal types:
+ * <p>Reuses the existing PostgreSQL Store container,
+ * prepopulates it with {@code boolean[]} and {@code bit(n)} columns, attaches it
+ * as a Polypheny source, then asserts that the catalog reflects the correct internal types:
  * <ul>
  *   <li>{@code boolean[]} -> plain {@code ARRAY<BOOLEAN>}, cardinality {@code null} -> <b>not</b> VectorType</li>
- *   <li>{@code bit(5)}    -> {@code ARRAY<BOOLEAN>} with cardinality 5 -> <b>is</b> VectorType&lt;BIT&gt;(5)</li>
+ *   <li>{@code bit(5)} -> {@code ARRAY<BOOLEAN>} with cardinality 5 -> is VectorType&lt;BIT&gt;(5)</li>
  * </ul>
- *
- * <p>Requires a local Docker daemon. Skipped automatically when Docker is unavailable.
  */
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @Tag("adapter")
+@EnabledIfSystemProperty(named = "store.default", matches = "postgresql")
 public class PostgresqlSourceDiscoveryTest {
 
     private static final String SOURCE_ADAPTER = "pg_discovery_source";
-    private static final String TABLE_NAME     = "discovery_test";
+    private static final String TABLE_NAME     = "public.discovery_test";
+    private static final String RAW_TABLE_NAME = "discovery_test";
 
-    private static DockerContainer container;
     private static boolean setupSucceeded = false;
 
 
     @BeforeAll
-    static void setup() throws IOException, SQLException {
+    static void start() throws SQLException {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
 
-        Optional<DockerInstance> maybeDocker = DockerManager.getInstance().getInstanceById( 0 );
-        assumeTrue( maybeDocker.isPresent(), "No local Docker instance - skipping source discovery test" );
+        Optional<LogicalAdapter> maybeStore = Catalog.getInstance().getSnapshot().getAdapters().stream()
+                .filter( ad -> ad.type == AdapterType.STORE && ad.adapterName.equalsIgnoreCase( "PostgreSQL" ) )
+                .findFirst();
 
-        container = maybeDocker.get()
-                .newBuilder( "polypheny/postgres-pgvector:latest", "pg-discovery-test" )
-                .withExposedPort( 5432 )
-                .withEnvironmentVariable( "POSTGRES_PASSWORD", "polypheny" )
-                .createAndStart();
+        assertTrue( maybeStore.isPresent(), "PostgreSQL Store not found in Catalog - skipping test" );
 
-        boolean started = container.waitTillStarted( () -> {
-            HostAndPort hp = container.connectToContainer( 5432 );
-            try ( Connection c = DriverManager.getConnection(
-                    "jdbc:postgresql://" + hp.host() + ":" + hp.port() + "/postgres",
-                    "postgres", "polypheny" ) ) {
-                return true;
-            } catch ( SQLException e ) {
-                return false;
-            }
-        }, 30_000 );
-        assumeTrue( started, "Postgres container did not become ready within 30 s" );
+        LogicalAdapter pgStore = maybeStore.get();
+        Map<String, String> settingsMap = pgStore.settings;
+        String host;
+        int port;
+        if ( pgStore.mode == DeployMode.DOCKER ) {
+            String deploymentId = settingsMap.get( "deploymentId" );
+            DockerContainer container = DockerContainer.getContainerByUUID( deploymentId )
+                    .orElseThrow( () -> new RuntimeException( "Could not find docker container for PostgreSQL store" ) );
+            DockerContainer.HostAndPort hp = container.connectToContainer( 5432 );
+            host = hp.host();
+            port = hp.port();
+        } else {
+            host = settingsMap.get( "host" );
+            port = Integer.parseInt( settingsMap.get( "port" ) );
+        }
 
-        HostAndPort hp = container.connectToContainer( 5432 );
-        try ( Connection conn = DriverManager.getConnection(
-                "jdbc:postgresql://" + hp.host() + ":" + hp.port() + "/postgres",
-                "postgres", "polypheny" );
+        String database = settingsMap.getOrDefault( "database", "postgres" );
+        String username = settingsMap.getOrDefault( "username", "postgres" );
+        String password = settingsMap.getOrDefault( "password", "polypheny" );
+
+        String jdbcUrl = String.format( "jdbc:postgresql://%s:%d/%s", host, port, database );
+        try ( Connection conn = DriverManager.getConnection( jdbcUrl, username, password );
               Statement st = conn.createStatement() ) {
+            st.executeUpdate( "DROP TABLE IF EXISTS " + TABLE_NAME );
             st.executeUpdate(
                     "CREATE TABLE " + TABLE_NAME + " (" +
                     "  id         SERIAL PRIMARY KEY," +
@@ -112,23 +116,21 @@ public class PostgresqlSourceDiscoveryTest {
                     ")" );
         }
 
-        HostAndPort hp2 = container.connectToContainer( 5432 );
+
         String settings = String.format(
-                "'host'='%s', 'port'='%d', 'database'='postgres'," +
-                " 'username'='postgres', 'password'='polypheny', 'tables'='%s'",
-                hp2.host(), hp2.port(), TABLE_NAME );
+                "'{ \"mode\": \"REMOTE\", \"host\": \"%s\", \"port\": \"%d\", \"database\": \"%s\", \"username\": \"%s\", \"password\": \"%s\", \"tables\": \"%s\", \"maxConnections\": \"25\", \"transactionIsolation\": \"SERIALIZABLE\" }'",
+                host, port, database, username, password, TABLE_NAME );
         try ( JdbcConnection jc = new JdbcConnection( true );
               Statement st = jc.getConnection().createStatement() ) {
             st.executeUpdate( "ALTER ADAPTERS ADD \"" + SOURCE_ADAPTER + "\"" +
-                    " USING 'PostgreSQL' AS 'Source' WITH (" + settings + ")" );
+                    " USING 'PostgreSQL' AS 'Source' WITH " + settings );
         }
-
         setupSucceeded = true;
     }
 
 
     @AfterAll
-    static void teardown() {
+    static void stop() {
         if ( setupSucceeded ) {
             try ( JdbcConnection jc = new JdbcConnection( true );
                   Statement st = jc.getConnection().createStatement() ) {
@@ -137,15 +139,12 @@ public class PostgresqlSourceDiscoveryTest {
                 log.warn( "Could not drop source adapter during teardown", e );
             }
         }
-        if ( container != null ) {
-            container.destroy();
-        }
     }
 
 
     private List<LogicalColumn> columns() {
         LogicalTable table = Catalog.getInstance().getSnapshot().rel()
-                .getTable( SOURCE_ADAPTER, TABLE_NAME ).orElseThrow();
+                .getTable( "public", RAW_TABLE_NAME ).orElseThrow();
         return Catalog.getInstance().getSnapshot().rel().getColumns( table.id );
     }
 
@@ -158,7 +157,7 @@ public class PostgresqlSourceDiscoveryTest {
 
         assertEquals( PolyType.BOOLEAN, col.type );
         assertEquals( PolyType.ARRAY, col.collectionsType );
-        // cardinality must be null - createArrayType must NOT promote this to VectorType
+        // createArrayType must NOT promote this to VectorType iff cardinality is null
         assertNull( col.cardinality,
                 "boolean[] must have null cardinality so it is not mistaken for a bitvector" );
         assertFalse( col.getAlgDataType( AlgDataTypeFactory.DEFAULT ) instanceof VectorType,
@@ -178,8 +177,7 @@ public class PostgresqlSourceDiscoveryTest {
         assertEquals( 5, col.cardinality );
         assertEquals( 1, col.dimension );
 
-        assertTrue( col.getAlgDataType( AlgDataTypeFactory.DEFAULT ) instanceof VectorType,
-                "bit(5) must be promoted to VectorType<BIT>" );
+        assertInstanceOf( VectorType.class, col.getAlgDataType( AlgDataTypeFactory.DEFAULT ), "bit(5) must be promoted to VectorType<BIT>" );
         VectorType vt = (VectorType) col.getAlgDataType( AlgDataTypeFactory.DEFAULT );
         assertEquals( 5, vt.getVectorDimension() );
         assertEquals( VectorType.ElementType.BIT, vt.getVectorElementType() );

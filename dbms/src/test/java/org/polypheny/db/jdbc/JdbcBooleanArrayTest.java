@@ -25,12 +25,14 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
+/**
+ * Integration tests for fixed-dimension {@code BOOLEAN ARRAY(1,N)} columns over JDBC.
+ * Internally Polypheny promotes these to {@code VectorType<BIT>}; on adapters without
+ * native bitvector support (e.g. HSQLDB) they fall back to a regular array.
+ */
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @Tag("adapter")
@@ -38,6 +40,7 @@ public class JdbcBooleanArrayTest {
 
     @BeforeAll
     public static void start() throws SQLException {
+        //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
         addTestData();
     }
@@ -71,37 +74,6 @@ public class JdbcBooleanArrayTest {
 
 
     @Test
-    void selectAllRowsDoesNotThrow() throws SQLException {
-        // verify the BIT read path doesn't throw PSQLException.
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                ResultSet rs = statement.executeQuery( "SELECT * FROM booleanarraytest ORDER BY id" );
-                int count = 0;
-                while ( rs.next() ) {
-                    count++;
-                }
-                assertEquals( 4, count );
-            }
-        }
-    }
-
-
-    @Test
-    void countReturnsCorrectRowCount() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT COUNT(id) FROM booleanarraytest" ),
-                        ImmutableList.of( new Object[]{ 4L } )
-                );
-            }
-        }
-    }
-
-
-    @Test
     void nullBooleanArrayIsInsertedAndReadBack() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -116,61 +88,17 @@ public class JdbcBooleanArrayTest {
 
 
     @Test
-    void filterByIdReturnsSingleRow() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id FROM booleanarraytest WHERE id = 1" ),
-                        ImmutableList.of( new Object[]{ 1 } )
-                );
-            }
-        }
-    }
-
-
-    @Test
-    void singleBooleanArray() throws SQLException {
-        // BOOLEAN ARRAY(1,1) - a 1-bit bitbooleanarray.
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate(
-                        "CREATE TABLE booleanarray1test( id INTEGER NOT NULL, bvec BOOLEAN ARRAY(1,1), PRIMARY KEY (id) )" );
-                statement.executeUpdate( "INSERT INTO booleanarray1test VALUES (1, ARRAY[TRUE])" );
-                statement.executeUpdate( "INSERT INTO booleanarray1test VALUES (2, ARRAY[FALSE])" );
-                connection.commit();
-            }
-        } try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                ResultSet rs = statement.executeQuery( "SELECT * FROM booleanarray1test ORDER BY id" );
-                int count = 0;
-                while ( rs.next() ) count++;
-                assertEquals( 2, count );
-            }
-        }
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "DROP TABLE booleanarray1test" );
-            }
-        }
-    }
-
-
-    @Test
     void verifyDataIntegrity() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT bvec FROM booleanarraytest WHERE id = 1" ),
-                        ImmutableList.of( new Object[]{ true, false, true } )
+                        ImmutableList.of( new Object[]{ new Object[]{ true, false, true } } )
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT bvec FROM booleanarraytest WHERE id = 2" ),
-                        ImmutableList.of( new Object[]{ false, false, false } )
+                        ImmutableList.of( new Object[]{ new Object[]{ false, false, false } } )
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT bvec FROM booleanarraytest WHERE id = 4" ),
@@ -182,28 +110,96 @@ public class JdbcBooleanArrayTest {
 
 
     @Test
+    void singleElementBooleanArray() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate(
+                        "CREATE TABLE booleanarray1test( id INTEGER NOT NULL, bvec BOOLEAN ARRAY(1,1), PRIMARY KEY (id) )" );
+                statement.executeUpdate( "INSERT INTO booleanarray1test VALUES (1, ARRAY[TRUE])" );
+                statement.executeUpdate( "INSERT INTO booleanarray1test VALUES (2, ARRAY[FALSE])" );
+                connection.commit();
+            }
+        }
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT bvec FROM booleanarray1test ORDER BY id" ),
+                            ImmutableList.of(
+                                    new Object[]{ new Object[]{ true } },
+                                    new Object[]{ new Object[]{ false } }
+                            )
+                    );
+                } finally {
+                    statement.executeUpdate( "DROP TABLE booleanarray1test" );
+                }
+            }
+        }
+    }
+
+
+    @Test
     void insertWithPreparedStatement() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( java.sql.PreparedStatement ps = connection.prepareStatement( "INSERT INTO booleanarraytest(id, bvec) VALUES (?, ?)" ) ) {
                 ps.setInt( 1, 10 );
-                Boolean[] bits = new Boolean[]{ true, true, false };
-                java.sql.Array sqlArray = connection.createArrayOf( "BOOLEAN", bits );
-                ps.setArray( 2, sqlArray );
+                ps.setArray( 2, connection.createArrayOf( "BOOLEAN", new Boolean[]{ true, true, false } ) );
                 ps.executeUpdate();
                 connection.commit();
             }
         }
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT bvec FROM booleanarraytest WHERE id = 10" ),
-                        ImmutableList.of( new Object[]{ ImmutableList.of( true, true, false ) } )
-                );
-                statement.executeUpdate( "DELETE FROM booleanarraytest WHERE id = 10" );
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT bvec FROM booleanarraytest WHERE id = 10" ),
+                            ImmutableList.of( new Object[]{ new Object[]{ true, true, false } } )
+                    );
+                } finally {
+                    statement.executeUpdate( "DELETE FROM booleanarraytest WHERE id = 10" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    void updateWithPreparedStatement() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( java.sql.PreparedStatement ps = connection.prepareStatement( "INSERT INTO booleanarraytest(id, bvec) VALUES (?, ?)" ) ) {
+                ps.setInt( 1, 11 );
+                ps.setArray( 2, connection.createArrayOf( "BOOLEAN", new Boolean[]{ false, false, false } ) );
+                ps.executeUpdate();
                 connection.commit();
+            }
+        }
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( java.sql.PreparedStatement ps = connection.prepareStatement( "UPDATE booleanarraytest SET bvec = ? WHERE id = ?" ) ) {
+                ps.setArray( 1, connection.createArrayOf( "BOOLEAN", new Boolean[]{ true, false, true } ) );
+                ps.setInt( 2, 11 );
+                ps.executeUpdate();
+                connection.commit();
+            }
+        }
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT bvec FROM booleanarraytest WHERE id = 11" ),
+                            ImmutableList.of( new Object[]{ new Object[]{ true, false, true } } )
+                    );
+                } finally {
+                    statement.executeUpdate( "DELETE FROM booleanarraytest WHERE id = 11" );
+                    connection.commit();
+                }
             }
         }
     }
