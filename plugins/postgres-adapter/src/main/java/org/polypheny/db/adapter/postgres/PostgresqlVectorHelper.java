@@ -67,20 +67,31 @@ public class PostgresqlVectorHelper {
     public static List<PolyValue> parseVector( Object dbObject ) {
         float[] vector = null;
         boolean[] bitvector = null;
-        if (dbObject instanceof PGvector vec) {
+        if ( dbObject instanceof PGvector vec ) {
             vector = vec.toArray();
-        } else if (dbObject instanceof PGhalfvec vec) {
+        } else if ( dbObject instanceof PGhalfvec vec ) {
             vector = vec.toArray();
-        } else if (dbObject instanceof PGsparsevec vec) {
+        } else if ( dbObject instanceof PGsparsevec vec ) {
             vector = vec.toArray();
-        } else if (dbObject instanceof PGbit vec ) {
+        } else if ( dbObject instanceof PGbit vec ) {
             bitvector = vec.toArray();
+        } else if ( dbObject instanceof String s ) {
+            bitvector = new boolean[s.length()];
+            for ( int j = 0; j < s.length(); ++j ) {
+                bitvector[j] = s.charAt( j ) == '1';
+            }
         }
-        if ( vector != null) {
+        if ( vector != null ) {
             List<PolyValue> list = new ArrayList<>( vector.length );
             for ( float f : vector ) list.add( PolyFloat.of( f ) );
             return list;
         }
+        if ( bitvector != null ) {
+            List<PolyValue> list = new ArrayList<>( bitvector.length );
+            for ( boolean b : bitvector ) list.add( PolyBoolean.of( b ) );
+            return list;
+        }
+        log.warn( "Was not able to parse the vector object." );
         return null;
     }
 

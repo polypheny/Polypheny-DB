@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import com.pgvector.PGbit;
 import com.pgvector.PGvector;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -34,6 +35,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.sql.language.SqlBasicCall;
@@ -191,6 +193,14 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
     @Override
     public SqlNode getCastSpec( AlgDataType type ) {
+        if ( type instanceof VectorType vectorType
+                && vectorPushdownTypeIsPresent( vectorType.getVectorElementType() )) {
+
+            String typeName = "_" + getTypeString( vectorType.getVectorElementType() );
+            return new SqlDataTypeSpec( new SqlIdentifier( typeName, ParserPos.ZERO ),
+                        (int) vectorType.getVectorDimension(), -1, null, null, ParserPos.ZERO );
+        }
+
         String castSpec;
         switch ( type.getPolyType() ) {
             case TINYINT:
@@ -334,14 +344,22 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     /**
-     * Bypasses the default getArray() path because the PostgreSQL driver returns a PGobject
+     * Bypasses the default {@code getArray()} path because the PostgreSQL driver returns a PGobject
      * instead of a standard java.sql.Array for pgvector columns.
      */
     @Override
     public Optional<Expression> getCustomArrayRetrievalExpression( ParameterExpression resultSet, int i, AlgDataType fieldType ) {
-        if ( !supportsVector() || fieldType.getPolyType() != PolyType.ARRAY || !(fieldType instanceof VectorType)) {
+        if ( fieldType.getPolyType() != PolyType.ARRAY || !(fieldType instanceof VectorType vectorType)) {
             return Optional.empty();
         }
+        if ( vectorType.getVectorElementType() == ElementType.BIT ) {
+            Expression object = Expressions.call( resultSet, "getString", Expressions.constant( i + 1 ) );
+            return Optional.of( Expressions.call( PostgresqlVectorHelper.class, "parseVector", object ) );
+        }
+        if ( !supportsVector() ) {
+            return Optional.empty();
+        }
+
         Expression object = Expressions.call( resultSet, "getObject", Expressions.constant( i + 1 ) );
         return Optional.of( Expressions.call( PostgresqlVectorHelper.class, "parseVector", object ) );
     }
@@ -357,15 +375,18 @@ public class PostgresqlSqlDialect extends SqlDialect {
     public void initializeConnection( java.sql.Connection conn ) throws java.sql.SQLException {
         if ( supportsVector() ) {
             PGvector.registerTypes( conn );
-            // TODO: Uncomment if support implemented
-            //PGbit.registerType( conn );
         }
+        PGbit.registerType( conn );
     }
 
 
     @Override
     public boolean vectorPushdownTypeIsPresent( VectorType.ElementType vectorType ) {
-        return supportsVector() && vectorType == ElementType.FLOAT;
+        return switch ( vectorType ) {
+            case FLOAT -> supportsVector();
+            case BIT -> true;
+            default -> false;
+        };
     }
 
 
@@ -377,7 +398,16 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 for ( int i = 0; i < vectorAsList.size(); ++i ) fa[i] = vectorAsList.get( i ).asFloat().floatValue();
                 yield new PGvector( fa );
             }
-            case BIT, DOUBLE, INTEGER -> null;
+            case BIT -> {
+                boolean[] ba = new boolean[vectorAsList.size()];
+                for ( int i = 0; i < vectorAsList.size(); ++i ) {
+                    PolyValue val = vectorAsList.get( i );
+                    ba[i] = (val != null && !val.isNull() && val.asBoolean().getValue() != null
+                            && val.asBoolean().getValue());
+                }
+                yield new PGbit( ba );
+            }
+            case DOUBLE, INTEGER -> null;
         };
     }
 
@@ -390,6 +420,23 @@ public class PostgresqlSqlDialect extends SqlDialect {
             case DOUBLE, INTEGER -> throw new UnsupportedOperationException("Vectors of type " + vectorType
                     + " are not supported by PG and do therefore not have a dedicated type string");
         };
+    }
+
+
+    @Override
+    public SqlNode getVectorLiteral( VectorType vectorType, PolyList<PolyValue> vectorAsList, ParserPos pos ) {
+        if ( vectorType.getVectorElementType() == ElementType.BIT ) {
+            StringBuilder sb = new StringBuilder();
+            for ( PolyValue val : vectorAsList ) {
+                sb.append( (val.asBoolean().getValue() != null && val.asBoolean().getValue() ? "1" : "0") );
+            }
+            return (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall(
+                    pos,
+                    SqlLiteral.createCharString( sb.toString(), pos ),
+                    getCastSpec( vectorType )
+            );
+        }
+        return null;
     }
 
 }

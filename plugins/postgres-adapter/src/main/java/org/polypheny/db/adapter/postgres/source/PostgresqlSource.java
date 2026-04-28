@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -85,7 +86,7 @@ public class PostgresqlSource extends AbstractJdbcSource {
         try {
             PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
             ConnectionHandler connectionHandler = connectionFactory.getOrCreateConnectionHandler( xid );
-            try ( java.sql.Statement statement = connectionHandler.getStatement() ) {
+            try ( Statement statement = connectionHandler.getStatement() ) {
                 Connection connection = statement.getConnection();
                 Set<SqlDbFeature> features = detectFeatures( connection );
                 dialect.addSupportedFeatures( features );
@@ -136,15 +137,16 @@ public class PostgresqlSource extends AbstractJdbcSource {
      *
      * <p>Handled type names:
      * <ul>
-     *   <li>{@code vector, halfvec}   — pgvector float4 and float2 vector, mapped to {@code
+     *   <li>{@code vector, halfvec}   - pgvector float4 and float2 vector, mapped to {@code
     ARRAY<REAL>}</li>
-     *   <li>{@code _float4}  — PostgreSQL float4 array, mapped to {@code
+     *  <li>{@code bit}       - bitvectors mappte to {@code ARRAY<BOOLEAN>}</li>
+     *   <li>{@code _float4}  - PostgreSQL float4 array, mapped to {@code
     ARRAY<REAL>}</li>
-     *   <li>{@code _float8}  — PostgreSQL float8 array, mapped to {@code
+     *   <li>{@code _float8}  - PostgreSQL float8 array, mapped to {@code
     ARRAY<DOUBLE>}</li>
-     *   <li>{@code _int4}    — PostgreSQL int4 array, mapped to {@code
+     *   <li>{@code _int4}    - PostgreSQL int4 array, mapped to {@code
     ARRAY<INTEGER>}</li>
-     *   <li>{@code _int8}    — PostgreSQL int8 array, mapped to {@code
+     *   <li>{@code _int8}    - PostgreSQL int8 array, mapped to {@code
     ARRAY<BIGINT>}</li>
      * </ul>
      * <p><b>Note:</b> PostgreSQL has no enforced array size limits. We therefore only detect the specified (but not enforced) dimensions.</p>
@@ -166,6 +168,8 @@ public class PostgresqlSource extends AbstractJdbcSource {
                     null, null, arrayDim( meta ), null ) );
             case "_int8"   -> Optional.of( new ColumnTypeInfo( PolyType.BIGINT, PolyType.ARRAY,
                     null, null, arrayDim( meta ), null ) );
+            case "_bool" -> Optional.of( new ColumnTypeInfo( PolyType.BOOLEAN, PolyType.ARRAY,
+                    null, null, arrayDim( meta ), null ) );
             default        -> Optional.empty();
         };
     }
@@ -173,6 +177,15 @@ public class PostgresqlSource extends AbstractJdbcSource {
 
     private int arrayDim( CollectionMetadata meta ) {
         return (meta != null && meta.arrayDimensions() > 0) ? meta.arrayDimensions() : -1;
+    }
+
+
+    @Override
+    public boolean requiresNativeTypeResolution( String typeName ) {
+        return (typeName.equals( "vector" )
+                || typeName.equals( "bit" ))
+                || typeName.equals( "halfvec" )
+                || typeName.equals( "sparsevec" );
     }
 
 
