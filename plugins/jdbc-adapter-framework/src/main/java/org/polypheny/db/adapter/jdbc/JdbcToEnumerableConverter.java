@@ -88,6 +88,7 @@ import org.polypheny.db.sql.language.SqlDialect.CalendarPolicy;
 import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDefaults;
@@ -354,7 +355,14 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     @NonNull
     private static Expression getPreprocessArrayExpression( ParameterExpression resultSet_, int i, SqlDialect dialect, AlgDataType fieldType ) {
         Optional<Expression> arrayRetrieval = dialect.getCustomArrayRetrievalExpression( resultSet_, i, fieldType );
-        if ( dialect.supportsArrays() ) {
+        if ( fieldType instanceof VectorType && arrayRetrieval.isPresent() ) {
+            Expression parsed = arrayRetrieval.get();
+            return Expressions.condition(
+                    Expressions.call( resultSet_, "wasNull" ),
+                    Expressions.constant( null ),
+                    parsed );
+        }
+        if ( (dialect.supportsArrays() && (fieldType.unwrapOrThrow( ArrayType.class ).getDimension() == 1 || dialect.supportsNestedArrays())) ) {
             ParameterExpression argument = Expressions.parameter( Object.class );
 
             AlgDataType componentType = fieldType.getComponentType();
@@ -364,32 +372,12 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 depth++;
             }
 
-            Expression standardMethod = Expressions.call(
+            return Expressions.call(
                     BuiltInMethod.JDBC_DEEP_ARRAY_TO_POLY_LIST.method,
                     Expressions.call( resultSet_, "getArray", Expressions.constant( i + 1 ) ),
                     Expressions.lambda( getOfPolyExpression( componentType, argument, resultSet_, i, dialect ), argument ),
                     Expressions.constant( depth )
             );
-            Expression textFallback = Expressions.call(
-                    BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
-                    Expressions.call( resultSet_, "getString", Expressions.constant( i + 1 ) )
-            );
-            // If not of type java.sql.Array, use dialect specific handling for vector type
-            if ( fieldType.unwrapOrThrow( ArrayType.class ).getDimension() == 1 && dialect.supportsVector()|| dialect.supportsNestedArrays() ) {
-                log.debug( "Parsing array as vector" );
-                return arrayRetrieval.map( expression -> Expressions.condition(
-                        Expressions.typeIs(
-                                Expressions.call( resultSet_, "getObject", Expressions.constant( i + 1 ) ),
-                                java.sql.Array.class ),
-                        standardMethod,
-                        expression ) ).orElse( standardMethod );
-            }
-            return Expressions.condition(
-                    Expressions.typeIs(
-                            Expressions.call( resultSet_, "getObject", Expressions.constant( i + 1 ) ),
-                            java.sql.Array.class ),
-                    standardMethod,
-                    textFallback );
         }
         return Expressions.call(
                 BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,

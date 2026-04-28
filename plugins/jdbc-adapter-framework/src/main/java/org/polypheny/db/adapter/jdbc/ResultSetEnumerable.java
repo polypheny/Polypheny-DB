@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TimeZone;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -61,8 +62,10 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
@@ -254,6 +257,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
             preparedStatement.setNull( i, Types.NULL );
             return;
         }
+        SqlDialect dialect = connectionHandler.getDialect();
 
         switch ( type.getPolyType() ) {
             case BIGINT:
@@ -290,7 +294,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 preparedStatement.setTime( i, value.asTime().asSqlTime(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
                 break;
             case TIMESTAMP:
-                if ( connectionHandler.getDialect().handlesUtcIncorrectly() ) {
+                if ( dialect.handlesUtcIncorrectly() ) {
                     preparedStatement.setTimestamp( i, PolyTimestamp.of( value.asTimestamp().millisSinceEpoch + OFFSET ).asSqlTimestamp() );
                 } else {
                     preparedStatement.setTimestamp( i, value.asTimestamp().asSqlTimestamp(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
@@ -301,7 +305,16 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 handleBinary( preparedStatement, i, value, connectionHandler );
                 break;
             case ARRAY:
-                if ( (type.getComponentType().getPolyType() == PolyType.ARRAY && connectionHandler.getDialect().supportsNestedArrays()) || (type.getComponentType().getPolyType() != PolyType.ARRAY) && connectionHandler.getDialect().supportsArrays() ) {
+                Optional<VectorType> vectorType = type.unwrap( VectorType.class );
+                if ( vectorType.isPresent() && dialect.vectorPushdownTypeIsPresent( vectorType.get().getVectorElementType() ) ) {
+                    Object dbObj = dialect.getVectorDbObject( vectorType.get().getVectorElementType(), value.asList() );
+                    if ( dbObj != null ) {
+                        preparedStatement.setObject( i, dbObj );
+                        break;
+                    }
+                }
+
+                if ( (type.getComponentType().getPolyType() == PolyType.ARRAY && dialect.supportsNestedArrays()) || (type.getComponentType().getPolyType() != PolyType.ARRAY) && dialect.supportsArrays() ) {
                     Array array = getArray( value, type, connectionHandler );
                     preparedStatement.setArray( i, array );
                     array.free(); // according to documentation this is advised to not hog the memory
@@ -342,6 +355,16 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 log.warn( "potentially unhandled type" );
                 preparedStatement.setObject( i, value );
         }
+    }
+
+
+    private static void addVecObjToPrepStatement( VectorType.ElementType vt, PreparedStatement ps, PolyValue value, SqlDialect dialect, int i ) throws SQLException {
+        Object dbObj = dialect.getVectorDbObject(vt, value.asList() );
+        if ( dbObj != null ) {
+            ps.setObject( i, dbObj );
+            return;
+        }
+        log.warn( "Setting vector object in PreparedStatement failed at index: {}", i );
     }
 
 
