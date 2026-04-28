@@ -126,6 +126,12 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
 
     @Override
     public AlgDataType createArrayType( AlgDataType elementType, long maxCardinality, long dimension ) {
+        if ( (elementType.getPolyType() == PolyType.FLOAT ||
+                elementType.getPolyType() == PolyType.REAL ||
+                elementType.getPolyType() == PolyType.BOOLEAN)
+                && maxCardinality > 0 && dimension == 1 ) {
+            return createVectorType( elementType, maxCardinality );
+        }
         ArrayType newType = new ArrayType( elementType, false, maxCardinality, dimension );
         return canonize( newType );
     }
