@@ -18,6 +18,7 @@ package org.polypheny.db.prisminterface.statements;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.IntStream;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,6 +32,7 @@ import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.prism.ParameterMeta;
 import org.polypheny.prism.StatementResult;
@@ -144,6 +146,16 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
                     yield typeFactory.createPolyType( PolyType.VARBINARY, parameterMeta.getPrecision() );
                 }
                 yield typeFactory.createPolyType( PolyType.VARBINARY );
+            }
+            case ARRAY -> {
+                Optional<VectorType> vt = parameterMeta.unwrap( VectorType.class );
+                if ( vt.isPresent() ) {
+                    yield typeFactory.createVectorType(
+                            typeFactory.createPolyType(
+                                    vt.get().getComponentType().getPolyType() ),
+                            vt.get().getVectorDimension() );
+                }
+                yield typeFactory.createPolyType( type );
             }
             default -> typeFactory.createPolyType( type );
         };
