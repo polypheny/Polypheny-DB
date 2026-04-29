@@ -114,13 +114,13 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
     }
 
 
-    private TransactionalConnectionHandler createNewHandler(Connection connection, SqlDialect dialect) throws ConnectionHandlerException {
+    private TransactionalConnectionHandler createNewHandler( Connection connection, SqlDialect dialect ) throws ConnectionHandlerException {
         try {
-            dialect.initializeConnection(connection);
-        } catch (SQLException e) {
-            throw new ConnectionHandlerException("Failed to initialize dialect connection", e);
+            dialect.initializeConnection( connection );
+        } catch ( SQLException e ) {
+            throw new ConnectionHandlerException( "Failed to initialize dialect connection", e );
         }
-        return new TransactionalConnectionHandler(connection, dialect);
+        return new TransactionalConnectionHandler( connection, dialect );
     }
 
 

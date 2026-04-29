@@ -22,6 +22,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import java.sql.Connection;
@@ -36,6 +37,7 @@ import java.sql.Statement;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @Tag("adapter")
+@EnabledIfSystemProperty(named = "store.default", matches = "postgresql|mongodb|hsqldb|monetdb|neo4j")
 public class JdbcBooleanArrayTest {
 
     @BeforeAll

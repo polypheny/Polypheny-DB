@@ -373,10 +373,15 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
     @Override
     public void initializeConnection( java.sql.Connection conn ) throws java.sql.SQLException {
+        PGbit.registerType( conn );
         if ( supportsVector() ) {
             PGvector.registerTypes( conn );
         }
-        PGbit.registerType( conn );
+        if ( supportsPostGIS() ) {
+            org.postgresql.PGConnection pgConn = conn.unwrap( org.postgresql.PGConnection.class );
+            pgConn.addDataType( "geometry", net.postgis.jdbc.PGgeometry.class );
+        }
+
     }
 
 
