@@ -100,68 +100,6 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
     }
 
 
-    private AlgDataType deriveType( JavaTypeFactory typeFactory, AlgDataType parameterMeta ) {
-        PolyType type = parameterMeta.getPolyType();
-        return switch ( type ) {
-            case DECIMAL -> {
-                if ( parameterMeta.getPrecision() >= 0 && parameterMeta.getScale() >= 0 ) {
-                    yield typeFactory.createPolyType( PolyType.DECIMAL, parameterMeta.getPrecision(), parameterMeta.getScale() );
-                } else if ( parameterMeta.getPrecision() >= 0 ) {
-                    yield typeFactory.createPolyType( PolyType.DECIMAL, parameterMeta.getPrecision() );
-                }
-                yield typeFactory.createPolyType( PolyType.DECIMAL );
-            }
-            case VARCHAR -> {
-                if ( parameterMeta.getPrecision() > 0 ) {
-                    yield typeFactory.createPolyType( PolyType.VARCHAR, parameterMeta.getPrecision() );
-                }
-                yield typeFactory.createPolyType( PolyType.VARCHAR );
-            }
-            case CHAR -> {
-                if ( parameterMeta.getPrecision() > 0 ) {
-                    yield typeFactory.createPolyType( PolyType.CHAR, parameterMeta.getPrecision() );
-                }
-                yield typeFactory.createPolyType( PolyType.CHAR );
-            }
-            case TIME -> {
-                if ( parameterMeta.getPrecision() >= 0 ) {
-                    yield typeFactory.createPolyType( PolyType.TIME, parameterMeta.getPrecision() );
-                }
-                yield typeFactory.createPolyType( PolyType.TIME );
-            }
-            case TIMESTAMP -> {
-                if ( parameterMeta.getPrecision() >= 0 ) {
-                    yield typeFactory.createPolyType( PolyType.TIMESTAMP, parameterMeta.getPrecision() );
-                }
-                yield typeFactory.createPolyType( PolyType.TIMESTAMP );
-            }
-            case BINARY -> {
-                if ( parameterMeta.getPrecision() > 0 ) {
-                    yield typeFactory.createPolyType( PolyType.BINARY, parameterMeta.getPrecision() );
-                }
-                yield typeFactory.createPolyType( PolyType.BINARY );
-            }
-            case VARBINARY -> {
-                if ( parameterMeta.getPrecision() > 0 ) {
-                    yield typeFactory.createPolyType( PolyType.VARBINARY, parameterMeta.getPrecision() );
-                }
-                yield typeFactory.createPolyType( PolyType.VARBINARY );
-            }
-            case ARRAY -> {
-                Optional<VectorType> vt = parameterMeta.unwrap( VectorType.class );
-                if ( vt.isPresent() ) {
-                    yield typeFactory.createVectorType(
-                            typeFactory.createPolyType(
-                                    vt.get().getComponentType().getPolyType() ),
-                            vt.get().getVectorDimension() );
-                }
-                yield typeFactory.createPolyType( type );
-            }
-            default -> typeFactory.createPolyType( type );
-        };
-    }
-
-
     @Override
     public void close() {
         if ( statement != null ) {

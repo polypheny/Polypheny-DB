@@ -82,7 +82,7 @@ public class PostgresqlSourceDiscoveryTest {
                 .filter( ad -> ad.type == AdapterType.STORE && ad.adapterName.equalsIgnoreCase( "PostgreSQL" ) )
                 .findFirst();
 
-        assertTrue( maybeStore.isPresent(), "PostgreSQL Store not found in Catalog - skipping test" );
+        assertTrue( maybeStore.isPresent(), "PostgreSQL Store not found in Catalog." );
 
         LogicalAdapter pgStore = maybeStore.get();
         Map<String, String> settingsMap = pgStore.settings;
