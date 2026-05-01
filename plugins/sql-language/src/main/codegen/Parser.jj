@@ -7418,6 +7418,8 @@ SqlBinaryOperator BinaryRowOperator() :
 |   <L2_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_L2, SqlBinaryOperator.class ); }
 |   <L1_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_L1, SqlBinaryOperator.class ); }
 |   <COS_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_COS, SqlBinaryOperator.class ); }
+|   <HAMMING_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_HAMMING, SqlBinaryOperator.class ); }
+|   <JACCARD_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_JACCARD, SqlBinaryOperator.class ); }
 |   op = BinaryMultisetOperator() { return op; }
 }
 
@@ -8630,6 +8632,8 @@ void NonReservedKeyWord2of3() :
 |   < L2_DIST_OP: "<->" >
 |   < L1_DIST_OP: "<+>" >
 |   < COS_DIST_OP: "<=>" >
+|   < HAMMING_DIST_OP: "<~>" >
+|   < JACCARD_DIST_OP: "<%>" >
 |   < NAMED_ARGUMENT_ASSIGNMENT: "=>" >
 |   < DOUBLE_PERIOD: ".." >
 |   < QUOTE: "'" >

@@ -1585,7 +1585,12 @@ public enum OperatorName {
 
     L1_DISTANCE( Function.class ),
 
-    COS_DISTANCE(Function.class ),
+    COS_DISTANCE( Function.class ),
+
+    HAMMING_DISTANCE( Function.class ),
+
+    JACCARD_DISTANCE( Function.class ),
+
 
 
     // PostgreSQL pgvector Operators
@@ -1595,6 +1600,10 @@ public enum OperatorName {
     PGVECTOR_L1( BinaryOperator.class ),
 
     PGVECTOR_COS( BinaryOperator.class ),
+
+    PGVECTOR_HAMMING( BinaryOperator.class ),
+
+    PGVECTOR_JACCARD( BinaryOperator.class ),
 
     //-------------------------------------------------------------
     //                   SET OPERATORS

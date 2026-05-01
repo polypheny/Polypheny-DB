@@ -260,6 +260,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                     case "L1" -> OperatorName.L1_DISTANCE;
                     case "L2" -> OperatorName.L2_DISTANCE;
                     case "COSINE" -> OperatorName.COS_DISTANCE;
+                    case "HAMMING" -> OperatorName.HAMMING_DISTANCE;
+                    case "JACCARD" -> OperatorName.JACCARD_DISTANCE;
                     default -> null;
                 };
                 if ( name != null ) {
@@ -291,6 +293,18 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             RexNode arg1 = cx.convertExpression( call.operand( 1 ) );
             AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
             return cx.getRexBuilder().makeCall( returnType, OperatorRegistry.get( OperatorName.COS_DISTANCE ), ImmutableList.of( arg0, arg1 ) );
+        } );
+        registerOp( OperatorRegistry.get( OperatorName.PGVECTOR_HAMMING ), (cx, call) -> {
+            RexNode arg0 = cx.convertExpression( call.operand( 0 ) );
+            RexNode arg1 = cx.convertExpression( call.operand( 1 ) );
+            AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
+            return cx.getRexBuilder().makeCall( returnType, OperatorRegistry.get( OperatorName.HAMMING_DISTANCE ), ImmutableList.of( arg0, arg1 ) );
+        } );
+        registerOp( OperatorRegistry.get( OperatorName.PGVECTOR_JACCARD ), (cx, call) -> {
+            RexNode arg0 = cx.convertExpression( call.operand( 0 ) );
+            RexNode arg1 = cx.convertExpression( call.operand( 1 ) );
+            AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
+            return cx.getRexBuilder().makeCall( returnType, OperatorRegistry.get( OperatorName.JACCARD_DISTANCE ), ImmutableList.of( arg0, arg1 ) );
         } );
 
         // Convert "element(<expr>)" to "$element_slice(<expr>)", if the expression is a multiset of scalars.

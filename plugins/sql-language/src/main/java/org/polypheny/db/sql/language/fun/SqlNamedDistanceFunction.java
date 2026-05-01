@@ -23,6 +23,7 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -36,12 +37,12 @@ import static org.polypheny.db.util.Static.RESOURCE;
 public class SqlNamedDistanceFunction extends SqlFunction {
 
 
-    public SqlNamedDistanceFunction( String name, Kind kind, FunctionCategory functionCategory ) {
+    public SqlNamedDistanceFunction( String name, Kind kind, FunctionCategory functionCategory, PolyOperandTypeChecker opreandTypeChecker ) {
         super( name,
                 kind,
                 ReturnTypes.DOUBLE,
                 null,
-                TWO_NUMERIC_ARRAYS,
+                opreandTypeChecker,
                 functionCategory );
     }
 
@@ -107,6 +108,74 @@ public class SqlNamedDistanceFunction extends SqlFunction {
         @Override
         public String getAllowedSignatures( Operator op, String opName ) {
             return "'" + opName + "(<NUMERIC ARRAY>, <NUMERIC ARRAY>)'";
+        }
+
+
+        @Override
+        public Consistency getConsistency() {
+            return Consistency.NONE;
+        }
+
+
+        @Override
+        public boolean isOptional( int i ) {
+            return false;
+        }
+    };
+
+
+    public static final PolyOperandTypeChecker TWO_BOOLEAN_ARRAYS = new PolyOperandTypeChecker() {
+
+        @Override
+        public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
+
+            // Make sure the first argument is not null
+            if ( CoreUtil.isNullLiteral( callBinding.operand( 0 ), false ) ) {
+                if ( throwOnFailure ) {
+                    throw callBinding.getValidator().newValidationError( callBinding.operand( 0 ), RESOURCE.nullIllegal() );
+                } else {
+                    return false;
+                }
+            }
+            // Make sure the first argument is an array of numeric values
+            if ( !PolyTypeUtil.isArray( callBinding.getOperandType( 0 ) )
+                    || (callBinding.getOperandType( 0 ).getComponentType().getPolyType() != PolyType.BOOLEAN) ) {
+                if ( throwOnFailure ) {
+                    throw callBinding.newValidationSignatureError();
+                } else {
+                    return false;
+                }
+            }
+            // Make sure the second argument is not null
+            if ( CoreUtil.isNullLiteral( callBinding.operand( 1 ), false ) ) {
+                if ( throwOnFailure ) {
+                    throw callBinding.getValidator().newValidationError( callBinding.operand( 1 ), RESOURCE.nullIllegal() );
+                } else {
+                    return false;
+                }
+            }
+            // Make sure the second argument is an array of numeric values
+            if ( !PolyTypeUtil.isArray( callBinding.getOperandType( 1 ) )
+                    || (callBinding.getOperandType( 1 ).getComponentType().getPolyType() != PolyType.BOOLEAN) ) {
+                if ( throwOnFailure ) {
+                    throw callBinding.newValidationSignatureError();
+                } else {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+
+        @Override
+        public OperandCountRange getOperandCountRange() {
+            return PolyOperandCountRanges.of( 2 );
+        }
+
+
+        @Override
+        public String getAllowedSignatures( Operator op, String opName ) {
+            return "'" + opName + "(<BOOLEAN ARRAY>, <BOOLEAN ARRA>)'";
         }
 
 

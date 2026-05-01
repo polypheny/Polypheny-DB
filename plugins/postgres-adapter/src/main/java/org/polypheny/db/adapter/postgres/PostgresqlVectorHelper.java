@@ -51,6 +51,14 @@ public class PostgresqlVectorHelper {
     }
 
 
+    public static void unparse( SqlWriter writer, SqlNode operand, int leftPrec, int rightPrec ) {
+        if ( operand instanceof SqlCall castCall && castCall.getKind() == Kind.CAST ) {
+            operand = castCall.operand( 0 );
+        }
+        operand.unparse( writer, leftPrec, rightPrec );
+    }
+
+
     /**
      *
      * @param dbObject database Object that represents a vector.

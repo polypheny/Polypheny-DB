@@ -28,6 +28,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.postgres.source.PostgresqlFeature;
+import org.polypheny.db.adapter.postgres.store.PostgresqlStore;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
@@ -157,7 +158,12 @@ public class PostgresqlSqlDialect extends SqlDialect {
     @Override
     public List<OperatorName> supportedKnnFunctions() {
         return supportsVector() ?
-        ImmutableList.of( OperatorName.L1_DISTANCE, OperatorName.L2_DISTANCE, OperatorName.COS_DISTANCE )
+        ImmutableList.of(
+                OperatorName.L1_DISTANCE,
+                OperatorName.L2_DISTANCE,
+                OperatorName.COS_DISTANCE,
+                OperatorName.HAMMING_DISTANCE,
+                OperatorName.JACCARD_DISTANCE )
                 : ImmutableList.of();
     }
 
@@ -336,6 +342,16 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 0 ), leftPrec, rightPrec );
                 writer.print( " <=> " );
                 PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 1 ), leftPrec, rightPrec );
+                break;
+            case HAMMING_DISTANCE:
+                PostgresqlVectorHelper.unparse( writer, call.operand( 0 ), leftPrec, rightPrec );
+                writer.print( " <~> " );
+                PostgresqlVectorHelper.unparse( writer, call.operand( 1 ), leftPrec, rightPrec );
+                break;
+            case JACCARD_DISTANCE:
+                PostgresqlVectorHelper.unparse( writer, call.operand( 0 ), leftPrec, rightPrec );
+                writer.print( " <%> " );
+                PostgresqlVectorHelper.unparse( writer, call.operand( 1 ), leftPrec, rightPrec );
                 break;
             default:
                 super.unparseCall( writer, call, leftPrec, rightPrec );

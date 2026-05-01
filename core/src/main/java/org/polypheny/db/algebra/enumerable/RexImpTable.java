@@ -228,6 +228,8 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( OperatorName.L1_DISTANCE ), "l1Distance", NullPolicy.ANY);
         defineMethod( OperatorRegistry.get( OperatorName.L2_DISTANCE ), "l2Distance", NullPolicy.ANY);
         defineMethod( OperatorRegistry.get( OperatorName.COS_DISTANCE ), "cosDistance", NullPolicy.ANY);
+        defineMethod( OperatorRegistry.get( OperatorName.HAMMING_DISTANCE ), "hammingDistance", NullPolicy.ANY);
+        defineMethod( OperatorRegistry.get( OperatorName.JACCARD_DISTANCE ), "jaccardDistance", NullPolicy.ANY);
         defineMethod( OperatorRegistry.get( OperatorName.META ), "meta", NullPolicy.ANY );
 
         map.put( OperatorRegistry.get( OperatorName.PI ), ( translator, call, nullAs ) -> PolyDouble.of( Math.PI ).asExpression() );

@@ -19,6 +19,8 @@ package org.polypheny.db.functions;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.util.Pair;
@@ -122,19 +124,47 @@ public class DistanceFunctions {
     }
 
 
+    protected static PolyDouble hammingMetric( List<PolyValue> value, List<PolyValue> target ) {
+        double result = 0;
+        for ( int i = 0; i < value.size(); ++i ) {
+            if ( value.get( i ).asBoolean().getValue() != target.get( i ).asBoolean().getValue() ) {
+                result++;
+            }
+        }
+        return PolyDouble.of( result );
+    }
+
+
+    protected static PolyDouble jaccardMetric( List<PolyValue> value, List<PolyValue> target ) {
+        double intersection = 0;
+        double union = 0;
+        for ( int i = 0; i < value.size(); ++i ) {
+            boolean a = value.get( i ).asBoolean().getValue();
+            boolean b = target.get( i ).asBoolean().getValue();
+            if ( a && b ) {
+                intersection++;
+            }
+            if ( a || b ) {
+                union++;
+            }
+        }
+
+        if ( union == 0.0 ) {
+            return PolyDouble.of( 0.0 );
+        }
+
+        return PolyDouble.of( 1.0 - (intersection / union) );
+    }
+
+
     private static double norm2( List<PolyNumber> list ) {
         return Math.sqrt( list.stream().mapToDouble( a -> Math.pow( a.doubleValue(), 2.0 ) ).sum() );
     }
 
 
     protected static void verifyInputs( List<?> a, List<?> b, List<?> w ) {
-        if ( a.isEmpty() && b.isEmpty() && (w == null || w.isEmpty()) ) {
+        if ( emptyArgument( a, b, w ) )
             return;
-        }
-
-        if ( (a.size() != b.size()) || (w != null && a.size() != w.size()) ) {
-            throw new RuntimeException( "Sizes of inputs do not match." );
-        }
 
         if ( !a.get( 0 ).getClass().isArray() || !b.get( 0 ).getClass().isArray() || (w != null && !w.get( 0 ).getClass().isArray()) ) {
             if ( !(a.get( 0 ) instanceof PolyNumber) || !(b.get( 0 ) instanceof PolyNumber) || (w != null && !(w.get( 0 ) instanceof PolyNumber)) ) {
@@ -143,6 +173,18 @@ public class DistanceFunctions {
         } else {
             throw new RuntimeException( "Not usable Arrays" );
         }
+    }
+
+
+    private static boolean emptyArgument( List<?> a, List<?> b, List<?> w ) {
+        if ( a.isEmpty() && b.isEmpty() && (w == null || w.isEmpty()) ) {
+            return true;
+        }
+
+        if ( (a.size() != b.size()) || (w != null && a.size() != w.size()) ) {
+            throw new RuntimeException( "Sizes of inputs do not match." );
+        }
+        return false;
     }
 
 }

@@ -123,6 +123,10 @@ public enum Kind {
 
     COS_DISTANCE,
 
+    HAMMING_DISTANCE,
+
+    JACCARD_DISTANCE,
+
     /**
      * GEO functions.
      */

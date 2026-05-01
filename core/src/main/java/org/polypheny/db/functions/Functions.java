@@ -210,6 +210,16 @@ public class Functions {
     }
 
 
+    public static PolyDouble hammingDistance( List<PolyValue> value, List<PolyValue> target ) {
+        return DistanceFunctions.hammingMetric( value, target );
+    }
+
+
+    public static PolyDouble jaccardDistance( List<PolyValue> value, List<PolyValue> target ) {
+        return DistanceFunctions.jaccardMetric( value, target );
+    }
+
+
     private static class MetadataModel {
 
         String name;

@@ -48,6 +48,8 @@ public enum FunctionCategory {
     L1_DISTANCE( "L1_DISTANCE", "l1 distance function", DISTANCE_FUNCTION ),
     L2_DISTANCE( "L2_DISTANCE", "l2 distance function", DISTANCE_FUNCTION ),
     COS_DISTANCE( "COS_DISTANCE", "cosine distance function", DISTANCE_FUNCTION ),
+    HAMMING_DISTANCE( "HAMMING_DISTANCE", "hamming distance function", DISTANCE_FUNCTION ),
+    JACCARD_DISTANCE( "JACCARD_DISTANCE", "jaccard distance function", DISTANCE_FUNCTION ),
     MULTIMEDIA( "MULTIMEDIA", "Multimedia function", MULTIMEDIA_FUNCTION ),
     GEOMETRY( "GEOMETRY", "Geo function", GEO_FUNCTION );
 
