@@ -105,15 +105,24 @@ public final class ParquetNativeFilterBuilder {
     }
 
 
+    /**
+     * Converts a logical ParquetAdapterFilter into a native Parquet FilterPredicate
+     * @param schema MessageType
+     * @param filter ParquetAdapterFilter
+     * @return Filter Predicate
+     */
     private static FilterPredicate buildLogicalPredicate( MessageType schema, ParquetAdapterFilter filter ) {
+        // recursively convert each adapter-level child filter into a native Parquet predicate
         List<FilterPredicate> operands = filter.operands().stream()
                 .map( operand -> buildPredicate( schema, operand ) )
                 .toList();
 
+        // check if any child failed
         if ( operands.stream().anyMatch( Objects::isNull ) ) {
             return null;
         }
 
+        // combine the native child predicates based on the logical operator
         return switch ( filter.operator() ) {
             case AND -> combineAnd( operands );
             case OR -> combineOr( operands );
@@ -123,6 +132,11 @@ public final class ParquetNativeFilterBuilder {
     }
 
 
+    /**
+     * Takes a list of native Parquet FilterPredicates and combines them into one predicate using AND
+     * @param operands list of filter predicates
+     * @return FilterPredicate
+     */
     private static FilterPredicate combineAnd( List<FilterPredicate> operands ) {
         FilterPredicate predicate = null;
         for ( FilterPredicate operand : operands ) {
@@ -132,6 +146,11 @@ public final class ParquetNativeFilterBuilder {
     }
 
 
+    /**
+     * Takes a list of native Parquet FilterPredicates and combines them into one predicate using OR
+     * @param operands list of filter predicates
+     * @return FilterPredicate
+     */
     private static FilterPredicate combineOr( List<FilterPredicate> operands ) {
         FilterPredicate predicate = null;
         for ( FilterPredicate operand : operands ) {

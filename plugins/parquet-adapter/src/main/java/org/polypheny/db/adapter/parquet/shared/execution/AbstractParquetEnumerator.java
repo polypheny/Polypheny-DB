@@ -81,7 +81,7 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
             current = rows.remove();
             return true;
         } catch ( Exception e ) {
-            throw new GenericRuntimeException( "Error while reading parquet data", e );
+            throw new GenericRuntimeException( "Error while reading parquet data: " + e.getClass().getSimpleName() + ": " + e.getMessage(), e );
         }
     }
 
@@ -158,6 +158,7 @@ public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[
 
 
     private boolean matches( Group group, ParquetAdapterFilter filter ) {
+        // add logical filter support
         if ( filter.isLogical() ) {
             return switch ( filter.operator() ) {
                 case AND -> filter.operands().stream().allMatch( operand -> matches( group, operand ) );

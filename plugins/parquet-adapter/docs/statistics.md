@@ -5,13 +5,21 @@ This document describes the statistics-related changes introduced to avoid loadi
 ## Goal
 
 Before this change, the monitoring statistics subsystem computed table and column statistics by executing normal relational queries.
-For Parquet-backed entities, this could trigger full scans during startup statistics reevaluation.
+This could trigger full scans for Parquet-backed entities during startup and impact performance.
 
-The new goal is:
+The goal of development is:
 
-1. ask the adapter for metadata-backed statistics first
-2. use Parquet footer metadata when available
-3. fall back to the old query-based path only when necessary
+1. Ask the adapter for metadata-backed statistics first
+2. Use Parquet footer metadata when available
+3. Fall back to the old query-based path only when necessary
+
+## Flow Chart
+
+![Schema display](images/statistics.png)
+
+## Example
+
+![Schema display](images/statistics_example.png)
 
 ## Main Objects
 
@@ -108,7 +116,6 @@ Helper methods added:
 - `getStatisticsProvider(AllocationEntity allocation)`
 - `toStatisticColumn(QueryResult column, ProvidedColumnStatistics provided)`
 
-
 ## Parquet Adapter Integration
 
 ### `ParquetRelTable`
@@ -181,8 +188,6 @@ Main methods:
 
 - `getEntityStatistics(boolean nestedTable)`
 - `getColumnStatistics(LogicalColumn column, int uniqueValueLimit)`
-
-
 
 ## Full Flow
 

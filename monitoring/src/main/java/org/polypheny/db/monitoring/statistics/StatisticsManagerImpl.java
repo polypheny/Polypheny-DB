@@ -326,6 +326,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     /**
+     * Adapter Statistics:
      * Gets column statistics
      * @param column - query result
      * @return Statistic Column
@@ -343,6 +344,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     /**
+     * Adapter Statistics:
      * Converts provider column statistics to statistics column representation
      * @param column QueryResult
      * @param provided ProvidedColumnStatistics
@@ -382,6 +384,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     /**
+     * Adapter Statistics:
      * Look for Adapter Statistic Provider via catalog
      * @param allocation AllocationEntity
      * @return AdapterStatisticsProvider
@@ -401,7 +404,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
                 .map( physical -> physical.unwrap( AdapterStatisticsProvider.class ) )
                 .filter( Optional::isPresent )
                 .map( Optional::get )
-                .findFirst();
+                .findFirst(); // get first adapter that implements AdapterStatisticsProvider
     }
 
 

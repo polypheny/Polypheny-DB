@@ -23,9 +23,20 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 
+/**
+ * Responsible for parsing supported Rex predicates and
+ * turning them into adapter-level filters
+ * Rex Filter -> Adapter Filter
+ */
 public abstract class AbstractFilterTranslator {
 
+    /**
+     * Parse Rex filter to left, right and operator
+     * @param filter - filter to parse
+     * @return ParsedFilter
+     */
     protected ParsedFilter parse( RexNode filter ) {
         if ( !(filter instanceof RexCall call) || !isSupportedOperator( filter.getKind() ) || call.getOperands().size() != 2 ) {
             return null;
@@ -46,6 +57,13 @@ public abstract class AbstractFilterTranslator {
     }
 
 
+    /**
+     * Convert Rex filter to Adapter Filter
+     * @param columnIndex - column
+     * @param operator - operator
+     * @param valueNode - value
+     * @return adapter filter
+     */
     protected ParquetAdapterFilter toParquetAdapterFilter( int columnIndex, Kind operator, RexNode valueNode ) {
         if ( valueNode instanceof RexLiteral literal ) {
             if ( literal.getValue() == null ) {
@@ -67,6 +85,11 @@ public abstract class AbstractFilterTranslator {
     }
 
 
+    /**
+     * Validate if operation is supported
+     * @param kind - kind of operator
+     * @return if supported
+     */
     protected boolean isSupportedOperator( Kind kind ) {
         return kind == Kind.EQUALS
                 || kind == Kind.NOT_EQUALS
@@ -77,6 +100,12 @@ public abstract class AbstractFilterTranslator {
     }
 
 
+    /**
+     * Reverse filters mapping
+     * Used for not calculating equal filters twice
+     * @param kind - operator kong
+     * @return - equivalent reversed operator
+     */
     protected Kind reverse( Kind kind ) {
         return switch ( kind ) {
             case GREATER_THAN -> Kind.LESS_THAN;
@@ -98,6 +127,14 @@ public abstract class AbstractFilterTranslator {
 
     protected record ParsedFilter( RexNode left, RexNode right, Kind operator ) {
 
+    }
+
+    protected boolean isColumnPredicateSupported( PolyType type, Kind kind, RexNode valueNode ) {
+        return switch ( type ) {
+            case BOOLEAN, VARCHAR, CHAR, TEXT -> kind == Kind.EQUALS || kind == Kind.NOT_EQUALS;
+            case INTEGER, BIGINT, FLOAT, DOUBLE, DATE, TIME, TIMESTAMP -> true;
+            default -> false;
+        } && (valueNode instanceof RexDynamicParam || (valueNode instanceof RexLiteral literal && literal.getValue() != null));
     }
 
 }

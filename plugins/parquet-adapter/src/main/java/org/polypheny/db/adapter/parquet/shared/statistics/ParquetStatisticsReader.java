@@ -108,6 +108,11 @@ public class ParquetStatisticsReader {
     }
 
 
+    /**
+     * Estimates how many values exist for one Parquet leaf path across the whole file
+     * @param sourcePathElements - path
+     * @return values count
+     */
     private long estimateValueCount( List<String> sourcePathElements ) {
         long valueCount = 0;
         for ( BlockMetaData block : schemaReader.getFooter().getBlocks() ) {

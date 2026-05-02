@@ -242,6 +242,15 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
     }
 
 
+    /**
+     * Takes a ParquetAdapterFilter produced by the translator and turns it into a filter that is ready for execution against the actual Parquet file
+     * Resolve dynamic parameters from dataContext
+     * Use binding path elements for nested fields
+     * For logical filter - recursive call
+     * @param dataContext DataContext
+     * @param filter Adapter level filter
+     * @return Adapter level filter
+     */
     private ParquetAdapterFilter resolveFilter( DataContext dataContext, ParquetAdapterFilter filter ) {
         if ( filter.isLogical() ) {
             return ParquetAdapterFilter.logical( filter.operator(), filter.operands().stream()
@@ -285,9 +294,11 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
             if ( field >= schema.getFieldCount() || !schema.getType( field ).getName().equals( columnBinding.sourcePathElements().get( 0 ) ) ) {
                 return true;
             }
+            if ( !schema.getType( field ).isPrimitive() ) {
+                return true;
+            }
         }
         return false;
     }
 
 }
-

@@ -145,7 +145,7 @@ public class ParquetSourceReader implements AutoCloseable {
                 return group;
             }
         } catch ( Exception e ) {
-            throw new GenericRuntimeException( "Error while reading parquet data", e );
+            throw new GenericRuntimeException( "Error while reading parquet data: " + e.getClass().getSimpleName() + ": " + e.getMessage(), e );
         }
     }
 

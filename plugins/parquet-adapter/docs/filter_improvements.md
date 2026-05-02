@@ -8,10 +8,10 @@ The previous filtering implementation mainly handled single comparison predicate
 
 The new goal of this development step was:
 
-1. support logical filter trees
+1. support logical filter trees (AND, OR, NOT, IN) - hierarchical filter
 2. resolve nested filter operands recursively
-3. reuse shared translation logic between relational and document filters
-4. allow both exact filtering and native Parquet pushdown to understand composed filters
+3. reuse shared translation logic between relational and document filters - abstract class
+
 
 ## Main Changes
 
@@ -202,18 +202,4 @@ Tests were extended to verify:
 - `plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/shared/filter/ParquetNativeFilterBuilder.java`
 - `plugins/parquet-adapter/src/test/java/org/polypheny/db/adapter/parquet/ParquetRelFilterTranslatorTest.java`
 
-## Summary
 
-The filtering model was upgraded from single comparison predicates to recursive logical filter trees.
-
-This improvement affects both:
-
-- filter translation
-- filter execution
-
-and it applies to both:
-
-- exact enumerator-level filtering
-- native Parquet predicate pushdown
-
-The result is better support for realistic composed predicates while keeping unsupported cases conservative.
