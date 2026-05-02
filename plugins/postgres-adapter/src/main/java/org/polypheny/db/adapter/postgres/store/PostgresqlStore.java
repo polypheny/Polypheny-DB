@@ -40,6 +40,7 @@ import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
 import org.polypheny.db.adapter.postgres.PostgresqlSqlDialect;
 import org.polypheny.db.adapter.postgres.source.PostgresqlFeature;
+import org.polypheny.db.adapter.postgres.source.PostgresqlSource;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
@@ -162,7 +163,19 @@ public class PostgresqlStore extends AbstractJdbcStore {
         if ( !testConnection() ) {
             throw new GenericRuntimeException( "Unable to connect" );
         }
-        return createConnectionFactory();
+        ConnectionFactory factory = createConnectionFactory();
+        try {
+            PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
+            ConnectionHandler handler = factory.getOrCreateConnectionHandler( xid );
+            try ( java.sql.Statement statement = handler.getStatement() ) {
+                java.sql.Connection connection = statement.getConnection();
+                java.util.Set<org.polypheny.db.sql.language.SqlDbFeature> features = PostgresqlSource.detectFeatures( connection );
+                dialect.addSupportedFeatures( features );
+            }
+        } catch ( ConnectionHandlerException | SQLException e ) {
+                log.error( "Could not query feature information on remote PostgreSQL store.", e );
+        }
+            return factory;
     }
 
 

@@ -136,8 +136,7 @@ public class PreparedNamedStatementTest {
 
 
     @Test
-    public void namedStatementCanBeExecutedMultipleTimesWithDifferentValues()
-            throws Exception {
+    public void namedStatementCanBeExecutedMultipleTimesWithDifferentValues() throws Exception {
         PIPreparedNamedStatement stmt = prepareInsert( 4 );
         for ( int i = 1; i <= 3; i++ ) {
             Map<String, PolyValue> values = Map.of(
