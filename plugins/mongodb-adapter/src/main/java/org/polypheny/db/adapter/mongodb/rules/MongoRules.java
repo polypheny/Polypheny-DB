@@ -477,6 +477,8 @@ public class MongoRules {
                     || operator.getOperatorName() == OperatorName.L1_DISTANCE
                     || operator.getOperatorName() == OperatorName.L2_DISTANCE
                     || operator.getOperatorName() == OperatorName.COS_DISTANCE
+                    || operator.getOperatorName() == OperatorName.HAMMING_DISTANCE
+                    || operator.getOperatorName() == OperatorName.JACCARD_DISTANCE
                     || (operator.getOperatorName() == OperatorName.CAST && call.operands.get( 0 ).getType().getPolyType() == PolyType.DATE)
                     || operator instanceof SqlDatetimeSubtractionOperator
                     || operator instanceof SqlDatetimePlusOperator ) {
