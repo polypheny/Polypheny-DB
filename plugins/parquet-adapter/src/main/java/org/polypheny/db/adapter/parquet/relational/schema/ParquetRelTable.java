@@ -263,7 +263,22 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
                 : dataContext.getParameterValue( filter.dynamicParamIndex() );
 
         ParquetColumnBinding columnBinding = Objects.requireNonNull( binding.getColumnBinding( columns.get( filter.columnIndex() ).id ), "Missing parquet column binding" );
-        return new ParquetAdapterFilter( filter.columnIndex(), columnBinding.sourcePathElements(), filter.operator(), value );
+        List<String> pathElements = canReadFilterByColumnIndex( filter.columnIndex(), columnBinding )
+                ? List.of()
+                : columnBinding.sourcePathElements();
+        return new ParquetAdapterFilter( filter.columnIndex(), pathElements, filter.operator(), value );
+    }
+
+
+    private boolean canReadFilterByColumnIndex( int field, ParquetColumnBinding columnBinding ) {
+        if ( isNestedTable() || columnBinding.sourcePathElements().size() != 1 ) {
+            return false;
+        }
+
+        var schema = schemaReader.getSchema();
+        return field >= 0
+                && field < schema.getFieldCount()
+                && schema.getType( field ).getName().equals( columnBinding.sourcePathElements().get( 0 ) );
     }
 
 
