@@ -85,6 +85,9 @@ public class UIRequest extends RequestModel {
     @JsonProperty
     public String selectInterval;
 
+    @JsonProperty
+    public String refreshTrigger;
+
 
     protected UIRequest() {
         super( null, null, null );

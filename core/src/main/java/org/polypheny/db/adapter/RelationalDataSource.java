@@ -25,6 +25,10 @@ public interface RelationalDataSource {
 
     Map<String, List<ExportedColumn>> getExportedColumns();
 
+    default Map<String, List<ExportedColumn>> getExportedColumnsFresh() {
+        return getExportedColumns();
+    }
+
     /**
      * Returns the exported columns for a specific table, optionally filtered by schema.
      *

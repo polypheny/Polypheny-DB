@@ -272,63 +272,66 @@ public class DdlManagerImpl extends DdlManager {
         }
         // Create table, columns etc.
         for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
-            // Make sure the table name is unique
-            String tableName = getUniqueEntityName( namespace, entry.getKey(), ( ns, en ) -> catalog.getSnapshot().rel().getTable( ns, en ) );
-
-            String physicalSchema = entry.getValue().get( 0 ).physicalSchemaName();
-
-            LogicalTable logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !adapter.isDataReadOnly() );
-            List<LogicalColumn> columns = new ArrayList<>();
-
-            Pair<AllocationPartition, PartitionProperty> partitionProperty = createSinglePartition( logical.namespaceId, logical );
-
-            AllocationPlacement placement = catalog.getAllocRel( namespace ).addPlacement( logical.id, namespace, adapter.adapterId );
-            AllocationEntity allocation = catalog.getAllocRel( namespace ).addAllocation( adapter.getAdapterId(), placement.id, partitionProperty.left.id, logical.id );
-            List<AllocationColumn> aColumns = new ArrayList<>();
-            int colPos = 1;
-
-            List<Long> pkIds = new ArrayList<>();
-            for ( ExportedColumn exportedColumn : entry.getValue() ) {
-                LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
-                        exportedColumn.name(),
-                        logical.id,
-                        colPos++,
-                        exportedColumn.type(),
-                        exportedColumn.collectionsType(),
-                        exportedColumn.length(),
-                        exportedColumn.scale(),
-                        exportedColumn.dimension(),
-                        exportedColumn.cardinality(),
-                        exportedColumn.nullable(),
-                        Collation.getDefaultCollation() );
-
-                AllocationColumn allocationColumn = catalog.getAllocRel( namespace ).addColumn(
-                        placement.id,
-                        logical.id,
-                        column.id,
-                        adapter.adapterId,
-                        PlacementType.STATIC,
-                        exportedColumn.physicalPosition() ); // Not a valid partitionGroupID --> placeholder
-
-                columns.add( column );
-                aColumns.add( allocationColumn );
-                if ( exportedColumn.primary() ) {
-                    pkIds.add( column.id );
-                }
-            }
-
-            if ( !pkIds.isEmpty() ) {
-                catalog.getLogicalRel( namespace ).addPrimaryKey( logical.id, pkIds, transaction.createStatement() );
-            }
-
-            buildRelationalNamespace( namespace, logical, adapter );
-
-            transaction.attachCommitAction( () ->
-                    // we can execute with initial logical and allocation data as this is a source and this will not change
-                    adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns, physicalSchema ) )
-            );
-            catalog.updateSnapshot();
+            createRelationalSourceTable( transaction, adapter, namespace, entry.getKey(), entry.getValue() );
         }
+    }
+
+    private void createRelationalSourceTable( Transaction transaction, DataSource<?> adapter, long namespace, String exportedTableName, List<ExportedColumn> exportedColumns ) {
+        String tableName = getUniqueEntityName( namespace, exportedTableName, ( ns, en ) -> catalog.getSnapshot().rel().getTable( ns, en ) );
+
+        String physicalSchema = exportedColumns.get( 0 ).physicalSchemaName();
+
+        LogicalTable logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !adapter.isDataReadOnly() );
+        List<LogicalColumn> columns = new ArrayList<>();
+
+        Pair<AllocationPartition, PartitionProperty> partitionProperty = createSinglePartition( logical.namespaceId, logical );
+
+        AllocationPlacement placement = catalog.getAllocRel( namespace ).addPlacement( logical.id, namespace, adapter.adapterId );
+        AllocationEntity allocation = catalog.getAllocRel( namespace ).addAllocation( adapter.getAdapterId(), placement.id, partitionProperty.left.id, logical.id );
+        List<AllocationColumn> aColumns = new ArrayList<>();
+        int colPos = 1;
+
+        List<Long> pkIds = new ArrayList<>();
+        for ( ExportedColumn exportedColumn : exportedColumns ) {
+            LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
+                    exportedColumn.name(),
+                    logical.id,
+                    colPos++,
+                    exportedColumn.type(),
+                    exportedColumn.collectionsType(),
+                    exportedColumn.length(),
+                    exportedColumn.scale(),
+                    exportedColumn.dimension(),
+                    exportedColumn.cardinality(),
+                    exportedColumn.nullable(),
+                    Collation.getDefaultCollation() );
+
+            AllocationColumn allocationColumn = catalog.getAllocRel( namespace ).addColumn(
+                    placement.id,
+                    logical.id,
+                    column.id,
+                    adapter.adapterId,
+                    PlacementType.STATIC,
+                    exportedColumn.physicalPosition() ); // Not a valid partitionGroupID --> placeholder
+
+            columns.add( column );
+            aColumns.add( allocationColumn );
+            if ( exportedColumn.primary() ) {
+                pkIds.add( column.id );
+            }
+        }
+
+        if ( !pkIds.isEmpty() ) {
+            catalog.getLogicalRel( namespace ).addPrimaryKey( logical.id, pkIds, transaction.createStatement() );
+        }
+
+        buildRelationalNamespace( namespace, logical, adapter );
+
+        transaction.attachCommitAction( () ->
+                // we can execute with initial logical and allocation data as this is a source and this will not change
+                adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns, physicalSchema ) )
+        );
+        catalog.updateSnapshot();
     }
 
 
@@ -492,8 +495,6 @@ public class DdlManagerImpl extends DdlManager {
         Snapshot snapshot = catalog.getSnapshot();
         LogicalTable logicalTable = snapshot.rel().getTable( entityId ).orElseThrow();
 
-        log.info( "Checking whether schema refresh is needed for table {}", logicalTable.name );
-
         if ( logicalTable.entityType != EntityType.SOURCE ) {
             log.info( "Refresh check skipped: {} is not a source table.", logicalTable.name );
             return false;
@@ -511,6 +512,14 @@ public class DdlManagerImpl extends DdlManager {
         long sourceAdapterId = sourceAllocation.adapterId;
 
         DataSource<?> sourceAdapter = AdapterManager.getInstance().getSource( sourceAdapterId ).orElseThrow();
+        if ( !supportsDynamicSourceTableDiscovery( sourceAdapter ) ) {
+            log.info(
+                    "Schema refresh is not supported for table {} because this source type does not support it",
+                    logicalTable.name,
+                    sourceAdapter.getUniqueName()
+            );
+            return false;
+        }
 
         AdapterCatalog sourceAdapterCatalog = catalog
                 .getAdapterCatalog( sourceAdapterId )
@@ -601,6 +610,10 @@ public class DdlManagerImpl extends DdlManager {
     public List<String> refreshSelectedSources( List<Long> sourceIds, Statement statement ) {
         Snapshot snapshot = catalog.getSnapshot();
 
+        for ( Long sourceId : sourceIds ) {
+            detectAndAddNewSourceTables( sourceId, statement, snapshot );
+        }
+
         List<LogicalTable> sourceTables = snapshot.rel().getTables( (Pattern) null, (Pattern) null ).stream()
                 .filter( table -> table.entityType == EntityType.SOURCE )
                 .filter( table -> snapshot.alloc().getFromLogical( table.id ).stream().anyMatch( alloc -> sourceIds.contains( alloc.adapterId ) ) )
@@ -610,13 +623,129 @@ public class DdlManagerImpl extends DdlManager {
                 .map( table -> table.name )
                 .toList();
 
-        log.info( "Refreshing selected sources {} with tables {}", sourceIds, refreshedSources );
+        List<String> sourceNames = sourceIds.stream()
+                .map( sourceId -> snapshot.getAdapter( sourceId ).map( a -> a.uniqueName ).orElse( String.valueOf( sourceId ) ) )
+                .toList();
+        log.info( "Refreshing tables {} from source(s) {}", refreshedSources, sourceNames );
 
         for ( LogicalTable sourceTable : sourceTables ) {
             refreshSourceSchemaIfNeeded( sourceTable.id, statement );
         }
 
         return refreshedSources;
+    }
+
+
+    private void detectAndAddNewSourceTables( Long sourceId, Statement statement, Snapshot snapshot ) {
+        DataSource<?> sourceAdapter = AdapterManager.getInstance().getSource( sourceId ).orElse( null );
+        if ( sourceAdapter == null || !sourceAdapter.supportsRelational() || !supportsDynamicSourceTableDiscovery( sourceAdapter ) ) {
+            return;
+        }
+
+        Set<String> knownSourceTables = getKnownSourceTableIdentifiers( sourceId, snapshot );
+
+        long namespaceId = getSourceNamespaceId( sourceId, sourceAdapter, snapshot );
+
+        List<Map.Entry<String, List<ExportedColumn>>> addedTables = sourceAdapter.asRelationalDataSource().getExportedColumnsFresh().entrySet().stream()
+                .filter( entry -> {
+                    String identifier = getExportedSourceTableIdentifier( entry );
+                    return identifier != null && !knownSourceTables.contains( identifier );
+                } )
+                .sorted( Comparator.comparing( this::getExportedSourceTableIdentifier ) )
+                .toList();
+
+        if ( !addedTables.isEmpty() ) {
+            log.info(
+                    "Adding newly detected table(s) on source {}: {}",
+                    sourceAdapter.getUniqueName(),
+                    addedTables.stream().map( this::getExportedSourceTableIdentifier ).toList()
+            );
+        }
+
+        for ( Map.Entry<String, List<ExportedColumn>> addedTable : addedTables ) {
+            createRelationalSourceTable( statement.getTransaction(), sourceAdapter, namespaceId, addedTable.getKey(), addedTable.getValue() );
+        }
+    }
+
+
+    private boolean supportsDynamicSourceTableDiscovery( DataSource<?> sourceAdapter ) {
+        return "PostgreSQL".equalsIgnoreCase( sourceAdapter.adapterName )
+                || "MySQL".equalsIgnoreCase( sourceAdapter.adapterName );
+    }
+
+
+    private Set<String> getKnownSourceTableIdentifiers( Long sourceId, Snapshot snapshot ) {
+        return snapshot.rel().getTables( (Pattern) null, (Pattern) null ).stream()
+                .filter( table -> table.entityType == EntityType.SOURCE )
+                .filter( table -> snapshot.alloc().getFromLogical( table.id ).stream().anyMatch( alloc -> alloc.adapterId == sourceId ) )
+                .map( table -> getKnownSourceTableIdentifier( table, snapshot ) )
+                .filter( Objects::nonNull )
+                .collect( Collectors.toSet() );
+    }
+
+
+    private String getKnownSourceTableIdentifier( LogicalTable table, Snapshot snapshot ) {
+        List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( table.id );
+        if ( allocations.isEmpty() ) {
+            return null;
+        }
+
+        AllocationEntity allocation = allocations.get( 0 );
+        Optional<AdapterCatalog> adapterCatalog = catalog.getAdapterCatalog( allocation.adapterId );
+        if ( adapterCatalog.isEmpty() ) {
+            return null;
+        }
+
+        Optional<PhysicalEntity> physicalEntity = adapterCatalog.get().getPhysicalsFromAllocs( allocation.id ).stream().findFirst();
+        if ( physicalEntity.isEmpty() ) {
+            return null;
+        }
+
+        PhysicalTable physicalTable = physicalEntity.get().unwrapOrThrow( PhysicalTable.class );
+        return formatSourceTableIdentifier( physicalTable.namespaceName, physicalTable.name );
+    }
+
+
+    private long getSourceNamespaceId( Long sourceId, DataSource<?> sourceAdapter, Snapshot snapshot ) {
+        Optional<Long> namespaceId = snapshot.rel().getTables( (Pattern) null, (Pattern) null ).stream()
+                .filter( table -> table.entityType == EntityType.SOURCE )
+                .filter( table -> snapshot.alloc().getFromLogical( table.id ).stream().anyMatch( alloc -> alloc.adapterId == sourceId ) )
+                .map( table -> table.namespaceId )
+                .findFirst();
+
+        if ( namespaceId.isPresent() ) {
+            return namespaceId.get();
+        }
+
+        if ( sourceAdapter.getCurrentNamespace() != null ) {
+            return sourceAdapter.getCurrentNamespace().id;
+        }
+
+        throw new GenericRuntimeException( "Could not determine namespace for source %s", sourceId );
+    }
+
+
+    private String getExportedSourceTableIdentifier( Map.Entry<String, List<ExportedColumn>> entry ) {
+        if ( entry.getValue().isEmpty() ) {
+            return formatSourceTableIdentifier( null, entry.getKey() );
+        }
+
+        ExportedColumn column = entry.getValue().get( 0 );
+        return formatSourceTableIdentifier( column.physicalSchemaName(), column.physicalTableName() );
+    }
+
+
+    private String formatSourceTableIdentifier( String schemaName, String tableName ) {
+        if ( tableName == null || tableName.isBlank() ) {
+            return null;
+        }
+
+        String normalizedTable = normalizeIdentifier( tableName );
+        if ( schemaName == null || schemaName.isBlank() ) {
+            return normalizedTable;
+        }
+
+        return normalizeIdentifier( schemaName ) + "." + normalizedTable;
     }
 
 
@@ -630,8 +759,6 @@ public class DdlManagerImpl extends DdlManager {
     public void refreshSourceSchemaIfNeeded( long entityId, Statement statement ) {
         Snapshot snapshot = catalog.getSnapshot();
         LogicalTable logicalTable = snapshot.rel().getTable( entityId ).orElseThrow();
-
-        log.info( "Refreshing schema for table {}", logicalTable.name );
 
         if ( logicalTable.entityType != EntityType.SOURCE ) {
             log.info( "Refresh skipped: {} is not a source table.", logicalTable.name );
@@ -650,6 +777,14 @@ public class DdlManagerImpl extends DdlManager {
         long sourceAdapterId = sourceAllocation.adapterId;
 
         DataSource<?> sourceAdapter = AdapterManager.getInstance().getSource( sourceAdapterId ).orElseThrow();
+        if ( !supportsDynamicSourceTableDiscovery( sourceAdapter ) ) {
+            log.info(
+                    "Schema refresh is not supported for table {} because this source type does not support it",
+                    logicalTable.name,
+                    sourceAdapter.getUniqueName()
+            );
+            return;
+        }
 
         AdapterCatalog sourceAdapterCatalog = catalog
                 .getAdapterCatalog( sourceAdapterId )
@@ -793,9 +928,7 @@ public class DdlManagerImpl extends DdlManager {
             );
         }
 
-        if ( syncSourceColumnPositionsForRefresh( logicalTable, sourceAllocation, orderedSourceColumns, refreshedLogicalColumns, refreshedAllocationColumns ) ) {
-            log.info( "Updated source column order for table '{}'", logicalTable.name );
-        }
+        syncSourceColumnPositionsForRefresh( logicalTable, sourceAllocation, orderedSourceColumns, refreshedLogicalColumns, refreshedAllocationColumns );
 
         refreshPhysicalSourceTableMetadata(
                 logicalTable,
@@ -808,7 +941,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.updateSnapshot();
         statement.getQueryProcessor().resetCaches();
 
-        log.info( "Catalog refresh finished successfully for table {}", logicalTable.name );
+        log.info( "Schema refresh finished successfully for table {}", logicalTable.name );
     }
 
 
@@ -1398,8 +1531,6 @@ public class DdlManagerImpl extends DdlManager {
             List<LogicalColumn> logicalColumns,
             List<AllocationColumn> allocationColumns,
             ImmutableList<Long> pkIds ) {
-
-        log.info("Rebuilding physical source table {}.{}", physicalSchema, table.name);
 
         DataSource<?> adapter = AdapterManager.getInstance()
                 .getSource( allocationTable.adapterId )

@@ -302,12 +302,25 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     public void checkSourceSchemaRefresh( final Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
+        String table = Catalog.snapshot().rel().getTable( request.entityId ).map( t -> t.name ).orElse( String.valueOf( request.entityId ) );
+        String trigger = request.refreshTrigger == null ? "selection" : request.refreshTrigger;
+
+        if ( "button".equalsIgnoreCase( trigger ) ) {
+            log.info( "Refresh button clicked for table {}, checking whether schema refresh is needed", table );
+        } else {
+            log.info( "Table {} was selected, checking whether schema refresh is needed", table );
+        }
+
         ctx.json( Map.of( "refreshNeeded", isSourceSchemaRefreshNeeded( request ) ) );
     }
 
 
     public void refreshSelectedSources( final Context ctx ) {
         SourceRefreshRequest request = ctx.bodyAsClass( SourceRefreshRequest.class );
+        List<String> sourceNames = request.getSourceIds().stream()
+                .map( sourceId -> Catalog.snapshot().getAdapter( sourceId ).map( a -> a.uniqueName ).orElse( String.valueOf( sourceId ) ) )
+                .toList();
+        log.info( "Received a source refresh request for source(s) {}", sourceNames );
         List<String> refreshedSources = refreshSelectedSources( request.getSourceIds() );
         ctx.json( Map.of(
                 "success", true,
@@ -323,6 +336,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             List<String> refreshedSources = DdlManager.getInstance().refreshSelectedSources( sourceIds, ddlStatement );
 
             transaction.commit();
+            List<String> sourceNames = sourceIds.stream()
+                    .map( sourceId -> Catalog.snapshot().getAdapter( sourceId ).map( a -> a.uniqueName ).orElse( String.valueOf( sourceId ) ) )
+                    .toList();
+            log.info( "Schema refresh finished successfully for selected source(s) {}", sourceNames );
             return refreshedSources;
         } catch ( Exception e ) {
             try {

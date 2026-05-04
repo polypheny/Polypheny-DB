@@ -96,7 +96,6 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
     public Connection getFreshConnection() throws SQLException {
         Connection connection = dataSource.getConnection();
         connection.setAutoCommit( true );
-        log.info( "Created fresh transactional metadata connection." );
         return connection;
     }
 

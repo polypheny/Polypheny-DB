@@ -214,13 +214,18 @@ public class WebSocket implements Consumer<WsConfig> {
             // For relational entities, refresh first synchronizes the source schema and then reloads the data.
             // For other data models, refresh currently behaves like EntityRequest.
             case "RefreshRequest":
-                log.info( "Received a refresh request" );
                 Result<?, ?> refreshResult;
                 UIRequest refreshRequest = ctx.messageAsClass( UIRequest.class );
                 try {
                     LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( refreshRequest.namespace ).orElse( null );
                     refreshResult = switch ( namespace == null ? DataModel.RELATIONAL : namespace.dataModel ) {
                         case RELATIONAL -> {
+                            String table = Catalog.snapshot().rel().getTable( refreshRequest.entityId ).map( t -> t.name ).orElse( String.valueOf( refreshRequest.entityId ) );
+                            if ( "button".equalsIgnoreCase( refreshRequest.refreshTrigger ) ) {
+                                log.info( "Received confirmation to refresh schema of table {}", table );
+                            } else {
+                                log.info( "Loading data for table {}", table );
+                            }
                             crud.refreshSourceSchemaIfNeeded( refreshRequest );
                             yield crud.getTable( refreshRequest );
                         }
