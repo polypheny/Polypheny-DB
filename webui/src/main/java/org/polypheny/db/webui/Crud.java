@@ -282,12 +282,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    public boolean isSourceSchemaRefreshNeeded( UIRequest request ) {
+    public DdlManager.SourceSchemaRefreshCheckResult getSourceSchemaRefreshCheckResult( UIRequest request ) {
         Transaction transaction = getTransaction();
         try {
-            boolean refreshNeeded = DdlManager.getInstance().isSourceSchemaRefreshNeeded( request.entityId );
+            DdlManager.SourceSchemaRefreshCheckResult refreshCheckResult = DdlManager.getInstance().getSourceSchemaRefreshCheckResult( request.entityId );
             transaction.commit();
-            return refreshNeeded;
+            return refreshCheckResult;
         } catch ( Exception e ) {
             try {
                 transaction.rollback( "Error while checking source catalog refresh: " + e.getMessage() );
@@ -311,7 +311,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             log.info( "Table {} was selected, checking whether schema refresh is needed", table );
         }
 
-        ctx.json( Map.of( "refreshNeeded", isSourceSchemaRefreshNeeded( request ) ) );
+        DdlManager.SourceSchemaRefreshCheckResult refreshCheckResult = getSourceSchemaRefreshCheckResult( request );
+        ctx.json( Map.of(
+                "refreshNeeded", refreshCheckResult.refreshNeeded(),
+                "changeDescriptions", refreshCheckResult.changeDescriptions() ) );
     }
 
 

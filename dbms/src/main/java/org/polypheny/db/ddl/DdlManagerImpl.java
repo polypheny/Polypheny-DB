@@ -492,12 +492,18 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public boolean isSourceSchemaRefreshNeeded( long entityId ) {
+        return getSourceSchemaRefreshCheckResult( entityId ).refreshNeeded();
+    }
+
+
+    @Override
+    public SourceSchemaRefreshCheckResult getSourceSchemaRefreshCheckResult( long entityId ) {
         Snapshot snapshot = catalog.getSnapshot();
         LogicalTable logicalTable = snapshot.rel().getTable( entityId ).orElseThrow();
 
         if ( logicalTable.entityType != EntityType.SOURCE ) {
             log.info( "Refresh check skipped: {} is not a source table.", logicalTable.name );
-            return false;
+            return new SourceSchemaRefreshCheckResult( false, List.of() );
         }
 
         List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( logicalTable.id );
@@ -517,7 +523,7 @@ public class DdlManagerImpl extends DdlManager {
                     "Schema refresh is not supported for table {} because this source type does not support it",
                     logicalTable.name
             );
-            return false;
+            return new SourceSchemaRefreshCheckResult( false, List.of() );
         }
 
         AdapterCatalog sourceAdapterCatalog = catalog
@@ -539,7 +545,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( currentSourceColumns == null || currentSourceColumns.isEmpty() ) {
             log.info( "No source columns found for table '{}.{}'", sourceSchemaName, sourceTableName );
-            return false;
+            return new SourceSchemaRefreshCheckResult( false, List.of() );
         }
 
         if ( sourceSchemaName != null ) {
@@ -585,10 +591,17 @@ public class DdlManagerImpl extends DdlManager {
         boolean hasReorderedColumns = hasReorderedColumns( currentLogicalColumns, orderedSourceColumns );
         boolean hasChangedPrimaryKey = hasChangedPrimaryKey( logicalTable, currentLogicalColumns, orderedSourceColumns, snapshot.rel() );
         boolean hasChangedForeignKeys = hasChangedForeignKeys( logicalTable, currentSourceForeignKeys, currentLogicalColumns, snapshot, sourceAdapterCatalog, sourceAdapterId );
+        List<String> changeDescriptions = buildSourceSchemaChangeDescriptions(
+                missingColumns,
+                droppedColumns,
+                changedTypeColumns,
+                hasReorderedColumns,
+                hasChangedPrimaryKey,
+                hasChangedForeignKeys );
 
-        if ( missingColumns.isEmpty() && droppedColumns.isEmpty() && changedTypeColumns.isEmpty() && !hasReorderedColumns && !hasChangedPrimaryKey && !hasChangedForeignKeys ) {
+        if ( changeDescriptions.isEmpty() ) {
             log.info( "No schema refresh needed for table {}", logicalTable.name );
-            return false;
+            return new SourceSchemaRefreshCheckResult( false, List.of() );
         }
 
         log.info(
@@ -601,7 +614,7 @@ public class DdlManagerImpl extends DdlManager {
                 hasChangedPrimaryKey,
                 hasChangedForeignKeys
         );
-        return true;
+        return new SourceSchemaRefreshCheckResult( true, changeDescriptions );
     }
 
 
@@ -693,6 +706,38 @@ public class DdlManagerImpl extends DdlManager {
                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue, ( left, right ) -> left, LinkedHashMap::new ) );
 
         return new SourceTableDiscovery( sourceAdapter, knownTablesByIdentifier, exportedTablesByIdentifier );
+    }
+
+
+    private List<String> buildSourceSchemaChangeDescriptions(
+            List<ExportedColumn> missingColumns,
+            List<LogicalColumn> droppedColumns,
+            List<PhysicalColumn> changedTypeColumns,
+            boolean hasReorderedColumns,
+            boolean hasChangedPrimaryKey,
+            boolean hasChangedForeignKeys ) {
+        List<String> changeDescriptions = new ArrayList<>();
+
+        if ( !missingColumns.isEmpty() ) {
+            changeDescriptions.add( "Added columns: " + missingColumns.stream().map( ExportedColumn::physicalColumnName ).toList() );
+        }
+        if ( !droppedColumns.isEmpty() ) {
+            changeDescriptions.add( "Removed columns: " + droppedColumns.stream().map( LogicalColumn::getName ).toList() );
+        }
+        if ( !changedTypeColumns.isEmpty() ) {
+            changeDescriptions.add( "Changed column types: " + changedTypeColumns.stream().map( PhysicalColumn::getName ).toList() );
+        }
+        if ( hasReorderedColumns ) {
+            changeDescriptions.add( "Column order changed" );
+        }
+        if ( hasChangedPrimaryKey ) {
+            changeDescriptions.add( "Primary key changed" );
+        }
+        if ( hasChangedForeignKeys ) {
+            changeDescriptions.add( "Foreign keys changed" );
+        }
+
+        return changeDescriptions;
     }
 
 

@@ -174,6 +174,13 @@ public abstract class DdlManager {
     public abstract boolean isSourceSchemaRefreshNeeded( long entityId );
 
 
+    public record SourceSchemaRefreshCheckResult( boolean refreshNeeded, List<String> changeDescriptions ) {
+
+    }
+
+    public abstract SourceSchemaRefreshCheckResult getSourceSchemaRefreshCheckResult( long entityId );
+
+
     public abstract List<String> refreshSelectedSources( List<Long> sourceIds, Statement statement );
 
 
