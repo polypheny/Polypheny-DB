@@ -515,8 +515,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( !supportsDynamicSourceTableDiscovery( sourceAdapter ) ) {
             log.info(
                     "Schema refresh is not supported for table {} because this source type does not support it",
-                    logicalTable.name,
-                    sourceAdapter.getUniqueName()
+                    logicalTable.name
             );
             return false;
         }
@@ -611,12 +610,15 @@ public class DdlManagerImpl extends DdlManager {
         Snapshot snapshot = catalog.getSnapshot();
 
         for ( Long sourceId : sourceIds ) {
-            detectAndAddNewSourceTables( sourceId, statement, snapshot );
+            synchronizeSourceTables( sourceId, statement, snapshot );
         }
+
+        Snapshot postDetectionSnapshot = catalog.getSnapshot();
 
         List<LogicalTable> sourceTables = snapshot.rel().getTables( (Pattern) null, (Pattern) null ).stream()
                 .filter( table -> table.entityType == EntityType.SOURCE )
                 .filter( table -> snapshot.alloc().getFromLogical( table.id ).stream().anyMatch( alloc -> sourceIds.contains( alloc.adapterId ) ) )
+                .filter( table -> postDetectionSnapshot.rel().getTable( table.id ).isPresent() )
                 .toList();
 
         List<String> refreshedSources = sourceTables.stream()
@@ -636,34 +638,32 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void detectAndAddNewSourceTables( Long sourceId, Statement statement, Snapshot snapshot ) {
-        DataSource<?> sourceAdapter = AdapterManager.getInstance().getSource( sourceId ).orElse( null );
-        if ( sourceAdapter == null || !sourceAdapter.supportsRelational() || !supportsDynamicSourceTableDiscovery( sourceAdapter ) ) {
+    private void synchronizeSourceTables( Long sourceId, Statement statement, Snapshot snapshot ) {
+        SourceTableDiscovery discovery = buildSourceTableDiscovery( sourceId, snapshot );
+        if ( discovery == null ) {
             return;
         }
 
-        Set<String> knownSourceTables = getKnownSourceTableIdentifiers( sourceId, snapshot );
-
-        long namespaceId = getSourceNamespaceId( sourceId, sourceAdapter, snapshot );
-
-        List<Map.Entry<String, List<ExportedColumn>>> addedTables = sourceAdapter.asRelationalDataSource().getExportedColumnsFresh().entrySet().stream()
-                .filter( entry -> {
-                    String identifier = getExportedSourceTableIdentifier( entry );
-                    return identifier != null && !knownSourceTables.contains( identifier );
-                } )
-                .sorted( Comparator.comparing( this::getExportedSourceTableIdentifier ) )
+        List<Map.Entry<String, LogicalTable>> removedTables = discovery.knownTablesByIdentifier().entrySet().stream()
+                .filter( entry -> !discovery.exportedTablesByIdentifier().containsKey( entry.getKey() ) )
+                .sorted( Comparator.comparing( Map.Entry::getKey ) )
                 .toList();
 
-        if ( !addedTables.isEmpty() ) {
-            log.info(
-                    "Adding newly detected table(s) on source {}: {}",
-                    sourceAdapter.getUniqueName(),
-                    addedTables.stream().map( this::getExportedSourceTableIdentifier ).toList()
-            );
+        for ( Map.Entry<String, LogicalTable> removedTable : removedTables ) {
+            log.info( "Dropping removed source table '{}' from source {}", removedTable.getValue().name, discovery.sourceAdapter().getUniqueName() );
+            dropRemovedSourceTable( removedTable.getValue(), statement );
         }
 
+        long namespaceId = getSourceNamespaceId( sourceId, discovery.sourceAdapter(), snapshot );
+
+        List<Map.Entry<String, List<ExportedColumn>>> addedTables = discovery.exportedTablesByIdentifier().entrySet().stream()
+                .filter( entry -> !discovery.knownTablesByIdentifier().containsKey( entry.getKey() ) )
+                .map( Map.Entry::getValue )
+                .toList();
+
         for ( Map.Entry<String, List<ExportedColumn>> addedTable : addedTables ) {
-            createRelationalSourceTable( statement.getTransaction(), sourceAdapter, namespaceId, addedTable.getKey(), addedTable.getValue() );
+            log.info( "Adding newly detected source table '{}' on source {}", addedTable.getKey(), discovery.sourceAdapter().getUniqueName() );
+            createRelationalSourceTable( statement.getTransaction(), discovery.sourceAdapter(), namespaceId, addedTable.getKey(), addedTable.getValue() );
         }
     }
 
@@ -674,13 +674,35 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private Set<String> getKnownSourceTableIdentifiers( Long sourceId, Snapshot snapshot ) {
+    private SourceTableDiscovery buildSourceTableDiscovery( Long sourceId, Snapshot snapshot ) {
+        DataSource<?> sourceAdapter = AdapterManager.getInstance().getSource( sourceId ).orElse( null );
+        if ( sourceAdapter == null || !sourceAdapter.supportsRelational() || !supportsDynamicSourceTableDiscovery( sourceAdapter ) ) {
+            return null;
+        }
+
+        Map<String, LogicalTable> knownTablesByIdentifier = getKnownSourceTablesByIdentifier( sourceId, snapshot );
+        Map<String, Map.Entry<String, List<ExportedColumn>>> exportedTablesByIdentifier = sourceAdapter.asRelationalDataSource().getExportedColumnsFresh().entrySet().stream()
+                .map( entry -> {
+                    String identifier = getExportedSourceTableIdentifier( entry );
+                    if ( identifier == null ) {
+                        return null;
+                    }
+                    return Map.entry( identifier, entry );
+                } )
+                .filter( Objects::nonNull )
+                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue, ( left, right ) -> left, LinkedHashMap::new ) );
+
+        return new SourceTableDiscovery( sourceAdapter, knownTablesByIdentifier, exportedTablesByIdentifier );
+    }
+
+
+    private Map<String, LogicalTable> getKnownSourceTablesByIdentifier( Long sourceId, Snapshot snapshot ) {
         return snapshot.rel().getTables( (Pattern) null, (Pattern) null ).stream()
                 .filter( table -> table.entityType == EntityType.SOURCE )
                 .filter( table -> snapshot.alloc().getFromLogical( table.id ).stream().anyMatch( alloc -> alloc.adapterId == sourceId ) )
-                .map( table -> getKnownSourceTableIdentifier( table, snapshot ) )
-                .filter( Objects::nonNull )
-                .collect( Collectors.toSet() );
+                .map( table -> Map.entry( getKnownSourceTableIdentifier( table, snapshot ), table ) )
+                .filter( entry -> entry.getKey() != null )
+                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue, ( left, right ) -> left, LinkedHashMap::new ) );
     }
 
 
@@ -703,6 +725,14 @@ public class DdlManagerImpl extends DdlManager {
 
         PhysicalTable physicalTable = physicalEntity.get().unwrapOrThrow( PhysicalTable.class );
         return formatSourceTableIdentifier( physicalTable.namespaceName, physicalTable.name );
+    }
+
+
+    private record SourceTableDiscovery(
+            DataSource<?> sourceAdapter,
+            Map<String, LogicalTable> knownTablesByIdentifier,
+            Map<String, Map.Entry<String, List<ExportedColumn>>> exportedTablesByIdentifier ) {
+
     }
 
 
@@ -780,8 +810,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( !supportsDynamicSourceTableDiscovery( sourceAdapter ) ) {
             log.info(
                     "Schema refresh is not supported for table {} because this source type does not support it",
-                    logicalTable.name,
-                    sourceAdapter.getUniqueName()
+                    logicalTable.name
             );
             return;
         }
@@ -4010,6 +4039,42 @@ public class DdlManagerImpl extends DdlManager {
             deleteAllocation( statement, allocation );
         }
 
+        deleteTableCatalogEntries( table, statement, snapshot );
+
+        // Monitor dropTables for statistics
+        prepareMonitoring( statement, Kind.DROP_TABLE, table );
+
+        // ON_COMMIT constraint needs no longer to be enforced if entity does no longer exist
+        statement.getTransaction().removeUsedTable( table );
+
+        // Reset plan cache implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
+
+        catalog.updateSnapshot();
+    }
+
+
+    private void dropRemovedSourceTable( LogicalTable table, Statement statement ) {
+        Snapshot snapshot = catalog.getSnapshot();
+
+        // delete all allocations and physicals
+        for ( AllocationEntity allocation : snapshot.alloc().getFromLogical( table.id ) ) {
+            deleteSourceAllocation( allocation );
+        }
+
+        deleteTableCatalogEntries( table, statement, snapshot );
+
+        // ON_COMMIT constraint needs no longer to be enforced if entity does no longer exist
+        statement.getTransaction().removeUsedTable( table );
+
+        // Reset plan cache implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
+
+        catalog.updateSnapshot();
+    }
+
+
+    private void deleteTableCatalogEntries( LogicalTable table, Statement statement, Snapshot snapshot ) {
         // delete all partitions
         for ( AllocationPartition partition : snapshot.alloc().getPartitionsFromLogical( table.id ) ) {
             catalog.getAllocRel( table.namespaceId ).deletePartition( partition.id );
@@ -4051,17 +4116,6 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         catalog.getLogicalRel( table.namespaceId ).deleteTable( table.id );
-
-        // Monitor dropTables for statistics
-        prepareMonitoring( statement, Kind.DROP_TABLE, table );
-
-        // ON_COMMIT constraint needs no longer to be enforced if entity does no longer exist
-        statement.getTransaction().removeUsedTable( table );
-
-        // Reset plan cache implementation cache & routing cache
-        statement.getQueryProcessor().resetCaches();
-
-        catalog.updateSnapshot();
     }
 
 
@@ -4073,6 +4127,12 @@ public class DdlManagerImpl extends DdlManager {
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
+    }
+
+
+    private void deleteSourceAllocation( AllocationEntity allocation ) {
+        catalog.getAdapterCatalog( allocation.adapterId ).ifPresent( adapterCatalog -> adapterCatalog.removeAllocAndPhysical( allocation.id ) );
+        catalog.getAllocRel( allocation.namespaceId ).deleteAllocation( allocation.id );
     }
 
 
