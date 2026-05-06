@@ -575,7 +575,7 @@ public class StorageManagerImpl implements StorageManager {
                 isArray ? (int) ((ArrayType) field.getType()).getDimension() : -1,
                 isArray ? (int) ((ArrayType) field.getType()).getCardinality() : -1,
                 field.getType().isNullable(),
-                field.getType().getComponentType().isNullable() );
+                field.getType().getComponentType() == null || field.getType().getComponentType().isNullable() );
     }
 
 
