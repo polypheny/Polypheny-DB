@@ -415,7 +415,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
         return switch ( vectorType ) {
             case FLOAT -> {
                 float[] fa = new float[vectorAsList.size()];
-                for ( int i = 0; i < vectorAsList.size(); ++i ) fa[i] = vectorAsList.get( i ).asFloat().floatValue();
+                for ( int i = 0; i < vectorAsList.size(); ++i ) fa[i] = vectorAsList.get( i ).asNumber().floatValue();
                 yield new PGvector( fa );
             }
             case BIT -> {
@@ -448,7 +448,10 @@ public class PostgresqlSqlDialect extends SqlDialect {
         if ( vectorType.getVectorElementType() == ElementType.BIT ) {
             StringBuilder sb = new StringBuilder();
             for ( PolyValue val : vectorAsList ) {
-                sb.append( (val.asBoolean().getValue() != null && val.asBoolean().getValue() ? "1" : "0") );
+                if ( val == null || val.isNull() || val.asBoolean().getValue() == null ) {
+                    throw new RuntimeException( "Vector cannot contain null elements." );
+                }
+                sb.append( (val.asBoolean().getValue() ? "1" : "0") );
             }
             return (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall(
                     pos,

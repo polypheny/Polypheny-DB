@@ -30,39 +30,39 @@ public class PostgresqlSourceTest {
 
     @Test
     void bitRequiresNativeResolution() {
-        assertTrue( source.requiresNativeTypeResolution( "bit" ) );
+        assertTrue( source.isNativeVectorType( "bit" ) );
     }
 
 
     @Test
     void vectorRequiresNativeResolution() {
-        assertTrue( source.requiresNativeTypeResolution( "vector" ) );
+        assertTrue( source.isNativeVectorType( "vector" ) );
     }
 
 
     @Test
     void halfvecRequiresNativeResolution() {
-        assertTrue( source.requiresNativeTypeResolution( "halfvec" ) );
+        assertTrue( source.isNativeVectorType( "halfvec" ) );
     }
 
 
     @Test
     void sparsevecRequiresNativeResolution() {
-        assertTrue( source.requiresNativeTypeResolution( "sparsevec" ) );
+        assertTrue( source.isNativeVectorType( "sparsevec" ) );
     }
 
 
     @Test
     void regularTypesDoNotRequireNativeResolution() {
-        assertFalse( source.requiresNativeTypeResolution( "float4" ) );
-        assertFalse( source.requiresNativeTypeResolution( "_float4" ) );
-        assertFalse( source.requiresNativeTypeResolution( "_float8" ) );
-        assertFalse( source.requiresNativeTypeResolution( "_int4" ) );
-        assertFalse( source.requiresNativeTypeResolution( "_int8" ) );
-        assertFalse( source.requiresNativeTypeResolution( "_bool" ) );
-        assertFalse( source.requiresNativeTypeResolution( "int4" ) );
-        assertFalse( source.requiresNativeTypeResolution( "varchar" ) );
-        assertFalse( source.requiresNativeTypeResolution( "boolean" ) );
+        assertFalse( source.isNativeVectorType( "float4" ) );
+        assertFalse( source.isNativeVectorType( "_float4" ) );
+        assertFalse( source.isNativeVectorType( "_float8" ) );
+        assertFalse( source.isNativeVectorType( "_int4" ) );
+        assertFalse( source.isNativeVectorType( "_int8" ) );
+        assertFalse( source.isNativeVectorType( "_bool" ) );
+        assertFalse( source.isNativeVectorType( "int4" ) );
+        assertFalse( source.isNativeVectorType( "varchar" ) );
+        assertFalse( source.isNativeVectorType( "boolean" ) );
     }
 
 }

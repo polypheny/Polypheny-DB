@@ -224,16 +224,16 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     public static Function1<PolyValue, Object> getPolyToJava( AlgDataType type, boolean arrayAsList ) {
         return switch ( type.getPolyType() ) {
-            case VARCHAR, CHAR, TEXT -> o -> o.asString().value;
-            case INTEGER, TINYINT, SMALLINT -> o -> o.asNumber().IntValue();
-            case FLOAT, REAL -> o -> o.asNumber().FloatValue();
-            case DOUBLE -> o -> o.asNumber().DoubleValue();
-            case BIGINT -> o -> o.asNumber().LongValue();
-            case DECIMAL -> o -> o.asNumber().BigDecimalValue();
-            case DATE -> o -> o.asDate().getDaysSinceEpoch();
-            case TIME -> o -> o.asTime().getMillisOfDay();
-            case TIMESTAMP -> o -> o.asTimestamp().millisSinceEpoch;
-            case BOOLEAN -> o -> o.asBoolean().value;
+            case VARCHAR, CHAR, TEXT -> o -> o == null || o.isNull() ? null : o.asString().value;
+            case INTEGER, TINYINT, SMALLINT -> o -> o == null || o.isNull() ? null : o.asNumber().IntValue();
+            case FLOAT, REAL -> o -> o == null || o.isNull() ? null : o.asNumber().FloatValue();
+            case DOUBLE -> o -> o == null || o.isNull() ? null : o.asNumber().DoubleValue();
+            case BIGINT -> o -> o == null || o.isNull() ? null : o.asNumber().LongValue();
+            case DECIMAL -> o -> o == null || o.isNull() ? null : o.asNumber().BigDecimalValue();
+            case DATE -> o -> o == null || o.isNull() ? null : o.asDate().getDaysSinceEpoch();
+            case TIME -> o -> o == null || o.isNull() ? null : o.asTime().getMillisOfDay();
+            case TIMESTAMP -> o -> o == null || o.isNull() ? null : o.asTimestamp().millisSinceEpoch;
+            case BOOLEAN -> o -> o == null || o.isNull() ? null : o.asBoolean().value;
             case ARRAY -> {
                 Function1<PolyValue, Object> elTrans = getPolyToJava( getAndDecreaseArrayDimensionIfNecessary( (ArrayType) type ), arrayAsList );
                 yield o -> o == null || o.isNull()

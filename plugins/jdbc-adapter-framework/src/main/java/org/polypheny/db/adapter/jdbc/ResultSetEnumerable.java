@@ -358,16 +358,6 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
     }
 
 
-    private static void addVecObjToPrepStatement( VectorType.ElementType vt, PreparedStatement ps, PolyValue value, SqlDialect dialect, int i ) throws SQLException {
-        Object dbObj = dialect.getVectorDbObject(vt, value.asList() );
-        if ( dbObj != null ) {
-            ps.setObject( i, dbObj );
-            return;
-        }
-        log.warn( "Setting vector object in PreparedStatement failed at index: {}", i );
-    }
-
-
     private static void handleBinary( PreparedStatement preparedStatement, int i, PolyValue value, ConnectionHandler connectionHandler ) throws SQLException {
         if ( !connectionHandler.getDialect().supportsComplexBinary() ) {
             preparedStatement.setString( i, value.asBinary().toTypedJson() );

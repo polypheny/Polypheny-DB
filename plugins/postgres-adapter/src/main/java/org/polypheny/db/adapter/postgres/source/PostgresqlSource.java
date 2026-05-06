@@ -181,7 +181,7 @@ public class PostgresqlSource extends AbstractJdbcSource {
 
 
     @Override
-    public boolean requiresNativeTypeResolution( String typeName ) {
+    public boolean isNativeVectorType( String typeName ) {
         return (typeName.equals( "vector" )
                 || typeName.equals( "bit" ))
                 || typeName.equals( "halfvec" )

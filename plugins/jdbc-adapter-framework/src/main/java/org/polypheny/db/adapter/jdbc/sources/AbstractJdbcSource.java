@@ -255,7 +255,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                         PolyType collectionsType = null;
                         Integer length = null, scale = null, dimension = null, cardinality = null;
                         type = PolyType.getNameForJdbcType( jdbcDataType );
-                        if ( requiresNativeTypeResolution( typeName ) ) type = PolyType.OTHER;
+                        if ( isNativeVectorType( typeName ) ) type = PolyType.OTHER;
                         switch ( type ) {
                             case BOOLEAN:
                             case TINYINT:
@@ -320,6 +320,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                                 dimension,
                                 cardinality,
                                 row.getString( "IS_NULLABLE" ).equalsIgnoreCase( "YES" ),
+                                !isNativeVectorType( typeName ),
                                 requiresSchema() ? row.getString( "TABLE_SCHEM" ) : row.getString( "TABLE_CAT" ),
                                 row.getString( "TABLE_NAME" ),
                                 row.getString( "COLUMN_NAME" ),
@@ -404,14 +405,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     }
 
 
-    /**
-     * <p>In some cases it might be necessary that it is checked whether a certain type needs special treatment.</p>
-     * <p>Specific stores must override this method if such types exist.</p>
-     * <p>An <i>Example</i> can be found in {@code PostgresqlSource}.</p>
-     *
-     * @return true if the type with {@code typeName} needs special treatment; false otherwise
-     */
-    protected boolean requiresNativeTypeResolution( String typeName ) {
+    protected boolean isNativeVectorType( String typeName ) {
         return false;
     }
 
