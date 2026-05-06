@@ -29,15 +29,11 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-/**
- * Integration tests for fixed-dimension {@code BOOLEAN ARRAY(1,N)} columns over JDBC.
- * Internally Polypheny promotes these to {@code VectorType<BIT>}; on adapters without
- * native bitvector support (e.g. HSQLDB) they fall back to a regular array.
- */
+
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @Tag("adapter")
-@EnabledIfSystemProperty(named = "store.default", matches = "postgresql|mongodb|hsqldb|monetdb|neo4j")
+@EnabledIfSystemProperty(named = "store.default", matches = "postgresql|mongoDB|hsqldb|monetdb|neo4j")
 public class JdbcBooleanArrayTest {
 
     @BeforeAll
