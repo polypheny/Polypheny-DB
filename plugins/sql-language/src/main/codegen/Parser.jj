@@ -5851,6 +5851,7 @@ SqlDataTypeSpec DataType() :
     int dimension = -1;
     int cardinality = -1;
     String charSetName = null;
+    boolean elementsNullable = true;
     final Span s;
 }
 {
@@ -5869,6 +5870,10 @@ SqlDataTypeSpec DataType() :
     [
         <CHARACTER> <SET>
         charSetName = Identifier()
+    ]
+    [
+        LOOKAHEAD( <NOT> <NULL> ( <ARRAY> | <MULTISET> ) )
+        <NOT> <NULL> { elementsNullable=false; }
     ]
     [
         //e.g. ARRAY(dimension, cardinality)
@@ -5893,6 +5898,7 @@ SqlDataTypeSpec DataType() :
                 dimension,
                 cardinality,
                 charSetName,
+                elementsNullable,
                 s.end(collectionTypeName));
         }
         return new SqlDataTypeSpec(
@@ -5901,6 +5907,7 @@ SqlDataTypeSpec DataType() :
             scale,
             charSetName,
             null,
+            elementsNullable,
             s.end(this));
     }
 }

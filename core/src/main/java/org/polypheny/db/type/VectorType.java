@@ -35,10 +35,25 @@ public class VectorType extends ArrayType {
             dimension, ElementType vectorElementType ) {
         super( elementType, isNullable, dimension, 1 );
         this.vectorElementType = vectorElementType;
+        computeDigest();
     }
 
     public long getVectorDimension() {
         return getCardinality();
+    }
+
+
+    @Override
+    protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
+        if ( withDetail ) {
+            sb.append( getComponentType().getFullTypeString() );
+        } else {
+            sb.append( getComponentType().toString() );
+        }
+        sb.append( " VECTOR" );
+        if ( withDetail ) {
+            sb.append( String.format( "(%d)", getVectorDimension() ) );
+        }
     }
 
 }

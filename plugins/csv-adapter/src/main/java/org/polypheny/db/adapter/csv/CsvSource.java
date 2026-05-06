@@ -262,6 +262,7 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
                             null,
                             null,
                             false,
+                            true,
                             fileName,
                             physicalTableName,
                             name,

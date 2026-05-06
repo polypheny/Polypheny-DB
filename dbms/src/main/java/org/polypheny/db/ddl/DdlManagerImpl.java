@@ -291,6 +291,7 @@ public class DdlManagerImpl extends DdlManager {
                         exportedColumn.dimension(),
                         exportedColumn.cardinality(),
                         exportedColumn.nullable(),
+                        exportedColumn.elementsNullable(),
                         Collation.getDefaultCollation() );
 
                 AllocationColumn allocationColumn = catalog.getAllocRel( namespace ).addColumn(
@@ -457,6 +458,7 @@ public class DdlManagerImpl extends DdlManager {
                 exportedColumn.dimension(),
                 exportedColumn.cardinality(),
                 exportedColumn.nullable(),
+                exportedColumn.elementsNullable(),
                 Collation.getDefaultCollation()
         );
 
@@ -533,6 +535,7 @@ public class DdlManagerImpl extends DdlManager {
                 type.dimension(),
                 type.cardinality(),
                 nullable,
+                type.elementsNullable(),
                 Collation.getDefaultCollation()
         );
 
@@ -1754,6 +1757,7 @@ public class DdlManagerImpl extends DdlManager {
                     column.typeInformation().dimension(),
                     column.typeInformation().cardinality(),
                     column.typeInformation().nullable(),
+                    column.typeInformation().elementsNullable(),
                     column.collation() );
         }
 
@@ -2044,7 +2048,9 @@ public class DdlManagerImpl extends DdlManager {
                             type.getScale(),
                             alg.getType().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) alg.getType()).getDimension() : -1,
                             alg.getType().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) alg.getType()).getCardinality() : -1,
-                            alg.getType().isNullable() ),
+                            alg.getType().isNullable(),
+                            alg.getType().getComponentType() == null
+                                    || alg.getType().getComponentType().isNullable() ),
                     Collation.getDefaultCollation(),
                     null,
                     position ) );
@@ -2063,7 +2069,8 @@ public class DdlManagerImpl extends DdlManager {
                             -1,
                             -1,
                             -1,
-                            false ),
+                            false,
+                            true ),
                     Collation.getDefaultCollation(),
                     null,
                     position ) );
@@ -2836,6 +2843,7 @@ public class DdlManagerImpl extends DdlManager {
                 typeInformation.dimension(),
                 typeInformation.cardinality(),
                 typeInformation.nullable(),
+                typeInformation.elementsNullable() == null || typeInformation.elementsNullable(),
                 collation
         );
 
