@@ -22,7 +22,7 @@ import org.apache.parquet.example.data.Group;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
 import org.polypheny.db.adapter.parquet.shared.execution.AbstractParquetEnumerator;
 import org.polypheny.db.adapter.parquet.shared.execution.VirtualGroup;
-import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
+import org.polypheny.db.adapter.parquet.shared.filter.FiltersContainer;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -38,13 +38,13 @@ public class ParquetNestedNonRepeatedRelEnumerator extends AbstractParquetEnumer
 
 
     public ParquetNestedNonRepeatedRelEnumerator( Source source, AtomicBoolean cancelFlag, List<ParquetColumnBinding> columnBindings ) {
-        this( source, cancelFlag, columnBindings, List.of() );
+        this( source, cancelFlag, columnBindings, FiltersContainer.empty );
     }
 
 
-    public ParquetNestedNonRepeatedRelEnumerator( Source source, AtomicBoolean cancelFlag, List<ParquetColumnBinding> columnBindings, List<ParquetAdapterFilter> filters ) {
+    public ParquetNestedNonRepeatedRelEnumerator( Source source, AtomicBoolean cancelFlag, List<ParquetColumnBinding> columnBindings, FiltersContainer filtersContainer ) {
         // read full root rows from the Parquet file
-        super( source, cancelFlag, null, filters, new ParquetPathValueExtractor() );
+        super( source, cancelFlag, null, filtersContainer, new ParquetPathValueExtractor() );
         this.columnBindings = List.copyOf( columnBindings );
     }
 

@@ -29,6 +29,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.parquet.document.execution.ParquetDocEnumerator;
 import org.polypheny.db.adapter.parquet.document.planning.ParquetDocScan;
+import org.polypheny.db.adapter.parquet.shared.filter.FiltersContainer;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 import org.polypheny.db.algebra.AlgNode;
@@ -108,7 +109,7 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                return new ParquetDocEnumerator( source, cancelFlag, resolvedFilters );
+                return new ParquetDocEnumerator( source, cancelFlag, FiltersContainer.shared( resolvedFilters ) );
             }
         };
     }

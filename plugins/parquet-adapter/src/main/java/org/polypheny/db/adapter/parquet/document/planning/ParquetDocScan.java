@@ -21,17 +21,16 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.adapter.parquet.document.schema.ParquetDocument;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.document.DocumentScan;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
-import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -42,7 +41,6 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.type.entity.PolyValue;
 
 /**
  * The planner node that sets up document reading.
@@ -95,7 +93,7 @@ public class ParquetDocScan extends DocumentScan<ParquetDocument> implements Enu
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
-        Expression runtimeFilters = EnumUtils.expressionList( filters.stream().map( ParquetDocScan::toFilterExpression ).toList() );
+        Expression runtimeFilters = EnumUtils.expressionList( filters.stream().map( ParquetAdapterFilter::toExpression ).toList() );
         // create runtime code that will call scanFiltered() on the ParquetDocument entity
         return implementor.result(
                 physType,
@@ -105,16 +103,6 @@ public class ParquetDocScan extends DocumentScan<ParquetDocument> implements Enu
                                 "scanFiltered",
                                 implementor.getRootExpression(),
                                 runtimeFilters ) ) );
-    }
-
-
-    private static Expression toFilterExpression( ParquetAdapterFilter filter ) {
-        return Expressions.new_(
-                ParquetAdapterFilter.class,
-                Expressions.constant( filter.columnIndex() ),
-                Expressions.constant( filter.operator(), Kind.class ),
-                filter.polyValue() == null ? Expressions.constant( null, PolyValue.class ) : filter.polyValue().asExpression(),
-                Expressions.constant( filter.dynamicParamIndex(), Long.class ) );
     }
 
 

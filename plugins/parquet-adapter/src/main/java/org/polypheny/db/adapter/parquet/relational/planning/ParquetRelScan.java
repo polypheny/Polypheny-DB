@@ -1,6 +1,7 @@
 package org.polypheny.db.adapter.parquet.relational.planning;
 
 import java.util.List;
+import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Primitive;
@@ -25,6 +26,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 /**
  * Relational scan algebra node for Parquet-backed physical tables
  */
+@Getter
 public class ParquetRelScan extends RelScan<ParquetRelTable> implements EnumerableAlg {
 
     private final int[] fields;
@@ -62,6 +64,10 @@ public class ParquetRelScan extends RelScan<ParquetRelTable> implements Enumerab
     @Override
     public void register( AlgPlanner planner ) {
         planner.addRule( ParquetRelScanRule.INSTANCE );
+        planner.addRule( ParquetRelJoinRule.INSTANCE );
+        planner.addRule( ParquetEnumerableJoinRule.INSTANCE );
+        planner.addRule( ParquetEnumerableFilterJoinRule.INSTANCE );
+        planner.addRule( ParquetEnumerableCalcJoinRule.INSTANCE );
     }
 
 

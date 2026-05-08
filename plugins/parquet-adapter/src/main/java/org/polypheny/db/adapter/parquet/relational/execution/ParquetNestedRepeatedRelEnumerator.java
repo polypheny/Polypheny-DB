@@ -26,6 +26,7 @@ import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetTableBinding;
 import org.polypheny.db.adapter.parquet.shared.execution.AbstractParquetEnumerator;
 import org.polypheny.db.adapter.parquet.shared.execution.VirtualGroup;
+import org.polypheny.db.adapter.parquet.shared.filter.FiltersContainer;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyNull;
@@ -44,31 +45,37 @@ public class ParquetNestedRepeatedRelEnumerator extends AbstractParquetEnumerato
 
 
     public ParquetNestedRepeatedRelEnumerator( Source source, AtomicBoolean cancelFlag, ParquetTableBinding binding, List<ParquetColumnBinding> columnBindings ) {
-        this( source, cancelFlag, binding, columnBindings, List.of() );
+        this( source, cancelFlag, binding, columnBindings, FiltersContainer.empty, false );
     }
 
 
-    public ParquetNestedRepeatedRelEnumerator( Source source, AtomicBoolean cancelFlag, ParquetTableBinding binding, List<ParquetColumnBinding> columnBindings, List<ParquetAdapterFilter> filters ) {
-        super( source, cancelFlag, null, filters, new ParquetPathValueExtractor() );
+    public ParquetNestedRepeatedRelEnumerator( Source source, AtomicBoolean cancelFlag, ParquetTableBinding binding, List<ParquetColumnBinding> columnBindings, FiltersContainer filtersContainer ) {
+        this( source, cancelFlag, binding, columnBindings, filtersContainer, false );
+    }
+
+
+    protected ParquetNestedRepeatedRelEnumerator( Source source, AtomicBoolean cancelFlag, ParquetTableBinding binding, List<ParquetColumnBinding> columnBindings, FiltersContainer filtersContainer, boolean allowRootTablePath ) {
+        super( source, cancelFlag, null, filtersContainer, new ParquetPathValueExtractor() );
 
         this.tablePath = binding.sourcePathElements();
         this.columnBindings = List.copyOf( columnBindings );
-        if ( tablePath.isEmpty() ) {
+        if ( !allowRootTablePath && tablePath.isEmpty() ) {
             throw new GenericRuntimeException( "Nested parquet table binding does not contain a table source path." );
         }
     }
 
 
     /**
-     *  Recursive function that finds which nested Parquet groups should become rows for a repeated generated table
-     *  Follow tablePath inside the current Parquet row and return all nested group occurrences that represent rows of the virtual repeated table.
+     * Recursive function that finds which nested Parquet groups should become rows for a repeated generated table
+     * Follow tablePath inside the current Parquet row and return all nested group occurrences that represent rows of the virtual repeated table.
+     *
      * @param group - parquet group/row
      * @return List<Group>
      */
     @Override
     protected List<Group> expandRow( Group group ) {
         var virtualGroup = new VirtualGroup( group, String.valueOf( reader.getCurrentRowNumber() ), null, 0 );
-        return resolveNested( virtualGroup, group.getType(), 0 );
+        return resolveNested( virtualGroup, group.getType(), tablePath, 0 );
     }
 
 
@@ -76,7 +83,7 @@ public class ParquetNestedRepeatedRelEnumerator extends AbstractParquetEnumerato
     protected PolyValue[] extractRow( Group group ) {
         PolyValue[] row = new PolyValue[columnBindings.size()];
         for ( int i = 0; i < columnBindings.size(); i++ ) {
-            row[i] = extractValueByColumnRole( (VirtualGroup) group, columnBindings.get( i ) );
+            row[i] = extractValueByColumnRole( (VirtualGroup) group, columnBindings.get( i ), tablePath );
         }
         return row;
     }
@@ -86,16 +93,16 @@ public class ParquetNestedRepeatedRelEnumerator extends AbstractParquetEnumerato
     protected PolyValue extractValue( Group group, ParquetAdapterFilter filter ) {
         var virtualGroup = (VirtualGroup) group;
         var binding = columnBindings.get( filter.columnIndex() );
-        return extractValueByColumnRole(virtualGroup, binding);
+        return extractValueByColumnRole( virtualGroup, binding, tablePath );
     }
 
 
-    private List<Group> resolveNested( VirtualGroup virtualGroup, GroupType groupType, int pathIndex ) {
-        if ( pathIndex >= tablePath.size() ) {
+    protected List<Group> resolveNested( VirtualGroup virtualGroup, GroupType groupType, List<String> path, int pathIndex ) {
+        if ( pathIndex >= path.size() ) {
             return List.of( virtualGroup );
         }
 
-        int fieldIndex = fieldIndex( groupType, tablePath.get( pathIndex ) );
+        int fieldIndex = fieldIndex( groupType, path.get( pathIndex ) );
         if ( fieldIndex < 0 || virtualGroup.getFieldRepetitionCount( fieldIndex ) == 0 ) {
             return List.of();
         }
@@ -109,16 +116,15 @@ public class ParquetNestedRepeatedRelEnumerator extends AbstractParquetEnumerato
         int count = virtualGroup.getFieldRepetitionCount( fieldIndex );
         for ( int occurrence = 0; occurrence < count; occurrence++ ) {
             Group child = virtualGroup.getGroup( fieldIndex, occurrence );
-
-            String childRowId = virtualGroup.getMetadata().getRowId() + "/" + tablePath.get( pathIndex ) + "[" + occurrence + "]";
+            String childRowId = virtualGroup.getMetadata().getRowId() + "/" + path.get( pathIndex ) + "[" + occurrence + "]";
             VirtualGroup childGroup = new VirtualGroup( child, childRowId, virtualGroup.getMetadata().getRowId(), occurrence );
-            groups.addAll( resolveNested( childGroup, fieldType.asGroupType(), pathIndex + 1 ) );
+            groups.addAll( resolveNested( childGroup, fieldType.asGroupType(), path, pathIndex + 1 ) );
         }
         return groups;
     }
 
 
-    private PolyValue extractValueByColumnRole( VirtualGroup virtualGroup, ParquetColumnBinding binding ) {
+    protected PolyValue extractValueByColumnRole( VirtualGroup virtualGroup, ParquetColumnBinding binding, List<String> tablePath ) {
         return switch ( binding.role() ) {
             case DATA -> {
                 var path = binding.sourcePathElements();

@@ -17,7 +17,10 @@
 package org.polypheny.db.adapter.parquet.shared.filter;
 
 import java.util.List;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.type.entity.PolyValue;
 
 /**
@@ -53,6 +56,18 @@ public record ParquetAdapterFilter( int columnIndex, List<String> pathElements, 
 
     public static ParquetAdapterFilter logical( Kind operator, List<ParquetAdapterFilter> operands ) {
         return new ParquetAdapterFilter( -1, List.of(), operator, null, null, operands );
+    }
+
+
+    public Expression toExpression() {
+        return Expressions.new_(
+                ParquetAdapterFilter.class,
+                Expressions.constant( columnIndex ),
+                EnumUtils.expressionList( pathElements.stream().<Expression>map( Expressions::constant ).toList() ),
+                Expressions.constant( operator, Kind.class ),
+                polyValue == null ? Expressions.constant( null, PolyValue.class ) : polyValue.asExpression(),
+                Expressions.constant( dynamicParamIndex, Long.class ),
+                EnumUtils.expressionList( operands.stream().map( ParquetAdapterFilter::toExpression ).toList() ) );
     }
 
 

@@ -16,12 +16,11 @@
 
 package org.polypheny.db.adapter.parquet.relational.execution;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.parquet.example.data.Group;
-import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.execution.AbstractParquetEnumerator;
+import org.polypheny.db.adapter.parquet.shared.filter.FiltersContainer;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
 
@@ -31,13 +30,15 @@ import org.polypheny.db.util.Source;
  */
 public class ParquetRelEnumerator extends AbstractParquetEnumerator implements Enumerator<PolyValue[]> {
 
-    public ParquetRelEnumerator(Source source, AtomicBoolean cancelFlag, int[] fields ) {
-        super( source, cancelFlag, fields, List.of(), new ParquetRelValueExtractor() );
+    public ParquetRelEnumerator( Source source, AtomicBoolean cancelFlag, int[] fields ) {
+        super( source, cancelFlag, fields, FiltersContainer.empty, new ParquetRelValueExtractor() );
     }
 
-    public ParquetRelEnumerator(Source source, AtomicBoolean cancelFlag, int[] fields, List<ParquetAdapterFilter> filters ) {
-        super( source, cancelFlag, fields, filters, new ParquetRelValueExtractor() );
+
+    public ParquetRelEnumerator( Source source, AtomicBoolean cancelFlag, int[] fields, FiltersContainer filtersContainer ) {
+        super( source, cancelFlag, fields, filtersContainer, new ParquetRelValueExtractor() );
     }
+
 
     protected PolyValue[] extractRow( Group group ) {
         var projectionSchema = reader.getProjectionSchema();
@@ -48,4 +49,5 @@ public class ParquetRelEnumerator extends AbstractParquetEnumerator implements E
         }
         return row;
     }
+
 }

@@ -21,26 +21,32 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.stream.IntStream;
+import lombok.Getter;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.parquet.relational.execution.ParquetNestedJoinEnumerator;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetNestedNonRepeatedRelEnumerator;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetNestedRepeatedRelEnumerator;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelEnumerator;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelFilterTranslator;
 import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelScan;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
+import org.polypheny.db.adapter.parquet.shared.filter.FiltersContainer;
+import org.polypheny.db.adapter.parquet.shared.filter.JoinFiltersSplitter;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetSchemaReader;
 import org.polypheny.db.adapter.parquet.shared.statistics.ParquetStatisticsReader;
+import org.polypheny.db.adapter.statistics.AdapterStatisticsProvider;
 import org.polypheny.db.adapter.statistics.ProvidedColumnStatistics;
 import org.polypheny.db.adapter.statistics.ProvidedEntityStatistics;
-import org.polypheny.db.adapter.statistics.AdapterStatisticsProvider;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -62,6 +68,7 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
     private final int[] fieldIndexes;
     private final AbstractParquetSource parquetSource;
     private final ParquetRelFilterTranslator filterTranslator;
+    @Getter
     private final ParquetTableBinding binding;
     private final List<PolyType> fieldTypes;
     private final ParquetSchemaReader schemaReader;
@@ -97,6 +104,7 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
 
     /**
      * Gets table statistics
+     *
      * @param logicalEntityId - logical table id
      * @return statistics from parquet file
      */
@@ -111,6 +119,7 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
 
     /**
      * Gets column statistics (range values for example)
+     *
      * @param column - logical column
      * @param uniqueValueLimit - limit
      * @return column statistics calculated from parquet file
@@ -122,7 +131,9 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
         }
         return statisticsReader.getColumnStatistics( column, uniqueValueLimit );
     }
+
     // endregion
+
 
     /**
      * Returns enumerable for FilterableEntity.
@@ -144,19 +155,19 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
         } );
 
         // check for dynamic filters
-        final List<ParquetAdapterFilter> resolvedFilters = resolveFilters( dataContext, parquetAdapterFilters );
+        final List<ParquetAdapterFilter> resolvedFilters = resolveFilters( dataContext, parquetAdapterFilters, f -> binding.getColumnBinding( columns.get( f.columnIndex() ).id ) );
 
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
                 if ( isNestedTable() ) {
-                    return new ParquetNestedRepeatedRelEnumerator( source, cancelFlag, binding, selectedBindings( fieldIndexes ), resolvedFilters );
+                    return new ParquetNestedRepeatedRelEnumerator( source, cancelFlag, binding, projectedBindings( fieldIndexes ), FiltersContainer.shared( resolvedFilters ) );
                 }
                 if ( needsBindingScan( fieldIndexes ) ) {
-                    return new ParquetNestedNonRepeatedRelEnumerator( source, cancelFlag, selectedBindings( fieldIndexes ), resolvedFilters );
+                    return new ParquetNestedNonRepeatedRelEnumerator( source, cancelFlag, projectedBindings( fieldIndexes ), FiltersContainer.shared( resolvedFilters ) );
                 }
-                return new ParquetRelEnumerator( source, cancelFlag, fieldIndexes, resolvedFilters );
+                return new ParquetRelEnumerator( source, cancelFlag, fieldIndexes, FiltersContainer.shared( resolvedFilters ) );
             }
         };
     }
@@ -177,10 +188,10 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
             @Override
             public Enumerator<PolyValue[]> enumerator() {
                 if ( isNestedTable() ) {
-                    return new ParquetNestedRepeatedRelEnumerator( source, cancelFlag, binding, selectedBindings( fieldIndexes ) );
+                    return new ParquetNestedRepeatedRelEnumerator( source, cancelFlag, binding, projectedBindings( fieldIndexes ) );
                 }
                 if ( needsBindingScan( fieldIndexes ) ) {
-                    return new ParquetNestedNonRepeatedRelEnumerator( source, cancelFlag, selectedBindings( fieldIndexes ) );
+                    return new ParquetNestedNonRepeatedRelEnumerator( source, cancelFlag, projectedBindings( fieldIndexes ) );
                 }
                 return new ParquetRelEnumerator( source, cancelFlag, fieldIndexes );
             }
@@ -215,10 +226,10 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
             @Override
             public Enumerator<PolyValue[]> enumerator() {
                 if ( isNestedTable() ) {
-                    return new ParquetNestedRepeatedRelEnumerator( source, cancelFlag, binding, selectedBindings( fields ) );
+                    return new ParquetNestedRepeatedRelEnumerator( source, cancelFlag, binding, projectedBindings( fields ) );
                 }
                 if ( needsBindingScan( fields ) ) {
-                    return new ParquetNestedNonRepeatedRelEnumerator( source, cancelFlag, selectedBindings( fields ) );
+                    return new ParquetNestedNonRepeatedRelEnumerator( source, cancelFlag, projectedBindings( fields ) );
                 }
                 return new ParquetRelEnumerator( source, cancelFlag, fields );
             }
@@ -227,34 +238,89 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
 
 
     /**
+     * Executes a supported parent/child join inside the Parquet adapter.
+     */
+    @SuppressWarnings("unused")
+    public Enumerable<PolyValue[]> nestedJoin(
+            final DataContext dataContext,
+            final ParquetRelTable right,
+            final int[] leftFields,
+            final int[] rightFields,
+            final boolean leftIsParent,
+            final boolean emitUnmatchedParents,
+            final List<ParquetAdapterFilter> filters ) {
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( parquetSource );
+        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
+        final ParquetRelTable parent = leftIsParent ? this : right;
+        final ParquetRelTable child = leftIsParent ? right : this;
+        final int[] parentFields = leftIsParent ? leftFields : rightFields;
+        final int[] childFields = leftIsParent ? rightFields : leftFields;
+        final List<ParquetAdapterFilter> resolvedFilters = resolveFilters( dataContext, filters, f -> selectBinding( f.columnIndex(), leftFields, rightFields, right ) );
+
+        return new AbstractEnumerable<>() {
+            @Override
+            public Enumerator<PolyValue[]> enumerator() {
+                var filterContainer = new JoinFiltersSplitter().split( resolvedFilters, leftIsParent, parentFields.length, childFields.length );
+                return new ParquetNestedJoinEnumerator(
+                        parent.source,
+                        cancelFlag,
+                        parent.binding,
+                        child.binding,
+                        parent.projectedBindings( parentFields ),
+                        child.projectedBindings( childFields ),
+                        filterContainer,
+                        leftIsParent,
+                        emitUnmatchedParents );
+            }
+        };
+    }
+
+
+    public int columnIndexByRole( ParquetColumnRole role ) {
+        for ( int i = 0; i < columns.size(); i++ ) {
+            ParquetColumnBinding columnBinding = binding.getColumnBinding( columns.get( i ).id );
+            if ( columnBinding != null && columnBinding.role() == role ) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+    public String getSourceUrl() {
+        return binding.sourceUrl();
+    }
+
+
+    public int getFieldCount() {
+        return columns.size();
+    }
+
+
+    /**
      * Support parametrized queries
      *
      * @param dataContext context
      * @param filters filters
+     * @param selector a helper function for column binding selection
      * @return list of parquet filters
      */
-    private List<ParquetAdapterFilter> resolveFilters( DataContext dataContext, List<ParquetAdapterFilter> filters ) {
+    private List<ParquetAdapterFilter> resolveFilters(
+            DataContext dataContext,
+            List<ParquetAdapterFilter> filters,
+            Function<ParquetAdapterFilter, ParquetColumnBinding> selector ) {
         List<ParquetAdapterFilter> resolved = new ArrayList<>( filters.size() );
         for ( ParquetAdapterFilter filter : filters ) {
-            resolved.add( resolveFilter( dataContext, filter ) );
+            resolved.add( resolveFilter( dataContext, filter, selector ) );
         }
         return resolved;
     }
 
 
-    /**
-     * Takes a ParquetAdapterFilter produced by the translator and turns it into a filter that is ready for execution against the actual Parquet file
-     * Resolve dynamic parameters from dataContext
-     * Use binding path elements for nested fields
-     * For logical filter - recursive call
-     * @param dataContext DataContext
-     * @param filter Adapter level filter
-     * @return Adapter level filter
-     */
-    private ParquetAdapterFilter resolveFilter( DataContext dataContext, ParquetAdapterFilter filter ) {
+    private ParquetAdapterFilter resolveFilter( DataContext dataContext, ParquetAdapterFilter filter, Function<ParquetAdapterFilter, ParquetColumnBinding> selector ) {
         if ( filter.isLogical() ) {
             return ParquetAdapterFilter.logical( filter.operator(), filter.operands().stream()
-                    .map( operand -> resolveFilter( dataContext, operand ) )
+                    .map( operand -> resolveFilter( dataContext, operand, selector ) )
                     .toList() );
         }
 
@@ -262,23 +328,8 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
                 ? filter.polyValue()
                 : dataContext.getParameterValue( filter.dynamicParamIndex() );
 
-        ParquetColumnBinding columnBinding = Objects.requireNonNull( binding.getColumnBinding( columns.get( filter.columnIndex() ).id ), "Missing parquet column binding" );
-        List<String> pathElements = canReadFilterByColumnIndex( filter.columnIndex(), columnBinding )
-                ? List.of()
-                : columnBinding.sourcePathElements();
-        return new ParquetAdapterFilter( filter.columnIndex(), pathElements, filter.operator(), value );
-    }
-
-
-    private boolean canReadFilterByColumnIndex( int field, ParquetColumnBinding columnBinding ) {
-        if ( isNestedTable() || columnBinding.sourcePathElements().size() != 1 ) {
-            return false;
-        }
-
-        var schema = schemaReader.getSchema();
-        return field >= 0
-                && field < schema.getFieldCount()
-                && schema.getType( field ).getName().equals( columnBinding.sourcePathElements().get( 0 ) );
+        ParquetColumnBinding columnBinding = Objects.requireNonNull( selector.apply( filter ), "Missing parquet column binding" );
+        return new ParquetAdapterFilter( filter.columnIndex(), columnBinding.sourcePathElements(), filter.operator(), value );
     }
 
 
@@ -287,7 +338,37 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
     }
 
 
-    private List<ParquetColumnBinding> selectedBindings( int[] fields ) {
+    /**
+     * Selects a column binding for a join. If the column index is less then left table fields count then use left table column binding otherwise use right table column biding.
+     *
+     * @param joinedIndex a column index
+     * @param leftFields a list of left column fields
+     * @param rightFields a list of right column fields
+     * @param right a right table
+     * @return {@link ParquetColumnBinding}
+     */
+    private ParquetColumnBinding selectBinding( int joinedIndex, int[] leftFields, int[] rightFields, ParquetRelTable right ) {
+        if ( joinedIndex < 0 ) {
+            throw new GenericRuntimeException( "Invalid joined filter column index: " + joinedIndex );
+        }
+        if ( joinedIndex < leftFields.length ) {
+            return binding.getColumnBinding( columns.get( leftFields[joinedIndex] ).id );
+        }
+        int rightIndex = joinedIndex - leftFields.length;
+        if ( rightIndex >= rightFields.length ) {
+            throw new GenericRuntimeException( "Invalid joined filter column index: " + joinedIndex );
+        }
+        return right.binding.getColumnBinding( right.columns.get( rightFields[rightIndex] ).id );
+    }
+
+
+    /**
+     * Gets a list of bindings per provided fields
+     *
+     * @param fields a list of fields to get the bindings for
+     * @return a list of column bindings
+     */
+    private List<ParquetColumnBinding> projectedBindings( int[] fields ) {
         List<ParquetColumnBinding> selected = new ArrayList<>( fields.length );
         for ( int field : fields ) {
             selected.add( Objects.requireNonNull( binding.getColumnBinding( columns.get( field ).id ), "Missing parquet column binding" ) );
@@ -309,11 +390,9 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
             if ( field >= schema.getFieldCount() || !schema.getType( field ).getName().equals( columnBinding.sourcePathElements().get( 0 ) ) ) {
                 return true;
             }
-            if ( !schema.getType( field ).isPrimitive() ) {
-                return true;
-            }
         }
         return false;
     }
 
 }
+
