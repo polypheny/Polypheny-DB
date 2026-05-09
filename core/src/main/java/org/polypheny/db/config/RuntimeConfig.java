@@ -433,7 +433,7 @@ public enum RuntimeConfig {
     DOCKER_CONTAINER_REGISTRY(
             "docker/defaultContainerRegistry",
             "The default container registry to be used when pull container. Default is Docker Hub.",
-            "localhost:3000",
+            "docker.io",
             ConfigType.STRING,
             "dockerGeneralGroup" ),
 
