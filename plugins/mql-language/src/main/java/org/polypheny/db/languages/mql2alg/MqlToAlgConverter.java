@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import io.activej.common.tuple.Tuple2;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
@@ -37,6 +39,7 @@ import org.bson.BsonNumber;
 import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
@@ -60,6 +63,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentUnwind;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -96,6 +100,8 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.schema.document.DocumentUtil.UpdateOperation;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
+import org.polypheny.db.type.VectorType.ElementType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
@@ -103,6 +109,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.DateString;
@@ -779,6 +786,9 @@ public class MqlToAlgConverter {
                 case "$replaceWith":
                     node = combineReplaceRoot( value.asDocument().get( "$replaceWith" ), node, true );
                     break;
+                case "$vectorSearch":
+                    node = convertVectorSearch( value.asDocument().get( "$vectorSearch" ) , rowType, node );
+                    break;
                 // todo dl add more pipeline statements
                 default:
                     throw new IllegalStateException( "Unexpected value: " + ((BsonDocument) value).getFirstKey() );
@@ -789,6 +799,152 @@ public class MqlToAlgConverter {
         }
 
         return node;
+    }
+
+
+    private AlgNode convertVectorSearch( BsonValue vectorSearchVal, AlgDataType rowType, AlgNode node ) {
+        BsonDocument vectorSearch = vectorSearchVal.asDocument();
+        if ( ! vectorSearch.containsKey( "path" ) ) {
+            throw new GenericRuntimeException( "$vectorSearch requires a 'path' field specifying the vector column." );
+        }
+        if ( !vectorSearch.containsKey( "queryVector" ) || !vectorSearch.get( "queryVector" ).isArray() ) {
+            throw new GenericRuntimeException( "$vectorSearch requires a 'queryVector' field of type Array." );
+        }
+        if ( !vectorSearch.containsKey( "limit" ) || !vectorSearch.get( "limit" ).isNumber() ) {
+            throw new GenericRuntimeException( "$vectorSearch requires a 'limit' field of type number." );
+        }
+        if ( !vectorSearch.containsKey( "metric" ) ) {
+            throw new GenericRuntimeException( "$vectorSearch requires a 'metric' field." );
+        }
+
+        String path = vectorSearch.getString( "path" ).getValue();
+        BsonArray queryVector = vectorSearch.getArray( "queryVector" );
+        int limit = vectorSearch.getNumber( "limit" ).intValue();
+        String metric = vectorSearch.getString( "metric" ).getValue();
+
+        Tuple2<OperatorName, Boolean> distanceOpName = getOperatorName( metric );
+        Operator distanceOperator = OperatorRegistry.get( distanceOpName.value1() );
+
+        if ( vectorSearch.containsKey( "filter" ) ) {
+            RexNode filterNode = translateDocument( vectorSearch.getDocument( "filter" ), rowType, null );
+            node = LogicalRelFilter.create( node, filterNode );
+        }
+
+        RexNode pathRef;
+        AlgDataType pathType = null;
+        for ( AlgDataTypeField field : rowType.getFields() ) {
+            if ( field.getName().equals( path ) ) {
+                pathType = field.getType();
+                break;
+            }
+        }
+
+        if ( pathType != null ) {
+            pathRef = RexNameRef.create( Collections.singletonList( path ), null, pathType );
+        } else {
+            pathRef = getIdentifier( path, rowType );
+            pathType = pathRef.getType();
+        }
+
+        AlgDataType queryLiteralType;
+        RexNode queryVectorRef;
+        if ( pathType instanceof VectorType vectorType ) {
+            queryLiteralType = cluster.getTypeFactory().createVectorType( vectorType.getComponentType(), vectorType.getVectorDimension() );
+            List<PolyValue> polyValues = new ArrayList<>();
+            ElementType elementType = vectorType.getVectorElementType();
+
+            for ( BsonValue value : queryVector ) {
+                switch ( elementType ) {
+                    case BIT -> {
+                        boolean b = value.isBoolean() ? value.asBoolean().getValue() : (value.isNumber() && value.asNumber().intValue() != 0);
+                        polyValues.add( new PolyBoolean( b ) );
+                    }
+                    case INTEGER -> {
+                        int i = value.isNumber() ? value.asNumber().intValue() : 0;
+                        polyValues.add( PolyInteger.of( i ) );
+                    }
+                    case FLOAT -> {
+                        float f = value.isNumber() ? (float) value.asNumber().doubleValue() : 0.0f;
+                        polyValues.add( PolyFloat.of( f ) );
+                    }
+                }
+            }
+            queryVectorRef = builder.makeArray( queryLiteralType, polyValues );
+            pathRef = builder.makeCast( queryLiteralType, pathRef );
+
+        } else {
+            AlgDataType nullableAny = cluster.getTypeFactory().createTypeWithNullability(
+                    cluster.getTypeFactory().createPolyType( PolyType.ANY ),
+                    true );
+            List<RexNode> arr = convertArray( path, queryVector, true, rowType, "queryVector must be an array" );
+            queryLiteralType = cluster.getTypeFactory().createArrayType( nullableAny, arr.size() );
+            queryVectorRef = DocumentUtil.getArray( arr, queryLiteralType );
+
+            AlgDataType dynamicArrayType = cluster.getTypeFactory().createArrayType( nullableAny, -1 );
+            pathRef = builder.makeCast( dynamicArrayType, pathRef );
+        }
+
+        AlgDataType distanceType = cluster.getTypeFactory().createPolyType( PolyType.DOUBLE );
+        RexNode distanceCall;
+        if ( distanceOpName.value2() ) {
+            // value2 of the tuple == true -> parameterized Distance Operator
+            // e.g. (e.g. DISTANCE(path, queryVector, 'L2SQUARED'))
+            RexNode metricLiteral = convertLiteral( new BsonString( metric ) );
+            distanceCall = builder.makeCall( distanceType, distanceOperator, Arrays.asList( pathRef, queryVectorRef, metricLiteral ) );
+        } else {
+            // unparameterized version
+            distanceCall = builder.makeCall( distanceType, distanceOperator, Arrays.asList( pathRef, queryVectorRef ) );
+        }
+
+        List<RexNode> projects = new ArrayList<>();
+        List<String> projectNames = new ArrayList<>();
+        for ( AlgDataTypeField field : node.getTupleType().getFields() ) {
+            projects.add( builder.makeInputRef( node, field.getIndex() ) );
+            projectNames.add( field.getName() );
+        }
+        projects.add( distanceCall );
+        String scoreName = "$vectorSearchScore";
+        projectNames.add( scoreName );
+
+        node = LogicalDocumentProject.create( node, projects, projectNames );
+
+        List<String> names = Collections.singletonList( scoreName );
+        List<AlgFieldCollation.Direction> dirs = Collections.singletonList( Direction.ASCENDING );
+        List<RexNode> projectionNodes = Collections.singletonList( builder.makeInputRef( node, projects.size() - 1   ) );
+        RexNode fetchLimit = convertLiteral( new BsonInt32( limit ) );
+
+        return LogicalDocumentSort.create(
+                node,
+                AlgCollations.of( generateCollation( dirs, names, projectNames ) ),
+                projectionNodes,
+                null,
+                fetchLimit );
+    }
+
+
+    /**
+     * <p>The returned {@link Tuple2} consists of an OperatorName and a boolean flag.</p>
+     * <p>The flag {@code parameterizedDistance} indicates if the standard {@code DISTANCE(<target array>, <array to compare with>, <metric> [, <weights>])} operator is used or a special unparameterized version.</p>
+     * <p>e.g. {@code L1_DISTANCE(<target array>, <array to compare with>)} is the unparameterized version for the standard {@code DISTANCE} with metric='L1'.</p>
+     */
+    private static @NotNull Tuple2<OperatorName, Boolean> getOperatorName( String metric ) {
+        OperatorName distanceOpName;
+        boolean parameterizedDistance = false;
+        switch ( metric ) {
+            case "L1" -> distanceOpName = OperatorName.L1_DISTANCE;
+            case "L2" -> distanceOpName = OperatorName.L2_DISTANCE;
+            case "COS" -> distanceOpName = OperatorName.COS_DISTANCE;
+            case "HAMMING" -> distanceOpName = OperatorName.HAMMING_DISTANCE;
+            case "JACCARD" -> distanceOpName = OperatorName.JACCARD_DISTANCE;
+            case "L2SQUARED", "CHISQUARED" -> {
+                distanceOpName = OperatorName.DISTANCE;
+                parameterizedDistance = true;
+            }
+            default -> throw new GenericRuntimeException( String.format(
+                    "Unsupported metric '%s' in $vectorSearch. Supported metrics are: L1, L2, L2SQUARED, CHISQUARED, COSINE, HAMMING, JACCARD.",
+                    metric ) );
+        }
+        return new Tuple2<>( distanceOpName, parameterizedDistance );
     }
 
 
