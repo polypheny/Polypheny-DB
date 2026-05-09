@@ -113,7 +113,7 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
             @Override
             public Enumerator<PolyValue[]> enumerator() {
                 FiltersContainer filtersContainer = FiltersContainer.shared( resolvedFilters );
-                ParquetSourceReader reader = new ParquetSourceReader( source, cancelFlag, null, filtersContainer.readerFilters() );
+                ParquetSourceReader reader = new ParquetSourceReader( source, cancelFlag, null, filtersContainer.nativeFilters() );
                 return new ParquetDocEnumerator( reader, filtersContainer );
             }
         };

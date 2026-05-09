@@ -350,14 +350,14 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
     private Enumerator<PolyValue[]> enumeratorForFile( ParquetSourceFile sourceFile, int[] fields, AtomicBoolean cancelFlag, FiltersContainer filtersContainer ) {
         boolean bindingScan = isNestedTable() || needsBindingScan( fields ) || binding.sourceFiles().size() > 1;
         Source fileSource = sourceFile.asSource();
-        ParquetSourceReader reader = new ParquetSourceReader( fileSource, cancelFlag, bindingScan ? null : fields, filtersContainer.readerFilters() );
+        ParquetSourceReader reader = new ParquetSourceReader( fileSource, cancelFlag, bindingScan ? null : fields, filtersContainer.nativeFilters() );
         if ( isNestedTable() ) {
             return new ParquetNestedRepeatedRelEnumerator( reader, binding, projectedBindings( fields ), filtersContainer );
         }
         if ( bindingScan ) {
             return new ParquetNestedNonRepeatedRelEnumerator( reader, sourceFile, projectedBindings( fields ), filtersContainer );
         }
-        return new ParquetRelEnumerator( reader, filtersContainer );
+        return new ParquetRelEnumerator( reader, filtersContainer.withoutPathElementsInAdapterFilters() );
     }
 
 
@@ -371,7 +371,7 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
             boolean leftIsParent,
             boolean emitUnmatchedParents ) {
 
-        ParquetSourceReader reader = new ParquetSourceReader( sourceFile.asSource(), cancelFlag, null, filterContainer.readerFilters() );
+        ParquetSourceReader reader = new ParquetSourceReader( sourceFile.asSource(), cancelFlag, null, filterContainer.nativeFilters() );
         return new ParquetNestedJoinEnumerator(
                 reader,
                 binding,

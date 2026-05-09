@@ -82,9 +82,8 @@ public class JoinFiltersSplitter {
             case PARENT -> {
                 if ( canUseAsReaderFilter( filter ) ) {
                     readerFilters.add( filter );
-                } else {
-                    parentFilters.add( filter );
                 }
+                parentFilters.add( filter );
             }
             case CHILD -> childFilters.add( filter );
             case ADAPTER -> adapterFilters.add( filter );
