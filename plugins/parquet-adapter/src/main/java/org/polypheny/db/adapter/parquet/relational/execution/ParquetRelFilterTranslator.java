@@ -22,7 +22,9 @@ import org.polypheny.db.adapter.parquet.shared.execution.AbstractFilterTranslato
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 
@@ -32,7 +34,7 @@ import org.polypheny.db.type.PolyType;
 public class ParquetRelFilterTranslator extends AbstractFilterTranslator {
 
     /**
-     * Translates a Rex filter into Parquet Adapter filter form when possible.
+     * Translates a Rex filter into Parquet filter form when possible.
      */
     public ParquetAdapterFilter translate( List<PolyType> fieldTypes, RexNode polyFilter ) {
         // support logical filter
@@ -62,11 +64,10 @@ public class ParquetRelFilterTranslator extends AbstractFilterTranslator {
         }
 
         int index = indexRef.getIndex();
-        if ( !isFieldPredicateSupported( fieldTypes, index, parsed.operator(), right ) ) {
+        if ( !isPushdownSupported( fieldTypes, index, parsed.operator(), right ) ) {
             return null;
         }
 
-        // call parent functionality
         return toParquetAdapterFilter( index, parsed.operator(), right );
     }
 
@@ -124,7 +125,7 @@ public class ParquetRelFilterTranslator extends AbstractFilterTranslator {
         int index = indexRef.getIndex();
         List<ParquetAdapterFilter> equalsFilters = operands.subList( 1, operands.size() ).stream()
                 .map( this::unwrapCast )
-                .map( value -> isFieldPredicateSupported( fieldTypes, index, Kind.EQUALS, value )
+                .map( value -> isPushdownSupported( fieldTypes, index, Kind.EQUALS, value )
                         ? toParquetAdapterFilter( index, Kind.EQUALS, value )
                         : null )
                 .toList();
@@ -141,12 +142,17 @@ public class ParquetRelFilterTranslator extends AbstractFilterTranslator {
     /**
      * Checks whether the operator can be handled by the reader.
      */
-    private boolean isFieldPredicateSupported( List<PolyType> fieldTypes, int index, Kind kind, RexNode valueNode ) {
+    private boolean isPushdownSupported( List<PolyType> fieldTypes, int index, Kind kind, RexNode valueNode ) {
         if ( index < 0 || index >= fieldTypes.size() ) {
             return false;
         }
 
-        return isColumnPredicateSupported( fieldTypes.get( index ), kind, valueNode );
+        PolyType type = fieldTypes.get( index );
+        return switch ( type ) {
+            case BOOLEAN, VARCHAR, CHAR, TEXT -> kind == Kind.EQUALS || kind == Kind.NOT_EQUALS;
+            case INTEGER, BIGINT, FLOAT, DOUBLE, DATE, TIME, TIMESTAMP -> true;
+            default -> false;
+        } && (valueNode instanceof RexDynamicParam || (valueNode instanceof RexLiteral literal && literal.getValue() != null));
     }
 
 }

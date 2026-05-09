@@ -25,6 +25,9 @@ import org.apache.parquet.io.api.RecordConsumer;
 import org.apache.parquet.schema.GroupType;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
 
+/**
+ * Represents a combination of joined groups: parent + child.
+ */
 @Getter
 public class CombinedGroup extends Group {
 

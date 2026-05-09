@@ -35,6 +35,11 @@ public final class ParquetBindingSerializer {
     private static final String COLUMN_SEPARATOR = ",";
     private static final String COLUMN_FIELD_SEPARATOR = ":";
     private static final String PATH_SEPARATOR = ".";
+    private static final String FILE_SEPARATOR = ";";
+    private static final String FILE_FIELD_SEPARATOR = "\\|";
+    private static final String FILE_FIELD_JOINER = "|";
+    private static final String PARTITION_SEPARATOR = "&";
+    private static final String PARTITION_FIELD_SEPARATOR = "=";
 
 
     private ParquetBindingSerializer() {
@@ -44,7 +49,7 @@ public final class ParquetBindingSerializer {
     public static String serialize( Map<Long, ParquetTableBinding> bindings ) {
         return bindings.entrySet().stream()
                 .map( entry -> entry.getKey()
-                        + FIELD_SEPARATOR + encode( entry.getValue().sourceUrl() )
+                        + FIELD_SEPARATOR + serializeSourceFiles( entry.getValue().sourceFiles() )
                         + FIELD_SEPARATOR + encode( entry.getValue().parentTableName() )
                         + FIELD_SEPARATOR + serializePath( entry.getValue().sourcePathElements() )
                         + FIELD_SEPARATOR + serializeColumns( entry.getValue().columnsByColumnId() ) )
@@ -60,18 +65,62 @@ public final class ParquetBindingSerializer {
 
         for ( String entry : serialized.split( ENTRY_SEPARATOR ) ) {
             String[] fields = entry.split( FIELD_SEPARATOR, -1 );
-            if ( fields.length != 4 && fields.length != 5 ) {
+            if ( fields.length != 5 ) {
                 throw new GenericRuntimeException( "Invalid serialized Parquet binding entry: %s", entry );
             }
 
             long physicalId = Long.parseLong( fields[0] );
-            String sourceUrl = decode( fields[1] );
+            List<ParquetSourceFile> sourceFiles = deserializeSourceFiles( fields[1] );
             String parentTableName = decode( fields[2] );
-            List<String> sourcePathElements = fields.length == 5 ? deserializePath( fields[3] ) : List.of();
-            Map<Long, ParquetColumnBinding> columns = deserializeColumns( fields.length == 5 ? fields[4] : fields[3] );
-            bindings.put( physicalId, new ParquetTableBinding( sourceUrl, parentTableName.isEmpty() ? null : parentTableName, sourcePathElements, columns ) );
+            List<String> sourcePathElements = deserializePath( fields[3] );
+            Map<Long, ParquetColumnBinding> columns = deserializeColumns( fields[4] );
+            bindings.put( physicalId, new ParquetTableBinding( sourceFiles, parentTableName.isEmpty() ? null : parentTableName, sourcePathElements, columns ) );
         }
         return bindings;
+    }
+
+
+    private static String serializeSourceFiles( List<ParquetSourceFile> sourceFiles ) {
+        return sourceFiles.stream()
+                .map( sourceFile -> encode( sourceFile.fileUrl() ) + FILE_FIELD_JOINER + serializePartitions( sourceFile.partitionValues() ) )
+                .collect( Collectors.joining( FILE_SEPARATOR ) );
+    }
+
+
+    private static List<ParquetSourceFile> deserializeSourceFiles( String serialized ) {
+        if ( serialized == null || serialized.isBlank() ) {
+            return List.of();
+        }
+        return Stream.of( serialized.split( FILE_SEPARATOR ) ).map( fileEntry -> {
+            String[] fields = fileEntry.split( FILE_FIELD_SEPARATOR, -1 );
+            if ( fields.length != 2 ) {
+                throw new GenericRuntimeException( "Invalid serialized Parquet source file entry: %s", fileEntry );
+            }
+            return new ParquetSourceFile( decode( fields[0] ), deserializePartitions( fields[1] ) );
+        } ).toList();
+    }
+
+
+    private static String serializePartitions( Map<String, String> partitionValues ) {
+        return partitionValues.entrySet().stream()
+                .map( entry -> encode( entry.getKey() ) + PARTITION_FIELD_SEPARATOR + encode( entry.getValue() ) )
+                .collect( Collectors.joining( PARTITION_SEPARATOR ) );
+    }
+
+
+    private static Map<String, String> deserializePartitions( String serialized ) {
+        Map<String, String> partitionValues = new LinkedHashMap<>();
+        if ( serialized == null || serialized.isBlank() ) {
+            return partitionValues;
+        }
+        for ( String partitionEntry : serialized.split( PARTITION_SEPARATOR ) ) {
+            String[] fields = partitionEntry.split( PARTITION_FIELD_SEPARATOR, -1 );
+            if ( fields.length != 2 ) {
+                throw new GenericRuntimeException( "Invalid serialized Parquet partition value entry: %s", partitionEntry );
+            }
+            partitionValues.put( decode( fields[0] ), decode( fields[1] ) );
+        }
+        return partitionValues;
     }
 
 

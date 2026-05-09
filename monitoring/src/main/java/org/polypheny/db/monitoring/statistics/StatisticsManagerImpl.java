@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -326,25 +327,106 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     /**
-     * Adapter Statistics:
      * Gets column statistics
      * @param column - query result
      * @return Statistic Column
      */
     private Optional<StatisticColumn> getColumnStatistics( QueryResult column ) {
-        return Catalog.snapshot().alloc().getFromLogical( column.getEntity().id ).stream()
+        List<ProvidedColumnStatistics> providedStatistics = Catalog.snapshot().alloc().getFromLogical( column.getEntity().id ).stream()
                 .map( this::getStatisticsProvider )
                 .filter( Optional::isPresent )
                 .map( provider -> provider.get().getColumnStatistics( column.getColumn(), buffer ) )
                 .filter( Optional::isPresent )
                 .map( Optional::get )
-                .flatMap( provided -> toStatisticColumn( column, provided ).stream() )
-                .findFirst();
+                .toList();
+
+        return aggregateProvidedColumnStatistics( providedStatistics )
+                .flatMap( provided -> toStatisticColumn( column, provided ) );
     }
 
 
     /**
-     * Adapter Statistics:
+     * Aggregate statistics from partitioned physical columns
+     *
+     * @param providedStatistics a list of column statistics
+     * @return aggregated statistics per logical column
+     */
+    private Optional<ProvidedColumnStatistics> aggregateProvidedColumnStatistics( List<ProvidedColumnStatistics> providedStatistics ) {
+        if ( providedStatistics.isEmpty() ) {
+            return Optional.empty();
+        }
+        if ( providedStatistics.size() == 1 ) {
+            return Optional.of( providedStatistics.get( 0 ) );
+        }
+
+        Long count = null;
+        PolyValue min = null;
+        PolyValue max = null;
+        boolean full = false;
+        Map<String, PolyValue> uniqueValues = new LinkedHashMap<>();
+
+        for ( ProvidedColumnStatistics provided : providedStatistics ) {
+            count = addCounts( count, provided.count() );
+            min = lower( min, provided.min() );
+            max = higher( max, provided.max() );
+            full |= provided.full();
+
+            for ( PolyValue value : provided.uniqueValues() ) {
+                uniqueValues.putIfAbsent( value.toTypedJson(), value );
+                if ( uniqueValues.size() > buffer ) {
+                    full = true;
+                    uniqueValues.clear();
+                    break;
+                }
+            }
+        }
+
+        return Optional.of( new ProvidedColumnStatistics( count, min, max, List.copyOf( uniqueValues.values() ), full ) );
+    }
+
+
+    private Long addCounts( Long left, Long right ) {
+        if ( left == null ) {
+            return right;
+        }
+        if ( right == null ) {
+            return left;
+        }
+        return left + right;
+    }
+
+
+    private PolyValue lower( PolyValue current, PolyValue candidate ) {
+        if ( candidate == null ) {
+            return current;
+        }
+        if ( current == null ) {
+            return candidate;
+        }
+        try {
+            return candidate.compareTo( current ) < 0 ? candidate : current;
+        } catch ( RuntimeException e ) {
+            return current;
+        }
+    }
+
+
+    private PolyValue higher( PolyValue current, PolyValue candidate ) {
+        if ( candidate == null ) {
+            return current;
+        }
+        if ( current == null ) {
+            return candidate;
+        }
+        try {
+            return candidate.compareTo( current ) > 0 ? candidate : current;
+        } catch ( RuntimeException e ) {
+            return current;
+        }
+    }
+
+
+    /**
      * Converts provider column statistics to statistics column representation
      * @param column QueryResult
      * @param provided ProvidedColumnStatistics
@@ -384,7 +466,6 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     /**
-     * Adapter Statistics:
      * Look for Adapter Statistic Provider via catalog
      * @param allocation AllocationEntity
      * @return AdapterStatisticsProvider
@@ -404,7 +485,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
                 .map( physical -> physical.unwrap( AdapterStatisticsProvider.class ) )
                 .filter( Optional::isPresent )
                 .map( Optional::get )
-                .findFirst(); // get first adapter that implements AdapterStatisticsProvider
+                .findFirst();
     }
 
 

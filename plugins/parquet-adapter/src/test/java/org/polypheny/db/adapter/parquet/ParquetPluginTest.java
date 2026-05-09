@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.util.Sources;
-import org.polypheny.jdbc.types.PolyDocument;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -48,15 +47,15 @@ class ParquetPluginTest {
         String parquetDir = Sources.of( ParquetPluginTest.class.getResource( "/orders_db/" ) )
                 .file()
                 .getAbsolutePath()
-                .replace( "\\", "/" );
+                .replace( "\\", "\\\\" );
 
         // open a JDBC connection to the running Polypheny test server
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             // creates the Parquet source adapter and imports the parquet files as source tables
              try ( Statement statement = connection.createStatement() ) {
-                String sql = "ALTER ADAPTERS ADD \"" + SOURCE_NAME + "\" USING 'Parquet Relational' AS 'SOURCE' "
-                        + "WITH '{\"method\":\"link\",\"directory\":\"classpath://orders_db\",\"directoryName\":\"" + parquetDir + "\",\"url\":\"\",\"schema mode\":\"flat\"}'";
+                String sql = "ALTER ADAPTERS ADD \"" + SOURCE_NAME + "\" USING 'Parquet' AS 'SOURCE' "
+                        + "WITH '{method:\"link\",directory:\"classpath://orders_db\",directoryName:\"" + parquetDir + "\"}'";
 
                 System.out.println( sql );
                 statement.executeUpdate( sql );
@@ -100,7 +99,7 @@ class ParquetPluginTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                assertThrows( SQLException.class, () -> statement.executeUpdate( "DELETE FROM " + table( "customers" ) ) );
+                assertThrows( SQLException.class, () -> statement.executeUpdate( "DELETE FROM customers" ) );
             }
         }
     }
@@ -109,7 +108,7 @@ class ParquetPluginTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement();
-                    ResultSet resultSet = statement.executeQuery( "SELECT COUNT(*) FROM " + table( tableName ) ) ) {
+                    ResultSet resultSet = statement.executeQuery( "SELECT COUNT(*) FROM " + tableName ) ) {
 
                 assertTrue( resultSet.next(), "COUNT query returned no row for table " + tableName );
                 assertTrue( resultSet.getLong( 1 ) > 0, "Expected table " + tableName + " to contain rows" );
@@ -125,7 +124,7 @@ class ParquetPluginTest {
             try ( Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(
                             "SELECT customer_id, name, email, country, signup_date "
-                                    + "FROM " + table( "customers" ) + " "
+                                    + "FROM customers "
                                     + "WHERE customer_id <= 3 "
                                     + "ORDER BY customer_id" ) ) {
 
@@ -148,7 +147,7 @@ class ParquetPluginTest {
             try ( Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(
                             "SELECT customer_id, name, email, country, signup_date "
-                                    + "FROM " + table( "customers" ) + " "
+                                    + "FROM customers "
                                     + "WHERE country = 'France' "
                                     + "ORDER BY customer_id "
                                     + "LIMIT 3" ) ) {
@@ -172,7 +171,7 @@ class ParquetPluginTest {
             try ( Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(
                             "SELECT customer_id, name "
-                                    + "FROM " + table( "customers" ) + " "
+                                    + "FROM customers "
                                     + "WHERE customer_id <= 3 "
                                     + "ORDER BY customer_id" ) ) {
 
@@ -195,7 +194,7 @@ class ParquetPluginTest {
             try ( Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(
                             "SELECT customer_id, name "
-                                    + "FROM " + table( "customers" ) + " "
+                                    + "FROM customers "
                                     + "WHERE customer_id > 3 "
                                     + "ORDER BY customer_id "
                                     + "LIMIT 3" ) ) {
@@ -216,7 +215,7 @@ class ParquetPluginTest {
     void supportsDateFilterLiterals() throws SQLException {
         assertQueryResult(
                 "SELECT customer_id, name "
-                        + "FROM " + table( "customers" ) + " "
+                        + "FROM customers "
                         + "WHERE signup_date = TIMESTAMP '2023-02-04 00:00:00' "
                         + "AND customer_id = 3 "
                         + "ORDER BY customer_id",
@@ -287,7 +286,7 @@ class ParquetPluginTest {
             try ( Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(
                             "SELECT customer_id, name "
-                                    + "FROM " + table( "customers" ) + " "
+                                    + "FROM customers "
                                     + "WHERE " + filter + " "
                                     + "ORDER BY customer_id "
                                     + "LIMIT 3" ) ) {
@@ -306,7 +305,7 @@ class ParquetPluginTest {
                 assertThrows(
                         SQLException.class,
                         () -> statement.executeUpdate(
-                                "UPDATE " + table( "customers" ) + " "
+                                "UPDATE customers "
                                         + "SET country = 'Switzerland' "
                                         + "WHERE customer_id = 1" )
                 );
@@ -330,7 +329,7 @@ class ParquetPluginTest {
     void projectsAndFiltersOtherTables() throws SQLException {
         assertQueryResult(
                 "SELECT order_id, status, total_price "
-                        + "FROM " + table( "orders" ) + " "
+                        + "FROM orders "
                         + "WHERE order_id <= 3 "
                         + "ORDER BY order_id",
                 ImmutableList.of(
@@ -342,7 +341,7 @@ class ParquetPluginTest {
 
         assertQueryResult(
                 "SELECT order_item_id, product_id, quantity "
-                        + "FROM " + table( "order_items" ) + " "
+                        + "FROM order_items "
                         + "WHERE order_id = 1 "
                         + "ORDER BY order_item_id "
                         + "LIMIT 3",
@@ -355,7 +354,7 @@ class ParquetPluginTest {
 
         assertQueryResult(
                 "SELECT product_id, name, category "
-                        + "FROM " + table( "products" ) + " "
+                        + "FROM products "
                         + "WHERE product_id <= 3 "
                         + "ORDER BY product_id",
                 ImmutableList.of(
@@ -366,35 +365,30 @@ class ParquetPluginTest {
         );
     }
 
-    // check that nested data is returned as document
+    // check that nested data returned as string
     @Test
-    void returnsNestedShippingAddressAsDocument() throws SQLException {
+    void returnsNestedShippingAddressAsJSON() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(
                             "SELECT shipping_address "
-                                    + "FROM " + table( "orders" ) + " "
+                                    + "FROM orders "
                                     + "WHERE order_id = 1" ) ) {
 
                 assertTrue( resultSet.next() );
-                assertEquals( "DOCUMENT", resultSet.getMetaData().getColumnTypeName( 1 ) );
 
                 Object value = resultSet.getObject( 1 );
-                PolyDocument shippingAddress = assertInstanceOf( PolyDocument.class, value );
+                String shippingAddress = assertInstanceOf( String.class, value );
 
-                assertEquals( 3, shippingAddress.size() );
-                assertEquals( "Lucerne", shippingAddress.get( "city" ).asString() );
-                assertEquals( "Gartenweg 103", shippingAddress.get( "street" ).asString() );
-                assertEquals( 7101, shippingAddress.get( "zip" ).asInt() );
+                assertEquals(
+                        "{\"city\":\"Lucerne\",\"street\":\"Gartenweg 103\",\"zip\":7101}",
+                        shippingAddress
+                );
             }
         }
     }
 
-
-    private static String table( String tableName ) {
-        return SOURCE_NAME + "__" + tableName;
-    }
 
 
 }

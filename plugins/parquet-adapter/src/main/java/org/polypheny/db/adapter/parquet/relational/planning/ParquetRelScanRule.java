@@ -18,7 +18,7 @@ public class ParquetRelScanRule extends AlgOptRule {
     public static final ParquetRelScanRule INSTANCE = new ParquetRelScanRule( AlgFactories.LOGICAL_BUILDER );
 
 
-    public ParquetRelScanRule(AlgBuilderFactory algBuilderFactory ) {
+    public ParquetRelScanRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 operand( LogicalRelProject.class, operand( ParquetRelScan.class, none() ) ),
                 algBuilderFactory,
@@ -34,11 +34,20 @@ public class ParquetRelScanRule extends AlgOptRule {
         if ( fields == null ) {
             return;
         }
-        call.transformTo( new ParquetRelScan( scan.getCluster(), scan.getEntity(), fields ) );
+
+        int[] currentFields = scan.getFields();
+        int[] projectedFields = new int[fields.length];
+        for ( int i = 0; i < fields.length; i++ ) {
+            if ( fields[i] < 0 || fields[i] >= currentFields.length ) {
+                return;
+            }
+            projectedFields[i] = currentFields[fields[i]];
+        }
+        call.transformTo( new ParquetRelScan( scan.getCluster(), scan.getEntity(), projectedFields, scan.getFilters() ) );
     }
 
 
-    private int[] getProjectFields( List<RexNode> exps ) {
+    static int[] getProjectFields( List<RexNode> exps ) {
         final int[] fields = new int[exps.size()];
         for ( int i = 0; i < exps.size(); i++ ) {
             final RexNode exp = exps.get( i );

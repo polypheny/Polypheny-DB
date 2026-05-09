@@ -22,18 +22,12 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.parquet.hadoop.ParquetFileReader;
-import org.apache.parquet.hadoop.util.HadoopInputFile;
-import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.Type;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetFileDiscovery;
-import org.polypheny.db.adapter.parquet.shared.io.ParquetUrlResolver;
+import org.polypheny.db.adapter.parquet.shared.io.ParquetSchemaReader;
 import org.polypheny.db.adapter.parquet.shared.schema.ParquetNameNormalizer;
 import org.polypheny.db.adapter.parquet.shared.schema.ParquetTypeConverter;
-import org.polypheny.db.adapter.parquet.shared.util.HadoopConfigurationFactory;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
 
@@ -45,19 +39,13 @@ import org.polypheny.db.type.PolyType;
 public class ParquetSchemaNormalizer {
 
     private final URL parquetDir; // source directory or source Parquet file URL
-    private final ClassLoader classLoader; // used to create Hadoop/Parquet reader configuration
     private final ParquetTypeConverter parquetTypeConverter; // converts Parquet types to Polypheny
     private final String tableNamePrefix; // adapter instance prefix
 
 
-    public ParquetSchemaNormalizer(
-            URL parquetDir,
-            ClassLoader classLoader,
-            ParquetTypeConverter parquetTypeConverter,
-            String tableNamePrefix ) {
+    public ParquetSchemaNormalizer(URL parquetDir, String tableNamePrefix ) {
         this.parquetDir = parquetDir;
-        this.classLoader = classLoader;
-        this.parquetTypeConverter = parquetTypeConverter;
+        this.parquetTypeConverter = new ParquetTypeConverter();
         if ( tableNamePrefix == null ) {
             throw new GenericRuntimeException( "Parquet normalized schema table name prefix must not be null." );
         }
@@ -76,29 +64,35 @@ public class ParquetSchemaNormalizer {
      */
     public ParquetNormalizedSchema normalize() {
         var normalizedSchema = new ParquetNormalizedSchema();
-        for ( String fileName : ParquetFileDiscovery.listParquetFiles( parquetDir ) ) {
-            normalizeFile( fileName, normalizedSchema );
+        for ( DiscoveredTable table : ParquetFileDiscovery.discoverTables( parquetDir, tableNamePrefix ).values() ) {
+            normalizeDiscoveredTable( table, normalizedSchema );
         }
         return normalizedSchema;
     }
 
 
-    private void normalizeFile( String fileName, ParquetNormalizedSchema normalizedSchema ) {
-        try {
-            URL sourceUrl = ParquetUrlResolver.resolveFile( parquetDir, fileName );
-            Path path = new Path( sourceUrl.toURI() );
-            Configuration conf = HadoopConfigurationFactory.create( classLoader );
-            try ( ParquetFileReader reader = ParquetFileReader.open( HadoopInputFile.fromPath( path, conf ) ) ) {
-                // get schema from parquet file
-                GroupType schema = reader.getFooter().getFileMetaData().getSchema();
-                // build root table name with adapter prefix
-                String rootTableName = normalizedSchema.uniqueTableName( prefixedTableName( ParquetNameNormalizer.computePhysicalTableName( fileName ) ) );
-                // create normalization info for table
-                addNormalizedTable( schema.getFields(), sourceUrl.toString(), fileName, rootTableName, null, List.of(), normalizedSchema );
-            }
-        } catch ( Exception e ) {
-            throw new GenericRuntimeException( e );
+    private void normalizeDiscoveredTable( DiscoveredTable table, ParquetNormalizedSchema normalizedSchema ) {
+        var schemaReader = new ParquetSchemaReader( table.binding().sourceFiles().stream().map( ParquetSourceFile::asSource ).toList() );
+        String rootTableName = normalizedSchema.uniqueTableName( table.tableName() );
+        List<String> partitionColumnNames = partitionColumnNames( table.binding().sourceFiles() );
+        addNormalizedTable(
+                schemaReader.getSchema().getFields(),
+                table.binding().sourceFiles(),
+                table.tableName(),
+                rootTableName,
+                null,
+                List.of(),
+                partitionColumnNames,
+                normalizedSchema );
+    }
+
+
+    private List<String> partitionColumnNames( List<ParquetSourceFile> sourceFiles ) {
+        Map<String, Boolean> names = new LinkedHashMap<>();
+        for ( ParquetSourceFile sourceFile : sourceFiles ) {
+            sourceFile.partitionValues().keySet().forEach( name -> names.putIfAbsent( name, true ) );
         }
+        return List.copyOf( names.keySet() );
     }
 
 
@@ -106,7 +100,7 @@ public class ParquetSchemaNormalizer {
      * Creates one generated relational table
      *
      * @param fields - schema fields
-     * @param sourceUrl - source file url
+     * @param sourceFiles - a list of source file URLS
      * @param fileName - file name
      * @param tableName - generated table name
      * @param parentTableName - generated parent table name if exists
@@ -116,19 +110,23 @@ public class ParquetSchemaNormalizer {
      */
     private void addNormalizedTable(
             List<Type> fields,
-            String sourceUrl,
+            List<ParquetSourceFile> sourceFiles,
             String fileName,
             String tableName,
             String parentTableName,
             List<String> tablePath,
+            List<String> partitionColumnNames,
             ParquetNormalizedSchema normalizedSchema ) {
         // maps relational column name to Parquet source path
         Map<String, List<String>> columnPaths = new LinkedHashMap<>();
         // add synthetic columns to normalized schema
         normalizedSchema.addColumns( tableName, syntheticColumns( fileName, tableName, parentTableName, normalizedSchema, tablePath, columnPaths ) );
-        collectNormalizedColumns( fields, sourceUrl, fileName, tableName, tableName, tablePath, columnPaths, normalizedSchema );
+        collectNormalizedColumns( fields, sourceFiles, fileName, tableName, tableName, tablePath, partitionColumnNames, columnPaths, normalizedSchema );
+        if ( parentTableName == null ) {
+            addPartitionColumns( fileName, tableName, partitionColumnNames, normalizedSchema );
+        }
         // each generated table gets table definition and binding metadata
-        normalizedSchema.addBinding( tableName, new DiscoveredTableBinding( sourceUrl, parentTableName, tablePath, columnPaths ) );
+        normalizedSchema.addBinding( tableName, new DiscoveredTableBinding( sourceFiles, parentTableName, tablePath, columnPaths ) );
     }
 
 
@@ -136,7 +134,7 @@ public class ParquetSchemaNormalizer {
      * Loops through fields of the current Parquet group
      *
      * @param fields - parquet schema fields
-     * @param sourceUrl - source file url
+     * @param sourceFiles - a list of source file URLS
      * @param fileName - source file name
      * @param tableName - generated table name
      * @param currentParentTableName - table name used as the base when creating child table names
@@ -147,11 +145,12 @@ public class ParquetSchemaNormalizer {
      */
     private void collectNormalizedColumns(
             List<Type> fields,
-            String sourceUrl,
+            List<ParquetSourceFile> sourceFiles,
             String fileName,
             String tableName,
             String currentParentTableName,
             List<String> currentPath,
+            List<String> partitionColumnNames,
             Map<String, List<String>> columnPaths, // where should each column read its value from
             ParquetNormalizedSchema normalizedSchema ) {
 
@@ -163,10 +162,10 @@ public class ParquetSchemaNormalizer {
                 String childTableName = normalizedSchema.uniqueTableName( currentParentTableName + "__" + ParquetNameNormalizer.normalizeFieldName( field.getName() ) );
                 if ( field.isPrimitive() ) {
                     // repeated and primitive - create a separate table
-                    addRepeatedPrimitiveTable( field, sourceUrl, fileName, childTableName, currentParentTableName, sourcePath, normalizedSchema );
+                    addRepeatedPrimitiveTable( field, sourceFiles, fileName, childTableName, currentParentTableName, sourcePath, normalizedSchema );
                 } else {
                     // repeated and group - create a child table and recursively processes the group fields
-                    addNormalizedTable( field.asGroupType().getFields(), sourceUrl, fileName, childTableName, currentParentTableName, sourcePath, normalizedSchema );
+                    addNormalizedTable( field.asGroupType().getFields(), sourceFiles, fileName, childTableName, currentParentTableName, sourcePath, List.of(), normalizedSchema );
                 }
                 continue;
             }
@@ -174,6 +173,9 @@ public class ParquetSchemaNormalizer {
             // primitive - add field as a column to the current table
             if ( field.isPrimitive() ) {
                 String columnName = uniqueColumnName( seenColumnNames, ParquetNameNormalizer.normalizeFieldName( field.getName() ) );
+                if ( currentPath.isEmpty() && partitionColumnNames.contains( columnName ) ) {
+                    continue;
+                }
                 normalizedSchema.addColumns( tableName, List.of( exportedColumn( field, fileName, tableName, columnName, sourcePath, nextPosition( normalizedSchema, tableName ) ) ) );
                 columnPaths.put( columnName, sourcePath );
                 continue;
@@ -181,14 +183,14 @@ public class ParquetSchemaNormalizer {
 
             //  non-repeated group - create a child table
             String childTableName = normalizedSchema.uniqueTableName( currentParentTableName + "__" + ParquetNameNormalizer.normalizeFieldName( field.getName() ) );
-            addNormalizedTable( field.asGroupType().getFields(), sourceUrl, fileName, childTableName, currentParentTableName, sourcePath, normalizedSchema );
+            addNormalizedTable( field.asGroupType().getFields(), sourceFiles, fileName, childTableName, currentParentTableName, sourcePath, List.of(), normalizedSchema );
         }
     }
 
 
     private void addRepeatedPrimitiveTable(
             Type field,
-            String sourceUrl,
+            List<ParquetSourceFile> sourceFiles,
             String fileName,
             String tableName,
             String parentTableName,
@@ -200,7 +202,29 @@ public class ParquetSchemaNormalizer {
         columns.add( exportedColumn( field, fileName, tableName, columnName, sourcePath, columns.size() ) );
         columnPaths.put( columnName, sourcePath );
         normalizedSchema.addColumns( tableName, columns );
-        normalizedSchema.addBinding( tableName, new DiscoveredTableBinding( sourceUrl, parentTableName, sourcePath, columnPaths ) );
+        normalizedSchema.addBinding( tableName, new DiscoveredTableBinding( sourceFiles, parentTableName, sourcePath, columnPaths ) );
+    }
+
+
+    private void addPartitionColumns( String fileName, String tableName, List<String> partitionColumnNames, ParquetNormalizedSchema normalizedSchema ) {
+        for ( String partitionColumnName : partitionColumnNames ) {
+            normalizedSchema.addColumns(
+                    tableName,
+                    List.of( new ExportedColumn(
+                            partitionColumnName,
+                            PolyType.VARCHAR,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            false,
+                            fileName,
+                            tableName,
+                            partitionColumnName,
+                            nextPosition( normalizedSchema, tableName ),
+                            false ) ) );
+        }
     }
 
 
@@ -281,17 +305,6 @@ public class ParquetSchemaNormalizer {
         int count = seenColumnNames.getOrDefault( baseName, 0 );
         seenColumnNames.put( baseName, count + 1 );
         return count == 0 ? baseName : baseName + "_" + (count + 1);
-    }
-
-
-    /**
-     * adds adapter unique name prefix to the table
-     *
-     * @param tableName - table name
-     * @return name with prefix
-     */
-    private String prefixedTableName( String tableName ) {
-        return tableNamePrefix + "__" + tableName;
     }
 
 

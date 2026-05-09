@@ -24,18 +24,19 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 
 /**
  * Table-level metadata, describes the whole table
- * @param sourceUrl - real Parquet file URL to read from
+ * @param sourceFiles - real Parquet file URLs to read from
  * @param parentTableName - generated parent relational table name, or null for root tables
  * @param sourcePathElements - table-level path inside the Parquet file, For root: List.of(), for nested: List.of("items")
  * @param columnsByColumnId - Map<Long, ParquetColumnBinding> - maps Polypheny physical column ids to column bindings
  */
 public record ParquetTableBinding(
-        String sourceUrl,
+        List<ParquetSourceFile> sourceFiles,
         String parentTableName,
         List<String> sourcePathElements,
         Map<Long, ParquetColumnBinding> columnsByColumnId ) {
 
     public ParquetTableBinding {
+        sourceFiles = sourceFiles == null ? List.of() : List.copyOf( sourceFiles );
         sourcePathElements = sourcePathElements == null ? List.of() : List.copyOf( sourcePathElements );
         columnsByColumnId = columnsByColumnId == null ? Map.of() : Collections.unmodifiableMap( new LinkedHashMap<>( columnsByColumnId ) );
     }
@@ -44,11 +45,11 @@ public record ParquetTableBinding(
     /**
      * Factory Method
      * creates a simple binding for a root/flat table
-     * @param sourceUrl - file
+     * @param sourceFiles - files
      * @param table - table name
      * @return ParquetTableBinding object
      */
-    public static ParquetTableBinding createRootTableBinding( String sourceUrl, PhysicalTable table ) {
+    public static ParquetTableBinding createRootTableBinding( List<ParquetSourceFile> sourceFiles, PhysicalTable table ) {
         // create map of column level bindings
         Map<Long, ParquetColumnBinding> columnBindings = new LinkedHashMap<>();
         // For each physical column create a DATA column binding with a one-element source path equal to the column name
@@ -58,7 +59,7 @@ public record ParquetTableBinding(
 
         // create table level binding
         return new ParquetTableBinding(
-                sourceUrl,
+                sourceFiles,
                 null, // parentTableName is null
                 List.of(), // sourcePathElements empty
                 columnBindings );
@@ -68,14 +69,14 @@ public record ParquetTableBinding(
     /**
      * Factory Method
      * creates a binding when exact Parquet paths for columns discovered
-     * @param sourceUrl - real Parquet file URL
+     * @param sourceFiles - real Parquet files
      * @param parentTableName - generated parent relational table name, or null for root tables
      * @param sourcePathElements - table-level path inside the Parquet file
      * @param table - Polypheny physical table object contains the physical columns that were created in the adapter catalog.
      * @param columnPaths - map relational column name to Parquet source path ("amount" -> ["items", "discounts", "amount"])
      * @return ParquetTableBinding
      */
-    public static ParquetTableBinding createTableBindingFromColumnPaths( String sourceUrl, String parentTableName, List<String> sourcePathElements, PhysicalTable table, Map<String, List<String>> columnPaths ) {
+    public static ParquetTableBinding createTableBindingFromColumnPaths( List<ParquetSourceFile> sourceFiles, String parentTableName, List<String> sourcePathElements, PhysicalTable table, Map<String, List<String>> columnPaths ) {
         Map<Long, ParquetColumnBinding> columnBindings = new LinkedHashMap<>();
         // create ParquetColumnBinding object for each column and store in map by id
         table.columns.forEach( column -> columnBindings.put(
@@ -83,12 +84,12 @@ public record ParquetTableBinding(
                 new ParquetColumnBinding(
                         column.id,
                         column.name,
-                        inferRole( column.name ),
+                        inferRole( column.name, columnPaths, sourceFiles ),
                         inferSourcePath( column.name, columnPaths ) ) ) );
 
         // create table level binding
         return new ParquetTableBinding(
-                sourceUrl,
+                sourceFiles,
                 parentTableName,
                 sourcePathElements,
                 columnBindings );
@@ -105,13 +106,18 @@ public record ParquetTableBinding(
     }
 
 
-    private static ParquetColumnRole inferRole( String columnName ) {
+    private static ParquetColumnRole inferRole( String columnName, Map<String, List<String>> columnPaths, List<ParquetSourceFile> sourceFiles ) {
         return switch ( columnName ) {
             case ParquetSyntheticColumns.ROW_ID -> ParquetColumnRole.PRIMARY_KEY;
             case ParquetSyntheticColumns.PARENT_ROW_ID -> ParquetColumnRole.PARENT_KEY;
             case ParquetSyntheticColumns.ELEM_ORDINAL -> ParquetColumnRole.ORDINAL;
-            default -> ParquetColumnRole.DATA;
+            default -> isPartitionColumn( columnName, columnPaths, sourceFiles ) ? ParquetColumnRole.PARTITION : ParquetColumnRole.DATA;
         };
+    }
+
+
+    private static boolean isPartitionColumn( String columnName, Map<String, List<String>> columnPaths, List<ParquetSourceFile> sourceFiles ) {
+        return !columnPaths.containsKey( columnName ) && sourceFiles.stream().anyMatch( sourceFile -> sourceFile.partitionValues().containsKey( columnName ) );
     }
 
 

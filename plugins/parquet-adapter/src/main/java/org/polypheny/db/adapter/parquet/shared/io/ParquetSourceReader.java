@@ -18,7 +18,6 @@ package org.polypheny.db.adapter.parquet.shared.io;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Getter;
@@ -35,7 +34,6 @@ import org.apache.parquet.io.ColumnIOFactory;
 import org.apache.parquet.io.MessageColumnIO;
 import org.apache.parquet.io.RecordReader;
 import org.apache.parquet.schema.MessageType;
-import org.apache.parquet.schema.Type;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetNativeFilterBuilder;
 import org.polypheny.db.adapter.parquet.shared.util.HadoopConfigurationFactory;
@@ -54,6 +52,8 @@ public class ParquetSourceReader implements AutoCloseable {
     private final boolean useNativeFilter;
     @Getter
     private final MessageType projectionSchema;
+    @Getter
+    private final Source source;
 
     private RecordReader<Group> recordReader;
     private long rowCountInGroup;
@@ -68,6 +68,7 @@ public class ParquetSourceReader implements AutoCloseable {
 
 
     public ParquetSourceReader( Source source, AtomicBoolean cancelFlag, int[] fields, List<ParquetAdapterFilter> filters ) {
+        this.source = source;
         this.cancelFlag = cancelFlag == null ? new AtomicBoolean( false ) : cancelFlag;
 
         try {
@@ -75,11 +76,10 @@ public class ParquetSourceReader implements AutoCloseable {
             Path path = new Path( uri );
             Configuration conf = HadoopConfigurationFactory.create( this.getClass().getClassLoader() );
 
-            MessageType schema = new ParquetSchemaReader( source ).getSchema();
+            ParquetSchemaReader schemaReader = new ParquetSchemaReader( source );
 
-            int[] projectedFields = buildProjectedFields( fields, schema.getFieldCount() );
-            this.projectionSchema = buildProjectionSchema( schema, projectedFields );
-            var recordFilter = ParquetNativeFilterBuilder.build( schema, filters == null ? List.of() : filters );
+            this.projectionSchema = schemaReader.buildProjectionSchema( fields );
+            var recordFilter = ParquetNativeFilterBuilder.build( schemaReader.getSchema(), filters == null ? List.of() : filters );
             this.useNativeFilter = FilterCompat.isFilteringRequired( recordFilter );
 
             ParquetReadOptions readOptions = ParquetReadOptions.builder()
@@ -96,31 +96,6 @@ public class ParquetSourceReader implements AutoCloseable {
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Unable to open parquet file: " + source.path(), e );
         }
-    }
-
-
-    private static int[] buildProjectedFields( int[] projectedFields, int schemaFieldCount ) {
-        if ( projectedFields == null || projectedFields.length == 0 ) {
-            int[] allFields = new int[schemaFieldCount];
-            for ( int i = 0; i < schemaFieldCount; i++ ) {
-                allFields[i] = i;
-            }
-            return allFields;
-        }
-        return projectedFields;
-    }
-
-
-    private static MessageType buildProjectionSchema( MessageType fullSchema, int[] projectedFieldIndexes ) {
-        if ( projectedFieldIndexes.length == 0 ) {
-            return fullSchema;
-        }
-
-        List<Type> fields = new ArrayList<>( projectedFieldIndexes.length );
-        for ( int index : projectedFieldIndexes ) {
-            fields.add( fullSchema.getType( index ) );
-        }
-        return new MessageType( fullSchema.getName(), fields );
     }
 
 
@@ -145,7 +120,7 @@ public class ParquetSourceReader implements AutoCloseable {
                 return group;
             }
         } catch ( Exception e ) {
-            throw new GenericRuntimeException( "Error while reading parquet data: " + e.getClass().getSimpleName() + ": " + e.getMessage(), e );
+            throw new GenericRuntimeException( "Error while reading parquet data", e );
         }
     }
 

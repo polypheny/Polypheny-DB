@@ -20,9 +20,13 @@ import java.util.List;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.Type;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
 import org.polypheny.db.adapter.parquet.shared.execution.AbstractParquetValueExtractor;
+import org.polypheny.db.adapter.parquet.shared.execution.VirtualGroup;
 import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
 
 /**
@@ -70,13 +74,16 @@ public class ParquetPathValueExtractor extends AbstractParquetValueExtractor {
     }
 
 
-    private int fieldIndex( GroupType groupType, String fieldName ) {
-        for ( int i = 0; i < groupType.getFieldCount(); i++ ) {
-            if ( groupType.getType( i ).getName().equals( fieldName ) ) {
-                return i;
+    public PolyValue extractValue( VirtualGroup virtualGroup, ParquetColumnBinding binding, List<String> tablePath ) {
+        return switch ( binding.role() ) {
+            case DATA -> {
+                var path = binding.sourcePathElements();
+                yield extractValue( virtualGroup, path.subList( tablePath.size(), path.size() ) );
             }
-        }
-        return -1;
+            case PARTITION -> PolyNull.NULL;
+            case PRIMARY_KEY -> PolyString.of( virtualGroup.getMetadata().getRowId() );
+            case PARENT_KEY -> virtualGroup.getMetadata().getParentRowId() == null ? PolyNull.NULL : PolyString.of( virtualGroup.getMetadata().getParentRowId() );
+            case ORDINAL -> PolyLong.of( virtualGroup.getMetadata().getOrdinal() );
+        };
     }
-
 }

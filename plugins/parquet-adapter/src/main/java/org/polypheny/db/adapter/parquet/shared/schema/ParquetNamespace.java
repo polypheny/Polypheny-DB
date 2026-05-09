@@ -1,16 +1,16 @@
 package org.polypheny.db.adapter.parquet.shared.schema;
 
-import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.parquet.document.schema.ParquetDocument;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetTableBinding;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetRelTable;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetUrlResolver;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.util.Source;
@@ -37,21 +37,14 @@ public class ParquetNamespace extends Namespace {
 
     public ParquetTableBinding createRootBinding( PhysicalTable table ) {
         Source parquetSource = Sources.of( ParquetUrlResolver.resolveFile( directoryUrl, table.name + ".parquet" ) );
-        return ParquetTableBinding.createRootTableBinding( parquetSource.url().toString(), table );
+        return ParquetTableBinding.createRootTableBinding( List.of( ParquetSourceFile.of( parquetSource.url().toString() ) ), table );
     }
 
     /**
      * Creates a Parquet table wrapper for a physical table entry.
      */
     public ParquetRelTable createParquetTable( long id, PhysicalTable table, ParquetTableBinding binding, AbstractParquetSource sourceAdapter ) {
-        try {
-            // source file comes from the binding, not from the generated table name
-            Source parquetSource = Sources.of( new URL( binding.sourceUrl() ) );
-            return new ParquetRelTable( id, parquetSource, table, binding, sourceAdapter );
-
-        } catch ( MalformedURLException e ) {
-            throw new GenericRuntimeException( e );
-        }
+        return new ParquetRelTable( id, table, binding, sourceAdapter );
     }
 
 

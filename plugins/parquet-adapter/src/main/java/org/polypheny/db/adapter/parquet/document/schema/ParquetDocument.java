@@ -29,9 +29,10 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.parquet.document.execution.ParquetDocEnumerator;
 import org.polypheny.db.adapter.parquet.document.planning.ParquetDocScan;
+import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 import org.polypheny.db.adapter.parquet.shared.filter.FiltersContainer;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
-import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
+import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceReader;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -76,6 +77,7 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
      * - get the adapter catalog from parquetSource
      * - ask it for the physical entity with this document’s id
      * - cast the result to ParquetDocument
+     *
      * @return Expression
      */
     @Override
@@ -98,6 +100,7 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
 
     /**
      * creates enumerable with resolve filters
+     *
      * @param dataContext context
      * @param filters - parquet filters
      * @return ParquetDocEnumerator
@@ -109,7 +112,9 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                return new ParquetDocEnumerator( source, cancelFlag, FiltersContainer.shared( resolvedFilters ) );
+                FiltersContainer filtersContainer = FiltersContainer.shared( resolvedFilters );
+                ParquetSourceReader reader = new ParquetSourceReader( source, cancelFlag, null, filtersContainer.readerFilters() );
+                return new ParquetDocEnumerator( reader, filtersContainer );
             }
         };
     }
@@ -153,6 +158,7 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
 
     /**
      * add dynamic parameters to parquet filter if needed
+     *
      * @param dataContext context
      * @param filter parquet filter
      * @return ParquetFilter

@@ -60,9 +60,6 @@ public class ParquetDocFilterTranslator extends AbstractFilterTranslator {
 
         for ( ExportedColumn column : columns ) {
             if ( column.name().equalsIgnoreCase( fieldName ) ) {
-                if ( !isColumnPredicateSupported( column.type(), parsed.operator(), right ) ) {
-                    return null;
-                }
                 return toParquetAdapterFilter( column.physicalPosition(), parsed.operator(), right );
             }
         }

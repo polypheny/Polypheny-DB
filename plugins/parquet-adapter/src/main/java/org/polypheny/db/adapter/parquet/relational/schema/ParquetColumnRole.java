@@ -21,6 +21,7 @@ package org.polypheny.db.adapter.parquet.relational.schema;
  */
 public enum ParquetColumnRole {
     DATA, // a normal real Parquet value
+    PARTITION, // a value derived from the source file's partition folder
     PRIMARY_KEY, // synthetic generated row id
     PARENT_KEY, // synthetic reference to the parent generated row
     ORDINAL // position of a child value inside its parent

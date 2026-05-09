@@ -222,6 +222,11 @@ The following figure shows an example of the displayed schema information.
 Workflow-specific Parquet extract and load activities are documented separately in:
 - `docs/workflow.md`
 
+## Partitioned Folder Layouts
+
+Hive-style partitioned folder layout support is designed separately in:
+- `docs/partitioned_layouts.md`
+
 ## Unit Tests
 ___
 

@@ -17,17 +17,17 @@
 package org.polypheny.db.adapter.parquet.relational.execution;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.parquet.example.data.Group;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnRole;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
 import org.polypheny.db.adapter.parquet.shared.execution.AbstractParquetEnumerator;
 import org.polypheny.db.adapter.parquet.shared.execution.VirtualGroup;
 import org.polypheny.db.adapter.parquet.shared.filter.FiltersContainer;
+import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceReader;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.numerical.PolyLong;
-import org.polypheny.db.util.Source;
 
 /**
  * Used to handle virtual table that was created from nested non-repeated types.
@@ -35,17 +35,14 @@ import org.polypheny.db.util.Source;
 public class ParquetNestedNonRepeatedRelEnumerator extends AbstractParquetEnumerator {
 
     private final List<ParquetColumnBinding> columnBindings;
+    private final ParquetSourceFile sourceFile;
 
 
-    public ParquetNestedNonRepeatedRelEnumerator( Source source, AtomicBoolean cancelFlag, List<ParquetColumnBinding> columnBindings ) {
-        this( source, cancelFlag, columnBindings, FiltersContainer.empty );
-    }
-
-
-    public ParquetNestedNonRepeatedRelEnumerator( Source source, AtomicBoolean cancelFlag, List<ParquetColumnBinding> columnBindings, FiltersContainer filtersContainer ) {
+    public ParquetNestedNonRepeatedRelEnumerator( ParquetSourceReader reader, ParquetSourceFile sourceFile, List<ParquetColumnBinding> columnBindings, FiltersContainer filtersContainer ) {
         // read full root rows from the Parquet file
-        super( source, cancelFlag, null, filtersContainer, new ParquetPathValueExtractor() );
+        super( reader, filtersContainer, new ParquetPartitionAwareFilterEvaluator( reader.getProjectionSchema(), new ParquetPathValueExtractor(), sourceFile, columnBindings ) );
         this.columnBindings = List.copyOf( columnBindings );
+        this.sourceFile = sourceFile;
     }
 
 
@@ -53,7 +50,10 @@ public class ParquetNestedNonRepeatedRelEnumerator extends AbstractParquetEnumer
     protected PolyValue[] extractRow( Group group ) {
         PolyValue[] row = new PolyValue[columnBindings.size()];
         for ( int i = 0; i < columnBindings.size(); i++ ) {
-            row[i] = extractValueByColumnRole( (VirtualGroup) group, columnBindings.get( i ) );
+            var binding = columnBindings.get( i );
+            row[i] = binding.role() == ParquetColumnRole.PARTITION
+                    ? partitionValue( binding )
+                    : pathValueExtractor().extractValue( (VirtualGroup) group, binding, List.of() );
         }
         return row;
     }
@@ -66,15 +66,16 @@ public class ParquetNestedNonRepeatedRelEnumerator extends AbstractParquetEnumer
     }
 
 
-    private PolyValue extractValueByColumnRole( VirtualGroup virtualGroup, ParquetColumnBinding binding ) {
-        return switch ( binding.role() ) {
-            case DATA -> valueExtractor.extractValue( virtualGroup, binding.sourcePathElements() );
-            case PRIMARY_KEY -> PolyString.of( virtualGroup.getMetadata().getRowId() );
-            case PARENT_KEY -> virtualGroup.getMetadata().getParentRowId() == null
-                    ? PolyNull.NULL
-                    : PolyString.of( virtualGroup.getMetadata().getParentRowId() );
-            case ORDINAL -> PolyLong.of( virtualGroup.getMetadata().getOrdinal() );
-        };
+    private PolyValue partitionValue( ParquetColumnBinding binding ) {
+        if ( !sourceFile.partitionValues().containsKey( binding.columnName() ) ) {
+            return PolyNull.NULL;
+        }
+        return PolyString.of( sourceFile.partitionValues().get( binding.columnName() ) );
+    }
+
+
+    private ParquetPathValueExtractor pathValueExtractor() {
+        return (ParquetPathValueExtractor) filterEvaluator.valueExtractor();
     }
 
 }

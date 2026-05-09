@@ -23,7 +23,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.type.PolyType;
 
 /**
  * Responsible for parsing supported Rex predicates and
@@ -127,14 +126,6 @@ public abstract class AbstractFilterTranslator {
 
     protected record ParsedFilter( RexNode left, RexNode right, Kind operator ) {
 
-    }
-
-    protected boolean isColumnPredicateSupported( PolyType type, Kind kind, RexNode valueNode ) {
-        return switch ( type ) {
-            case BOOLEAN, VARCHAR, CHAR, TEXT -> kind == Kind.EQUALS || kind == Kind.NOT_EQUALS;
-            case INTEGER, BIGINT, FLOAT, DOUBLE, DATE, TIME, TIMESTAMP -> true;
-            default -> false;
-        } && (valueNode instanceof RexDynamicParam || (valueNode instanceof RexLiteral literal && literal.getValue() != null));
     }
 
 }

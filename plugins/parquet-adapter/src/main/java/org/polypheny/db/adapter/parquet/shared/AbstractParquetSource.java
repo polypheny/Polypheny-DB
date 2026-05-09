@@ -19,32 +19,26 @@ package org.polypheny.db.adapter.parquet.shared;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.parquet.hadoop.ParquetFileReader;
-import org.apache.parquet.hadoop.util.HadoopInputFile;
-import org.apache.parquet.schema.Type;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.Scannable;
+import org.polypheny.db.adapter.parquet.relational.schema.DiscoveredTable;
+import org.polypheny.db.adapter.parquet.relational.schema.DiscoveredTableBinding;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetBindingSerializer;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetTableBinding;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetFileDiscovery;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetUrlResolver;
 import org.polypheny.db.adapter.parquet.shared.schema.ParquetNamespace;
-import org.polypheny.db.adapter.parquet.shared.schema.ParquetNameNormalizer;
-import org.polypheny.db.adapter.parquet.shared.schema.ParquetTypeConverter;
-import org.polypheny.db.adapter.parquet.shared.util.HadoopConfigurationFactory;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -52,7 +46,6 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.type.PolyType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,22 +56,17 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog> implements Scannable {
 
-    private static final String PARQUET_BINDINGS_SETTING = "__polypheny_parquet_bindings";
-
-    protected final ConnectionMethod connectionMethod;
-    protected final ParquetTypeConverter parquetTypeConverter;
-    protected URL parquetDir;
-
-    protected ParquetNamespace currentNamespace;
-    private Map<String, List<ExportedColumn>> exportedColumns;
-    private final Map<Long, ParquetTableBinding> parquetBindings;
-
     protected static final Logger log = LoggerFactory.getLogger( AbstractParquetSource.class );
+    private static final String PARQUET_BINDINGS_SETTING = "__polypheny_parquet_bindings";
+    protected final ConnectionMethod connectionMethod;
+    private final Map<Long, ParquetTableBinding> parquetBindings;
+    protected URL parquetDir;
+    protected ParquetNamespace currentNamespace;
+    private Map<String, DiscoveredTable> discoveredTables;
 
 
     protected AbstractParquetSource( long storeId, String uniqueName, Map<String, String> settings, DeployMode mode, Set<DataModel> supportedModels ) {
         super( storeId, uniqueName, settings, mode, true, new DocAdapterCatalog( storeId ), supportedModels );
-        this.parquetTypeConverter = new ParquetTypeConverter();
         // Recover binding metadata through adapter settings
         this.parquetBindings = new HashMap<>( ParquetBindingSerializer.deserialize( settings.get( PARQUET_BINDINGS_SETTING ) ) );
         this.connectionMethod = settings.containsKey( "method" )
@@ -92,6 +80,7 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
 
     /**
      * populate parquet directory variable according to settings
+     *
      * @param settings Settings Map
      */
     protected void setParquetDir( Map<String, String> settings ) {
@@ -133,88 +122,25 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
 
 
     /**
-     * Get list of columns from parquet file using metadata
-     * @param fileName - parquet file name
-     * @param physicalTableName - physical Table Name
-     * @return List<ExportedColumn> - list of columns
-     */
-    private List<ExportedColumn> getExportedColumnsFromFile( String fileName, String physicalTableName ) {
-        try {
-            Path path = new Path( ParquetUrlResolver.resolveFile( parquetDir, fileName ).toURI() );
-            Configuration conf = HadoopConfigurationFactory.create( this.getClass().getClassLoader() );
-            try ( ParquetFileReader reader = ParquetFileReader.open( HadoopInputFile.fromPath( path, conf ) ) ) {
-                List<Type> schemaFields = reader.getFooter().getFileMetaData().getSchema().getFields();
-                List<ExportedColumn> columns = new ArrayList<>();
-                int position = 0;
-                for ( Type field : schemaFields ) {
-                    columns.add( getExportedColumnFromField( field, fileName, physicalTableName, position++ ) );
-                }
-                return columns;
-            }
-        } catch ( Exception e ) {
-            throw new org.polypheny.db.catalog.exceptions.GenericRuntimeException( e );
-        }
-    }
-
-
-    /**
-     * Create exported column object from parquet file field
-     * @param field - parquet file column
-     * @param fileName - name of parquet file
-     * @param physicalTableName - the table name that Polypheny should create/export for this Parquet file
-     * @param position - column position
-     * @return ExportedColumn object
-     */
-    private ExportedColumn getExportedColumnFromField( Type field, String fileName, String physicalTableName, int position ) {
-        String columnName = ParquetNameNormalizer.normalizeFieldName( field.getName() );
-        PolyType polyType = parquetTypeConverter.fromParquetTypeToPolyType( field );
-        return new ExportedColumn(
-                columnName,
-                polyType,
-                null,
-                null,
-                null,
-                null,
-                null,
-                false,
-                fileName,
-                physicalTableName,
-                field.getName(),
-                position,
-                position == 0 );
-    }
-
-
-    /**
      * Return exported column map if exists
      * Otherwise creates hashmap:
      * for each filename - store exported columns list
+     *
      * @return Map<String, List<ExportedColumn>>
      */
     public Map<String, List<ExportedColumn>> getExportedColumns() {
-        if ( connectionMethod == ConnectionMethod.UPLOAD && exportedColumns != null ) {
-            return exportedColumns;
+        if ( discoveredTables == null ) {
+            discoveredTables = ParquetFileDiscovery.discoverTables( parquetDir, getUniqueName() );
         }
-
-        Map<String, List<ExportedColumn>> columns = new HashMap<>();
-        Set<String> fileNames = ParquetFileDiscovery.listParquetFiles( parquetDir );
-        for ( String fileName : fileNames ) {
-            String physicalTableName = getPrefixedTableName( ParquetNameNormalizer.computePhysicalTableName( fileName ) );
-            columns.put( physicalTableName, getExportedColumnsFromFile( fileName, physicalTableName ) );
-        }
-        this.exportedColumns = columns;
-        return columns;
+        return discoveredTables.values().stream().collect( LinkedHashMap::new, ( m, t ) -> m.put( t.tableName(), t.columns() ), HashMap::putAll );
     }
 
 
-    /**
-     * Add prefix to the table names to allow deployment multiple Parquet relational adapters
-     * over the same files, for example one flat and one normalized, without logical table name collisions
-     * @param tableName table-name produced from the Parquet file name
-     * @return normalized name containing prefix - adapter unique name
-     */
-    protected String getPrefixedTableName( String tableName ) {
-        return ParquetNameNormalizer.normalizeFieldName( getUniqueName() ) + "__" + tableName;
+    protected Optional<DiscoveredTableBinding> getTableBinding( String tableName ) {
+        if ( discoveredTables == null ) {
+            discoveredTables = ParquetFileDiscovery.discoverTables( parquetDir, getUniqueName() );
+        }
+        return Optional.ofNullable( discoveredTables.get( tableName ).binding() );
     }
 
 
@@ -222,13 +148,14 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
      * Allows ParquetRelationalSource to clear the flat exported-column cache when settings such as
      * schemaMode or directory change.
      */
-    protected void clearExportedColumnsCache() {
-        exportedColumns = null;
+    protected void clearTablesCache() {
+        discoveredTables = null;
     }
 
 
     /**
      * Add binding to the parquet bindings map and call for persistence to store map in settings
+     *
      * @param physicalTableId - key in Map<Long, ParquetTableBinding>
      * @param binding ParquetTableBinding to store
      */
@@ -342,7 +269,7 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
     protected void reloadSettings( List<String> updatedSettings ) {
         if ( updatedSettings.contains( "directory" ) || updatedSettings.contains( "directoryName" ) || updatedSettings.contains( "url" ) ) {
             setParquetDir( settings );
-            clearExportedColumnsCache();
+            clearTablesCache();
         }
     }
 

@@ -16,21 +16,17 @@
 
 package org.polypheny.db.adapter.parquet.relational.schema;
 
+import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import java.util.List;
-import java.util.Map;
 
 /**
- *  metadata that connects a discovered logical table back to the real Parquet data
- *
- * @param sourceFiles - real Parquet files
- * @param parentTableName - generated parent table
- * @param sourcePathElements - table-level Parquet path
- * @param columnPaths - column-level Parquet path
+ * Represents one logical Polypheny table found during Parquet discovery, before the table is fully registered in Polypheny.
+ * @param tableName - final discovered table name, prefixed with adapter name
+ * @param columns - columns Polypheny should expose for this table
+ * @param binding - metadata that explains how this logical table maps back to physical Parquet data
  */
-public record DiscoveredTableBinding(
-        List<ParquetSourceFile> sourceFiles,
-        String parentTableName,
-        List<String> sourcePathElements,
-        Map<String, List<String>> columnPaths ) {
-
+public record DiscoveredTable(String tableName, List<ExportedColumn> columns, DiscoveredTableBinding binding ) {
+    public DiscoveredTable {
+        columns = columns == null ? List.of() : List.copyOf( columns );
+    }
 }

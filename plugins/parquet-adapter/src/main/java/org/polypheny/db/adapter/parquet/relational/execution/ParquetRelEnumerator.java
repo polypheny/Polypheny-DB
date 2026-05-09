@@ -16,13 +16,13 @@
 
 package org.polypheny.db.adapter.parquet.relational.execution;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.parquet.example.data.Group;
 import org.polypheny.db.adapter.parquet.shared.execution.AbstractParquetEnumerator;
 import org.polypheny.db.adapter.parquet.shared.filter.FiltersContainer;
+import org.polypheny.db.adapter.parquet.shared.filter.ParquetGroupFilterEvaluator;
+import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceReader;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Source;
 
 /**
  * Relational runtime enumerator.
@@ -30,13 +30,14 @@ import org.polypheny.db.util.Source;
  */
 public class ParquetRelEnumerator extends AbstractParquetEnumerator implements Enumerator<PolyValue[]> {
 
-    public ParquetRelEnumerator( Source source, AtomicBoolean cancelFlag, int[] fields ) {
-        super( source, cancelFlag, fields, FiltersContainer.empty, new ParquetRelValueExtractor() );
+
+    public ParquetRelEnumerator( ParquetSourceReader reader, FiltersContainer filtersContainer ) {
+        this( reader, filtersContainer, true );
     }
 
 
-    public ParquetRelEnumerator( Source source, AtomicBoolean cancelFlag, int[] fields, FiltersContainer filtersContainer ) {
-        super( source, cancelFlag, fields, filtersContainer, new ParquetRelValueExtractor() );
+    public ParquetRelEnumerator( ParquetSourceReader reader, FiltersContainer filtersContainer, boolean readerOwner ) {
+        super( reader, filtersContainer, new ParquetGroupFilterEvaluator( reader.getProjectionSchema(), new ParquetRelValueExtractor() ), readerOwner );
     }
 
 
@@ -45,7 +46,7 @@ public class ParquetRelEnumerator extends AbstractParquetEnumerator implements E
         PolyValue[] row = new PolyValue[projectionSchema.getFieldCount()];
         for ( int readIndex = 0; readIndex < projectionSchema.getFieldCount(); readIndex++ ) {
             var type = projectionSchema.getType( readIndex );
-            row[readIndex] = valueExtractor.extractValue( group, readIndex, type );
+            row[readIndex] = valueExtractor().extractValue( group, readIndex, type );
         }
         return row;
     }

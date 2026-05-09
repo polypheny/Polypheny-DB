@@ -16,9 +16,12 @@
 
 package org.polypheny.db.adapter.parquet.relational;
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.pf4j.Extension;
@@ -29,25 +32,38 @@ import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.adapter.parquet.relational.schema.DiscoveredTableBinding;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetNormalizedSchema;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSchemaMode;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSchemaNormalizer;
-import org.polypheny.db.adapter.parquet.relational.schema.DiscoveredTableBinding;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetTableBinding;
+import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelScan;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
-import org.polypheny.db.adapter.parquet.shared.io.ParquetUrlResolver;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.rules.FilterSetOpTransposeRule;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartitionGroup;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.logistic.PartitionType;
+import org.polypheny.db.catalog.logistic.PlacementType;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.tools.AlgBuilder;
 
 /**
  * Relational adapter implementation.
@@ -87,6 +103,15 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
 
 
     @Override
+    public AlgNode getRelScan( long allocId, AlgBuilder builder ) {
+        // this rule is required to push the filters into the ParquetRelScan.
+        builder.getCluster().getPlanner().addRuleDuringRuntime( FilterSetOpTransposeRule.INSTANCE );
+        ParquetRelScan.registerRules( builder.getCluster().getPlanner() );
+        return super.getRelScan( allocId, builder );
+    }
+
+
+    @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         ParquetSchemaMode activeMode = schemaMode == null ? getConfiguredSchemaMode() : schemaMode;
         if ( activeMode == ParquetSchemaMode.NORMALIZED ) {
@@ -107,6 +132,12 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
                 logical.pkIds, allocation );
 
         ParquetTableBinding binding = getDiscoveredTableBinding( logical.table.name, table );
+        Optional<String> partitionColumn = firstPolyphenyPartitionColumn( binding );
+        // check if partitions exist
+        if ( partitionColumn.isPresent() && binding.parentTableName() == null ) {
+            return createPartitionedTable( logical, allocation, table, binding, partitionColumn.get() );
+        }
+
         registerParquetBinding( table.id, binding );
         var physical = currentNamespace.createParquetTable( table.id, table, binding, this );
         adapterCatalog.replacePhysical( physical );
@@ -187,7 +218,7 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
         }
         if ( updatedSettings.contains( SCHEMA_MODE_SETTING ) ) {
             schemaMode = getConfiguredSchemaMode();
-            clearExportedColumnsCache();
+            clearTablesCache();
             clearNormalizedExportCache();
         }
     }
@@ -210,6 +241,7 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
 
     /**
      * converts DiscoveredTableBinding into ParquetTableBinding
+     *
      * @param tableName - generated table name
      * @param table - physical table
      * @return ParquetTableBinding - column bindings are stored by physical column id
@@ -234,7 +266,7 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
             return createFlatTableBinding( tableName, table );
         }
         // Convert discovered bindings to final ParquetTableBinding, where column bindings are stored by physical column id
-        return ParquetTableBinding.createTableBindingFromColumnPaths( binding.sourceUrl(), binding.parentTableName(), binding.sourcePathElements(), table, binding.columnPaths() );
+        return ParquetTableBinding.createTableBindingFromColumnPaths( binding.sourceFiles(), binding.parentTableName(), binding.sourcePathElements(), table, binding.columnPaths() );
     }
 
 
@@ -242,6 +274,7 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
      * Creates a ParquetTableBinding for a flat-mode table.
      * Flat-mode tables do not come from ParquetSchemaNormalizer, so they do not have a DiscoveredTableBinding.
      * But we still want a persisted ParquetTableBinding for them so restore/scanning uses the same binding infrastructure.
+     *
      * @param tableName - generated table name
      * @param table - physical table
      * @return - ParquetTableBinding
@@ -254,14 +287,148 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
         }
 
         try {
-            Map<String, List<String>> columnPaths = new LinkedHashMap<>();
-            // Build column path map like order_id -> ["order_id"]
-            exportedColumns.forEach( column -> columnPaths.put( column.name(), List.of( column.physicalColumnName() ) ) );
-            String sourceUrl = ParquetUrlResolver.resolveFile( parquetDir, exportedColumns.get( 0 ).physicalSchemaName() ).toString();
-            return ParquetTableBinding.createTableBindingFromColumnPaths( sourceUrl, null, List.of(), table, columnPaths );
+            DiscoveredTableBinding binding = getTableBinding( tableName ).orElseThrow();
+            return ParquetTableBinding.createTableBindingFromColumnPaths( binding.sourceFiles(), null, List.of(), table, binding.columnPaths() );
         } catch ( Exception e ) {
             throw new GenericRuntimeException( e );
         }
+    }
+
+
+    private Optional<String> firstPolyphenyPartitionColumn( ParquetTableBinding binding ) {
+        return binding.sourceFiles().stream()
+                .flatMap( sourceFile -> sourceFile.partitionValues().keySet().stream() )
+                .distinct()
+                .filter( partitionColumn -> binding.columnsByColumnId().values().stream().anyMatch( column -> column.columnName().equals( partitionColumn ) ) )
+                .findFirst();
+    }
+
+
+    /**
+     * Creates physical entity (relational table) and adds top level partition to catalog.
+     *
+     * @param logical logical table
+     * @param originalAllocation allocation table
+     * @param originalPhysical physical table
+     * @param binding table binding
+     * @param partitionColumn partition column
+     * @return list of tables if parquet file contains nested data.
+     */
+    private List<PhysicalEntity> createPartitionedTable(
+            LogicalTableWrapper logical,
+            AllocationTableWrapper originalAllocation,
+            PhysicalTable originalPhysical,
+            ParquetTableBinding binding,
+            String partitionColumn ) {
+        // group files by top level partitions
+        Map<String, List<ParquetSourceFile>> filesByPartitionValue = binding.sourceFiles().stream()
+                .filter( sourceFile -> sourceFile.partitionValues().containsKey( partitionColumn ) )
+                .collect( Collectors.groupingBy(
+                        sourceFile -> sourceFile.partitionValues().get( partitionColumn ),
+                        LinkedHashMap::new,
+                        Collectors.toList() ) );
+
+        // one partition -> one physical table
+        if ( filesByPartitionValue.size() <= 1 ) {
+            registerParquetBinding( originalPhysical.id, binding );
+            var physical = currentNamespace.createParquetTable( originalPhysical.id, originalPhysical, binding, this );
+            adapterCatalog.replacePhysical( physical );
+            return List.of( physical );
+        }
+
+        Catalog catalog = Catalog.getInstance();
+        AllocationRelationalCatalog allocationCatalog = catalog.getAllocRel( logical.table.namespaceId );
+
+        // Delete all temporary created allocations by polypheny first
+        allocationCatalog.deleteAllocation( originalAllocation.table.id );
+        allocationCatalog.deletePartition( originalAllocation.table.partitionId );
+        Catalog.snapshot()
+                .alloc()
+                .getPartitionProperty( logical.table.id )
+                .ifPresent( property -> property.partitionGroupIds.forEach( allocationCatalog::deletePartitionGroup ) );
+
+        adapterCatalog.removeAllocAndPhysical( originalAllocation.table.id );
+
+
+        LogicalColumn partitionLogicalColumn = logical.columns.stream()
+                .filter( column -> column.name.equals( partitionColumn ) )
+                .findFirst()
+                .orElseThrow( () -> new GenericRuntimeException( "Missing parquet partition column in logical table: %s", partitionColumn ) );
+
+        List<PhysicalEntity> physicals = new ArrayList<>();
+        List<Long> partitionGroupIds = new ArrayList<>();
+        List<Long> partitionIds = new ArrayList<>();
+
+        // Add partitions on Polypheny level
+
+        filesByPartitionValue.entrySet().stream()
+                .sorted( Map.Entry.comparingByKey() )
+                .forEach( entry -> {
+                    String partitionName = partitionName( partitionColumn, entry.getKey() );
+                    AllocationPartitionGroup group = allocationCatalog.addPartitionGroup(
+                            logical.table.id,
+                            partitionName,
+                            logical.table.namespaceId,
+                            PartitionType.LIST,
+                            1,
+                            false );
+                    AllocationPartition partition = allocationCatalog.addPartition(
+                            logical.table.id,
+                            logical.table.namespaceId,
+                            group.id,
+                            partitionName,
+                            false,
+                            PlacementType.AUTOMATIC,
+                            DataPlacementRole.REFRESHABLE,
+                            List.of( entry.getKey() ),
+                            PartitionType.LIST );
+                    AllocationTable partitionAllocation = allocationCatalog.addAllocation(
+                            adapterId,
+                            originalAllocation.table.placementId,
+                            partition.id,
+                            logical.table.id );
+                    PhysicalTable partitionPhysical = adapterCatalog.createTable(
+                            logical.table.getNamespaceName(),
+                            logical.table.name,
+                            logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
+                            logical.table,
+                            logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
+                            logical.pkIds,
+                            AllocationTableWrapper.of( partitionAllocation, originalAllocation.columns, originalAllocation.physicalSchema ) );
+                    ParquetTableBinding partitionBinding = new ParquetTableBinding(
+                            entry.getValue(),
+                            binding.parentTableName(),
+                            binding.sourcePathElements(),
+                            binding.columnsByColumnId() );
+                    registerParquetBinding( partitionPhysical.id, partitionBinding );
+                    var physical = currentNamespace.createParquetTable( partitionPhysical.id, partitionPhysical, partitionBinding, this );
+                    adapterCatalog.replacePhysical( physical );
+                    physicals.add( physical );
+                    partitionGroupIds.add( group.id );
+                    partitionIds.add( partition.id );
+                } );
+
+        allocationCatalog.addPartitionProperty(
+                logical.table.id,
+                PartitionProperty.builder()
+                        .entityId( logical.table.id )
+                        .partitionType( PartitionType.LIST )
+                        .isPartitioned( true )
+                        .partitionColumnId( partitionLogicalColumn.id )
+                        .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ) )
+                        .partitionIds( ImmutableList.copyOf( partitionIds ) )
+                        .numPartitionGroups( partitionGroupIds.size() )
+                        .numPartitions( partitionIds.size() )
+                        .reliesOnPeriodicChecks( false )
+                        .build() );
+        catalog.updateSnapshot();
+        return physicals;
+    }
+
+
+    private String partitionName( String columnName, String value ) {
+        String normalized = (columnName + "_" + value).toLowerCase().replaceAll( "[^a-z0-9_]+", "_" );
+        return normalized.isBlank() ? "partition" : normalized;
     }
 
 
@@ -272,6 +439,7 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
 
     /**
      * get normalized schema from ParquetSchemaNormalizer
+     *
      * @return ParquetNormalizedSchema
      */
     private ParquetNormalizedSchema getNormalizedSchema() {
@@ -279,12 +447,7 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
             return normalizedSchema;
         }
 
-        normalizedSchema = new ParquetSchemaNormalizer(
-                parquetDir,
-                getClass().getClassLoader(),
-                parquetTypeConverter,
-                getUniqueName() ).normalize();
-
+        normalizedSchema = new ParquetSchemaNormalizer( parquetDir, getUniqueName() ).normalize();
         return normalizedSchema;
     }
 

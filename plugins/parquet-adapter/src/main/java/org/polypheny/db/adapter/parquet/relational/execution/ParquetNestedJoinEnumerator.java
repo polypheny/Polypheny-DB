@@ -18,7 +18,6 @@ package org.polypheny.db.adapter.parquet.relational.execution;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.parquet.example.data.Group;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetTableBinding;
@@ -26,9 +25,10 @@ import org.polypheny.db.adapter.parquet.shared.execution.CombinedGroup;
 import org.polypheny.db.adapter.parquet.shared.execution.VirtualGroup;
 import org.polypheny.db.adapter.parquet.shared.filter.JoinFiltersContainer;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
+import org.polypheny.db.adapter.parquet.shared.filter.ParquetNestedJoinFilterEvaluator;
+import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceReader;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Source;
 
 /**
  * Executes parent/child joins for normalized nested Parquet tables in one pass over
@@ -47,17 +47,13 @@ public class ParquetNestedJoinEnumerator extends ParquetNestedRepeatedRelEnumera
     private final List<String> childPathFromParent;
 
 
-    public ParquetNestedJoinEnumerator(
-            Source source,
-            AtomicBoolean cancelFlag,
-            ParquetTableBinding parentBinding,
-            ParquetTableBinding childBinding,
-            List<ParquetColumnBinding> parentColumns,
-            List<ParquetColumnBinding> childColumns,
-            JoinFiltersContainer filterContainer,
-            boolean leftIsParent,
-            boolean emitUnmatchedParents ) {
-        super( source, cancelFlag, parentBinding, parentColumns, filterContainer, true );
+    public ParquetNestedJoinEnumerator( ParquetSourceReader reader, ParquetTableBinding parentBinding, ParquetTableBinding childBinding, List<ParquetColumnBinding> parentColumns, List<ParquetColumnBinding> childColumns, JoinFiltersContainer filterContainer, boolean leftIsParent, boolean emitUnmatchedParents ) {
+        this( reader, parentBinding, childBinding, parentColumns, childColumns, filterContainer, leftIsParent, emitUnmatchedParents, true );
+    }
+
+
+    public ParquetNestedJoinEnumerator( ParquetSourceReader reader, ParquetTableBinding parentBinding, ParquetTableBinding childBinding, List<ParquetColumnBinding> parentColumns, List<ParquetColumnBinding> childColumns, JoinFiltersContainer filterContainer, boolean leftIsParent, boolean emitUnmatchedParents, boolean readerOwner ) {
+        super( reader, parentBinding, parentColumns, filterContainer, new ParquetNestedJoinFilterEvaluator( reader.getProjectionSchema(), new ParquetPathValueExtractor(), parentBinding, parentColumns, leftIsParent ), true, readerOwner );
         this.parentBinding = parentBinding;
         this.childBinding = childBinding;
         this.parentColumns = List.copyOf( parentColumns );
@@ -112,7 +108,7 @@ public class ParquetNestedJoinEnumerator extends ParquetNestedRepeatedRelEnumera
                 row[i] = PolyNull.NULL;
                 continue;
             }
-            row[i] = extractValueByColumnRole(
+            row[i] = pathValueExtractor().extractValue(
                     combinedGroup.groupForField( i, leftIsParent ),
                     combinedGroup.bindingForField( i, leftIsParent ),
                     combinedGroup.tablePathForField( i, leftIsParent )
@@ -129,54 +125,20 @@ public class ParquetNestedJoinEnumerator extends ParquetNestedRepeatedRelEnumera
      * @param filter - ParquetAdapterFilter
      * @return an extracted value
      */
-    @Override
     protected PolyValue extractValue( Group group, ParquetAdapterFilter filter ) {
         if ( group instanceof CombinedGroup combinedGroup ) {
-            return extractValueByColumnRole(
+            return pathValueExtractor().extractValue(
                     combinedGroup.groupForField( filter.columnIndex(), leftIsParent ),
                     combinedGroup.bindingForField( filter.columnIndex(), leftIsParent ),
                     combinedGroup.tablePathForField( filter.columnIndex(), leftIsParent )
             );
         }
         // If this is not a combined group then the filtering is being done on parent table only.
-        return extractValueByColumnRole(
+        return pathValueExtractor().extractValue(
                 (VirtualGroup) group,
                 parentColumns.get( filter.columnIndex() ),
                 parentBinding.sourcePathElements()
         );
-    }
-
-
-    /**
-     * Checks if a filter is valid and can be applied on the group.
-     *
-     * @param group a group to check
-     * @param filter a filter to validate
-     * @return true if the filter is valid and false otherwise.
-     */
-    @Override
-    protected boolean canApplyFilter( Group group, ParquetAdapterFilter filter ) {
-        if ( filter.polyValue() == null || filter.columnIndex() < 0 ) {
-            return false;
-        }
-        if ( group instanceof CombinedGroup combinedGroup ) {
-            return filter.columnIndex() < combinedGroup.fieldCount();
-        }
-        return filter.columnIndex() < parentColumns.size();
-    }
-
-
-    /**
-     * Checks if the group contains a value.
-     *
-     * @param group a group to check.
-     * @param filter a filter containing column index which value is checked
-     * @return true if the group has a value at the filter column index and false otherwise.
-     */
-    @Override
-    protected boolean filterHasValue( Group group, ParquetAdapterFilter filter ) {
-        CombinedGroup combinedGroup = (CombinedGroup) group;
-        return !combinedGroup.isNullField( filter.columnIndex(), leftIsParent );
     }
 
 
@@ -192,7 +154,12 @@ public class ParquetNestedJoinEnumerator extends ParquetNestedRepeatedRelEnumera
 
 
     private boolean matchesFilters( Group group, List<ParquetAdapterFilter> filters ) {
-        return filters.stream().allMatch( filter -> matches( group, filter ) );
+        return filters.stream().allMatch( filter -> filterEvaluator.matches( group, filter ) );
+    }
+
+
+    private ParquetPathValueExtractor pathValueExtractor() {
+        return (ParquetPathValueExtractor) valueExtractor();
     }
 
 }

@@ -16,15 +16,15 @@
 
 package org.polypheny.db.adapter.parquet.document.execution;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.parquet.example.data.Group;
 import org.polypheny.db.adapter.parquet.shared.execution.AbstractParquetEnumerator;
 import org.polypheny.db.adapter.parquet.shared.filter.FiltersContainer;
+import org.polypheny.db.adapter.parquet.shared.filter.ParquetGroupFilterEvaluator;
+import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceReader;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.util.Source;
 
 /**
  * Document enumerator.
@@ -32,14 +32,18 @@ import org.polypheny.db.util.Source;
  */
 public class ParquetDocEnumerator extends AbstractParquetEnumerator implements Enumerator<PolyValue[]> {
 
+    private static final ParquetDocValueExtractor documentValueExtractor = new ParquetDocValueExtractor();
     private final String documentPrefix;
-    private final ParquetDocValueExtractor documentValueExtractor;
 
 
-    public ParquetDocEnumerator( Source source, AtomicBoolean cancelFlag, FiltersContainer filtersContainer ) {
-        super( source, cancelFlag, null, filtersContainer, new ParquetDocValueExtractor() );
-        this.documentValueExtractor = (ParquetDocValueExtractor) valueExtractor;
-        this.documentPrefix = source.path();
+    public ParquetDocEnumerator( ParquetSourceReader reader, FiltersContainer filtersContainer ) {
+        this( reader, filtersContainer, true );
+    }
+
+
+    public ParquetDocEnumerator( ParquetSourceReader reader, FiltersContainer filtersContainer, boolean readerOwner ) {
+        super( reader, filtersContainer, new ParquetGroupFilterEvaluator( reader.getProjectionSchema(), documentValueExtractor ), readerOwner );
+        this.documentPrefix = reader.getSource().path();
     }
 
 
