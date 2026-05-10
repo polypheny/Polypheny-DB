@@ -54,6 +54,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.transaction.PolyXid;
@@ -529,6 +530,14 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     public abstract String getDefaultPhysicalSchemaName();
+
+
+    @Override
+    public List<String> getActiveFeatureNames() {
+        return dialect.getSupportedFeatures().stream()
+                .map( SqlDbFeature::featureName )
+                .collect( Collectors.toList() );
+    }
 
 
     @SuppressWarnings("unused")

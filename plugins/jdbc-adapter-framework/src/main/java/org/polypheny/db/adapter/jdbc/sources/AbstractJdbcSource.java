@@ -54,6 +54,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PolyXid;
@@ -436,5 +437,13 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
      * @param typeModifier     value of {@code pg_attribute.atttypmod} if > 0, else null
      */
     public record CollectionMetadata( int arrayDimensions, @Nullable Integer typeModifier ) {}
+
+
+    @Override
+    public List<String> getActiveFeatureNames() {
+        return dialect.getSupportedFeatures().stream()
+                .map( SqlDbFeature::featureName )
+                .collect( Collectors.toList() );
+    }
 
 }

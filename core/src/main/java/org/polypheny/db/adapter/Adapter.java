@@ -312,4 +312,8 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
     }
 
 
+    public List<String> getActiveFeatureNames() {
+        return List.of();
+    }
+
 }

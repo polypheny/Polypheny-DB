@@ -21,9 +21,11 @@ import com.google.common.base.Preconditions;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import lombok.NonNull;
 import lombok.Value;
@@ -98,7 +100,7 @@ public class SqlDialect {
     AlgDataTypeSystem dataTypeSystem;
 
     @NonNull
-    protected final java.util.Set<SqlDbFeature> supportedFeatures = new java.util.HashSet<>();
+    protected Set<SqlDbFeature> supportedFeatures = new java.util.HashSet<>();
 
 
     /**
@@ -728,6 +730,11 @@ public class SqlDialect {
 
     public void addSupportedFeatures( java.util.Set<SqlDbFeature> features ) {
         supportedFeatures.addAll( features );
+    }
+
+
+    public Set<SqlDbFeature> getSupportedFeatures() {
+        return Collections.unmodifiableSet( supportedFeatures );
     }
 
 
