@@ -506,3 +506,29 @@ Failure reasons:
 
 12, 13, 14, 23: row-type mismatch errors.
 19, 29, 30: Entity not found errors.
+
+```sql
+SELECT *
+FROM pon__orders__items i
+FULL JOIN pon__orders__items__discounts d
+ON d.__polypheny_parent_row_id = i.__polypheny_row_id
+WHERE i.quantity = 3;
+```
+
+
+NOT working:
+
+```sql
+SELECT count(*)
+FROM pon__orders__items i
+FULL JOIN pon__orders__items__discounts d
+ON d.__polypheny_parent_row_id = i.__polypheny_row_id
+WHERE i.quantity = 3;
+```
+```sql
+SELECT i.price
+FROM pon__orders__items i
+FULL JOIN pon__orders__items__discounts d
+ON d.__polypheny_parent_row_id = i.__polypheny_row_id
+WHERE i.quantity = 3;
+```

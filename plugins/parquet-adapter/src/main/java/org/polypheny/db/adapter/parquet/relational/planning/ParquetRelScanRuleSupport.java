@@ -98,7 +98,7 @@ public final class ParquetRelScanRuleSupport {
             return directScan;
         }
         if ( alg instanceof Calc calc ) {
-            ParquetRelScan inputScan = findProjectedRelScanMatchingRowType( calc.getInput(), calc, visited );
+            ParquetRelScan inputScan = findProjectedRelScanMatchingRowType( calc.getInput(), calc.getInput(), visited );
             if ( inputScan == null ) {
                 return null;
             }
@@ -109,7 +109,7 @@ public final class ParquetRelScanRuleSupport {
             return new ParquetRelScan( inputScan.getCluster(), inputScan.getEntity(), projectedFields, inputScan.getFilters() );
         }
         if ( alg instanceof Project project ) {
-            ParquetRelScan inputScan = findProjectedRelScanMatchingRowType( project.getInput(), project, visited );
+            ParquetRelScan inputScan = findProjectedRelScanMatchingRowType( project.getInput(), project.getInput(), visited );
             if ( inputScan == null ) {
                 return null;
             }

@@ -1,2 +1,3 @@
 - load statistics when adapter added ? workaround can be recalculated from monitoring -> statistics
 - add adapter - check all options in settings lookup
+- support hierarchical partitions
