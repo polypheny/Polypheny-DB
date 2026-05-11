@@ -11,19 +11,25 @@ The purpose is to avoid reading parent and child tables independently and joinin
 
 This change supports adapter-level joins only for normalized Parquet nested tables that belong to the same Parquet source. It is not a general Parquet join implementation and it is not a general self-join on the same physical table.
 
-The supported case is a parent-child join where:
+The supported case is a direct parent-child join where:
 
 - Both tables have the same `sourceUrl`.
-- One table is an ancestor of the other table in the Parquet path hierarchy.
-- The child table binding has `parentTableName()` equal to the parent table name.
-- The parent table path is a prefix of the child table path.
+- One table is the direct parent of the other table in the Parquet path hierarchy.
+- The child table path is exactly one level below the parent table path.
 - The join condition is a single equi-join.
 - The parent join key is the generated `PRIMARY_KEY` column.
 - The child join key is the generated `PARENT_KEY` column.
 
-The parent is often the root table, but it does not have to be root. A nested table can also be the parent if its path is an ancestor of the child path. At runtime the adapter reads from the parent source, resolves the parent path first, then resolves the child path below each parent row.
+The parent is often the root table, but it does not have to be root. A nested table can also be the parent when the child table is directly below it. At runtime the adapter reads from the parent source, resolves the parent path first, then resolves the child path below each parent row.
 
-Supported joins are checked in `ParquetRelJoin.supportedDirection(...)`. The join must be an equi-join with exactly one key on each side, both tables must come from the same source URL, and the keys must match the generated role mapping: parent `PRIMARY_KEY` to child `PARENT_KEY`. The child table path must also be below the parent path. Join types accepted by the rule are `INNER`, `LEFT`, `RIGHT`, and `FULL`.
+Supported joins are checked in `ParquetRelJoin.supportedDirection(...)`. The join must be an equi-join with exactly one key on each side, both tables must come from the same source URL, and the keys must match the generated role mapping: parent `PRIMARY_KEY` to child `PARENT_KEY`. The child table path must also be directly below the parent path. Join types accepted by the rule are `INNER`, `LEFT`, `RIGHT`, and `FULL`.
+
+The planner rules can also recognize supported joins when simple row-shaping nodes are between the join and the scan:
+
+- projection-only `Calc` nodes are allowed when they only select or reorder fields
+- a literal `EnumerableLimit` on the parent input is allowed through a dedicated limit-join rule
+
+These nodes are not general child execution. They are accepted only when the adapter can preserve the same meaning inside `ParquetRelJoin`.
 
 ## Unsupported Joins
 
@@ -45,6 +51,8 @@ Unsupported joins:
 - Join types other than `INNER`, `LEFT`, `RIGHT`, and `FULL`.
 - General joins on arbitrary user columns.
 - Independent child-side outer join scanning outside the parent path.
+- Input limits on the child side of the join.
+- Dynamic or non-literal input limits before the join.
 
 
 ### Flow
@@ -54,23 +62,31 @@ Unsupported joins:
   - `ParquetRelScanRule`
   - `ParquetRelJoinRule`
   - `ParquetEnumerableJoinRule`
+  - `ParquetEnumerableLimitJoinRule`
   - `ParquetEnumerableFilterJoinRule`
   - `ParquetEnumerableCalcJoinRule`
   
 
-- There are two paths to create the adapter join. 
+- There are three paths to create the adapter join. 
 
 
 - `ParquetRelJoinRule` handles a logical join path: 
   - it receives a `LogicalRelJoin`
   - tries to convert both inputs to enumerable Parquet scans
-  - extracts `ParquetRelScan` from the result
+  - resolves `ParquetRelScan` from the converted inputs, including projection-only calc wrappers
   - validates the parent-child direction
   - creates `ParquetRelJoin`. 
   
 
 - `ParquetEnumerableJoinRule` handles the later physical path: 
-  - if an `EnumerableJoin` already has two `ParquetRelScan` inputs, it performs the same support check and replaces the enumerable join with `ParquetRelJoin`.
+  - if an `EnumerableJoin` has inputs that can be resolved to projected Parquet scans, it performs the same support check and replaces the enumerable join with `ParquetRelJoin`.
+
+
+- `ParquetEnumerableLimitJoinRule` handles the physical path where the planner placed a literal `EnumerableLimit` on the parent side before the join:
+  - it resolves the limited parent input and the other input to Parquet scans
+  - it validates that the limit is only on the parent side
+  - it stores the parent limit in `ParquetRelJoin`
+  - it rejects child-side limits and dynamic limits, so those plans stay on the normal Polypheny join path.
 
 
 - After `ParquetRelJoin` exists, filters above it can be pushed into the adapter join. 
@@ -80,16 +96,16 @@ Unsupported joins:
 - `ParquetEnumerableCalcJoinRule` does the same for `EnumerableCalc(ParquetRelJoin)` when the calc contains a condition; it pushes the condition into the join and keeps a projection-only calc above the filtered join.
 
 
-- At runtime, `ParquetRelJoin.implement(...)` generates enumerable code that calls `leftTable.nestedJoin(dataContext, rightTable, leftFields, rightFields, leftIsParent, emitUnmatchedParents, filters)`. `emitUnmatchedParents` is derived from join type and direction: parent-side outer rows are emitted for parent-preserving `LEFT` or `RIGHT` joins, and for `FULL`. This runtime path preserves unmatched parent rows; it does not perform an independent child-side scan outside the parent path.
+- At runtime, `ParquetRelJoin.implement(...)` generates enumerable code that calls `leftTable.nestedJoin(dataContext, rightTable, leftFields, rightFields, leftIsParent, emitUnmatchedParents, parentOffset, parentFetch, filters)`. `emitUnmatchedParents` is derived from join type and direction: parent-side outer rows are emitted for parent-preserving `LEFT` or `RIGHT` joins, and for `FULL`. This runtime path preserves unmatched parent rows; it does not perform an independent child-side scan outside the parent path.
 
 
-- `ParquetRelTable.nestedJoin(...)` is the runtime entry point. It chooses which input is parent and which input is child based on `leftIsParent`, resolves dynamic parameters, maps joined filter column indexes to the correct left or right table column binding, and calls `JoinFiltersSplitter`.
+- `ParquetRelTable.nestedJoin(...)` is the runtime entry point. It chooses which input is parent and which input is child based on `leftIsParent`, resolves dynamic parameters, maps joined filter column indexes to the correct left or right table column binding, creates `ParentLimitState` for parent-side input limits, and calls `JoinFiltersSplitter`.
 
 
 - `JoinFiltersSplitter` classifies filters by the fields they reference. Parent-only filters that can be represented by Parquet paths may become reader filters. Parent-only filters that cannot be reader filters are kept as parent adapter filters. Child-only filters are applied after child expansion. Filters spanning both sides, invalid indexes, or mixed logical conditions become adapter-level joined-row filters.
 
 
-- `ParquetNestedJoinEnumerator` performs the actual read. It opens the parent source, walks the parent path using inherited nested resolution from `ParquetNestedRepeatedRelEnumerator`, applies parent filters, resolves child groups below each accepted parent, and creates `CombinedGroup` for each joined parent-child row. If a parent has no child and the join type requires preserving unmatched parents, it creates a `CombinedGroup` with a null child side.
+- `ParquetNestedJoinEnumerator` performs the actual read. It opens the parent source, walks the parent path using inherited nested resolution from `ParquetNestedRepeatedRelEnumerator`, applies parent-side input limit state when present, applies parent filters, resolves child groups below each accepted parent, and creates `CombinedGroup` for each joined parent-child row. If a parent has no child and the join type requires preserving unmatched parents, it creates a `CombinedGroup` with a null child side.
 
 
 - `CombinedGroup` is the bridge between nested Parquet groups and joined row indexes. When the enumerator extracts output values or evaluates filters, the combined group maps each joined field index to the correct parent or child `VirtualGroup`, binding, and table path. This lets the same extraction logic handle both left-parent and right-parent join directions.
@@ -103,27 +119,42 @@ Unsupported joins:
 ### ParquetRelScan
 `plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/planning/ParquetRelScan.java`
 
-Registers the new join rules in addition to the scan rule. Also exposes scan fields via Lombok `@Getter`, which is needed by join validation to map join keys back to physical table columns.
+Registers the new join rules in addition to the scan rule, including `ParquetEnumerableLimitJoinRule`. Also exposes scan fields via Lombok `@Getter`, which is needed by join validation to map join keys back to physical table columns.
+
+### ParquetRelScanRuleSupport
+`plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/planning/ParquetRelScanRuleSupport.java`
+
+Shared helper used by scan and join planner rules. It finds direct Parquet scans, looks inside planner subsets, and resolves projection-only `Calc` nodes by mapping visible fields back to physical Parquet table columns.
 
 ### ParquetRelJoinRule
 `plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/planning/ParquetRelJoinRule.java`
 
-New file. Converts a `LogicalRelJoin` into `ParquetRelJoin` when both sides can be resolved to `ParquetRelScan` and `ParquetRelJoin.supportedDirection(...)` accepts the join.
+New file. Converts a `LogicalRelJoin` into `ParquetRelJoin` when both sides can be resolved to projected Parquet scans and `ParquetRelJoin.supportedDirection(...)` accepts the join.
 
 ### ParquetEnumerableJoinRule
 `plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/planning/ParquetEnumerableJoinRule.java`
 
-New file. Rewrites an `EnumerableJoin` over two `ParquetRelScan` inputs into `ParquetRelJoin` when the join is a supported nested parent-child join. This catches plans where the join has already been converted to enumerable form.
+New file. Rewrites an `EnumerableJoin` over inputs that can be resolved to projected Parquet scans into `ParquetRelJoin` when the join is a supported nested parent-child join. This catches plans where the join has already been converted to enumerable form.
+
+### ParquetEnumerableLimitJoinRule
+`plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/planning/ParquetEnumerableLimitJoinRule.java`
+
+New file. Handles plans where the planner places a literal `EnumerableLimit` on the parent input before a supported parent-child join. It converts only parent-side input limits and leaves child-side or dynamic input limits to normal Polypheny execution.
 
 ### ParquetRelJoin
 `plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/planning/ParquetRelJoin.java`
 
-New file. Physical adapter-level join node. It provides supported join validation through `supportedDirection(...)`, stores table metadata, projected fields, join direction, join type, and pushed filters, and generates runtime code that calls `ParquetRelTable.nestedJoin(...)`.
+New file. Physical adapter-level join node. It provides supported join validation through `supportedDirection(...)`, stores table metadata, projected fields, join direction, join type, optional parent-side input limit, and pushed filters, and generates runtime code that calls `ParquetRelTable.nestedJoin(...)`.
 
 ### JoinDirection
 `plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/planning/JoinDirection.java`
 
 New file. Small value record used by join support checks to remember whether the left input is the parent table. It is returned by `ParquetRelJoin.supportedDirection(...)`.
+
+### JoinInputLimit
+`plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/planning/JoinInputLimit.java`
+
+New file. Small value record used by join planning to store a literal parent-side input `OFFSET` and `FETCH` before the values are passed to runtime.
 
 ### ParquetEnumerableFilterJoinRule
 `plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/planning/ParquetEnumerableFilterJoinRule.java`
@@ -138,12 +169,17 @@ New file. Pushes the filter part of an `EnumerableCalc` above a `ParquetRelJoin`
 ### ParquetRelTable
 `plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/schema/ParquetRelTable.java`
 
-Adds adapter-level nested join execution through `nestedJoin(...)`. Also exposes binding/source metadata for rule validation, resolves filters with table-specific column bindings, uses `FiltersContainer` for scans, and renames selected binding helper logic to projected binding logic.
+Adds adapter-level nested join execution through `nestedJoin(...)`. Also exposes binding/source metadata for rule validation, resolves filters with table-specific column bindings, creates `ParentLimitState` for parent-side input limits, uses `FiltersContainer` for scans, and renames selected binding helper logic to projected binding logic.
 
 ### ParquetNestedJoinEnumerator
 `plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/execution/ParquetNestedJoinEnumerator.java`
 
-New file. Executes supported parent-child joins inside the Parquet adapter. It is created by `ParquetRelTable.nestedJoin()` and reads parent and child rows from the same Parquet source, combines them into `CombinedGroup` rows, applies parent and child filters, and emits null child fields for supported outer join cases.
+New file. Executes supported parent-child joins inside the Parquet adapter. It is created by `ParquetRelTable.nestedJoin()` and reads parent and child rows from the same Parquet source, applies shared parent-side limit state when present, combines rows into `CombinedGroup`, applies parent and child filters, and emits null child fields for supported outer join cases.
+
+### ParentLimitState
+`plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/execution/ParentLimitState.java`
+
+New file. Shared runtime state for parent-side input limits. It is shared across per-file join enumerators so `OFFSET` and `FETCH` are applied once across the whole parent input, not reset for each Parquet file.
 
 ### CombinedGroup
 `plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/shared/execution/CombinedGroup.java`
@@ -207,9 +243,13 @@ Refactoring. Use FiltersContainer.
 
 ## Examples
 
+### Join - root parent - direct child
+
 ![Schema display](images/parquet_rel_join.png)
 
-![Schema display](images/join.png)
+### Join - nested parent - direct child
+
+![Schema display](images/join_nested_parent_direct_child.png)
 
 ## Convention
 
@@ -264,4 +304,3 @@ Enumerable<PolyValue[]>
 ```
 
 and creates `ParquetNestedJoinEnumerator`, which yields the joined rows one by one.
-

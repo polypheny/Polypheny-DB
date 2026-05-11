@@ -18,14 +18,6 @@
 - Add tests for ancestor-descendant joins beyond direct parent-child joins when this join shape is supported.
 - Add fallback tests proving child-child joins and ancestor-descendant joins remain Polypheny-level joins until adapter-level support is implemented.
 
-## Filter Correctness
-
-- Review the split between reader filters and adapter filters.
-- Ensure filters pushed to the native Parquet reader are still validated at adapter level when native filtering may be incomplete or unsupported.
-- Verify logical filters (`AND`, `OR`, `NOT`) are split safely when some operands refer to parent fields, child fields, or both sides.
-- Verify dynamic parameters are resolved correctly for join filters on both left and right inputs.
-- Fix the flat relational filter regression where path-based resolved filters can reach `ParquetRelValueExtractor`, which does not support path extraction.
-
 ## Join Semantics
 
 - Clarify and test `FULL` join behavior for nested parent-child data.

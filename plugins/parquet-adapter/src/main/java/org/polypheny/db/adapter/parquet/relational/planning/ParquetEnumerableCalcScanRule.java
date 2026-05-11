@@ -61,9 +61,9 @@ public class ParquetEnumerableCalcScanRule extends ConverterRule {
             return null;
         }
 
-        ParquetRelScan scan = ParquetRelScanRuleSupport.findDirectRelScan( calc.getInput() );
+        ParquetRelScan scan = ParquetRelScanRuleSupport.findProjectedRelScan( calc.getInput() );
         if ( scan == null ) {
-            scan = ParquetRelScanRuleSupport.findDirectRelScan( convert( calc.getInput(), calc.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ) ) );
+            scan = ParquetRelScanRuleSupport.findProjectedRelScan( convert( calc.getInput(), calc.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ) ) );
         }
         if ( scan == null ) {
             return null;

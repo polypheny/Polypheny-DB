@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.parquet.relational.planning;
 
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.enumerable.EnumerableJoin;
 import org.polypheny.db.plan.AlgOptRule;
@@ -35,7 +36,7 @@ public class ParquetEnumerableJoinRule extends AlgOptRule {
 
     public ParquetEnumerableJoinRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                operand( EnumerableJoin.class, operand( ParquetRelScan.class, none() ), operand( ParquetRelScan.class, none() ) ),
+                operand( EnumerableJoin.class, operand( AlgNode.class, any() ), operand( AlgNode.class, any() ) ),
                 algBuilderFactory,
                 ParquetEnumerableJoinRule.class.getSimpleName() );
     }
@@ -44,12 +45,15 @@ public class ParquetEnumerableJoinRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         EnumerableJoin join = call.alg( 0 );
-        ParquetRelScan left = call.alg( 1 );
-        ParquetRelScan right = call.alg( 2 );
+        ParquetRelScan left = ParquetRelScanRuleSupport.findProjectedRelScan( call.alg( 1 ) );
+        ParquetRelScan right = ParquetRelScanRuleSupport.findProjectedRelScan( call.alg( 2 ) );
+        if ( left == null || right == null ) {
+            return;
+        }
         JoinDirection direction = supportedDirection( join, left, right );
         if ( direction == null ) {
             return;
         }
-        call.transformTo( ParquetRelJoin.create( left, right, join.getCondition(), join.getVariablesSet(), join.getJoinType(), direction.leftIsParent() ) );
+        call.transformTo( ParquetRelJoin.create( join.getLeft(), join.getRight(), left, right, join.getCondition(), join.getVariablesSet(), join.getJoinType(), direction.leftIsParent(), JoinInputLimit.NONE ) );
     }
 }

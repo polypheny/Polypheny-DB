@@ -24,7 +24,6 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 /**
@@ -47,32 +46,26 @@ public class ParquetRelJoinRule extends ConverterRule {
     }
 
 
+    /**
+     * Tries to turn a logical join into an adapter-level ParquetRelJoin
+     */
     @Override
     public AlgNode convert( AlgNode alg ) {
         LogicalRelJoin join = (LogicalRelJoin) alg;
-        ParquetRelScan left = findRelScan( convert( join.getLeft(), join.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) ) );
-        ParquetRelScan right = findRelScan( convert( join.getRight(), join.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) ) );
-        if ( left == null || right == null ) {
+        AlgNode leftOperand = convert( join.getLeft(), join.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+        AlgNode rightOperand = convert( join.getRight(), join.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+        ParquetRelScan leftScan = ParquetRelScanRuleSupport.findProjectedRelScan( leftOperand );
+        ParquetRelScan rightScan = ParquetRelScanRuleSupport.findProjectedRelScan( rightOperand );
+        if ( leftScan == null || rightScan == null ) {
             return null;
         }
 
-        JoinDirection direction = supportedDirection( join, left, right );
+        JoinDirection direction = supportedDirection( join, leftScan, rightScan );
         if ( direction == null ) {
             return null;
         }
 
-        return ParquetRelJoin.create( left, right, join.getCondition(), join.getVariablesSet(), join.getJoinType(), direction.leftIsParent() );
-    }
-
-
-    private ParquetRelScan findRelScan( AlgNode alg ) {
-        if ( alg instanceof ParquetRelScan relScan ) {
-            return relScan;
-        }
-        if ( alg instanceof AlgSubset subset && subset.getBest() instanceof ParquetRelScan relScan ) {
-            return relScan;
-        }
-        return null;
+        return ParquetRelJoin.create( leftOperand, rightOperand, leftScan, rightScan, join.getCondition(), join.getVariablesSet(), join.getJoinType(), direction.leftIsParent(), JoinInputLimit.NONE );
     }
 
 }

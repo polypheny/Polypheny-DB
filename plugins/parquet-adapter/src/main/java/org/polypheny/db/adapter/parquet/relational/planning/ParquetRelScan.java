@@ -91,6 +91,7 @@ public class ParquetRelScan extends RelScan<ParquetRelTable> implements Enumerab
         planner.addRuleDuringRuntime( ParquetEnumerableCalcScanRule.INSTANCE );
         planner.addRuleDuringRuntime( ParquetRelJoinRule.INSTANCE );
         planner.addRuleDuringRuntime( ParquetEnumerableJoinRule.INSTANCE );
+        planner.addRuleDuringRuntime( ParquetEnumerableLimitJoinRule.INSTANCE );
         planner.addRuleDuringRuntime( ParquetEnumerableFilterJoinRule.INSTANCE );
         planner.addRuleDuringRuntime( ParquetEnumerableCalcJoinRule.INSTANCE );
     }

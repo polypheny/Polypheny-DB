@@ -52,9 +52,9 @@ public class ParquetEnumerableFilterScanRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         LogicalRelFilter filter = (LogicalRelFilter) alg;
-        ParquetRelScan scan = ParquetRelScanRuleSupport.findDirectRelScan( filter.getInput() );
+        ParquetRelScan scan = ParquetRelScanRuleSupport.findProjectedRelScan( filter.getInput() );
         if ( scan == null ) {
-            scan = ParquetRelScanRuleSupport.findDirectRelScan( convert( filter.getInput(), filter.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ) ) );
+            scan = ParquetRelScanRuleSupport.findProjectedRelScan( convert( filter.getInput(), filter.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ) ) );
         }
         if ( scan == null ) {
             return null;

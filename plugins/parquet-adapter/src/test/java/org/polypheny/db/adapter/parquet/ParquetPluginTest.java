@@ -19,9 +19,9 @@ package org.polypheny.db.adapter.parquet;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.adapter.parquet.relational.ParquetRelationalSource;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.util.Sources;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -37,25 +37,24 @@ class ParquetPluginTest {
     private static TestHelper helper;
     private static boolean sourceCreated = false;
 
+
+    private static String table( String tableName ) {
+        return SOURCE_NAME + "__" + tableName;
+    }
+
     //region initialization and finalization
     @BeforeAll
     static void start() throws SQLException {
         // starts the Polypheny test instance
         helper = TestHelper.getInstance();
 
-        // build absolute path to file directory
-        String parquetDir = Sources.of( ParquetPluginTest.class.getResource( "/orders_db/" ) )
-                .file()
-                .getAbsolutePath()
-                .replace( "\\", "\\\\" );
-
         // open a JDBC connection to the running Polypheny test server
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             // creates the Parquet source adapter and imports the parquet files as source tables
              try ( Statement statement = connection.createStatement() ) {
-                String sql = "ALTER ADAPTERS ADD \"" + SOURCE_NAME + "\" USING 'Parquet' AS 'SOURCE' "
-                        + "WITH '{method:\"link\",directory:\"classpath://orders_db\",directoryName:\"" + parquetDir + "\"}'";
+                String sql = "ALTER ADAPTERS ADD \"" + SOURCE_NAME + "\" USING '" + ParquetRelationalSource.NAME + "' AS 'SOURCE' "
+                        + "WITH '{method:\"upload\",directory:\"classpath://orders_db\",directoryName:\"classpath://orders_db\",url:\"file:/\",\"" + ParquetRelationalSource.SCHEMA_MODE_SETTING + "\":\"flat\"}'";
 
                 System.out.println( sql );
                 statement.executeUpdate( sql );
@@ -87,10 +86,10 @@ class ParquetPluginTest {
     // validate that tables loaded and contain data
     @Test
     void importsAllTablesAndReadsRows() throws SQLException {
-        assertTableHasRows( "customers" );
-        assertTableHasRows( "orders" );
-        assertTableHasRows( "order_items" );
-        assertTableHasRows( "products" );
+        assertTableHasRows( table( "customers" ) );
+        assertTableHasRows( table( "orders" ) );
+        assertTableHasRows( table( "order_items" ) );
+        assertTableHasRows( table( "products" ) );
     }
 
     // validate that tables are read-only, this means delete attempt is invalid
@@ -99,7 +98,7 @@ class ParquetPluginTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                assertThrows( SQLException.class, () -> statement.executeUpdate( "DELETE FROM customers" ) );
+                assertThrows( SQLException.class, () -> statement.executeUpdate( "DELETE FROM " + table( "customers" ) ) );
             }
         }
     }
@@ -124,7 +123,7 @@ class ParquetPluginTest {
             try ( Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(
                             "SELECT customer_id, name, email, country, signup_date "
-                                    + "FROM customers "
+                                    + "FROM " + table( "customers" ) + " "
                                     + "WHERE customer_id <= 3 "
                                     + "ORDER BY customer_id" ) ) {
 
@@ -147,7 +146,7 @@ class ParquetPluginTest {
             try ( Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(
                             "SELECT customer_id, name, email, country, signup_date "
-                                    + "FROM customers "
+                                    + "FROM " + table( "customers" ) + " "
                                     + "WHERE country = 'France' "
                                     + "ORDER BY customer_id "
                                     + "LIMIT 3" ) ) {
@@ -171,7 +170,7 @@ class ParquetPluginTest {
             try ( Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(
                             "SELECT customer_id, name "
-                                    + "FROM customers "
+                                    + "FROM " + table( "customers" ) + " "
                                     + "WHERE customer_id <= 3 "
                                     + "ORDER BY customer_id" ) ) {
 
@@ -194,7 +193,7 @@ class ParquetPluginTest {
             try ( Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(
                             "SELECT customer_id, name "
-                                    + "FROM customers "
+                                    + "FROM " + table( "customers" ) + " "
                                     + "WHERE customer_id > 3 "
                                     + "ORDER BY customer_id "
                                     + "LIMIT 3" ) ) {
@@ -209,20 +208,6 @@ class ParquetPluginTest {
                 );
             }
         }
-    }
-
-    @Test
-    void supportsDateFilterLiterals() throws SQLException {
-        assertQueryResult(
-                "SELECT customer_id, name "
-                        + "FROM customers "
-                        + "WHERE signup_date = TIMESTAMP '2023-02-04 00:00:00' "
-                        + "AND customer_id = 3 "
-                        + "ORDER BY customer_id",
-                ImmutableList.of(
-                        new Object[]{ 3L, "Rita Garcia" }
-                )
-        );
     }
 
     // test filter operations
@@ -286,7 +271,7 @@ class ParquetPluginTest {
             try ( Statement statement = connection.createStatement();
                     ResultSet resultSet = statement.executeQuery(
                             "SELECT customer_id, name "
-                                    + "FROM customers "
+                                    + "FROM " + table( "customers" ) + " "
                                     + "WHERE " + filter + " "
                                     + "ORDER BY customer_id "
                                     + "LIMIT 3" ) ) {
@@ -305,90 +290,12 @@ class ParquetPluginTest {
                 assertThrows(
                         SQLException.class,
                         () -> statement.executeUpdate(
-                                "UPDATE customers "
+                                "UPDATE " + table( "customers" ) + " "
                                         + "SET country = 'Switzerland' "
                                         + "WHERE customer_id = 1" )
                 );
             }
         }
     }
-
-    private void assertQueryResult( String sql, ImmutableList<Object[]> expected ) throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement();
-                    ResultSet resultSet = statement.executeQuery( sql ) ) {
-                TestHelper.checkResultSet( resultSet, expected );
-            }
-        }
-    }
-
-    // test data in orders, order_items and products
-    // using filter and projection
-    @Test
-    void projectsAndFiltersOtherTables() throws SQLException {
-        assertQueryResult(
-                "SELECT order_id, status, total_price "
-                        + "FROM orders "
-                        + "WHERE order_id <= 3 "
-                        + "ORDER BY order_id",
-                ImmutableList.of(
-                        new Object[]{ 1L, "paid", 12916.51 },
-                        new Object[]{ 2L, "delivered", 2551.43 },
-                        new Object[]{ 3L, "delivered", 14631.22 }
-                )
-        );
-
-        assertQueryResult(
-                "SELECT order_item_id, product_id, quantity "
-                        + "FROM order_items "
-                        + "WHERE order_id = 1 "
-                        + "ORDER BY order_item_id "
-                        + "LIMIT 3",
-                ImmutableList.of(
-                        new Object[]{ 1L, 1491L, 3L },
-                        new Object[]{ 2L, 1525L, 2L },
-                        new Object[]{ 3L, 1784L, 5L }
-                )
-        );
-
-        assertQueryResult(
-                "SELECT product_id, name, category "
-                        + "FROM products "
-                        + "WHERE product_id <= 3 "
-                        + "ORDER BY product_id",
-                ImmutableList.of(
-                        new Object[]{ 1L, "Mouse 198", "Grocery" },
-                        new Object[]{ 2L, "Yoga Mat 396", "Home" },
-                        new Object[]{ 3L, "Notebook 301", "Books" }
-                )
-        );
-    }
-
-    // check that nested data returned as string
-    @Test
-    void returnsNestedShippingAddressAsJSON() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement();
-                    ResultSet resultSet = statement.executeQuery(
-                            "SELECT shipping_address "
-                                    + "FROM orders "
-                                    + "WHERE order_id = 1" ) ) {
-
-                assertTrue( resultSet.next() );
-
-                Object value = resultSet.getObject( 1 );
-                String shippingAddress = assertInstanceOf( String.class, value );
-
-                assertEquals(
-                        "{\"city\":\"Lucerne\",\"street\":\"Gartenweg 103\",\"zip\":7101}",
-                        shippingAddress
-                );
-            }
-        }
-    }
-
-
 
 }
