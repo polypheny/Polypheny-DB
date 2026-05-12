@@ -850,20 +850,53 @@ public class MqlToAlgConverter {
         RexNode queryVectorRef;
         if ( pathType instanceof VectorType vectorType ) {
             queryLiteralType = cluster.getTypeFactory().createVectorType( vectorType.getComponentType(), vectorType.getVectorDimension() );
+            if ( queryVector.size() != vectorType.getVectorDimension() ) {
+                throw new GenericRuntimeException( String.format(
+                        "$vectorSearch 'queryVector' has %d elements but column '%s' has dimension %d.",
+                        queryVector.size(), path, vectorType.getVectorDimension() ) );
+            }
             List<PolyValue> polyValues = new ArrayList<>();
             ElementType elementType = vectorType.getVectorElementType();
+
+            boolean isBinaryMetric = metric.equals( "HAMMING" ) || metric.equals( "JACCARD" );
+            boolean isBinaryVector = elementType == ElementType.BIT;
+            if ( isBinaryMetric && !isBinaryVector ) {
+                throw new GenericRuntimeException( String.format(
+                        "Metric '%s' requires a BIT vector column, but column '%s' has element type %s.",
+                        metric, path, elementType ) );
+            }
+            if ( !isBinaryMetric && isBinaryVector ) {
+                throw new GenericRuntimeException( String.format(
+                        "Metric '%s' requires a numeric vector column, but column '%s' has element type BIT.",
+                        metric, path ) );
+            }
 
             for ( BsonValue value : queryVector ) {
                 switch ( elementType ) {
                     case BIT -> {
+                        if ( !value.isBoolean() && !value.isNumber() ) {
+                            throw new GenericRuntimeException( String.format(
+                                    "$vectorSearch 'queryVector' element '%s' cannot be interpreted as a bit (expected boolean or 0/1 integer) for column '%s'.",
+                                    value, path ) );
+                        }
                         boolean b = value.isBoolean() ? value.asBoolean().getValue() : (value.isNumber() && value.asNumber().intValue() != 0);
                         polyValues.add( new PolyBoolean( b ) );
                     }
                     case INTEGER -> {
+                        if ( !value.isNumber() ) {
+                        throw new GenericRuntimeException( String.format(
+                                "$vectorSearch 'queryVector' element '%s' is not numeric, but column '%s' has element type INTEGER.",
+                                value, path ) );
+                        }
                         int i = value.isNumber() ? value.asNumber().intValue() : 0;
                         polyValues.add( PolyInteger.of( i ) );
                     }
                     case FLOAT -> {
+                        if ( !value.isNumber() ) {
+                            throw new GenericRuntimeException( String.format(
+                                    "$vectorSearch 'queryVector' element '%s' is not numeric, but column '%s' has element type FLOAT.",
+                                    value, path ) );
+                        }
                         float f = value.isNumber() ? (float) value.asNumber().doubleValue() : 0.0f;
                         polyValues.add( PolyFloat.of( f ) );
                     }
@@ -933,7 +966,7 @@ public class MqlToAlgConverter {
         switch ( metric ) {
             case "L1" -> distanceOpName = OperatorName.L1_DISTANCE;
             case "L2" -> distanceOpName = OperatorName.L2_DISTANCE;
-            case "COS" -> distanceOpName = OperatorName.COS_DISTANCE;
+            case "COSINE" -> distanceOpName = OperatorName.COS_DISTANCE;
             case "HAMMING" -> distanceOpName = OperatorName.HAMMING_DISTANCE;
             case "JACCARD" -> distanceOpName = OperatorName.JACCARD_DISTANCE;
             case "L2SQUARED", "CHISQUARED" -> {
