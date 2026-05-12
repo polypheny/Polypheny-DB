@@ -63,6 +63,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.docker.DockerContainer;
@@ -245,6 +246,11 @@ public class TestHelper {
     }
 
 
+    public static void addPostgresSource( String name, String host, int port, String database, String username, String password ) throws SQLException {
+        addPostgresSource( name, host, port, database, username, password, "" );
+    }
+
+
     public static void addMysqlSource( String name, String host, int port, String database, String username, String password, String table ) throws SQLException {
         executeSQL(
                 "ALTER ADAPTERS ADD \"" + name + "\" USING 'MySQL' AS 'Source' WITH "
@@ -290,6 +296,39 @@ public class TestHelper {
             }
         }
         throw new IllegalStateException( "Table was not created in time: " + tableName );
+    }
+
+
+    public static void awaitLogicalTableAbsent( long namespaceId, String tableName, int timeoutSeconds ) {
+        for ( int i = 0; i < timeoutSeconds; i++ ) {
+            if ( Catalog.snapshot().rel().getTable( namespaceId, tableName ).isEmpty() ) {
+                return;
+            }
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch ( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( "Interrupted while waiting for table removal " + tableName, e );
+            }
+        }
+        throw new IllegalStateException( "Table still exists after refresh: " + tableName );
+    }
+
+
+    public static long awaitSourceAdapterId( String adapterName, int timeoutSeconds ) {
+        for ( int i = 0; i < timeoutSeconds; i++ ) {
+            LogicalAdapter adapter = Catalog.snapshot().getAdapter( adapterName ).orElse( null );
+            if ( adapter != null ) {
+                return adapter.id;
+            }
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch ( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( "Interrupted while waiting for source adapter " + adapterName, e );
+            }
+        }
+        throw new IllegalStateException( "Source adapter was not created in time: " + adapterName );
     }
 
 
@@ -798,6 +837,18 @@ public class TestHelper {
         Method getTableMethod = crud.getClass().getDeclaredMethod( "getTable", UIRequest.class );
         getTableMethod.setAccessible( true );
         return (RelationalResult) getTableMethod.invoke( crud, request );
+    }
+
+
+    @SuppressWarnings("unchecked")
+    public static List<String> refreshSelectedSources( List<Long> sourceIds ) throws Exception {
+        Object httpServer = HttpServer.getInstance();
+        Field crudField = httpServer.getClass().getDeclaredField( "crud" );
+        crudField.setAccessible( true );
+        Object crud = crudField.get( httpServer );
+
+        Method refreshMethod = crud.getClass().getMethod( "refreshSelectedSources", List.class );
+        return (List<String>) refreshMethod.invoke( crud, sourceIds );
     }
 
 

@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -428,6 +429,230 @@ class SourceSchemaRefreshTest {
                 assertTrue( !Catalog.snapshot().rel().getColumn( entityId, "country" ).orElseThrow().nullable );
             } finally {
                 TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + ADAPTER_NAME + "\"" );
+            }
+        }
+    }
+
+
+    @Test
+    void selectedSourceRefreshAddsNewlyDetectedTable() throws Exception {
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
+        TestHelper.getInstance();
+
+        String adapterName = ADAPTER_NAME + "_table_add";
+        String existingTable = SOURCE_TABLE + "_existing_add";
+        String addedTable = SOURCE_TABLE + "_added";
+
+        try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( DATABASE, USERNAME, PASSWORD ) ) {
+            postgres.execute( "CREATE TABLE public." + existingTable + " (id INTEGER PRIMARY KEY, name VARCHAR(255))" );
+            postgres.execute( "INSERT INTO public." + existingTable + " (id, name) VALUES (1, 'Alice')" );
+
+            TestHelper.addPostgresSource(
+                    adapterName,
+                    postgres.getHost(),
+                    postgres.getPort(),
+                    DATABASE,
+                    USERNAME,
+                    PASSWORD );
+
+            try {
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, existingTable, 30 );
+                assertFalse( Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, addedTable ).isPresent() );
+
+                postgres.execute( "CREATE TABLE public." + addedTable + " (id INTEGER PRIMARY KEY, city VARCHAR(255))" );
+                postgres.execute( "INSERT INTO public." + addedTable + " (id, city) VALUES (1, 'Basel')" );
+
+                long sourceId = TestHelper.awaitSourceAdapterId( adapterName, 30 );
+                List<String> refreshedTables = TestHelper.refreshSelectedSources( List.of( sourceId ) );
+
+                assertTrue( refreshedTables.contains( existingTable ) );
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, addedTable, 30 );
+            } finally {
+                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + adapterName + "\"" );
+            }
+        }
+    }
+
+
+    @Test
+    void selectedSourceRefreshDropsRemovedTable() throws Exception {
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
+        TestHelper.getInstance();
+
+        String adapterName = ADAPTER_NAME + "_table_drop";
+        String keptTable = SOURCE_TABLE + "_kept_drop";
+        String removedTable = SOURCE_TABLE + "_removed_drop";
+
+        try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( DATABASE, USERNAME, PASSWORD ) ) {
+            postgres.execute( "CREATE TABLE public." + keptTable + " (id INTEGER PRIMARY KEY, name VARCHAR(255))" );
+            postgres.execute( "CREATE TABLE public." + removedTable + " (id INTEGER PRIMARY KEY, city VARCHAR(255))" );
+
+            TestHelper.addPostgresSource(
+                    adapterName,
+                    postgres.getHost(),
+                    postgres.getPort(),
+                    DATABASE,
+                    USERNAME,
+                    PASSWORD );
+
+            try {
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, keptTable, 30 );
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, removedTable, 30 );
+
+                postgres.execute( "DROP TABLE public." + removedTable );
+
+                long sourceId = TestHelper.awaitSourceAdapterId( adapterName, 30 );
+                List<String> refreshedTables = TestHelper.refreshSelectedSources( List.of( sourceId ) );
+
+                assertTrue( refreshedTables.contains( keptTable ) );
+                TestHelper.awaitLogicalTableAbsent( Catalog.defaultNamespaceId, removedTable, 30 );
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, keptTable, 30 );
+            } finally {
+                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + adapterName + "\"" );
+            }
+        }
+    }
+
+
+    @Test
+    void selectedSourceRefreshReplacesRenamedTable() throws Exception {
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
+        TestHelper.getInstance();
+
+        String adapterName = ADAPTER_NAME + "_table_rename";
+        String oldTable = SOURCE_TABLE + "_old_name";
+        String newTable = SOURCE_TABLE + "_new_name";
+
+        try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( DATABASE, USERNAME, PASSWORD ) ) {
+            postgres.execute( "CREATE TABLE public." + oldTable + " (id INTEGER PRIMARY KEY, name VARCHAR(255))" );
+
+            TestHelper.addPostgresSource(
+                    adapterName,
+                    postgres.getHost(),
+                    postgres.getPort(),
+                    DATABASE,
+                    USERNAME,
+                    PASSWORD );
+
+            try {
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, oldTable, 30 );
+                assertFalse( Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, newTable ).isPresent() );
+
+                postgres.execute( "ALTER TABLE public." + oldTable + " RENAME TO " + newTable );
+
+                long sourceId = TestHelper.awaitSourceAdapterId( adapterName, 30 );
+                List<String> refreshedTables = TestHelper.refreshSelectedSources( List.of( sourceId ) );
+
+                assertNotNull( refreshedTables );
+                TestHelper.awaitLogicalTableAbsent( Catalog.defaultNamespaceId, oldTable, 30 );
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, newTable, 30 );
+            } finally {
+                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + adapterName + "\"" );
+            }
+        }
+    }
+
+
+    @Test
+    void selectedSourceRefreshAppliesCombinedTableDiscoveryChanges() throws Exception {
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
+        TestHelper.getInstance();
+
+        String adapterName = ADAPTER_NAME + "_table_combined";
+        String keptTable = SOURCE_TABLE + "_kept_combined";
+        String removedTable = SOURCE_TABLE + "_removed_combined";
+        String oldRenamedTable = SOURCE_TABLE + "_old_combined";
+        String newRenamedTable = SOURCE_TABLE + "_new_combined";
+        String addedTable = SOURCE_TABLE + "_added_combined";
+
+        try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( DATABASE, USERNAME, PASSWORD ) ) {
+            postgres.execute( "CREATE TABLE public." + keptTable + " (id INTEGER PRIMARY KEY, name VARCHAR(255))" );
+            postgres.execute( "CREATE TABLE public." + removedTable + " (id INTEGER PRIMARY KEY, city VARCHAR(255))" );
+            postgres.execute( "CREATE TABLE public." + oldRenamedTable + " (id INTEGER PRIMARY KEY, age INTEGER)" );
+
+            TestHelper.addPostgresSource(
+                    adapterName,
+                    postgres.getHost(),
+                    postgres.getPort(),
+                    DATABASE,
+                    USERNAME,
+                    PASSWORD );
+
+            try {
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, keptTable, 30 );
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, removedTable, 30 );
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, oldRenamedTable, 30 );
+
+                postgres.execute( "DROP TABLE public." + removedTable );
+                postgres.execute( "ALTER TABLE public." + oldRenamedTable + " RENAME TO " + newRenamedTable );
+                postgres.execute( "CREATE TABLE public." + addedTable + " (id INTEGER PRIMARY KEY, country VARCHAR(255))" );
+
+                long sourceId = TestHelper.awaitSourceAdapterId( adapterName, 30 );
+                List<String> refreshedTables = TestHelper.refreshSelectedSources( List.of( sourceId ) );
+
+                assertTrue( refreshedTables.contains( keptTable ) );
+
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, keptTable, 30 );
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, newRenamedTable, 30 );
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, addedTable, 30 );
+                TestHelper.awaitLogicalTableAbsent( Catalog.defaultNamespaceId, removedTable, 30 );
+                TestHelper.awaitLogicalTableAbsent( Catalog.defaultNamespaceId, oldRenamedTable, 30 );
+            } finally {
+                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + adapterName + "\"" );
+            }
+        }
+    }
+
+
+    @Test
+    void selectedSourceRefreshOnlyAppliesChangesForRequestedSource() throws Exception {
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
+        TestHelper.getInstance();
+
+        String adapterOne = ADAPTER_NAME + "_source_one";
+        String adapterTwo = ADAPTER_NAME + "_source_two";
+        String sourceOneTable = SOURCE_TABLE + "_source_one";
+        String sourceTwoTable = SOURCE_TABLE + "_source_two";
+        String sourceOneAddedTable = SOURCE_TABLE + "_source_one_added";
+        String sourceTwoAddedTable = SOURCE_TABLE + "_source_two_added";
+
+        try ( TestHelper.DockerPostgres postgresOne = TestHelper.startPostgresDocker( DATABASE, USERNAME, PASSWORD );
+              TestHelper.DockerPostgres postgresTwo = TestHelper.startPostgresDocker( DATABASE + "_two", USERNAME, PASSWORD ) ) {
+            postgresOne.execute( "CREATE TABLE public." + sourceOneTable + " (id INTEGER PRIMARY KEY, name VARCHAR(255))" );
+            postgresTwo.execute( "CREATE TABLE public." + sourceTwoTable + " (id INTEGER PRIMARY KEY, city VARCHAR(255))" );
+
+            TestHelper.addPostgresSource(
+                    adapterOne,
+                    postgresOne.getHost(),
+                    postgresOne.getPort(),
+                    DATABASE,
+                    USERNAME,
+                    PASSWORD );
+
+            TestHelper.addPostgresSource(
+                    adapterTwo,
+                    postgresTwo.getHost(),
+                    postgresTwo.getPort(),
+                    DATABASE + "_two",
+                    USERNAME,
+                    PASSWORD );
+
+            try {
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, sourceOneTable, 30 );
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, sourceTwoTable, 30 );
+
+                postgresOne.execute( "CREATE TABLE public." + sourceOneAddedTable + " (id INTEGER PRIMARY KEY, age INTEGER)" );
+                postgresTwo.execute( "CREATE TABLE public." + sourceTwoAddedTable + " (id INTEGER PRIMARY KEY, country VARCHAR(255))" );
+
+                long sourceOneId = TestHelper.awaitSourceAdapterId( adapterOne, 30 );
+                List<String> refreshedTables = TestHelper.refreshSelectedSources( List.of( sourceOneId ) );
+
+                assertTrue( refreshedTables.contains( sourceOneTable ) );
+                TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, sourceOneAddedTable, 30 );
+                assertFalse( Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, sourceTwoAddedTable ).isPresent() );
+            } finally {
+                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + adapterOne + "\"" );
+                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + adapterTwo + "\"" );
             }
         }
     }
