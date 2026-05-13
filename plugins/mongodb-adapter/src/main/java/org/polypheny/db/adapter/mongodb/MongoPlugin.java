@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.mongodb;
 
 import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.mongodb.source.MongoSource;
 import org.polypheny.db.adapter.mongodb.store.MongoStore;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
@@ -25,7 +26,8 @@ public class MongoPlugin extends PolyPlugin {
 
 
     public static final String ADAPTER_NAME = "MongoDB";
-    private long id;
+    private long storeId;
+    private long sourceId;
 
 
     /**
@@ -39,12 +41,14 @@ public class MongoPlugin extends PolyPlugin {
 
     @Override
     public void afterCatalogInit() {
-        this.id = AdapterManager.addAdapterTemplate( MongoStore.class, ADAPTER_NAME, MongoStore::new );
+        this.storeId = AdapterManager.addAdapterTemplate( MongoStore.class, ADAPTER_NAME, MongoStore::new );
+        this.sourceId = AdapterManager.addAdapterTemplate( MongoSource.class, ADAPTER_NAME, MongoSource::new );
     }
 
 
     @Override
     public void stop() {
-        AdapterManager.removeAdapterTemplate( id );
+        AdapterManager.removeAdapterTemplate( storeId );
+        AdapterManager.removeAdapterTemplate( sourceId );
     }
 }

@@ -77,6 +77,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -229,13 +230,25 @@ public class DdlManagerImpl extends DdlManager {
             createRelationalSource( transaction, adapter, namespace );
         }
         if ( adapter.supportsDocument() ) {
-            createDocumentSource( adapter, namespace );
+            long documentNamespace = ensureDocumentNamespace( uniqueName, namespace );
+            createDocumentSource( adapter, documentNamespace );
         }
         if ( adapter.supportsGraph() ) {
             // TODO: implement graph source creation
             throw new IllegalArgumentException( "Adapters with native data model graph are not yet supported!" );
         }
         catalog.updateSnapshot();
+    }
+
+
+    private long ensureDocumentNamespace( String uniqueName, long namespaceId ) {
+        return catalog.getSnapshot().getNamespace( namespaceId )
+                .filter( namespace -> namespace.dataModel == DataModel.DOCUMENT )
+                .map( namespace -> namespace.id )
+                .orElseGet( () -> catalog.getSnapshot().getNamespace( uniqueName )
+                        .filter( namespace -> namespace.dataModel == DataModel.DOCUMENT )
+                        .map( namespace -> namespace.id )
+                        .orElseGet( () -> catalog.createNamespace( uniqueName, DataModel.DOCUMENT, true, false ) ) );
     }
 
 
@@ -499,7 +512,18 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public SourceSchemaRefreshCheckResult getSourceSchemaRefreshCheckResult( long entityId ) {
         Snapshot snapshot = catalog.getSnapshot();
-        LogicalTable logicalTable = snapshot.rel().getTable( entityId ).orElseThrow();
+        Optional<? extends LogicalEntity> optionalEntity = snapshot.getLogicalEntity( entityId );
+        if ( optionalEntity.isEmpty() ) {
+            throw new GenericRuntimeException( "No logical entity found for id %s", entityId );
+        }
+
+        LogicalEntity logicalEntity = optionalEntity.get();
+        if ( logicalEntity.dataModel != DataModel.RELATIONAL ) {
+            log.info( "Refresh check skipped: entity {} uses {} and source refresh is currently only implemented for relational sources.", logicalEntity.name, logicalEntity.dataModel );
+            return new SourceSchemaRefreshCheckResult( false, List.of() );
+        }
+
+        LogicalTable logicalTable = logicalEntity.unwrapOrThrow( LogicalTable.class );
 
         if ( logicalTable.entityType != EntityType.SOURCE ) {
             log.info( "Refresh check skipped: {} is not a source table.", logicalTable.name );
