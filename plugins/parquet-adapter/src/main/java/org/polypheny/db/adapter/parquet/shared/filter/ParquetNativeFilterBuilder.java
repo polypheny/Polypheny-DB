@@ -162,6 +162,10 @@ public final class ParquetNativeFilterBuilder {
 
     private static FilterPredicate buildPredicatePrimitive( Kind operator, PolyValue value, Type type, String columnName ) {
         PrimitiveType primitive = type.asPrimitiveType();
+        if ( isNullCheck( operator ) ) {
+            return buildNullPredicate( operator, primitive, columnName );
+        }
+
         Object expected = TYPE_CONVERTER.fromPolyValueToParquetObj( primitive, value );
         if ( expected == null ) {
             return null;
@@ -175,6 +179,37 @@ public final class ParquetNativeFilterBuilder {
             case DOUBLE -> buildDouble( operator, columnName, expected );
             case BINARY, FIXED_LEN_BYTE_ARRAY, INT96 -> buildBinary( operator, columnName, expected, primitive.getLogicalTypeAnnotation() );
         };
+    }
+
+
+    private static FilterPredicate buildNullPredicate( Kind operator, PrimitiveType primitive, String columnName ) {
+        boolean isNull = operator == Kind.IS_NULL;
+        return switch ( primitive.getPrimitiveTypeName() ) {
+            case BOOLEAN -> isNull
+                    ? FilterApi.eq( FilterApi.booleanColumn( columnName ), null )
+                    : FilterApi.notEq( FilterApi.booleanColumn( columnName ), null );
+            case INT32 -> isNull
+                    ? FilterApi.eq( FilterApi.intColumn( columnName ), null )
+                    : FilterApi.notEq( FilterApi.intColumn( columnName ), null );
+            case INT64 -> isNull
+                    ? FilterApi.eq( FilterApi.longColumn( columnName ), null )
+                    : FilterApi.notEq( FilterApi.longColumn( columnName ), null );
+            case FLOAT -> isNull
+                    ? FilterApi.eq( FilterApi.floatColumn( columnName ), null )
+                    : FilterApi.notEq( FilterApi.floatColumn( columnName ), null );
+            case DOUBLE -> isNull
+                    ? FilterApi.eq( FilterApi.doubleColumn( columnName ), null )
+                    : FilterApi.notEq( FilterApi.doubleColumn( columnName ), null );
+            case BINARY, FIXED_LEN_BYTE_ARRAY -> isNull
+                    ? FilterApi.eq( FilterApi.binaryColumn( columnName ), null )
+                    : FilterApi.notEq( FilterApi.binaryColumn( columnName ), null );
+            case INT96 -> null;
+        };
+    }
+
+
+    private static boolean isNullCheck( Kind operator ) {
+        return operator == Kind.IS_NULL || operator == Kind.IS_NOT_NULL;
     }
 
 

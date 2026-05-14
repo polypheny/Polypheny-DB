@@ -20,6 +20,8 @@ import org.apache.parquet.example.data.Group;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.polypheny.db.adapter.parquet.shared.execution.ParquetValueExtractor;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
 
 /**
@@ -54,14 +56,17 @@ public class ParquetGroupFilterEvaluator extends FilterEvaluator<Group> {
             return null;
         }
         if ( !filterHasValue( group, filter ) ) {
-            return false;
+            return matchesValue( PolyNull.NULL, filter.operator(), filter.polyValue() );
         }
         return matchesValue( extractValue( group, filter ), filter.operator(), filter.polyValue() );
     }
 
 
     protected boolean canApplyFilter( Group group, ParquetAdapterFilter filter ) {
-        if ( filter.polyValue() == null || filter.columnIndex() < 0 ) {
+        if ( filter.columnIndex() < 0 ) {
+            return false;
+        }
+        if ( filter.polyValue() == null && !isNullCheck( filter.operator() ) ) {
             return false;
         }
         return !filter.pathElements().isEmpty() || filter.columnIndex() < schema.getFieldCount();
@@ -79,6 +84,11 @@ public class ParquetGroupFilterEvaluator extends FilterEvaluator<Group> {
             return valueExtractor.extractValue( group, filter.columnIndex(), field );
         }
         return valueExtractor.extractValue( group, filter.pathElements() );
+    }
+
+
+    private boolean isNullCheck( Kind operator ) {
+        return operator == Kind.IS_NULL || operator == Kind.IS_NOT_NULL;
     }
 
 }

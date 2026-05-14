@@ -48,6 +48,13 @@ public abstract class FilterEvaluator<C> {
 
 
     protected Boolean matchesValue( PolyValue actual, Kind operator, PolyValue expected ) {
+        if ( operator == Kind.IS_NULL ) {
+            return actual == null || actual.isNull();
+        }
+        if ( operator == Kind.IS_NOT_NULL ) {
+            return actual != null && !actual.isNull();
+        }
+
         if ( actual == null || actual.isNull() || expected == null || expected.isNull() ) {
             return false;
         }

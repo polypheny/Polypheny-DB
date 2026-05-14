@@ -516,7 +516,9 @@ WHERE i.quantity = 3;
 ```
 
 
-NOT working:
+
+
+### 31. Filtering + Count(*)
 
 ```sql
 SELECT count(*)
@@ -525,6 +527,11 @@ FULL JOIN pon__orders__items__discounts d
 ON d.__polypheny_parent_row_id = i.__polypheny_row_id
 WHERE i.quantity = 3;
 ```
+
+
+
+### Filtering + Projection 
+
 ```sql
 SELECT i.price
 FROM pon__orders__items i
@@ -532,3 +539,23 @@ FULL JOIN pon__orders__items__discounts d
 ON d.__polypheny_parent_row_id = i.__polypheny_row_id
 WHERE i.quantity = 3;
 ```
+
+
+NOT working:
+
+Incorrect limit values:
+
+SELECT *
+FROM pon__orders__items i
+FULL JOIN pon__orders__items__discounts d
+ON d.__polypheny_parent_row_id = i.__polypheny_row_id
+WHERE i.quantity = 3
+LIMIT 10;
+
+
+SELECT i.quantity
+FROM pon__orders__items i
+FULL JOIN pon__orders__items__discounts d
+ON d.__polypheny_parent_row_id = i.__polypheny_row_id
+WHERE i.quantity = 3
+LIMIT 10;

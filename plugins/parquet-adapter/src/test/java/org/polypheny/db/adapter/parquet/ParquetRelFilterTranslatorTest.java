@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelFilterTranslator;
+import org.polypheny.db.adapter.parquet.shared.filter.FilterEvaluator;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetNativeFilterBuilder;
 import org.polypheny.db.algebra.constant.Kind;
@@ -37,6 +38,9 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
@@ -44,6 +48,7 @@ import org.polypheny.db.util.RunMode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ParquetRelFilterTranslatorTest {
@@ -107,6 +112,34 @@ class ParquetRelFilterTranslatorTest {
 
 
     @Test
+    void translatesNullChecks() {
+        ParquetAdapterFilter isNull = translator.translate( List.of( PolyType.INTEGER ), call( Kind.IS_NULL, ref( 0 ) ) );
+        ParquetAdapterFilter isNotNull = translator.translate( List.of( PolyType.INTEGER ), call( Kind.IS_NOT_NULL, ref( 0 ) ) );
+
+        assertNotNull( isNull );
+        assertEquals( Kind.IS_NULL, isNull.operator() );
+        assertEquals( 0, isNull.columnIndex() );
+        assertNull( isNull.polyValue() );
+
+        assertNotNull( isNotNull );
+        assertEquals( Kind.IS_NOT_NULL, isNotNull.operator() );
+        assertEquals( 0, isNotNull.columnIndex() );
+        assertNull( isNotNull.polyValue() );
+    }
+
+
+    @Test
+    void evaluatesNullChecks() {
+        TestFilterEvaluator evaluator = new TestFilterEvaluator();
+
+        assertEquals( Boolean.TRUE, evaluator.evaluate( PolyNull.NULL, new ParquetAdapterFilter( 0, Kind.IS_NULL, null ) ) );
+        assertEquals( Boolean.FALSE, evaluator.evaluate( PolyString.of( "shipped" ), new ParquetAdapterFilter( 0, Kind.IS_NULL, null ) ) );
+        assertEquals( Boolean.FALSE, evaluator.evaluate( PolyNull.NULL, new ParquetAdapterFilter( 0, Kind.IS_NOT_NULL, null ) ) );
+        assertEquals( Boolean.TRUE, evaluator.evaluate( PolyString.of( "shipped" ), new ParquetAdapterFilter( 0, Kind.IS_NOT_NULL, null ) ) );
+    }
+
+
+    @Test
     void reversesComparisonWhenLiteralIsOnTheLeft() {
         RexNode filter = call( Kind.LESS_THAN, param( 10 ), ref( 0 ) );
 
@@ -131,6 +164,18 @@ class ParquetRelFilterTranslatorTest {
     }
 
 
+    @Test
+    void buildsNativeNullCheckPredicates() {
+        MessageType schema = Types.buildMessage()
+                .optional( PrimitiveTypeName.BINARY )
+                .named( "status" )
+                .named( "test_schema" );
+
+        assertDoesNotThrow(
+                () -> ParquetNativeFilterBuilder.build( schema, List.of( new ParquetAdapterFilter( 0, Kind.IS_NOT_NULL, null ) ) ) );
+    }
+
+
     private RexNode ref( int index ) {
         return new RexIndexRef( index, intType );
     }
@@ -143,5 +188,15 @@ class ParquetRelFilterTranslatorTest {
 
     private RexNode call( Kind kind, RexNode... operands ) {
         return new RexCall( boolType, new SpecialOperator( kind.name(), kind ), operands );
+    }
+
+
+    private static class TestFilterEvaluator extends FilterEvaluator<PolyValue> {
+
+        @Override
+        protected Boolean evaluateLeaf( PolyValue value, ParquetAdapterFilter filter ) {
+            return matchesValue( value, filter.operator(), filter.polyValue() );
+        }
+
     }
 }

@@ -39,6 +39,9 @@ public class ParquetRelFilterTranslator extends AbstractFilterTranslator {
     public ParquetAdapterFilter translate( List<PolyType> fieldTypes, RexNode polyFilter ) {
         // support logical filter
         if ( polyFilter instanceof RexCall call ) {
+            if ( (polyFilter.isA( Kind.IS_NULL ) || polyFilter.isA( Kind.IS_NOT_NULL )) && call.getOperands().size() == 1 ) {
+                return translateNullCheck( fieldTypes, polyFilter.getKind(), call.getOperands().get( 0 ) );
+            }
             if ( polyFilter.isA( Kind.AND ) || polyFilter.isA( Kind.OR ) ) {
                 return translateLogical( fieldTypes, polyFilter.getKind(), call.getOperands() );
             }
@@ -69,6 +72,21 @@ public class ParquetRelFilterTranslator extends AbstractFilterTranslator {
         }
 
         return toParquetAdapterFilter( index, parsed.operator(), right );
+    }
+
+
+    private ParquetAdapterFilter translateNullCheck( List<PolyType> fieldTypes, Kind operator, RexNode operand ) {
+        RexNode column = unwrapCast( operand );
+        if ( !(column instanceof RexIndexRef indexRef) ) {
+            return null;
+        }
+
+        int index = indexRef.getIndex();
+        if ( !isPushdownSupported( fieldTypes, index, operator ) ) {
+            return null;
+        }
+
+        return new ParquetAdapterFilter( index, operator, null );
     }
 
 
@@ -143,16 +161,37 @@ public class ParquetRelFilterTranslator extends AbstractFilterTranslator {
      * Checks whether the operator can be handled by the reader.
      */
     private boolean isPushdownSupported( List<PolyType> fieldTypes, int index, Kind kind, RexNode valueNode ) {
+        return isPushdownSupported( fieldTypes, index, kind )
+                && (valueNode instanceof RexDynamicParam || (valueNode instanceof RexLiteral literal && literal.getValue() != null));
+    }
+
+
+    private boolean isPushdownSupported( List<PolyType> fieldTypes, int index, Kind kind ) {
         if ( index < 0 || index >= fieldTypes.size() ) {
             return false;
         }
 
         PolyType type = fieldTypes.get( index );
         return switch ( type ) {
-            case BOOLEAN, VARCHAR, CHAR, TEXT -> kind == Kind.EQUALS || kind == Kind.NOT_EQUALS;
-            case INTEGER, BIGINT, FLOAT, DOUBLE, DATE, TIME, TIMESTAMP -> true;
+            case BOOLEAN, VARCHAR, CHAR, TEXT -> kind == Kind.EQUALS || kind == Kind.NOT_EQUALS || isNullCheck( kind );
+            case INTEGER, BIGINT, FLOAT, DOUBLE, DATE, TIME, TIMESTAMP -> isComparison( kind ) || isNullCheck( kind );
             default -> false;
-        } && (valueNode instanceof RexDynamicParam || (valueNode instanceof RexLiteral literal && literal.getValue() != null));
+        };
+    }
+
+
+    private boolean isComparison( Kind kind ) {
+        return kind == Kind.EQUALS
+                || kind == Kind.NOT_EQUALS
+                || kind == Kind.GREATER_THAN
+                || kind == Kind.GREATER_THAN_OR_EQUAL
+                || kind == Kind.LESS_THAN
+                || kind == Kind.LESS_THAN_OR_EQUAL;
+    }
+
+
+    private boolean isNullCheck( Kind kind ) {
+        return kind == Kind.IS_NULL || kind == Kind.IS_NOT_NULL;
     }
 
 }

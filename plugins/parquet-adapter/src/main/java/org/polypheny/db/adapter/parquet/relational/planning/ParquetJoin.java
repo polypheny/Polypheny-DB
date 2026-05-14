@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnRole;
@@ -33,12 +32,12 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
-import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.algebra.enumerable.EnumerableConvention;
-import org.polypheny.db.algebra.enumerable.PhysType;
-import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
@@ -47,9 +46,9 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 /**
- * Parquet physical join for supported nested parent/child table joins.
+ * Parquet-convention join for supported parent/child table joins.
  */
-public class ParquetRelJoin extends Join implements EnumerableAlg {
+public class ParquetJoin extends Join implements ParquetAlg {
 
     private final boolean leftIsParent;
     private final ParquetRelTable leftTable;
@@ -57,10 +56,9 @@ public class ParquetRelJoin extends Join implements EnumerableAlg {
     private final int[] leftFields;
     private final int[] rightFields;
     private final List<ParquetAdapterFilter> filters;
-    private final JoinInputLimit parentLimit;
 
 
-    public ParquetRelJoin(
+    public ParquetJoin(
             AlgCluster cluster,
             AlgTraitSet traitSet,
             AlgNode left,
@@ -73,8 +71,7 @@ public class ParquetRelJoin extends Join implements EnumerableAlg {
             ParquetRelTable rightTable,
             int[] leftFields,
             int[] rightFields,
-            List<ParquetAdapterFilter> filters,
-            JoinInputLimit parentLimit ) {
+            List<ParquetAdapterFilter> filters ) {
         super( cluster, traitSet, left, right, condition, variablesSet, joinType );
         this.leftIsParent = leftIsParent;
         this.leftTable = leftTable;
@@ -82,45 +79,67 @@ public class ParquetRelJoin extends Join implements EnumerableAlg {
         this.leftFields = leftFields;
         this.rightFields = rightFields;
         this.filters = List.copyOf( filters );
-        this.parentLimit = parentLimit;
     }
 
 
-    public static ParquetRelJoin create( ParquetRelScan left, ParquetRelScan right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType, boolean leftIsParent ) {
-        return create( left, right, left, right, condition, variablesSet, joinType, leftIsParent, JoinInputLimit.NONE );
-    }
-
-
-    /**
-     * factory method that builds the physical adapter join node
-     */
-    public static ParquetRelJoin create( AlgNode leftInput, AlgNode rightInput, ParquetRelScan leftScan, ParquetRelScan rightScan, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType, boolean leftIsParent, JoinInputLimit parentLimit ) {
-        AlgCluster cluster = leftInput.getCluster();
-        AlgTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE ).replace( ModelTrait.RELATIONAL );
-        return new ParquetRelJoin(
+    public static ParquetJoin create( ParquetScan left, ParquetScan right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType, boolean leftIsParent ) {
+        AlgCluster cluster = left.getCluster();
+        AlgTraitSet traitSet = cluster.traitSetOf( ParquetConvention.INSTANCE ).replace( ModelTrait.RELATIONAL );
+        return new ParquetJoin(
                 cluster,
                 traitSet,
-                leftInput,
-                rightInput,
+                left,
+                right,
                 condition,
                 variablesSet,
                 joinType,
                 leftIsParent,
-                leftScan.getEntity(),
-                rightScan.getEntity(),
-                leftScan.getFields(),
-                rightScan.getFields(),
-                List.of(),
-                parentLimit );
+                left.getEntity(),
+                right.getEntity(),
+                left.getFields(),
+                right.getFields(),
+                joinInputFilters( left, right ) );
+    }
+
+
+    private static List<ParquetAdapterFilter> joinInputFilters( ParquetScan leftScan, ParquetScan rightScan ) {
+        List<ParquetAdapterFilter> filters = new ArrayList<>( leftScan.getFilters().size() + rightScan.getFilters().size() );
+        leftScan.getFilters().forEach( filter -> filters.add( shiftFilter( filter, 0 ) ) );
+        rightScan.getFilters().forEach( filter -> filters.add( shiftFilter( filter, leftScan.getFields().length ) ) );
+        return filters;
+    }
+
+
+    private static ParquetAdapterFilter shiftFilter( ParquetAdapterFilter filter, int offset ) {
+        if ( filter.isLogical() ) {
+            return ParquetAdapterFilter.logical( filter.operator(), filter.operands().stream()
+                    .map( operand -> shiftFilter( operand, offset ) )
+                    .toList() );
+        }
+        return new ParquetAdapterFilter(
+                filter.columnIndex() + offset,
+                filter.pathElements(),
+                filter.operator(),
+                filter.polyValue(),
+                filter.dynamicParamIndex() );
     }
 
 
     /**
      * Checks whether a join can be executed by the Parquet adapter: it must be join
-     * between two tables from the same Parquet source, using parent PRIMARY_KEY and child PARENT_KEY
+     * between two tables from the same Parquet source, using parent PRIMARY_KEY and child PARENT_KEY.
      */
-    public static JoinDirection supportedDirection( Join join, ParquetRelScan left, ParquetRelScan right ) {
-        JoinInfo info = JoinInfo.of( left, right, join.getCondition() );
+    public static JoinDirection supportedDirection( Join join, ParquetScan left, ParquetScan right ) {
+        return supportedDirection( join.getCondition(), join.getJoinType(), left, right );
+    }
+
+
+    /**
+     * Checks whether a join can be executed by the Parquet adapter: it must be join
+     * between two tables from the same Parquet source, using parent PRIMARY_KEY and child PARENT_KEY.
+     */
+    public static JoinDirection supportedDirection( RexNode condition, JoinAlgType joinType, ParquetScan left, ParquetScan right ) {
+        JoinInfo info = JoinInfo.of( left, right, condition );
         if ( !info.isEqui() || info.leftKeys.size() != 1 || info.rightKeys.size() != 1 ) {
             return null;
         }
@@ -131,8 +150,8 @@ public class ParquetRelJoin extends Join implements EnumerableAlg {
             return null;
         }
 
-        int leftColumn = mappedColumn( left, info.leftKeys.get( 0 ) );
-        int rightColumn = mappedColumn( right, info.rightKeys.get( 0 ) );
+        int leftColumn = mappedColumn( left.getFields(), info.leftKeys.get( 0 ), left.getEntity().getFieldCount() );
+        int rightColumn = mappedColumn( right.getFields(), info.rightKeys.get( 0 ), right.getEntity().getFieldCount() );
         if ( leftColumn < 0 || rightColumn < 0 ) {
             return null;
         }
@@ -143,7 +162,7 @@ public class ParquetRelJoin extends Join implements EnumerableAlg {
             return null;
         }
 
-        switch ( join.getJoinType() ) {
+        switch ( joinType ) {
             case INNER, FULL, LEFT, RIGHT -> {
                 return new JoinDirection( leftIsParent );
             }
@@ -154,13 +173,12 @@ public class ParquetRelJoin extends Join implements EnumerableAlg {
     }
 
 
-    private static int mappedColumn( ParquetRelScan scan, int inputIndex ) {
-        int[] fields = scan.getFields();
+    private static int mappedColumn( int[] fields, int inputIndex, int totalFieldsCount ) {
         if ( inputIndex < 0 || inputIndex >= fields.length ) {
             return -1;
         }
         int column = fields[inputIndex];
-        return column < 0 || column >= scan.getEntity().getFieldCount() ? -1 : column;
+        return column < 0 || column >= totalFieldsCount ? -1 : column;
     }
 
 
@@ -168,33 +186,49 @@ public class ParquetRelJoin extends Join implements EnumerableAlg {
         if ( !isDirectChildPath( parent.getBinding().sourcePathElements(), child.getBinding().sourcePathElements() ) ) {
             return false;
         }
-        return parentColumn == parent.columnIndexByRole( ParquetColumnRole.PRIMARY_KEY )
-                && childColumn == child.columnIndexByRole( ParquetColumnRole.PARENT_KEY );
+        return parentColumn == parent.columnIndexByRole( ParquetColumnRole.PRIMARY_KEY ) && childColumn == child.columnIndexByRole( ParquetColumnRole.PARENT_KEY );
     }
 
 
-    public static boolean isDirectChildPath( List<String> parentPath, List<String> childPath ) {
+    private static boolean isDirectChildPath( List<String> parentPath, List<String> childPath ) {
         return childPath.size() == parentPath.size() + 1 && childPath.subList( 0, parentPath.size() ).equals( parentPath );
     }
 
 
-    public ParquetRelJoin withFilters( List<ParquetAdapterFilter> filters ) {
+    public ParquetJoin withFilters( List<ParquetAdapterFilter> filters ) {
         List<ParquetAdapterFilter> combinedFilters = new ArrayList<>( this.filters );
         combinedFilters.addAll( filters );
-        return new ParquetRelJoin( getCluster(), traitSet, left, right, condition, variablesSet, joinType, leftIsParent, leftTable, rightTable, leftFields, rightFields, combinedFilters, parentLimit );
+        return new ParquetJoin( getCluster(), traitSet, left, right, condition, variablesSet, joinType, leftIsParent, leftTable, rightTable, leftFields, rightFields, combinedFilters );
     }
 
 
     @Override
     public Join copy( AlgTraitSet traitSet, RexNode conditionExpr, AlgNode left, AlgNode right, JoinAlgType joinType, boolean semiJoinDone ) {
-        return new ParquetRelJoin( getCluster(), traitSet, left, right, conditionExpr, variablesSet, joinType, leftIsParent, leftTable, rightTable, leftFields, rightFields, filters, parentLimit );
+        return new ParquetJoin( getCluster(), traitSet, left, right, conditionExpr, variablesSet, joinType, leftIsParent, leftTable, rightTable, leftFields, rightFields, filters );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        List<String> joinedFields = ParquetPolyAlgDisplay.joinedFieldNames( leftTable, leftFields, rightTable, rightFields );
+        return super.bindArguments()
+                .put( "leftIsParent", new BooleanArg( leftIsParent ) )
+                .put( "leftFields", new ListArg<>( ParquetPolyAlgDisplay.fieldNames( leftTable, leftFields ), StringArg::new ) )
+                .put( "rightFields", new ListArg<>( ParquetPolyAlgDisplay.fieldNames( rightTable, rightFields ), StringArg::new ) )
+                .put( "filters", new ListArg<>( ParquetPolyAlgDisplay.filters( filters, joinedFields ), StringArg::new ) );
     }
 
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         Optional<Double> count = mq.getTupleCount( this );
-        return planner.getCostFactory().makeCost( count.orElse( estimateTupleCount( mq ) ), 0, 0 );
+        return planner.getCostFactory().makeCost( count.orElse( estimateTupleCount( mq ) ), 0, 0 ).multiplyBy( ParquetConvention.COST_MULTIPLIER );
+    }
+
+
+    @Override
+    public double estimateTupleCount( AlgMetadataQuery mq ) {
+        return Math.max( left.estimateTupleCount( mq ), right.estimateTupleCount( mq ) );
     }
 
 
@@ -202,33 +236,25 @@ public class ParquetRelJoin extends Join implements EnumerableAlg {
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
                 .item( "leftIsParent", leftIsParent )
-                .itemIf( "parentOffset", parentLimit.offset(), parentLimit.offset() != 0 )
-                .itemIf( "parentFetch", parentLimit.fetch(), parentLimit.fetch() >= 0 )
                 .item( "filters", filters );
     }
 
 
     @Override
-    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
-        PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
+    public Expression implement( EnumerableAlgImplementor implementor ) {
         boolean emitUnmatchedParents = emitUnmatchedParents();
         Expression runtimeFilters = EnumUtils.expressionList( filters.stream().map( ParquetAdapterFilter::toExpression ).toList() );
 
-        return implementor.result(
-                physType,
-                Blocks.toBlock(
-                        Expressions.call(
-                                leftTable.asExpression( ParquetRelTable.class ),
-                                "nestedJoin",
-                                implementor.getRootExpression(),
-                                rightTable.asExpression( ParquetRelTable.class ),
-                                Expressions.constant( leftFields ),
-                                Expressions.constant( rightFields ),
-                                Expressions.constant( leftIsParent ),
-                                Expressions.constant( emitUnmatchedParents ),
-                                Expressions.constant( parentLimit.offset() ),
-                                Expressions.constant( parentLimit.fetch() ),
-                                runtimeFilters ) ) );
+        return Expressions.call(
+                leftTable.asExpression( ParquetRelTable.class ),
+                "nestedJoin",
+                implementor.getRootExpression(),
+                rightTable.asExpression( ParquetRelTable.class ),
+                Expressions.constant( leftFields ),
+                Expressions.constant( rightFields ),
+                Expressions.constant( leftIsParent ),
+                Expressions.constant( emitUnmatchedParents ),
+                runtimeFilters );
     }
 
 
@@ -240,6 +266,5 @@ public class ParquetRelJoin extends Join implements EnumerableAlg {
             default -> false;
         };
     }
-
 
 }

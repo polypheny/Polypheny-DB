@@ -34,8 +34,8 @@ import org.polypheny.db.adapter.parquet.relational.execution.ParquetNestedNonRep
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetNestedRepeatedRelEnumerator;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelEnumerator;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelFilterTranslator;
-import org.polypheny.db.adapter.parquet.relational.execution.ParentLimitState;
-import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelScan;
+import org.polypheny.db.adapter.parquet.relational.planning.ParquetConvention;
+import org.polypheny.db.adapter.parquet.relational.planning.ParquetScan;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 import org.polypheny.db.adapter.parquet.shared.filter.FiltersContainer;
 import org.polypheny.db.adapter.parquet.shared.filter.JoinFiltersContainer;
@@ -204,12 +204,13 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
      */
     @Override
     public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
-        return new ParquetRelScan( cluster, this, fieldIndexes );
+        ParquetConvention.INSTANCE.register( cluster.getPlanner() );
+        return new ParquetScan( cluster, this, fieldIndexes );
     }
 
 
     /**
-     * This method is called from the {@link ParquetRelScan} via reflection.
+     * This method is called from the {@link ParquetScan} via reflection.
      *
      * @param dataContext data context
      * @param fields a list of fields to return.
@@ -221,7 +222,7 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
 
 
     /**
-     * This method is called from the {@link ParquetRelScan} via reflection.
+     * This method is called from the {@link ParquetScan} via reflection.
      *
      * @param dataContext data context
      * @param fields a list of fields to return.
@@ -257,8 +258,6 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
             final int[] rightFields,
             final boolean leftIsParent,
             final boolean emitUnmatchedParents,
-            final int parentOffset,
-            final int parentFetch,
             final List<ParquetAdapterFilter> filters ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( parquetSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
@@ -273,11 +272,10 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                ParentLimitState parentLimitState = new ParentLimitState( parentOffset, parentFetch );
                 var filterContainer = new JoinFiltersSplitter().split( resolvedFilters, leftIsParent, parentFields.length, childFields.length );
                 return new ParquetMultiFileEnumerator(
                         sourceFiles,
-                        sourceFile -> parent.nestedJoinEnumeratorForFile( sourceFile, child, parentFields, childFields, cancelFlag, filterContainer, leftIsParent, emitUnmatchedParents, parentLimitState ) );
+                        sourceFile -> parent.nestedJoinEnumeratorForFile( sourceFile, child, parentFields, childFields, cancelFlag, filterContainer, leftIsParent, emitUnmatchedParents ) );
             }
         };
     }
@@ -373,8 +371,7 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
             AtomicBoolean cancelFlag,
             JoinFiltersContainer filterContainer,
             boolean leftIsParent,
-            boolean emitUnmatchedParents,
-            ParentLimitState parentLimitState ) {
+            boolean emitUnmatchedParents ) {
 
         ParquetSourceReader reader = new ParquetSourceReader( sourceFile.asSource(), cancelFlag, null, filterContainer.nativeFilters() );
         return new ParquetNestedJoinEnumerator(
@@ -385,8 +382,7 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
                 child.projectedBindings( childFields ),
                 filterContainer,
                 leftIsParent,
-                emitUnmatchedParents,
-                parentLimitState );
+                emitUnmatchedParents );
     }
 
 

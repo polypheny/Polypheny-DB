@@ -16,18 +16,15 @@
 
 package org.polypheny.db.adapter.parquet.relational.planning;
 
+import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
+
 /**
- * Stores an optional OFFSET and FETCH/LIMIT for the parent side of an adapter-level join
- * @param offset - how many rows to skip before returning results
- * @param fetch - how many rows to return after the offset
+ * Algebra node that runs inside the Parquet adapter convention.
  */
-public record JoinInputLimit( int offset, int fetch ) {
+public interface ParquetAlg extends AlgNode {
 
-    static final JoinInputLimit NONE = new JoinInputLimit( 0, -1 );
-
-
-    boolean isEmpty() {
-        return offset == 0 && fetch < 0;
-    }
+    Expression implement( EnumerableAlgImplementor implementor );
 
 }

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.function.Function;
 import org.polypheny.db.adapter.parquet.shared.filter.FilterEvaluator;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 
 
@@ -51,7 +52,7 @@ class ParquetSourceFileFilterEvaluator extends FilterEvaluator<ParquetSourceFile
         }
         String partitionValue = sourceFile.partitionValues().get( columnBinding.columnName() );
         if ( partitionValue == null ) {
-            return false;
+            return matchesValue( PolyNull.NULL, filter.operator(), filter.polyValue() );
         }
         return matchesValue( PolyString.of( partitionValue ), filter.operator(), filter.polyValue() );
     }

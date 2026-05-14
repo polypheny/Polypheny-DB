@@ -45,15 +45,14 @@ public class ParquetNestedJoinEnumerator extends ParquetNestedRepeatedRelEnumera
     private final boolean leftIsParent;
     private final boolean emitUnmatchedParents;
     private final List<String> childPathFromParent;
-    private final ParentLimitState parentLimitState;
 
 
-    public ParquetNestedJoinEnumerator( ParquetSourceReader reader, ParquetTableBinding parentBinding, ParquetTableBinding childBinding, List<ParquetColumnBinding> parentColumns, List<ParquetColumnBinding> childColumns, JoinFiltersContainer filterContainer, boolean leftIsParent, boolean emitUnmatchedParents, ParentLimitState parentLimitState ) {
-        this( reader, parentBinding, childBinding, parentColumns, childColumns, filterContainer, leftIsParent, emitUnmatchedParents, parentLimitState, true );
+    public ParquetNestedJoinEnumerator( ParquetSourceReader reader, ParquetTableBinding parentBinding, ParquetTableBinding childBinding, List<ParquetColumnBinding> parentColumns, List<ParquetColumnBinding> childColumns, JoinFiltersContainer filterContainer, boolean leftIsParent, boolean emitUnmatchedParents ) {
+        this( reader, parentBinding, childBinding, parentColumns, childColumns, filterContainer, leftIsParent, emitUnmatchedParents, true );
     }
 
 
-    public ParquetNestedJoinEnumerator( ParquetSourceReader reader, ParquetTableBinding parentBinding, ParquetTableBinding childBinding, List<ParquetColumnBinding> parentColumns, List<ParquetColumnBinding> childColumns, JoinFiltersContainer filterContainer, boolean leftIsParent, boolean emitUnmatchedParents, ParentLimitState parentLimitState, boolean readerOwner ) {
+    public ParquetNestedJoinEnumerator( ParquetSourceReader reader, ParquetTableBinding parentBinding, ParquetTableBinding childBinding, List<ParquetColumnBinding> parentColumns, List<ParquetColumnBinding> childColumns, JoinFiltersContainer filterContainer, boolean leftIsParent, boolean emitUnmatchedParents, boolean readerOwner ) {
         super( reader, parentBinding, parentColumns, filterContainer, new ParquetNestedJoinFilterEvaluator( reader.getProjectionSchema(), new ParquetPathValueExtractor(), parentBinding, parentColumns, leftIsParent ), true, readerOwner );
         this.parentBinding = parentBinding;
         this.childBinding = childBinding;
@@ -64,7 +63,6 @@ public class ParquetNestedJoinEnumerator extends ParquetNestedRepeatedRelEnumera
         this.leftIsParent = leftIsParent;
         this.emitUnmatchedParents = emitUnmatchedParents;
         this.childPathFromParent = childBinding.sourcePathElements().subList( parentBinding.sourcePathElements().size(), childBinding.sourcePathElements().size() );
-        this.parentLimitState = parentLimitState;
     }
 
 
@@ -73,9 +71,6 @@ public class ParquetNestedJoinEnumerator extends ParquetNestedRepeatedRelEnumera
         List<Group> rows = new ArrayList<>();
         VirtualGroup rootGroup = new VirtualGroup( group, String.valueOf( reader.getCurrentRowNumber() ), null, 0 );
         for ( Group parent : resolveNested( rootGroup, group.getType(), parentBinding.sourcePathElements(), 0 ) ) {
-            if ( !parentLimitState.includeNextParentRow() ) {
-                continue;
-            }
             if ( !matchesFilters( combinedGroup( (VirtualGroup) parent, null ), parentFilters ) ) {
                 continue;
             }

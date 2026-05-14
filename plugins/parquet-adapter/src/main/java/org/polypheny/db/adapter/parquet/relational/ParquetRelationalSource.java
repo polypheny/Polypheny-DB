@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.pf4j.Extension;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DeployMode;
@@ -37,8 +38,9 @@ import org.polypheny.db.adapter.parquet.relational.schema.ParquetNormalizedSchem
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSchemaMode;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSchemaNormalizer;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetRelTable;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetTableBinding;
-import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelScan;
+import org.polypheny.db.adapter.parquet.relational.planning.ParquetScan;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.rules.FilterSetOpTransposeRule;
@@ -104,10 +106,12 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
 
     @Override
     public AlgNode getRelScan( long allocId, AlgBuilder builder ) {
-        // this rule is required to push the filters into the ParquetRelScan.
+        // This rule is still required for filter movement before the adapter rules inspect the tree.
         builder.getCluster().getPlanner().addRuleDuringRuntime( FilterSetOpTransposeRule.INSTANCE );
-        ParquetRelScan.registerRules( builder.getCluster().getPlanner() );
-        return super.getRelScan( allocId, builder );
+//        ParquetConvention.INSTANCE.register( builder.getCluster().getPlanner() );
+        PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
+        ParquetRelTable table = entity.unwrapOrThrow( ParquetRelTable.class );
+        return new ParquetScan( builder.getCluster(), table, IntStream.range( 0, table.getFieldCount() ).toArray() );
     }
 
 
