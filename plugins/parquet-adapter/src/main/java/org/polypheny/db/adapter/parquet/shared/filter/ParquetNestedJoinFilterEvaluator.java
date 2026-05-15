@@ -24,6 +24,7 @@ import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetTableBinding;
 import org.polypheny.db.adapter.parquet.shared.execution.CombinedGroup;
 import org.polypheny.db.adapter.parquet.shared.execution.VirtualGroup;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.type.entity.PolyValue;
 
 /**
@@ -72,7 +73,10 @@ public class ParquetNestedJoinFilterEvaluator extends ParquetGroupFilterEvaluato
      */
     @Override
     protected boolean canApplyFilter( Group group, ParquetAdapterFilter filter ) {
-        if ( filter.polyValue() == null || filter.columnIndex() < 0 ) {
+        if ( filter.columnIndex() < 0 ) {
+            return false;
+        }
+        if ( filter.polyValue() == null && !isNullCheck( filter.operator() ) ) {
             return false;
         }
         if ( group instanceof CombinedGroup combinedGroup ) {
@@ -93,6 +97,11 @@ public class ParquetNestedJoinFilterEvaluator extends ParquetGroupFilterEvaluato
     protected boolean filterHasValue( Group group, ParquetAdapterFilter filter ) {
         CombinedGroup combinedGroup = (CombinedGroup) group;
         return !combinedGroup.isNullField( filter.columnIndex(), leftIsParent );
+    }
+
+
+    private boolean isNullCheck( Kind operator ) {
+        return operator == Kind.IS_NULL || operator == Kind.IS_NOT_NULL;
     }
 
 }

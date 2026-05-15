@@ -42,12 +42,12 @@ public final class PatternMatchers {
     private final static ParquetRelFilterTranslator translator = new ParquetRelFilterTranslator();
 
 
-    private static void transformTo( AlgOptRuleCall call, EnumerableJoin join, ParquetScan left, ParquetScan right ) {
-        JoinDirection direction = ParquetJoin.supportedDirection( join, left, right );
+    private static void transformTo( AlgOptRuleCall call, EnumerableJoin join, ParquetRelScan left, ParquetRelScan right ) {
+        JoinDirection direction = ParquetRelJoin.supportedDirection( join, left, right );
         if ( direction == null ) {
             return;
         }
-        ParquetJoin parquetJoin = ParquetJoin.create( left, right, join.getCondition(), join.getVariablesSet(), join.getJoinType(), direction.leftIsParent() );
+        ParquetRelJoin parquetJoin = ParquetRelJoin.create( left, right, join.getCondition(), join.getVariablesSet(), join.getJoinType(), direction.leftIsParent() );
         call.transformTo( toEnumerable( join, parquetJoin ) );
     }
 
@@ -85,7 +85,7 @@ public final class PatternMatchers {
     }
 
 
-    private static ParquetScan applyCalc( EnumerableCalc calc, ParquetScan scan ) {
+    private static ParquetRelScan applyCalc( EnumerableCalc calc, ParquetRelScan scan ) {
         RexProgram program = calc.getProgram();
         List<RexNode> projects = program.getProjectList().stream()
                 .map( program::expandLocalRef )
@@ -105,23 +105,24 @@ public final class PatternMatchers {
             projectedFields[i] = currentFields[fields[i]];
         }
 
-        ParquetScan updatedScan = scan.withFields( projectedFields );
-        if ( updatedScan == null && program.getCondition() == null ) {
-            return null;
-        }
+        ParquetAdapterFilter adapterFilter = null;
 
         if ( program.getCondition() != null ) {
-            // if updatedScan is null then original scan contains an old filter that cannot be translated into new projection.
-            ParquetScan projectedScan = updatedScan == null ? scan.withFieldsAndFilters( projectedFields, List.of() ) : updatedScan;
             RexNode condition = program.expandLocalRef( program.getCondition() );
-            ParquetAdapterFilter adapterFilter = translate( projectedScan, condition );
+            adapterFilter = translate( scan, condition );
             if ( adapterFilter == null ) {
                 return null;
             }
-            return projectedScan.withFilters( List.of( adapterFilter ) );
+            adapterFilter = ParquetFilterResolver.toPhysicalFilter( adapterFilter, currentFields );
+            if ( adapterFilter == null ) {
+                return null;
+            }
         }
 
-        return updatedScan;
+        ParquetRelScan updatedScan = scan.withFields( projectedFields );
+        return adapterFilter == null
+                ? updatedScan
+                : updatedScan.withFilters( List.of( adapterFilter ) );
     }
 
 
@@ -131,14 +132,14 @@ public final class PatternMatchers {
                 factory,
                 operand(
                         EnumerableJoin.class,
-                        operand( EnumerableParquet.class, operand( ParquetScan.class, none() ) ),
-                        operand( EnumerableParquet.class, operand( ParquetScan.class, none() ) )
+                        operand( EnumerableParquet.class, operand( ParquetRelScan.class, none() ) ),
+                        operand( EnumerableParquet.class, operand( ParquetRelScan.class, none() ) )
                 ),
                 "joinWithScanOnLeftAndScanOnRight",
                 call -> {
                     EnumerableJoin join = call.alg( 0 );
-                    ParquetScan left = call.alg( 2 );
-                    ParquetScan right = call.alg( 4 );
+                    ParquetRelScan left = call.alg( 2 );
+                    ParquetRelScan right = call.alg( 4 );
                     transformTo( call, join, left, right );
                 }
         );
@@ -151,12 +152,12 @@ public final class PatternMatchers {
                 factory,
                 operand(
                         EnumerableCalc.class,
-                        operand( EnumerableParquet.class, operand( ParquetJoin.class, any() ) )
+                        operand( EnumerableParquet.class, operand( ParquetRelJoin.class, any() ) )
                 ),
                 "attachFilterToJoinUnderCalc",
                 call -> {
                     EnumerableCalc calc = call.alg( 0 );
-                    ParquetJoin join = call.alg( 2 );
+                    ParquetRelJoin join = call.alg( 2 );
                     if ( !AlgOptUtil.areRowTypesEqual( calc.getInput().getTupleType(), join.getTupleType(), false ) ) {
                         return;
                     }
@@ -181,12 +182,12 @@ public final class PatternMatchers {
                 factory,
                 operand(
                         EnumerableCalc.class,
-                        operand( EnumerableParquet.class, operand( ParquetScan.class, any() ) )
+                        operand( EnumerableParquet.class, operand( ParquetRelScan.class, any() ) )
                 ),
                 "attachFieldsAndFiltersToScanUnderCalc",
                 call -> {
                     EnumerableCalc calc = call.alg( 0 );
-                    ParquetScan scan = applyCalc( calc, call.alg( 2 ) );
+                    ParquetRelScan scan = applyCalc( calc, call.alg( 2 ) );
                     if ( scan == null ) {
                         return;
                     }

@@ -37,6 +37,21 @@ final class ParquetPolyAlgDisplay {
     }
 
 
+    static List<String> fieldNames( ParquetRelTable table ) {
+        List<AlgDataTypeField> tableFields = table.getTupleType().getFields();
+        return java.util.stream.IntStream.range( 0, tableFields.size() )
+                .mapToObj( index -> fieldName( tableFields, index ) )
+                .toList();
+    }
+
+
+    static List<String> prefixedFieldNames( ParquetRelTable table, String prefix ) {
+        return fieldNames( table ).stream()
+                .map( fieldName -> prefix + "." + fieldName )
+                .toList();
+    }
+
+
     static List<String> filters( List<ParquetAdapterFilter> filters, List<String> fieldNames ) {
         return filters.stream()
                 .map( filter -> filter( filter, fieldNames ) )

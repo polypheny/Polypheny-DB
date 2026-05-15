@@ -46,18 +46,18 @@ import org.polypheny.db.schema.trait.ModelTrait;
  * Parquet-convention scan for relational Parquet tables.
  */
 @Getter
-public class ParquetScan extends RelScan<ParquetRelTable> implements ParquetAlg {
+public class ParquetRelScan extends RelScan<ParquetRelTable> implements ParquetAlg {
 
     private final int[] fields;
     private final List<ParquetAdapterFilter> filters;
 
 
-    public ParquetScan( AlgCluster cluster, ParquetRelTable table, int[] fields ) {
+    public ParquetRelScan(AlgCluster cluster, ParquetRelTable table, int[] fields ) {
         this( cluster, table, fields, List.of() );
     }
 
 
-    public ParquetScan( AlgCluster cluster, ParquetRelTable table, int[] fields, List<ParquetAdapterFilter> filters ) {
+    public ParquetRelScan(AlgCluster cluster, ParquetRelTable table, int[] fields, List<ParquetAdapterFilter> filters ) {
         super( cluster, cluster.traitSetOf( ParquetConvention.INSTANCE ).replace( ModelTrait.RELATIONAL ), table );
         this.fields = fields;
         this.filters = List.copyOf( filters );
@@ -67,7 +67,7 @@ public class ParquetScan extends RelScan<ParquetRelTable> implements ParquetAlg 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
-        return new ParquetScan( getCluster(), entity, fields, filters );
+        return new ParquetRelScan( getCluster(), entity, fields, filters );
     }
 
 
@@ -86,9 +86,10 @@ public class ParquetScan extends RelScan<ParquetRelTable> implements ParquetAlg 
     @Override
     public PolyAlgArgs bindArguments() {
         List<String> fieldNames = ParquetPolyAlgDisplay.fieldNames( entity, fields );
+        List<String> tableFieldNames = ParquetPolyAlgDisplay.fieldNames( entity );
         return super.bindArguments()
                 .put( "fields", new ListArg<>( fieldNames, StringArg::new ) )
-                .put( "filters", new ListArg<>( ParquetPolyAlgDisplay.filters( filters, fieldNames ), StringArg::new ) );
+                .put( "filters", new ListArg<>( ParquetPolyAlgDisplay.filters( filters, tableFieldNames ), StringArg::new ) );
     }
 
 
@@ -117,23 +118,15 @@ public class ParquetScan extends RelScan<ParquetRelTable> implements ParquetAlg 
     }
 
 
-    public ParquetScan withFilters( List<ParquetAdapterFilter> filters ) {
+    public ParquetRelScan withFilters(List<ParquetAdapterFilter> filters ) {
         List<ParquetAdapterFilter> combinedFilters = new ArrayList<>( this.filters );
         combinedFilters.addAll( filters );
-        return new ParquetScan( getCluster(), entity, fields, combinedFilters );
+        return new ParquetRelScan( getCluster(), entity, fields, combinedFilters );
     }
 
 
-    public ParquetScan withFields( int[] fields ) {
-        List<ParquetAdapterFilter> remapped = ParquetFilterIndexMapper.remapFilters( filters, this.fields, fields );
-        if ( remapped == null ) {
-            return null; // cannot absorb this projection into the scan
-        }
-        return new ParquetScan( getCluster(), entity, fields, remapped );
-    }
-
-    public ParquetScan withFieldsAndFilters( int[] fields, List<ParquetAdapterFilter> filters ) {
-        return new ParquetScan( getCluster(), entity, fields, filters );
+    public ParquetRelScan withFields(int[] fields ) {
+        return new ParquetRelScan( getCluster(), entity, fields, filters );
     }
 
 

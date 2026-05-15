@@ -137,7 +137,7 @@ class ParquetNestedJoinPlanningTest {
                         + "WHERE i.quantity = 3 "
                         + "LIMIT 10" );
 
-        assertTrue( physicalPlan.contains( "ParquetJoin" ), physicalPlan );
+        assertTrue( physicalPlan.contains( "ParquetRelJoin" ), physicalPlan );
         assertFalse( physicalPlan.contains( "EnumerableJoin" ), physicalPlan );
     }
 
@@ -152,7 +152,7 @@ class ParquetNestedJoinPlanningTest {
                         + "WHERE i.quantity = 3 "
                         + "LIMIT 10" );
 
-        assertTrue( physicalPlan.contains( "ParquetJoin" ), physicalPlan );
+        assertTrue( physicalPlan.contains( "ParquetRelJoin" ), physicalPlan );
         assertFalse( physicalPlan.contains( "EnumerableJoin" ), physicalPlan );
     }
 

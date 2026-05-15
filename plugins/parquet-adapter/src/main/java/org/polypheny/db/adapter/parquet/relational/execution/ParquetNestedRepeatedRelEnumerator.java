@@ -41,8 +41,9 @@ public class ParquetNestedRepeatedRelEnumerator extends AbstractParquetEnumerato
     private final List<String> tablePath;
     private final List<ParquetColumnBinding> columnBindings;
 
-    public ParquetNestedRepeatedRelEnumerator( ParquetSourceReader reader, ParquetTableBinding binding, List<ParquetColumnBinding> columnBindings, FiltersContainer filtersContainer ) {
-        this( reader, binding, columnBindings, filtersContainer, new ParquetNestedFilterEvaluator( reader.getProjectionSchema(), new ParquetPathValueExtractor(), binding.sourcePathElements(), columnBindings ), false, true );
+
+    public ParquetNestedRepeatedRelEnumerator( ParquetSourceReader reader, ParquetTableBinding binding, List<ParquetColumnBinding> columnBindings, List<ParquetColumnBinding> filterColumnBindings, FiltersContainer filtersContainer ) {
+        this( reader, binding, columnBindings, filtersContainer, new ParquetNestedFilterEvaluator( reader.getProjectionSchema(), new ParquetPathValueExtractor(), binding.sourcePathElements(), filterColumnBindings ), false, true );
     }
 
 

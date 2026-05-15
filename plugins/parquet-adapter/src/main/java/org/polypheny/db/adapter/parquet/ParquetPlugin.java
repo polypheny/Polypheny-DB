@@ -22,8 +22,8 @@ import org.polypheny.db.adapter.parquet.document.ParquetDocumentSource;
 import org.polypheny.db.adapter.parquet.relational.ParquetRelationalSource;
 import org.polypheny.db.adapter.parquet.relational.planning.EnumerableParquet;
 import org.polypheny.db.adapter.parquet.relational.planning.ParquetConvention;
-import org.polypheny.db.adapter.parquet.relational.planning.ParquetJoin;
-import org.polypheny.db.adapter.parquet.relational.planning.ParquetScan;
+import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelJoin;
+import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelScan;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
@@ -69,21 +69,23 @@ public class ParquetPlugin extends PolyPlugin {
                 .model( DataModel.RELATIONAL )
                 .opName( "PE_CALC" ).convention( EnumerableConvention.INSTANCE ).numInputs( 1 ).opTags( physTags )
                 .build() );
-        PolyAlgRegistry.register( ParquetScan.class, PolyAlgDeclaration.builder()
+        PolyAlgRegistry.register( ParquetRelScan.class, PolyAlgDeclaration.builder()
                 .model( DataModel.RELATIONAL )
                 .opName( "P_SCAN" ).convention( ParquetConvention.INSTANCE ).numInputs( 0 ).opTags( physTags )
                 .params( PolyAlgRegistry.getParams( LogicalRelScan.class ) )
                 .param( Parameter.builder().name( "fields" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "filters" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
-        PolyAlgRegistry.register( ParquetJoin.class, PolyAlgDeclaration.builder()
+        PolyAlgRegistry.register( ParquetRelJoin.class, PolyAlgDeclaration.builder()
                 .model( DataModel.RELATIONAL )
                 .opName( "P_JOIN" ).convention( ParquetConvention.INSTANCE ).numInputs( 2 ).opTags( physTags )
                 .params( PolyAlgRegistry.getParams( EnumerableJoin.class ) )
                 .param( Parameter.builder().name( "leftIsParent" ).type( ParamType.BOOLEAN ).defaultValue( BooleanArg.FALSE ).build() )
                 .param( Parameter.builder().name( "leftFields" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "rightFields" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
-                .param( Parameter.builder().name( "filters" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "leftFilters" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "rightFilters" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "joinFilters" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
     }
 

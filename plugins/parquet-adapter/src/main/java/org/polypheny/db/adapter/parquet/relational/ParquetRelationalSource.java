@@ -40,7 +40,7 @@ import org.polypheny.db.adapter.parquet.relational.schema.ParquetSchemaNormalize
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetRelTable;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetTableBinding;
-import org.polypheny.db.adapter.parquet.relational.planning.ParquetScan;
+import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelScan;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.rules.FilterSetOpTransposeRule;
@@ -111,7 +111,7 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
 //        ParquetConvention.INSTANCE.register( builder.getCluster().getPlanner() );
         PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
         ParquetRelTable table = entity.unwrapOrThrow( ParquetRelTable.class );
-        return new ParquetScan( builder.getCluster(), table, IntStream.range( 0, table.getFieldCount() ).toArray() );
+        return new ParquetRelScan( builder.getCluster(), table, IntStream.range( 0, table.getFieldCount() ).toArray() );
     }
 
 

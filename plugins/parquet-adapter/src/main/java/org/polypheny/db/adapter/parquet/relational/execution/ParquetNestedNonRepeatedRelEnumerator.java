@@ -38,9 +38,9 @@ public class ParquetNestedNonRepeatedRelEnumerator extends AbstractParquetEnumer
     private final ParquetSourceFile sourceFile;
 
 
-    public ParquetNestedNonRepeatedRelEnumerator( ParquetSourceReader reader, ParquetSourceFile sourceFile, List<ParquetColumnBinding> columnBindings, FiltersContainer filtersContainer ) {
+    public ParquetNestedNonRepeatedRelEnumerator( ParquetSourceReader reader, ParquetSourceFile sourceFile, List<ParquetColumnBinding> columnBindings, List<ParquetColumnBinding> filterColumnBindings, FiltersContainer filtersContainer ) {
         // read full root rows from the Parquet file
-        super( reader, filtersContainer, new ParquetPartitionAwareFilterEvaluator( reader.getProjectionSchema(), new ParquetPathValueExtractor(), sourceFile, columnBindings ) );
+        super( reader, filtersContainer, new ParquetPartitionAwareFilterEvaluator( reader.getProjectionSchema(), new ParquetPathValueExtractor(), sourceFile, filterColumnBindings ) );
         this.columnBindings = List.copyOf( columnBindings );
         this.sourceFile = sourceFile;
     }

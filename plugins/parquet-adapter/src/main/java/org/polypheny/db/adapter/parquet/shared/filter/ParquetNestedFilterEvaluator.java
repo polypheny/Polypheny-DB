@@ -23,6 +23,7 @@ import org.polypheny.db.adapter.parquet.relational.execution.ParquetPathValueExt
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
 import org.polypheny.db.adapter.parquet.shared.execution.ParquetValueExtractor;
 import org.polypheny.db.adapter.parquet.shared.execution.VirtualGroup;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
 
 /**
@@ -45,6 +46,9 @@ public class ParquetNestedFilterEvaluator extends ParquetGroupFilterEvaluator {
     protected PolyValue extractValue( Group group, ParquetAdapterFilter filter ) {
         var pathValueExtractor = (ParquetPathValueExtractor) valueExtractor;
         var virtualGroup = (VirtualGroup) group;
+        if ( filter.columnIndex() < 0 || filter.columnIndex() >= columnBindings.size() ) {
+            return PolyNull.NULL;
+        }
         var binding = columnBindings.get( filter.columnIndex() );
         return pathValueExtractor.extractValue( virtualGroup, binding, tablePath );
     }
