@@ -19,11 +19,13 @@ package org.polypheny.db.adapter.parquet.relational.schema;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.LinkedHashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.type.PolyType;
 
 /**
  * Saves and restores ParquetTableBinding metadata through adapter settings.
@@ -40,6 +42,8 @@ public final class ParquetBindingSerializer {
     private static final String FILE_FIELD_JOINER = "|";
     private static final String PARTITION_SEPARATOR = "&";
     private static final String PARTITION_FIELD_SEPARATOR = "=";
+    private static final String STATISTICS_SEPARATOR = "~";
+    private static final String STATISTICS_FIELD_SEPARATOR = ":";
 
 
     private ParquetBindingSerializer() {
@@ -82,7 +86,9 @@ public final class ParquetBindingSerializer {
 
     private static String serializeSourceFiles( List<ParquetSourceFile> sourceFiles ) {
         return sourceFiles.stream()
-                .map( sourceFile -> encode( sourceFile.fileUrl() ) + FILE_FIELD_JOINER + serializePartitions( sourceFile.partitionValues() ) )
+                .map( sourceFile -> encode( sourceFile.fileUrl() )
+                        + FILE_FIELD_JOINER + serializePartitions( sourceFile.partitionValues() )
+                        + FILE_FIELD_JOINER + serializeColumnStatistics( sourceFile.columnStatistics() ) )
                 .collect( Collectors.joining( FILE_SEPARATOR ) );
     }
 
@@ -93,10 +99,15 @@ public final class ParquetBindingSerializer {
         }
         return Stream.of( serialized.split( FILE_SEPARATOR ) ).map( fileEntry -> {
             String[] fields = fileEntry.split( FILE_FIELD_SEPARATOR, -1 );
-            if ( fields.length != 2 ) {
+            if ( fields.length != 2 && fields.length != 3 ) {
                 throw new GenericRuntimeException( "Invalid serialized Parquet source file entry: %s", fileEntry );
             }
-            return new ParquetSourceFile( decode( fields[0] ), deserializePartitions( fields[1] ) );
+            String fileUrl = decode( fields[0] );
+            Map<String, String> partitions = deserializePartitions( fields[1] );
+            if ( fields.length == 2 ) {
+                return ParquetSourceFile.of( fileUrl, partitions );
+            }
+            return new ParquetSourceFile( fileUrl, partitions, deserializeColumnStatistics( fields[2] ) );
         } ).toList();
     }
 
@@ -121,6 +132,61 @@ public final class ParquetBindingSerializer {
             partitionValues.put( decode( fields[0] ), decode( fields[1] ) );
         }
         return partitionValues;
+    }
+
+
+    private static String serializeColumnStatistics( Map<List<String>, ParquetColumnStatistics> statistics ) {
+        return statistics.entrySet().stream()
+                .map( entry -> serializePath( entry.getKey() )
+                        + STATISTICS_FIELD_SEPARATOR + entry.getValue().type().name()
+                        + STATISTICS_FIELD_SEPARATOR + entry.getValue().rowCount()
+                        + STATISTICS_FIELD_SEPARATOR + entry.getValue().valueCount()
+                        + STATISTICS_FIELD_SEPARATOR + serializeNullableLong( entry.getValue().nullCount() )
+                        + STATISTICS_FIELD_SEPARATOR + encode( entry.getValue().min() )
+                        + STATISTICS_FIELD_SEPARATOR + encode( entry.getValue().max() )
+                        + STATISTICS_FIELD_SEPARATOR + entry.getValue().minMaxReliable() )
+                .collect( Collectors.joining( STATISTICS_SEPARATOR ) );
+    }
+
+
+    private static Map<List<String>, ParquetColumnStatistics> deserializeColumnStatistics( String serialized ) {
+        if ( serialized == null || serialized.isBlank() ) {
+            return Collections.emptyMap();
+        }
+
+        Map<List<String>, ParquetColumnStatistics> statistics = new LinkedHashMap<>();
+        for ( String entry : serialized.split( STATISTICS_SEPARATOR ) ) {
+            String[] fields = entry.split( STATISTICS_FIELD_SEPARATOR, -1 );
+            if ( fields.length != 8 ) {
+                throw new GenericRuntimeException( "Invalid serialized Parquet column statistics entry: %s", entry );
+            }
+            statistics.put(
+                    deserializePath( fields[0] ),
+                    new ParquetColumnStatistics(
+                            PolyType.valueOf( fields[1] ),
+                            Long.parseLong( fields[2] ),
+                            Long.parseLong( fields[3] ),
+                            deserializeNullableLong( fields[4] ),
+                            decodeNullable( fields[5] ),
+                            decodeNullable( fields[6] ),
+                            Boolean.parseBoolean( fields[7] ) ) );
+        }
+        return statistics;
+    }
+
+
+    private static String serializeNullableLong( Long value ) {
+        return value == null ? "" : String.valueOf( value );
+    }
+
+
+    private static Long deserializeNullableLong( String value ) {
+        return value == null || value.isBlank() ? null : Long.parseLong( value );
+    }
+
+
+    private static String decodeNullable( String value ) {
+        return value == null || value.isBlank() ? null : decode( value );
     }
 
 

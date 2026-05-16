@@ -29,7 +29,7 @@ import org.polypheny.db.plan.ConventionTraitDef;
 public class ParquetConvention extends Convention.Impl {
 
     public static final ParquetConvention INSTANCE = new ParquetConvention();
-    public static final double COST_MULTIPLIER = 0d;// 0.05d;
+    public static final double COST_MULTIPLIER = 0.05d;
 
 
     private ParquetConvention() {

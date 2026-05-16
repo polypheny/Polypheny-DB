@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import lombok.Getter;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -45,7 +46,7 @@ import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetSchemaReader;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceReader;
 import org.polypheny.db.adapter.parquet.relational.planning.ParquetFilterResolver;
-import org.polypheny.db.adapter.parquet.shared.statistics.ParquetStatisticsReader;
+import org.polypheny.db.adapter.parquet.shared.statistics.ParquetTableStatisticsReader;
 import org.polypheny.db.adapter.statistics.AdapterStatisticsProvider;
 import org.polypheny.db.adapter.statistics.ProvidedColumnStatistics;
 import org.polypheny.db.adapter.statistics.ProvidedEntityStatistics;
@@ -77,7 +78,7 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
     private final ParquetTableBinding binding;
     private final List<PolyType> fieldTypes;
     private final ParquetSchemaReader schemaReader;
-    private final ParquetStatisticsReader statisticsReader;
+    private final ParquetTableStatisticsReader statisticsReader;
 
 
     /**
@@ -98,7 +99,7 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
         this.fieldIndexes = IntStream.range( 0, table.columns.size() ).toArray();
         this.fieldTypes = columns.stream().map( c -> c.type ).toList();
         this.schemaReader = new ParquetSchemaReader( binding.sourceFiles().stream().map( ParquetSourceFile::asSource ).toList() );
-        this.statisticsReader = new ParquetStatisticsReader( schemaReader, binding );
+        this.statisticsReader = new ParquetTableStatisticsReader( schemaReader, binding );
         this.parquetSource = parquetSource;
         this.filterTranslator = new ParquetRelFilterTranslator();
     }
@@ -160,16 +161,15 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
 
         // check for dynamic filters
         final List<ParquetAdapterFilter> resolvedFilters = ParquetFilterResolver.resolveFilters( dataContext, parquetAdapterFilters, f -> binding.getColumnBinding( columns.get( f.columnIndex() ).id ) );
-        final List<ParquetSourceFile> sourceFiles = new ParquetSourceFileFilterEvaluator( f -> binding.getColumnBinding( columns.get( f.columnIndex() ).id ) )
-                .prune( binding.sourceFiles(), resolvedFilters );
-
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
                 return new ParquetMultiFileEnumerator(
-                        sourceFiles,
-                        sourceFile -> enumeratorForFile( sourceFile, fieldIndexes, cancelFlag, FiltersContainer.shared( resolvedFilters ) ) );
+                        binding.sourceFiles(),
+                        sourceFile -> enumeratorForFile( sourceFile, fieldIndexes, cancelFlag, FiltersContainer.shared( resolvedFilters ) ),
+                        createParquetSourceFileEvaluatorsChain( f -> binding.getColumnBinding( columns.get( f.columnIndex() ).id ) ),
+                        resolvedFilters );
             }
         };
     }
@@ -235,15 +235,15 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
     public Enumerable<PolyValue[]> project( final DataContext dataContext, final int[] fields, final List<ParquetAdapterFilter> filters ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( parquetSource );
         final List<ParquetAdapterFilter> resolvedFilters = ParquetFilterResolver.resolveFilters( dataContext, filters, f -> selectPhysicalBinding( f.columnIndex() ) );
-        final List<ParquetSourceFile> sourceFiles = new ParquetSourceFileFilterEvaluator( f -> selectPhysicalBinding( f.columnIndex() ) )
-                .prune( binding.sourceFiles(), resolvedFilters );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
                 return new ParquetMultiFileEnumerator(
-                        sourceFiles,
-                        sourceFile -> enumeratorForFile( sourceFile, fields, cancelFlag, FiltersContainer.shared( resolvedFilters ) ) );
+                        binding.sourceFiles(),
+                        sourceFile -> enumeratorForFile( sourceFile, fields, cancelFlag, FiltersContainer.shared( resolvedFilters ) ),
+                        createParquetSourceFileEvaluatorsChain( f -> selectPhysicalBinding( f.columnIndex() ) ),
+                        resolvedFilters );
             }
         };
     }
@@ -269,16 +269,16 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
         final List<ParquetAdapterFilter> rightScanFilters = rightScan.resolveFilters( dataContext );
         final JoinFiltersContainer filterContainer = getJoinFiltersContainer( dataContext, leftScan, rightScan, leftIsParent, filters, leftScanFilters, rightScanFilters, parent, child );
 
-        final List<ParquetSourceFile> sourceFiles = new ParquetSourceFileFilterEvaluator(
-                f -> parent.selectPhysicalBinding( f.columnIndex() )
-        ).prune( parent.table().binding.sourceFiles(), leftIsParent ? leftScanFilters : rightScanFilters );
+        final List<ParquetAdapterFilter> parentFileFilters = leftIsParent ? leftScanFilters : rightScanFilters;
 
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
                 return new ParquetMultiFileEnumerator(
-                        sourceFiles,
-                        sourceFile -> parent.table().nestedJoinEnumeratorForFile( sourceFile, child.table(), parent.fields(), child.fields(), cancelFlag, filterContainer, leftIsParent, emitUnmatchedParents ) );
+                        parent.table().binding.sourceFiles(),
+                        sourceFile -> parent.table().nestedJoinEnumeratorForFile( sourceFile, child.table(), parent.fields(), child.fields(), cancelFlag, filterContainer, leftIsParent, emitUnmatchedParents ),
+                        createParquetSourceFileEvaluatorsChain( f -> parent.selectPhysicalBinding( f.columnIndex() ) ),
+                        parentFileFilters );
             }
         };
     }
@@ -359,6 +359,14 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
                 filterContainer,
                 leftIsParent,
                 emitUnmatchedParents );
+    }
+
+
+    private static ParquetFilterEvaluatorsChain<ParquetSourceFile> createParquetSourceFileEvaluatorsChain( Function<ParquetAdapterFilter, ParquetColumnBinding> selector ) {
+        return new ParquetFilterEvaluatorsChain<>( List.of(
+                new ParquetSourceFileFilterEvaluator( selector ),
+                new ParquetSourceFileStatisticsFilterEvaluator( selector ) )
+        );
     }
 
 

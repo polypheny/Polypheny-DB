@@ -479,7 +479,7 @@ public class ParquetFileDiscovery {
 
 
     private static ParquetSourceFile toSourceFile( DiscoveredSourceFile sourceFile ) {
-        return new ParquetSourceFile( sourceFile.url().toString(), sourceFile.partitionValues() );
+        return ParquetSourceFile.of( sourceFile.url().toString(), sourceFile.partitionValues() );
     }
 
 

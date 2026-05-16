@@ -19,8 +19,10 @@ package org.polypheny.db.adapter.parquet.relational.schema;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.polypheny.db.adapter.parquet.shared.statistics.ParquetColumnStatisticsReader;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
@@ -31,24 +33,46 @@ import org.polypheny.db.util.Sources;
  */
 public record ParquetSourceFile(
         String fileUrl,
-        Map<String, String> partitionValues ) {
+        Map<String, String> partitionValues,
+        Map<List<String>, ParquetColumnStatistics> columnStatistics ) {
 
     public ParquetSourceFile {
         partitionValues = partitionValues == null ? Map.of() : Collections.unmodifiableMap( new LinkedHashMap<>( partitionValues ) );
+        columnStatistics = immutableColumnStatistics( columnStatistics );
     }
 
 
     public static ParquetSourceFile of( String fileUrl ) {
-        return new ParquetSourceFile( fileUrl, Map.of() );
+        return of( fileUrl, Map.of() );
+    }
+
+
+    public static ParquetSourceFile of( String fileUrl, Map<String, String> partitionValues ) {
+        return new ParquetSourceFile( fileUrl, partitionValues, ParquetColumnStatisticsReader.readAll( source( fileUrl ) ) );
     }
 
 
     public Source asSource() {
+        return source( fileUrl );
+    }
+
+
+    private static Source source( String fileUrl ) {
         try {
             return Sources.of( new URL( fileUrl ) );
         } catch ( MalformedURLException e ) {
             throw new GenericRuntimeException( e );
         }
+    }
+
+
+    private static Map<List<String>, ParquetColumnStatistics> immutableColumnStatistics( Map<List<String>, ParquetColumnStatistics> columnStatistics ) {
+        if ( columnStatistics == null || columnStatistics.isEmpty() ) {
+            return Map.of();
+        }
+        Map<List<String>, ParquetColumnStatistics> copy = new LinkedHashMap<>();
+        columnStatistics.forEach( ( path, statistics ) -> copy.put( List.copyOf( path ), statistics ) );
+        return Collections.unmodifiableMap( copy );
     }
 
 }

@@ -28,6 +28,7 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Type;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyNull;
@@ -168,6 +169,7 @@ public class ParquetTypeConverter {
 
     /**
      * Convert PolyValue to PolyString
+     *
      * @param value - to convert
      * @return PolyString
      */
@@ -177,6 +179,144 @@ public class ParquetTypeConverter {
             case ANY, DOCUMENT, GRAPH, NODE, EDGE, PATH, ARRAY, MAP -> value.toPolyJson();
             default -> PolyString.convert( value );
         };
+    }
+
+
+    /**
+     * Converts a raw Parquet footer statistic value into the compact string representation
+     * stored in {@code ParquetColumnStatistics}.
+     */
+    public String fromParquetValueToString( PrimitiveType primitive, Object value ) {
+        if ( value == null ) {
+            return null;
+        }
+
+        PolyType polyType = fromParquetTypeToPolyType( primitive );
+        if ( polyType == PolyType.DATE && value instanceof Number number ) {
+            return String.valueOf( number.longValue() );
+        }
+        if ( polyType == PolyType.TIME && value instanceof Number number ) {
+            return String.valueOf( normalizeParquetTimeToMillis( primitive, number.longValue() ) );
+        }
+        if ( polyType == PolyType.TIMESTAMP && value instanceof Number number ) {
+            return String.valueOf( normalizeParquetTimestampToMillis( primitive, number.longValue() ) );
+        }
+        if ( value instanceof Binary binary ) {
+            return binary.toStringUsingUTF8();
+        }
+        return String.valueOf( value );
+    }
+
+
+    /**
+     * Converts a string value into a PolyValue.
+     */
+    public PolyValue fromStringToPolyValue( PolyType polyType, String value ) {
+        if ( value == null ) {
+            return null;
+        }
+        try {
+            return switch ( polyType ) {
+                case BOOLEAN -> PolyBoolean.of( Boolean.parseBoolean( value ) );
+                case TINYINT, SMALLINT, INTEGER -> PolyInteger.of( Integer.parseInt( value ) );
+                case BIGINT -> PolyLong.of( Long.parseLong( value ) );
+                case FLOAT, REAL -> PolyFloat.of( Float.parseFloat( value ) );
+                case DOUBLE -> PolyDouble.of( Double.parseDouble( value ) );
+                case DATE -> PolyDate.of( Long.parseLong( value ) * DateTimeUtils.MILLIS_PER_DAY );
+                case TIME -> PolyTime.of( (int) (Long.parseLong( value ) % DateTimeUtils.MILLIS_PER_DAY) );
+                case TIMESTAMP -> PolyTimestamp.of( Long.parseLong( value ) );
+                case CHAR, VARCHAR, TEXT -> PolyString.of( value );
+                default -> null;
+            };
+        } catch ( RuntimeException e ) {
+            return null;
+        }
+    }
+
+
+    /**
+     * Converts a string value into a PolyValue if it is compatible with
+     * the requested logical column type.
+     */
+    public PolyValue fromStringToCompatiblePolyValue( PolyType columnType, PolyType polyType, String value ) {
+        PolyValue polyValue = fromStringToPolyValue( polyType, value );
+        return isCompatible( columnType, polyValue ) ? polyValue : null;
+    }
+
+
+    /**
+     * Converts a {@code String} value to a real comparable type.
+     */
+    public Comparable<?> fromStringToComparable( PolyType type, String value ) {
+        if ( value == null ) {
+            return null;
+        }
+        try {
+            PolyValue polyValue = fromStringToPolyValue( type, value );
+            return fromPolyValueToComparable( polyValue, type );
+        } catch ( RuntimeException e ) {
+            return null;
+        }
+    }
+
+
+    /**
+     * Converts a {@link PolyValue} to {@link Comparable}.
+     */
+    @SuppressWarnings("DataFlowIssue")
+    public Comparable<?> fromPolyValueToComparable( PolyValue value, PolyType type ) {
+        if ( value == null || value.isNull() ) {
+            return null;
+        }
+        try {
+            return switch ( type ) {
+                case BOOLEAN -> value.isBoolean() ? value.asBoolean().value : Boolean.parseBoolean( value.toString() );
+                case TINYINT, SMALLINT, INTEGER, BIGINT -> value.asNumber().longValue();
+                case FLOAT, REAL -> value.asNumber().floatValue();
+                case DOUBLE -> value.asNumber().doubleValue();
+                case DATE -> value.isDate() ? value.asDate().getDaysSinceEpoch() : value.asNumber().longValue();
+                case TIME -> value.isTime() ? value.asTime().ofDay.longValue() : value.asNumber().longValue();
+                case TIMESTAMP -> value.isTimestamp() ? value.asTimestamp().millisSinceEpoch : value.asNumber().longValue();
+                case CHAR, VARCHAR, TEXT -> value.isString() ? value.asString().value : value.toString();
+                default -> null;
+            };
+        } catch ( RuntimeException e ) {
+            return null;
+        }
+    }
+
+
+    public int compareStringValues( PolyType type, String left, String right ) {
+        Comparable<?> leftComparable = fromStringToComparable( type, left );
+        Comparable<?> rightComparable = fromStringToComparable( type, right );
+        if ( leftComparable == null || rightComparable == null ) {
+            return left.compareTo( right );
+        }
+        return compare( leftComparable, rightComparable );
+    }
+
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public int compare( Comparable left, Comparable right ) {
+        try {
+            return left.compareTo( right );
+        } catch ( RuntimeException e ) {
+            return left.toString().compareTo( right.toString() );
+        }
+    }
+
+
+    private boolean isCompatible( PolyType columnType, PolyValue polyValue ) {
+        if ( polyValue == null ) {
+            return false;
+        }
+        if ( columnType.getFamily() == PolyTypeFamily.NUMERIC && polyValue.isNumber() ) {
+            return true;
+        }
+        if ( PolyType.DATETIME_TYPES.contains( columnType ) && polyValue.isTemporal() ) {
+            return true;
+        }
+        return columnType.getFamily() == PolyTypeFamily.CHARACTER && polyValue.isString();
     }
 
 
@@ -304,6 +444,38 @@ public class ParquetTypeConverter {
             return localDateTime.toInstant( ZoneOffset.UTC ).toEpochMilli();
         }
         return normalizeTimestampToMillis( Long.parseLong( literal ) );
+    }
+
+
+    /**
+     * Normalizes Parquet TIME footer statistics to milliseconds.
+     */
+    private long normalizeParquetTimeToMillis( PrimitiveType primitive, long value ) {
+        LogicalTypeAnnotation logical = primitive.getLogicalTypeAnnotation();
+        if ( logical instanceof TimeLogicalTypeAnnotation timeLogical ) {
+            return switch ( timeLogical.getUnit() ) {
+                case MILLIS -> value;
+                case MICROS -> value / 1_000L;
+                case NANOS -> value / 1_000_000L;
+            };
+        }
+        return value;
+    }
+
+
+    /**
+     * Normalizes Parquet TIMESTAMP footer statistics to milliseconds.
+     */
+    private long normalizeParquetTimestampToMillis( PrimitiveType primitive, long value ) {
+        LogicalTypeAnnotation logical = primitive.getLogicalTypeAnnotation();
+        if ( logical instanceof TimestampLogicalTypeAnnotation timestampLogical ) {
+            return switch ( timestampLogical.getUnit() ) {
+                case MILLIS -> value;
+                case MICROS -> value / 1_000L;
+                case NANOS -> value / 1_000_000L;
+            };
+        }
+        return value;
     }
 
 

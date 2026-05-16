@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.parquet.relational.schema;
 
-import java.util.List;
 import java.util.function.Function;
 import org.polypheny.db.adapter.parquet.shared.filter.FilterEvaluator;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
@@ -31,16 +30,6 @@ class ParquetSourceFileFilterEvaluator extends FilterEvaluator<ParquetSourceFile
 
     ParquetSourceFileFilterEvaluator( Function<ParquetAdapterFilter, ParquetColumnBinding> selector ) {
         this.selector = selector;
-    }
-
-
-    List<ParquetSourceFile> prune( List<ParquetSourceFile> sourceFiles, List<ParquetAdapterFilter> filters ) {
-        if ( filters.isEmpty() ) {
-            return sourceFiles;
-        }
-        return sourceFiles.stream()
-                .filter( sourceFile -> filters.stream().allMatch( filter -> matches( sourceFile, filter ) ) )
-                .toList();
     }
 
 

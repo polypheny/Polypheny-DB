@@ -20,13 +20,11 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
-import org.apache.parquet.column.statistics.Statistics;
-import org.apache.parquet.hadoop.metadata.BlockMetaData;
-import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
-import org.apache.parquet.schema.PrimitiveType;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnRole;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnStatistics;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetTableBinding;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetSchemaReader;
@@ -35,21 +33,20 @@ import org.polypheny.db.adapter.statistics.ProvidedColumnStatistics;
 import org.polypheny.db.adapter.statistics.ProvidedEntityStatistics;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 
 /**
  * Provides parquet statistics
  */
-public class ParquetStatisticsReader {
+public class ParquetTableStatisticsReader {
 
     private final ParquetSchemaReader schemaReader;
     private final ParquetTableBinding binding;
     private final ParquetTypeConverter typeConverter;
 
 
-    public ParquetStatisticsReader( ParquetSchemaReader schemaReader, ParquetTableBinding binding ) {
+    public ParquetTableStatisticsReader( ParquetSchemaReader schemaReader, ParquetTableBinding binding ) {
         this.schemaReader = schemaReader;
         this.binding = binding;
         this.typeConverter = new ParquetTypeConverter();
@@ -62,7 +59,7 @@ public class ParquetStatisticsReader {
      * @return provided statistics
      */
     public Optional<ProvidedEntityStatistics> getEntityStatistics( boolean nestedTable ) {
-        return Optional.of( new ProvidedEntityStatistics( nestedTable ? estimateNestedRowCount() : schemaReader.getEstimatedRowCount() ) );
+        return Optional.of( new ProvidedEntityStatistics( nestedTable ? estimateNestedRowCount() : estimateSourceRowCount() ) );
     }
 
 
@@ -84,17 +81,15 @@ public class ParquetStatisticsReader {
             return Optional.of( new ProvidedColumnStatistics( estimateEntityRowCount(), null, null, List.of(), true ) );
         }
 
-        PrimitiveType primitiveType;
-        try {
-            primitiveType = schemaReader.getSchema().getType( columnBinding.sourcePathElements().toArray( new String[0] ) ).asPrimitiveType();
-        } catch ( RuntimeException e ) {
+        Optional<ParquetColumnStatistics> metadataStatistics = aggregateColumnStatistics( columnBinding.sourcePathElements() );
+        if ( metadataStatistics.isEmpty() ) {
             return Optional.of( new ProvidedColumnStatistics( estimateEntityRowCount(), null, null, List.of(), true ) );
         }
 
-        ColumnMetadataStatistics metadataStatistics = readColumnMetadataStatistics( columnBinding.sourcePathElements() );
-        PolyValue min = toStatisticValue( column.type, primitiveType, metadataStatistics.min() );
-        PolyValue max = toStatisticValue( column.type, primitiveType, metadataStatistics.max() );
-        return Optional.of( new ProvidedColumnStatistics( metadataStatistics.count(), min, max, List.of(), true ) );
+        ParquetColumnStatistics statistics = metadataStatistics.get();
+        PolyValue min = statistics.hasRange() ? typeConverter.fromStringToCompatiblePolyValue( column.type, statistics.type(), statistics.min() ) : null;
+        PolyValue max = statistics.hasRange() ? typeConverter.fromStringToCompatiblePolyValue( column.type, statistics.type(), statistics.max() ) : null;
+        return Optional.of( new ProvidedColumnStatistics( nonNullCount( statistics ), min, max, List.of(), true ) );
     }
 
 
@@ -122,7 +117,20 @@ public class ParquetStatisticsReader {
 
 
     private long estimateEntityRowCount() {
-        return binding.parentTableName() == null ? schemaReader.getEstimatedRowCount() : estimateNestedRowCount();
+        return binding.parentTableName() == null ? estimateSourceRowCount() : estimateNestedRowCount();
+    }
+
+
+    private long estimateSourceRowCount() {
+        long rowCount = 0;
+        for ( ParquetSourceFile sourceFile : binding.sourceFiles() ) {
+            OptionalLong fileRowCount = sourceRowCount( sourceFile );
+            if ( fileRowCount.isEmpty() ) {
+                return schemaReader.getEstimatedRowCount();
+            }
+            rowCount += fileRowCount.getAsLong();
+        }
+        return rowCount;
     }
 
 
@@ -142,125 +150,99 @@ public class ParquetStatisticsReader {
 
     private long estimateValueCount( List<String> sourcePathElements ) {
         long valueCount = 0;
-        for ( var footer : schemaReader.getFooters() ) {
-            for ( BlockMetaData block : footer.getBlocks() ) {
-                ColumnChunkMetaData column = findColumnChunk( block, sourcePathElements );
-                if ( column == null ) {
-                    continue;
-                }
-                valueCount += column.getValueCount();
+        for ( ParquetSourceFile sourceFile : binding.sourceFiles() ) {
+            ParquetColumnStatistics statistics = sourceFile.columnStatistics().get( sourcePathElements );
+            if ( statistics != null ) {
+                valueCount += statistics.valueCount();
             }
         }
         return valueCount;
     }
 
 
-    /**
-     * Count rows including min/max limits
-     * @param sourcePathElements - path
-     * @return column metadata statistics
-     */
-    private ColumnMetadataStatistics readColumnMetadataStatistics( List<String> sourcePathElements ) {
+    private Optional<ParquetColumnStatistics> aggregateColumnStatistics( List<String> sourcePathElements ) {
+        PolyType type = null;
         long rowCount = 0;
-        long nullCount = 0;
-        boolean hasReliableNullCount = true;
-        Object min = null;
-        Object max = null;
-        boolean hasMinMax = true;
+        long valueCount = 0;
+        Long nullCount = 0L;
+        String min = null;
+        String max = null;
+        boolean minMaxReliable = true;
+        boolean hasColumnStatistics = false;
 
-        for ( var footer : schemaReader.getFooters() ) {
-            for ( BlockMetaData block : footer.getBlocks() ) {
-                rowCount += block.getRowCount();
-                ColumnChunkMetaData column = findColumnChunk( block, sourcePathElements );
-                if ( column == null ) {
-                    nullCount += block.getRowCount();
+        for ( ParquetSourceFile sourceFile : binding.sourceFiles() ) {
+            ParquetColumnStatistics statistics = sourceFile.columnStatistics().get( sourcePathElements );
+            if ( statistics == null ) {
+                OptionalLong fileRowCount = sourceRowCount( sourceFile );
+                if ( fileRowCount.isEmpty() ) {
+                    nullCount = null;
+                    minMaxReliable = false;
                     continue;
                 }
-
-                Statistics<?> statistics = column.getStatistics();
-                if ( statistics == null ) {
-                    hasReliableNullCount = false;
-                    hasMinMax = false;
-                    continue;
+                long missingRows = fileRowCount.getAsLong();
+                rowCount += missingRows;
+                valueCount += missingRows;
+                if ( nullCount != null ) {
+                    nullCount += missingRows;
                 }
+                continue;
+            }
 
-                if ( statistics.isNumNullsSet() ) {
-                    nullCount += statistics.getNumNulls();
-                } else {
-                    hasReliableNullCount = false;
-                }
+            hasColumnStatistics = true;
+            if ( type == null ) {
+                type = statistics.type();
+            } else if ( type != statistics.type() ) {
+                minMaxReliable = false;
+            }
 
-                if ( statistics.hasNonNullValue() ) {
-                    Object currentMin = statistics.genericGetMin();
-                    Object currentMax = statistics.genericGetMax();
-                    min = lower( min, currentMin );
-                    max = higher( max, currentMax );
-                } else if ( !statistics.isNumNullsSet() || statistics.getNumNulls() != block.getRowCount() ) {
-                    hasMinMax = false;
-                }
+            rowCount += statistics.rowCount();
+            valueCount += statistics.valueCount();
+            if ( nullCount != null ) {
+                nullCount = statistics.nullCount() == null ? null : nullCount + statistics.nullCount();
+            }
+
+            if ( !statistics.minMaxReliable() ) {
+                minMaxReliable = false;
+            } else if ( statistics.hasRange() && type == statistics.type() ) {
+                min = lowerStatisticValue( min, statistics.min(), type );
+                max = higherStatisticValue( max, statistics.max(), type );
+            } else if ( !statistics.hasOnlyNulls() ) {
+                minMaxReliable = false;
             }
         }
 
-        long count = hasReliableNullCount ? rowCount - nullCount : rowCount;
-        return new ColumnMetadataStatistics( count, hasMinMax ? min : null, hasMinMax ? max : null );
-    }
-
-
-    private ColumnChunkMetaData findColumnChunk( BlockMetaData block, List<String> sourcePathElements ) {
-        for ( ColumnChunkMetaData column : block.getColumns() ) {
-            if ( List.of( column.getPath().toArray() ).equals( sourcePathElements ) ) {
-                return column;
-            }
+        if ( !hasColumnStatistics || type == null ) {
+            return Optional.empty();
         }
-        return null;
+        return Optional.of( new ParquetColumnStatistics( type, rowCount, valueCount, nullCount, min, max, minMaxReliable ) );
     }
 
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private Object lower( Object current, Object candidate ) {
+    private OptionalLong sourceRowCount( ParquetSourceFile sourceFile ) {
+        return sourceFile.columnStatistics().values().stream()
+                .mapToLong( ParquetColumnStatistics::rowCount )
+                .findFirst();
+    }
+
+
+    private long nonNullCount( ParquetColumnStatistics statistics ) {
+        return statistics.nullCount() == null ? statistics.rowCount() : statistics.rowCount() - statistics.nullCount();
+    }
+
+
+    private String lowerStatisticValue( String current, String candidate, PolyType type ) {
         if ( current == null ) {
             return candidate;
         }
-        return ((Comparable) candidate).compareTo( current ) < 0 ? candidate : current;
+        return typeConverter.compareStringValues( type, candidate, current ) < 0 ? candidate : current;
     }
 
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private Object higher( Object current, Object candidate ) {
+    private String higherStatisticValue( String current, String candidate, PolyType type ) {
         if ( current == null ) {
             return candidate;
         }
-        return ((Comparable) candidate).compareTo( current ) > 0 ? candidate : current;
-    }
-
-
-    private PolyValue toStatisticValue( PolyType columnType, PrimitiveType primitiveType, Object value ) {
-        if ( value == null ) {
-            return null;
-        }
-        try {
-            PolyValue polyValue = typeConverter.fromObjToPolyValue( primitiveType, value );
-            if ( columnType.getFamily() == PolyTypeFamily.NUMERIC && polyValue.isNumber() ) {
-                return polyValue;
-            }
-            if ( PolyType.DATETIME_TYPES.contains( columnType ) && polyValue.isTemporal() ) {
-                return polyValue;
-            }
-            if ( columnType.getFamily() == PolyTypeFamily.CHARACTER && polyValue.isString() ) {
-                return polyValue;
-            }
-            return null;
-        } catch ( RuntimeException e ) {
-            return null;
-        }
-    }
-
-
-    private record ColumnMetadataStatistics(
-            Long count,
-            Object min,
-            Object max ) {
-
+        return typeConverter.compareStringValues( type, candidate, current ) > 0 ? candidate : current;
     }
 
 }
