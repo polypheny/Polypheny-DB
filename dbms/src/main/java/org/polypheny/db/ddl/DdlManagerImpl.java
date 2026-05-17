@@ -262,16 +262,20 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         for ( ExportedDocument exportedDocument : exportedCollections ) {
-            String documentName = getUniqueEntityName( namespace, exportedDocument.name(), ( ns, en ) -> catalog.getSnapshot().doc().getCollection( ns, en ) );
-            LogicalCollection logicalCollection = catalog.getLogicalDoc( namespace ).addCollection( documentName, exportedDocument.type(), exportedDocument.isModifiable() );
-            AllocationPartition partition = catalog.getAllocDoc( namespace ).addPartition( logicalCollection, PartitionType.NONE, null );
-            AllocationPlacement placement = catalog.getAllocDoc( namespace ).addPlacement( logicalCollection, adapter.getAdapterId() );
-            AllocationCollection allocationCollection = catalog.getAllocDoc( namespace ).addAllocation( logicalCollection, placement.getId(), partition.getId(), adapter.getAdapterId() );
-
-            buildDocumentNamespace( namespace, logicalCollection, adapter );
-            adapter.createCollection( null, logicalCollection, allocationCollection );
-            catalog.updateSnapshot();
+            createDocumentSourceCollection( adapter, namespace, exportedDocument );
         }
+    }
+
+    private void createDocumentSourceCollection( DataSource<?> adapter, long namespace, ExportedDocument exportedDocument ) {
+        String documentName = getUniqueEntityName( namespace, exportedDocument.name(), ( ns, en ) -> catalog.getSnapshot().doc().getCollection( ns, en ) );
+        LogicalCollection logicalCollection = catalog.getLogicalDoc( namespace ).addCollection( documentName, exportedDocument.type(), exportedDocument.isModifiable() );
+        AllocationPartition partition = catalog.getAllocDoc( namespace ).addPartition( logicalCollection, PartitionType.NONE, null );
+        AllocationPlacement placement = catalog.getAllocDoc( namespace ).addPlacement( logicalCollection, adapter.getAdapterId() );
+        AllocationCollection allocationCollection = catalog.getAllocDoc( namespace ).addAllocation( logicalCollection, placement.getId(), partition.getId(), adapter.getAdapterId() );
+
+        buildDocumentNamespace( namespace, logicalCollection, adapter );
+        adapter.createCollection( null, logicalCollection, allocationCollection );
+        catalog.updateSnapshot();
     }
 
 
@@ -648,6 +652,7 @@ public class DdlManagerImpl extends DdlManager {
 
         for ( Long sourceId : sourceIds ) {
             synchronizeSourceTables( sourceId, statement, snapshot );
+            synchronizeSourceCollections( sourceId, statement, snapshot );
         }
 
         Snapshot postDetectionSnapshot = catalog.getSnapshot();
@@ -658,14 +663,19 @@ public class DdlManagerImpl extends DdlManager {
                 .filter( table -> postDetectionSnapshot.rel().getTable( table.id ).isPresent() )
                 .toList();
 
-        List<String> refreshedSources = sourceTables.stream()
-                .map( table -> table.name )
+        List<LogicalCollection> sourceCollections = snapshot.doc().getCollections( (Pattern) null, (Pattern) null ).stream()
+                .filter( collection -> collection.entityType == EntityType.SOURCE )
+                .filter( collection -> snapshot.alloc().getFromLogical( collection.id ).stream().anyMatch( alloc -> sourceIds.contains( alloc.adapterId ) ) )
+                .filter( collection -> postDetectionSnapshot.doc().getCollection( collection.id ).isPresent() )
                 .toList();
+
+        List<String> refreshedSources = new ArrayList<>( sourceTables.stream().map( table -> table.name ).toList() );
+        refreshedSources.addAll( sourceCollections.stream().map( collection -> collection.name ).toList() );
 
         List<String> sourceNames = sourceIds.stream()
                 .map( sourceId -> snapshot.getAdapter( sourceId ).map( a -> a.uniqueName ).orElse( String.valueOf( sourceId ) ) )
                 .toList();
-        log.info( "Refreshing tables {} from source(s) {}", refreshedSources, sourceNames );
+        log.info( "Refreshing source entities {} from source(s) {}", refreshedSources, sourceNames );
 
         for ( LogicalTable sourceTable : sourceTables ) {
             refreshSourceSchemaIfNeeded( sourceTable.id, statement );
@@ -705,9 +715,62 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    private void synchronizeSourceCollections( Long sourceId, Statement statement, Snapshot snapshot ) {
+        SourceCollectionDiscovery discovery = buildSourceCollectionDiscovery( sourceId, snapshot );
+        if ( discovery == null ) {
+            return;
+        }
+
+        List<LogicalCollection> removedCollections = discovery.knownCollectionsByIdentifier().entrySet().stream()
+                .filter( entry -> !discovery.exportedCollectionsByIdentifier().containsKey( entry.getKey() ) )
+                .map( Map.Entry::getValue )
+                .sorted( Comparator.comparing( LogicalCollection::getName ) )
+                .toList();
+
+        for ( LogicalCollection removedCollection : removedCollections ) {
+            log.info(
+                    "Dropping removed collections {} from MongoDB source {}",
+                    List.of( removedCollection.name ),
+                    discovery.sourceAdapter().getUniqueName()
+            );
+            dropCollection( removedCollection, statement );
+        }
+
+        long namespaceId = getDocumentSourceNamespaceId( sourceId, discovery.sourceAdapter(), snapshot );
+
+        List<ExportedDocument> addedCollections = discovery.exportedCollectionsByIdentifier().entrySet().stream()
+                .filter( entry -> !discovery.knownCollectionsByIdentifier().containsKey( entry.getKey() ) )
+                .map( Map.Entry::getValue )
+                .sorted( Comparator.comparing( ExportedDocument::name ) )
+                .toList();
+
+        if ( !addedCollections.isEmpty() ) {
+            log.info(
+                    "Adding newly detected collections {} to MongoDB source {}",
+                    addedCollections.stream().map( ExportedDocument::name ).toList(),
+                    discovery.sourceAdapter().getUniqueName()
+            );
+            for ( ExportedDocument addedCollection : addedCollections ) {
+                createDocumentSourceCollection( discovery.sourceAdapter(), namespaceId, addedCollection );
+            }
+        } else {
+            log.info( "No new source collections detected on MongoDB source {}", discovery.sourceAdapter().getUniqueName() );
+        }
+
+        if ( removedCollections.isEmpty() ) {
+            log.info( "No removed source collections detected on MongoDB source {}", discovery.sourceAdapter().getUniqueName() );
+        }
+    }
+
+
     private boolean supportsDynamicSourceTableDiscovery( DataSource<?> sourceAdapter ) {
         return "PostgreSQL".equalsIgnoreCase( sourceAdapter.adapterName )
                 || "MySQL".equalsIgnoreCase( sourceAdapter.adapterName );
+    }
+
+
+    private boolean supportsDynamicSourceCollectionDiscovery( DataSource<?> sourceAdapter ) {
+        return "MongoDB".equalsIgnoreCase( sourceAdapter.adapterName );
     }
 
 
@@ -730,6 +793,22 @@ public class DdlManagerImpl extends DdlManager {
                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue, ( left, right ) -> left, LinkedHashMap::new ) );
 
         return new SourceTableDiscovery( sourceAdapter, knownTablesByIdentifier, exportedTablesByIdentifier );
+    }
+
+
+    private SourceCollectionDiscovery buildSourceCollectionDiscovery( Long sourceId, Snapshot snapshot ) {
+        DataSource<?> sourceAdapter = AdapterManager.getInstance().getSource( sourceId ).orElse( null );
+        if ( sourceAdapter == null || !sourceAdapter.supportsDocument() || !supportsDynamicSourceCollectionDiscovery( sourceAdapter ) ) {
+            return null;
+        }
+
+        Map<String, LogicalCollection> knownCollectionsByIdentifier = getKnownSourceCollectionsByIdentifier( sourceId, snapshot );
+        Map<String, ExportedDocument> exportedCollectionsByIdentifier = sourceAdapter.asDocumentDataSource().getExportedCollections().stream()
+                .map( exportedDocument -> Map.entry( formatSourceCollectionIdentifier( exportedDocument.name() ), exportedDocument ) )
+                .filter( entry -> entry.getKey() != null )
+                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue, ( left, right ) -> left, LinkedHashMap::new ) );
+
+        return new SourceCollectionDiscovery( sourceAdapter, knownCollectionsByIdentifier, exportedCollectionsByIdentifier );
     }
 
 
@@ -775,6 +854,16 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    private Map<String, LogicalCollection> getKnownSourceCollectionsByIdentifier( Long sourceId, Snapshot snapshot ) {
+        return snapshot.doc().getCollections( (Pattern) null, (Pattern) null ).stream()
+                .filter( collection -> collection.entityType == EntityType.SOURCE )
+                .filter( collection -> snapshot.alloc().getFromLogical( collection.id ).stream().anyMatch( alloc -> alloc.adapterId == sourceId ) )
+                .map( collection -> Map.entry( formatSourceCollectionIdentifier( collection.name ), collection ) )
+                .filter( entry -> entry.getKey() != null )
+                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue, ( left, right ) -> left, LinkedHashMap::new ) );
+    }
+
+
     private String getKnownSourceTableIdentifier( LogicalTable table, Snapshot snapshot ) {
         List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( table.id );
         if ( allocations.isEmpty() ) {
@@ -805,11 +894,38 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    private record SourceCollectionDiscovery(
+            DataSource<?> sourceAdapter,
+            Map<String, LogicalCollection> knownCollectionsByIdentifier,
+            Map<String, ExportedDocument> exportedCollectionsByIdentifier ) {
+
+    }
+
+
     private long getSourceNamespaceId( Long sourceId, DataSource<?> sourceAdapter, Snapshot snapshot ) {
         Optional<Long> namespaceId = snapshot.rel().getTables( (Pattern) null, (Pattern) null ).stream()
                 .filter( table -> table.entityType == EntityType.SOURCE )
                 .filter( table -> snapshot.alloc().getFromLogical( table.id ).stream().anyMatch( alloc -> alloc.adapterId == sourceId ) )
                 .map( table -> table.namespaceId )
+                .findFirst();
+
+        if ( namespaceId.isPresent() ) {
+            return namespaceId.get();
+        }
+
+        if ( sourceAdapter.getCurrentNamespace() != null ) {
+            return sourceAdapter.getCurrentNamespace().id;
+        }
+
+        throw new GenericRuntimeException( "Could not determine namespace for source %s", sourceId );
+    }
+
+
+    private long getDocumentSourceNamespaceId( Long sourceId, DataSource<?> sourceAdapter, Snapshot snapshot ) {
+        Optional<Long> namespaceId = snapshot.doc().getCollections( (Pattern) null, (Pattern) null ).stream()
+                .filter( collection -> collection.entityType == EntityType.SOURCE )
+                .filter( collection -> snapshot.alloc().getFromLogical( collection.id ).stream().anyMatch( alloc -> alloc.adapterId == sourceId ) )
+                .map( collection -> collection.namespaceId )
                 .findFirst();
 
         if ( namespaceId.isPresent() ) {
@@ -845,6 +961,14 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         return normalizeIdentifier( schemaName ) + "." + normalizedTable;
+    }
+
+    private String formatSourceCollectionIdentifier( String collectionName ) {
+        if ( collectionName == null || collectionName.isBlank() ) {
+            return null;
+        }
+
+        return normalizeIdentifier( collectionName );
     }
 
 
