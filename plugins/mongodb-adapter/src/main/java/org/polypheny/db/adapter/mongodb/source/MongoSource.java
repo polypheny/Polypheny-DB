@@ -17,16 +17,17 @@
 package org.polypheny.db.adapter.mongodb.source;
 
 import com.mongodb.MongoClientSettings;
+import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
 import java.util.Set;
 import lombok.experimental.Delegate;
-import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.pf4j.Extension;
 import org.polypheny.db.adapter.DataSource;
@@ -47,7 +48,6 @@ import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
@@ -59,16 +59,18 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.transaction.PolyXid;
 
-@Slf4j
 @Extension
 @AdapterProperties(
         name = "MongoDB",
         description = "MongoDB is a document-oriented database system.",
         usedModes = DeployMode.REMOTE,
         defaultMode = DeployMode.REMOTE)
-@AdapterSettingString(name = "host", defaultValue = "localhost")
-@AdapterSettingInteger(name = "port", defaultValue = 27017)
-@AdapterSettingString(name = "database", defaultValue = "public")
+@AdapterSettingString(name = "host", defaultValue = "localhost", description = "Hostname or IP address of the remote MongoDB instance.")
+@AdapterSettingInteger(name = "port", defaultValue = 27017, description = "Port number on the remote MongoDB instance.")
+@AdapterSettingString(name = "database", defaultValue = "public", description = "Name of the database to connect to.")
+@AdapterSettingString(name = "username", defaultValue = "", description = "Optional username for authenticating at the remote MongoDB instance.")
+@AdapterSettingString(name = "password", defaultValue = "", description = "Optional password for authenticating at the remote MongoDB instance.")
+@AdapterSettingString(name = "authSource", defaultValue = "", description = "Optional authentication database. If empty, the selected database is used.")
 public class MongoSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Scannable {
 
     @Delegate(excludes = Excludes.class)
@@ -88,13 +90,20 @@ public class MongoSource extends DataSource<DocAdapterCatalog> implements Docume
         String host = settings.get( "host" );
         int port = Integer.parseInt( settings.get( "port" ) );
         this.database = settings.get( "database" );
+        String username = settings.getOrDefault( "username", "" );
+        String password = settings.getOrDefault( "password", "" );
+        String authSource = settings.getOrDefault( "authSource", "" );
 
-        MongoClientSettings mongoSettings = MongoClientSettings
+        MongoClientSettings.Builder mongoSettingsBuilder = MongoClientSettings
                 .builder()
                 .applyToClusterSettings( builder ->
                         builder.hosts( List.of( new ServerAddress( host, port ) ) )
-                )
-                .build();
+                );
+        if ( !username.isBlank() ) {
+            String effectiveAuthSource = authSource.isBlank() ? this.database : authSource;
+            mongoSettingsBuilder.credential( MongoCredential.createCredential( username, effectiveAuthSource, password.toCharArray() ) );
+        }
+        MongoClientSettings mongoSettings = mongoSettingsBuilder.build();
         this.client = MongoClients.create( mongoSettings );
 
         addInformationPhysicalNames();
@@ -138,9 +147,10 @@ public class MongoSource extends DataSource<DocAdapterCatalog> implements Docume
     @Override
     public List<ExportedDocument> getExportedCollections() {
         MongoDatabase mongoDatabase = client.getDatabase( database );
-        return mongoDatabase.listCollectionNames()
+        List<String> collectionNames = mongoDatabase.listCollectionNames()
                 .into( new java.util.ArrayList<>() )
-                .stream()
+                .stream().toList();
+        return collectionNames.stream()
                 .map( name -> new ExportedDocument( name, false, EntityType.SOURCE ) )
                 .toList();
     }
@@ -238,6 +248,12 @@ public class MongoSource extends DataSource<DocAdapterCatalog> implements Docume
 
 
     @Override
+    public void dropCollection( Context context, AllocationCollection allocation ) {
+        adapterCatalog.removeAllocAndPhysical( allocation.id );
+    }
+
+
+    @Override
     public DocumentDataSource asDocumentDataSource() {
         return this;
     }
@@ -249,6 +265,8 @@ public class MongoSource extends DataSource<DocAdapterCatalog> implements Docume
 
         void createCollection( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
+        void dropCollection( Context context, AllocationCollection allocation );
+
         void restoreCollection( AllocationTable alloc, List<PhysicalEntity> entities );
 
     }
@@ -257,6 +275,13 @@ public class MongoSource extends DataSource<DocAdapterCatalog> implements Docume
     private void testConnection() {
         try {
             client.getDatabase( database ).runCommand( new Document( "ping", 1 ) );
+            List<String> databaseNames = client.listDatabaseNames().into( new ArrayList<>() );
+            List<String> collectionNames = getExportedCollections().stream().map( ExportedDocument::name ).toList();
+            if ( !databaseNames.contains( database ) && collectionNames.isEmpty() ) {
+                throw new GenericRuntimeException( "MongoDB database does not exist or is empty: " + database );
+            }
+        } catch ( GenericRuntimeException e ) {
+            throw e;
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Unable to connect to MongoDB source", e );
         }

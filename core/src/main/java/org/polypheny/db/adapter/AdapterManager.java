@@ -202,7 +202,10 @@ public class AdapterManager {
             return adapter;
         } catch ( Exception e ) {
             catalog.dropAdapter( adapterId );
-            throw new GenericRuntimeException( "Something went wrong while adding a new adapter", e );
+            String message = e.getMessage() == null || e.getMessage().isBlank()
+                    ? "Something went wrong while adding a new adapter"
+                    : e.getMessage();
+            throw new GenericRuntimeException( message, e );
         }
     }
 
