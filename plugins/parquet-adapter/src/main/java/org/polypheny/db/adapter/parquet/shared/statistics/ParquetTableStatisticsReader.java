@@ -160,6 +160,11 @@ public class ParquetTableStatisticsReader {
     }
 
 
+    /**
+     * Get statistics from bindings
+     * @param sourcePathElements - column path
+     * @return ParquetColumnStatistics
+     */
     private Optional<ParquetColumnStatistics> aggregateColumnStatistics( List<String> sourcePathElements ) {
         PolyType type = null;
         long rowCount = 0;

@@ -33,7 +33,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
 
 /**
- * Converter from Parquet convention back to the standard enumerable pipeline.
+ * Planner node that converts ParquetScan node from Parquet convention to enumerable convention.
  */
 public class EnumerableParquet extends ConverterImpl implements EnumerableAlg {
 

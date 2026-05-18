@@ -30,6 +30,7 @@ import org.polypheny.db.util.Sources;
 
 /**
  * One physical Parquet file that contributes rows to a Parquet table.
+ * contains partition values and column statistics for file pruning
  */
 public record ParquetSourceFile(
         String fileUrl,

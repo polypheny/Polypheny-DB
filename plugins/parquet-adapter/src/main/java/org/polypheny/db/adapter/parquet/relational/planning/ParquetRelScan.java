@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.parquet.relational.planning;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -52,44 +53,44 @@ public class ParquetRelScan extends RelScan<ParquetRelTable> implements ParquetA
     private final List<ParquetAdapterFilter> filters;
 
 
-    public ParquetRelScan(AlgCluster cluster, ParquetRelTable table, int[] fields ) {
-        this( cluster, table, fields, List.of() );
+    public ParquetRelScan(AlgCluster cluster, ParquetRelTable table, int[] fields) {
+        this(cluster, table, fields, List.of());
     }
 
 
-    public ParquetRelScan(AlgCluster cluster, ParquetRelTable table, int[] fields, List<ParquetAdapterFilter> filters ) {
-        super( cluster, cluster.traitSetOf( ParquetConvention.INSTANCE ).replace( ModelTrait.RELATIONAL ), table );
+    public ParquetRelScan(AlgCluster cluster, ParquetRelTable table, int[] fields, List<ParquetAdapterFilter> filters) {
+        super(cluster, cluster.traitSetOf(ParquetConvention.INSTANCE).replace(ModelTrait.RELATIONAL), table);
         this.fields = fields;
-        this.filters = List.copyOf( filters );
+        this.filters = List.copyOf(filters);
     }
 
 
     @Override
-    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+    public AlgNode copy(AlgTraitSet traitSet, List<AlgNode> inputs) {
         assert inputs.isEmpty();
-        return new ParquetRelScan( getCluster(), entity, fields, filters );
+        return new ParquetRelScan(getCluster(), entity, fields, filters);
     }
 
 
     @Override
-    public AlgWriter explainTerms( AlgWriter pw ) {
-        return super.explainTerms( pw ).item( "fields", Primitive.asList( fields ) ).item( "filters", filters );
+    public AlgWriter explainTerms(AlgWriter pw) {
+        return super.explainTerms(pw).item("fields", Primitive.asList(fields)).item("filters", filters);
     }
 
 
     @Override
     public String algCompareString() {
-        return super.algCompareString() + "$fields=" + Primitive.asList( fields ) + "$filters=" + filters;
+        return super.algCompareString() + "$fields=" + Primitive.asList(fields) + "$filters=" + filters;
     }
 
 
     @Override
     public PolyAlgArgs bindArguments() {
-        List<String> fieldNames = ParquetPolyAlgDisplay.fieldNames( entity, fields );
-        List<String> tableFieldNames = ParquetPolyAlgDisplay.fieldNames( entity );
+        List<String> fieldNames = ParquetPolyAlgDisplay.fieldNames(entity, fields);
+        List<String> tableFieldNames = ParquetPolyAlgDisplay.fieldNames(entity);
         return super.bindArguments()
-                .put( "fields", new ListArg<>( fieldNames, StringArg::new ) )
-                .put( "filters", new ListArg<>( ParquetPolyAlgDisplay.filters( filters, tableFieldNames ), StringArg::new ) );
+                .put("fields", new ListArg<>(fieldNames, StringArg::new))
+                .put("filters", new ListArg<>(ParquetPolyAlgDisplay.filters(filters, tableFieldNames), StringArg::new));
     }
 
 
@@ -97,48 +98,53 @@ public class ParquetRelScan extends RelScan<ParquetRelTable> implements ParquetA
     public AlgDataType deriveRowType() {
         final List<AlgDataTypeField> fieldList = entity.getTupleType().getFields();
         final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
-        for ( int field : fields ) {
-            builder.add( fieldList.get( field ) );
+        for (int field : fields) {
+            builder.add(fieldList.get(field));
         }
         return builder.build();
     }
 
 
     @Override
-    public void register( AlgPlanner planner ) {
-        ParquetConvention.INSTANCE.register( planner );
+    public void register(AlgPlanner planner) {
+        ParquetConvention.INSTANCE.register(planner);
     }
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost(AlgPlanner planner, AlgMetadataQuery mq) {
         double fieldRatio = ((double) fields.length + 2D) / ((double) entity.getTupleType().getFieldCount() + 2D);
         double filterRatio = filters.isEmpty() ? 1D : 0.5D;
-        return super.computeSelfCost( planner, mq ).multiplyBy( ParquetConvention.COST_MULTIPLIER * fieldRatio * filterRatio );
+        return super.computeSelfCost(planner, mq).multiplyBy(ParquetConvention.COST_MULTIPLIER * fieldRatio * filterRatio);
     }
 
 
-    public ParquetRelScan withFilters(List<ParquetAdapterFilter> filters ) {
-        List<ParquetAdapterFilter> combinedFilters = new ArrayList<>( this.filters );
-        combinedFilters.addAll( filters );
-        return new ParquetRelScan( getCluster(), entity, fields, combinedFilters );
+    public ParquetRelScan withFilters(List<ParquetAdapterFilter> filters) {
+        List<ParquetAdapterFilter> combinedFilters = new ArrayList<>(this.filters);
+        combinedFilters.addAll(filters);
+        return new ParquetRelScan(getCluster(), entity, fields, combinedFilters);
     }
 
 
-    public ParquetRelScan withFields(int[] fields ) {
-        return new ParquetRelScan( getCluster(), entity, fields, filters );
+    public ParquetRelScan withFields(int[] fields) {
+        return new ParquetRelScan(getCluster(), entity, fields, filters);
     }
 
-
+    /**
+     * The function defines the expression call: function to call when node invoked
+     *
+     * @param implementor original implementor
+     * @return a call expression
+     */
     @Override
-    public Expression implement( EnumerableAlgImplementor implementor ) {
-        Expression runtimeFilters = EnumUtils.expressionList( filters.stream().map( ParquetAdapterFilter::toExpression ).toList() );
+    public Expression implement(EnumerableAlgImplementor implementor) {
+        Expression runtimeFilters = EnumUtils.expressionList(filters.stream().map(ParquetAdapterFilter::toExpression).toList());
         return Expressions.call(
-                entity.asExpression( ParquetRelTable.class ),
-                "project",
-                implementor.getRootExpression(),
-                Expressions.constant( fields ),
-                runtimeFilters );
+                entity.asExpression(ParquetRelTable.class), // class
+                "project", // function to call
+                implementor.getRootExpression(), // context - parameter 1
+                Expressions.constant(fields), // projection - parameter 2
+                runtimeFilters); // filters - parameter 3
     }
 
 }

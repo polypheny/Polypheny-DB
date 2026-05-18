@@ -47,14 +47,14 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 /**
- * Parquet-convention join for supported parent/child table joins.
+ *  Planner node that represents a join the Parquet adapter can execute itself
  */
 public class ParquetRelJoin extends Join implements ParquetAlg {
 
-    private final boolean leftIsParent;
+    private final boolean leftIsParent; //whether the left input is the parent side
     private final PhysicalScan leftScan;
     private final PhysicalScan rightScan;
-    private final List<ParquetAdapterFilter> joinFilters;
+    private final List<ParquetAdapterFilter> joinFilters; //filters that belong to the joined output
 
 
     public ParquetRelJoin(
@@ -148,7 +148,7 @@ public class ParquetRelJoin extends Join implements ParquetAlg {
             return -1;
         }
         int column = fields[inputIndex];
-        return column < 0 || column >= totalFieldsCount ? -1 : column;
+        return column < 0 || column >= totalFieldsCount ? -1 : column; // one key on each side
     }
 
 
@@ -213,7 +213,11 @@ public class ParquetRelJoin extends Join implements ParquetAlg {
                 .item("joinFilters", joinFilters);
     }
 
-
+    /**
+     * Generates execution call
+     * @param implementor EnumerableAlgImplementor
+     * @return Expression
+     */
     @Override
     public Expression implement(EnumerableAlgImplementor implementor) {
         Expression leftScanExpr = Expressions.new_(
@@ -249,7 +253,10 @@ public class ParquetRelJoin extends Join implements ParquetAlg {
                 runtimeFilters);
     }
 
-
+    /**
+     * Decides whether parent rows without matching child rows should still be emitted for LEFT, RIGHT, or FULL joins.
+     * @return boolean
+     */
     private boolean emitUnmatchedParents() {
         return switch (joinType) {
             case LEFT -> leftIsParent;

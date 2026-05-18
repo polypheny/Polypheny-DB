@@ -1,561 +1,852 @@
-# Join Test List
+# PON Planning Query Matrix
 
-This document lists SQL queries that should be used to test adapter-level Parquet joins and fallback join behavior.
+This checklist is for exercising different physical-planning shapes over the normalized `pon_` Parquet tables.
 
-The examples assume a normalized Parquet adapter with these generated tables:
+The queries assume these table relationships:
 
-- `pon__orders` - root table
-- `pon__orders__items` - direct child table of `pon__orders`
-- `pon__orders__items__discounts` - direct child table of `pon__orders__items`
+- `pon__customers`, `pon__orders`, and `pon__products` are root-level tables.
+- `pon__orders__items` is a direct child of `pon__orders`.
+- `pon__orders__shipping_address` is a direct child of `pon__orders`.
+- `pon__orders__items__discounts` is a direct child of `pon__orders__items`.
+- Supported adapter joins use generated structural keys: child `__polypheny_parent_row_id` to parent `__polypheny_row_id`.
 
-Expected adapter-level support means the physical plan should contain `ParquetRelJoin`.
-Unsupported cases should still execute through the normal Polypheny join path and should not produce `ParquetRelJoin`.
+Plan terms below use the short PolyAlg names:
 
-## Supported Adapter-Level Joins
+- `P_SCAN`: Parquet scan.
+- `PE_CALC`: converter from Parquet convention to enumerable convention.
+- `P_JOIN`: adapter-level Parquet parent-child join.
+- `E_CALC`, `E_LIMIT`, `E_SORT`, `E_AGGREGATE`, `E_JOIN`: normal enumerable operators above or around Parquet nodes.
 
-### 1. Root parent - direct child, parent on left, inner join
+For every supported parent-child join, also check that projected scan fields map the join keys correctly. In particular, for child tables the join key `__polypheny_parent_row_id` should map to physical column index `1`, not to `0`.
 
-Expected: supported. The plan should contain `ParquetRelJoin`.
+## Simple Scans And Projections
+
+### Q01. Root table scan with limit
+
+Expected plan: one `P_SCAN` for `pon__orders`, wrapped by `PE_CALC`; limit remains above the scan as `E_LIMIT` unless a future rule pushes it.
+
+Check: baseline root-table planning and limit placement.
 
 ```sql
-SELECT
-    o.__polypheny_row_id AS order_row_id,
-    o.order_id,
-    i.__polypheny_row_id AS item_row_id,
-    i.__polypheny_parent_row_id AS item_parent_row_id,
-    i.product_id,
-    i.quantity
+SELECT *
+FROM pon__orders
+LIMIT 10;
+```
+
+### Q02. Root table projection
+
+Expected plan: `P_SCAN` should read only projected order columns if projection pushdown applies.
+
+Check: simple projection pushdown on a root table.
+
+```sql
+SELECT order_id, status, total_price
+FROM pon__orders
+LIMIT 10;
+```
+
+### Q03. Customer projection
+
+Expected plan: `P_SCAN` for `pon__customers`, with only selected customer fields.
+
+Check: projection over another root table and text/timestamp columns.
+
+```sql
+SELECT customer_id, name, country, signup_date
+FROM pon__customers
+LIMIT 10;
+```
+
+### Q04. Product projection
+
+Expected plan: `P_SCAN` for `pon__products`, with only selected product fields.
+
+Check: projection over numeric and text product columns.
+
+```sql
+SELECT product_id, name, category, price, stock
+FROM pon__products
+LIMIT 10;
+```
+
+### Q05. Repeated child projection
+
+Expected plan: `P_SCAN` for `pon__orders__items`, with projected child fields only.
+
+Check: projection on a nested repeated child table.
+
+```sql
+SELECT order_item_id, product_id, quantity, price
+FROM pon__orders__items
+LIMIT 10;
+```
+
+### Q06. Repeated child structural columns
+
+Expected plan: `P_SCAN` for `pon__orders__items`, keeping the generated row id, parent row id, and ordinal.
+
+Check: scan of generated structural columns used by nested tables.
+
+```sql
+SELECT __polypheny_row_id, __polypheny_parent_row_id, __polypheny_elem_ordinal
+FROM pon__orders__items
+LIMIT 10;
+```
+
+### Q07. Nested grandchild projection
+
+Expected plan: `P_SCAN` for `pon__orders__items__discounts`, with projected discount fields.
+
+Check: projection on a second-level nested repeated child table.
+
+```sql
+SELECT code, amount
+FROM pon__orders__items__discounts
+LIMIT 10;
+```
+
+### Q08. Direct nested shipping-address projection
+
+Expected plan: `P_SCAN` for `pon__orders__shipping_address`, with projected address fields.
+
+Check: projection on a direct nested child that is not the `items` repeated branch.
+
+```sql
+SELECT city, street, zip
+FROM pon__orders__shipping_address
+LIMIT 10;
+```
+
+## Filters Without Joins
+
+### Q09. Root numeric filter
+
+Expected plan: `P_SCAN` with a translatable filter if filter pushdown applies; otherwise `E_CALC` or filter above `PE_CALC`.
+
+Check: root-table numeric predicate.
+
+```sql
+SELECT order_id, total_price
+FROM pon__orders
+WHERE total_price >= 0
+LIMIT 10;
+```
+
+### Q10. Root nullable text filter
+
+Expected plan: `P_SCAN` plus a status filter when supported.
+
+Check: nullable text predicate on root table.
+
+```sql
+SELECT order_id, status
+FROM pon__orders
+WHERE status IS NOT NULL
+LIMIT 10;
+```
+
+### Q11. Root timestamp filter
+
+Expected plan: `P_SCAN` plus a timestamp/nullability filter when supported.
+
+Check: timestamp column handling.
+
+```sql
+SELECT order_id, order_date
+FROM pon__orders
+WHERE order_date IS NOT NULL
+LIMIT 10;
+```
+
+### Q12. Customer text filter
+
+Expected plan: `P_SCAN` for `pon__customers`; text predicate may or may not be pushed.
+
+Check: text filter planning on a root table.
+
+```sql
+SELECT customer_id, name, country
+FROM pon__customers
+WHERE country IS NOT NULL
+LIMIT 10;
+```
+
+### Q13. Product numeric filter
+
+Expected plan: `P_SCAN` for `pon__products` with a numeric filter when supported.
+
+Check: product scan with numeric predicate and projection.
+
+```sql
+SELECT product_id, name, price, stock
+FROM pon__products
+WHERE price >= 0 AND stock >= 0
+LIMIT 10;
+```
+
+### Q14. Repeated child numeric filter
+
+Expected plan: `P_SCAN` for `pon__orders__items`, with `quantity` and `price` filters when supported.
+
+Check: filter pushdown on nested repeated table.
+
+```sql
+SELECT order_item_id, product_id, quantity, price
+FROM pon__orders__items
+WHERE quantity > 0 AND price >= 0
+LIMIT 10;
+```
+
+### Q15. Repeated child ordinal filter
+
+Expected plan: `P_SCAN` for `pon__orders__items`, possibly with a filter on generated ordinal.
+
+Check: generated ordinal field in a filter.
+
+```sql
+SELECT __polypheny_parent_row_id, __polypheny_elem_ordinal, product_id
+FROM pon__orders__items
+WHERE __polypheny_elem_ordinal = 0
+LIMIT 10;
+```
+
+### Q16. Nested grandchild filter
+
+Expected plan: `P_SCAN` for `pon__orders__items__discounts`, with `amount` filter when supported.
+
+Check: filter on second-level nested repeated table.
+
+```sql
+SELECT code, amount
+FROM pon__orders__items__discounts
+WHERE amount > 0
+LIMIT 10;
+```
+
+### Q17. Direct nested shipping-address filter
+
+Expected plan: `P_SCAN` for `pon__orders__shipping_address`; filter may remain as `E_CALC` if text predicates are not pushed.
+
+Check: filter on direct nested child branch different from `items`.
+
+```sql
+SELECT city, street, zip
+FROM pon__orders__shipping_address
+WHERE city IS NOT NULL AND zip IS NOT NULL
+LIMIT 10;
+```
+
+### Q18. Non-pushable expression filter
+
+Expected plan: `P_SCAN` for `pon__products`, with an enumerable calc/filter for the expression if it cannot be pushed.
+
+Check: fallback around a scan when the predicate contains an expression.
+
+```sql
+SELECT product_id, name, category
+FROM pon__products
+WHERE LOWER(category) IS NOT NULL
+LIMIT 10;
+```
+
+## Supported Parent-Child Joins
+
+### Q19. Orders to items, inner join
+
+Expected plan: `P_JOIN` with `pon__orders` as parent and `pon__orders__items` as child.
+
+Check: basic root parent to repeated child join.
+
+```sql
+SELECT o.order_id, i.order_item_id, i.product_id, i.quantity
 FROM pon__orders o
 JOIN pon__orders__items i
     ON i.__polypheny_parent_row_id = o.__polypheny_row_id
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 2. Root parent - direct child, parent on right, inner join
+### Q20. Items to orders, inner join with parent on right
 
-Expected: supported. This validates that the rule detects parent-child direction when the child table is the left input.
+Expected plan: `P_JOIN`; direction detection should identify that the right input is the parent.
+
+Check: supported join with swapped input order.
 
 ```sql
-SELECT
-    i.__polypheny_row_id AS item_row_id,
-    i.product_id,
-    o.__polypheny_row_id AS order_row_id,
-    o.order_id
+SELECT i.order_item_id, i.product_id, o.order_id, o.status
 FROM pon__orders__items i
 JOIN pon__orders o
     ON i.__polypheny_parent_row_id = o.__polypheny_row_id
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 3. Root parent - direct child, equality written in reversed order
+### Q21. Orders to shipping address
 
-Expected: supported. This validates that the rule accepts the same equi-join when the operands are reversed.
+Expected plan: `P_JOIN` with `pon__orders` as parent and `pon__orders__shipping_address` as child.
+
+Check: direct nested child branch that is not `items`.
 
 ```sql
-SELECT
-    o.order_id,
-    i.product_id,
-    i.quantity
+SELECT o.order_id, s.city, s.street, s.zip
 FROM pon__orders o
-JOIN pon__orders__items i
-    ON o.__polypheny_row_id = i.__polypheny_parent_row_id
-LIMIT 20;
+JOIN pon__orders__shipping_address s
+    ON s.__polypheny_parent_row_id = o.__polypheny_row_id
+LIMIT 10;
 ```
 
-### 4. Nested parent - direct nested child, parent on left, inner join
+### Q22. Shipping address to orders, parent on right
 
-Expected: supported. This is the main nested-parent case: `items` is parent, `discounts` is direct child.
+Expected plan: `P_JOIN`; direction detection should identify that the right input is the parent.
+
+Check: swapped direction for a direct nested child branch.
 
 ```sql
-SELECT
-    i.__polypheny_row_id AS item_row_id,
-    d.__polypheny_row_id AS discount_row_id,
-    d.__polypheny_parent_row_id AS discount_parent_row_id,
-    i.product_id,
-    d.code,
-    d.amount
+SELECT s.city, s.zip, o.order_id
+FROM pon__orders__shipping_address s
+JOIN pon__orders o
+    ON s.__polypheny_parent_row_id = o.__polypheny_row_id
+LIMIT 10;
+```
+
+### Q23. Items to discounts, inner join
+
+Expected plan: `P_JOIN` with `pon__orders__items` as parent and `pon__orders__items__discounts` as child.
+
+Check: nested parent to second-level repeated child.
+
+```sql
+SELECT i.order_item_id, i.product_id, d.code, d.amount
 FROM pon__orders__items i
 JOIN pon__orders__items__discounts d
     ON d.__polypheny_parent_row_id = i.__polypheny_row_id
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 5. Nested parent - direct nested child, parent on right, inner join
+### Q24. Discounts to items, parent on right
 
-Expected: supported. This validates nested parent-child direction when the child table is the left input.
+Expected plan: `P_JOIN`; direction detection should identify that the right input is the nested parent.
+
+Check: swapped direction for nested parent-child join.
 
 ```sql
-SELECT
-    d.__polypheny_row_id AS discount_row_id,
-    d.code,
-    d.amount,
-    i.__polypheny_row_id AS item_row_id,
-    i.product_id
+SELECT d.code, d.amount, i.order_item_id, i.product_id
 FROM pon__orders__items__discounts d
 JOIN pon__orders__items i
     ON d.__polypheny_parent_row_id = i.__polypheny_row_id
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 6. Root parent - direct child, left join preserves parent rows
-PROBLEM
+### Q25. Reversed equality operands
 
-Expected: supported. Parent is on the left, so unmatched parent rows can be emitted by adapter runtime.
+Expected plan: `P_JOIN`; the equality is written parent key first.
+
+Check: join-key extraction independent of operand order.
 
 ```sql
-SELECT
-    o.order_id,
-    i.product_id,
-    i.quantity
+SELECT i.order_item_id, i.quantity, d.code, d.amount
+FROM pon__orders__items i
+JOIN pon__orders__items__discounts d
+    ON i.__polypheny_row_id = d.__polypheny_parent_row_id
+LIMIT 10;
+```
+
+### Q26. Orders to items, left join
+
+Expected plan: `P_JOIN` with join type `LEFT`.
+
+Check: parent-preserving outer join.
+
+```sql
+SELECT o.order_id, i.order_item_id, i.product_id
 FROM pon__orders o
 LEFT JOIN pon__orders__items i
     ON i.__polypheny_parent_row_id = o.__polypheny_row_id
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 7. Root parent - direct child, right join preserves parent rows
+### Q27. Items to orders, right join
 
-Expected: supported. Parent is on the right, so this is the same preservation direction as the previous test but with swapped input order.
+Expected plan: `P_JOIN` with join type `RIGHT`.
+
+Check: same parent-preserving semantics as Q26 with swapped input order.
 
 ```sql
-SELECT
-    i.product_id,
-    i.quantity,
-    o.order_id
+SELECT i.order_item_id, i.product_id, o.order_id
 FROM pon__orders__items i
 RIGHT JOIN pon__orders o
     ON i.__polypheny_parent_row_id = o.__polypheny_row_id
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 8. Nested parent - direct nested child, left join preserves nested parent rows
+### Q28. Items to discounts, full join
 
-Expected: supported. This checks unmatched `items` rows when an item has no discount.
+Expected plan: `P_JOIN` with join type `FULL`.
 
-```sql
-SELECT
-    i.product_id,
-    d.code,
-    d.amount
-FROM pon__orders__items i
-LEFT JOIN pon__orders__items__discounts d
-    ON d.__polypheny_parent_row_id = i.__polypheny_row_id
-LIMIT 20;
-```
-
-### 9. Nested parent - direct nested child, right join preserves nested parent rows
-
-Expected: supported. Parent is on the right, so the runtime should still preserve unmatched parent rows.
+Check: full outer structural join on nested parent and grandchild.
 
 ```sql
-SELECT
-    d.code,
-    d.amount,
-    i.product_id
-FROM pon__orders__items__discounts d
-RIGHT JOIN pon__orders__items i
-    ON d.__polypheny_parent_row_id = i.__polypheny_row_id
-LIMIT 20;
-```
-
-### 10. Root parent - direct child, full join
-
-Expected: supported by the rule. Runtime preserves unmatched parent rows. It does not do an independent child-side outer scan outside the parent path.
-
-```sql
-SELECT
-    o.order_id,
-    i.product_id,
-    i.quantity
-FROM pon__orders o
-FULL JOIN pon__orders__items i
-    ON i.__polypheny_parent_row_id = o.__polypheny_row_id
-LIMIT 20;
-```
-
-### 11. Nested parent - direct nested child, full join
-
-Expected: supported by the rule. Runtime preserves unmatched parent rows. It does not do an independent child-side outer scan outside the parent path.
-
-```sql
-SELECT
-    i.product_id,
-    d.code,
-    d.amount
+SELECT i.order_item_id, i.quantity, d.code, d.amount
 FROM pon__orders__items i
 FULL JOIN pon__orders__items__discounts d
     ON d.__polypheny_parent_row_id = i.__polypheny_row_id
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 12. Root parent - direct child with filter above join
+### Q29. Projected full join with filter and limit
 
-Expected: supported. The join should still become `ParquetRelJoin`; the filter may be pushed into the adapter join if translatable.
+Expected plan: `P_JOIN` under `E_LIMIT` and final projection/calc. Both scans should carry the projected fields needed for selected columns, filter columns, and join keys.
+
+Check: the child scan projection bug case; child join key should map to physical column `1`.
 
 ```sql
-SELECT
-    o.order_id,
-    i.product_id,
-    i.quantity
+SELECT i.order_item_id, i.quantity, i.price
+FROM pon__orders__items i
+FULL JOIN pon__orders__items__discounts d
+    ON d.__polypheny_parent_row_id = i.__polypheny_row_id
+WHERE i.quantity = 3
+LIMIT 10;
+```
+
+### Q30. Parent-side filter above structural join
+
+Expected plan: `P_JOIN`; parent filter should be pushed into the scan or join when possible.
+
+Check: filter placement for parent-side predicate.
+
+```sql
+SELECT o.order_id, o.total_price, i.product_id, i.quantity
+FROM pon__orders o
+JOIN pon__orders__items i
+    ON i.__polypheny_parent_row_id = o.__polypheny_row_id
+WHERE o.total_price >= 0
+LIMIT 10;
+```
+
+### Q31. Child-side filter above structural join
+
+Expected plan: `P_JOIN`; child filter should be applied on the child branch or in the joined-row filter.
+
+Check: filter placement for child-side predicate.
+
+```sql
+SELECT o.order_id, i.product_id, i.quantity
 FROM pon__orders o
 JOIN pon__orders__items i
     ON i.__polypheny_parent_row_id = o.__polypheny_row_id
 WHERE i.quantity > 1
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 13. Nested parent - direct nested child with child-side filter
+### Q32. Filters on both sides of structural join
 
-Expected: supported. The join should still become `ParquetRelJoin`; the discount filter should be applied on the child side or as an adapter-level joined-row filter.
+Expected plan: `P_JOIN`; filters may split between parent and child branches.
+
+Check: filter splitting and field-index shifting for joined rows.
 
 ```sql
-SELECT
-    i.product_id,
-    d.code,
-    d.amount
+SELECT i.order_item_id, i.quantity, d.code, d.amount
+FROM pon__orders__items i
+JOIN pon__orders__items__discounts d
+    ON d.__polypheny_parent_row_id = i.__polypheny_row_id
+WHERE i.quantity > 1 AND d.amount > 0
+LIMIT 10;
+```
+
+### Q33. Aggregate above structural join
+
+Expected plan: `E_AGGREGATE` above `P_JOIN`.
+
+Check: join can still be adapter-level when the final result is an aggregate.
+
+```sql
+SELECT count(*)
+FROM pon__orders__items i
+JOIN pon__orders__items__discounts d
+    ON d.__polypheny_parent_row_id = i.__polypheny_row_id
+WHERE i.quantity > 0;
+```
+
+### Q34. Group by above structural join
+
+Expected plan: `E_AGGREGATE` above `P_JOIN`.
+
+Check: grouped aggregate after adapter-level join.
+
+```sql
+SELECT i.product_id, count(*) AS discount_rows
+FROM pon__orders__items i
+JOIN pon__orders__items__discounts d
+    ON d.__polypheny_parent_row_id = i.__polypheny_row_id
+GROUP BY i.product_id
+LIMIT 10;
+```
+
+### Q35. Sort above structural join
+
+Expected plan: `E_SORT` or `E_LIMIT` above `P_JOIN`.
+
+Check: sorting after adapter-level join and projection.
+
+```sql
+SELECT o.order_id, i.product_id, i.quantity
+FROM pon__orders o
+JOIN pon__orders__items i
+    ON i.__polypheny_parent_row_id = o.__polypheny_row_id
+ORDER BY i.quantity DESC
+LIMIT 10;
+```
+
+## Derived Tables And Calc Permutations
+
+### Q36. Projected parent and child derived tables
+
+Expected plan: ideally `P_JOIN`; derived-table projections should be consumed into `P_SCAN` fields.
+
+Check: projection-only `Calc` or `Project` wrappers on both join inputs.
+
+```sql
+SELECT o.order_id, i.product_id, i.quantity
+FROM (
+    SELECT __polypheny_row_id, order_id
+    FROM pon__orders
+) o
+JOIN (
+    SELECT __polypheny_parent_row_id, product_id, quantity
+    FROM pon__orders__items
+) i
+    ON i.__polypheny_parent_row_id = o.__polypheny_row_id
+LIMIT 10;
+```
+
+### Q37. Projected nested parent and grandchild derived tables
+
+Expected plan: `P_JOIN`; child `__polypheny_parent_row_id` must map through the projection to physical column `1`.
+
+Check: projection-only calc on the child side of an `items` to `discounts` join.
+
+```sql
+SELECT i.quantity, i.price, d.code, d.amount
+FROM (
+    SELECT __polypheny_row_id, quantity, price
+    FROM pon__orders__items
+) i
+JOIN (
+    SELECT __polypheny_parent_row_id, code, amount
+    FROM pon__orders__items__discounts
+) d
+    ON d.__polypheny_parent_row_id = i.__polypheny_row_id
+LIMIT 10;
+```
+
+### Q38. Filtered derived table on parent branch
+
+Expected plan: `P_JOIN` if the filter can be attached before join recognition; otherwise fallback indicates a rule gap.
+
+Check: filter/calc wrapper on parent input.
+
+```sql
+SELECT o.order_id, i.product_id, i.quantity
+FROM (
+    SELECT __polypheny_row_id, order_id
+    FROM pon__orders
+    WHERE total_price >= 0
+) o
+JOIN pon__orders__items i
+    ON i.__polypheny_parent_row_id = o.__polypheny_row_id
+LIMIT 10;
+```
+
+### Q39. Filtered derived table on child branch
+
+Expected plan: `P_JOIN` if the child filter and projection can be attached to the scan before join recognition.
+
+Check: child-side `EnumerableCalc` projection/filter wrapper.
+
+```sql
+SELECT o.order_id, i.product_id, i.quantity
+FROM pon__orders o
+JOIN (
+    SELECT __polypheny_parent_row_id, product_id, quantity
+    FROM pon__orders__items
+    WHERE quantity > 1
+) i
+    ON i.__polypheny_parent_row_id = o.__polypheny_row_id
+LIMIT 10;
+```
+
+### Q40. Final projection hides all child join keys
+
+Expected plan: `P_JOIN`; scan projections still need join keys internally even though final output hides them.
+
+Check: join-key preservation through projection trimming.
+
+```sql
+SELECT i.product_id, d.amount
 FROM pon__orders__items i
 JOIN pon__orders__items__discounts d
     ON d.__polypheny_parent_row_id = i.__polypheny_row_id
 WHERE d.amount > 0
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 14. Nested parent - direct nested child with parent-side filter
+### Q41. Limit inside join input
 
-Expected: supported. The join should still become `ParquetRelJoin`; the item filter should be applied before or during child expansion when possible.
+Expected plan: this is a semantic edge case. If the input limit stays below the join, the adapter join should not silently ignore it.
+
+Check: rule ordering around `E_LIMIT` below a structural join input.
 
 ```sql
-SELECT
-    i.product_id,
-    i.quantity,
-    d.code,
-    d.amount
-FROM pon__orders__items i
+SELECT i.order_item_id, d.code, d.amount
+FROM (
+    SELECT __polypheny_row_id, order_item_id
+    FROM pon__orders__items
+    LIMIT 100
+) i
 JOIN pon__orders__items__discounts d
     ON d.__polypheny_parent_row_id = i.__polypheny_row_id
-WHERE i.quantity > 1
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 15. Nested parent - direct nested child with projected columns
+## Multi-Join And Mixed Join Shapes
 
-Expected: supported. This validates plans where `Calc` or `Project` nodes appear between the join and the Parquet scans.
+### Q42. Orders to items to discounts chain
 
-```sql
-SELECT
-    i.__polypheny_row_id AS item_id,
-    d.__polypheny_row_id AS discount_id,
-    d.__polypheny_parent_row_id AS discount_parent_id,
-    d.__polypheny_elem_ordinal AS discount_ordinal,
-    i.product_id,
-    d.code,
-    d.amount
-FROM pon__orders__items i
-JOIN pon__orders__items__discounts d
-    ON d.__polypheny_parent_row_id = i.__polypheny_row_id
-LIMIT 20;
-```
+Expected plan: direct structural joins are individually supported. Depending on rule composition, expect either nested `P_JOIN` use or one `P_JOIN` plus a normal join.
 
-### 16. Two adapter-level joins in one query, root to child and child to grandchild
-
-Expected: both direct joins are individually supported. The ideal plan has `ParquetRelJoin` for both direct parent-child joins, but this should be verified because rule ordering can affect the final shape.
+Check: whether adapter-level joins compose across multiple levels.
 
 ```sql
-SELECT
-    o.order_id,
-    i.product_id,
-    d.code,
-    d.amount
+SELECT o.order_id, i.product_id, d.code, d.amount
 FROM pon__orders o
 JOIN pon__orders__items i
     ON i.__polypheny_parent_row_id = o.__polypheny_row_id
 JOIN pon__orders__items__discounts d
     ON d.__polypheny_parent_row_id = i.__polypheny_row_id
-LIMIT 20;
+LIMIT 10;
 ```
 
-## Unsupported Or Fallback Join Shapes
+### Q43. Structural join plus product lookup
 
-### 17. Root parent - grandchild directly
+Expected plan: `orders` to `items` may become `P_JOIN`; `items` to `products` should be a normal join because it uses user columns.
 
-Expected: not supported as one adapter-level join. `discounts` points to `items`, not directly to `orders`.
+Check: mixed adapter-level and fallback join planning.
 
 ```sql
-SELECT
-    o.order_id,
-    d.code,
-    d.amount
+SELECT o.order_id, i.quantity, p.name, p.category
+FROM pon__orders o
+JOIN pon__orders__items i
+    ON i.__polypheny_parent_row_id = o.__polypheny_row_id
+JOIN pon__products p
+    ON p.product_id = i.product_id
+LIMIT 10;
+```
+
+### Q44. Customer to orders to items
+
+Expected plan: `customers` to `orders` is a normal user-column join; `orders` to `items` is structurally supported if the planner can isolate it.
+
+Check: structural join recognition inside a larger query with a root-root user join.
+
+```sql
+SELECT c.customer_id, c.country, o.order_id, i.product_id
+FROM pon__customers c
+JOIN pon__orders o
+    ON o.customer_id = c.customer_id
+JOIN pon__orders__items i
+    ON i.__polypheny_parent_row_id = o.__polypheny_row_id
+LIMIT 10;
+```
+
+### Q45. Orders with two direct children
+
+Expected plan: each root-to-child join is structurally valid, but composition may fall back after one `P_JOIN`.
+
+Check: sibling child branches under the same parent.
+
+```sql
+SELECT o.order_id, i.product_id, s.city, s.zip
+FROM pon__orders o
+JOIN pon__orders__items i
+    ON i.__polypheny_parent_row_id = o.__polypheny_row_id
+JOIN pon__orders__shipping_address s
+    ON s.__polypheny_parent_row_id = o.__polypheny_row_id
+LIMIT 10;
+```
+
+## Unsupported Or Fallback Plans
+
+### Q46. Customers to orders by user key
+
+Expected plan: no `P_JOIN`; use normal `E_JOIN` or equivalent.
+
+Check: root-root user-column join must not be mistaken for structural join.
+
+```sql
+SELECT c.customer_id, c.name, o.order_id, o.status
+FROM pon__customers c
+JOIN pon__orders o
+    ON o.customer_id = c.customer_id
+LIMIT 10;
+```
+
+### Q47. Items to products by product id
+
+Expected plan: no `P_JOIN`; use normal join.
+
+Check: nested table joined to root lookup table by user column.
+
+```sql
+SELECT i.order_item_id, i.quantity, p.name, p.price
+FROM pon__orders__items i
+JOIN pon__products p
+    ON p.product_id = i.product_id
+LIMIT 10;
+```
+
+### Q48. Orders directly to discounts
+
+Expected plan: no single `P_JOIN`; discounts are not a direct child of orders.
+
+Check: ancestor-to-grandchild direct join is rejected.
+
+```sql
+SELECT o.order_id, d.code, d.amount
 FROM pon__orders o
 JOIN pon__orders__items__discounts d
     ON d.__polypheny_parent_row_id = o.__polypheny_row_id
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 18. Ancestor-descendant join beyond direct parent-child
+### Q49. Sibling child join
 
-Expected: not supported as one adapter-level join. This tries to connect root rows directly to descendant discount rows by structural row-id prefix, not by direct `PRIMARY_KEY` to `PARENT_KEY`.
+Expected plan: no `P_JOIN`; items and shipping address are siblings, not parent and child.
 
-```sql
-SELECT
-    o.order_id,
-    d.code,
-    d.amount
-FROM pon__orders o
-JOIN pon__orders__items__discounts d
-    ON d.__polypheny_row_id LIKE o.__polypheny_row_id || '/%'
-LIMIT 20;
-```
-
-### 19. Child-child join inside the same parent
-
-Expected: not supported at adapter level today. This requires a schema with another repeated child table such as `pon__orders__payments`.
+Check: same-parent sibling relationship is rejected.
 
 ```sql
-SELECT
-    i.product_id,
-    p.payment_id,
-    p.amount
+SELECT i.product_id, s.city, s.zip
 FROM pon__orders__items i
-JOIN pon__orders__payments p
-    ON p.__polypheny_parent_row_id = i.__polypheny_parent_row_id
-LIMIT 20;
+JOIN pon__orders__shipping_address s
+    ON s.__polypheny_parent_row_id = i.__polypheny_parent_row_id
+LIMIT 10;
 ```
 
-### 20. Same table self-join
+### Q50. Same-table self join
 
-Expected: not supported at adapter level. This is a normal relational self-join.
+Expected plan: no `P_JOIN`; use normal self-join.
+
+Check: self-join on generated parent row id is not a structural parent-child join.
 
 ```sql
-SELECT
-    i1.product_id AS product_1,
-    i2.product_id AS product_2
+SELECT i1.product_id AS product_1, i2.product_id AS product_2
 FROM pon__orders__items i1
 JOIN pon__orders__items i2
     ON i1.__polypheny_parent_row_id = i2.__polypheny_parent_row_id
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 21. Parent-child tables but wrong generated keys
+### Q51. Parent-child tables with wrong generated keys
 
-Expected: not supported at adapter level. The child must join from `PARENT_KEY` to parent `PRIMARY_KEY`.
+Expected plan: no `P_JOIN`; child primary key is not the parent reference key.
+
+Check: key-role validation in `supportedDirection()`.
 
 ```sql
-SELECT
-    o.order_id,
-    i.product_id
+SELECT o.order_id, i.product_id
 FROM pon__orders o
 JOIN pon__orders__items i
     ON i.__polypheny_row_id = o.__polypheny_row_id
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 22. Parent-child tables joined on user columns
+### Q52. Parent-child tables joined by user columns
 
-Expected: not supported at adapter level. Adapter-level nested joins only support generated structural keys.
+Expected plan: no `P_JOIN`; structural keys are not used.
+
+Check: user-column join between parent and child falls back.
 
 ```sql
-SELECT
-    o.order_id,
-    i.product_id
+SELECT o.order_id, i.order_item_id
 FROM pon__orders o
 JOIN pon__orders__items i
     ON o.order_id = i.order_item_id
-LIMIT 20;
+LIMIT 10;
 ```
 
-If `order_item_id` is not present in the dataset, replace it with another compatible user column. The important part is that the join does not use `__polypheny_parent_row_id = __polypheny_row_id`.
+### Q53. Multi-key join condition
 
-### 23. Multi-key join condition
+Expected plan: no `P_JOIN` if the extra equality remains part of the join condition.
 
-Expected: not supported as adapter-level join when the extra condition is part of the join condition. Put additional filters in `WHERE` if the structural join itself should still be recognized.
+Check: `supportedDirection()` requires exactly one equi-key on each side.
 
 ```sql
-SELECT
-    o.order_id,
-    i.product_id,
-    i.quantity
+SELECT o.order_id, i.product_id
 FROM pon__orders o
 JOIN pon__orders__items i
     ON i.__polypheny_parent_row_id = o.__polypheny_row_id
-   AND i.__polypheny_elem_ordinal = 0
-LIMIT 20;
+   AND i.__polypheny_elem_ordinal = o.order_id
+LIMIT 10;
 ```
 
-### 24. Non-equi join
+### Q54. Non-equi join condition
 
-Expected: not supported at adapter level. Only a single equality between parent `PRIMARY_KEY` and child `PARENT_KEY` is supported.
+Expected plan: no `P_JOIN`.
+
+Check: non-equi structural condition is rejected.
 
 ```sql
-SELECT
-    o.order_id,
-    i.product_id
+SELECT o.order_id, i.product_id
 FROM pon__orders o
 JOIN pon__orders__items i
     ON i.__polypheny_parent_row_id <> o.__polypheny_row_id
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 25. OR join condition
+### Q55. OR join condition
 
-Expected: not supported at adapter level. The join condition is not a single structural equi-join. (contains OR)
+Expected plan: no `P_JOIN`.
+
+Check: disjunctive join condition is rejected.
 
 ```sql
-SELECT
-    o.order_id,
-    i.product_id
+SELECT o.order_id, i.product_id
 FROM pon__orders o
 JOIN pon__orders__items i
     ON i.__polypheny_parent_row_id = o.__polypheny_row_id
     OR i.__polypheny_elem_ordinal = 0
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 26. Cross join
+### Q56. EXISTS over structural relationship
 
-Expected: not supported at adapter level. There is no structural parent-child equality condition.
+Expected plan: no `P_JOIN` unless a future semi-join rule explicitly supports this shape.
 
-```sql
-SELECT
-    o.order_id,
-    i.product_id
-FROM pon__orders o
-CROSS JOIN pon__orders__items i
-LIMIT 20;
-```
-
-### 27. Semi join through EXISTS
-
-Expected: not supported as `ParquetRelJoin`. This may become a semi-join or correlated plan in Polypheny.
+Check: correlated/semi-join planning around nested tables.
 
 ```sql
-SELECT
-    o.order_id
+SELECT o.order_id
 FROM pon__orders o
 WHERE EXISTS (
     SELECT 1
     FROM pon__orders__items i
     WHERE i.__polypheny_parent_row_id = o.__polypheny_row_id
 )
-LIMIT 20;
+LIMIT 10;
 ```
 
-### 28. Anti join through NOT EXISTS
+### Q57. NOT EXISTS over structural relationship
 
-Expected: not supported as `ParquetRelJoin`. This may become an anti-join or correlated plan in Polypheny.
+Expected plan: no `P_JOIN` unless a future anti-join rule explicitly supports this shape.
+
+Check: anti-join or correlated fallback planning.
 
 ```sql
-SELECT
-    o.order_id
+SELECT o.order_id
 FROM pon__orders o
 WHERE NOT EXISTS (
     SELECT 1
     FROM pon__orders__items i
     WHERE i.__polypheny_parent_row_id = o.__polypheny_row_id
 )
-LIMIT 20;
-```
-
-### 29. Join between different Parquet sources
-
-Expected: not supported at adapter level. This requires another adapter/table prefix such as `pon2__orders`.
-
-```sql
-SELECT
-    o.order_id,
-    o2.order_id AS other_order_id
-FROM pon__orders o
-JOIN pon2__orders o2
-    ON o.order_id = o2.order_id
-LIMIT 20;
-```
-
-### 30. Join between normalized Parquet table and non-Parquet table
-
-Expected: not supported at adapter level. This is a normal Polypheny join.
-
-```sql
-SELECT
-    o.order_id,
-    c.customer_id
-FROM pon__orders o
-JOIN customers c
-    ON o.customer_id = c.customer_id
-LIMIT 20;
-```
-
-### 31. Child-side preserving outer join
-
-Expected: accepted by the rule for the structural join, but child rows normally cannot exist without a parent in normalized data. This should be tested mainly to verify runtime semantics and null handling.
-
-```sql
-SELECT
-    i.product_id,
-    o.order_id
-FROM pon__orders__items i
-LEFT JOIN pon__orders o
-    ON i.__polypheny_parent_row_id = o.__polypheny_row_id
-LIMIT 20;
-```
-
-
-Failed query numbers:
-
-12, 13, 14, 19, 23, 29, 30
-
-Failure reasons:
-
-12, 13, 14, 23: row-type mismatch errors.
-19, 29, 30: Entity not found errors.
-
-```sql
-SELECT *
-FROM pon__orders__items i
-FULL JOIN pon__orders__items__discounts d
-ON d.__polypheny_parent_row_id = i.__polypheny_row_id
-WHERE i.quantity = 3;
-```
-
-
-
-
-### 31. Filtering + Count(*)
-
-```sql
-SELECT count(*)
-FROM pon__orders__items i
-FULL JOIN pon__orders__items__discounts d
-ON d.__polypheny_parent_row_id = i.__polypheny_row_id
-WHERE i.quantity = 3;
-```
-
-
-
-### Filtering + Projection 
-
-```sql
-SELECT i.price
-FROM pon__orders__items i
-FULL JOIN pon__orders__items__discounts d
-ON d.__polypheny_parent_row_id = i.__polypheny_row_id
-WHERE i.quantity = 3;
-```
-
-
-NOT working:
-
-Incorrect limit values:
-
-SELECT *
-FROM pon__orders__items i
-FULL JOIN pon__orders__items__discounts d
-ON d.__polypheny_parent_row_id = i.__polypheny_row_id
-WHERE i.quantity = 3
 LIMIT 10;
+```
 
-
-SELECT i.quantity
-FROM pon__orders__items i
-FULL JOIN pon__orders__items__discounts d
-ON d.__polypheny_parent_row_id = i.__polypheny_row_id
-WHERE i.quantity = 3
-LIMIT 10;

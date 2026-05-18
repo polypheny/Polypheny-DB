@@ -58,6 +58,9 @@ public class ParquetPlugin extends PolyPlugin {
     }
 
 
+    /**
+     * Register nodes
+     */
     private void registerPolyAlg() {
         if ( PolyAlgRegistry.getClass( "P_SCAN" ) != null ) {
             return;

@@ -37,6 +37,10 @@ public class ParquetConvention extends Convention.Impl {
     }
 
 
+    /**
+     * Register Rules
+     * @param planner Planner
+     */
     @Override
     public void register( AlgPlanner planner ) {
         for ( AlgOptRule rule : ParquetRules.rules( this ) ) {

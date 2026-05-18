@@ -21,6 +21,7 @@ import org.polypheny.db.type.PolyType;
 
 /**
  * Compact per-file statistics for one physical Parquet column path.
+ * Provides statistics for file pruning
  */
 public record ParquetColumnStatistics(
         PolyType type,

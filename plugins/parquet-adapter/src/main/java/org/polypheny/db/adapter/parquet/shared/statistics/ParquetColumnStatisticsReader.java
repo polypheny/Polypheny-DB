@@ -33,6 +33,7 @@ import org.polypheny.db.util.Source;
 
 /**
  * Reads compact column statistics from Parquet footer metadata.
+ * Returns ParquetColumnStatistics per column
  */
 public final class ParquetColumnStatisticsReader {
 

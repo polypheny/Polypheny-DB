@@ -19,6 +19,10 @@ package org.polypheny.db.adapter.parquet.relational.planning;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 
+/**
+ * Adapter between Polypheny’s rule engine and your own PatternMatcher abstraction
+ * It does not contain Parquet planning logic itself. It only delegates.
+ */
 public class ParquetAlgOptRule extends AlgOptRule {
 
     private final PatternMatcher matcher;

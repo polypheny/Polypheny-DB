@@ -35,6 +35,8 @@ import org.polypheny.db.adapter.parquet.relational.execution.ParquetNestedNonRep
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetNestedRepeatedRelEnumerator;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelEnumerator;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelFilterTranslator;
+import org.polypheny.db.adapter.parquet.relational.execution.ParquetSourceFilePartitionFilterEvaluator;
+import org.polypheny.db.adapter.parquet.relational.execution.ParquetSourceFileStatisticsFilterEvaluator;
 import org.polypheny.db.adapter.parquet.relational.planning.ParquetConvention;
 import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelScan;
 import org.polypheny.db.adapter.parquet.relational.planning.PhysicalScan;
@@ -260,13 +262,16 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
             final boolean leftIsParent,
             final boolean emitUnmatchedParents,
             final List<ParquetAdapterFilter> filters ) {
+
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( parquetSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
+        // decide who is parent
         final PhysicalScan parent = leftIsParent ? leftScan : rightScan;
         final PhysicalScan child = leftIsParent ? rightScan : leftScan;
 
         final List<ParquetAdapterFilter> leftScanFilters = leftScan.resolveFilters( dataContext );
         final List<ParquetAdapterFilter> rightScanFilters = rightScan.resolveFilters( dataContext );
+        // split filters into filter container
         final JoinFiltersContainer filterContainer = getJoinFiltersContainer( dataContext, leftScan, rightScan, leftIsParent, filters, leftScanFilters, rightScanFilters, parent, child );
 
         final List<ParquetAdapterFilter> parentFileFilters = leftIsParent ? leftScanFilters : rightScanFilters;
@@ -314,6 +319,7 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
         final List<ParquetAdapterFilter> joinFilters = ParquetFilterResolver.resolveFilters( dataContext, filters, f -> selectBinding( f.columnIndex(), leftScan.fields(), rightScan.fields(), rightScan.table() ) );
         final List<ParquetAdapterFilter> parentScanFilters = leftIsParent ? leftScanFilters : rightScanFilters;
         final List<ParquetAdapterFilter> childScanFilters = leftIsParent ? rightScanFilters : leftScanFilters;
+        // split join filters to parent, child, adapter, reader
         final JoinFiltersContainer container = new JoinFiltersSplitter().split( joinFilters, leftIsParent, parent.fields().length, child.fields().length );
         return new JoinFiltersContainer(
                 container.parentFilters(),
@@ -362,9 +368,14 @@ public class ParquetRelTable extends PhysicalTable implements FilterableEntity, 
     }
 
 
+    /**
+     * Apply two evaluators: partition and statistics
+     * @param selector - function
+     * @return ParquetFilterEvaluatorsChain<ParquetSourceFile>
+     */
     private static ParquetFilterEvaluatorsChain<ParquetSourceFile> createParquetSourceFileEvaluatorsChain( Function<ParquetAdapterFilter, ParquetColumnBinding> selector ) {
         return new ParquetFilterEvaluatorsChain<>( List.of(
-                new ParquetSourceFileFilterEvaluator( selector ),
+                new ParquetSourceFilePartitionFilterEvaluator( selector ),
                 new ParquetSourceFileStatisticsFilterEvaluator( selector ) )
         );
     }

@@ -1,7 +1,5 @@
 # Parquet Filter Overview
 
-This document describes the current filtering mechanism based on the Java source code only.
-The existing `filtering.md` and `filter_improvements.md` files should be treated as possibly stale.
 In particular, the current relational planner path is built around `ParquetConvention`, `ParquetRules`, `PatternMatchers`, `ParquetScan`, and `ParquetJoin`; older `ParquetRelScan` / `ParquetRelJoin` rule classes still exist, but their direct rule registration in `ParquetRelScan.registerRules()` is commented out.
 
 ## 1. Short Description

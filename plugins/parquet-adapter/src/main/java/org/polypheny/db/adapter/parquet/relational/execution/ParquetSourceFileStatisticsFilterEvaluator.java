@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.parquet.relational.schema;
+package org.polypheny.db.adapter.parquet.relational.execution;
 
 import java.util.function.Function;
+
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnRole;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnStatistics;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
 import org.polypheny.db.adapter.parquet.shared.filter.FilterEvaluator;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.schema.ParquetTypeConverter;
@@ -27,13 +32,13 @@ import org.polypheny.db.algebra.constant.Kind;
  * Uses Parquet footer min/max/null-count statistics to reject files that cannot
  * contain rows matching a filter.
  */
-class ParquetSourceFileStatisticsFilterEvaluator extends FilterEvaluator<ParquetSourceFile> {
+public class ParquetSourceFileStatisticsFilterEvaluator extends FilterEvaluator<ParquetSourceFile> {
 
     private final Function<ParquetAdapterFilter, ParquetColumnBinding> selector;
     private final ParquetTypeConverter typeConverter;
 
 
-    ParquetSourceFileStatisticsFilterEvaluator( Function<ParquetAdapterFilter, ParquetColumnBinding> selector ) {
+    public ParquetSourceFileStatisticsFilterEvaluator( Function<ParquetAdapterFilter, ParquetColumnBinding> selector ) {
         this.selector = selector;
         this.typeConverter = new ParquetTypeConverter();
     }

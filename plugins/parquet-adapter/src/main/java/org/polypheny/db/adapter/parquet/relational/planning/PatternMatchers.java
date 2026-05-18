@@ -126,6 +126,9 @@ public final class PatternMatchers {
     }
 
 
+    /**
+     * Rule that converts a generic enumerable join into a Parquet adapter-level join.
+     */
     public static PatternMatcher joinWithScanOnLeftAndScanOnRight( ParquetConvention out, AlgBuilderFactory factory ) {
         return new PatternMatcher(
                 out,
@@ -146,6 +149,9 @@ public final class PatternMatchers {
     }
 
 
+    /**
+     * Rule that pushes a filter from a Calc above a ParquetRelJoin into the join node.
+     */
     public static PatternMatcher attachFilterToJoinUnderCalc( ParquetConvention out, AlgBuilderFactory factory ) {
         return new PatternMatcher(
                 out,
@@ -176,13 +182,16 @@ public final class PatternMatchers {
     }
 
 
+    /**
+     * Rule that pushes a simple EnumerableCalc projection/filter into a ParquetRelScan
+     */
     public static PatternMatcher attachFieldsAndFiltersToScanUnderCalc( ParquetConvention out, AlgBuilderFactory factory ) {
         return new PatternMatcher(
                 out,
                 factory,
                 operand(
                         EnumerableCalc.class,
-                        operand( EnumerableParquet.class, operand( ParquetRelScan.class, any() ) )
+                        operand( EnumerableParquet.class, operand( ParquetRelScan.class, none() ) )
                 ),
                 "attachFieldsAndFiltersToScanUnderCalc",
                 call -> {

@@ -108,7 +108,6 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
     public AlgNode getRelScan( long allocId, AlgBuilder builder ) {
         // This rule is still required for filter movement before the adapter rules inspect the tree.
         builder.getCluster().getPlanner().addRuleDuringRuntime( FilterSetOpTransposeRule.INSTANCE );
-//        ParquetConvention.INSTANCE.register( builder.getCluster().getPlanner() );
         PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
         ParquetRelTable table = entity.unwrapOrThrow( ParquetRelTable.class );
         return new ParquetRelScan( builder.getCluster(), table, IntStream.range( 0, table.getFieldCount() ).toArray() );

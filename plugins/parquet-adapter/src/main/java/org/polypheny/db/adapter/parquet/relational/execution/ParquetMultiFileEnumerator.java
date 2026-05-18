@@ -72,6 +72,7 @@ public class ParquetMultiFileEnumerator implements Enumerator<PolyValue[]> {
                     if ( !sourceFileEvaluator.matches( sourceFile, filters ) ) {
                         continue;
                     }
+                    // create Enumerator
                     currentEnumerator = enumeratorFactory.apply( sourceFile );
                 }
 

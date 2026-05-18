@@ -14,21 +14,25 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.parquet.relational.schema;
+package org.polypheny.db.adapter.parquet.relational.execution;
 
 import java.util.function.Function;
+
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnRole;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
 import org.polypheny.db.adapter.parquet.shared.filter.FilterEvaluator;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 
 
-class ParquetSourceFileFilterEvaluator extends FilterEvaluator<ParquetSourceFile> {
+public class ParquetSourceFilePartitionFilterEvaluator extends FilterEvaluator<ParquetSourceFile> {
 
     private final Function<ParquetAdapterFilter, ParquetColumnBinding> selector;
 
 
-    ParquetSourceFileFilterEvaluator( Function<ParquetAdapterFilter, ParquetColumnBinding> selector ) {
+    public ParquetSourceFilePartitionFilterEvaluator(Function<ParquetAdapterFilter, ParquetColumnBinding> selector ) {
         this.selector = selector;
     }
 

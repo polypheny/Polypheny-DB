@@ -49,6 +49,9 @@ public final class ParquetRules {
     }
 
 
+    /**
+     * Rule that converts a plan from Parquet convention into Enumerable convention
+     */
     public static class EnumerableParquetRule extends ConverterRule {
 
         public EnumerableParquetRule( ParquetConvention in, AlgBuilderFactory algBuilderFactory ) {
@@ -58,7 +61,7 @@ public final class ParquetRules {
                     in,
                     EnumerableConvention.INSTANCE,
                     algBuilderFactory,
-                    "P_CALC" );
+                    "EnumerableParquetRule" );
         }
 
 
