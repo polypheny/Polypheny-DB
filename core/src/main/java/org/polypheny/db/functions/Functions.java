@@ -169,7 +169,7 @@ public class Functions {
     }
 
 
-    public static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric, List<PolyNumber> weights ) {
+    private static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric, List<PolyNumber> weights ) {
         DistanceFunctions.verifyInputs( value, target, weights );
         return switch ( metric.value ) {
             case "L2" -> DistanceFunctions.l2MetricWeighted( value, target, weights );
@@ -182,7 +182,7 @@ public class Functions {
     }
 
 
-    public static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric ) {
+    private static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric ) {
         DistanceFunctions.verifyInputs( value, target, null );
         return switch ( metric.value ) {
             case "L2" -> DistanceFunctions.l2Metric( value, target );
