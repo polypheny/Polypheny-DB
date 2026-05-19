@@ -227,20 +227,29 @@ public class Functions {
     }
 
 
-    public static PolyDouble distance( PolyValue value, PolyValue target, PolyString metric ) {
-        return distance( toNumberList( value ), toNumberList( target ), metric );
+    public static PolyDouble distance( PolyValue value, PolyValue target, PolyValue metric ) {
+        return distance( toNumberList( value ), toNumberList( target ), metric.asString() );
     }
 
 
-    public static PolyDouble distance( PolyValue value, PolyValue target, PolyString
-            metric, PolyValue weights ) {
-        return distance( toNumberList( value ), toNumberList( target ), metric,
+    public static PolyDouble distance( PolyValue value, PolyValue target, PolyValue metric, PolyValue weights ) {
+        return distance( toNumberList( value ), toNumberList( target ), metric.asString(),
                 toNumberList( weights ) );
     }
 
 
     private static List<PolyNumber> toNumberList( PolyValue v ) {
-        return v.asList().stream().map( e -> (PolyNumber) e ).toList();
+        if ( v.isList() ) {
+            return v.asList().value.stream().map( e -> (PolyNumber) e ).toList();
+        }
+        if ( v.isString() ) {
+            String raw = v.asString().value.trim().replaceAll( "^\\[|\\]$", "" );
+            return Arrays.stream( raw.split( "," ) )
+                    .map( s -> (PolyNumber) PolyDouble.of( Double.parseDouble( s.trim() )
+                    ) )
+                    .toList();
+        }
+        throw new GenericRuntimeException( "Cannot convert " + v + " to number list" );
     }
 
 
