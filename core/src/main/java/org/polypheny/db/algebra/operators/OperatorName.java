@@ -1591,6 +1591,8 @@ public enum OperatorName {
 
     JACCARD_DISTANCE( Function.class ),
 
+    // Cypher specific operator
+    VECTOR_DISTANCE( Function.class),
 
 
     // PostgreSQL pgvector Operators

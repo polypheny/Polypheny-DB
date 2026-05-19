@@ -22,7 +22,15 @@ import java.util.Locale;
 import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherFunctionInvocation extends CypherExpression {
@@ -48,5 +56,50 @@ public class CypherFunctionInvocation extends CypherExpression {
         this.distinct = distinct;
         this.arguments = arguments;
     }
+
+
+    @Override
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+        if ( this.op == OperatorName.VECTOR_DISTANCE ) {
+            return getVectorDistanceRex( context, type );
+        }
+        return super.getRex( context, type );
+    }
+
+
+    private Pair<PolyString, RexNode> getVectorDistanceRex( CypherContext context, RexType type ) {
+        if ( arguments.size() != 3 ) {
+            throw new GenericRuntimeException( "vector_distance requires at exactly 3 arguments" );
+        }
+
+        RexNode v1 = arguments.get( 0 ).getRex( context, type ).right;
+        RexNode v2 = arguments.get( 1 ).getRex( context, type ).right;
+
+        RexNode metricRex = arguments.get( 2 ).getRex( context, type ).right;
+        if ( !(metricRex instanceof RexLiteral metricLit) ) {
+            throw new GenericRuntimeException( "vector_distance metric must be a string literal" );
+        }
+        String metric = metricLit.value.asString().value.toUpperCase( Locale.ROOT );
+
+        OperatorName namedOp = switch ( metric ) {
+            case "L1"      -> OperatorName.L1_DISTANCE;
+            case "L2"      -> OperatorName.L2_DISTANCE;
+            case "COSINE"  -> OperatorName.COS_DISTANCE;
+            case "HAMMING" -> OperatorName.HAMMING_DISTANCE;
+            case "JACCARD" -> OperatorName.JACCARD_DISTANCE;
+            // parameterized version
+            case "CHISQUARED", "L2SQUARED" -> OperatorName.DISTANCE;
+            default -> throw new GenericRuntimeException( "Unknown distance metric: ", metric );
+        };
+        Operator operator = OperatorRegistry.get( namedOp );
+
+        if ( namedOp == OperatorName.DISTANCE ) {
+            return Pair.of( PolyString.of( namedOp.name() ), context.rexBuilder.makeCall( operator, List.of( v1, v2, metricRex ) ) );
+        }
+
+        return Pair.of( PolyString.of( namedOp.name() ), context.rexBuilder.makeCall( operator, List.of( v1, v2 ) ) );
+    }
+
+
 
 }

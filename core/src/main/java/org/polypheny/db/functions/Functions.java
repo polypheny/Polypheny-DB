@@ -195,28 +195,52 @@ public class Functions {
     }
 
 
-    public static PolyDouble l1Distance( List<PolyNumber> value, List<PolyNumber> target ) {
-        return DistanceFunctions.l1Metric( value, target );
+    public static PolyDouble l1Distance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.l1Metric( toNumberList( value ), toNumberList( target )
+        );
     }
 
 
-    public static PolyDouble l2Distance( List<PolyNumber> value, List<PolyNumber> target ) {
-        return DistanceFunctions.l2Metric( value, target );
+    public static PolyDouble l2Distance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.l2Metric( toNumberList( value ), toNumberList( target )
+        );
     }
 
 
-    public static PolyDouble cosDistance( List<PolyNumber> value, List<PolyNumber> target ) {
-        return DistanceFunctions.cosineMetric( value, target );
+    public static PolyDouble cosDistance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.cosineMetric( toNumberList( value ), toNumberList( target
+        ) );
     }
 
 
-    public static PolyDouble hammingDistance( List<PolyValue> value, List<PolyValue> target ) {
-        return DistanceFunctions.hammingMetric( value, target );
+    public static PolyDouble hammingDistance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.hammingMetric(
+                value.asList().stream().map( e -> (PolyBoolean) e ).toList(),
+                target.asList().stream().map( e -> (PolyBoolean) e ).toList() );
     }
 
 
-    public static PolyDouble jaccardDistance( List<PolyValue> value, List<PolyValue> target ) {
-        return DistanceFunctions.jaccardMetric( value, target );
+    public static PolyDouble jaccardDistance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.jaccardMetric(
+                value.asList().stream().map( e -> (PolyBoolean) e ).toList(),
+                target.asList().stream().map( e -> (PolyBoolean) e ).toList() );
+    }
+
+
+    public static PolyDouble distance( PolyValue value, PolyValue target, PolyString metric ) {
+        return distance( toNumberList( value ), toNumberList( target ), metric );
+    }
+
+
+    public static PolyDouble distance( PolyValue value, PolyValue target, PolyString
+            metric, PolyValue weights ) {
+        return distance( toNumberList( value ), toNumberList( target ), metric,
+                toNumberList( weights ) );
+    }
+
+
+    private static List<PolyNumber> toNumberList( PolyValue v ) {
+        return v.asList().stream().map( e -> (PolyNumber) e ).toList();
     }
 
 

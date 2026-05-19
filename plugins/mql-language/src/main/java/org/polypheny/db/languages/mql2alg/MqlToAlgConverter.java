@@ -20,7 +20,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -63,7 +62,6 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentUnwind;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
-import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -827,7 +825,7 @@ public class MqlToAlgConverter {
 
         if ( vectorSearch.containsKey( "filter" ) ) {
             RexNode filterNode = translateDocument( vectorSearch.getDocument( "filter" ), rowType, null );
-            node = LogicalRelFilter.create( node, filterNode );
+            node = LogicalDocumentFilter.create( node, filterNode );
         }
 
         RexNode pathRef;
