@@ -212,6 +212,10 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
+    /**
+     * <p>Generally the docker images already have the extension registered.
+     * This is merely used as a safeguard.</p>
+     */
     @Override
     public void registerFeatures() {
         PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.CONNECTION ), PUID.randomPUID( Type.CONNECTION ) );
