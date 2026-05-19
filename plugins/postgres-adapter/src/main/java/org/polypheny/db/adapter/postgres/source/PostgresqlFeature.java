@@ -21,7 +21,9 @@ import org.polypheny.db.sql.language.SqlDialect;
 import java.util.function.Predicate;
 
 public enum PostgresqlFeature implements SqlDbFeature {
+
     PGVECTOR( "vector", SqlDialect::supportsVector ),
+
     POSTGIS( "postgis", SqlDialect::supportsPostGIS );
 
     /**
@@ -42,11 +44,13 @@ public enum PostgresqlFeature implements SqlDbFeature {
     }
 
 
+    @Override
     public boolean isSupported( SqlDialect dialect ) {
         return this.supportCheck.test( dialect );
     }
 
 
+    @Override
     public String getFeatureRegistrationQuery() {
         return "CREATE EXTENSION IF NOT EXISTS \"" + this.name + "\"";
     }

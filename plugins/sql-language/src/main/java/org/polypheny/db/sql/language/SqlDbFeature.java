@@ -40,11 +40,12 @@ public interface SqlDbFeature {
      */
     String featureName();
 
-    public boolean isSupported( SqlDialect dialect );
+    boolean isSupported( SqlDialect dialect );
 
     /**
      * Creates a query than can be run in order to register the feature in the database.
      * In PostgreSQL this is e.g. {@code CREATE EXTENSION IF NOT EXISTS <feature name>}.
+     * Preferably the query should be <i>idempotent</i>.
      */
-    public String getFeatureRegistrationQuery();
+    String getFeatureRegistrationQuery();
 }
