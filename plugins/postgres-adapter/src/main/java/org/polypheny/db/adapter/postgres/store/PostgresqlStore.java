@@ -83,8 +83,8 @@ import org.polypheny.db.util.PasswordGenerator;
         description = "Maximum number of concurrent JDBC connections.")
 @AdapterSettingList(
         name        = "imageVariant",
-        options     = { "Default", "pgvector", "PostGIS", "pgvector & PostGIS" },
-        defaultValue = "pgvector & PostGIS",
+        options     = { "Default_old", "Default", "pgvector", "PostGIS", "pgvector & PostGIS" },
+        defaultValue = "Default_old",
         position    = 7,
         description = "PostgreSQL Docker image variant to deploy.",
         appliesTo   = DeploySetting.DOCKER

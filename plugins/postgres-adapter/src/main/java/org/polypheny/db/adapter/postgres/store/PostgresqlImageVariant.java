@@ -21,6 +21,7 @@ import org.polypheny.db.sql.language.SqlDbFeature;
 import java.util.Set;
 
 public enum PostgresqlImageVariant {
+    DEFAULT_OLD     ( "polypheny/postgres:latest", Set.of( PostgresqlFeature.POSTGIS ) ),
     DEFAULT         ( "polypheny/postgres:17-debian", Set.of() ),
     PGVECTOR        ( "polypheny/postgres-pgvector:17-debian", Set.of( PostgresqlFeature.PGVECTOR ) ),
     POSTGIS         ( "polypheny/postgres-postgis:17-debian", Set.of( PostgresqlFeature.POSTGIS ) ),
