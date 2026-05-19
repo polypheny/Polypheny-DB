@@ -84,7 +84,7 @@ import org.polypheny.db.util.PasswordGenerator;
 @AdapterSettingList(
         name        = "imageVariant",
         options     = { "Default", "pgvector", "PostGIS", "pgvector & PostGIS" },
-        defaultValue = "Default",
+        defaultValue = "pgvector & PostGIS",
         position    = 7,
         description = "PostgreSQL Docker image variant to deploy.",
         appliesTo   = DeploySetting.DOCKER
@@ -148,7 +148,6 @@ public class PostgresqlStore extends AbstractJdbcStore {
             }
         }
         dialect.addSupportedFeatures( variant.features );
-        dialect.addSupportedFeatures( java.util.Set.of( PostgresqlFeature.POSTGIS ) );
 
         return createConnectionFactory();
     }
