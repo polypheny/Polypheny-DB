@@ -240,8 +240,13 @@ public class Functions {
 
     private static List<PolyNumber> toNumberList( PolyValue v ) {
         if ( v.isList() ) {
-            return v.asList().value.stream().map( e -> (PolyNumber) e ).toList();
+            return v.asList().value.stream().map( e -> {
+                if ( e instanceof PolyNumber n ) return n;
+                if ( e instanceof PolyString s ) return (PolyNumber) PolyDouble.of( Double.parseDouble( s.value ) );
+                throw new GenericRuntimeException( "Cannot convert list element " + e + " to number" );
+            } ).toList();
         }
+
         if ( v.isString() ) {
             String raw = v.asString().value.trim().replaceAll( "^\\[|\\]$", "" );
             return Arrays.stream( raw.split( "," ) )

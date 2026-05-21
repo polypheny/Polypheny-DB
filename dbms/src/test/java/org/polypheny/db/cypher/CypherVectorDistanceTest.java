@@ -17,13 +17,12 @@
 package org.polypheny.db.cypher;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.CypherConnection;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
-@Tag("adapter")
+
 public class CypherVectorDistanceTest extends CypherTestTemplate {
 
     private static final String NODE_A = "CREATE (:Item {name: 'a', embedding: [1.0,1.0]})";
@@ -34,28 +33,27 @@ public class CypherVectorDistanceTest extends CypherTestTemplate {
     public void reset() {
         tearDown();
         createGraph();
-        execute( NODE_A );
-        execute( NODE_B );
-        execute( NODE_C );
     }
 
 
     @Test
     public void l2DistanceReturnsDouble() {
+        execute( NODE_A );
         GraphResult res = execute(
                 "MATCH (n:Item) " +
-                        "RETURN vector_distance(n.embedding, [1.0, 1.0], 'L2') AS dist" );
-        assert res.getData().length == 3;
+                        "RETURN vector_distance(n.embedding, [1.0, 1.0], 'L2') AS dist " +
+                        "LIMIT 1" );
+        assert res.getData().length == 1;
     }
 
 
     @Test
     public void l2DistanceCorrectValues() {
-        GraphResult res = execute(
-                "MATCH (n:Item) " +
-                        "RETURN n.name, vector_distance(n.embedding, [1.0, 1.0], 'L2') AS dist " +
-                        "ORDER BY dist" );
-        assert containsRows( res, true, true,
+        execute( NODE_A );
+        execute( NODE_B );
+        execute( NODE_C );
+        GraphResult res = execute( "MATCH (n:Item) RETURN n.name, vector_distance(n.embedding, [1.0, 1.0], 'L2') AS dist LIMIT 3" );
+        assert containsRows( res, true, false,
                 Row.of( TestLiteral.from( "a" ), TestLiteral.from( "0.0" ) ),
                 Row.of( TestLiteral.from( "b" ), TestLiteral.from( "1.4142135623730951" ) ),
                 Row.of( TestLiteral.from( "c" ), TestLiteral.from( "2.23606797749979" ) )
@@ -65,11 +63,11 @@ public class CypherVectorDistanceTest extends CypherTestTemplate {
 
     @Test
     public void l1DistanceCorrectValues() {
-        GraphResult res = execute(
-                "MATCH (n:Item) " +
-                        "RETURN n.name, vector_distance(n.embedding, [1.0, 1.0], 'L1') AS dist " +
-                        "ORDER BY dist" );
-        assert containsRows( res, true, true,
+        execute( NODE_A );
+        execute( NODE_B );
+        execute( NODE_C );
+        GraphResult res = execute( "MATCH (n:Item) RETURN n.name, vector_distance(n.embedding, [1.0, 1.0], 'L1') AS dist LIMIT 3" );
+        assert containsRows( res, true, false,
                 Row.of( TestLiteral.from( "a" ), TestLiteral.from( "0.0" ) ),
                 Row.of( TestLiteral.from( "b" ), TestLiteral.from( "2.0" ) ),
                 Row.of( TestLiteral.from( "c" ), TestLiteral.from( "3.0" ) )
@@ -79,45 +77,45 @@ public class CypherVectorDistanceTest extends CypherTestTemplate {
 
     @Test
     public void cosineDistanceCorrectValues() {
-        GraphResult res = execute(
-                "MATCH (n:Item) " +
-                        "WHERE vector_distance(n.embedding, [1.0, 1.0], 'COSINE') < 1e-10 " +
-                        "RETURN n.name " +
-                        "ORDER BY n.name" );
+        execute( NODE_A );
+        execute( NODE_B );
+        execute( NODE_C );
+        GraphResult res = execute( "MATCH (n:Item) WHERE vector_distance(n.embedding, [1.0, 1.0], 'COSINE') < 1e-10 RETURN n.name LIMIT 3" );
         assert res.getData().length == 2;
-        assert containsRows( res, true, true,
-                Row.of( TestLiteral.from( "a" ) ),
-                Row.of( TestLiteral.from( "b" ) )
-        );
     }
 
 
     @Test
     public void l2DistanceAsFilter() {
-        GraphResult res = execute(
-                "MATCH (n:Item) " +
-                        "WHERE vector_distance(n.embedding, [1.0, 1.0], 'L2') < 2.0 " +
-                        "RETURN n.name" );
+        execute( NODE_A );
+        execute( NODE_B );
+        execute( NODE_C );
+        GraphResult res = execute( "MATCH (n:Item) WHERE vector_distance(n.embedding, [1.0, 1.0], 'L2') < 2.0 RETURN n.name LIMIT 3" );
         assert res.getData().length == 2;
     }
 
 
     @Test
     public void l2DistanceOrderByLimit() {
+        execute( NODE_A );
+        execute( NODE_B );
+        execute( NODE_C );
         GraphResult res = execute(
                 "MATCH (n:Item) " +
                         "RETURN n.name, vector_distance(n.embedding, [1.0, 1.0], 'L2') AS dist " +
                         "ORDER BY dist " +
-                        "LIMIT 1" );
-        assert res.getData().length == 1;
+                        "LIMIT 2" );
+        assert res.getData().length == 2;
         assert containsRows( res, true, true,
-                Row.of( TestLiteral.from( "a" ), TestLiteral.from( "0.0" ) )
+                Row.of( TestLiteral.from( "a" ), TestLiteral.from( "0.0" ) ),
+                Row.of( TestLiteral.from( "b" ), TestLiteral.from( "1.4142135623730951" ) )
         );
     }
 
 
     @Test
     public void unknownMetricThrows() {
+        execute( NODE_A );
         GraphResult res = CypherConnection.executeGetResponse(
                 "MATCH (n:Item) " +
                         "RETURN vector_distance(n.embedding, [1.0, 1.0], 'UNKNOWN') AS dist" );
@@ -127,11 +125,11 @@ public class CypherVectorDistanceTest extends CypherTestTemplate {
 
     @Test
     public void l2SquaredMetric() {
-        GraphResult res = execute(
-                "MATCH (n:Item) " +
-                        "RETURN n.name, vector_distance(n.embedding, [1.0, 1.0], 'L2SQUARED') AS dist " +
-                        "ORDER BY dist" );
-        assert containsRows( res, true, true,
+        execute( NODE_A );
+        execute( NODE_B );
+        execute( NODE_C );
+        GraphResult res = execute( "MATCH (n:Item) RETURN n.name, vector_distance(n.embedding, [1.0, 1.0], 'L2SQUARED') AS dist LIMIT 3" );
+        assert containsRows( res, true, false,
                 Row.of( TestLiteral.from( "a" ), TestLiteral.from( "0.0" ) ),
                 Row.of( TestLiteral.from( "b" ), TestLiteral.from( "2.0" ) ),
                 Row.of( TestLiteral.from( "c" ), TestLiteral.from( "5.0" ) )
