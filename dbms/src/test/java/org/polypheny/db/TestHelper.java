@@ -64,8 +64,10 @@ import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.impl.PolyCatalog;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
@@ -268,6 +270,21 @@ public class TestHelper {
     }
 
 
+    public static void addMongoSource( String name, String host, int port, String database ) throws SQLException {
+        executeSQL(
+                "ALTER ADAPTERS ADD \"" + name + "\" USING 'MongoDB' AS 'Source' WITH "
+                        + "'{"
+                        + "\"mode\":\"remote\","
+                        + "\"host\":\"" + host + "\","
+                        + "\"port\":\"" + port + "\","
+                        + "\"database\":\"" + database + "\","
+                        + "\"username\":\"\","
+                        + "\"password\":\"\","
+                        + "\"authSource\":\"\""
+                        + "}'" );
+    }
+
+
     public static void executeSQL( Statement statement, String sql ) throws SQLException {
         statement.execute( sql );
     }
@@ -312,6 +329,58 @@ public class TestHelper {
             }
         }
         throw new IllegalStateException( "Table still exists after refresh: " + tableName );
+    }
+
+
+    public static LogicalCollection awaitLogicalCollection( long namespaceId, String collectionName, int timeoutSeconds ) {
+        for ( int i = 0; i < timeoutSeconds; i++ ) {
+            var collection = Catalog.snapshot().doc().getCollection( namespaceId, collectionName );
+            if ( collection.isPresent() ) {
+                return collection.orElseThrow();
+            }
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch ( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( "Interrupted while waiting for collection " + collectionName, e );
+            }
+        }
+        throw new IllegalStateException( "Collection was not created in time: " + collectionName );
+    }
+
+
+    public static void awaitLogicalCollectionAbsent( long namespaceId, String collectionName, int timeoutSeconds ) {
+        for ( int i = 0; i < timeoutSeconds; i++ ) {
+            if ( Catalog.snapshot().doc().getCollection( namespaceId, collectionName ).isEmpty() ) {
+                return;
+            }
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch ( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( "Interrupted while waiting for collection removal " + collectionName, e );
+            }
+        }
+        throw new IllegalStateException( "Collection still exists after refresh: " + collectionName );
+    }
+
+
+    public static long awaitDocumentNamespaceId( String namespaceName, int timeoutSeconds ) {
+        String normalizedName = namespaceName.toLowerCase();
+        for ( int i = 0; i < timeoutSeconds; i++ ) {
+            var namespace = Catalog.snapshot().getNamespace( normalizedName )
+                    .filter( ns -> ns.dataModel == DataModel.DOCUMENT );
+            if ( namespace.isPresent() ) {
+                return namespace.orElseThrow().id;
+            }
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch ( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( "Interrupted while waiting for document namespace " + normalizedName, e );
+            }
+        }
+        throw new IllegalStateException( "Document namespace was not created in time: " + normalizedName );
     }
 
 
@@ -891,6 +960,11 @@ public class TestHelper {
     }
 
 
+    public static DockerMongo startMongoDocker( String database ) throws Exception {
+        return DockerMongo.start( database );
+    }
+
+
     @Getter
     public static class JdbcConnection implements AutoCloseable {
 
@@ -1163,6 +1237,92 @@ public class TestHelper {
                         database,
                         "-e",
                         "CREATE TABLE IF NOT EXISTS __polypheny_ready_check (id INT); DROP TABLE __polypheny_ready_check" ) ) == 0;
+            } catch ( IOException e ) {
+                // Ignore during startup polling.
+            }
+            return false;
+        }
+
+    }
+
+
+    public static final class DockerMongo implements AutoCloseable {
+
+        private static final int MONGO_PORT = 27017;
+        private static final long STARTUP_TIMEOUT_MS = TimeUnit.SECONDS.toMillis( 60 );
+
+        private final DockerContainer container;
+        @Getter
+        private final String host;
+        @Getter
+        private final int port;
+        private final String database;
+
+
+        private DockerMongo( DockerContainer container, String host, int port, String database ) {
+            this.container = container;
+            this.host = host;
+            this.port = port;
+            this.database = database;
+        }
+
+
+        public static DockerMongo start( String database ) throws Exception {
+            String containerName = "polypheny-refresh-mongo-test-" + UUID.randomUUID().toString().replace( "-", "" ).substring( 0, 8 );
+            DockerInstance instance = DockerManager.getInstance()
+                    .getInstanceById( 0 )
+                    .orElseThrow( () -> new IllegalStateException( "No docker instance with id 0" ) );
+
+            DockerContainer container = instance.newBuilder( "mongo:8.0", containerName )
+                    .createAndStart();
+
+            try {
+                HostAndPort connection = container.connectToContainer( MONGO_PORT );
+                String host = connection.host();
+                int port = connection.port();
+                DockerMongo mongo = new DockerMongo( container, host, port, database );
+                if ( !container.waitTillStarted( mongo::testConnection, STARTUP_TIMEOUT_MS ) ) {
+                    throw new IllegalStateException( "MongoDB container did not become ready in time" );
+                }
+                return mongo;
+            } catch ( Exception e ) {
+                container.destroy();
+                throw e;
+            }
+        }
+
+
+        public void execute( String javascript ) throws Exception {
+            int exitCode = container.execute( List.of(
+                    "mongosh",
+                    "--quiet",
+                    "mongodb://127.0.0.1:" + MONGO_PORT + "/" + database,
+                    "--eval",
+                    javascript ) );
+            if ( exitCode != 0 ) {
+                throw new IllegalStateException( "MongoDB command failed with exit code " + exitCode + ": " + javascript );
+            }
+        }
+
+
+        @Override
+        public void close() {
+            try {
+                container.destroy();
+            } catch ( Exception ignored ) {
+                // Ignore cleanup failures to avoid masking test failures.
+            }
+        }
+
+
+        private boolean testConnection() {
+            try {
+                return container.execute( List.of(
+                        "mongosh",
+                        "--quiet",
+                        "mongodb://127.0.0.1:" + MONGO_PORT + "/" + database,
+                        "--eval",
+                        "db.runCommand({ ping: 1 })" ) ) == 0;
             } catch ( IOException e ) {
                 // Ignore during startup polling.
             }
