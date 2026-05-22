@@ -33,8 +33,8 @@ import org.pf4j.Extension;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DocumentDataSource;
-import org.polypheny.db.adapter.DocumentModifyDelegate;
-import org.polypheny.db.adapter.Modifiable;
+import org.polypheny.db.adapter.DocumentScanDelegate;
+import org.polypheny.db.adapter.Scannable;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
@@ -48,9 +48,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
-import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -73,10 +71,10 @@ import org.polypheny.db.transaction.PolyXid;
 @AdapterSettingString(name = "username", defaultValue = "", description = "Optional username for authenticating at the remote MongoDB instance.")
 @AdapterSettingString(name = "password", defaultValue = "", description = "Optional password for authenticating at the remote MongoDB instance.")
 @AdapterSettingString(name = "authSource", defaultValue = "", description = "Optional authentication database. If empty, the selected database is used.")
-public class MongoSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Modifiable {
+public class MongoSource extends DataSource<DocAdapterCatalog> implements DocumentDataSource, Scannable {
 
     @Delegate(excludes = Excludes.class)
-    private final DocumentModifyDelegate delegate;
+    private final DocumentScanDelegate delegate;
     private final String database;
     private final transient MongoClient client;
     private final transient TransactionProvider transactionProvider;
@@ -84,7 +82,7 @@ public class MongoSource extends DataSource<DocAdapterCatalog> implements Docume
 
 
     public MongoSource( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
-        super( adapterId, uniqueName, settings, mode, false, new DocAdapterCatalog( adapterId ), Set.of( DataModel.DOCUMENT ) );
+        super( adapterId, uniqueName, settings, mode, true, new DocAdapterCatalog( adapterId ), Set.of( DataModel.DOCUMENT ) );
         if ( mode != DeployMode.REMOTE ) {
             throw new GenericRuntimeException( "Not supported deploy mode: " + mode.name() );
         }
@@ -115,7 +113,7 @@ public class MongoSource extends DataSource<DocAdapterCatalog> implements Docume
 
         testConnection();
 
-        this.delegate = new DocumentModifyDelegate( this, adapterCatalog );
+        this.delegate = new DocumentScanDelegate( this, adapterCatalog );
 
     }
 
@@ -153,7 +151,7 @@ public class MongoSource extends DataSource<DocAdapterCatalog> implements Docume
                 .into( new java.util.ArrayList<>() )
                 .stream().toList();
         return collectionNames.stream()
-                .map( name -> new ExportedDocument( name, true, EntityType.SOURCE ) )
+                .map( name -> new ExportedDocument( name, false, EntityType.SOURCE ) )
                 .toList();
     }
 
@@ -256,52 +254,12 @@ public class MongoSource extends DataSource<DocAdapterCatalog> implements Docume
 
 
     @Override
-    public void addColumn( Context context, long allocId, LogicalColumn column ) {
-        throw new GenericRuntimeException( "Mongo source does not support addColumn()." );
-    }
-
-
-    @Override
-    public void dropColumn( Context context, long allocId, long columnId ) {
-        throw new GenericRuntimeException( "Mongo source does not support dropColumn()." );
-    }
-
-
-    @Override
-    public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
-        throw new GenericRuntimeException( "Mongo source does not support addIndex()." );
-    }
-
-
-    @Override
-    public void dropIndex( Context context, LogicalIndex index, long allocId ) {
-        throw new GenericRuntimeException( "Mongo source does not support dropIndex()." );
-    }
-
-
-    @Override
-    public void updateColumnType( Context context, long allocId, LogicalColumn column ) {
-        throw new GenericRuntimeException( "Mongo source does not support updateColumnType()." );
-    }
-
-
-    @Override
     public DocumentDataSource asDocumentDataSource() {
         return this;
     }
 
 
     private interface Excludes {
-
-        void addColumn( Context context, long allocId, LogicalColumn column );
-
-        void dropColumn( Context context, long allocId, long columnId );
-
-        String addIndex( Context context, LogicalIndex index, AllocationTable allocation );
-
-        void dropIndex( Context context, LogicalIndex index, long allocId );
-
-        void updateColumnType( Context context, long allocId, LogicalColumn column );
 
         void refreshCollection( long allocId );
 

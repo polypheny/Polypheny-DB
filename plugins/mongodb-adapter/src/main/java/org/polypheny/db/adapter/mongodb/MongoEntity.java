@@ -449,18 +449,13 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
             PolyXid xid = dataContext.getStatement().getTransaction().getXid();
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( entity.getAdapterId() ).orElseThrow() );
             GridFSBucket bucket = entity.getMongoNamespace().getBucket();
-            boolean sourceBacked = Catalog.snapshot().getAdapter( entity.getAdapterId() )
-                    .map( adapter -> adapter.type == AdapterType.SOURCE )
-                    .orElse( false );
 
             try {
-                final long changes = doDML( operation, filter, operations, onlyOne, needsDocument, xid, bucket, sourceBacked );
+                final long changes = doDML( operation, filter, operations, onlyOne, needsDocument, xid, bucket );
                 // this has to be a list of arrays, so List.of(...) will unwrap array and produce errors
                 return Linq4j.asEnumerable( Collections.singletonList( new PolyValue[]{ PolyLong.of( changes ) } ) );
             } catch ( MongoException e ) {
-                if ( !sourceBacked ) {
-                    entity.getTransactionProvider().rollback( xid );
-                }
+                entity.getTransactionProvider().rollback( xid );
 
                 log.warn( "Failed op: {}\nfilter: {}\nops: [{}]", operation.name(), filter, String.join( ";", operations ) );
                 log.warn( e.getMessage() );
@@ -469,8 +464,8 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         }
 
 
-        private long doDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument, PolyXid xid, GridFSBucket bucket, boolean sourceBacked ) {
-            ClientSession session = sourceBacked ? null : entity.getTransactionProvider().startTransaction( xid, true );
+        private long doDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument, PolyXid xid, GridFSBucket bucket ) {
+            ClientSession session = entity.getTransactionProvider().startTransaction( xid, true );
 
             long changes = 0;
             switch ( operation ) {
@@ -480,20 +475,12 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                         // prepared
                         MongoDynamic util = MongoDynamic.create( BsonDocument.parse( operations.get( 0 ) ), bucket, getEntity().getDataModel() );
                         List<Document> inserts = util.getAll( dataContext.getParameterValues() );
-                        if ( session != null ) {
-                            entity.getCollection().insertMany( session, inserts );
-                        } else {
-                            entity.getCollection().insertMany( inserts );
-                        }
+                        entity.getCollection().insertMany( session, inserts );
                         return inserts.size();
                     } else {
                         // direct
                         List<Document> docs = operations.stream().map( BsonDocument::parse ).map( BsonUtil::asDocument ).toList();
-                        if ( session != null ) {
-                            entity.getCollection().insertMany( session, docs );
-                        } else {
-                            entity.getCollection().insertMany( docs );
-                        }
+                        entity.getCollection().insertMany( session, docs );
                         return docs.size();
                     }
 
@@ -507,38 +494,44 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                         for ( Map<Long, PolyValue> parameterValue : dataContext.getParameterValues() ) {
                             if ( onlyOne ) {
                                 if ( needsDocument ) {
-                                    changes += session != null
-                                            ? entity.getCollection().updateOne( session, filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) ).getModifiedCount()
-                                            : entity.getCollection().updateOne( filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) ).getModifiedCount();
+                                    changes += entity
+                                            .getCollection()
+                                            .updateOne( session, filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) )
+                                            .getModifiedCount();
                                 } else {
-                                    changes += session != null
-                                            ? entity.getCollection().updateOne( session, filterUtil.insert( parameterValue ), List.of( docUtil.insert( parameterValue ) ) ).getModifiedCount()
-                                            : entity.getCollection().updateOne( filterUtil.insert( parameterValue ), List.of( docUtil.insert( parameterValue ) ) ).getModifiedCount();
+                                    changes += entity
+                                            .getCollection()
+                                            .updateOne( session, filterUtil.insert( parameterValue ), List.of( docUtil.insert( parameterValue ) ) )
+                                            .getModifiedCount();
                                 }
                             } else {
                                 log.debug( "filter {}", filterUtil.insert( parameterValue ) );
                                 log.debug( "operation {}", docUtil.insert( parameterValue ) );
                                 if ( needsDocument ) {
-                                    changes += session != null
-                                            ? entity.getCollection().updateMany( session, filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) ).getModifiedCount()
-                                            : entity.getCollection().updateMany( filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) ).getModifiedCount();
+                                    changes += entity
+                                            .getCollection()
+                                            .updateMany( session, filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) )
+                                            .getModifiedCount();
                                 } else {
-                                    changes += session != null
-                                            ? entity.getCollection().updateMany( session, filterUtil.insert( parameterValue ), List.of( docUtil.insert( parameterValue ) ) ).getModifiedCount()
-                                            : entity.getCollection().updateMany( filterUtil.insert( parameterValue ), List.of( docUtil.insert( parameterValue ) ) ).getModifiedCount();
+                                    changes += entity
+                                            .getCollection()
+                                            .updateMany( session, filterUtil.insert( parameterValue ), List.of( docUtil.insert( parameterValue ) ) )
+                                            .getModifiedCount();
                                 }
                             }
                         }
                     } else {
                         // direct
                         if ( onlyOne ) {
-                            changes = session != null
-                                    ? entity.getCollection().updateOne( session, BsonDocument.parse( filter ), List.of( BsonDocument.parse( operations.get( 0 ) ) ) ).getModifiedCount()
-                                    : entity.getCollection().updateOne( BsonDocument.parse( filter ), List.of( BsonDocument.parse( operations.get( 0 ) ) ) ).getModifiedCount();
+                            changes = entity
+                                    .getCollection()
+                                    .updateOne( session, BsonDocument.parse( filter ), List.of( BsonDocument.parse( operations.get( 0 ) ) ) )
+                                    .getModifiedCount();
                         } else {
-                            changes = session != null
-                                    ? entity.getCollection().updateMany( session, BsonDocument.parse( filter ), List.of( BsonDocument.parse( operations.get( 0 ) ) ) ).getModifiedCount()
-                                    : entity.getCollection().updateMany( BsonDocument.parse( filter ), List.of( BsonDocument.parse( operations.get( 0 ) ) ) ).getModifiedCount();
+                            changes = entity
+                                    .getCollection()
+                                    .updateMany( session, BsonDocument.parse( filter ), List.of( BsonDocument.parse( operations.get( 0 ) ) ) )
+                                    .getModifiedCount();
                         }
 
                     }
@@ -555,19 +548,19 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                             filters = filterUtil.getAll( dataContext.getParameterValues(), DeleteManyModel::new );
                         }
 
-                        changes = session != null
-                                ? entity.getCollection().bulkWrite( session, filters ).getDeletedCount()
-                                : entity.getCollection().bulkWrite( filters ).getDeletedCount();
+                        changes = entity.getCollection().bulkWrite( session, filters ).getDeletedCount();
                     } else {
                         // direct
                         if ( onlyOne ) {
-                            changes = session != null
-                                    ? entity.getCollection().deleteOne( session, BsonDocument.parse( filter ) ).getDeletedCount()
-                                    : entity.getCollection().deleteOne( BsonDocument.parse( filter ) ).getDeletedCount();
+                            changes = entity
+                                    .getCollection()
+                                    .deleteOne( session, BsonDocument.parse( filter ) )
+                                    .getDeletedCount();
                         } else {
-                            changes = session != null
-                                    ? entity.getCollection().deleteMany( session, BsonDocument.parse( filter ) ).getDeletedCount()
-                                    : entity.getCollection().deleteMany( BsonDocument.parse( filter ) ).getDeletedCount();
+                            changes = entity
+                                    .getCollection()
+                                    .deleteMany( session, BsonDocument.parse( filter ) )
+                                    .getDeletedCount();
                         }
                     }
                     break;
