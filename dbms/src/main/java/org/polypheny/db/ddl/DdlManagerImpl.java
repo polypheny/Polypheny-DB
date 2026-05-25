@@ -53,6 +53,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
@@ -89,6 +90,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
+import org.polypheny.db.catalog.logistic.IndexCategory;
 import org.polypheny.db.catalog.logistic.IndexType;
 import org.polypheny.db.catalog.logistic.NameGenerator;
 import org.polypheny.db.catalog.logistic.PartitionType;
@@ -115,6 +117,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
@@ -600,8 +603,30 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void createIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement ) throws TransactionException {
         List<Long> columnIds = new ArrayList<>();
+        IndexCategory requestedCategory = IndexCategory.REGULAR;
+        if ( indexMethodName != null ) {
+            IndexMethodModel aim = IndexManager.getAvailableIndexMethods().stream()
+                    .filter( m -> m.name().equals( indexMethodName ) )
+                    .findFirst()
+                    .orElse( null );
+            if ( aim == null && location != null ) {
+                aim = location.getAvailableIndexMethods().stream()
+                        .filter( m -> m.name().equals( indexMethodName ) )
+                        .findFirst()
+                        .orElse( null );
+            }
+            if ( aim != null ) requestedCategory = aim.category();
+        }
+
         for ( String columnName : columnNames ) {
             LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
+            boolean isVectorColumn = logicalColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT ) instanceof VectorType;
+            if ( requestedCategory == IndexCategory.VECTOR && !isVectorColumn ) {
+                throw new GenericRuntimeException( "Index method '%s' can only be created on vector columns.", indexMethodName );
+            }
+            if ( requestedCategory != IndexCategory.VECTOR && isVectorColumn ) {
+                throw new GenericRuntimeException( "Standard index methods cannot be created on vector columns. Please use 'hnsw' or 'ivfflat'." );
+            }
             columnIds.add( logicalColumn.id );
         }
 
