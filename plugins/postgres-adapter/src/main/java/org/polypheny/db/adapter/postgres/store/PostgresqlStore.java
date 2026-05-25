@@ -310,10 +310,10 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 builder.append( "brin" );
                 break;
             case "hnsw":
-                builder.append( "hnsw" );
+                builder.append( "hnsw " );
                 break;
             case "ivfflat":
-                builder.append( "ivfflat" );
+                builder.append( "ivfflat " );
                 break;
             default:
                 throw new RuntimeException( "Unknown index method: " + index.method );
@@ -328,9 +328,25 @@ public class PostgresqlStore extends AbstractJdbcStore {
             first = false;
             builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
         }
-        if ( index.method.equals( "hnsw" ) || index.method.equals( "ivfflat" ) ) {
-            //TODO: Extract correct distance metric.
-            builder.append( "vector_l2_ops" );
+        String metric = index.options.getOrDefault( "metric", "L2" ).toUpperCase();
+        if ( index.method.equals( "hnsw" ) ) {
+            String operatorClass = switch ( metric ) {
+                case "L1" -> "vector_l1_ops";
+                case "L2" -> "vector_l2_ops";
+                case "COSINE" -> "vector_cosine_ops";
+                case "HAMMING" -> "bit_hamming_ops";
+                case "JACCARD" -> "bit_jaccard_ops";
+                default -> throw new RuntimeException( "Unsupported distance metric for pgvector HNSW indexes: " + metric);
+            };
+            builder.append( " " ).append( operatorClass );
+        } else if ( index.method.equals( "ivfflat" ) ) {
+            String operatorClass = switch ( metric ) {
+                case "L2" -> "vector_l2_ops";
+                case "COSINE" -> "vector_cosine_ops";
+                case "HAMMING" -> "bit_hamming_ops";
+                default -> throw new RuntimeException( "Unsupported distance metric for pgvector HNSW indexes: " + metric);
+            };
+            builder.append( " " ).append( operatorClass );
         }
         builder.append( ")" );
 
@@ -361,39 +377,34 @@ public class PostgresqlStore extends AbstractJdbcStore {
         );
 
         if ( dialect.supportsVector() ) {
-            List<IndexParameterModel> vectorParams = new ArrayList<>( List.of(
+            List<IndexParameterModel> hnswParams = List.of(
                     new IndexParameterModel(
                             "metric",
                             "Distance Metric",
                             "ENUM",
                             List.of( "L1", "L2", "COSINE", "JACCARD", "HAMMING" ),
-                            "L2"
-                    ) )
+                            "L2" )
             );
-
+            List<IndexParameterModel> ivfflatParams = List.of(
+                    new IndexParameterModel(
+                            "metric",
+                            "Distance metric",
+                            "ENUM",
+                            List.of( "L2", "COSINE", "HAMMING"),
+                            "L2"
+                    )
+            );
             methods.add( new IndexMethodModel(
                     "hnsw",
                     "HNSW (Hierarchical Navigable Small World)",
                     IndexCategory.VECTOR,
-                    vectorParams
+                    hnswParams
             ) );
-
-            vectorParams.remove( 0 );
-            vectorParams.add(
-                    new IndexParameterModel(
-                            "metric",
-                            "Distance Metric",
-                            "ENUM",
-                            List.of( "L1", "L2", "COSINE", "JACCARD" ),
-                            "L2"
-                    )
-            );
-
             methods.add( new IndexMethodModel(
                     "ivfflat",
                     "IVFFlat (Inverted File Flat)",
                     IndexCategory.VECTOR,
-                    vectorParams
+                    ivfflatParams
             ) );
         }
         return ImmutableList.copyOf( methods );
