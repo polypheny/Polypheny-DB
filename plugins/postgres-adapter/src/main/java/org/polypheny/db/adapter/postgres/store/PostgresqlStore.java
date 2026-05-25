@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -49,6 +50,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.IndexCategory;
 import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
@@ -307,6 +309,14 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case "brin":
                 builder.append( "brin" );
                 break;
+            case "hnsw":
+                builder.append( "hnsw" );
+                break;
+            case "ivfflat":
+                builder.append( "ivfflat" );
+                break;
+            default:
+                throw new RuntimeException( "Unknown index method: " + index.method );
         }
 
         builder.append( "(" );
@@ -317,6 +327,10 @@ public class PostgresqlStore extends AbstractJdbcStore {
             }
             first = false;
             builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
+        }
+        if ( index.method.equals( "hnsw" ) || index.method.equals( "ivfflat" ) ) {
+            //TODO: Extract correct distance metric.
+            builder.append( "vector_l2_ops" );
         }
         builder.append( ")" );
 
@@ -339,12 +353,50 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     public List<IndexMethodModel> getAvailableIndexMethods() {
-        return ImmutableList.of(
-                new IndexMethodModel( "btree", "B-TREE" ),
-                new IndexMethodModel( "hash", "HASH" ),
-                new IndexMethodModel( "gin", "GIN (Generalized Inverted Index)" ),
-                new IndexMethodModel( "brin", "BRIN (Block Range index)" )
+        List<IndexMethodModel> methods = new ArrayList<>( List.of(
+                    new IndexMethodModel( "btree", "B-TREE" ),
+                    new IndexMethodModel( "hash", "HASH" ),
+                    new IndexMethodModel( "gin", "GIN (Generalized Inverted Index)" ),
+                    new IndexMethodModel( "brin", "BRIN (Block Range index)" ) )
         );
+
+        if ( dialect.supportsVector() ) {
+            List<IndexParameterModel> vectorParams = new ArrayList<>( List.of(
+                    new IndexParameterModel(
+                            "metric",
+                            "Distance Metric",
+                            "ENUM",
+                            List.of( "L1", "L2", "COSINE", "JACCARD", "HAMMING" ),
+                            "L2"
+                    ) )
+            );
+
+            methods.add( new IndexMethodModel(
+                    "hnsw",
+                    "HNSW (Hierarchical Navigable Small World)",
+                    IndexCategory.VECTOR,
+                    vectorParams
+            ) );
+
+            vectorParams.remove( 0 );
+            vectorParams.add(
+                    new IndexParameterModel(
+                            "metric",
+                            "Distance Metric",
+                            "ENUM",
+                            List.of( "L1", "L2", "COSINE", "JACCARD" ),
+                            "L2"
+                    )
+            );
+
+            methods.add( new IndexMethodModel(
+                    "ivfflat",
+                    "IVFFlat (Inverted File Flat)",
+                    IndexCategory.VECTOR,
+                    vectorParams
+            ) );
+        }
+        return ImmutableList.copyOf( methods );
     }
 
 
