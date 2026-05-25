@@ -147,7 +147,8 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                     indexName.getSimple(),
                     unique,
                     storeInstance,
-                    statement );
+                    statement,
+                    null );
         }
     }
 

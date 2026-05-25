@@ -228,7 +228,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
-    public LogicalIndex addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName ) {
+    public LogicalIndex addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName, Map<String, String> options ) {
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         if ( unique ) {
             // TODO: Check if the current values are unique
@@ -244,7 +244,8 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
                 adapterId,
                 keyId,
                 Objects.requireNonNull( keys.get( keyId ) ),
-                null );
+                null,
+                options );
         synchronized ( this ) {
             indexes.put( id, index );
         }

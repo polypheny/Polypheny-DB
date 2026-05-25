@@ -299,7 +299,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param indexName The name of the index
      * @return The id of the created index
      */
-    LogicalIndex addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName );
+    LogicalIndex addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName, Map<String, String> options );
 
     /**
      * Set physical index name.

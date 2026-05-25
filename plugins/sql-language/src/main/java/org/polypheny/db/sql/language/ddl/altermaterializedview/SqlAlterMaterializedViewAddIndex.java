@@ -140,7 +140,8 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
                     indexName.getSimple(),
                     unique,
                     storeInstance,
-                    statement );
+                    statement,
+                    null );
         }
 
     }

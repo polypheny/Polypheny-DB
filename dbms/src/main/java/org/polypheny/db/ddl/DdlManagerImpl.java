@@ -601,7 +601,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement ) throws TransactionException {
+    public void createIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement, Map<String, String> options ) throws TransactionException {
         List<Long> columnIds = new ArrayList<>();
         IndexCategory requestedCategory = IndexCategory.REGULAR;
         if ( indexMethodName != null ) {
@@ -667,7 +667,7 @@ public class DdlManagerImpl extends DdlManager {
                 if ( location == null ) {
                     throw new GenericRuntimeException( "Unable to create an index on one of the underlying data stores since there is no data storeId that supports indexes and has all required columns!" );
                 }
-                addDataStoreIndex( table, indexMethodName, indexName, isUnique, location, statement, columnIds, type );
+                addDataStoreIndex( table, indexMethodName, indexName, isUnique, location, statement, columnIds, type, options );
             } else if ( RuntimeConfig.DEFAULT_INDEX_PLACEMENT_STRATEGY.getEnum() == DefaultIndexPlacementStrategy.ALL_DATA_STORES ) {
                 if ( indexMethodName != null ) {
                     throw new GenericRuntimeException( "It is not possible to specify a index method if no location has been specified." );
@@ -689,7 +689,7 @@ public class DdlManagerImpl extends DdlManager {
                             while ( catalog.getSnapshot().rel().getIndex( table.id, name + nameSuffix ).isPresent() ) {
                                 nameSuffix = String.valueOf( counter++ );
                             }
-                            addDataStoreIndex( table, indexMethodName, name + nameSuffix, isUnique, loc, statement, columnIds, type );
+                            addDataStoreIndex( table, indexMethodName, name + nameSuffix, isUnique, loc, statement, columnIds, type, options );
                             createdAtLeastOne = true;
                         }
                     }
@@ -699,12 +699,12 @@ public class DdlManagerImpl extends DdlManager {
                 }
             }
         } else { // Store Index
-            addDataStoreIndex( table, indexMethodName, indexName, isUnique, location, statement, columnIds, type );
+            addDataStoreIndex( table, indexMethodName, indexName, isUnique, location, statement, columnIds, type, options );
         }
     }
 
 
-    private void addDataStoreIndex( LogicalTable table, String indexMethodName, String indexName, boolean isUnique, @NotNull DataStore<?> location, Statement statement, List<Long> columnIds, IndexType type ) {
+    private void addDataStoreIndex( LogicalTable table, String indexMethodName, String indexName, boolean isUnique, @NotNull DataStore<?> location, Statement statement, List<Long> columnIds, IndexType type, Map<String, String> options ) {
 
         List<AllocationPartition> partitions = catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id );
         if ( partitions.size() != 1 ) {
@@ -745,7 +745,8 @@ public class DdlManagerImpl extends DdlManager {
                 methodDisplayName,
                 location.getAdapterId(),
                 type,
-                indexName );
+                indexName,
+                options );
 
         String physicalName = location.addIndex(
                 statement.getPrepareContext(),
@@ -803,7 +804,8 @@ public class DdlManagerImpl extends DdlManager {
                 methodDisplayName,
                 -1,
                 type,
-                indexName );
+                indexName,
+                null );
 
         IndexManager.getInstance().addIndex( index, statement );
     }
@@ -2518,7 +2520,8 @@ public class DdlManagerImpl extends DdlManager {
                     index.methodDisplayName,
                     index.location,
                     index.type,
-                    index.name );
+                    index.name,
+                    null );
             if ( index.location < 0 ) {
                 IndexManager.getInstance().addIndex( newIndex, statement );
             } else {
@@ -2820,7 +2823,8 @@ public class DdlManagerImpl extends DdlManager {
                     index.methodDisplayName,
                     index.location,
                     index.type,
-                    index.name );
+                    index.name,
+                    null );
             if ( index.location < 0 ) {
                 IndexManager.getInstance().addIndex( newIndex, statement );
             } else {

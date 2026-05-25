@@ -16,6 +16,7 @@
 
 package org.polypheny.db.webui.models;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -59,7 +60,7 @@ public class IndexAdapterModel extends IdEntity {
             model.name = index.name();
             model.displayName = index.displayName();
             model.category = index.category().name();
-
+            model.parameters = index.parameters() == null ? new ArrayList<>() : index.parameters();
             return model;
         }
 
