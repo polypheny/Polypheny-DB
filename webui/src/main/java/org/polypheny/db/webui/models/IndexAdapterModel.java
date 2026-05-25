@@ -22,6 +22,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.DataStore.IndexParameterModel;
 import org.polypheny.db.webui.models.catalog.IdEntity;
 
 @EqualsAndHashCode(callSuper = true)
@@ -47,10 +48,19 @@ public class IndexAdapterModel extends IdEntity {
 
         public String name;
         public String displayName;
+        public String category;
+        public List<IndexParameterModel> parameters;
+
+        public IndexMethodModel() {}
 
 
         public static IndexMethodModel from( DataStore.IndexMethodModel index ) {
-            return new IndexMethodModel( index.name(), index.displayName() );
+            IndexMethodModel model = new IndexMethodModel();
+            model.name = index.name();
+            model.displayName = index.displayName();
+            model.category = index.category().name();
+
+            return model;
         }
 
     }
