@@ -264,12 +264,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      * @param request UI request containing the target entity identifier
      * @throws GenericRuntimeException if the refresh fails
      */
-    public void refreshSourceSchemaIfNeeded( UIRequest request ) {
+    public List<String> refreshSourceSchemaIfNeeded( UIRequest request ) {
         Transaction transaction = getTransaction();
         try {
             Statement ddlStatement = transaction.createStatement();
-            DdlManager.getInstance().refreshSourceSchemaIfNeeded( request.entityId, ddlStatement );
+            List<String> changeDescriptions = DdlManager.getInstance().refreshSourceSchemaIfNeeded( request.entityId, ddlStatement );
             transaction.commit();
+            return changeDescriptions;
         } catch ( Exception e ) {
             try {
                 transaction.rollback( "Error while refreshing source catalog: " + e.getMessage() );

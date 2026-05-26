@@ -163,7 +163,7 @@ public abstract class DdlManager {
      * @param entityId the id of the logical source table to refresh
      * @param statement the statement used to execute the DDL operations
      */
-    public abstract void refreshSourceSchemaIfNeeded( long entityId, Statement statement );
+    public abstract List<String> refreshSourceSchemaIfNeeded( long entityId, Statement statement );
 
 
     public abstract List<String> refreshSelectedSources( List<Long> sourceIds, Statement statement );

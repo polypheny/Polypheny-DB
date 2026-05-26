@@ -113,6 +113,7 @@ public abstract class Result<E, F> {
          */
         protected B $fillValuesFrom( C instance ) {
             this.data = instance.data;
+            this.header = instance.header;
             this.dataModel = instance.dataModel;
             this.xid = instance.xid;
             this.namespace = instance.namespace;
@@ -121,6 +122,10 @@ public abstract class Result<E, F> {
             this.language$value = instance.language;
             this.error = instance.error;
             this.queryType$value = instance.queryType;
+            this.currentPage = instance.currentPage;
+            this.highestPage = instance.highestPage;
+            this.hasMore = instance.hasMore;
+            this.affectedTuples = instance.affectedTuples;
             this.isRolledBack = instance.isRolledBack;
 
             return self();

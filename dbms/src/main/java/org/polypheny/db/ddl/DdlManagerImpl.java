@@ -839,13 +839,13 @@ public class DdlManagerImpl extends DdlManager {
      * @param statement the statement used to execute the DDL operations
      */
     @Override
-    public void refreshSourceSchemaIfNeeded( long entityId, Statement statement ) {
+    public List<String> refreshSourceSchemaIfNeeded( long entityId, Statement statement ) {
         Snapshot snapshot = catalog.getSnapshot();
         LogicalTable logicalTable = snapshot.rel().getTable( entityId ).orElseThrow();
 
         if ( logicalTable.entityType != EntityType.SOURCE ) {
             log.info( "Refresh skipped: {} is not a source table.", logicalTable.name );
-            return;
+            return List.of();
         }
 
         List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( logicalTable.id );
@@ -865,7 +865,7 @@ public class DdlManagerImpl extends DdlManager {
                     "Schema refresh is not supported for table {} because this source type does not support it",
                     logicalTable.name
             );
-            return;
+            return List.of();
         }
 
         AdapterCatalog sourceAdapterCatalog = catalog
@@ -888,7 +888,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( currentSourceColumns == null || currentSourceColumns.isEmpty() ) {
             log.info( "No source columns found for table '{}.{}'", sourceSchemaName, sourceTableName );
-            return;
+            return List.of();
         }
 
         // Keep only columns that belong to the expected schema
@@ -939,10 +939,11 @@ public class DdlManagerImpl extends DdlManager {
         boolean hasReorderedColumns = hasReorderedColumns( currentLogicalColumns, orderedSourceColumns );
         boolean hasChangedPrimaryKey = hasChangedPrimaryKey( logicalTable, currentLogicalColumns, orderedSourceColumns, snapshot.rel() );
         boolean hasChangedForeignKeys = hasChangedForeignKeys( logicalTable, currentSourceForeignKeys, currentLogicalColumns, snapshot, sourceAdapterCatalog, sourceAdapterId );
+        List<String> changeDescriptions = buildSourceSchemaChangeDescriptions( missingColumns, droppedColumns, changedTypeColumns, hasReorderedColumns, hasChangedPrimaryKey, hasChangedForeignKeys );
 
         if ( missingColumns.isEmpty() && droppedColumns.isEmpty() && changedTypeColumns.isEmpty() && !hasReorderedColumns && !hasChangedPrimaryKey && !hasChangedForeignKeys ) {
             log.info( "No schema refresh needed for table {}", logicalTable.name );
-            return;
+            return changeDescriptions;
         }
 
         List<LogicalColumn> refreshedLogicalColumns = new ArrayList<>( currentLogicalColumns );
@@ -1024,6 +1025,7 @@ public class DdlManagerImpl extends DdlManager {
         statement.getQueryProcessor().resetCaches();
 
         log.info( "Schema refresh finished successfully for table {}", logicalTable.name );
+        return changeDescriptions;
     }
 
 

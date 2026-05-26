@@ -226,8 +226,8 @@ public class WebSocket implements Consumer<WsConfig> {
                             } else {
                                 log.info( "Refreshing table {} after table selection", table );
                             }
-                            crud.refreshSourceSchemaIfNeeded( refreshRequest );
-                            yield crud.getTable( refreshRequest );
+                            List<String> changeDescriptions = crud.refreshSourceSchemaIfNeeded( refreshRequest );
+                            yield crud.getTable( refreshRequest ).toBuilder().changeDescriptions( changeDescriptions.toArray( new String[0] ) ).build();
                         }
                         case DOCUMENT -> {
                             String entity = Catalog.snapshot().doc().getCollection( refreshRequest.entityId ).map( c -> c.name ).orElse( "" );
