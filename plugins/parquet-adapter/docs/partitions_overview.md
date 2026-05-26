@@ -32,7 +32,7 @@ So partitioning improves query performance by reducing the number of Parquet fil
 
 If partition integration is triggered, then created:
 - one logical table
-- many physical tables: one physical table per value of the first partition column
+- many physical tables: one physical table per value of the first partition column (one physical table per partition)
 
 ### Example:
 ```text
@@ -60,7 +60,7 @@ Physical tables:
 
 The following functionality was implemented:
 
-### 1. Support multiple Parquet files as one table.
+### 1. Support multiple Parquet files as one logical table.
 - `ParquetFileDiscovery` discovers multiple files for one logical table.
 - `DiscoveredTableBinding`, `ParquetTableBinding`, `ParquetSourceFile` store the file list.
 - `ParquetRelTable` uses the file list at scan time.
@@ -232,7 +232,7 @@ The adapter should not rely on filename prefixes as the main grouping rule. Sche
 - Polypheny creates the logical table in its catalog.
 
 
-5. Physical table creation. ParquetRelationalSource.createTable() uses the discovered metadata.
+5. Physical tables creation. ParquetRelationalSource.createTable() uses the discovered metadata.
 
 
 6. Add partitions on Polypheny level. ParquetRelationalSource.createPartitionedTable() adds needed information to catalog.

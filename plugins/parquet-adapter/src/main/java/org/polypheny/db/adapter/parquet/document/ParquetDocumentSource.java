@@ -28,6 +28,9 @@ import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.adapter.parquet.relational.schema.DiscoveredTableBinding;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
+import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -37,10 +40,10 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 
 /**
  * Document adapter implementation.
@@ -92,8 +95,11 @@ public class ParquetDocumentSource extends AbstractParquetSource implements Docu
                 logical.getName(),
                 logical,
                 allocation );
-
-        var physical = currentNamespace.createParquetCollection( collection, this );
+        // handle multi-files
+        var physical = currentNamespace.createParquetCollection(
+                collection,
+                getCollectionSourceFiles( logical.getName() ),
+                this );
         adapterCatalog.replacePhysical( physical );
         return List.of( physical );
     }
@@ -103,7 +109,11 @@ public class ParquetDocumentSource extends AbstractParquetSource implements Docu
     public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context ) {
         PhysicalEntity collection = entities.get( 0 );
         updateNamespace( collection.namespaceName, collection.namespaceId );
-        var physical = currentNamespace.createParquetCollection( collection.unwrapOrThrow( PhysicalCollection.class ), this );
+        // handle multi-files
+        var physical = currentNamespace.createParquetCollection(
+                collection.unwrapOrThrow( PhysicalCollection.class ),
+                getCollectionSourceFiles( collection.name ),
+                this );
         adapterCatalog.addPhysical( alloc, physical );
     }
 
@@ -155,6 +165,15 @@ public class ParquetDocumentSource extends AbstractParquetSource implements Docu
     @Override
     public void renameLogicalColumn( long id, String newColumnName ) {
         adapterCatalog.renameLogicalColumn( id, newColumnName );
+    }
+
+
+    private List<ParquetSourceFile> getCollectionSourceFiles( String collectionName ) {
+        // handle multi-files
+        return getTableBinding( collectionName )
+                .map( DiscoveredTableBinding::sourceFiles )
+                .filter( sourceFiles -> !sourceFiles.isEmpty() )
+                .orElseThrow( () -> new GenericRuntimeException( "Missing discovered Parquet file binding for collection: %s", collectionName ) );
     }
 
 

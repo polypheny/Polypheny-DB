@@ -48,9 +48,9 @@ public class ParquetNamespace extends Namespace {
     }
 
 
-    public ParquetDocument createParquetCollection( PhysicalCollection collection, AbstractParquetSource sourceAdapter ) {
-        Source parquetSource = Sources.of( ParquetUrlResolver.resolveFile( directoryUrl, collection.name + ".parquet" ) );
-        return new ParquetDocument( collection, parquetSource, sourceAdapter );
+
+    public ParquetDocument createParquetCollection( PhysicalCollection collection, List<ParquetSourceFile> sourceFiles, AbstractParquetSource sourceAdapter ) {
+        return new ParquetDocument( collection, sourceFiles, sourceAdapter );     // handle multi-files
     }
 
 

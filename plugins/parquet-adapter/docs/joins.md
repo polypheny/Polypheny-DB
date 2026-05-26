@@ -2,8 +2,6 @@
 
 ## Goal: Perform join on parquet adapter level.
 
-A Parquet adapter-level join is more efficient because it can exploit the physical parent/child layout of the Parquet data.
-
 For normalized nested tables, the relation is:
 `child.__polypheny_parent_row_id = parent.__polypheny_row_id`
 
@@ -214,6 +212,16 @@ EnumerableParquet
 `ParquetConvention` is the marker that tells the planner: This part of the plan is executable by the Parquet adapter.
 It defines a separate planner convention named: "PARQUET"
 and says that nodes in this convention must implement: ParquetAlg
+
+Conceptually, a convention tells Polypheny who is responsible for executing a part of the query plan.
+
+For the Parquet adapter, ParquetConvention means:
+
+“This part of the plan can be executed by the Parquet adapter.”
+It lets the planner distinguish generic Polypheny operations from Parquet-specific operations.
+It enables adapter-specific nodes such as ParquetRelScan and ParquetRelJoin.
+It allows planner rules to rewrite normal scans, filters, projections, and joins into Parquet-aware operations.
+At the end, the Parquet plan is converted back to EnumerableConvention, so Polypheny can execute it.
 
 
 ## Planner Flow - Query Execution with Join

@@ -140,7 +140,9 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
         if ( discoveredTables == null ) {
             discoveredTables = ParquetFileDiscovery.discoverTables( parquetDir, getUniqueName() );
         }
-        return Optional.ofNullable( discoveredTables.get( tableName ).binding() );
+        DiscoveredTable table = discoveredTables.get( tableName );
+        // for document data source table discovered tabled not constructed
+        return table == null ? Optional.empty() : Optional.ofNullable( table.binding() );
     }
 
 

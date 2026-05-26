@@ -29,6 +29,8 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.parquet.document.execution.ParquetDocEnumerator;
 import org.polypheny.db.adapter.parquet.document.planning.ParquetDocScan;
+import org.polypheny.db.adapter.parquet.relational.execution.ParquetMultiFileEnumerator;
+import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 import org.polypheny.db.adapter.parquet.shared.filter.FiltersContainer;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
@@ -45,20 +47,19 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Source;
 
 /**
  * Physical collection wrapper for the document model.
  * Represents one Parquet-backed collection inside Polypheny
  */
+@Getter
 public class ParquetDocument extends PhysicalCollection implements ScannableEntity, TranslatableEntity {
 
-    private final Source source;
-    @Getter
+    private final List<ParquetSourceFile> sourceFiles;
     private final AbstractParquetSource parquetSource;
 
 
-    public ParquetDocument( PhysicalCollection collection, Source source, AbstractParquetSource parquetSource ) {
+    public ParquetDocument( PhysicalCollection collection, List<ParquetSourceFile> sourceFiles, AbstractParquetSource parquetSource ) {
         super(
                 collection.id,
                 collection.allocationId,
@@ -67,7 +68,7 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
                 collection.name,
                 collection.namespaceName,
                 collection.adapterId );
-        this.source = source;
+        this.sourceFiles = List.copyOf( sourceFiles ); // add multi-file handling
         this.parquetSource = parquetSource;
     }
 
@@ -113,8 +114,17 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
             @Override
             public Enumerator<PolyValue[]> enumerator() {
                 FiltersContainer filtersContainer = FiltersContainer.shared( resolvedFilters );
-                ParquetSourceReader reader = new ParquetSourceReader( source, cancelFlag, null, filtersContainer.nativeFilters() );
-                return new ParquetDocEnumerator( reader, filtersContainer );
+                // handle multi-files
+                return new ParquetMultiFileEnumerator(
+                        sourceFiles,
+                        sourceFile -> {
+                            ParquetSourceReader reader = new ParquetSourceReader(
+                                    sourceFile.asSource(),
+                                    cancelFlag,
+                                    null,
+                                    filtersContainer.nativeFilters() );
+                            return new ParquetDocEnumerator( reader, filtersContainer );
+                        } );
             }
         };
     }

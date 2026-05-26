@@ -35,6 +35,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -105,13 +106,8 @@ public final class ParquetWorkflowExtractSupport {
         // PK added by the workflow layer, it does not come from file
         builder.add( Activity.PK_COL, null, PolyType.BIGINT );
         for ( Type field : schema.getFields() ) {
-            var type = parquetTypeConverter.fromParquetTypeToPolyType( field );
-            // PolyDocument type provided as json string
-            if ( type == PolyType.DOCUMENT ) {
-                type = PolyType.TEXT;
-            }
             String fieldName = ParquetNameNormalizer.normalizeFieldName( field.getName() );
-            builder.add( fieldName, null, type );
+            builder.add( fieldName, null, getRelationalOutputType( field ) );
         }
         if ( addNameField ) {
             // add source file name to each row
@@ -224,11 +220,7 @@ public final class ParquetWorkflowExtractSupport {
                 for ( int i = 0; i < schema.getFieldCount(); i++ ) {
                     Type field = schema.getType( i );
                     var polyValue = parquetRelValueExtractor.extractValue( row, i, field );
-                    // PolyDocument type provided as json string
-                    if ( polyValue instanceof PolyDocument document ) {
-                        polyValue = document.toPolyJson();
-                    }
-                    values.add( polyValue );
+                    values.add( toRelationalColumnValue( field, polyValue ) );
                 }
                 if ( addNameCol ) {
                     values.add( polyName );
@@ -239,6 +231,42 @@ public final class ParquetWorkflowExtractSupport {
                 written++;
             }
         }
+    }
+
+
+    /**
+     * Decides what Polypheny relational column type the workflow should expose for one Parquet field.
+     */
+    private static PolyType getRelationalOutputType( Type field ) {
+        if ( isTextEncodedRelationalField( field ) ) {
+            return PolyType.TEXT;
+        }
+        return parquetTypeConverter.fromParquetTypeToPolyType( field );
+    }
+
+
+    /**
+     * Returns:
+     * true - for nested/group fields and for repeated fields
+     * and should instead be encoded as text/JSON
+     * false - for normal scalar primitive fields
+     */
+    private static boolean isTextEncodedRelationalField( Type field ) {
+        return !field.isPrimitive() || field.isRepetition( Type.Repetition.REPEATED );
+    }
+
+
+    /**
+     * Prepares one extracted Parquet value so it matches the relational workflow column type.
+     */
+    private static PolyValue toRelationalColumnValue( Type field, PolyValue value ) {
+        if ( value == null || value.isNull() || !isTextEncodedRelationalField( field ) ) {
+            return value;
+        }
+        if ( field.isRepetition( Type.Repetition.REPEATED ) && !value.isList() ) {
+            value = PolyList.of( value );
+        }
+        return ActivityUtils.valueToPolyString( value );
     }
 
 }

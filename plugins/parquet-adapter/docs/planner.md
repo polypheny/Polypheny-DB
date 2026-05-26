@@ -2,6 +2,18 @@
 
 The planner takes a query and turns it into an executable plan.
 
+Polypheny does not execute the first query plan directly.
+The planner searches for a better plan by applying transformation rules.
+
+For the Parquet adapter, we register rules that recognize Parquet-specific opportunities.
+For example, a normal scan can become a ParquetRelScan.
+A filter or projection can be attached directly to that scan.
+A parent-child join between normalized Parquet tables can become a ParquetRelJoin.
+
+The planner compares possible plans using cost estimates.
+Plans that read fewer columns, apply filters earlier, or execute joins inside the adapter are cheaper.
+The selected plan is then converted back into an executable form.
+
 In simple words:
 
 ```text
