@@ -673,32 +673,36 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private List<String> buildSourceSchemaChangeDescriptions(
+            LogicalTable table,
+            List<LogicalColumn> currentLogicalColumns,
+            List<ExportedColumn> orderedSourceColumns,
+            List<ExportedForeignKey> sourceForeignKeys,
             List<ExportedColumn> missingColumns,
             List<LogicalColumn> droppedColumns,
             List<PhysicalColumn> changedTypeColumns,
             boolean hasReorderedColumns,
-            boolean hasChangedPrimaryKey,
-            boolean hasChangedForeignKeys ) {
+            Snapshot snapshot,
+            AdapterCatalog sourceAdapterCatalog,
+            long sourceAdapterId ) {
         List<String> changeDescriptions = new ArrayList<>();
 
         if ( !missingColumns.isEmpty() ) {
-            changeDescriptions.add( "Added columns: " + missingColumns.stream().map( ExportedColumn::physicalColumnName ).toList() );
+            changeDescriptions.add( "Added columns: " + joinNames( missingColumns.stream().map( ExportedColumn::physicalColumnName ).toList() ) );
         }
         if ( !droppedColumns.isEmpty() ) {
-            changeDescriptions.add( "Removed columns: " + droppedColumns.stream().map( LogicalColumn::getName ).toList() );
+            changeDescriptions.add( "Removed columns: " + joinNames( droppedColumns.stream().map( LogicalColumn::getName ).toList() ) );
         }
         if ( !changedTypeColumns.isEmpty() ) {
-            changeDescriptions.add( "Changed column types: " + changedTypeColumns.stream().map( PhysicalColumn::getName ).toList() );
+            changeDescriptions.add( "Changed column types: " + joinNames( changedTypeColumns.stream().map( PhysicalColumn::getName ).toList() ) );
         }
         if ( hasReorderedColumns ) {
-            changeDescriptions.add( "Column order changed" );
+            changeDescriptions.add( "Changed column order" );
         }
-        if ( hasChangedPrimaryKey ) {
-            changeDescriptions.add( "Primary key changed" );
+        String primaryKeyChange = buildPrimaryKeyChangeDescription( table, currentLogicalColumns, orderedSourceColumns, snapshot.rel() );
+        if ( primaryKeyChange != null ) {
+            changeDescriptions.add( primaryKeyChange );
         }
-        if ( hasChangedForeignKeys ) {
-            changeDescriptions.add( "Foreign keys changed" );
-        }
+        changeDescriptions.addAll( buildForeignKeyChangeDescriptions( table, sourceForeignKeys, currentLogicalColumns, snapshot, sourceAdapterCatalog, sourceAdapterId ) );
 
         return changeDescriptions;
     }
@@ -939,7 +943,18 @@ public class DdlManagerImpl extends DdlManager {
         boolean hasReorderedColumns = hasReorderedColumns( currentLogicalColumns, orderedSourceColumns );
         boolean hasChangedPrimaryKey = hasChangedPrimaryKey( logicalTable, currentLogicalColumns, orderedSourceColumns, snapshot.rel() );
         boolean hasChangedForeignKeys = hasChangedForeignKeys( logicalTable, currentSourceForeignKeys, currentLogicalColumns, snapshot, sourceAdapterCatalog, sourceAdapterId );
-        List<String> changeDescriptions = buildSourceSchemaChangeDescriptions( missingColumns, droppedColumns, changedTypeColumns, hasReorderedColumns, hasChangedPrimaryKey, hasChangedForeignKeys );
+        List<String> changeDescriptions = buildSourceSchemaChangeDescriptions(
+                logicalTable,
+                currentLogicalColumns,
+                orderedSourceColumns,
+                currentSourceForeignKeys,
+                missingColumns,
+                droppedColumns,
+                changedTypeColumns,
+                hasReorderedColumns,
+                snapshot,
+                sourceAdapterCatalog,
+                sourceAdapterId );
 
         if ( missingColumns.isEmpty() && droppedColumns.isEmpty() && changedTypeColumns.isEmpty() && !hasReorderedColumns && !hasChangedPrimaryKey && !hasChangedForeignKeys ) {
             log.info( "No schema refresh needed for table {}", logicalTable.name );
@@ -1363,6 +1378,32 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    private String buildPrimaryKeyChangeDescription(
+            LogicalTable table,
+            List<LogicalColumn> currentLogicalColumns,
+            List<ExportedColumn> orderedSourceColumns,
+            LogicalRelSnapshot snapshot ) {
+        List<Long> sourcePkIds = getSourcePrimaryKeyIds( orderedSourceColumns, currentLogicalColumns );
+        List<Long> currentPkIds = getCurrentPrimaryKeyIds( table, snapshot );
+
+        if ( sourcePkIds.equals( currentPkIds ) ) {
+            return null;
+        }
+
+        List<String> sourcePkColumns = getColumnNames( sourcePkIds, snapshot );
+        List<String> currentPkColumns = getColumnNames( currentPkIds, snapshot );
+
+        if ( currentPkColumns.isEmpty() ) {
+            return "Added primary key: " + joinNames( sourcePkColumns );
+        }
+        if ( sourcePkColumns.isEmpty() ) {
+            return "Removed primary key: " + joinNames( currentPkColumns );
+        }
+
+        return "Changed primary key: " + joinNames( currentPkColumns ) + " -> " + joinNames( sourcePkColumns );
+    }
+
+
     private List<Long> syncSourceForeignKeysForRefresh(
             LogicalTable table,
             List<ExportedForeignKey> sourceForeignKeys,
@@ -1442,6 +1483,48 @@ public class DdlManagerImpl extends DdlManager {
                 .collect( Collectors.toSet() );
 
         return !sourceSignatures.equals( currentSignatures );
+    }
+
+
+    private List<String> buildForeignKeyChangeDescriptions(
+            LogicalTable table,
+            List<ExportedForeignKey> sourceForeignKeys,
+            List<LogicalColumn> currentLogicalColumns,
+            Snapshot snapshot,
+            AdapterCatalog sourceAdapterCatalog,
+            long sourceAdapterId ) {
+        Set<ForeignKeySignature> sourceSignatures = new HashSet<>( getSourceForeignKeySignatures(
+                sourceForeignKeys,
+                currentLogicalColumns,
+                snapshot,
+                sourceAdapterCatalog,
+                sourceAdapterId ) );
+
+        Set<ForeignKeySignature> currentSignatures = snapshot.rel().getForeignKeys( table.id ).stream()
+                .map( this::toForeignKeySignature )
+                .collect( Collectors.toSet() );
+
+        List<String> changeDescriptions = new ArrayList<>();
+
+        List<String> addedForeignKeys = sourceSignatures.stream()
+                .filter( signature -> !currentSignatures.contains( signature ) )
+                .map( signature -> formatForeignKeySignature( signature, snapshot ) )
+                .sorted()
+                .toList();
+        if ( !addedForeignKeys.isEmpty() ) {
+            changeDescriptions.add( "Added foreign keys: " + joinNames( addedForeignKeys ) );
+        }
+
+        List<String> removedForeignKeys = currentSignatures.stream()
+                .filter( signature -> !sourceSignatures.contains( signature ) )
+                .map( signature -> formatForeignKeySignature( signature, snapshot ) )
+                .sorted()
+                .toList();
+        if ( !removedForeignKeys.isEmpty() ) {
+            changeDescriptions.add( "Removed foreign keys: " + joinNames( removedForeignKeys ) );
+        }
+
+        return changeDescriptions;
     }
 
 
@@ -1568,6 +1651,27 @@ public class DdlManagerImpl extends DdlManager {
 
     }
 
+    private String formatForeignKeySignature( ForeignKeySignature signature, Snapshot snapshot ) {
+        String sourceColumns = joinNames( getColumnNames( signature.columnIds(), snapshot.rel() ) );
+        String referencedColumns = joinNames( getColumnNames( signature.referencedColumnIds(), snapshot.rel() ) );
+        String referencedTable = snapshot.rel().getTable( signature.referencedTableId() )
+                .map( t -> t.name )
+                .orElse( String.valueOf( signature.referencedTableId() ) );
+
+        return signature.name() + " (" + sourceColumns + " -> " + referencedTable + "." + referencedColumns + ")";
+    }
+
+
+    private List<String> getColumnNames( List<Long> columnIds, LogicalRelSnapshot snapshot ) {
+        return columnIds.stream()
+                .map( columnId -> snapshot.getColumn( columnId ).map( c -> c.name ).orElse( String.valueOf( columnId ) ) )
+                .toList();
+    }
+
+
+    private String joinNames( List<String> names ) {
+        return String.join( ", ", names );
+    }
 
 
     private boolean hasReorderedColumns( List<LogicalColumn> currentLogicalColumns, List<ExportedColumn> orderedSourceColumns ) {
