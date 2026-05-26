@@ -222,9 +222,9 @@ public class WebSocket implements Consumer<WsConfig> {
                         case RELATIONAL -> {
                             String table = Catalog.snapshot().rel().getTable( refreshRequest.entityId ).map( t -> t.name ).orElse( String.valueOf( refreshRequest.entityId ) );
                             if ( "button".equalsIgnoreCase( refreshRequest.refreshTrigger ) ) {
-                                log.info( "Received confirmation to refresh schema of table {}", table );
+                                log.info( "Refreshing table {} after manual refresh button click", table );
                             } else {
-                                log.info( "Loading data for table {}", table );
+                                log.info( "Refreshing table {} after table selection", table );
                             }
                             crud.refreshSourceSchemaIfNeeded( refreshRequest );
                             yield crud.getTable( refreshRequest );

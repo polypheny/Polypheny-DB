@@ -250,8 +250,6 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getAvailableSourceColumns", crud::getAvailableSourceColumns );
 
-        webuiServer.post( "/checkSourceSchemaRefresh", crud::checkSourceSchemaRefresh );
-
         webuiServer.post( "/refreshSelectedSources", crud::refreshSelectedSources );
 
         webuiServer.post( "/updateColumn", crud::updateColumn );

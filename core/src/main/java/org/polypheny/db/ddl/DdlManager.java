@@ -165,21 +165,6 @@ public abstract class DdlManager {
      */
     public abstract void refreshSourceSchemaIfNeeded( long entityId, Statement statement );
 
-    /**
-     * Checks whether the catalog schema of a source table differs from the underlying source.
-     *
-     * @param entityId the id of the logical source table to inspect
-     * @return {@code true} if a schema refresh is needed, {@code false} otherwise
-     */
-    public abstract boolean isSourceSchemaRefreshNeeded( long entityId );
-
-
-    public record SourceSchemaRefreshCheckResult( boolean refreshNeeded, List<String> changeDescriptions ) {
-
-    }
-
-    public abstract SourceSchemaRefreshCheckResult getSourceSchemaRefreshCheckResult( long entityId );
-
 
     public abstract List<String> refreshSelectedSources( List<Long> sourceIds, Statement statement );
 

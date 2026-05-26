@@ -282,42 +282,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    public DdlManager.SourceSchemaRefreshCheckResult getSourceSchemaRefreshCheckResult( UIRequest request ) {
-        Transaction transaction = getTransaction();
-        try {
-            DdlManager.SourceSchemaRefreshCheckResult refreshCheckResult = DdlManager.getInstance().getSourceSchemaRefreshCheckResult( request.entityId );
-            transaction.commit();
-            return refreshCheckResult;
-        } catch ( Exception e ) {
-            try {
-                transaction.rollback( "Error while checking source catalog refresh: " + e.getMessage() );
-            } catch ( Exception rollbackException ) {
-                log.error( "Rollback also failed", rollbackException );
-            }
-            throw new GenericRuntimeException(
-                    "Could not check source catalog for entity " + request.entityId, e );
-        }
-    }
-
-
-    public void checkSourceSchemaRefresh( final Context ctx ) {
-        UIRequest request = ctx.bodyAsClass( UIRequest.class );
-        String table = Catalog.snapshot().rel().getTable( request.entityId ).map( t -> t.name ).orElse( String.valueOf( request.entityId ) );
-        String trigger = request.refreshTrigger == null ? "selection" : request.refreshTrigger;
-
-        if ( "button".equalsIgnoreCase( trigger ) ) {
-            log.info( "Refresh button clicked for table {}, checking whether schema refresh is needed", table );
-        } else {
-            log.info( "Table {} was selected, checking whether schema refresh is needed", table );
-        }
-
-        DdlManager.SourceSchemaRefreshCheckResult refreshCheckResult = getSourceSchemaRefreshCheckResult( request );
-        ctx.json( Map.of(
-                "refreshNeeded", refreshCheckResult.refreshNeeded(),
-                "changeDescriptions", refreshCheckResult.changeDescriptions() ) );
-    }
-
-
     public void refreshSelectedSources( final Context ctx ) {
         SourceRefreshRequest request = ctx.bodyAsClass( SourceRefreshRequest.class );
         List<String> sourceNames = request.getSourceIds().stream()

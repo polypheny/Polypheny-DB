@@ -1074,7 +1074,7 @@ public class TestHelper {
     public static final class DockerPostgres implements AutoCloseable {
 
         private static final int POSTGRES_PORT = 5432;
-        private static final long STARTUP_TIMEOUT_MS = TimeUnit.SECONDS.toMillis( 60 );
+        private static final long STARTUP_TIMEOUT_MS = TimeUnit.SECONDS.toMillis( 120 );
 
         private final DockerContainer container;
         @Getter
@@ -1144,6 +1144,10 @@ public class TestHelper {
 
         private boolean testConnection() {
             try {
+                int readyExitCode = container.execute( List.of( "pg_isready", "-U", username, "-d", database ) );
+                if ( readyExitCode != 0 ) {
+                    return false;
+                }
                 return container.execute( List.of( "psql", "-U", username, "-d", database, "-c", "SELECT 1" ) ) == 0;
             } catch ( IOException e ) {
                 // Ignore during startup polling.
@@ -1157,7 +1161,7 @@ public class TestHelper {
     public static final class DockerMysql implements AutoCloseable {
 
         private static final int MYSQL_PORT = 3306;
-        private static final long STARTUP_TIMEOUT_MS = TimeUnit.SECONDS.toMillis( 60 );
+        private static final long STARTUP_TIMEOUT_MS = TimeUnit.SECONDS.toMillis( 120 );
         private static final String ROOT_PASSWORD = "polypheny-root";
 
         private final DockerContainer container;
@@ -1229,6 +1233,18 @@ public class TestHelper {
 
         private boolean testConnection() {
             try {
+                int pingExitCode = container.execute( List.of(
+                        "mysqladmin",
+                        "ping",
+                        "-h",
+                        "127.0.0.1",
+                        "-u",
+                        "root",
+                        "-p" + ROOT_PASSWORD,
+                        "--silent" ) );
+                if ( pingExitCode != 0 ) {
+                    return false;
+                }
                 return container.execute( List.of(
                         "mysql",
                         "-u",
@@ -1236,7 +1252,7 @@ public class TestHelper {
                         "-p" + password,
                         database,
                         "-e",
-                        "CREATE TABLE IF NOT EXISTS __polypheny_ready_check (id INT); DROP TABLE __polypheny_ready_check" ) ) == 0;
+                        "SELECT 1" ) ) == 0;
             } catch ( IOException e ) {
                 // Ignore during startup polling.
             }
