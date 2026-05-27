@@ -111,6 +111,7 @@ import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.DdlManager.SourceRefreshDetails;
 import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
@@ -289,26 +290,39 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .map( sourceId -> Catalog.snapshot().getAdapter( sourceId ).map( a -> a.uniqueName ).orElse( String.valueOf( sourceId ) ) )
                 .toList();
         log.info( "Received a source refresh request for source(s) {}", sourceNames );
-        List<String> refreshedSources = refreshSelectedSources( request.getSourceIds() );
+        SourceRefreshDetails refreshDetails = refreshSelectedSourcesWithDetails( request.getSourceIds() );
+        List<Map<String, Object>> refreshSummaries = refreshDetails.summaries().stream()
+                .map( summary -> Map.<String, Object>of(
+                        "sourceName", summary.sourceName(),
+                        "entityName", summary.entityName(),
+                        "dataModel", summary.dataModel(),
+                        "changeDescriptions", summary.changeDescriptions() ) )
+                .toList();
         ctx.json( Map.of(
                 "success", true,
-                "refreshedSources", refreshedSources,
-                "refreshedCount", refreshedSources.size() ) );
+                "refreshedSources", refreshDetails.refreshedSources(),
+                "refreshedCount", refreshDetails.refreshedSources().size(),
+                "refreshSummaries", refreshSummaries ) );
     }
 
 
     public List<String> refreshSelectedSources( List<Long> sourceIds ) {
+        return refreshSelectedSourcesWithDetails( sourceIds ).refreshedSources();
+    }
+
+
+    public SourceRefreshDetails refreshSelectedSourcesWithDetails( List<Long> sourceIds ) {
         Transaction transaction = getTransaction();
         try {
             Statement ddlStatement = transaction.createStatement();
-            List<String> refreshedSources = DdlManager.getInstance().refreshSelectedSources( sourceIds, ddlStatement );
+            SourceRefreshDetails refreshDetails = DdlManager.getInstance().refreshSelectedSourcesWithDetails( sourceIds, ddlStatement );
 
             transaction.commit();
             List<String> sourceNames = sourceIds.stream()
                     .map( sourceId -> Catalog.snapshot().getAdapter( sourceId ).map( a -> a.uniqueName ).orElse( String.valueOf( sourceId ) ) )
                     .toList();
             log.info( "Schema refresh finished successfully for selected source(s) {}", sourceNames );
-            return refreshedSources;
+            return refreshDetails;
         } catch ( Exception e ) {
             try {
                 transaction.rollback( "Error while refreshing selected sources: " + e.getMessage() );

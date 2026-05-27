@@ -507,12 +507,13 @@ public class DdlManagerImpl extends DdlManager {
     }
 
     @Override
-    public List<String> refreshSelectedSources( List<Long> sourceIds, Statement statement ) {
+    public SourceRefreshDetails refreshSelectedSourcesWithDetails( List<Long> sourceIds, Statement statement ) {
         Snapshot snapshot = catalog.getSnapshot();
+        List<SourceRefreshSummary> summaries = new ArrayList<>();
 
         for ( Long sourceId : sourceIds ) {
-            synchronizeSourceTables( sourceId, statement, snapshot );
-            synchronizeSourceCollections( sourceId, statement, snapshot );
+            summaries.addAll( synchronizeSourceTables( sourceId, statement, snapshot ) );
+            summaries.addAll( synchronizeSourceCollections( sourceId, statement, snapshot ) );
         }
 
         Snapshot postDetectionSnapshot = catalog.getSnapshot();
@@ -538,18 +539,27 @@ public class DdlManagerImpl extends DdlManager {
         log.info( "Refreshing source entities {} from source(s) {}", refreshedSources, sourceNames );
 
         for ( LogicalTable sourceTable : sourceTables ) {
-            refreshSourceSchemaIfNeeded( sourceTable.id, statement );
+            List<String> changeDescriptions = refreshSourceSchemaIfNeeded( sourceTable.id, statement );
+            if ( !changeDescriptions.isEmpty() ) {
+                summaries.add( new SourceRefreshSummary(
+                        getSourceNameForEntity( sourceTable.id, postDetectionSnapshot ),
+                        sourceTable.name,
+                        DataModel.RELATIONAL,
+                        changeDescriptions ) );
+            }
         }
 
-        return refreshedSources;
+        return new SourceRefreshDetails( refreshedSources, summaries );
     }
 
 
-    private void synchronizeSourceTables( Long sourceId, Statement statement, Snapshot snapshot ) {
+    private List<SourceRefreshSummary> synchronizeSourceTables( Long sourceId, Statement statement, Snapshot snapshot ) {
         SourceTableDiscovery discovery = buildSourceTableDiscovery( sourceId, snapshot );
         if ( discovery == null ) {
-            return;
+            return List.of();
         }
+        List<SourceRefreshSummary> summaries = new ArrayList<>();
+        String sourceName = discovery.sourceAdapter().getUniqueName();
 
         List<Map.Entry<String, LogicalTable>> removedTables = discovery.knownTablesByIdentifier().entrySet().stream()
                 .filter( entry -> !discovery.exportedTablesByIdentifier().containsKey( entry.getKey() ) )
@@ -559,6 +569,7 @@ public class DdlManagerImpl extends DdlManager {
         for ( Map.Entry<String, LogicalTable> removedTable : removedTables ) {
             log.info( "Dropping removed source table '{}' from source {}", removedTable.getValue().name, discovery.sourceAdapter().getUniqueName() );
             dropRemovedSourceTable( removedTable.getValue(), statement );
+            summaries.add( new SourceRefreshSummary( sourceName, removedTable.getValue().name, DataModel.RELATIONAL, List.of( "Removed source table" ) ) );
         }
 
         long namespaceId = getSourceNamespaceId( sourceId, discovery.sourceAdapter(), snapshot );
@@ -571,15 +582,19 @@ public class DdlManagerImpl extends DdlManager {
         for ( Map.Entry<String, List<ExportedColumn>> addedTable : addedTables ) {
             log.info( "Adding newly detected source table '{}' on source {}", addedTable.getKey(), discovery.sourceAdapter().getUniqueName() );
             createRelationalSourceTable( statement.getTransaction(), discovery.sourceAdapter(), namespaceId, addedTable.getKey(), addedTable.getValue() );
+            summaries.add( new SourceRefreshSummary( sourceName, addedTable.getKey(), DataModel.RELATIONAL, List.of( "Added source table" ) ) );
         }
+        return summaries;
     }
 
 
-    private void synchronizeSourceCollections( Long sourceId, Statement statement, Snapshot snapshot ) {
+    private List<SourceRefreshSummary> synchronizeSourceCollections( Long sourceId, Statement statement, Snapshot snapshot ) {
         SourceCollectionDiscovery discovery = buildSourceCollectionDiscovery( sourceId, snapshot );
         if ( discovery == null ) {
-            return;
+            return List.of();
         }
+        List<SourceRefreshSummary> summaries = new ArrayList<>();
+        String sourceName = discovery.sourceAdapter().getUniqueName();
 
         List<LogicalCollection> removedCollections = discovery.knownCollectionsByIdentifier().entrySet().stream()
                 .filter( entry -> !discovery.exportedCollectionsByIdentifier().containsKey( entry.getKey() ) )
@@ -594,6 +609,7 @@ public class DdlManagerImpl extends DdlManager {
                     discovery.sourceAdapter().getUniqueName()
             );
             dropCollection( removedCollection, statement );
+            summaries.add( new SourceRefreshSummary( sourceName, removedCollection.name, DataModel.DOCUMENT, List.of( "Removed source collection" ) ) );
         }
 
         long namespaceId = getDocumentSourceNamespaceId( sourceId, discovery.sourceAdapter(), snapshot );
@@ -612,6 +628,7 @@ public class DdlManagerImpl extends DdlManager {
             );
             for ( ExportedDocument addedCollection : addedCollections ) {
                 createDocumentSourceCollection( discovery.sourceAdapter(), namespaceId, addedCollection );
+                summaries.add( new SourceRefreshSummary( sourceName, addedCollection.name(), DataModel.DOCUMENT, List.of( "Added source collection" ) ) );
             }
         } else {
             log.info( "No new source collections detected on MongoDB source {}", discovery.sourceAdapter().getUniqueName() );
@@ -620,6 +637,16 @@ public class DdlManagerImpl extends DdlManager {
         if ( removedCollections.isEmpty() ) {
             log.info( "No removed source collections detected on MongoDB source {}", discovery.sourceAdapter().getUniqueName() );
         }
+        return summaries;
+    }
+
+
+    private String getSourceNameForEntity( long entityId, Snapshot snapshot ) {
+        return snapshot.alloc().getFromLogical( entityId ).stream()
+                .findFirst()
+                .flatMap( allocation -> snapshot.getAdapter( allocation.adapterId ) )
+                .map( adapter -> adapter.uniqueName )
+                .orElse( String.valueOf( entityId ) );
     }
 
 

@@ -166,7 +166,22 @@ public abstract class DdlManager {
     public abstract List<String> refreshSourceSchemaIfNeeded( long entityId, Statement statement );
 
 
-    public abstract List<String> refreshSelectedSources( List<Long> sourceIds, Statement statement );
+    public List<String> refreshSelectedSources( List<Long> sourceIds, Statement statement ) {
+        return refreshSelectedSourcesWithDetails( sourceIds, statement ).refreshedSources();
+    }
+
+
+    public abstract SourceRefreshDetails refreshSelectedSourcesWithDetails( List<Long> sourceIds, Statement statement );
+
+
+    public record SourceRefreshDetails( List<String> refreshedSources, List<SourceRefreshSummary> summaries ) {
+
+    }
+
+
+    public record SourceRefreshSummary( String sourceName, String entityName, DataModel dataModel, List<String> changeDescriptions ) {
+
+    }
 
 
     /**
