@@ -29,6 +29,7 @@ import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.prism.ParameterMeta;
 
 @Setter
@@ -104,13 +105,17 @@ public abstract class PIPreparedStatement extends PIStatement implements Signatu
                 yield typeFactory.createPolyType( PolyType.VARBINARY );
             }
             case ARRAY -> {
+                Optional<VectorType> vt = parameterMeta.unwrap( VectorType.class );
+                if ( vt.isPresent() ) {
+                    yield vt.get();
+                }
                 Optional<ArrayType> at = parameterMeta.unwrap( ArrayType.class );
                 if ( at.isPresent() ) {
                     yield typeFactory.createArrayType(
                             typeFactory.createPolyType(
                                     at.get().getComponentType().getPolyType() ),
-                                    at.get().getCardinality(),
-                                    at.get().getDimension() );
+                            at.get().getCardinality(),
+                            at.get().getDimension() );
                 }
                 yield typeFactory.createPolyType( type );
             }
