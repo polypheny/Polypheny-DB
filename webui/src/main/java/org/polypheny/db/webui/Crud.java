@@ -1635,11 +1635,18 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
         String onStore = String.format( "ON STORE \"%s\"", store );
 
-        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING \"%s\" %s", tableId, index.getName(), colJoiner, index.getMethod(), onStore );
+        StringBuilder query = new StringBuilder( String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING \"%s\" %s", tableId, index.getName(), colJoiner, index.getMethod(), onStore ) );
+        if ( index.options != null && !index.options.isEmpty() ) {
+            StringJoiner withJoiner = new StringJoiner( ", ", " WITH (", ")" );
+            for ( Map.Entry<String, String> e : index.options.entrySet() ) {
+                withJoiner.add( e.getKey() + "=" + e.getValue() );
+            }
+            query.append( withJoiner );
+        }
         QueryLanguage language = QueryLanguage.from( "sql" );
         Result<?, ?> res = LanguageCrud.anyQueryResult(
                 QueryContext.builder()
-                        .query( query )
+                        .query( query.toString() )
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
