@@ -334,6 +334,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 case "L1" -> "vector_l1_ops";
                 case "L2" -> "vector_l2_ops";
                 case "COSINE" -> "vector_cosine_ops";
+                case "IP" -> "vector_ip_ops";
                 case "HAMMING" -> "bit_hamming_ops";
                 case "JACCARD" -> "bit_jaccard_ops";
                 default -> throw new GenericRuntimeException( "Unsupported distance metric for pgvector HNSW indexes: " + metric);
@@ -382,7 +383,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                             "metric",
                             "Distance Metric",
                             "ENUM",
-                            List.of( "L1", "L2", "COSINE", "JACCARD", "HAMMING" ),
+                            List.of( "L1", "L2", "COSINE", "IP", "JACCARD", "HAMMING" ),
                             "L2" )
             );
             List<IndexParameterModel> ivfflatParams = List.of(

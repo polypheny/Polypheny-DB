@@ -1535,6 +1535,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
         register( OperatorName.COS_DISTANCE, new SqlNamedDistanceFunction( "COS_DISTANCE", Kind.COS_DISTANCE, FunctionCategory.COS_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
         register( OperatorName.HAMMING_DISTANCE, new SqlNamedDistanceFunction( "HAMMING_DISTANCE", Kind.HAMMING_DISTANCE, FunctionCategory.HAMMING_DISTANCE, SqlNamedDistanceFunction.TWO_BOOLEAN_ARRAYS ) );
         register( OperatorName.JACCARD_DISTANCE, new SqlNamedDistanceFunction( "JACCARD_DISTANCE", Kind.JACCARD_DISTANCE, FunctionCategory.JACCARD_DISTANCE, SqlNamedDistanceFunction.TWO_BOOLEAN_ARRAYS ) );
+        register( OperatorName.IP_DISTANCE, new SqlNamedDistanceFunction( "IP_DISTANCE", Kind.IP_DISTANCE, FunctionCategory.IP_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
 
 
 
@@ -2467,6 +2468,9 @@ public class SqlLanguagePlugin extends PolyPlugin {
         register( OperatorName.PGVECTOR_JACCARD, new SqlBinaryOperator(
                 "<%>", Kind.JACCARD_DISTANCE, 36, true,
                 ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_BOOLEAN_ARRAYS ) );
+        register( OperatorName.PGVECTOR_IP, new SqlBinaryOperator(
+                "<#>", Kind.IP_DISTANCE, 36, true,
+                ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
 
 
         /*

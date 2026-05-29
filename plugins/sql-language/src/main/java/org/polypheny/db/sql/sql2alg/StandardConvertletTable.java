@@ -262,6 +262,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                     case "COSINE" -> OperatorName.COS_DISTANCE;
                     case "HAMMING" -> OperatorName.HAMMING_DISTANCE;
                     case "JACCARD" -> OperatorName.JACCARD_DISTANCE;
+                    case "IP" -> OperatorName.IP_DISTANCE;
                     default -> null;
                 };
                 if ( name != null ) {
@@ -305,6 +306,12 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             RexNode arg1 = cx.convertExpression( call.operand( 1 ) );
             AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
             return cx.getRexBuilder().makeCall( returnType, OperatorRegistry.get( OperatorName.JACCARD_DISTANCE ), ImmutableList.of( arg0, arg1 ) );
+        } );
+        registerOp( OperatorRegistry.get( OperatorName.PGVECTOR_IP ), (cx, call) -> {
+            RexNode arg0 = cx.convertExpression( call.operand( 0 ) );
+            RexNode arg1 = cx.convertExpression( call.operand( 1 ) );
+            AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
+            return cx.getRexBuilder().makeCall( returnType, OperatorRegistry.get( OperatorName.IP_DISTANCE ), ImmutableList.of( arg0, arg1 ) );
         } );
 
         // Convert "element(<expr>)" to "$element_slice(<expr>)", if the expression is a multiset of scalars.

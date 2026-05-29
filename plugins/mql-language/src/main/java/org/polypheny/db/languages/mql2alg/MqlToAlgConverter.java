@@ -964,6 +964,7 @@ public class MqlToAlgConverter {
         switch ( metric ) {
             case "L1" -> distanceOpName = OperatorName.L1_DISTANCE;
             case "L2" -> distanceOpName = OperatorName.L2_DISTANCE;
+            case "IP" -> distanceOpName = OperatorName.IP_DISTANCE;
             case "COSINE" -> distanceOpName = OperatorName.COS_DISTANCE;
             case "HAMMING" -> distanceOpName = OperatorName.HAMMING_DISTANCE;
             case "JACCARD" -> distanceOpName = OperatorName.JACCARD_DISTANCE;
@@ -972,7 +973,7 @@ public class MqlToAlgConverter {
                 parameterizedDistance = true;
             }
             default -> throw new GenericRuntimeException( String.format(
-                    "Unsupported metric '%s' in $vectorSearch. Supported metrics are: L1, L2, L2SQUARED, CHISQUARED, COSINE, HAMMING, JACCARD.",
+                    "Unsupported metric '%s' in $vectorSearch. Supported metrics are: L1, L2, IP, L2SQUARED, CHISQUARED, COSINE, HAMMING, JACCARD.",
                     metric ) );
         }
         return new Tuple2<>( distanceOpName, parameterizedDistance );

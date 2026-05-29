@@ -330,6 +330,86 @@ public class SqlPgvectorOperatorTest {
         }
     }
 
+    // --------------- IP operator (<#>) ---------------
+    @Test
+    public void ipOperatorTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                List<Object[]> expected = ImmutableList.of(
+                        new Object[]{ 1, -2.0 },
+                        new Object[]{ 2, -4.0 },
+                        new Object[]{ 3, -3.0 }
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, myarray <#> ARRAY[1.0, 1.0] AS dist FROM pgvecrealtest ORDER BY id" ),
+                        expected
+                );
+            }
+        }
+    }
+
+
+    @Test
+    public void ipEquivalenceTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                List<Object[]> expected = ImmutableList.of(
+                        new Object[]{ 1, -2.0 },
+                        new Object[]{ 2, -4.0 },
+                        new Object[]{ 3, -3.0 }
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1.0, 1.0], 'IP') AS dist FROM pgvecrealtest ORDER BY id" ),
+                        expected
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, ip_distance(myarray, ARRAY[1.0, 1.0]) AS dist FROM pgvecrealtest ORDER BY id" ),
+                        expected
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, myarray <#> ARRAY[1.0, 1.0] AS dist FROM pgvecrealtest ORDER BY id" ),
+                        expected
+                );
+            }
+        }
+    }
+
+
+    @Test
+    public void knnTopKIpTest() throws SQLException {
+        // Ordering ASC by ip_distance finds highest inner product first: row 2 (-4), then row 3 (-3).
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                List<Object[]> expected = ImmutableList.of(
+                        new Object[]{ 2, -4.0 },
+                        new Object[]{ 3, -3.0 }
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, myarray <#> ARRAY[1.0, 1.0] AS dist FROM pgvecrealtest ORDER BY dist LIMIT 2" ),
+                        expected
+                );
+            }
+        }
+    }
+
+
+    @Test
+    public void filterIpTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT COUNT(id) FROM pgvecrealtest WHERE myarray <#> ARRAY[1.0, 1.0] < -2.5" ),
+                        ImmutableList.of( new Object[]{ 2L } )
+                );
+            }
+        }
+    }
+
+
     // --------------- Jaccard operator (<%>) ---------------
     @Test
     public void jaccardOperatorTest() throws SQLException {

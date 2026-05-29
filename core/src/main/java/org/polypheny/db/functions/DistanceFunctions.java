@@ -18,12 +18,9 @@ package org.polypheny.db.functions;
 
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.type.entity.PolyBoolean;
-import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
-import org.polypheny.db.util.Pair;
 
 
 public class DistanceFunctions {
@@ -107,11 +104,17 @@ public class DistanceFunctions {
         return PolyDouble.of( 1 - dot( value, target ).doubleValue() / (norm2( value ) * norm2( target )) );
     }
 
-
+    
     protected static PolyDouble cosineMetricWeighted( List<PolyNumber> value, List<PolyNumber> target, List<PolyNumber> weights ) {
-        List<PolyNumber> valueWeighted = Pair.zip( value, weights ).stream().map( p -> PolyDouble.of( p.left.doubleValue() * p.right.doubleValue() ) ).collect( Collectors.toList() );
-        List<PolyNumber> targetWeighted = Pair.zip( target, weights ).stream().map( p -> PolyDouble.of( p.left.doubleValue() * p.right.doubleValue() ) ).collect( Collectors.toList() );
-        return cosineMetric( valueWeighted, targetWeighted );
+        double dot = 0, normV = 0, normT = 0;
+        for ( int i = 0; i < value.size(); i++ ) {
+            double v = value.get( i ).doubleValue() * weights.get( i ).doubleValue();
+            double t = target.get( i ).doubleValue() * weights.get( i ).doubleValue();
+            dot += v * t;
+            normV += v * v;
+            normT += t * t;
+        }
+        return PolyDouble.of( 1 - dot / (Math.sqrt( normV ) * Math.sqrt( normT )) );
     }
 
 
@@ -126,7 +129,7 @@ public class DistanceFunctions {
 
     protected static PolyDouble hammingMetric( List<PolyBoolean> value, List<PolyBoolean> target ) {
         double result = 0;
-        for ( int i = 0; i < value.size(); ++i ) {
+        for ( int i = 0; i < value.size(); i++ ) {
             if ( value.get( i ).asBoolean().getValue() != target.get( i ).asBoolean().getValue() ) {
                 result++;
             }
@@ -138,7 +141,7 @@ public class DistanceFunctions {
     protected static PolyDouble jaccardMetric( List<PolyBoolean> value, List<PolyBoolean> target ) {
         double intersection = 0;
         double union = 0;
-        for ( int i = 0; i < value.size(); ++i ) {
+        for ( int i = 0; i < value.size(); i++ ) {
             boolean a = value.get( i ).asBoolean().getValue();
             boolean b = target.get( i ).asBoolean().getValue();
             if ( a && b ) {
@@ -154,6 +157,24 @@ public class DistanceFunctions {
         }
 
         return PolyDouble.of( 1.0 - (intersection / union) );
+    }
+
+
+    protected static PolyDouble ipMetric( List<PolyNumber> value, List<PolyNumber> target ) {
+        double result = 0;
+        for ( int i = 0; i < value.size(); i++ ) {
+            result += value.get( i ).doubleValue() * target.get( i ).doubleValue();
+        }
+        return PolyDouble.of( -result );
+    }
+
+
+    protected static PolyDouble ipMetricWeighted( List<PolyNumber> value, List<PolyNumber> target, List<PolyNumber> weights ) {
+        double result = 0;
+        for ( int i = 0; i < value.size(); i++ ) {
+            result += value.get( i ).doubleValue() * target.get( i ).doubleValue() * weights.get( i ).doubleValue();
+        }
+        return PolyDouble.of( -result );
     }
 
 

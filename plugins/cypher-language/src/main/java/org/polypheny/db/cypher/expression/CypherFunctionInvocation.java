@@ -69,7 +69,7 @@ public class CypherFunctionInvocation extends CypherExpression {
 
     private Pair<PolyString, RexNode> getVectorDistanceRex( CypherContext context, RexType type ) {
         if ( arguments.size() != 3 ) {
-            throw new GenericRuntimeException( "vector_distance requires at exactly 3 arguments" );
+            throw new GenericRuntimeException( "vector_distance requires exactly 3 arguments" );
         }
 
         RexNode v1 = arguments.get( 0 ).getRex( context, type ).right;
@@ -87,6 +87,7 @@ public class CypherFunctionInvocation extends CypherExpression {
             case "COSINE"  -> OperatorName.COS_DISTANCE;
             case "HAMMING" -> OperatorName.HAMMING_DISTANCE;
             case "JACCARD" -> OperatorName.JACCARD_DISTANCE;
+            case "IP"      -> OperatorName.IP_DISTANCE;
             // parameterized version
             case "CHISQUARED", "L2SQUARED" -> OperatorName.DISTANCE;
             default -> throw new GenericRuntimeException( "Unknown distance metric: ", metric );
