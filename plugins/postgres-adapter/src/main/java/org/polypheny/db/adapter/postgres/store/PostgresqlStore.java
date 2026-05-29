@@ -316,7 +316,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 builder.append( "ivfflat " );
                 break;
             default:
-                throw new RuntimeException( "Unknown index method: " + index.method );
+                throw new GenericRuntimeException( "Unknown index method: " + index.method );
         }
 
         builder.append( "(" );
@@ -336,7 +336,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 case "COSINE" -> "vector_cosine_ops";
                 case "HAMMING" -> "bit_hamming_ops";
                 case "JACCARD" -> "bit_jaccard_ops";
-                default -> throw new RuntimeException( "Unsupported distance metric for pgvector HNSW indexes: " + metric);
+                default -> throw new GenericRuntimeException( "Unsupported distance metric for pgvector HNSW indexes: " + metric);
             };
             builder.append( " " ).append( operatorClass );
         } else if ( index.method.equals( "ivfflat" ) ) {
@@ -344,7 +344,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 case "L2" -> "vector_l2_ops";
                 case "COSINE" -> "vector_cosine_ops";
                 case "HAMMING" -> "bit_hamming_ops";
-                default -> throw new RuntimeException( "Unsupported distance metric for pgvector HNSW indexes: " + metric);
+                default -> throw new GenericRuntimeException( "Unsupported distance metric for pgvector HNSW indexes: " + metric);
             };
             builder.append( " " ).append( operatorClass );
         }
