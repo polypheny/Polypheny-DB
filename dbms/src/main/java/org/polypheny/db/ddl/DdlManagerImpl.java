@@ -603,6 +603,10 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void createIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement, Map<String, String> options ) throws TransactionException {
         List<Long> columnIds = new ArrayList<>();
+        boolean hasVectorColumn = columnNames.stream()
+                .map( name -> catalog.getSnapshot().rel().getColumn( table.id, name ).orElseThrow() )
+                .anyMatch( col -> col.getAlgDataType( AlgDataTypeFactory.DEFAULT ) instanceof VectorType );
+
         IndexCategory requestedCategory = IndexCategory.REGULAR;
         if ( indexMethodName != null ) {
             IndexMethodModel aim = IndexManager.getAvailableIndexMethods().stream()
@@ -615,17 +619,45 @@ public class DdlManagerImpl extends DdlManager {
                         .findFirst()
                         .orElse( null );
             }
-            if ( aim != null ) requestedCategory = aim.category();
+            if ( aim != null ) {
+                requestedCategory = aim.category();
+            } else if ( hasVectorColumn ) {
+                requestedCategory = IndexCategory.VECTOR;
+            }
+        }
+        if ( requestedCategory == IndexCategory.VECTOR && location == null ) {
+            throw new GenericRuntimeException( "Vector indexes must be placed on a specific store. Use ON STORE <store_name>." );
         }
 
         for ( String columnName : columnNames ) {
-            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
-            boolean isVectorColumn = logicalColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT ) instanceof VectorType;
+            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName
+            ).orElseThrow();
+            AlgDataType colType = logicalColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+            boolean isVectorColumn = colType instanceof VectorType;
             if ( requestedCategory == IndexCategory.VECTOR && !isVectorColumn ) {
                 throw new GenericRuntimeException( "Index method '%s' can only be created on vector columns.", indexMethodName );
             }
             if ( requestedCategory != IndexCategory.VECTOR && isVectorColumn ) {
                 throw new GenericRuntimeException( "Standard index methods cannot be created on vector columns. Please use 'hnsw' or 'ivfflat'." );
+            }
+            if ( requestedCategory == IndexCategory.VECTOR && isVectorColumn && options != null ) {
+                String metric = options.get( "metric" );
+                if ( metric != null ) {
+                    VectorType.ElementType elemType = ((VectorType) colType).getVectorElementType();
+                    boolean isBitMetric = metric.equalsIgnoreCase( "HAMMING" ) ||
+                            metric.equalsIgnoreCase( "JACCARD" );
+                    boolean isBitVector = elemType == VectorType.ElementType.BIT;
+                    if ( isBitMetric && !isBitVector ) {
+                        throw new GenericRuntimeException(
+                                "Metric '%s' is only valid for BIT vector columns, but column '%s' has element type %s.",
+                                metric, columnName, elemType );
+                    }
+                    if ( !isBitMetric && isBitVector ) {
+                        throw new GenericRuntimeException(
+                                "Metric '%s' is not valid for BIT vector columns. Use HAMMING or JACCARD.",
+                                metric, columnName );
+                    }
+                }
             }
             columnIds.add( logicalColumn.id );
         }
