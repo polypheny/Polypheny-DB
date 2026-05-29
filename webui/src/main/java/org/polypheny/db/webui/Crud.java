@@ -110,7 +110,6 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
@@ -1622,35 +1621,30 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void createIndex( final Context ctx ) {
         IndexModel index = ctx.bodyAsClass( IndexModel.class );
 
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( index.namespaceId ).orElseThrow();
         LogicalTable table = Catalog.snapshot().rel().getTable( index.entityId ).orElseThrow();
-        List<String> columnNames = new ArrayList<>();
+
+        String tableId = String.format( "\"%s\".\"%s\"", namespace.name, table.name );
+        StringJoiner colJoiner = new StringJoiner( ",", "(", ")" );
         for ( long col : index.columnIds ) {
-            columnNames.add( Catalog.snapshot().rel().getColumn( col ).orElseThrow().name );
+            colJoiner.add( "\"" + Catalog.snapshot().rel().getColumn( col ).orElseThrow().name + "\"" );
         }
+        String store = IndexManager.POLYPHENY;
+        if ( index.storeUniqueName != null && !index.storeUniqueName.equals( "Polypheny-DB" ) ) {
+            store = index.getStoreUniqueName();
+        }
+        String onStore = String.format( "ON STORE \"%s\"", store );
 
-        DataStore<?> storeInstance = null;
-        if ( index.storeUniqueName != null && !index.storeUniqueName.equals( "PolyphenyDB" ) ) {
-            storeInstance = (DataStore<?>) AdapterManager.getInstance().getAdapter( index.storeUniqueName ).orElseThrow();
-        }
-        try {
-            Transaction transaction = getTransaction();
-            Statement statement = transaction.createStatement();
-
-            DdlManager.getInstance().createIndex(
-                    table,
-                    index.getMethod(),
-                    columnNames,
-                    index.getName(),
-                    false,
-                    storeInstance,
-                    statement,
-                    index.options
-            );
-            transaction.commit();
-            ctx.json( RelationalResult.builder().build() );
-        } catch ( Exception e ) {
-            ctx.json( RelationalResult.builder().exception( e ).build() );
-        }
+        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING \"%s\" %s", tableId, index.getName(), colJoiner, index.getMethod(), onStore );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> res = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), UIRequest.builder().build() ).get( 0 );
+        ctx.json( res );
     }
 
 
