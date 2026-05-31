@@ -372,12 +372,27 @@ public class PostgresqlStore extends AbstractJdbcStore {
             String operatorClass = switch ( metric ) {
                 case "L2" -> "vector_l2_ops";
                 case "COSINE" -> "vector_cosine_ops";
+                case "IP" -> "vector_ip_ops";
                 case "HAMMING" -> "bit_hamming_ops";
                 default -> throw new GenericRuntimeException( "Unsupported distance metric for pgvector HNSW indexes: " + metric);
             };
             builder.append( " " ).append( operatorClass );
         }
         builder.append( ")" );
+        if ( index.method.equals( "hnsw" ) ) {
+            List<String> params = new ArrayList<>();
+            if ( index.options.containsKey( "m" ) ) {
+                params.add( "m = " + Integer.parseInt( index.options.get( "m" ) ) );
+            }
+            if ( index.options.containsKey( "ef_construction" ) ) {
+                params.add( "ef_construction = " + Integer.parseInt( index.options.get( "ef_construction" ) ) );
+            }
+            if ( !params.isEmpty() ) {
+                builder.append( " WITH (" ).append( String.join( ", ", params ) ).append( ")" );
+            }
+        } else if ( index.method.equals( "ivfflat" ) && index.options.containsKey( "lists" ) ) {
+            builder.append( " WITH (lists = " ).append( Integer.parseInt( index.options.get( "lists" ) ) ).append( ")" );
+        }
 
         executeUpdate( builder, context );
 
@@ -388,10 +403,11 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public void dropIndex( Context context, LogicalIndex index, long allocId ) {
         PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        String physicalIndexName = getPhysicalIndexName( table.id, index.id );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "DROP INDEX " );
-        builder.append( dialect.quoteIdentifier( index.physicalName + "_" + table.id ) );
+        builder.append( dialect.quoteIdentifier( physicalIndexName ) );
         executeUpdate( builder, context );
     }
 
@@ -412,15 +428,36 @@ public class PostgresqlStore extends AbstractJdbcStore {
                             "Distance Metric",
                             "ENUM",
                             List.of( "L1", "L2", "COSINE", "IP", "JACCARD", "HAMMING" ),
-                            "L2" )
+                            "L2" ),
+                    new IndexParameterModel(
+                            "m",
+                            "Max number of connections per layer (m)",
+                            "INTEGER",
+                            null,
+                            "16"
+                    ),
+                    new IndexParameterModel(
+                            "ef_construction",
+                            "Size of the dynamic candidate list for constructing the graph (efConstruction)",
+                            "INTEGER",
+                            null,
+                            "64"
+                    )
             );
             List<IndexParameterModel> ivfflatParams = List.of(
                     new IndexParameterModel(
                             "metric",
-                            "Distance metric",
+                            "Distance Metric",
                             "ENUM",
-                            List.of( "L2", "COSINE", "HAMMING"),
+                            List.of( "L2", "COSINE",  "IP", "HAMMING"),
                             "L2"
+                    ),
+                    new IndexParameterModel(
+                            "lists",
+                            "Number of lists the vectors are divided into",
+                            "INTEGER",
+                            null,
+                            "100"
                     )
             );
             methods.add( new IndexMethodModel(
