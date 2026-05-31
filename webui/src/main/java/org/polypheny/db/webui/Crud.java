@@ -322,6 +322,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .dataType( logicalColumn.type.getName() )
                             .collectionsType( collectionsType )
                             .nullable( logicalColumn.nullable )
+                            .elementsNullable( logicalColumn.elementsNullable )
                             .precision( logicalColumn.length )
                             .scale( logicalColumn.scale )
                             .dimension( logicalColumn.dimension )
@@ -974,6 +975,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .dataType( logicalColumn.type.getName() )
                             .collectionsType( collectionsType )
                             .nullable( logicalColumn.nullable )
+                            .elementsNullable( logicalColumn.elementsNullable )
                             .precision( logicalColumn.length )
                             .scale( logicalColumn.scale )
                             .dimension( logicalColumn.dimension )
@@ -1039,6 +1041,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .name( col.name )
                         .dataType( col.type.getName() )
                         .collectionsType( col.collectionsType == null ? "" : col.collectionsType.getName() ).nullable( col.nullable )
+                        .elementsNullable( col.elementsNullable )
                         .precision( col.length )
                         .scale( col.scale )
                         .dimension( col.dimension )
@@ -1167,6 +1170,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         UiColumnDefinition oldColumn = request.oldColumn;
         UiColumnDefinition newColumn = request.newColumn;
+        String elementsNullable = newColumn.elementsNullable ? "" : " NOT NULL";
         List<String> queries = new ArrayList<>();
         StringBuilder sBuilder = new StringBuilder();
 
@@ -1205,6 +1209,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 }
                 //collectionType
                 if ( newColumn.collectionsType != null && !newColumn.collectionsType.isEmpty() ) {
+                    query = query + elementsNullable;
                     query = query + " " + request.newColumn.collectionsType;
                     int dimension = newColumn.dimension == null ? -1 : newColumn.dimension;
                     int cardinality = newColumn.cardinality == null ? -1 : newColumn.cardinality;
@@ -1305,6 +1310,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 query = query + ")";
             }
             if ( request.newColumn.collectionsType != null && !request.newColumn.collectionsType.isEmpty() ) {
+                if ( !request.newColumn.elementsNullable ) {
+                    query = query + " NOT NULL";
+                }
                 query = query + " " + request.newColumn.collectionsType;
                 int dimension = request.newColumn.dimension == null ? -1 : request.newColumn.dimension;
                 int cardinality = request.newColumn.cardinality == null ? -1 : request.newColumn.cardinality;

@@ -146,7 +146,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param columnId The id of the column
      * @param type The new type of the column
      */
-    void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer precision, Integer dimension, Integer cardinality );
+    void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer precision, Integer dimension, Integer cardinality, Boolean elementsNullable );
 
     /**
      * Change nullability of the column (weather the column allows null values).

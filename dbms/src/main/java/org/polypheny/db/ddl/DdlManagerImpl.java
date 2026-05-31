@@ -1241,7 +1241,8 @@ public class DdlManagerImpl extends DdlManager {
                 type.precision(),
                 type.scale(),
                 type.dimension(),
-                type.cardinality() );
+                type.cardinality(),
+                type.elementsNullable() );
         catalog.updateSnapshot();
         for ( AllocationColumn allocationColumn : catalog.getSnapshot().alloc().getColumnFromLogical( logicalColumn.id ).orElseThrow() ) {
             statement.getTransaction().attachCommitAction( () -> {

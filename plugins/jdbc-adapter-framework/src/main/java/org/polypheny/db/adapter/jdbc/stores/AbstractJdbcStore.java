@@ -261,7 +261,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     }
 
 
-    protected void createColumnDefinition( PhysicalColumn column, StringBuilder builder ) {
+    protected String getColumnDefinitionString( PhysicalColumn column ) {
+        StringBuilder builder = new StringBuilder();
         boolean supportsThisArray = column.collectionsType == PolyType.ARRAY && column.dimension != null && this.dialect.supportsArrays() && (this.dialect.supportsNestedArrays() || column.dimension == 1);
         AlgDataType algType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
         if ( algType instanceof VectorType vectorType && dialect.vectorPushdownTypeIsPresent( vectorType.getVectorElementType() ) ) {
@@ -295,6 +296,11 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                 builder.append( " " ).append( getTypeString( column.collectionsType ) );
             }
         }
+        return builder.toString().trim();
+    }
+
+    protected void createColumnDefinition( PhysicalColumn column, StringBuilder builder ) {
+        builder.append( getColumnDefinitionString( column ) );
     }
 
 
@@ -338,15 +344,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                 .append( "." )
                 .append( dialect.quoteIdentifier( physicalTable.name ) );
         builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( column.name ) );
-        builder.append( " " ).append( getTypeString( column.type ) );
-        if ( column.length != null && doesTypeUseLength( column.type ) ) {
-            builder.append( "(" );
-            builder.append( column.length );
-            if ( column.scale != null ) {
-                builder.append( "," ).append( column.scale );
-            }
-            builder.append( ")" );
-        }
+        builder.append( " " ).append( getColumnDefinitionString( column ) );
         executeUpdate( builder, context );
 
         updateNativePhysical( allocId );

@@ -42,6 +42,8 @@ import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
 import org.polypheny.db.adapter.postgres.PostgresqlSqlDialect;
 import org.polypheny.db.adapter.postgres.source.PostgresqlFeature;
 import org.polypheny.db.adapter.postgres.source.PostgresqlSource;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
@@ -62,6 +64,7 @@ import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.util.PasswordGenerator;
 
 
@@ -237,6 +240,22 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
+        PhysicalColumn old = adapterCatalog.getColumn( newCol.id, allocId );
+        AlgDataType oldAlg = old.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+        AlgDataType newAlg = newCol.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+
+        if ( oldAlg instanceof VectorType oldVec
+                && newAlg instanceof VectorType newVec
+                && dialect.vectorPushdownTypeIsPresent( oldVec.getVectorElementType() )
+                && dialect.vectorPushdownTypeIsPresent( newVec.getVectorElementType() )
+                && oldVec.getVectorElementType() != VectorType.ElementType.BIT
+                && oldVec.getCardinality() != newVec.getCardinality() ) {
+            throw new GenericRuntimeException(
+                    "Cannot change dimension of vector(%d) to vector(%d) on PostgreSQL. "
+                            + "pgvector does not support resizing float vector dimensions. "
+                            + "Drop and recreate the column.",
+                    oldVec.getCardinality(), newVec.getCardinality() );
+        }
         PhysicalColumn column = adapterCatalog.updateColumnType( allocId, newCol );
 
         PhysicalTable physicalTable = adapterCatalog.fromAllocation( allocId );
@@ -247,26 +266,35 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 .append( "." )
                 .append( dialect.quoteIdentifier( physicalTable.name ) );
         builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( column.name ) );
-        builder.append( " TYPE " ).append( getTypeString( column.type ) );
-        if ( column.collectionsType != null ) {
-            builder.append( " " ).append( column.collectionsType );
-        }
-        if ( column.length != null && doesTypeUseLength( column.type ) ) {
-            builder.append( "(" );
-            builder.append( column.length );
-            if ( column.scale != null ) {
-                builder.append( "," ).append( column.scale );
+        
+        AlgDataType algType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+        String typeString;
+        if ( algType instanceof VectorType vectorType && dialect.vectorPushdownTypeIsPresent( vectorType.getVectorElementType() ) ) {
+            typeString = dialect.getTypeString( vectorType.getVectorElementType() ) +
+                    "(" + (column.cardinality != null && column.cardinality > 0 ? column.cardinality : "") + ")";
+        } else {
+            StringBuilder typeBuilder = new StringBuilder();
+            typeBuilder.append( getTypeString( column.type ) );
+            if ( column.collectionsType != null ) {
+                typeBuilder.append( " " ).append( column.collectionsType );
             }
-            builder.append( ")" );
+            if ( column.length != null && doesTypeUseLength( column.type ) ) {
+                typeBuilder.append( "(" );
+                typeBuilder.append( column.length );
+                if ( column.scale != null ) {
+                    typeBuilder.append( "," ).append( column.scale );
+                }
+                typeBuilder.append( ")" );
+            }
+            typeString = typeBuilder.toString();
         }
+
+        builder.append( " TYPE " ).append( typeString );
         builder.append( " USING " )
                 .append( dialect.quoteIdentifier( column.name ) )
                 .append( "::" )
-                .append( getTypeString( column.type ) );
+                .append( typeString );
 
-        if ( column.collectionsType != null ) {
-            builder.append( " " ).append( column.collectionsType );
-        }
         executeUpdate( builder, context );
 
         updateNativePhysical( allocId );

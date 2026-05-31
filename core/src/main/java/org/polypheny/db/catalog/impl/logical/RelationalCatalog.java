@@ -326,12 +326,12 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
-    public void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality ) {
+    public void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, Boolean elementsNullable ) {
         if ( scale != null && scale > length ) {
             throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
         }
 
-        columns.put( columnId, columns.get( columnId ).toBuilder().type( type ).collectionsType( collectionsType ).length( length ).scale( scale ).dimension( dimension ).cardinality( cardinality ).build() );
+        columns.put( columnId, columns.get( columnId ).toBuilder().type( type ).collectionsType( collectionsType ).length( length ).scale( scale ).dimension( dimension ).cardinality( cardinality ).elementsNullable( elementsNullable ).build() );
         change( CatalogEvent.LOGICAL_REL_FIELD_TYPE_CHANGED, columnId, type );
     }
 

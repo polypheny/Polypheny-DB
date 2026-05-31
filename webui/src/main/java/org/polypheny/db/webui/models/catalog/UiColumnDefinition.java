@@ -63,6 +63,8 @@ public class UiColumnDefinition extends FieldDefinition {
     @JsonProperty
     @Nullable
     public String collectionsType;
+    @JsonProperty
+    public Boolean elementsNullable;
 
     //for data source columns
     @JsonProperty
