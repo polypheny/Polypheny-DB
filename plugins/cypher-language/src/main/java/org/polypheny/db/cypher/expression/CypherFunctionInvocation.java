@@ -87,7 +87,7 @@ public class CypherFunctionInvocation extends CypherExpression {
             case "COSINE"  -> OperatorName.COS_DISTANCE;
             case "HAMMING" -> OperatorName.HAMMING_DISTANCE;
             case "JACCARD" -> OperatorName.JACCARD_DISTANCE;
-            case "IP"      -> OperatorName.IP_DISTANCE;
+            case "INNER_PRODUCT" -> OperatorName.INNER_PRODUCT_DISTANCE;
             // parameterized version
             case "CHISQUARED", "L2SQUARED" -> OperatorName.DISTANCE;
             default -> throw new GenericRuntimeException( "Unknown distance metric: ", metric );

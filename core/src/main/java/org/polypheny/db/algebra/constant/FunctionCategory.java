@@ -50,7 +50,7 @@ public enum FunctionCategory {
     COS_DISTANCE( "COS_DISTANCE", "cosine distance function", DISTANCE_FUNCTION ),
     HAMMING_DISTANCE( "HAMMING_DISTANCE", "hamming distance function", DISTANCE_FUNCTION ),
     JACCARD_DISTANCE( "JACCARD_DISTANCE", "jaccard distance function", DISTANCE_FUNCTION ),
-    IP_DISTANCE( "IP_DISTANCE", "inner product distance function", DISTANCE_FUNCTION ),
+    INNER_PRODUCT_DISTANCE( "INNER_PRODUCT_DISTANCE", "inner product distance function", DISTANCE_FUNCTION ),
     MULTIMEDIA( "MULTIMEDIA", "Multimedia function", MULTIMEDIA_FUNCTION ),
     GEOMETRY( "GEOMETRY", "Geo function", GEO_FUNCTION );
 

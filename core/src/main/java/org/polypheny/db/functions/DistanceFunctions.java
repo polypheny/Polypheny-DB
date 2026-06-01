@@ -160,7 +160,7 @@ public class DistanceFunctions {
     }
 
 
-    protected static PolyDouble ipMetric( List<PolyNumber> value, List<PolyNumber> target ) {
+    protected static PolyDouble innerProductMetric( List<PolyNumber> value, List<PolyNumber> target ) {
         double result = 0;
         for ( int i = 0; i < value.size(); i++ ) {
             result += value.get( i ).doubleValue() * target.get( i ).doubleValue();
@@ -169,7 +169,7 @@ public class DistanceFunctions {
     }
 
 
-    protected static PolyDouble ipMetricWeighted( List<PolyNumber> value, List<PolyNumber> target, List<PolyNumber> weights ) {
+    protected static PolyDouble innerProductMetricWeighted( List<PolyNumber> value, List<PolyNumber> target, List<PolyNumber> weights ) {
         double result = 0;
         for ( int i = 0; i < value.size(); i++ ) {
             result += value.get( i ).doubleValue() * target.get( i ).doubleValue() * weights.get( i ).doubleValue();

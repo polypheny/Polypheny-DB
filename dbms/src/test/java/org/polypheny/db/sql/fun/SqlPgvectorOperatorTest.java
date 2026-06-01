@@ -330,9 +330,9 @@ public class SqlPgvectorOperatorTest {
         }
     }
 
-    // --------------- IP operator (<#>) ---------------
+    // --------------- INNER_PRODUCT operator (<#>) ---------------
     @Test
-    public void ipOperatorTest() throws SQLException {
+    public void innerProductOperatorTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -351,7 +351,7 @@ public class SqlPgvectorOperatorTest {
 
 
     @Test
-    public void ipEquivalenceTest() throws SQLException {
+    public void innerProductEquivalenceTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -361,11 +361,11 @@ public class SqlPgvectorOperatorTest {
                         new Object[]{ 3, -3.0 }
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1.0, 1.0], 'IP') AS dist FROM pgvecrealtest ORDER BY id" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1.0, 1.0], 'INNER_PRODUCT') AS dist FROM pgvecrealtest ORDER BY id" ),
                         expected
                 );
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, ip_distance(myarray, ARRAY[1.0, 1.0]) AS dist FROM pgvecrealtest ORDER BY id" ),
+                        statement.executeQuery( "SELECT id, inner_product_distance(myarray, ARRAY[1.0, 1.0]) AS dist FROM pgvecrealtest ORDER BY id" ),
                         expected
                 );
                 TestHelper.checkResultSet(
@@ -378,8 +378,8 @@ public class SqlPgvectorOperatorTest {
 
 
     @Test
-    public void knnTopKIpTest() throws SQLException {
-        // Ordering ASC by ip_distance finds highest inner product first: row 2 (-4), then row 3 (-3).
+    public void knnTopKInnerProductTest() throws SQLException {
+        // Ordering ASC by inner_product_distance finds highest inner product first: row 2 (-4), then row 3 (-3).
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -397,7 +397,7 @@ public class SqlPgvectorOperatorTest {
 
 
     @Test
-    public void filterIpTest() throws SQLException {
+    public void filterInnerProductTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {

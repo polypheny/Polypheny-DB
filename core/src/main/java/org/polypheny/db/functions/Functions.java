@@ -177,7 +177,7 @@ public class Functions {
             case "L2SQUARED" -> DistanceFunctions.l2SquaredMetricWeighted( value, target, weights );
             case "CHISQUARED" -> DistanceFunctions.chiSquaredMetricWeighted( value, target, weights );
             case "COSINE" -> DistanceFunctions.cosineMetricWeighted( value, target, weights );
-            case "IP" -> DistanceFunctions.ipMetricWeighted( value, target, weights );
+            case "INNER_PRODUCT" -> DistanceFunctions.innerProductMetricWeighted( value, target, weights );
             default -> PolyDouble.of( 0.0 );
         };
     }
@@ -191,7 +191,7 @@ public class Functions {
             case "L2SQUARED" -> DistanceFunctions.l2SquaredMetric( value, target );
             case "CHISQUARED" -> DistanceFunctions.chiSquaredMetric( value, target );
             case "COSINE" -> DistanceFunctions.cosineMetric( value, target );
-            case "IP" -> DistanceFunctions.ipMetric( value, target );
+            case "INNER_PRODUCT" -> DistanceFunctions.innerProductMetric( value, target );
             default -> PolyDouble.of( 0.0 );
         };
     }
@@ -229,8 +229,8 @@ public class Functions {
     }
 
 
-    public static PolyDouble ipDistance( PolyValue value, PolyValue target ) {
-        return DistanceFunctions.ipMetric( toNumberList( value ), toNumberList( target ) );
+    public static PolyDouble innerProductDistance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.innerProductMetric( toNumberList( value ), toNumberList( target ) );
     }
 
 

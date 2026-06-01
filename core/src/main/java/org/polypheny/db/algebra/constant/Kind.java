@@ -127,7 +127,7 @@ public enum Kind {
 
     JACCARD_DISTANCE,
 
-    IP_DISTANCE,
+    INNER_PRODUCT_DISTANCE,
 
     /**
      * GEO functions.

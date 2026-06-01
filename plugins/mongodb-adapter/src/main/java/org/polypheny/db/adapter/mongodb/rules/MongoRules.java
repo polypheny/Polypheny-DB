@@ -478,7 +478,7 @@ public class MongoRules {
                     || operator.getOperatorName() == OperatorName.DISTANCE
                     || operator.getOperatorName() == OperatorName.L1_DISTANCE
                     || operator.getOperatorName() == OperatorName.L2_DISTANCE
-                    || operator.getOperatorName() == OperatorName.IP_DISTANCE
+                    || operator.getOperatorName() == OperatorName.INNER_PRODUCT_DISTANCE
                     || operator.getOperatorName() == OperatorName.COS_DISTANCE
                     || operator.getOperatorName() == OperatorName.HAMMING_DISTANCE
                     || operator.getOperatorName() == OperatorName.JACCARD_DISTANCE

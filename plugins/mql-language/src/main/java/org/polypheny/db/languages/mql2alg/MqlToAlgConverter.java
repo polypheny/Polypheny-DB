@@ -964,7 +964,7 @@ public class MqlToAlgConverter {
         switch ( metric ) {
             case "L1" -> distanceOpName = OperatorName.L1_DISTANCE;
             case "L2" -> distanceOpName = OperatorName.L2_DISTANCE;
-            case "IP" -> distanceOpName = OperatorName.IP_DISTANCE;
+            case "INNER_PRODUCT" -> distanceOpName = OperatorName.INNER_PRODUCT_DISTANCE;
             case "COSINE" -> distanceOpName = OperatorName.COS_DISTANCE;
             case "HAMMING" -> distanceOpName = OperatorName.HAMMING_DISTANCE;
             case "JACCARD" -> distanceOpName = OperatorName.JACCARD_DISTANCE;

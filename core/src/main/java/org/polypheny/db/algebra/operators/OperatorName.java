@@ -1591,7 +1591,7 @@ public enum OperatorName {
 
     JACCARD_DISTANCE( Function.class ),
 
-    IP_DISTANCE( Function.class ),
+    INNER_PRODUCT_DISTANCE( Function.class ),
 
     // Cypher specific operator
     VECTOR_DISTANCE( Function.class),
@@ -1609,7 +1609,7 @@ public enum OperatorName {
 
     PGVECTOR_JACCARD( BinaryOperator.class ),
 
-    PGVECTOR_IP( BinaryOperator.class ),
+    PGVECTOR_INNER_PRODUCT( BinaryOperator.class ),
 
     //-------------------------------------------------------------
     //                   SET OPERATORS
