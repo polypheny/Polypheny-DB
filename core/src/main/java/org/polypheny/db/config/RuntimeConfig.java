@@ -50,46 +50,20 @@ public enum RuntimeConfig {
             ConfigType.ENUM
     ),
 
-    APPROXIMATE_DISTINCT_COUNT(
-            "runtime/approximateDistinctCount",
-            "Whether approximate results from \"COUNT(DISTINCT ...)\" aggregate functions are acceptable.",
-            false,
-            ConfigType.BOOLEAN
-    ), // Druid
-
-    APPROXIMATE_TOP_N(
-            "runtime/approximateTopN",
-            "Whether approximate results from \"Top N\" queries (\"ORDER BY aggFun DESC LIMIT n\") are acceptable.",
-            false,
-            ConfigType.BOOLEAN
-    ), // Druid
-
-    APPROXIMATE_DECIMAL(
-            "runtime/approximateDecimal",
-            "Whether approximate results from aggregate functions on DECIMAL types are acceptable.",
-            false,
-            ConfigType.BOOLEAN
-    ), // Druid
-
-    NULL_EQUAL_TO_EMPTY(
-            "runtime/nullEqualToEmpty",
-            "Whether to treat empty strings as null for Druid Adapter.",
-            true,
-            ConfigType.BOOLEAN
-    ), // Druid
-
     RELATIONAL_NAMESPACE_DEFAULT_CASE_SENSITIVE(
             "runtime/relationalCaseSensitive",
             "Whether a relational namespace is case-sensitive if not specified otherwise.",
             false,
             ConfigType.BOOLEAN
     ),
+
     DOCUMENT_NAMESPACE_DEFAULT_CASE_SENSITIVE(
             "runtime/documentCaseSensitive",
             "Whether a document namespace is case-sensitive if not specified otherwise.",
             false,
             ConfigType.BOOLEAN
     ),
+
     GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE(
             "runtime/graphCaseSensitive",
             "Whether a graph (namespace) is case-sensitive if not specified otherwise.",
@@ -170,14 +144,6 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "planningGroup" ),
 
-    VALIDATE_MM_CONTENT_TYPE(
-            "validation/validateMultimediaContentType",
-            "Validate multimedia data by checking its content-type.",
-            true,
-            ConfigType.BOOLEAN,
-            "validationGroup"
-    ),
-
     TWO_PC_MODE(
             "runtime/twoPcMode",
             "Use two-phase commit protocol for committing queries on data stores.",
@@ -220,13 +186,6 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "statisticSettingsGroup" ),
 
-    UNIQUE_VALUES(
-            "statistics/maxCharUniqueVal",
-            "Maximum character of unique values",
-            10,
-            ConfigType.INTEGER,
-            "statisticSettingsGroup" ),
-
     STATISTIC_RATE(
             "statistics/passiveTrackingRate",
             "Rate of passive tracking of statistics.",
@@ -239,24 +198,10 @@ public enum RuntimeConfig {
             TaskSchedulingType.EVERY_SECOND_FIXED,
             ConfigType.ENUM ),
 
-    EXPLORE_BY_EXAMPLE_TO_SQL(
-            "exploreByExample/classificationToSQL",
-            "Build SQL query from classification.",
-            true,
-            ConfigType.BOOLEAN,
-            "uiSettings" ),
-
     UI_PAGE_SIZE(
             "ui/pageSize",
             "Number of rows per page in the data view.",
             10,
-            ConfigType.INTEGER,
-            "uiSettingsDataViewGroup" ),
-
-    UI_NODE_AMOUNT(
-            "ui/nodeAmount",
-            "Number of nodes in the graph data view.",
-            300,
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
 
@@ -267,29 +212,6 @@ public enum RuntimeConfig {
             10_000,
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
-
-    UI_USE_HARDLINKS(
-            "ui/useHardlinks",
-            "Whether or not to use hardlinks for temporal files in the UI. If false, softlinks are used. This config has only an effect when one or multiple file stores are deployed. "
-                    + "With hardlinks, the data you see is the correct data that was selected during the transaction. "
-                    + "But with multiple file stores on different file systems, hardlinks won't work. "
-                    + "In this case you can use softlinks, but you might see data that is more recent.",
-            true,
-            ConfigType.BOOLEAN,
-            "uiSettingsDataViewGroup" ),
-
-    HUB_IMPORT_BATCH_SIZE(
-            "hub/hubImportBatchSize",
-            "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub.",
-            1000,
-            ConfigType.INTEGER,
-            "uiSettingsDataViewGroup" ),
-
-    SCHEMA_CACHING(
-            "runtime/schemaCaching",
-            "Cache polypheny-db schema",
-            true,
-            ConfigType.BOOLEAN ),
 
     QUERY_PLAN_CACHING(
             "runtime/queryPlanCaching",
@@ -479,13 +401,6 @@ public enum RuntimeConfig {
             ConfigType.ENUM,
             "temperaturePartitionProcessingSettingsGroup" ),
 
-    CATALOG_DEBUG_MESSAGES(
-            "runtime/catalogDebugMessages",
-            "Enable output of catalog debug messages on the monitoring page.",
-            false,
-            ConfigType.BOOLEAN,
-            "monitoringGroup" ),
-
     AVAILABLE_PLUGINS(
             "runtime/availablePlugins",
             "All plugins, which are available, be it active, only loaded or unloaded.",
@@ -546,12 +461,6 @@ public enum RuntimeConfig {
             "runtime/serialization",
             "How big the buffersize for catalog objects should be.",
             2_000_000,
-            ConfigType.INTEGER ),
-
-    LOCKING_MAX_TIMEOUT_SECONDS(
-            "runtime/maxTimeout",
-            "How long a transactions should wait for a lock until it is aborted",
-            90,
             ConfigType.INTEGER );
 
 

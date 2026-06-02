@@ -112,66 +112,6 @@ public class ParameterValueValidator extends AlgShuttleImpl {
                         break;
                     case MULTIMEDIA:
                         return super.visitDynamicParam( dynamicParam );
-                        /*if ( polyType == PolyType.FILE || !RuntimeConfig.VALIDATE_MM_CONTENT_TYPE.getBoolean() ) {
-                            if ( o.isBlob() )//instanceof byte[] || o instanceof InputStream || o instanceof File || o instanceof FileInputHandle ) {
-                                return super.visitDynamicParam( dynamicParam );
-                            } else {
-                                throw new InvalidParameterValueException( String.format( "Parameter value '%s' of type %s does not match the PolyType %s", o.toString(), o.getClass().getSimpleName(), polyType ) );
-                            }
-                        }
-                        /*ContentInfoUtil util = new ContentInfoUtil();
-                        ContentInfo info;
-                        if ( o instanceof byte[] ) {
-                            info = util.findMatch( (byte[]) o );
-                        } else if ( o instanceof InputStream ) {
-                            PushbackInputStream pbis = new PushbackInputStream( (InputStream) o, ContentInfoUtil.DEFAULT_READ_SIZE );
-                            byte[] buffer = new byte[ContentInfoUtil.DEFAULT_READ_SIZE];
-                            try {
-                                pbis.read( buffer );
-                                info = util.findMatch( buffer );
-                                pbis.unread( buffer );
-                                map.put( index, pbis );
-                            } catch ( IOException e ) {
-                                throw new InvalidParameterValueException( "Exception while trying to determine file content type", e );
-                            }
-                        } else if ( o instanceof File ) {
-                            try {
-                                info = util.findMatch( (File) o );
-                            } catch ( IOException e ) {
-                                throw new InvalidParameterValueException( "Exception while trying to determine file content type", e );
-                            }
-                        } else if ( o instanceof FileInputHandle ) {
-                            try {
-                                info = ((FileInputHandle) o).getContentType( util );
-                            } catch ( IOException e ) {
-                                throw new InvalidParameterValueException( "Exception while trying to determine file content type", e );
-                            }
-                        } else {
-                            throw new InvalidParameterValueException( "Multimedia object in unexpected form " + o.getClass().getSimpleName() );
-                        }
-                        if ( info == null ) {
-                            throw new InvalidParameterValueException( String.format( "The content type of the %s file could not be determined and is thus invalid", polyType ) );
-                        }
-                        ContentType[] imageTypes = new ContentType[]{ ContentType.APPLE_QUICKTIME_IMAGE, ContentType.BMP, ContentType.GIF, ContentType.JPEG, ContentType.JPEG_2000, ContentType.PBM, ContentType.PGM, ContentType.PNG, ContentType.PPM, ContentType.SVG, ContentType.TIFF };
-                        ContentType[] videoTypes = new ContentType[]{ ContentType.APPLE_QUICKTIME_MOVIE, ContentType.AVI, ContentType.MNG, ContentType.MP4A, ContentType.MP4V, ContentType.VIDEO_MPEG };
-                        ContentType[] soundTypes = new ContentType[]{ ContentType.AIFF, ContentType.AUDIO_MPEG, ContentType.MIDI, ContentType.REAL_AUDIO, ContentType.WAV };
-                        switch ( polyType ) {
-                            case IMAGE:
-                                valid = Arrays.asList( imageTypes ).contains( info.getContentType() );
-                                break;
-                            case VIDEO:
-                                valid = Arrays.asList( videoTypes ).contains( info.getContentType() );
-                                break;
-                            case AUDIO:
-                                valid = Arrays.asList( soundTypes ).contains( info.getContentType() );
-                                break;
-                            //case File:
-                            //break;
-                        }
-                        if ( !valid ) {
-                            throw new InvalidParameterValueException( String.format( "The %s file has the content type '%s' which is not valid for the %s PolyType", polyType.toString().toLowerCase(), polyType ) );
-                        }
-                        break;*/
                 }
                 if ( !valid ) {
                     break;
