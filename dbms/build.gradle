@@ -103,10 +103,10 @@ licensee {
 
     allowDependency('com.j256.simplemagic', 'simplemagic', '1.17') { because 'ISC license' }
     allowDependency('com.adobe.xmp', 'xmpcore', '6.0.6') { because 'BSD 3-Clause' }
-    allowDependency('org.bouncycastle', 'bcprov-jdk18on', '1.80') { because 'MIT license' }
-    allowDependency('org.bouncycastle', 'bcpkix-jdk18on', '1.80') { because 'MIT license' }
-    allowDependency('org.bouncycastle', 'bcutil-jdk18on', '1.80') { because 'MIT license' }
-    allowDependency('org.bouncycastle', 'bctls-jdk18on', '1.80') { because 'MIT license' }
+    allowDependency('org.bouncycastle', 'bcprov-jdk18on', '1.84') { because 'MIT license' }
+    allowDependency('org.bouncycastle', 'bcpkix-jdk18on', '1.84') { because 'MIT license' }
+    allowDependency('org.bouncycastle', 'bcutil-jdk18on', '1.84') { because 'MIT license' }
+    allowDependency('org.bouncycastle', 'bctls-jdk18on', '1.84') { because 'MIT license' }
     allowDependency('jakarta.xml.bind', 'jakarta.xml.bind-api', '2.3.3') { because 'Eclipse Distribution License 1.0' }
     allowDependency('org.codehaus.janino', 'janino', '3.0.11') { because 'BSD 3-Clause' }
     allowDependency('org.codehaus.janino', 'commons-compiler', '3.0.11') { because 'BSD 3-Clause' }
