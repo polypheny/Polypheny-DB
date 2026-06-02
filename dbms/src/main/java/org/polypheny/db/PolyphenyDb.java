@@ -303,7 +303,7 @@ public class PolyphenyDb {
         }
 
         // Initialize plugin manager
-        PolyPluginManager.init( resetPlugins );
+        PolyPluginManager.init();
 
         // Startup and restore catalog
         Catalog catalog = startCatalog();

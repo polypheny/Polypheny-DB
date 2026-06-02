@@ -403,7 +403,7 @@ public enum RuntimeConfig {
 
     AVAILABLE_PLUGINS(
             "runtime/availablePlugins",
-            "All plugins, which are available, be it active, only loaded or unloaded.",
+            "All plugins which are loaded.",
             List.of(),
             ConfigType.PLUGIN_LIST,
             "pluginsGroup"
@@ -425,16 +425,6 @@ public enum RuntimeConfig {
             "workflowsSettingsGroup"
     ),
 
-    BLOCKED_PLUGINS(
-            "runtime/blockedPlugins",
-            "All plugins, which are blocked by default.",
-            List.of( "druid-adapter",
-                    "elasticsearch-adapter",
-                    "geode-adapter",
-                    "html-adapter",
-                    "pig-adapter" ),
-            ConfigType.STRING_LIST
-    ),
 
     INSTANCE_UUID(
             "runtime/uuid",
@@ -727,7 +717,7 @@ public enum RuntimeConfig {
     }
 
 
-    public void setList( final List<ConfigScalar> values ) {
+    public void setList( final List<? extends ConfigScalar> values ) {
         configManager.getConfig( key ).setList( values );
     }
 

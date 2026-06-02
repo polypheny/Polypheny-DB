@@ -230,7 +230,7 @@ public class HttpServer implements Runnable {
 
         attachStatisticRoutes( webuiServer, crud );
 
-        attachPluginRoutes( webuiServer, crud );
+        webuiServer.get( "/getAvailablePlugins", crud::getAvailablePlugins );
 
         attachDockerRoutes( webuiServer, crud );
 
@@ -397,15 +397,6 @@ public class HttpServer implements Runnable {
         webuiServer.get( "/docker/settings", crud::getDockerSettings );
 
         webuiServer.patch( "/docker/settings", crud::updateDockerSettings );
-    }
-
-
-    private static void attachPluginRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.post( "/loadPlugins", crud::loadPlugins );
-
-        webuiServer.post( "/unloadPlugin", crud::unloadPlugin );
-
-        webuiServer.get( "/getAvailablePlugins", crud::getAvailablePlugins );
     }
 
 

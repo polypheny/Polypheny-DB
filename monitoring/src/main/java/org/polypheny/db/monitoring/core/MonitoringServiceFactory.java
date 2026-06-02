@@ -27,7 +27,7 @@ public class MonitoringServiceFactory {
 
     public static MonitoringService createMonitoringService( boolean resetRepository ) {
         // Create repository
-        PersistentMonitoringRepository persistentRepo = PolyPluginManager.getPERSISTENT_MONITORING();
+        PersistentMonitoringRepository persistentRepo = PolyPluginManager.getPERSISTENT_MONITORING().get();
         StatisticRepository statisticRepo = new StatisticRepository();
 
         // Initialize the repo and open connection
