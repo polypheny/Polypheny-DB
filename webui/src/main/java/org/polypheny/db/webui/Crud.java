@@ -671,6 +671,62 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    void createSourceCollectionSnapshot( final Context ctx ) {
+        SourceSnapshotRequest request = ctx.bodyAsClass( SourceSnapshotRequest.class );
+        Snapshot snapshot = Catalog.snapshot();
+        LogicalCollection sourceCollection = snapshot.doc().getCollection( request.getSourceEntityId() ).orElseThrow();
+        LogicalNamespace sourceNamespace = snapshot.getNamespace( sourceCollection.namespaceId ).orElseThrow();
+        long targetNamespaceId = request.getTargetNamespaceId() == null ? sourceNamespace.id : request.getTargetNamespaceId();
+        LogicalNamespace targetNamespace = snapshot.getNamespace( targetNamespaceId ).orElseThrow();
+        LogicalAdapter targetStore = snapshot.getAdapter( request.getTargetStoreId() ).orElseThrow();
+
+        String snapshotCollectionName = getNextSnapshotCollectionName( targetNamespace.id, sourceCollection.name );
+        String findQuery = String.format( "db.%s.find({})", sourceCollection.name );
+        Result<?, ?> findResult = executeMql( findQuery, sourceNamespace.name, true );
+        if ( findResult.error != null ) {
+            ctx.json( findResult );
+            return;
+        }
+
+        String createQuery = buildCreateSnapshotCollectionQuery( snapshotCollectionName, targetStore.uniqueName );
+        Result<?, ?> createResult = executeMql( createQuery, targetNamespace.name, false );
+        if ( createResult.error != null ) {
+            ctx.json( createResult );
+            return;
+        }
+
+        String[] documents = (String[]) findResult.data;
+        if ( documents.length == 0 ) {
+            ctx.json( RelationalResult.builder()
+                    .dataModel( DataModel.DOCUMENT )
+                    .table( snapshotCollectionName )
+                    .namespace( targetNamespace.name )
+                    .query( createQuery )
+                    .queryType( QueryType.DML )
+                    .affectedTuples( 0 )
+                    .build() );
+            return;
+        }
+
+        String insertQuery = buildInsertManyQuery( snapshotCollectionName, documents );
+        Result<?, ?> insertResult = executeMql( insertQuery, targetNamespace.name, false );
+        if ( insertResult.error != null ) {
+            executeMql( "db." + snapshotCollectionName + ".drop()", targetNamespace.name, false );
+            ctx.json( insertResult );
+            return;
+        }
+
+        ctx.json( RelationalResult.builder()
+                .dataModel( DataModel.DOCUMENT )
+                .table( snapshotCollectionName )
+                .namespace( targetNamespace.name )
+                .query( insertQuery )
+                .queryType( QueryType.DML )
+                .affectedTuples( documents.length )
+                .build() );
+    }
+
+
     private Result<?, ?> executeSql( String query ) {
         return LanguageCrud.anyQueryResult(
                 QueryContext.builder()
@@ -679,6 +735,22 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )
                         .build(), UIRequest.builder().build() ).get( 0 );
+    }
+
+
+    private Result<?, ?> executeMql( String query, String namespace, boolean noLimit ) {
+        return LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( QueryLanguage.from( "mql" ) )
+                        .origin( ORIGIN )
+                        .namespaceId( LanguageCrud.getNamespaceIdOrDefault( namespace ) )
+                        .batch( noLimit ? -1 : getPageSize() )
+                        .transactionManager( transactionManager )
+                        .build(), UIRequest.builder()
+                        .namespace( namespace )
+                        .noLimit( noLimit )
+                        .build() ).get( 0 );
     }
 
 
@@ -743,6 +815,28 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             suffix++;
         }
         return candidate;
+    }
+
+
+    private static String getNextSnapshotCollectionName( long namespaceId, String sourceCollectionName ) {
+        String baseName = sourceCollectionName + "_snapshot";
+        String candidate = baseName;
+        int suffix = 2;
+        while ( Catalog.snapshot().doc().getCollection( namespaceId, candidate ).isPresent() ) {
+            candidate = baseName + suffix;
+            suffix++;
+        }
+        return candidate;
+    }
+
+
+    private static String buildCreateSnapshotCollectionQuery( String targetCollectionName, String targetStoreName ) {
+        return String.format( "db.createCollection(\"%s\").store(\"%s\")", targetCollectionName, targetStoreName );
+    }
+
+
+    private static String buildInsertManyQuery( String targetCollectionName, String[] documents ) {
+        return String.format( "db.%s.insertMany([%s])", targetCollectionName, String.join( ",", documents ) );
     }
 
 

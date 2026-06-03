@@ -274,6 +274,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/createSourceSnapshot", crud::createSourceSnapshot );
 
+        webuiServer.post( "/createSourceCollectionSnapshot", crud::createSourceCollectionSnapshot );
+
         webuiServer.get( "/getGeneratedNames", crud::getGeneratedNames );
 
         webuiServer.post( "/getConstraints", crud::getConstraints );
