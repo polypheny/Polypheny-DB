@@ -198,11 +198,13 @@ import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
 import org.polypheny.db.webui.models.requests.PolyAlgRequest;
 import org.polypheny.db.webui.models.requests.RenameEntityRequest;
+import org.polypheny.db.webui.models.requests.SourceSnapshotRequest;
 import org.polypheny.db.webui.models.requests.SourceRefreshRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.requests.UpdateAdapterRequest;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.RelationalResult.RelationalResultBuilder;
+import org.polypheny.db.webui.models.results.QueryType;
 import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.webui.models.results.Result.ResultBuilder;
 import org.polypheny.db.webui.models.results.ResultType;
@@ -624,6 +626,133 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .transactionManager( transactionManager )
                         .build(), UIRequest.builder().build() ).get( 0 );
         ctx.json( result );
+    }
+
+
+    void createSourceSnapshot( final Context ctx ) {
+        SourceSnapshotRequest request = ctx.bodyAsClass( SourceSnapshotRequest.class );
+        Snapshot snapshot = Catalog.snapshot();
+        LogicalTable sourceTable = snapshot.rel().getTable( request.getSourceEntityId() ).orElseThrow();
+        LogicalNamespace sourceNamespace = snapshot.getNamespace( sourceTable.namespaceId ).orElseThrow();
+        long targetNamespaceId = request.getTargetNamespaceId() == null ? sourceNamespace.id : request.getTargetNamespaceId();
+        LogicalNamespace targetNamespace = snapshot.getNamespace( targetNamespaceId ).orElseThrow();
+        LogicalAdapter targetStore = snapshot.getAdapter( request.getTargetStoreId() ).orElseThrow();
+
+        String snapshotTableName = getNextSnapshotTableName( targetNamespace.id, sourceTable.name );
+        String targetTable = quoteQualified( targetNamespace.name, snapshotTableName );
+        String sourceTableName = quoteQualified( sourceNamespace.name, sourceTable.name );
+        List<LogicalColumn> columns = snapshot.rel().getColumns( sourceTable.id ).stream().sorted().toList();
+
+        String createQuery = buildCreateSnapshotTableQuery( targetTable, targetStore.uniqueName, sourceTable, columns );
+        Result<?, ?> createResult = executeSql( createQuery );
+        if ( createResult.error != null ) {
+            ctx.json( createResult );
+            return;
+        }
+
+        String columnList = columns.stream()
+                .map( column -> quoteIdentifier( column.name ) )
+                .collect( Collectors.joining( ", " ) );
+        String insertQuery = String.format( "INSERT INTO %s SELECT %s FROM %s", targetTable, columnList, sourceTableName );
+        Result<?, ?> insertResult = executeSql( insertQuery );
+        if ( insertResult.error != null ) {
+            executeSql( "DROP TABLE " + targetTable );
+            ctx.json( insertResult );
+            return;
+        }
+
+        ctx.json( RelationalResult.builder()
+                .table( snapshotTableName )
+                .namespace( targetNamespace.name )
+                .query( insertQuery )
+                .queryType( QueryType.DML )
+                .affectedTuples( insertResult.affectedTuples )
+                .build() );
+    }
+
+
+    private Result<?, ?> executeSql( String query ) {
+        return LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( QueryLanguage.from( "sql" ) )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), UIRequest.builder().build() ).get( 0 );
+    }
+
+
+    private String buildCreateSnapshotTableQuery( String targetTable, String targetStoreName, LogicalTable sourceTable, List<LogicalColumn> columns ) {
+        StringJoiner columnJoiner = new StringJoiner( ", " );
+        for ( LogicalColumn column : columns ) {
+            columnJoiner.add( buildSnapshotColumnDefinition( column ) );
+        }
+
+        if ( sourceTable.primaryKey != null ) {
+            LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( sourceTable.primaryKey ).orElse( null );
+            if ( primaryKey != null ) {
+                String primaryKeyColumns = primaryKey.getFieldNames().stream()
+                        .map( Crud::quoteIdentifier )
+                        .collect( Collectors.joining( ", " ) );
+                columnJoiner.add( "PRIMARY KEY (" + primaryKeyColumns + ")" );
+            }
+        }
+
+        return String.format( "CREATE TABLE %s (%s) ON STORE %s", targetTable, columnJoiner, quoteIdentifier( targetStoreName ) );
+    }
+
+
+    private static String buildSnapshotColumnDefinition( LogicalColumn column ) {
+        StringBuilder builder = new StringBuilder();
+        builder.append( quoteIdentifier( column.name ) ).append( " " ).append( buildSnapshotColumnType( column ) );
+        if ( !column.nullable ) {
+            builder.append( " NOT NULL" );
+        }
+        return builder.toString();
+    }
+
+
+    private static String buildSnapshotColumnType( LogicalColumn column ) {
+        StringBuilder builder = new StringBuilder( column.type.getName() );
+        if ( column.length != null && column.scale != null && column.type.allowsPrecScale( true, true ) ) {
+            builder.append( "(" ).append( column.length ).append( ", " ).append( column.scale ).append( ")" );
+        } else if ( column.length != null && column.type.allowsPrecNoScale() ) {
+            builder.append( "(" ).append( column.length ).append( ")" );
+        }
+
+        if ( column.collectionsType != null ) {
+            builder.append( " " ).append( column.collectionsType.getName() );
+            if ( column.dimension != null ) {
+                builder.append( "(" ).append( column.dimension );
+                if ( column.cardinality != null ) {
+                    builder.append( ", " ).append( column.cardinality );
+                }
+                builder.append( ")" );
+            }
+        }
+        return builder.toString();
+    }
+
+
+    private static String getNextSnapshotTableName( long namespaceId, String sourceTableName ) {
+        String baseName = sourceTableName + "_snapshot";
+        String candidate = baseName;
+        int suffix = 2;
+        while ( Catalog.snapshot().rel().getTable( namespaceId, candidate ).isPresent() ) {
+            candidate = baseName + suffix;
+            suffix++;
+        }
+        return candidate;
+    }
+
+
+    private static String quoteQualified( String namespaceName, String entityName ) {
+        return quoteIdentifier( namespaceName ) + "." + quoteIdentifier( entityName );
+    }
+
+
+    private static String quoteIdentifier( String identifier ) {
+        return "\"" + identifier.replace( "\"", "\"\"" ) + "\"";
     }
 
 
