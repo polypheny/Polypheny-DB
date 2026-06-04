@@ -1603,7 +1603,7 @@ public class JdbcRules {
             if ( t2 instanceof VectorType ) return true;
             if ( t2.getPolyType() != PolyType.ARRAY ) return false;
             AlgDataType comp = t2.getComponentType();
-            return comp != null && PolyTypeUtil.isNumeric( comp );
+            return comp != null && (PolyTypeUtil.isNumeric( comp ) || comp.getPolyType() == PolyType.BOOLEAN );
         }
 
     }

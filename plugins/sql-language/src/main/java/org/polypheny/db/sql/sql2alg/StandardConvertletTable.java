@@ -79,6 +79,7 @@ import org.polypheny.db.sql.sql2alg.SqlToAlgConverter.Blackboard;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
@@ -269,8 +270,10 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                     RexBuilder rb = cx.getRexBuilder();
                     RexNode arg0 = cx.convertExpression( operands.get( 0 ) );
                     RexNode arg1 = cx.convertExpression( operands.get( 1 ) );
+                    RexNode c0 = coerceQueryVector( rb, arg0, arg1.getType() );
+                    RexNode c1 = coerceQueryVector( rb, arg1, arg0.getType() );
                     AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
-                    return rb.makeCall( returnType, OperatorRegistry.get( name ), ImmutableList.of( arg0, arg1 ) );
+                    return rb.makeCall( returnType, OperatorRegistry.get( name ), ImmutableList.of( c0, c1 ) );
                 }
             }
             return convertCall( cx, call );
@@ -296,22 +299,46 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             return cx.getRexBuilder().makeCall( returnType, OperatorRegistry.get( OperatorName.COS_DISTANCE ), ImmutableList.of( arg0, arg1 ) );
         } );
         registerOp( OperatorRegistry.get( OperatorName.PGVECTOR_HAMMING ), (cx, call) -> {
+            RexBuilder rb = cx.getRexBuilder();
             RexNode arg0 = cx.convertExpression( call.operand( 0 ) );
             RexNode arg1 = cx.convertExpression( call.operand( 1 ) );
+            RexNode c0 = coerceQueryVector( rb, arg0, arg1.getType() );
+            RexNode c1 = coerceQueryVector( rb, arg1, arg0.getType() );
             AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
-            return cx.getRexBuilder().makeCall( returnType, OperatorRegistry.get( OperatorName.HAMMING_DISTANCE ), ImmutableList.of( arg0, arg1 ) );
+            return rb.makeCall( returnType, OperatorRegistry.get( OperatorName.HAMMING_DISTANCE ), ImmutableList.of( c0, c1 ) );
         } );
         registerOp( OperatorRegistry.get( OperatorName.PGVECTOR_JACCARD ), (cx, call) -> {
+            RexBuilder rb = cx.getRexBuilder();
             RexNode arg0 = cx.convertExpression( call.operand( 0 ) );
             RexNode arg1 = cx.convertExpression( call.operand( 1 ) );
+            RexNode c0 = coerceQueryVector( rb, arg0, arg1.getType() );
+            RexNode c1 = coerceQueryVector( rb, arg1, arg0.getType() );
             AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
-            return cx.getRexBuilder().makeCall( returnType, OperatorRegistry.get( OperatorName.JACCARD_DISTANCE ), ImmutableList.of( arg0, arg1 ) );
+            return rb.makeCall( returnType, OperatorRegistry.get( OperatorName.JACCARD_DISTANCE ), ImmutableList.of( c0, c1 ) );
         } );
         registerOp( OperatorRegistry.get( OperatorName.PGVECTOR_INNER_PRODUCT ), (cx, call) -> {
             RexNode arg0 = cx.convertExpression( call.operand( 0 ) );
             RexNode arg1 = cx.convertExpression( call.operand( 1 ) );
             AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
             return cx.getRexBuilder().makeCall( returnType, OperatorRegistry.get( OperatorName.INNER_PRODUCT_DISTANCE ), ImmutableList.of( arg0, arg1 ) );
+        } );
+       registerOp( OperatorRegistry.get( OperatorName.HAMMING_DISTANCE ), (cx, call) -> {
+            RexBuilder rb = cx.getRexBuilder();
+            RexNode arg0 = cx.convertExpression( call.operand( 0 ) );
+            RexNode arg1 = cx.convertExpression( call.operand( 1 ) );
+            RexNode c0 = coerceQueryVector( rb, arg0, arg1.getType() );
+            RexNode c1 = coerceQueryVector( rb, arg1, arg0.getType() );
+            AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
+            return rb.makeCall( returnType, OperatorRegistry.get( OperatorName.HAMMING_DISTANCE ), ImmutableList.of( c0, c1 ) );
+        } );
+        registerOp( OperatorRegistry.get( OperatorName.JACCARD_DISTANCE ), (cx, call) -> {
+            RexBuilder rb = cx.getRexBuilder();
+            RexNode arg0 = cx.convertExpression( call.operand( 0 ) );
+            RexNode arg1 = cx.convertExpression( call.operand( 1 ) );
+            RexNode c0 = coerceQueryVector( rb, arg0, arg1.getType() );
+            RexNode c1 = coerceQueryVector( rb, arg1, arg0.getType() );
+            AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
+            return rb.makeCall( returnType, OperatorRegistry.get( OperatorName.JACCARD_DISTANCE ), ImmutableList.of( c0, c1 ) );
         } );
 
         // Convert "element(<expr>)" to "$element_slice(<expr>)", if the expression is a multiset of scalars.
@@ -372,6 +399,43 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     private static RexNode divideInt( RexBuilder rexBuilder, RexNode a0, RexNode a1 ) {
         return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.DIVIDE_INTEGER ), a0, a1 );
+    }
+
+
+    /**
+     * When a distance call compares a stored vector column against a plain array query vector (e.g.
+     * {@code ARRAY[true, false, true]}), retypes that array operand to the column's {@link VectorType} so the
+     * query vector is carried as a vector all the way down to the adapter. This is required for bit (boolean)
+     * vectors: Postgres has no {@code boolean[] -> bit} cast, so the query vector must reach the JDBC layer as a
+     * {@code VectorType} parameter.
+     */
+    private static RexNode coerceQueryVector( RexBuilder rb, RexNode operand, AlgDataType otherType ) {
+        if ( !(otherType instanceof VectorType vectorType)
+                || vectorType.getVectorElementType() != VectorType.ElementType.BIT
+                || operand.getType() instanceof VectorType
+                || !isCandidateQueryVector( operand.getType() ) ) {
+            return operand;
+        }
+        if ( operand instanceof RexCall arrayCall && arrayCall.getKind() == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
+            return rb.makeCall( vectorType, arrayCall.getOperator(), arrayCall.getOperands() );
+        }
+        if ( operand instanceof RexLiteral literal ) {
+            return rb.makeLiteral( literal.value, vectorType, literal.getPolyType() );
+        }
+        return rb.makeCast( vectorType, operand );
+    }
+
+
+    /**
+     * A query vector operand that may be coerced to a {@link VectorType}: a non-vector array whose elements are
+     * numeric or boolean.
+     */
+    private static boolean isCandidateQueryVector( AlgDataType type ) {
+        if ( type.getPolyType() != PolyType.ARRAY ) {
+            return false;
+        }
+        AlgDataType comp = type.getComponentType();
+        return comp != null && (PolyTypeUtil.isNumeric( comp ) || comp.getPolyType() == PolyType.BOOLEAN);
     }
 
 
