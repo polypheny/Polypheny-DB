@@ -133,4 +133,19 @@ public class RelationalOnLpgTest extends CrossModelTestTemplate {
 
     }
 
+
+    @Test
+    public void viewOnGraphNamespaceTest() {
+        executeStatements( ( s, c ) -> {
+            s.executeUpdate( "DROP VIEW IF EXISTS graphNamespaceView" );
+            try {
+                s.executeUpdate( String.format( "CREATE VIEW graphNamespaceView AS SELECT properties, labels FROM \"%s\".\"%s\"", GRAPH_NAME, DATA_LABEL ) );
+                ResultSet result = s.executeQuery( "SELECT * FROM graphNamespaceView" );
+                TestHelper.checkResultSet( result, ImmutableList.of( new Object[]{ "{\"key\":\"3\"}", new Object[]{ DATA_LABEL } } ) );
+            } finally {
+                s.executeUpdate( "DROP VIEW IF EXISTS graphNamespaceView" );
+            }
+        } );
+    }
+
 }
