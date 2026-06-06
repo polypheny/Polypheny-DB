@@ -2579,13 +2579,7 @@ public class Functions {
             };
             try {
                 Object json = ctx.read( pathWff );
-                PolyValue val;
-                try {
-                    val = json == null ? null : PolyValue.fromJson( json.toString() );
-                } catch ( GenericRuntimeException e ) {
-                    // if the BsonParser cannot parse it we might try as string
-                    val = PolyValue.fromJson( "\"" + json + "\"" );
-                }
+                PolyValue val = toPolyValueFromJsonPathResult( json );
 
                 return PathContext.withReturned( mode, val );
             } catch ( Exception e ) {
@@ -2700,6 +2694,31 @@ public class Functions {
 
     public static PolyValue dejsonize( PolyString input ) {
         return mapFromBson( BsonDocument.parse( "{ \"key\":" + input.value + "}" ) ).asDocument().get( PolyString.of( "key" ) );
+    }
+
+
+    private static PolyValue toPolyValueFromJsonPathResult( Object value ) {
+        if ( value == null ) {
+            return null;
+        } else if ( value instanceof PolyValue polyValue ) {
+            return polyValue;
+        } else if ( value instanceof String string ) {
+            return PolyString.of( string );
+        } else if ( value instanceof Integer integer ) {
+            return PolyInteger.of( integer );
+        } else if ( value instanceof Long longValue ) {
+            return PolyLong.of( longValue );
+        } else if ( value instanceof BigInteger bigInteger ) {
+            return PolyBigDecimal.of( new BigDecimal( bigInteger ) );
+        } else if ( value instanceof BigDecimal bigDecimal ) {
+            return PolyBigDecimal.of( bigDecimal );
+        } else if ( value instanceof Number number ) {
+            return PolyDouble.of( number );
+        } else if ( value instanceof Boolean bool ) {
+            return PolyBoolean.of( bool );
+        }
+
+        return PolyValue.fromJson( new Gson().toJson( value ) );
     }
 
 
