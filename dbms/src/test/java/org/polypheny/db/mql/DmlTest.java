@@ -16,6 +16,7 @@
 
 package org.polypheny.db.mql;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.polypheny.db.TestHelper.MongoConnection.toDoc;
 
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.MongoConnection;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.webui.models.results.DocResult;
 
 
@@ -51,6 +53,7 @@ public class DmlTest extends MqlTestTemplate {
 
         DocResult result = find( "{}", "{}" );
 
+        assertEquals( DocumentType.DOCUMENT_ID, result.getHeader()[0].getName() );
         assertTrue(
                 MongoConnection.checkDocResultSet(
                         result,
@@ -72,6 +75,21 @@ public class DmlTest extends MqlTestTemplate {
                         ImmutableList.of( data ), true,
                         true ) );
 
+    }
+
+
+    @Test
+    public void insertWithOptionsTest() {
+        String data = "{\"test\":4}";
+        execute( "db.test.insert(" + data + ", {\"ordered\": true})" );
+
+        DocResult result = find( "{}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkDocResultSet(
+                        result,
+                        ImmutableList.of( data ), true,
+                        true ) );
     }
 
 

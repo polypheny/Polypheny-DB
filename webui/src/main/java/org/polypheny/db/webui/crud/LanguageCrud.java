@@ -45,6 +45,7 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
@@ -475,7 +476,7 @@ public class LanguageCrud {
             boolean hasMoreRows = context.getIterator().hasMoreRows();
 
             return DocResult.builder()
-                    .header( new FieldDefinition[]{ FieldDefinition.builder().name( "Document" ).dataType( DataModel.DOCUMENT.name() ).build() } )
+                    .header( new FieldDefinition[]{ FieldDefinition.builder().name( DocumentType.DOCUMENT_ID ).dataType( DataModel.DOCUMENT.name() ).build() } )
                     .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
                     .query( context.getQuery().getQuery() )
                     .language( context.getQuery().getLanguage() )

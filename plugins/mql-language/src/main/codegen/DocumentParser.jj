@@ -760,7 +760,7 @@ MqlNode Insert_Statement( String collection, String namespace ):
     docs=Bson_Splits()
     {
         if ( docs.size() == 2 ){
-            if ( docs.get(1).isDocument() ) {
+            if ( !docs.get(1).isDocument() ) {
                 throw new RuntimeException( "Options need to be a document" );
             }
             return new MqlInsert( getPos(), collection, namespace, docs.get(0), docs.get(1).asDocument() );
