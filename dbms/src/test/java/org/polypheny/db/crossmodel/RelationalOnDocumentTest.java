@@ -85,4 +85,19 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
     }
 
 
+    @Test
+    public void materializedViewFromDocumentCollectionTest() {
+        executeStatements( ( s, c ) -> {
+            s.executeUpdate( String.format( "CREATE MATERIALIZED VIEW crossDocumentMaterialized AS SELECT * FROM %s.%s ON STORE hsqldb FRESHNESS MANUAL", DATABASE_NAME, COLLECTION_NAME ) );
+
+            try {
+                ResultSet result = s.executeQuery( "SELECT JSON_VALUE(CAST(d AS VARCHAR(2050)), 'lax $.test') FROM crossDocumentMaterialized" );
+                TestHelper.checkResultSet( result, List.of( new Object[][]{ new Object[]{ "3" } } ) );
+            } finally {
+                s.executeUpdate( "DROP MATERIALIZED VIEW crossDocumentMaterialized" );
+            }
+        } );
+    }
+
+
 }

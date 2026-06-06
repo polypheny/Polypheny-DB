@@ -329,6 +329,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             case TIME -> Expressions.call( resultSet_, "getTime", Expressions.constant( i + 1 ), LOCAL_EXPRESSION );
             case TIMESTAMP -> Expressions.call( resultSet_, "getTimestamp", Expressions.constant( i + 1 ), UTC_EXPRESSION );
             case FILE, AUDIO, IMAGE, VIDEO -> Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
+            case DOCUMENT -> Expressions.call( resultSet_, "getString", Expressions.constant( i + 1 ) );
             default -> Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
         };
         final Expression poly = getOfPolyExpression( fieldType, source, resultSet_, i, dialect );
@@ -438,6 +439,9 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 break;
             case GEOMETRY:
                 poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
+                break;
+            case DOCUMENT:
+                poly = Expressions.call( PolyValue.class, "fromJson", Expressions.convert_( source, String.class ) );
                 break;
             default:
                 log.warn( "potentially unhandled polyValue" );

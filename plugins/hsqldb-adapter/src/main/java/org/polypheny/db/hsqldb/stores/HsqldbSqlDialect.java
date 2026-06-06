@@ -90,6 +90,7 @@ public class HsqldbSqlDialect extends SqlDialect {
         String castSpec;
         switch ( type.getPolyType() ) {
             case ARRAY:
+            case DOCUMENT:
                 // We need to flag the type with an underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_LONGVARCHAR";
                 break;
@@ -239,4 +240,3 @@ public class HsqldbSqlDialect extends SqlDialect {
     }
 
 }
-

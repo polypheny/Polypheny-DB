@@ -338,6 +338,9 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
             case TEXT:
                 preparedStatement.setString( i, value.asString().value );
                 break;
+            case DOCUMENT:
+                preparedStatement.setString( i, value.asDocument().toJson() );
+                break;
             default:
                 log.warn( "potentially unhandled type" );
                 preparedStatement.setObject( i, value );

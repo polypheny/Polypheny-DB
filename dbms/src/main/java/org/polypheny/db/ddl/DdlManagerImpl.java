@@ -50,6 +50,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -2074,7 +2075,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private Map<Long, List<Long>> findUnderlyingTablesOfView( AlgNode algNode, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList ) {
-        if ( algNode instanceof LogicalRelScan || algNode instanceof LogicalRelViewScan ) {
+        if ( (algNode instanceof LogicalRelScan || algNode instanceof LogicalRelViewScan || algNode instanceof LogicalDocumentScan) && algNode.getEntity() != null ) {
             List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
             underlyingTables.put( algNode.getEntity().id, underlyingColumns );
         }
@@ -2089,6 +2090,9 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private List<Long> getUnderlyingColumns( AlgNode algNode, AlgDataType fieldList ) {
+        if ( algNode.getEntity().unwrap( LogicalCollection.class ).isPresent() ) {
+            return List.of();
+        }
         LogicalTable table = algNode.getEntity().unwrapOrThrow( LogicalTable.class );
         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
         List<String> logicalColumnNames = columns.stream().map( c -> c.name ).toList();
