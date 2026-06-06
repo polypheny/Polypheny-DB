@@ -24,6 +24,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.mql.MqlTestTemplate;
 import org.polypheny.jdbc.types.PolyDocument;
 
@@ -105,6 +106,47 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
                 TestHelper.checkResultSet( result, List.of( new Object[][]{ new Object[]{ "3" } } ) );
             } finally {
                 s.executeUpdate( "DROP MATERIALIZED VIEW crossDocumentMaterialized" );
+            }
+        } );
+    }
+
+
+    @Test
+    public void materializedViewWithJsonValueFromDocumentCollectionTest() {
+        executeStatements( ( s, c ) -> {
+            String collection = "crossBatchCollection";
+            int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
+            RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.setInteger( 1 );
+
+            try {
+                MqlTestTemplate.createCollection( collection, DATABASE_NAME );
+                MqlTestTemplate.execute(
+                        "db." + collection + ".insertMany(["
+                                + "{\"_id\":\"batch_0\",\"name\":\"Patient0\",\"test\":0},"
+                                + "{\"_id\":\"batch_1\",\"name\":\"Patient1\",\"test\":1}"
+                                + "])",
+                        DATABASE_NAME );
+
+                s.executeUpdate( String.format(
+                        "CREATE MATERIALIZED VIEW crossDocumentJsonMaterialized AS "
+                                + "SELECT JSON_VALUE(d, 'lax $.name') AS patient_id, JSON_VALUE(d, 'lax $.test') AS viral_load_day1, * "
+                                + "FROM %s.%s ON STORE hsqldb FRESHNESS MANUAL",
+                        DATABASE_NAME,
+                        collection ) );
+
+                ResultSet result = s.executeQuery( "SELECT patient_id, viral_load_day1 FROM crossDocumentJsonMaterialized ORDER BY patient_id" );
+                TestHelper.checkResultSet( result, List.of( new Object[][]{
+                        new Object[]{ "Patient0", "0" },
+                        new Object[]{ "Patient1", "1" }
+                } ) );
+            } finally {
+                RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.setInteger( batchSize );
+                try {
+                    s.executeUpdate( "DROP MATERIALIZED VIEW crossDocumentJsonMaterialized" );
+                } catch ( Exception ignored ) {
+                    // The regression fails during creation, before the materialized view is available to drop.
+                }
+                MqlTestTemplate.execute( "db." + collection + ".drop()", DATABASE_NAME );
             }
         } );
     }

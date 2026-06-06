@@ -342,57 +342,60 @@ public class DataMigratorImpl implements DataMigrator {
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             int i = 0;
 
-            do {
-                ResultIterator iter = implementation.execute( sourceStatement, batchSize );
-                List<List<PolyValue>> rows = iter.getNextBatch();
-                iter.close();
-                if ( rows.isEmpty() ) {
-                    continue;
-                }
-                Map<Long, List<PolyValue>> values = new HashMap<>();
+            ResultIterator iter = implementation.execute( sourceStatement, batchSize );
+            try {
+                do {
+                    List<List<PolyValue>> rows = iter.getNextBatch();
+                    if ( rows.isEmpty() ) {
+                        continue;
+                    }
+                    Map<Long, List<PolyValue>> values = new HashMap<>();
 
-                for ( List<PolyValue> list : rows ) {
-                    for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
-                        if ( !values.containsKey( entry.getKey() ) ) {
-                            values.put( entry.getKey(), new LinkedList<>() );
-                        }
-                        if ( isMaterializedView ) {
-                            if ( entry.getValue() > list.size() - 1 ) {
-                                values.get( entry.getKey() ).add( PolyInteger.of( i ) );
-                                i++;
+                    for ( List<PolyValue> list : rows ) {
+                        for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
+                            if ( !values.containsKey( entry.getKey() ) ) {
+                                values.put( entry.getKey(), new LinkedList<>() );
+                            }
+                            if ( isMaterializedView ) {
+                                if ( entry.getValue() > list.size() - 1 ) {
+                                    values.get( entry.getKey() ).add( PolyInteger.of( i ) );
+                                    i++;
+                                } else {
+                                    values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
+                                }
                             } else {
                                 values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
                             }
-                        } else {
-                            values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
                         }
                     }
-                }
-                List<AlgDataTypeField> fields;
-                if ( isMaterializedView ) {
-                    fields = targetAlg.alg.getEntity().getTupleType().getFields();
-                } else {
-                    fields = sourceAlg.validatedRowType.getFields();
-                }
+                    List<AlgDataTypeField> fields;
+                    if ( isMaterializedView ) {
+                        fields = targetAlg.alg.getEntity().getTupleType().getFields();
+                    } else {
+                        fields = sourceAlg.validatedRowType.getFields();
+                    }
 
-                for ( Map.Entry<Long, List<PolyValue>> v : values.entrySet() ) {
-                    targetStatement.getDataContext().addParameterValues(
-                            v.getKey(),
-                            fields.get( resultColMapping.get( v.getKey() ) ).getType(),
-                            v.getValue() );
-                }
+                    for ( Map.Entry<Long, List<PolyValue>> v : values.entrySet() ) {
+                        targetStatement.getDataContext().addParameterValues(
+                                v.getKey(),
+                                fields.get( resultColMapping.get( v.getKey() ) ).getType(),
+                                v.getValue() );
+                    }
 
-                Iterator<?> iterator = targetStatement.getQueryProcessor()
-                        .prepareQuery( targetAlg, sourceAlg.validatedRowType, true, false, false )
-                        .enumerable( targetStatement.getDataContext() )
-                        .iterator();
+                    Iterator<?> iterator = targetStatement.getQueryProcessor()
+                            .prepareQuery( targetAlg, sourceAlg.validatedRowType, true, false, false )
+                            .enumerable( targetStatement.getDataContext() )
+                            .iterator();
 
-                //noinspection WhileLoopReplaceableByForEach
-                while ( iterator.hasNext() ) {
-                    iterator.next();
-                }
-                targetStatement.getDataContext().resetParameterValues();
-            } while ( implementation.hasMoreRows() );
+                    //noinspection WhileLoopReplaceableByForEach
+                    while ( iterator.hasNext() ) {
+                        iterator.next();
+                    }
+                    targetStatement.getDataContext().resetParameterValues();
+                } while ( iter.hasMoreRows() );
+            } finally {
+                iter.close();
+            }
         } catch ( Throwable t ) {
             throw new GenericRuntimeException( t );
         }
@@ -577,60 +580,63 @@ public class DataMigratorImpl implements DataMigrator {
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
 
-            do {
-                ResultIterator iter = result.execute( source.sourceStatement, batchSize );
-                List<List<PolyValue>> rows = iter.getNextBatch();
+            ResultIterator iter = result.execute( source.sourceStatement, batchSize );
+            try {
+                do {
+                    List<List<PolyValue>> rows = iter.getNextBatch();
+                    if ( rows.isEmpty() ) {
+                        continue;
+                    }
+
+                    Map<Long, Map<Long, Pair<AlgDataType, List<PolyValue>>>> partitionValues = new HashMap<>();
+
+                    for ( List<PolyValue> row : rows ) {
+
+                        if ( row.get( columIndex ) != null ) {
+                            parsedValue = row.get( columIndex ).toString();
+                        } else {
+                            parsedValue = PartitionManager.NULL_STRING;
+                        }
+
+                        long currentPartitionId = partitionManager.getTargetPartitionId( table, targetProperty, parsedValue );
+
+                        int i = 0;
+                        for ( AllocationColumn column : columns.stream().sorted( Comparator.comparingInt( c -> c.position ) ).toList() ) {
+                            if ( !partitionValues.containsKey( currentPartitionId ) ) {
+                                partitionValues.put( currentPartitionId, new HashMap<>() );
+                            }
+                            if ( !partitionValues.get( currentPartitionId ).containsKey( column.columnId ) ) {
+                                partitionValues.get( currentPartitionId ).put( column.columnId, Pair.of( column.getAlgDataType(), new ArrayList<>() ) );
+                            }
+                            partitionValues.get( currentPartitionId ).get( column.columnId ).right.add( row.get( i++ ) );
+                        }
+                    }
+
+                    // Iterate over partitionValues in that way we don't even execute a statement which has no rows
+                    for ( Entry<Long, Map<Long, Pair<AlgDataType, List<PolyValue>>>> dataOnPartition : partitionValues.entrySet() ) {
+                        long partitionId = dataOnPartition.getKey();
+                        Map<Long, Pair<AlgDataType, List<PolyValue>>> values = dataOnPartition.getValue();
+                        Statement currentTargetStatement = targetStatements.get( partitionId );
+
+                        for ( Entry<Long, Pair<AlgDataType, List<PolyValue>>> columnDataOnPartition : values.entrySet() ) {
+                            // Check partitionValue
+                            currentTargetStatement.getDataContext().addParameterValues( columnDataOnPartition.getKey(), columnDataOnPartition.getValue().left, columnDataOnPartition.getValue().right );
+                        }
+
+                        Iterator<?> iterator = currentTargetStatement.getQueryProcessor()
+                                .prepareQuery( targetAlgs.get( partitionId ), source.sourceAlg.validatedRowType, true, false, false )
+                                .enumerable( currentTargetStatement.getDataContext() )
+                                .iterator();
+                        //noinspection WhileLoopReplaceableByForEach
+                        while ( iterator.hasNext() ) {
+                            iterator.next();
+                        }
+                        currentTargetStatement.getDataContext().resetParameterValues();
+                    }
+                } while ( iter.hasMoreRows() );
+            } finally {
                 iter.close();
-                if ( rows.isEmpty() ) {
-                    continue;
-                }
-
-                Map<Long, Map<Long, Pair<AlgDataType, List<PolyValue>>>> partitionValues = new HashMap<>();
-
-                for ( List<PolyValue> row : rows ) {
-
-                    if ( row.get( columIndex ) != null ) {
-                        parsedValue = row.get( columIndex ).toString();
-                    } else {
-                        parsedValue = PartitionManager.NULL_STRING;
-                    }
-
-                    long currentPartitionId = partitionManager.getTargetPartitionId( table, targetProperty, parsedValue );
-
-                    int i = 0;
-                    for ( AllocationColumn column : columns.stream().sorted( Comparator.comparingInt( c -> c.position ) ).toList() ) {
-                        if ( !partitionValues.containsKey( currentPartitionId ) ) {
-                            partitionValues.put( currentPartitionId, new HashMap<>() );
-                        }
-                        if ( !partitionValues.get( currentPartitionId ).containsKey( column.columnId ) ) {
-                            partitionValues.get( currentPartitionId ).put( column.columnId, Pair.of( column.getAlgDataType(), new ArrayList<>() ) );
-                        }
-                        partitionValues.get( currentPartitionId ).get( column.columnId ).right.add( row.get( i++ ) );
-                    }
-                }
-
-                // Iterate over partitionValues in that way we don't even execute a statement which has no rows
-                for ( Entry<Long, Map<Long, Pair<AlgDataType, List<PolyValue>>>> dataOnPartition : partitionValues.entrySet() ) {
-                    long partitionId = dataOnPartition.getKey();
-                    Map<Long, Pair<AlgDataType, List<PolyValue>>> values = dataOnPartition.getValue();
-                    Statement currentTargetStatement = targetStatements.get( partitionId );
-
-                    for ( Entry<Long, Pair<AlgDataType, List<PolyValue>>> columnDataOnPartition : values.entrySet() ) {
-                        // Check partitionValue
-                        currentTargetStatement.getDataContext().addParameterValues( columnDataOnPartition.getKey(), columnDataOnPartition.getValue().left, columnDataOnPartition.getValue().right );
-                    }
-
-                    Iterator<?> iterator = currentTargetStatement.getQueryProcessor()
-                            .prepareQuery( targetAlgs.get( partitionId ), source.sourceAlg.validatedRowType, true, false, false )
-                            .enumerable( currentTargetStatement.getDataContext() )
-                            .iterator();
-                    //noinspection WhileLoopReplaceableByForEach
-                    while ( iterator.hasNext() ) {
-                        iterator.next();
-                    }
-                    currentTargetStatement.getDataContext().resetParameterValues();
-                }
-            } while ( result.hasMoreRows() );
+            }
         } catch ( Throwable t ) {
             throw new GenericRuntimeException( t );
         }
