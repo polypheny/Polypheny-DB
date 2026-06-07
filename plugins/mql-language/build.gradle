@@ -35,7 +35,8 @@ dependencies {
 
 
 task generateParser(type: CompileJavaccTask) {
-    getConventionMapping().map("classpath", { configurations.javacc })
+    classpath.from(configurations.javacc)
+    javaccVersion.set(javacc_version)
     arguments = [static: "false"]
     inputDirectory = file("src/main/codegen")
     outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/mql/parser")

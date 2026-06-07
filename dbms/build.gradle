@@ -14,7 +14,7 @@ buildscript {
 
 plugins {
     id "application"
-    id "com.github.johnrengelman.shadow" version "$shadow_plugin_version"
+    id "com.gradleup.shadow" version "$shadow_plugin_version"
 }
 
 run {
@@ -233,7 +233,7 @@ artifacts {
  * Release
  */
 application {
-    mainClassName = 'org.polypheny.db.PolyphenyDb'
+    mainClass = 'org.polypheny.db.PolyphenyDb'
     applicationName = 'Polypheny-DB'
     //applicationDefaultJvmArgs = ["-Dlog4j.configuration=config/log4j.properties"]
 }
@@ -242,16 +242,20 @@ tasks.register('runDevReset', JavaExec) {
     group = 'Execution'
     description = 'Run the main class with JavaExecTask'
     classpath sourceSets.main.runtimeClasspath
+    systemProperty 'pf4j.pluginsDir', '../build/plugins'
     mainClass = 'org.polypheny.db.PolyphenyDb'
     args = ['-resetCatalog', '-resetDocker', '-mode', 'dev']  // '-resetPlugins'
+    dependsOn(":plugins:assemblePlugins")
 }
 
 tasks.register('runDev', JavaExec) {
     group = 'Execution'
     description = 'Run the main class with JavaExecTask'
     classpath sourceSets.main.runtimeClasspath
+    systemProperty 'pf4j.pluginsDir', '../build/plugins'
     mainClass = 'org.polypheny.db.PolyphenyDb'
     args = ['-mode', 'dev']
+    dependsOn(":plugins:assemblePlugins")
 }
 
 startScripts {

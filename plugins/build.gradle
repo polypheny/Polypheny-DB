@@ -52,8 +52,12 @@ subprojects {
                 'Plugin-Ui-Visible': "${pluginIsUiVisible}"
         }
         archiveBaseName = "plugin-${pluginId}"
+        dependsOn(tasks.named('classes'))
         into('classes') {
-            with jar
+            from sourceSets.main.output.classesDirs
+            from(sourceSets.main.output.resourcesDir) {
+                exclude 'java/**'
+            }
         }
         into('lib') {
             from configurations.runtimeClasspath

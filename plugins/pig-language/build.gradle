@@ -35,7 +35,8 @@ dependencies {
  * Compile Pipeline
  */
 task generateParser(type: CompileJavaccTask) {
-    getConventionMapping().map("classpath", { configurations.javacc })
+    classpath.from(configurations.javacc)
+    javaccVersion.set(javacc_version)
     arguments = [static: 'false', lookahead: '2']
     inputDirectory = file('src/main/codegen/javacc')
     outputDirectory = file(project.buildDir.absolutePath + '/generated-sources/org/polypheny/db/piglet/parser')
