@@ -33,34 +33,41 @@ public class PathContext extends PolyValue {
     public final PathMode mode;
     public final PolyValue pathReturned;
     public final Exception exc;
+    public final boolean emptyResultSequence;
 
 
-    private PathContext( PathMode mode, PolyValue pathReturned, Exception exc ) {
+    private PathContext( PathMode mode, PolyValue pathReturned, Exception exc, boolean emptyResultSequence ) {
         super( PolyType.JSON );
         this.mode = mode;
         this.pathReturned = pathReturned;
         this.exc = exc;
+        this.emptyResultSequence = emptyResultSequence;
     }
 
 
     public static PathContext withUnknownException( Exception exc ) {
-        return new PathContext( PathMode.UNKNOWN, null, exc );
+        return new PathContext( PathMode.UNKNOWN, null, exc, false );
     }
 
 
     public static PathContext withStrictException( Exception exc ) {
-        return new PathContext( PathMode.STRICT, null, exc );
+        return new PathContext( PathMode.STRICT, null, exc, false );
     }
 
 
     public static PathContext withReturned( PathMode mode, PolyValue pathReturned ) {
+        return withReturned( mode, pathReturned, false );
+    }
+
+
+    public static PathContext withReturned( PathMode mode, PolyValue pathReturned, boolean emptyResultSequence ) {
         if ( mode == PathMode.UNKNOWN ) {
             throw Static.RESOURCE.illegalJsonPathMode( mode.toString() ).ex();
         }
         if ( mode == PathMode.STRICT && pathReturned == null ) {
             throw Static.RESOURCE.strictPathModeRequiresNonEmptyValue().ex();
         }
-        return new PathContext( mode, pathReturned, null );
+        return new PathContext( mode, pathReturned, null, emptyResultSequence );
     }
 
 
@@ -70,6 +77,7 @@ public class PathContext extends PolyValue {
                 + "mode=" + mode
                 + ", pathReturned=" + pathReturned
                 + ", exc=" + exc
+                + ", emptyResultSequence=" + emptyResultSequence
                 + '}';
     }
 

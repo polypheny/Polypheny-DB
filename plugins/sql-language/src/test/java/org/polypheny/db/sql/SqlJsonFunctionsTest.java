@@ -158,6 +158,20 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
                 is( false ) );
 
         assertJsonExists(
+                Functions.jsonApiCommonSyntax(
+                        PolyDocument.of( Map.of( PolyString.of( "tags" ), PolyList.of( PolyString.of( "a" ) ) ) ),
+                        PolyString.of( "lax $.tags[?(@ == 'missing')]" ) ),
+                JsonExistsErrorBehavior.FALSE,
+                is( false ) );
+
+        assertJsonExists(
+                Functions.jsonApiCommonSyntax(
+                        PolyDocument.of( Map.of( PolyString.of( "tags" ), PolyList.EMPTY_LIST ) ),
+                        PolyString.of( "lax $.tags" ) ),
+                JsonExistsErrorBehavior.FALSE,
+                is( true ) );
+
+        assertJsonExists(
                 PathContext.withStrictException( new Exception( "test message" ) ),
                 JsonExistsErrorBehavior.FALSE,
                 is( false ) );

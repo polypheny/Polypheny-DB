@@ -2581,7 +2581,7 @@ public class Functions {
                 Object json = ctx.read( pathWff );
                 PolyValue val = toPolyValueFromJsonPathResult( json );
 
-                return PathContext.withReturned( mode, val );
+                return PathContext.withReturned( mode, val, isEmptyJsonPathResultSequence( pathWff, json ) );
             } catch ( Exception e ) {
                 return PathContext.withStrictException( e );
             }
@@ -2606,9 +2606,8 @@ public class Functions {
                 case ERROR -> throw toUnchecked( context.exc );
                 case UNKNOWN -> null;
             };
-        } else {
-            return !Objects.isNull( context.pathReturned );
         }
+        return !Objects.isNull( context.pathReturned ) && !context.emptyResultSequence;
     }
 
 
@@ -2719,6 +2718,13 @@ public class Functions {
         }
 
         return PolyValue.fromJson( new Gson().toJson( value ) );
+    }
+
+
+    private static boolean isEmptyJsonPathResultSequence( String pathWff, Object jsonPathResult ) {
+        return !JsonPath.isPathDefinite( pathWff )
+                && jsonPathResult instanceof Collection<?> collection
+                && collection.isEmpty();
     }
 
 
