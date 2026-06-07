@@ -347,7 +347,7 @@ public class MonetdbStore extends AbstractJdbcStore {
             case DOUBLE -> "DOUBLE";
             case DECIMAL -> "DECIMAL";
             case VARCHAR -> "VARCHAR";
-            case JSON, ARRAY, TEXT, GEOMETRY -> "TEXT";
+            case DOCUMENT, JSON, ARRAY, TEXT, GEOMETRY -> "TEXT";
             case DATE -> "DATE";
             case TIME -> "TIME";
             case TIMESTAMP -> "TIMESTAMP";

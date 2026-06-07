@@ -472,6 +472,7 @@ public class MongoRules {
                     || operator.getOperatorName() == OperatorName.TRIM
                     || operator.getOperatorName() == OperatorName.INITCAP
                     || operator.getOperatorName() == OperatorName.SUBSTRING
+                    || isJsonOperator( operator )
                     || operator.getOperatorName() == OperatorName.FLOOR
                     || operator.getOperatorName() == OperatorName.DISTANCE
                     || (operator.getOperatorName() == OperatorName.CAST && call.operands.get( 0 ).getType().getPolyType() == PolyType.DATE)
@@ -480,6 +481,11 @@ public class MongoRules {
                 containsIncompatible = true;
             }
             return super.visitCall( call );
+        }
+
+
+        private boolean isJsonOperator( Operator operator ) {
+            return operator.getOperatorName().name().contains( "JSON" );
         }
 
     }
