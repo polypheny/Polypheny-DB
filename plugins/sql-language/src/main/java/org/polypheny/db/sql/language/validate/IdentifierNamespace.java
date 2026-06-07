@@ -160,6 +160,9 @@ public class IdentifierNamespace extends AbstractNamespace {
                 }
             };
 
+            if ( entity == null ) {
+                throw new GenericRuntimeException( "Entity not found: %s.%s".formatted( namespace.name, entityName ) );
+            }
             return new EntityNamespace( validator, entity );
         }
         throw new GenericRuntimeException( "Entity not found" );
@@ -261,4 +264,3 @@ public class IdentifierNamespace extends AbstractNamespace {
     }
 
 }
-

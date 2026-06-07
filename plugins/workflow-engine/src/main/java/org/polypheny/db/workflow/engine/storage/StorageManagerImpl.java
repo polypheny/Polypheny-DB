@@ -331,24 +331,28 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    public void dropCheckpoints( UUID activityId ) {
-        for ( Entry<Integer, Pair<LogicalEntity, CheckpointMetadata>> entry : checkpoints.getOrDefault( activityId, Map.of() ).entrySet() ) {
+    public synchronized void dropCheckpoints( UUID activityId ) {
+        Map<Integer, Pair<LogicalEntity, CheckpointMetadata>> removed = checkpoints.remove( activityId );
+        if ( removed == null ) {
+            return;
+        }
+        for ( Entry<Integer, Pair<LogicalEntity, CheckpointMetadata>> entry : removed.entrySet() ) {
             if ( !isLinkedCheckpoint( activityId, entry.getKey() ) ) {
-                dropEntity( entry.getValue().getLeft() );
+                dropEntityIfExists( activityId, entry );
             }
             // We don't drop a linked checkpoint, as it is managed by a different StorageManager instance
         }
-        checkpoints.remove( activityId );
     }
 
 
     @Override
-    public void dropManagedCheckpoints( UUID activityId ) {
+    public synchronized void dropManagedCheckpoints( UUID activityId ) {
         Map<Integer, Pair<LogicalEntity, CheckpointMetadata>> editable = new HashMap<>( checkpoints.getOrDefault( activityId, Map.of() ) );
         for ( Entry<Integer, Pair<LogicalEntity, CheckpointMetadata>> entry : checkpoints.getOrDefault( activityId, Map.of() ).entrySet() ) {
             if ( !isLinkedCheckpoint( activityId, entry.getKey() ) ) {
-                dropEntity( entry.getValue().getLeft() );
-                editable.remove( entry.getKey() );
+                if ( dropEntityIfExists( activityId, entry ) ) {
+                    editable.remove( entry.getKey() );
+                }
             }
             // We don't drop a linked checkpoint, as it is managed by a different StorageManager instance
         }
@@ -359,8 +363,8 @@ public class StorageManagerImpl implements StorageManager {
 
 
     @Override
-    public void dropAllCheckpoints() {
-        for ( UUID activityId : checkpoints.keySet() ) {
+    public synchronized void dropAllCheckpoints() {
+        for ( UUID activityId : new ArrayList<>( checkpoints.keySet() ) ) {
             dropCheckpoints( activityId );
         }
     }
@@ -480,16 +484,42 @@ public class StorageManagerImpl implements StorageManager {
     }
 
 
-    private void dropEntity( LogicalEntity entity ) {
-        Transaction transaction = QueryUtils.startTransaction( transactionManager, entity.getNamespaceId(), "DropCheckpoint" );
-        Statement statement = transaction.createStatement();
-        acquireSchemaLock( transaction, entity.getNamespaceId() );
-        switch ( entity.dataModel ) {
-            case RELATIONAL -> ddlManager.dropTable( (LogicalTable) entity, statement );
-            case DOCUMENT -> ddlManager.dropCollection( (LogicalCollection) entity, statement );
-            case GRAPH -> ddlManager.dropGraph( entity.getId(), true, statement );
+    private boolean dropEntityIfExists( UUID activityId, Entry<Integer, Pair<LogicalEntity, CheckpointMetadata>> entry ) {
+        LogicalEntity entity = entry.getValue().getLeft();
+        try {
+            dropEntityIfExists( entity );
+            return true;
+        } catch ( Exception e ) {
+            log.warn( "Unable to drop checkpoint {}:{} for entity {}", activityId, entry.getKey(), entity.getName(), e );
+            return false;
         }
-        transaction.commit();
+    }
+
+
+    private void dropEntityIfExists( LogicalEntity entity ) {
+        Transaction transaction = QueryUtils.startTransaction( transactionManager, entity.getNamespaceId(), "DropCheckpoint" );
+        try {
+            Statement statement = transaction.createStatement();
+            acquireSchemaLock( transaction, entity.getNamespaceId() );
+            switch ( entity.dataModel ) {
+                case RELATIONAL -> {
+                    if ( Catalog.snapshot().rel().getTable( entity.getId() ).isPresent() ) {
+                        ddlManager.dropTable( (LogicalTable) entity, statement );
+                    }
+                }
+                case DOCUMENT -> {
+                    if ( Catalog.snapshot().doc().getCollection( entity.getId() ).isPresent() ) {
+                        ddlManager.dropCollection( (LogicalCollection) entity, statement );
+                    }
+                }
+                case GRAPH -> ddlManager.dropGraph( entity.getId(), true, statement );
+            }
+            transaction.commit();
+        } finally {
+            if ( transaction.isActive() ) {
+                transaction.rollback( null );
+            }
+        }
     }
 
 
