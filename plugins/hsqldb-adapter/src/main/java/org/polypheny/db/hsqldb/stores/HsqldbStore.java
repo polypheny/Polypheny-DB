@@ -29,6 +29,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
@@ -70,6 +71,8 @@ public class HsqldbStore extends AbstractJdbcStore {
 
     @Override
     protected ConnectionFactory deployEmbedded() {
+        allowJsonFunctionAccess();
+
         if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
             // TODO MV: implement
             throw new GenericRuntimeException( "2PC Mode is not implemented" );
@@ -93,6 +96,45 @@ public class HsqldbStore extends AbstractJdbcStore {
             dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_COMMITTED );
             dataSource.setDriverClassLoader( PolyPluginManager.getMainClassLoader() );
             return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
+        }
+    }
+
+
+    @Override
+    public void createUdfs() {
+        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.CONNECTION ), PUID.randomPUID( Type.CONNECTION ) );
+        try {
+            ConnectionHandler ch = connectionFactory.getOrCreateConnectionHandler( xid );
+            ch.executeUpdate( "DROP FUNCTION IF EXISTS POLYPHENY_JSON_VALUE" );
+            ch.executeUpdate( "DROP FUNCTION IF EXISTS POLYPHENY_JSON_EXISTS" );
+            ch.executeUpdate( "DROP FUNCTION IF EXISTS POLYPHENY_JSON_QUERY" );
+            ch.executeUpdate( "CREATE FUNCTION POLYPHENY_JSON_VALUE(D LONGVARCHAR, P VARCHAR(20000)) RETURNS LONGVARCHAR LANGUAGE JAVA DETERMINISTIC NO SQL EXTERNAL NAME 'CLASSPATH:org.polypheny.db.hsqldb.stores.HsqldbJsonFunctions.jsonValue'" );
+            ch.executeUpdate( "CREATE FUNCTION POLYPHENY_JSON_EXISTS(D LONGVARCHAR, P VARCHAR(20000)) RETURNS BOOLEAN LANGUAGE JAVA DETERMINISTIC NO SQL EXTERNAL NAME 'CLASSPATH:org.polypheny.db.hsqldb.stores.HsqldbJsonFunctions.jsonExists'" );
+            ch.executeUpdate( "CREATE FUNCTION POLYPHENY_JSON_QUERY(D LONGVARCHAR, P VARCHAR(20000)) RETURNS LONGVARCHAR LANGUAGE JAVA DETERMINISTIC NO SQL EXTERNAL NAME 'CLASSPATH:org.polypheny.db.hsqldb.stores.HsqldbJsonFunctions.jsonQuery'" );
+            ch.commit();
+        } catch ( ConnectionHandlerException | SQLException e ) {
+            log.error( "Error while creating JSON UDFs on HSQLDB", e );
+        }
+    }
+
+
+    private static void allowJsonFunctionAccess() {
+        String jsonFunctionAccess = HsqldbJsonFunctions.class.getName() + ".*";
+        String currentAccess = System.getProperty( "hsqldb.method_class_names" );
+        if ( currentAccess == null || currentAccess.isBlank() ) {
+            System.setProperty( "hsqldb.method_class_names", jsonFunctionAccess );
+        } else if ( !List.of( currentAccess.split( ";" ) ).contains( jsonFunctionAccess ) ) {
+            System.setProperty( "hsqldb.method_class_names", currentAccess + ";" + jsonFunctionAccess );
+        }
+
+        try {
+            Class<?> propertiesClass = Class.forName( "org.hsqldb.persist.HsqlDatabaseProperties" );
+            java.lang.reflect.Field accessibleMethods = propertiesClass.getDeclaredField( "accessibleJavaMethodNames" );
+            accessibleMethods.setAccessible( true );
+            Object methodNames = accessibleMethods.get( null );
+            methodNames.getClass().getMethod( "add", Object.class ).invoke( methodNames, jsonFunctionAccess );
+        } catch ( ReflectiveOperationException e ) {
+            log.debug( "Could not update HSQLDB Java method allowlist directly", e );
         }
     }
 

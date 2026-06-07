@@ -11,8 +11,11 @@ dependencies {
 
 
     // --- Test Compile ---
+    testImplementation project(path: ":core")
     testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":plugins:sql-language")
     testImplementation project(path: ":plugins:sql-language", configuration: "tests")
+    testImplementation project(path: ":plugins:jdbc-adapter-framework")
 }
 
 
