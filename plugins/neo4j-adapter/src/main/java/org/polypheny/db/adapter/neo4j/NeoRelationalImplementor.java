@@ -243,10 +243,11 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
     public static OperatorStatement createProjectValues( NeoProject last, NeoEntity entity, NeoRelationalImplementor implementor ) {
         List<PropertyStatement> properties = new ArrayList<>();
         List<AlgDataTypeField> fields = entity.getTupleType().getFields();
+        List<AlgDataTypeField> projectFields = last.getTupleType().getFields();
 
         int i = 0;
         for ( RexNode project : last.getProjects() ) {
-            String key = fields.get( i ).getPhysicalName();
+            String key = getPhysicalName( projectFields.get( i ), fields, i );
             if ( project.isA( Kind.LITERAL ) ) {
                 properties.add( property_( key, literal_( (RexLiteral) project ) ) );
             } else if ( project.isA( Kind.DYNAMIC_PARAM ) ) {
@@ -260,6 +261,15 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         String name = entity.name;
 
         return create_( node_( PolyString.of( name ), labels_( PolyString.of( name ) ), properties ) );
+    }
+
+
+    private static String getPhysicalName( AlgDataTypeField projectField, List<AlgDataTypeField> entityFields, int position ) {
+        return entityFields.stream()
+                .filter( field -> field.getName().equalsIgnoreCase( projectField.getName() ) )
+                .findFirst()
+                .orElse( entityFields.get( position ) )
+                .getPhysicalName();
     }
 
 
