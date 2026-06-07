@@ -46,9 +46,6 @@ final class JsonEnumerator implements Enumerator<PolyValue[]> {
 
         if ( isCollection ) {
             while ( parser.nextToken() != JsonToken.END_ARRAY ) {
-                if ( parser.currentToken() != JsonToken.START_OBJECT ) {
-                    continue;
-                }
                 return MAPPER.readTree( parser );
             }
         }

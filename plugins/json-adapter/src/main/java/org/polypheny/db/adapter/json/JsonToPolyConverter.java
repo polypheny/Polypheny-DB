@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.StreamSupport;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyNull;
@@ -34,6 +35,9 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 public final class JsonToPolyConverter {
 
     public PolyDocument nodeToPolyDocument( JsonNode node ) {
+        if ( !node.isObject() ) {
+            return new PolyDocument( Map.of( PolyString.of( DocumentType.DOCUMENT_DATA ), nodeToPolyValue( node ) ) );
+        }
         return new PolyDocument( nodeToPolyMap( node ) );
     }
 
