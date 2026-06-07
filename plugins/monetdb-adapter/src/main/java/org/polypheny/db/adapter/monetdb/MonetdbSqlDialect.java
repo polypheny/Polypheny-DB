@@ -106,6 +106,8 @@ public class MonetdbSqlDialect extends SqlDialect {
             case TINYINT:
                 castSpec = "_SMALLINT";
                 break;
+            case DOCUMENT:
+            case JSON:
             case ARRAY:
                 // We need to flag the type with an underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_TEXT";
@@ -288,4 +290,3 @@ public class MonetdbSqlDialect extends SqlDialect {
     }
 
 }
-
