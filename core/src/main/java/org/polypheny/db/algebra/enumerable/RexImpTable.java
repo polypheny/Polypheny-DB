@@ -305,7 +305,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( OperatorName.JSON_VALUE_EXPRESSION_EXCLUDED ), BuiltInMethod.JSON_VALUE_EXPRESSION_EXCLUDE.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.JSON_STRUCTURED_VALUE_EXPRESSION ), BuiltInMethod.JSON_STRUCTURED_VALUE_EXPRESSION.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.JSON_API_COMMON_SYNTAX ), BuiltInMethod.JSON_API_COMMON_SYNTAX.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( OperatorName.JSON_EXISTS ), BuiltInMethod.JSON_EXISTS.method, NullPolicy.NONE );
+        defineImplementor( OperatorRegistry.get( OperatorName.JSON_EXISTS ), NullPolicy.NONE, new JsonExistsImplementor(), false );
         defineMethod( OperatorRegistry.get( OperatorName.JSON_VALUE_ANY ), BuiltInMethod.JSON_VALUE_ANY.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( OperatorName.JSON_QUERY ), BuiltInMethod.JSON_QUERY.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( OperatorName.JSON_OBJECT ), BuiltInMethod.JSON_OBJECT.method, NullPolicy.NONE );
@@ -2027,6 +2027,17 @@ public class RexImpTable {
     }
 
 
+    private static class JsonExistsImplementor implements NotNullImplementor {
+
+
+        @Override
+        public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
+            return Expressions.call( PolyBoolean.class, "ofNullable", Expressions.call( Functions.class, "jsonExists", translatedOperands ) );
+        }
+
+    }
+
+
     private record MqlMethodNameImplementor( String methodName ) implements NotNullImplementor {
 
 
@@ -2772,4 +2783,3 @@ public class RexImpTable {
     }
 
 }
-
