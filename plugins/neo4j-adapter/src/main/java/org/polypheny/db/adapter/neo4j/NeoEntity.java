@@ -54,6 +54,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgCluster;
@@ -143,6 +144,9 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
     @Override
     public PhysicalEntity normalize() {
+        if ( dataModel == DataModel.RELATIONAL ) {
+            return new PhysicalTable( id, allocationId, logicalId, name, fields.stream().map( f -> f.unwrapOrThrow( PhysicalColumn.class ) ).toList(), namespaceId, namespaceName, uniqueFieldIds, adapterId );
+        }
         return new PhysicalGraph( id, allocationId, logicalId, name, adapterId );
     }
 

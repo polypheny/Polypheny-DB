@@ -247,7 +247,9 @@ public interface NeoUtil {
                 yield literal.value.asString().value;
 
             }
-            case MAP, DOCUMENT, ARRAY -> literal.value.asList().toString();
+            case DOCUMENT -> "'" + literal.value.asDocument().toJson() + "'";
+            case JSON -> "'" + literal.value.asString().value + "'";
+            case MAP, ARRAY -> literal.value.asList().toString();
             case BINARY, VARBINARY -> literal.value.asBinary().as64String();
             case FILE, IMAGE, VIDEO, AUDIO -> Arrays.toString( literal.value.asBlob().asByteArray() );
             case NULL -> null;
@@ -439,10 +441,10 @@ public interface NeoUtil {
 
         return switch ( type.getType() ) {
             case DATE, TIME, TIMESTAMP -> value.asTemporal().getMillisSinceEpoch();
-            case DOCUMENT -> value.asDocument().toTypedJson();
+            case DOCUMENT -> value.asDocument().toJson();
             case TINYINT, INTEGER, SMALLINT -> value.asNumber().IntValue();
             case BIGINT -> value.asNumber().LongValue();
-            case VARCHAR, TEXT, CHAR -> value.asString().value;
+            case JSON, VARCHAR, TEXT, CHAR -> value.asString().value;
             case BOOLEAN -> value.asBoolean().value;
             case BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO -> value.asBinary().value;
             case FLOAT, REAL, DOUBLE -> value.asNumber().doubleValue();
