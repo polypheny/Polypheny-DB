@@ -505,7 +505,7 @@ public class JdbcRules {
                     && !multimediaFunctionInProject( project )
                     && !contains( project, List.of( OperatorName.INITCAP ) )
                     && (!geoFunctionInProject( project ) || supportsGeoFunction( out.dialect, project ))
-                    && !DocumentRules.containsJson( project )
+                    && !unsupportedJsonFunction( project, out.dialect )
                     && !DocumentRules.containsDocument( project )
                     && !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() )
                     && out.dialect.supportsProject( project )
@@ -556,6 +556,18 @@ public class JdbcRules {
             for ( RexNode node : project.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsMultimediaFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean unsupportedJsonFunction( Project project, SqlDialect dialect ) {
+            CheckingJsonFunctionSupportVisitor visitor = new CheckingJsonFunctionSupportVisitor( dialect );
+            for ( RexNode node : project.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsUnsupportedJsonFunction() ) {
                     return true;
                 }
             }
@@ -683,7 +695,7 @@ public class JdbcRules {
                                     && !knnFunctionInFilter( filter )
                                     && !multimediaFunctionInFilter( filter )
                                     && (!geoFunctionInFilter( filter ) || supportsGeoFunctionInFilter( out.dialect, filter ))
-                                    && !DocumentRules.containsJson( filter )
+                                    && !unsupportedJsonFunction( filter, out.dialect )
                                     && !DocumentRules.containsDocument( filter )
                                     && out.dialect.supportsFilter( filter )
                                     && (out.dialect.supportsNestedArrays() || (!itemOperatorInFilter( filter ) && isStringComparableArrayType( filter )))),
@@ -749,6 +761,18 @@ public class JdbcRules {
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.supportsGeoFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean unsupportedJsonFunction( Filter filter, SqlDialect dialect ) {
+            CheckingJsonFunctionSupportVisitor visitor = new CheckingJsonFunctionSupportVisitor( dialect );
+            for ( RexNode node : filter.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsUnsupportedJsonFunction() ) {
                     return true;
                 }
             }
@@ -1516,6 +1540,36 @@ public class JdbcRules {
             Operator operator = call.getOperator();
             if ( operator instanceof Function && ((SqlFunction) operator).getFunctionCategory().isGeo() && dialect.supportedGeoFunctions().contains( operator.getOperatorName() ) ) {
                 supportsGeoFunction = true;
+            }
+            return super.visitCall( call );
+        }
+
+    }
+
+
+    private static class CheckingJsonFunctionSupportVisitor extends RexVisitorImpl<Void> {
+
+        private boolean containsUnsupportedJsonFunction = false;
+        private final SqlDialect dialect;
+
+
+        CheckingJsonFunctionSupportVisitor( SqlDialect dialect ) {
+            super( true );
+            this.dialect = dialect;
+        }
+
+
+        public boolean containsUnsupportedJsonFunction() {
+            return containsUnsupportedJsonFunction;
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            Operator operator = call.getOperator();
+            OperatorName operatorName = operator.getOperatorName();
+            if ( operatorName != null && operatorName.name().startsWith( "JSON_" ) && !dialect.supportsJsonFunction( call ) ) {
+                containsUnsupportedJsonFunction = true;
             }
             return super.visitCall( call );
         }

@@ -18,7 +18,9 @@ package org.polypheny.db.sql.language;
 
 
 import com.google.common.base.Preconditions;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -54,11 +56,13 @@ import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect.JethroInfo;
 import org.polypheny.db.sql.language.util.SqlBuilder;
 import org.polypheny.db.sql.language.util.SqlTypeUtil;
 import org.polypheny.db.sql.language.validate.SqlType;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.temporal.DateTimeUtils;
@@ -682,6 +686,21 @@ public class SqlDialect {
 
     public boolean supportsGeoJson() {
         return false;
+    }
+
+
+    public boolean supportsJsonFunctions() {
+        return false;
+    }
+
+
+    public boolean supportsJsonFunction( RexCall call ) {
+        return false;
+    }
+
+
+    public void setDocumentDynamicParam( PreparedStatement preparedStatement, int index, PolyValue value ) throws SQLException {
+        preparedStatement.setString( index, value.asDocument().toJson() );
     }
 
 

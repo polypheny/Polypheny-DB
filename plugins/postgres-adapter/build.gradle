@@ -10,8 +10,12 @@ dependencies {
     implementation group: "org.postgresql", name: "postgresql", version: postgresql_version  // BSD 2-clause
 
     // --- Test Compile ---
+    testImplementation project(path: ":core")
     testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":plugins:sql-language")
     testImplementation project(path: ":plugins:sql-language", configuration: "tests")
+    testImplementation project(path: ":plugins:jdbc-adapter-framework")
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: junit_jupiter_version
 
 }
 

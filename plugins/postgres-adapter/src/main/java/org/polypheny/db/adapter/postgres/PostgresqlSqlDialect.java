@@ -18,6 +18,9 @@ package org.polypheny.db.adapter.postgres;
 
 
 import com.google.common.collect.ImmutableList;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -27,12 +30,17 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.algebra.json.JsonExistsErrorBehavior;
+import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.TimeUnitRange;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
@@ -46,6 +54,7 @@ import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.fun.SqlFloorFunction;
 import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.inference.ReturnTypes;
 
@@ -134,6 +143,35 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     @Override
+    public boolean supportsJsonFunctions() {
+        return true;
+    }
+
+
+    @Override
+    public boolean supportsJsonFunction( RexCall call ) {
+        OperatorName operatorName = call.getOperator().getOperatorName();
+        if ( operatorName == null ) {
+            return false;
+        }
+
+        return switch ( operatorName ) {
+            case JSON_VALUE_EXPRESSION, JSON_VALUE_EXPRESSION_EXCLUDED, JSON_STRUCTURED_VALUE_EXPRESSION -> call.operands.size() == 1;
+            case JSON_API_COMMON_SYNTAX -> call.operands.size() == 2;
+            case JSON_VALUE_ANY -> supportsJsonValueAny( call );
+            case JSON_EXISTS -> supportsJsonExists( call );
+            default -> false;
+        };
+    }
+
+
+    @Override
+    public void setDocumentDynamicParam( PreparedStatement preparedStatement, int index, PolyValue value ) throws SQLException {
+        preparedStatement.setObject( index, value.asDocument().toJson(), Types.OTHER );
+    }
+
+
+    @Override
     public Optional<String> handleMissingLength( PolyType type ) {
         return switch ( type ) {
             case VARBINARY, VARCHAR, BINARY -> Optional.of( "VARYING" );
@@ -170,6 +208,9 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 break;
             case GEOMETRY:
                 castSpec = "_GEOMETRY";
+                break;
+            case DOCUMENT:
+                castSpec = "_JSONB";
                 break;
             case VARBINARY:
             case FILE:
@@ -227,6 +268,21 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
     @Override
     public void unparseCall( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
+        OperatorName operatorName = call.getOperator().getOperatorName();
+        if ( operatorName == OperatorName.JSON_VALUE_ANY && unparseJsonValueAny( writer, call, leftPrec, rightPrec ) ) {
+            return;
+        }
+        if ( operatorName == OperatorName.JSON_EXISTS && unparseJsonExists( writer, call, leftPrec, rightPrec ) ) {
+            return;
+        }
+        if ( operatorName == OperatorName.JSON_API_COMMON_SYNTAX && unparseJsonApiCommonSyntax( writer, call, leftPrec, rightPrec ) ) {
+            return;
+        }
+        if ( isJsonValueExpression( call ) ) {
+            unparseJsonDocumentExpression( writer, call, leftPrec, rightPrec );
+            return;
+        }
+
         switch ( call.getKind() ) {
             case FLOOR:
                 if ( call.operandCount() != 2 ) {
@@ -283,6 +339,168 @@ public class PostgresqlSqlDialect extends SqlDialect {
             default:
                 super.unparseCall( writer, call, leftPrec, rightPrec );
         }
+    }
+
+
+    private boolean supportsJsonValueAny( RexCall call ) {
+        return call.operands.size() == 5
+                && isJsonValueBehavior( call.operands.get( 1 ), JsonValueEmptyOrErrorBehavior.NULL )
+                && RexLiteral.isNullLiteral( call.operands.get( 2 ) )
+                && isJsonValueBehavior( call.operands.get( 3 ), JsonValueEmptyOrErrorBehavior.NULL )
+                && RexLiteral.isNullLiteral( call.operands.get( 4 ) );
+    }
+
+
+    private boolean supportsJsonExists( RexCall call ) {
+        return call.operands.size() == 1
+                || (call.operands.size() == 2 && isJsonExistsBehavior( call.operands.get( 1 ), JsonExistsErrorBehavior.FALSE ));
+    }
+
+
+    private boolean isJsonValueBehavior( RexNode node, JsonValueEmptyOrErrorBehavior behavior ) {
+        return node instanceof RexLiteral literal
+                && literal.value != null
+                && literal.value.isSymbol()
+                && literal.value.asSymbol().value == behavior;
+    }
+
+
+    private boolean isJsonExistsBehavior( RexNode node, JsonExistsErrorBehavior behavior ) {
+        return node instanceof RexLiteral literal
+                && literal.value != null
+                && literal.value.isSymbol()
+                && literal.value.asSymbol().value == behavior;
+    }
+
+
+    private boolean unparseJsonValueAny( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
+        if ( call.operandCount() != 5
+                || !isJsonValueBehavior( (SqlNode) call.operand( 1 ), JsonValueEmptyOrErrorBehavior.NULL )
+                || !isNullLiteral( (SqlNode) call.operand( 2 ) )
+                || !isJsonValueBehavior( (SqlNode) call.operand( 3 ), JsonValueEmptyOrErrorBehavior.NULL )
+                || !isNullLiteral( (SqlNode) call.operand( 4 ) ) ) {
+            return false;
+        }
+
+        SqlCall commonSyntax = asJsonApiCommonSyntax( (SqlNode) call.operand( 0 ) );
+        if ( commonSyntax == null ) {
+            return false;
+        }
+
+        writer.print( "(CASE WHEN jsonb_typeof(" );
+        unparseJsonPathQueryFirst( writer, commonSyntax, leftPrec, rightPrec );
+        writer.print( ") IN ('object', 'array') THEN NULL ELSE " );
+        unparseJsonPathQueryFirst( writer, commonSyntax, leftPrec, rightPrec );
+        writer.print( " #>> '{}' END)" );
+        return true;
+    }
+
+
+    private boolean unparseJsonExists( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
+        if ( call.operandCount() != 1
+                && !(call.operandCount() == 2 && isJsonExistsBehavior( (SqlNode) call.operand( 1 ), JsonExistsErrorBehavior.FALSE )) ) {
+            return false;
+        }
+
+        SqlCall commonSyntax = asJsonApiCommonSyntax( (SqlNode) call.operand( 0 ) );
+        if ( commonSyntax == null ) {
+            return false;
+        }
+
+        writer.print( "jsonb_path_exists(" );
+        unparseJsonDocumentExpression( writer, commonSyntax.operand( 0 ), leftPrec, rightPrec );
+        writer.print( ", " );
+        ((SqlNode) commonSyntax.operand( 1 )).unparse( writer, leftPrec, rightPrec );
+        writer.print( ", " );
+        writer.print( "'{}'::jsonb" );
+        writer.print( ", " );
+        writer.print( "true" );
+        writer.print( ")" );
+        return true;
+    }
+
+
+    private boolean unparseJsonApiCommonSyntax( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
+        if ( call.operandCount() != 2 ) {
+            return false;
+        }
+
+        unparseJsonPathQueryFirst( writer, call, leftPrec, rightPrec );
+        return true;
+    }
+
+
+    private void unparseJsonPathQueryFirst( SqlWriter writer, SqlCall commonSyntax, int leftPrec, int rightPrec ) {
+        writer.print( "jsonb_path_query_first(" );
+        unparseJsonDocumentExpression( writer, commonSyntax.operand( 0 ), leftPrec, rightPrec );
+        writer.print( ", " );
+        ((SqlNode) commonSyntax.operand( 1 )).unparse( writer, leftPrec, rightPrec );
+        writer.print( ", " );
+        writer.print( "'{}'::jsonb" );
+        writer.print( ", " );
+        writer.print( "true" );
+        writer.print( ")" );
+    }
+
+
+    private void unparseJsonDocumentExpression( SqlWriter writer, SqlNode node, int leftPrec, int rightPrec ) {
+        SqlNode unwrapped = unwrapJsonDocumentExpression( node );
+        writer.print( "(" );
+        unwrapped.unparse( writer, leftPrec, rightPrec );
+        writer.print( ")::jsonb" );
+    }
+
+
+    private SqlNode unwrapJsonDocumentExpression( SqlNode node ) {
+        SqlNode unwrapped = node;
+        if ( unwrapped instanceof SqlCall call && isJsonValueExpression( call ) && call.operandCount() == 1 ) {
+            unwrapped = call.operand( 0 );
+        }
+        if ( unwrapped instanceof SqlCall call
+                && call.getKind() == Kind.CAST
+                && call.operandCount() == 2
+                && call.operand( 1 ) instanceof SqlDataTypeSpec dataTypeSpec
+                && List.of( PolyType.CHAR, PolyType.VARCHAR, PolyType.TEXT ).contains( dataTypeSpec.getType() ) ) {
+            unwrapped = call.operand( 0 );
+        }
+        return unwrapped;
+    }
+
+
+    private boolean isJsonValueExpression( SqlCall call ) {
+        OperatorName operatorName = call.getOperator().getOperatorName();
+        return operatorName == OperatorName.JSON_VALUE_EXPRESSION
+                || operatorName == OperatorName.JSON_VALUE_EXPRESSION_EXCLUDED
+                || operatorName == OperatorName.JSON_STRUCTURED_VALUE_EXPRESSION;
+    }
+
+
+    private SqlCall asJsonApiCommonSyntax( SqlNode node ) {
+        if ( node instanceof SqlCall call && call.getOperator().getOperatorName() == OperatorName.JSON_API_COMMON_SYNTAX ) {
+            return call;
+        }
+        return null;
+    }
+
+
+    private boolean isJsonValueBehavior( SqlNode node, JsonValueEmptyOrErrorBehavior behavior ) {
+        return node instanceof SqlLiteral literal
+                && literal.value != null
+                && literal.value.isSymbol()
+                && literal.value.asSymbol().value == behavior;
+    }
+
+
+    private boolean isJsonExistsBehavior( SqlNode node, JsonExistsErrorBehavior behavior ) {
+        return node instanceof SqlLiteral literal
+                && literal.value != null
+                && literal.value.isSymbol()
+                && literal.value.asSymbol().value == behavior;
+    }
+
+
+    private boolean isNullLiteral( SqlNode node ) {
+        return node instanceof SqlLiteral literal && literal.value == null;
     }
 
 }

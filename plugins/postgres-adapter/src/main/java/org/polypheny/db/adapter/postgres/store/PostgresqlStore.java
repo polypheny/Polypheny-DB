@@ -335,7 +335,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case DOUBLE -> "FLOAT";
             case DECIMAL -> "DECIMAL";
             case VARCHAR -> "VARCHAR";
-            case DOCUMENT, JSON, TEXT -> "TEXT";
+            case DOCUMENT -> "JSONB";
+            case JSON, TEXT -> "TEXT";
             case GEOMETRY -> "GEOMETRY";
             case DATE -> "DATE";
             case TIME -> "TIME";
@@ -349,7 +350,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public boolean doesTypeUseLength( PolyType type ) {
         return switch ( type ) {
-            case VARBINARY -> false;
+            case DOCUMENT, VARBINARY -> false;
             default -> super.doesTypeUseLength( type );
         };
     }
