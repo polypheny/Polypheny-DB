@@ -17,13 +17,15 @@
 package org.polypheny.db.adapter.parquet.relational.planning;
 
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.parquet.relational.filter.ParquetFilterResolver;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetRelTable;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.type.entity.PolyValue;
 import java.util.List;
 
-public record PhysicalScan( ParquetRelTable table, int[] fields, List<ParquetAdapterFilter> filters ) {
+public record PhysicalScan( ParquetRelTable table, int[] fields, List<ParquetAdapterFilter<PolyValue>> filters ) {
 
     public PhysicalScan {
         filters = List.copyOf( filters );
@@ -36,7 +38,7 @@ public record PhysicalScan( ParquetRelTable table, int[] fields, List<ParquetAda
      * @param dataContext context
      * @return list of parquet filters
      */
-    public List<ParquetAdapterFilter> resolveFilters( DataContext dataContext ) {
+    public List<ParquetAdapterFilter<PolyValue>> resolveFilters( DataContext dataContext ) {
         return ParquetFilterResolver.resolveFilters( dataContext, filters, f -> selectPhysicalBinding( f.columnIndex() ) );
     }
 

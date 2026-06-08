@@ -19,10 +19,11 @@ package org.polypheny.db.adapter.parquet.shared.filter;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.type.entity.PolyValue;
 
 public class JoinFiltersSplitter {
 
-    private static FilterKind classifyFilter( ParquetAdapterFilter filter, boolean leftIsParent, int parentFieldCount, int childFieldCount ) {
+    private static FilterKind classifyFilter( ParquetAdapterFilter<PolyValue> filter, boolean leftIsParent, int parentFieldCount, int childFieldCount ) {
         if ( filter.isLogical() ) {
             List<FilterKind> operandSides = filter.operands().stream()
                     .map( operand -> classifyFilter( operand, leftIsParent, parentFieldCount, childFieldCount ) )
@@ -51,7 +52,7 @@ public class JoinFiltersSplitter {
     }
 
 
-    private static boolean canUseAsReaderFilter( ParquetAdapterFilter filter ) {
+    private static boolean canUseAsReaderFilter( ParquetAdapterFilter<PolyValue> filter ) {
         if ( filter.isLogical() ) {
             return !filter.operands().isEmpty() && filter.operands().stream().allMatch( JoinFiltersSplitter::canUseAsReaderFilter );
         }
@@ -59,20 +60,20 @@ public class JoinFiltersSplitter {
     }
 
 
-    public JoinFiltersContainer split( List<ParquetAdapterFilter> filters, boolean leftIsParent, int parentFieldCount, int childFieldCount ) {
-        List<ParquetAdapterFilter> parentFilters = new ArrayList<>();
-        List<ParquetAdapterFilter> childFilters = new ArrayList<>();
-        List<ParquetAdapterFilter> adapterFilters = new ArrayList<>();
-        List<ParquetAdapterFilter> readerFilters = new ArrayList<>();
+    public JoinFiltersContainer split( List<ParquetAdapterFilter<PolyValue>> filters, boolean leftIsParent, int parentFieldCount, int childFieldCount ) {
+        List<ParquetAdapterFilter<PolyValue>> parentFilters = new ArrayList<>();
+        List<ParquetAdapterFilter<PolyValue>> childFilters = new ArrayList<>();
+        List<ParquetAdapterFilter<PolyValue>> adapterFilters = new ArrayList<>();
+        List<ParquetAdapterFilter<PolyValue>> readerFilters = new ArrayList<>();
 
-        for ( ParquetAdapterFilter filter : filters ) {
+        for ( ParquetAdapterFilter<PolyValue> filter : filters ) {
             splitFilter( filter, leftIsParent, parentFieldCount, childFieldCount, parentFilters, childFilters, adapterFilters, readerFilters );
         }
         return new JoinFiltersContainer( parentFilters, childFilters, adapterFilters, readerFilters );
     }
 
 
-    private void splitFilter( ParquetAdapterFilter filter, boolean leftIsParent, int parentFieldCount, int childFieldCount, List<ParquetAdapterFilter> parentFilters, List<ParquetAdapterFilter> childFilters, List<ParquetAdapterFilter> adapterFilters, List<ParquetAdapterFilter> readerFilters ) {
+    private void splitFilter( ParquetAdapterFilter<PolyValue> filter, boolean leftIsParent, int parentFieldCount, int childFieldCount, List<ParquetAdapterFilter<PolyValue>> parentFilters, List<ParquetAdapterFilter<PolyValue>> childFilters, List<ParquetAdapterFilter<PolyValue>> adapterFilters, List<ParquetAdapterFilter<PolyValue>> readerFilters ) {
         if ( filter.isLogical() && filter.operator() == Kind.AND ) {
             filter.operands().forEach( operand -> splitFilter( operand, leftIsParent, parentFieldCount, childFieldCount, parentFilters, childFilters, adapterFilters, readerFilters ) );
             return;

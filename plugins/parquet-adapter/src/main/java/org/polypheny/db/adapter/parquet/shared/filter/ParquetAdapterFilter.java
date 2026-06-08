@@ -28,22 +28,22 @@ import org.polypheny.db.type.entity.PolyValue;
  *
  * @param columnIndex - index of filter column
  * @param operator - filter operation
- * @param polyValue - filter value
+ * @param value - filter value
  */
-public record ParquetAdapterFilter( int columnIndex, List<String> pathElements, Kind operator, PolyValue polyValue, Long dynamicParamIndex, List<ParquetAdapterFilter> operands ) {
+public record ParquetAdapterFilter<T>( int columnIndex, List<String> pathElements, Kind operator, T value, Long dynamicParamIndex, List<ParquetAdapterFilter<T>> operands ) {
 
-    public ParquetAdapterFilter( int columnIndex, Kind operator, PolyValue polyValue ) {
-        this( columnIndex, List.of(), operator, polyValue, null, List.of() );
+    public ParquetAdapterFilter( int columnIndex, Kind operator, T value ) {
+        this( columnIndex, List.of(), operator, value, null, List.of() );
     }
 
 
-    public ParquetAdapterFilter( int columnIndex, List<String> pathElements, Kind operator, PolyValue polyValue ) {
-        this( columnIndex, pathElements, operator, polyValue, null, List.of() );
+    public ParquetAdapterFilter( int columnIndex, List<String> pathElements, Kind operator, T value ) {
+        this( columnIndex, pathElements, operator, value, null, List.of() );
     }
 
 
-    public ParquetAdapterFilter( int columnIndex, List<String> pathElements, Kind operator, PolyValue polyValue, Long dynamicParamIndex ) {
-        this( columnIndex, pathElements, operator, polyValue, dynamicParamIndex, List.of() );
+    public ParquetAdapterFilter( int columnIndex, List<String> pathElements, Kind operator, T value, Long dynamicParamIndex ) {
+        this( columnIndex, pathElements, operator, value, dynamicParamIndex, List.of() );
     }
 
 
@@ -54,8 +54,8 @@ public record ParquetAdapterFilter( int columnIndex, List<String> pathElements, 
     }
 
 
-    public static ParquetAdapterFilter logical( Kind operator, List<ParquetAdapterFilter> operands ) {
-        return new ParquetAdapterFilter( -1, List.of(), operator, null, null, operands );
+    public static <T> ParquetAdapterFilter<T> logical( Kind operator, List<ParquetAdapterFilter<T>> operands ) {
+        return new ParquetAdapterFilter<>( -1, List.of(), operator, null, null, operands );
     }
 
 
@@ -65,7 +65,7 @@ public record ParquetAdapterFilter( int columnIndex, List<String> pathElements, 
                 Expressions.constant( columnIndex ),
                 EnumUtils.expressionList( pathElements.stream().<Expression>map( Expressions::constant ).toList() ),
                 Expressions.constant( operator, Kind.class ),
-                polyValue == null ? Expressions.constant( null, PolyValue.class ) : polyValue.asExpression(),
+                value == null ? Expressions.constant( null, PolyValue.class ) : ((PolyValue) value).asExpression(),
                 Expressions.constant( dynamicParamIndex, Long.class ),
                 EnumUtils.expressionList( operands.stream().map( ParquetAdapterFilter::toExpression ).toList() ) );
     }

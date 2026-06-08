@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.parquet.shared.filter;
 
 import java.util.List;
+import org.polypheny.db.type.entity.PolyValue;
 
 /**
  * Filter bundle used by the nested Parquet join executor.
@@ -98,10 +99,10 @@ public class JoinFiltersContainer extends FiltersContainer {
 
     public static JoinFiltersContainer empty = new JoinFiltersContainer( List.of(), List.of(), List.of(), List.of() );
 
-    private final List<ParquetAdapterFilter> parentFilters;
-    private final List<ParquetAdapterFilter> childFilters;
-    private final List<ParquetAdapterFilter> parentScanFilters;
-    private final List<ParquetAdapterFilter> childScanFilters;
+    private final List<ParquetAdapterFilter<PolyValue>> parentFilters;
+    private final List<ParquetAdapterFilter<PolyValue>> childFilters;
+    private final List<ParquetAdapterFilter<PolyValue>> parentScanFilters;
+    private final List<ParquetAdapterFilter<PolyValue>> childScanFilters;
 
 
     /**
@@ -120,7 +121,7 @@ public class JoinFiltersContainer extends FiltersContainer {
      * @param readerFilters join-owned filters that can also be pushed to the
      * Parquet reader as native predicates.
      */
-    public JoinFiltersContainer( List<ParquetAdapterFilter> parentFilters, List<ParquetAdapterFilter> childFilters, List<ParquetAdapterFilter> adapterFilters, List<ParquetAdapterFilter> readerFilters ) {
+    public JoinFiltersContainer( List<ParquetAdapterFilter<PolyValue>> parentFilters, List<ParquetAdapterFilter<PolyValue>> childFilters, List<ParquetAdapterFilter<PolyValue>> adapterFilters, List<ParquetAdapterFilter<PolyValue>> readerFilters ) {
         this( parentFilters, childFilters, adapterFilters, readerFilters, List.of(), List.of() );
     }
 
@@ -150,7 +151,7 @@ public class JoinFiltersContainer extends FiltersContainer {
      * @param childScanFilters scan-owned filters for the child table, using
      * child physical table column indexes.
      */
-    public JoinFiltersContainer( List<ParquetAdapterFilter> parentFilters, List<ParquetAdapterFilter> childFilters, List<ParquetAdapterFilter> adapterFilters, List<ParquetAdapterFilter> readerFilters, List<ParquetAdapterFilter> parentScanFilters, List<ParquetAdapterFilter> childScanFilters ) {
+    public JoinFiltersContainer( List<ParquetAdapterFilter<PolyValue>> parentFilters, List<ParquetAdapterFilter<PolyValue>> childFilters, List<ParquetAdapterFilter<PolyValue>> adapterFilters, List<ParquetAdapterFilter<PolyValue>> readerFilters, List<ParquetAdapterFilter<PolyValue>> parentScanFilters, List<ParquetAdapterFilter<PolyValue>> childScanFilters ) {
         super( adapterFilters, readerFilters );
         this.parentFilters = parentFilters == null ? List.of() : List.copyOf( parentFilters );
         this.childFilters = childFilters == null ? List.of() : List.copyOf( childFilters );
@@ -169,7 +170,7 @@ public class JoinFiltersContainer extends FiltersContainer {
      *
      * @return parent-only join-owned filters.
      */
-    public List<ParquetAdapterFilter> parentFilters() {
+    public List<ParquetAdapterFilter<PolyValue>> parentFilters() {
         return parentFilters;
     }
 
@@ -183,7 +184,7 @@ public class JoinFiltersContainer extends FiltersContainer {
      *
      * @return child-only join-owned filters.
      */
-    public List<ParquetAdapterFilter> childFilters() {
+    public List<ParquetAdapterFilter<PolyValue>> childFilters() {
         return childFilters;
     }
 
@@ -198,7 +199,7 @@ public class JoinFiltersContainer extends FiltersContainer {
      *
      * @return parent scan filters using physical table indexes.
      */
-    public List<ParquetAdapterFilter> parentScanFilters() {
+    public List<ParquetAdapterFilter<PolyValue>> parentScanFilters() {
         return parentScanFilters;
     }
 
@@ -214,7 +215,7 @@ public class JoinFiltersContainer extends FiltersContainer {
      *
      * @return child scan filters using physical table indexes.
      */
-    public List<ParquetAdapterFilter> childScanFilters() {
+    public List<ParquetAdapterFilter<PolyValue>> childScanFilters() {
         return childScanFilters;
     }
 

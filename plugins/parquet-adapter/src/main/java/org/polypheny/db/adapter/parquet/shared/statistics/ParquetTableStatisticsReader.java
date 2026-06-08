@@ -33,6 +33,7 @@ import org.polypheny.db.adapter.statistics.ProvidedColumnStatistics;
 import org.polypheny.db.adapter.statistics.ProvidedEntityStatistics;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -72,23 +73,23 @@ public class ParquetTableStatisticsReader {
     public Optional<ProvidedColumnStatistics> getColumnStatistics( LogicalColumn column, int uniqueValueLimit ) {
         ParquetColumnBinding columnBinding = binding.getColumnBinding( column.id );
         if ( columnBinding == null ) {
-            return Optional.of( new ProvidedColumnStatistics( estimateEntityRowCount(), null, null, List.of(), true ) );
+            return Optional.of( new ProvidedColumnStatistics( estimateEntityRowCount(), PolyNull.NULL, PolyNull.NULL, List.of(), true ) );
         }
         if ( columnBinding.role() == ParquetColumnRole.PARTITION ) {
             return Optional.of( partitionColumnStatistics( columnBinding, uniqueValueLimit ) );
         }
         if ( columnBinding.role() != ParquetColumnRole.DATA || columnBinding.sourcePathElements().isEmpty() ) {
-            return Optional.of( new ProvidedColumnStatistics( estimateEntityRowCount(), null, null, List.of(), true ) );
+            return Optional.of( new ProvidedColumnStatistics( estimateEntityRowCount(), PolyNull.NULL, PolyNull.NULL, List.of(), true ) );
         }
 
         Optional<ParquetColumnStatistics> metadataStatistics = aggregateColumnStatistics( columnBinding.sourcePathElements() );
         if ( metadataStatistics.isEmpty() ) {
-            return Optional.of( new ProvidedColumnStatistics( estimateEntityRowCount(), null, null, List.of(), true ) );
+            return Optional.of( new ProvidedColumnStatistics( estimateEntityRowCount(), PolyNull.NULL, PolyNull.NULL, List.of(), true ) );
         }
 
         ParquetColumnStatistics statistics = metadataStatistics.get();
-        PolyValue min = statistics.hasRange() ? typeConverter.fromStringToCompatiblePolyValue( column.type, statistics.type(), statistics.min() ) : null;
-        PolyValue max = statistics.hasRange() ? typeConverter.fromStringToCompatiblePolyValue( column.type, statistics.type(), statistics.max() ) : null;
+        PolyValue min = statistics.hasRange() ? typeConverter.fromStringToCompatiblePolyValue( column.type, statistics.type(), statistics.min() ) : PolyNull.NULL;
+        PolyValue max = statistics.hasRange() ? typeConverter.fromStringToCompatiblePolyValue( column.type, statistics.type(), statistics.max() ) : PolyNull.NULL;
         return Optional.of( new ProvidedColumnStatistics( nonNullCount( statistics ), min, max, List.of(), true ) );
     }
 
@@ -103,7 +104,7 @@ public class ParquetTableStatisticsReader {
         }
 
         if ( uniqueValueLimit > 0 && values.size() > uniqueValueLimit ) {
-            return new ProvidedColumnStatistics( estimateEntityRowCount(), null, null, List.of(), true );
+            return new ProvidedColumnStatistics( estimateEntityRowCount(), PolyNull.NULL, PolyNull.NULL, List.of(), true );
         }
 
         List<PolyValue> uniqueValues = values.stream()
@@ -112,7 +113,7 @@ public class ParquetTableStatisticsReader {
                 .toList();
         PolyValue min = values.stream().min( Comparator.naturalOrder() ).map( PolyString::of ).orElse( null );
         PolyValue max = values.stream().max( Comparator.naturalOrder() ).map( PolyString::of ).orElse( null );
-        return new ProvidedColumnStatistics( estimateEntityRowCount(), min, max, uniqueValues, false );
+        return new ProvidedColumnStatistics( estimateEntityRowCount(), min == null ? PolyNull.NULL : min, max == null ? PolyNull.NULL : max, uniqueValues, false );
     }
 
 

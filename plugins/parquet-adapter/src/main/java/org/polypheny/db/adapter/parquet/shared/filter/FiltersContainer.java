@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.parquet.shared.filter;
 
 import java.util.List;
+import org.polypheny.db.type.entity.PolyValue;
 
 /**
  * A container for filters split by usage.
@@ -25,8 +26,8 @@ public class FiltersContainer {
 
     public static FiltersContainer empty = new FiltersContainer( List.of(), List.of() );
 
-    private final List<ParquetAdapterFilter> adapterFilters;
-    private final List<ParquetAdapterFilter> nativeFilters;
+    private final List<ParquetAdapterFilter<PolyValue>> adapterFilters;
+    private final List<ParquetAdapterFilter<PolyValue>> nativeFilters;
 
 
     /**
@@ -35,7 +36,7 @@ public class FiltersContainer {
      * @param adapterFilters a list of filters to be used on adapter level.
      * @param nativeFilters a list of filters to be used on parquet reader level.
      */
-    public FiltersContainer( List<ParquetAdapterFilter> adapterFilters, List<ParquetAdapterFilter> nativeFilters ) {
+    public FiltersContainer( List<ParquetAdapterFilter<PolyValue>> adapterFilters, List<ParquetAdapterFilter<PolyValue>> nativeFilters ) {
         this.adapterFilters = adapterFilters == null ? List.of() : List.copyOf( adapterFilters );
         this.nativeFilters = nativeFilters == null ? List.of() : List.copyOf( nativeFilters );
     }
@@ -47,8 +48,18 @@ public class FiltersContainer {
      * @param filters filters to share between adapter and reader.
      * @return a new instance of {@link FiltersContainer}
      */
-    public static FiltersContainer shared( List<ParquetAdapterFilter> filters ) {
+    public static FiltersContainer shared( List<ParquetAdapterFilter<PolyValue>> filters ) {
         return new FiltersContainer( filters, filters );
+    }
+
+
+    private static ParquetAdapterFilter<PolyValue> withoutPathElements( ParquetAdapterFilter<PolyValue> filter ) {
+        if ( filter.isLogical() ) {
+            return ParquetAdapterFilter.logical(
+                    filter.operator(),
+                    filter.operands().stream().map( FiltersContainer::withoutPathElements ).toList() );
+        }
+        return new ParquetAdapterFilter<>( filter.columnIndex(), List.of(), filter.operator(), filter.value(), filter.dynamicParamIndex() );
     }
 
 
@@ -66,22 +77,12 @@ public class FiltersContainer {
     }
 
 
-    private static ParquetAdapterFilter withoutPathElements( ParquetAdapterFilter filter ) {
-        if ( filter.isLogical() ) {
-            return ParquetAdapterFilter.logical(
-                    filter.operator(),
-                    filter.operands().stream().map( FiltersContainer::withoutPathElements ).toList() );
-        }
-        return new ParquetAdapterFilter( filter.columnIndex(), List.of(), filter.operator(), filter.polyValue(), filter.dynamicParamIndex() );
-    }
-
-
     /**
      * Gets a list of adapter filters.
      *
      * @return a list of adapter filters.
      */
-    public List<ParquetAdapterFilter> adapterFilters() {
+    public List<ParquetAdapterFilter<PolyValue>> adapterFilters() {
         return adapterFilters;
     }
 
@@ -91,7 +92,7 @@ public class FiltersContainer {
      *
      * @return a list of reader filters.
      */
-    public List<ParquetAdapterFilter> nativeFilters() {
+    public List<ParquetAdapterFilter<PolyValue>> nativeFilters() {
         return nativeFilters;
     }
 

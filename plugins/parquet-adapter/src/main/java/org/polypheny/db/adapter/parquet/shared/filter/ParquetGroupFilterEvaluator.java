@@ -28,7 +28,7 @@ import org.polypheny.db.type.entity.PolyValue;
  * Filter functionality on Adapter Level
  * works with group (row)
  */
-public class ParquetGroupFilterEvaluator extends FilterEvaluator<Group> {
+public class ParquetGroupFilterEvaluator extends ParquetFilterEvaluator<Group, PolyValue> {
 
     protected final MessageType schema;
     protected final ParquetValueExtractor valueExtractor;
@@ -51,34 +51,34 @@ public class ParquetGroupFilterEvaluator extends FilterEvaluator<Group> {
 
 
     @Override
-    protected Boolean evaluateLeaf( Group group, ParquetAdapterFilter filter ) {
+    protected Boolean evaluateLeaf( Group group, ParquetAdapterFilter<PolyValue> filter ) {
         if ( !canApplyFilter( group, filter ) ) {
             return null;
         }
         if ( !filterHasValue( group, filter ) ) {
-            return matchesValue( PolyNull.NULL, filter.operator(), filter.polyValue() );
+            return matchesValue( PolyNull.NULL, filter.operator(), filter.value() );
         }
-        return matchesValue( extractValue( group, filter ), filter.operator(), filter.polyValue() );
+        return matchesValue( extractValue( group, filter ), filter.operator(), filter.value() );
     }
 
 
-    protected boolean canApplyFilter( Group group, ParquetAdapterFilter filter ) {
+    protected boolean canApplyFilter( Group group, ParquetAdapterFilter<PolyValue> filter ) {
         if ( filter.columnIndex() < 0 ) {
             return false;
         }
-        if ( filter.polyValue() == null && !isNullCheck( filter.operator() ) ) {
+        if ( filter.value() == null && !isNullCheck( filter.operator() ) ) {
             return false;
         }
         return !filter.pathElements().isEmpty() || filter.columnIndex() < schema.getFieldCount();
     }
 
 
-    protected boolean filterHasValue( Group group, ParquetAdapterFilter filter ) {
+    protected boolean filterHasValue( Group group, ParquetAdapterFilter<PolyValue> filter ) {
         return !filter.pathElements().isEmpty() || group.getFieldRepetitionCount( filter.columnIndex() ) > 0;
     }
 
 
-    protected PolyValue extractValue( Group group, ParquetAdapterFilter filter ) {
+    protected PolyValue extractValue( Group group, ParquetAdapterFilter<PolyValue> filter ) {
         if ( filter.pathElements().isEmpty() ) {
             Type field = schema.getType( filter.columnIndex() );
             return valueExtractor.extractValue( group, filter.columnIndex(), field );

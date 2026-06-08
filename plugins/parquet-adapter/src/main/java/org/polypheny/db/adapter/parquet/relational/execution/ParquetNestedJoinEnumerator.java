@@ -148,7 +148,7 @@ public class ParquetNestedJoinEnumerator extends ParquetNestedRepeatedRelEnumera
      * @param filter - ParquetAdapterFilter
      * @return an extracted value
      */
-    protected PolyValue extractValue( Group group, ParquetAdapterFilter filter ) {
+    protected PolyValue extractValue( Group group, ParquetAdapterFilter<PolyValue> filter ) {
         if ( group instanceof CombinedGroup combinedGroup ) {
             return pathValueExtractor().extractValue(
                     combinedGroup.groupForField( filter.columnIndex(), leftIsParent ),
@@ -176,7 +176,7 @@ public class ParquetNestedJoinEnumerator extends ParquetNestedRepeatedRelEnumera
     }
 
 
-    private boolean matchesFilters( Group group, List<ParquetAdapterFilter> filters, ParquetGroupFilterEvaluator evaluator ) {
+    private boolean matchesFilters( Group group, List<ParquetAdapterFilter<PolyValue>> filters, ParquetGroupFilterEvaluator evaluator ) {
         return filters.stream().allMatch( filter -> evaluator.matches( group, filter ) );
     }
 

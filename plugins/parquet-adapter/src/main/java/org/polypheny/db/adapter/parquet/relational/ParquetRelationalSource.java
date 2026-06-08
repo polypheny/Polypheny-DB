@@ -250,23 +250,22 @@ public class ParquetRelationalSource extends AbstractParquetSource implements Re
      * @return ParquetTableBinding - column bindings are stored by physical column id
      */
     private ParquetTableBinding getDiscoveredTableBinding( String tableName, PhysicalTable table ) {
+        if ( getConfiguredSchemaMode() == ParquetSchemaMode.FLAT ) {
+            return createFlatTableBinding( tableName, table );
+        }
+
         // Get or build normalized schema
         ParquetNormalizedSchema normalizedSchema = getNormalizedSchema();
         // find binding for this table
         DiscoveredTableBinding binding = normalizedSchema.getBinding( tableName );
         // if missing in normalized mode - rebuild
-        if ( binding == null && getConfiguredSchemaMode() == ParquetSchemaMode.NORMALIZED ) {
+        if ( binding == null ) {
             clearNormalizedExportCache();
             normalizedSchema = getNormalizedSchema();
             binding = normalizedSchema.getBinding( tableName );
         }
         if ( binding == null ) {
-            if ( getConfiguredSchemaMode() == ParquetSchemaMode.NORMALIZED ) {
-                throw new GenericRuntimeException( "Missing normalized Parquet binding for generated table: %s", tableName );
-            }
-            // Flat tables do not have DiscoveredTableBinding,
-            // because they come from AbstractParquetSource.getExportedColumns() not ParquetSchemaNormalizer
-            return createFlatTableBinding( tableName, table );
+            throw new GenericRuntimeException( "Missing normalized Parquet binding for generated table: %s", tableName );
         }
         // Convert discovered bindings to final ParquetTableBinding, where column bindings are stored by physical column id
         return ParquetTableBinding.createTableBindingFromColumnPaths( binding.sourceFiles(), binding.parentTableName(), binding.sourcePathElements(), table, binding.columnPaths() );

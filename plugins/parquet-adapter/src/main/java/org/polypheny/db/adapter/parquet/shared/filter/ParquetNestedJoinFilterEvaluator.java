@@ -46,7 +46,7 @@ public class ParquetNestedJoinFilterEvaluator extends ParquetGroupFilterEvaluato
 
 
     @Override
-    protected PolyValue extractValue( Group group, ParquetAdapterFilter filter ) {
+    protected PolyValue extractValue( Group group, ParquetAdapterFilter<PolyValue> filter ) {
         ParquetPathValueExtractor pathValueExtractor = (ParquetPathValueExtractor) valueExtractor;
         if ( group instanceof CombinedGroup combinedGroup ) {
             return pathValueExtractor.extractValue(
@@ -72,11 +72,11 @@ public class ParquetNestedJoinFilterEvaluator extends ParquetGroupFilterEvaluato
      * @return true if the filter is valid and false otherwise.
      */
     @Override
-    protected boolean canApplyFilter( Group group, ParquetAdapterFilter filter ) {
+    protected boolean canApplyFilter( Group group, ParquetAdapterFilter<PolyValue> filter ) {
         if ( filter.columnIndex() < 0 ) {
             return false;
         }
-        if ( filter.polyValue() == null && !isNullCheck( filter.operator() ) ) {
+        if ( filter.value() == null && !isNullCheck( filter.operator() ) ) {
             return false;
         }
         if ( group instanceof CombinedGroup combinedGroup ) {
@@ -94,7 +94,7 @@ public class ParquetNestedJoinFilterEvaluator extends ParquetGroupFilterEvaluato
      * @return true if the group has a value at the filter column index and false otherwise.
      */
     @Override
-    protected boolean filterHasValue( Group group, ParquetAdapterFilter filter ) {
+    protected boolean filterHasValue( Group group, ParquetAdapterFilter<PolyValue> filter ) {
         CombinedGroup combinedGroup = (CombinedGroup) group;
         return !combinedGroup.isNullField( filter.columnIndex(), leftIsParent );
     }

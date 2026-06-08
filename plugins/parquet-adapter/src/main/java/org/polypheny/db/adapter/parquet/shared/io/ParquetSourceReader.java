@@ -38,6 +38,7 @@ import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetNativeFilterBuilder;
 import org.polypheny.db.adapter.parquet.shared.util.HadoopConfigurationFactory;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
 
 /**
@@ -67,7 +68,7 @@ public class ParquetSourceReader implements AutoCloseable {
     }
 
 
-    public ParquetSourceReader( Source source, AtomicBoolean cancelFlag, int[] fields, List<ParquetAdapterFilter> filters ) {
+    public ParquetSourceReader( Source source, AtomicBoolean cancelFlag, int[] fields, List<ParquetAdapterFilter<PolyValue>> filters ) {
         this.source = source;
         this.cancelFlag = cancelFlag == null ? new AtomicBoolean( false ) : cancelFlag;
 
@@ -102,7 +103,7 @@ public class ParquetSourceReader implements AutoCloseable {
     public Group next() {
         try {
             for ( ; ; ) {
-                if ( cancelFlag.get() ) {
+                if ( ParquetCancellation.shouldStop( rowIndexInGroup, cancelFlag ) ) {
                     return null;
                 }
                 if ( !ensureRecordReader() ) {

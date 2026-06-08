@@ -51,7 +51,7 @@ public final class ParquetNativeFilterBuilder {
      * @param filters adapter level filters
      * @return FilterCompat.Filter - parquet native
      */
-    public static FilterCompat.Filter build( MessageType schema, List<ParquetAdapterFilter> filters ) {
+    public static FilterCompat.Filter build( MessageType schema, List<ParquetAdapterFilter<PolyValue>> filters ) {
         if ( filters == null || filters.isEmpty() ) {
             return FilterCompat.NOOP;
         }
@@ -70,7 +70,7 @@ public final class ParquetNativeFilterBuilder {
     }
 
 
-    private static FilterPredicate buildPredicate( MessageType schema, ParquetAdapterFilter filter ) {
+    private static FilterPredicate buildPredicate( MessageType schema, ParquetAdapterFilter<PolyValue> filter ) {
         if ( filter.isLogical() ) {
             return buildLogicalPredicate( schema, filter );
         }
@@ -87,7 +87,7 @@ public final class ParquetNativeFilterBuilder {
             }
 
             String columnName = schema.getFieldName( index );
-            return buildPredicatePrimitive( filter.operator(), filter.polyValue(), type, columnName );
+            return buildPredicatePrimitive( filter.operator(), filter.value(), type, columnName );
         } else {
             // build native filter to push down for nested fields
             Type type = resolveType( schema, filter.pathElements() );
@@ -100,7 +100,7 @@ public final class ParquetNativeFilterBuilder {
             }
 
             String columnName = String.join( ".", filter.pathElements() );
-            return buildPredicatePrimitive( filter.operator(), filter.polyValue(), type, columnName );
+            return buildPredicatePrimitive( filter.operator(), filter.value(), type, columnName );
         }
     }
 
@@ -111,7 +111,7 @@ public final class ParquetNativeFilterBuilder {
      * @param filter ParquetAdapterFilter
      * @return Filter Predicate
      */
-    private static FilterPredicate buildLogicalPredicate( MessageType schema, ParquetAdapterFilter filter ) {
+    private static FilterPredicate buildLogicalPredicate( MessageType schema, ParquetAdapterFilter<PolyValue> filter ) {
         // recursively convert each adapter-level child filter into a native Parquet predicate
         List<FilterPredicate> operands = filter.operands().stream()
                 .map( operand -> buildPredicate( schema, operand ) )

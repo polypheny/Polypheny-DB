@@ -33,7 +33,9 @@ import org.apache.parquet.hadoop.example.ExampleParquetWriter;
 import org.apache.parquet.io.OutputFile;
 import org.apache.parquet.io.PositionOutputStream;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.MessageTypeParser;
 import org.apache.parquet.schema.Types;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
@@ -165,6 +167,18 @@ class ParquetFileDiscoveryTest {
     }
 
 
+    @Test
+    void flatDiscoveryBindsTopLevelListColumnToRootPath() throws Exception {
+        writeParquet( tempDir.resolve( "flickr.parquet" ), flickrSchema(), flickrRow() );
+
+        Map<String, DiscoveredTable> tables = ParquetFileDiscovery.discoverTables( tempDir.toUri().toURL(), PREFIX );
+
+        DiscoveredTable table = tables.get( PREFIX + "__flickr" );
+        assertEquals( List.of( "id", "captions", "image" ), columnNames( table.columns() ) );
+        assertEquals( List.of( "captions" ), table.binding().columnPaths().get( "captions" ) );
+    }
+
+
     private static List<String> columnNames( List<ExportedColumn> columns ) {
         return columns.stream().map( ExportedColumn::name ).toList();
     }
@@ -190,6 +204,26 @@ class ParquetFileDiscoveryTest {
     }
 
 
+    private static MessageType flickrSchema() {
+        return MessageTypeParser.parseMessageType( """
+                message test {
+                  optional binary id (STRING);
+                  optional group captions (LIST) {
+                    repeated group list {
+                      optional binary element (STRING);
+                    }
+                  }
+                  optional binary image;
+                }
+                """ );
+    }
+
+
+    private static Object[] flickrRow() {
+        return row( "image-1.jpg", List.of( "a dog in grass", "a puppy outside" ), "image-bytes" );
+    }
+
+
     private static void writeParquet( Path file, MessageType schema, Object[] values ) throws Exception {
         SimpleGroupFactory groupFactory = new SimpleGroupFactory( schema );
         Group group = groupFactory.newGroup();
@@ -197,6 +231,11 @@ class ParquetFileDiscoveryTest {
             Object value = values[i];
             if ( value instanceof String string ) {
                 group.add( i, string );
+            } else if ( value instanceof List<?> list ) {
+                Group captions = group.addGroup( i );
+                for ( Object element : list ) {
+                    captions.addGroup( "list" ).append( "element", (String) element );
+                }
             } else {
                 group.add( i, ((Number) value).longValue() );
             }
@@ -269,7 +308,7 @@ class ParquetFileDiscoveryTest {
 
 
         @Override
-        public void write( byte[] b, int off, int len ) throws IOException {
+        public void write( byte @NotNull [] b, int off, int len ) throws IOException {
             out.write( b, off, len );
             position += len;
         }

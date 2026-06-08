@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.parquet.relational.execution;
 
 import java.util.List;
 import org.apache.parquet.example.data.Group;
+import org.polypheny.db.adapter.parquet.relational.filter.ParquetPartitionAwareFilterEvaluator;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnRole;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;

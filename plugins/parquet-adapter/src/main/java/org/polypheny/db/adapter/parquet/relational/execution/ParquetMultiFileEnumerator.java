@@ -18,10 +18,13 @@ package org.polypheny.db.adapter.parquet.relational.execution;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.calcite.linq4j.Enumerator;
+import org.polypheny.db.adapter.parquet.relational.filter.ResidualFilters;
+import org.polypheny.db.adapter.parquet.relational.filter.ParquetMultiFilterEvaluator;
+import org.polypheny.db.adapter.parquet.relational.filter.ParquetSourceFileFilterReducer;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
-import org.polypheny.db.adapter.parquet.relational.schema.ParquetFilterEvaluatorsChain;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyValue;
@@ -33,22 +36,27 @@ import org.polypheny.db.type.entity.PolyValue;
 public class ParquetMultiFileEnumerator implements Enumerator<PolyValue[]> {
 
     private final Iterator<ParquetSourceFile> files;
-    private final Function<ParquetSourceFile, Enumerator<PolyValue[]>> enumeratorFactory;
-    private final ParquetFilterEvaluatorsChain<ParquetSourceFile> sourceFileEvaluator;
-    private final List<ParquetAdapterFilter> filters;
+    private final BiFunction<ParquetSourceFile, List<ParquetAdapterFilter<PolyValue>>, Enumerator<PolyValue[]>> enumeratorFactory;
+    private final ParquetMultiFilterEvaluator<ParquetSourceFile> sourceFileEvaluator;
+    private final List<ParquetAdapterFilter<PolyValue>> filters;
     private Enumerator<PolyValue[]> currentEnumerator;
     private PolyValue[] current;
 
 
     public ParquetMultiFileEnumerator( List<ParquetSourceFile> files, Function<ParquetSourceFile, Enumerator<PolyValue[]>> enumeratorFactory ) {
-        this( files, enumeratorFactory, ParquetFilterEvaluatorsChain.empty(), List.of() );
+        this( files, ( sourceFile, ignored ) -> enumeratorFactory.apply( sourceFile ), ParquetMultiFilterEvaluator.empty(), List.of() );
     }
 
 
-    public ParquetMultiFileEnumerator( List<ParquetSourceFile> files, Function<ParquetSourceFile, Enumerator<PolyValue[]>> enumeratorFactory, ParquetFilterEvaluatorsChain<ParquetSourceFile> sourceFileEvaluator, List<ParquetAdapterFilter> filters ) {
+    public ParquetMultiFileEnumerator( List<ParquetSourceFile> files, Function<ParquetSourceFile, Enumerator<PolyValue[]>> enumeratorFactory, ParquetMultiFilterEvaluator<ParquetSourceFile> sourceFileEvaluator, List<ParquetAdapterFilter<PolyValue>> filters ) {
+        this( files, ( sourceFile, ignored ) -> enumeratorFactory.apply( sourceFile ), sourceFileEvaluator, filters );
+    }
+
+
+    public ParquetMultiFileEnumerator( List<ParquetSourceFile> files, BiFunction<ParquetSourceFile, List<ParquetAdapterFilter<PolyValue>>, Enumerator<PolyValue[]>> enumeratorFactory, ParquetMultiFilterEvaluator<ParquetSourceFile> sourceFileEvaluator, List<ParquetAdapterFilter<PolyValue>> filters ) {
         this.files = List.copyOf( files ).iterator();
         this.enumeratorFactory = enumeratorFactory;
-        this.sourceFileEvaluator = sourceFileEvaluator == null ? ParquetFilterEvaluatorsChain.empty() : sourceFileEvaluator;
+        this.sourceFileEvaluator = sourceFileEvaluator == null ? ParquetMultiFilterEvaluator.empty() : sourceFileEvaluator;
         this.filters = filters == null ? List.of() : List.copyOf( filters );
     }
 
@@ -69,11 +77,13 @@ public class ParquetMultiFileEnumerator implements Enumerator<PolyValue[]> {
                         return false;
                     }
                     ParquetSourceFile sourceFile = files.next();
-                    if ( !sourceFileEvaluator.matches( sourceFile, filters ) ) {
+                    // evaluate filters and remove if those only file level filters and don't need to be pushed down.
+                    ResidualFilters residualFilters = ParquetSourceFileFilterReducer.reduce( sourceFile, sourceFileEvaluator, filters );
+                    if ( !residualFilters.matches() ) {
                         continue;
                     }
                     // create Enumerator
-                    currentEnumerator = enumeratorFactory.apply( sourceFile );
+                    currentEnumerator = enumeratorFactory.apply( sourceFile, residualFilters.filters() );
                 }
 
                 if ( currentEnumerator.moveNext() ) {

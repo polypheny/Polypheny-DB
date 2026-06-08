@@ -22,6 +22,7 @@ import org.polypheny.db.adapter.parquet.relational.schema.ParquetRelTable;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.type.entity.PolyValue;
 
 final class ParquetPolyAlgDisplay {
 
@@ -52,19 +53,19 @@ final class ParquetPolyAlgDisplay {
     }
 
 
-    static List<String> filters( List<ParquetAdapterFilter> filters, List<String> fieldNames ) {
+    static List<String> filters( List<ParquetAdapterFilter<PolyValue>> filters, List<String> fieldNames ) {
         return filters.stream()
                 .map( filter -> filter( filter, fieldNames ) )
                 .toList();
     }
 
 
-    static String filter( ParquetAdapterFilter filter, List<String> fieldNames ) {
+    static String filter( ParquetAdapterFilter<PolyValue> filter, List<String> fieldNames ) {
         if ( filter.isLogical() ) {
             return filter.operator().name() + "("
                     + String.join( ", ", filter.operands().stream()
-                            .map( operand -> filter( operand, fieldNames ) )
-                            .toList() )
+                    .map( operand -> filter( operand, fieldNames ) )
+                    .toList() )
                     + ")";
         }
 
@@ -76,10 +77,10 @@ final class ParquetPolyAlgDisplay {
         String value;
         if ( filter.dynamicParamIndex() != null ) {
             value = "?" + filter.dynamicParamIndex();
-        } else if ( filter.polyValue() == null ) {
+        } else if ( filter.value() == null ) {
             value = "null";
         } else {
-            value = filter.polyValue().toString();
+            value = filter.value().toString();
         }
 
         return field + " " + operator( filter ) + " " + value;
@@ -105,7 +106,7 @@ final class ParquetPolyAlgDisplay {
     }
 
 
-    private static String operator( ParquetAdapterFilter filter ) {
+    private static String operator( ParquetAdapterFilter<PolyValue> filter ) {
         return filter.operator().sql == null ? filter.operator().name() : filter.operator().sql;
     }
 

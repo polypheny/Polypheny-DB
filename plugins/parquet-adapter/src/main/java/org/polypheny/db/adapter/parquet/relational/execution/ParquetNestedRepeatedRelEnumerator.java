@@ -82,7 +82,7 @@ public class ParquetNestedRepeatedRelEnumerator extends AbstractParquetEnumerato
     }
 
 
-    protected PolyValue extractValue( Group group, ParquetAdapterFilter filter ) {
+    protected PolyValue extractValue( Group group, ParquetAdapterFilter<PolyValue> filter ) {
         var virtualGroup = (VirtualGroup) group;
         var binding = columnBindings.get( filter.columnIndex() );
         return pathValueExtractor().extractValue( virtualGroup, binding, tablePath );

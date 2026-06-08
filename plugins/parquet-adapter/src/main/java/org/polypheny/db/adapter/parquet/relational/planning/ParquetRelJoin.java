@@ -45,6 +45,7 @@ import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.PolyValue;
 
 /**
  *  Planner node that represents a join the Parquet adapter can execute itself
@@ -54,7 +55,7 @@ public class ParquetRelJoin extends Join implements ParquetAlg {
     private final boolean leftIsParent; //whether the left input is the parent side
     private final PhysicalScan leftScan;
     private final PhysicalScan rightScan;
-    private final List<ParquetAdapterFilter> joinFilters; //filters that belong to the joined output
+    private final List<ParquetAdapterFilter<PolyValue>> joinFilters; //filters that belong to the joined output
 
 
     public ParquetRelJoin(
@@ -68,7 +69,7 @@ public class ParquetRelJoin extends Join implements ParquetAlg {
             boolean leftIsParent,
             PhysicalScan leftScan,
             PhysicalScan rightScan,
-            List<ParquetAdapterFilter> joinFilters) {
+            List<ParquetAdapterFilter<PolyValue>> joinFilters) {
         super(cluster, traitSet, left, right, condition, variablesSet, joinType);
         this.leftIsParent = leftIsParent;
         this.leftScan = leftScan;
@@ -165,8 +166,8 @@ public class ParquetRelJoin extends Join implements ParquetAlg {
     }
 
 
-    public ParquetRelJoin withFilters(List<ParquetAdapterFilter> filters) {
-        List<ParquetAdapterFilter> combinedFilters = new ArrayList<>(this.joinFilters);
+    public ParquetRelJoin withFilters(List<ParquetAdapterFilter<PolyValue>> filters) {
+        List<ParquetAdapterFilter<PolyValue>> combinedFilters = new ArrayList<>(this.joinFilters);
         combinedFilters.addAll(filters);
         return new ParquetRelJoin(getCluster(), traitSet, left, right, condition, variablesSet, joinType, leftIsParent, leftScan, rightScan, combinedFilters);
     }

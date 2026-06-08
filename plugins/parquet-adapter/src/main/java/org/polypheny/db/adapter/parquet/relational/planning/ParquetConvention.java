@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.parquet.relational.planning;
 
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.adapter.parquet.relational.optimization.ParquetRules;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;

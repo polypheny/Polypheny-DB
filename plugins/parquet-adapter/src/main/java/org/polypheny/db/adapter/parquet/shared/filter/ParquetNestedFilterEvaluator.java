@@ -43,7 +43,7 @@ public class ParquetNestedFilterEvaluator extends ParquetGroupFilterEvaluator {
 
 
     @Override
-    protected PolyValue extractValue( Group group, ParquetAdapterFilter filter ) {
+    protected PolyValue extractValue( Group group, ParquetAdapterFilter<PolyValue> filter ) {
         var pathValueExtractor = (ParquetPathValueExtractor) valueExtractor;
         var virtualGroup = (VirtualGroup) group;
         if ( filter.columnIndex() < 0 || filter.columnIndex() >= columnBindings.size() ) {

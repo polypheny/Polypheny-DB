@@ -23,6 +23,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyValue;
 
 /**
  * Responsible for parsing supported Rex predicates and
@@ -63,16 +64,16 @@ public abstract class AbstractFilterTranslator {
      * @param valueNode - value
      * @return adapter filter
      */
-    protected ParquetAdapterFilter toParquetAdapterFilter( int columnIndex, Kind operator, RexNode valueNode ) {
+    protected ParquetAdapterFilter<PolyValue> toParquetAdapterFilter( int columnIndex, Kind operator, RexNode valueNode ) {
         if ( valueNode instanceof RexLiteral literal ) {
             if ( literal.getValue() == null ) {
                 return null;
             }
-            return new ParquetAdapterFilter( columnIndex, operator, literal.getValue() );
+            return new ParquetAdapterFilter<>( columnIndex, operator, literal.getValue() );
         }
 
         if ( valueNode instanceof RexDynamicParam dynamicParam ) {
-            return new ParquetAdapterFilter( columnIndex, List.of(), operator, null, dynamicParam.getIndex() );
+            return new ParquetAdapterFilter<>( columnIndex, List.of(), operator, null, dynamicParam.getIndex() );
         }
 
         return null;

@@ -42,6 +42,7 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.PolyValue;
 
 /**
  * Parquet-convention scan for relational Parquet tables.
@@ -50,7 +51,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 public class ParquetRelScan extends RelScan<ParquetRelTable> implements ParquetAlg {
 
     private final int[] fields;
-    private final List<ParquetAdapterFilter> filters;
+    private final List<ParquetAdapterFilter<PolyValue>> filters;
 
 
     public ParquetRelScan(AlgCluster cluster, ParquetRelTable table, int[] fields) {
@@ -58,7 +59,7 @@ public class ParquetRelScan extends RelScan<ParquetRelTable> implements ParquetA
     }
 
 
-    public ParquetRelScan(AlgCluster cluster, ParquetRelTable table, int[] fields, List<ParquetAdapterFilter> filters) {
+    public ParquetRelScan(AlgCluster cluster, ParquetRelTable table, int[] fields, List<ParquetAdapterFilter<PolyValue>> filters) {
         super(cluster, cluster.traitSetOf(ParquetConvention.INSTANCE).replace(ModelTrait.RELATIONAL), table);
         this.fields = fields;
         this.filters = List.copyOf(filters);
@@ -119,8 +120,8 @@ public class ParquetRelScan extends RelScan<ParquetRelTable> implements ParquetA
     }
 
 
-    public ParquetRelScan withFilters(List<ParquetAdapterFilter> filters) {
-        List<ParquetAdapterFilter> combinedFilters = new ArrayList<>(this.filters);
+    public ParquetRelScan withFilters(List<ParquetAdapterFilter<PolyValue>> filters) {
+        List<ParquetAdapterFilter<PolyValue>> combinedFilters = new ArrayList<>(this.filters);
         combinedFilters.addAll(filters);
         return new ParquetRelScan(getCluster(), entity, fields, combinedFilters);
     }

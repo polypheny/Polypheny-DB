@@ -36,7 +36,7 @@ import org.polypheny.db.type.entity.PolyValue;
 public abstract class AbstractParquetEnumerator implements Enumerator<PolyValue[]> {
 
     protected final ParquetSourceReader reader;
-    protected final List<ParquetAdapterFilter> filters;
+    protected final List<ParquetAdapterFilter<PolyValue>> filters;
     protected final ParquetGroupFilterEvaluator filterEvaluator;
     private final boolean readerOwner;
     private final Queue<PolyValue[]> rows = new ArrayDeque<>();

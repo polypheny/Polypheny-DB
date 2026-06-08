@@ -106,10 +106,10 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
      * @param filters - parquet filters
      * @return ParquetDocEnumerator
      */
-    public Enumerable<PolyValue[]> scanFiltered( DataContext dataContext, List<ParquetAdapterFilter> filters ) {
+    public Enumerable<PolyValue[]> scanFiltered( DataContext dataContext, List<ParquetAdapterFilter<PolyValue>> filters ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( parquetSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
-        final List<ParquetAdapterFilter> resolvedFilters = filters.stream().map( filter -> resolveFilter( dataContext, filter ) ).toList();
+        final List<ParquetAdapterFilter<PolyValue>> resolvedFilters = filters.stream().map( filter -> resolveFilter( dataContext, filter ) ).toList();
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
@@ -173,11 +173,11 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
      * @param filter parquet filter
      * @return ParquetFilter
      */
-    private ParquetAdapterFilter resolveFilter( DataContext dataContext, ParquetAdapterFilter filter ) {
+    private ParquetAdapterFilter<PolyValue> resolveFilter( DataContext dataContext, ParquetAdapterFilter<PolyValue> filter ) {
         if ( filter.dynamicParamIndex() == null ) {
             return filter;
         }
-        return new ParquetAdapterFilter(
+        return new ParquetAdapterFilter<>(
                 filter.columnIndex(),
                 filter.operator(),
                 dataContext.getParameterValue( filter.dynamicParamIndex() ) );
