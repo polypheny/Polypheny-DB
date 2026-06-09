@@ -188,7 +188,7 @@ class ParquetFileDiscoveryTest {
 
 
     @Test
-    void flatDiscoveryKeepsOrdersDbPrimaryKeys() throws Exception {
+    void flatDiscoveryKeepsOrdersDbPrimaryKeys() {
         URL ordersDb = ParquetFileDiscoveryTest.class.getClassLoader().getResource( "orders_db" );
         Map<String, DiscoveredTable> tables = ParquetFileDiscovery.discoverTables( ordersDb, PREFIX );
 
