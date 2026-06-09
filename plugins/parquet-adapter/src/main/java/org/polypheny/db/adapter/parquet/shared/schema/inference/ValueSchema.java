@@ -99,7 +99,7 @@ public record ValueSchema( ValueKind kind, PrimitiveType.PrimitiveTypeName primi
 
 
     public static ValueSchema timeType() {
-        return new ValueSchema( ValueKind.TIME, PrimitiveType.PrimitiveTypeName.INT64, LogicalTypeAnnotation.timeType( true, LogicalTypeAnnotation.TimeUnit.MILLIS ), null, false, null );
+        return new ValueSchema( ValueKind.TIME, PrimitiveType.PrimitiveTypeName.INT32, LogicalTypeAnnotation.timeType( true, LogicalTypeAnnotation.TimeUnit.MILLIS ), null, false, null );
     }
 
 

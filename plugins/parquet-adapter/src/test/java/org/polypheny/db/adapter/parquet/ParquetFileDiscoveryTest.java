@@ -143,6 +143,27 @@ class ParquetFileDiscoveryTest {
 
 
     @Test
+    void hidesPhysicalColumnWhenNormalizedPartitionNameCollidesAndValuesMatch() throws Exception {
+        Path partition = tempDir.resolve( "Region Name=EU" );
+        Files.createDirectories( partition );
+        MessageType schema = Types.buildMessage()
+                .required( org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64 ).named( "id" )
+                .required( org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY )
+                .as( org.apache.parquet.schema.LogicalTypeAnnotation.stringType() )
+                .named( "region_name" )
+                .named( "test" );
+        writeParquet( partition.resolve( "part-000.parquet" ), schema, row( 1L, "EU" ) );
+
+        Map<String, DiscoveredTable> tables = ParquetFileDiscovery.discoverTables( tempDir.toUri().toURL(), PREFIX );
+
+        DiscoveredTable table = tables.values().iterator().next();
+        assertEquals( List.of( "id", "region_name" ), columnNames( table.columns() ) );
+        assertEquals( Map.of( "id", List.of( "id" ) ), table.binding().columnPaths() );
+        assertEquals( "EU", table.binding().sourceFiles().get( 0 ).partitionValues().get( "region_name" ) );
+    }
+
+
+    @Test
     void failsWhenParquetColumnConflictsWithPartitionValue() throws Exception {
         Path partition = tempDir.resolve( "year=2025" );
         Files.createDirectories( partition );

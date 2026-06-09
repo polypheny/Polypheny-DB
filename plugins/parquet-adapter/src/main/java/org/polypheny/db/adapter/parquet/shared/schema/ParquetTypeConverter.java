@@ -331,7 +331,7 @@ public class ParquetTypeConverter {
         if ( logical instanceof TimeLogicalTypeAnnotation timeLogical ) {
             long millis = normalizeTimeLiteralToMillis( literal );
             return switch ( timeLogical.getUnit() ) {
-                case MILLIS -> primitive.getPrimitiveTypeName() == PrimitiveTypeName.INT32 ? (int) millis : millis;
+                case MILLIS -> parquetTimeMillisValue( primitive, millis );
                 case MICROS -> millis * 1_000L;
                 case NANOS -> millis * 1_000_000L;
             };
@@ -372,7 +372,7 @@ public class ParquetTypeConverter {
                 millis = normalizeTimeLiteralToMillis( literal.toString() );
             }
             return switch ( timeLogical.getUnit() ) {
-                case MILLIS -> primitive.getPrimitiveTypeName() == PrimitiveTypeName.INT32 ? (int) millis : millis;
+                case MILLIS -> parquetTimeMillisValue( primitive, millis );
                 case MICROS -> millis * 1_000L;
                 case NANOS -> millis * 1_000_000L;
             };
@@ -396,6 +396,14 @@ public class ParquetTypeConverter {
         }
 
         return null;
+    }
+
+
+    private Object parquetTimeMillisValue( PrimitiveType primitive, long millis ) {
+        if ( primitive.getPrimitiveTypeName() == PrimitiveTypeName.INT32 ) {
+            return Math.toIntExact( millis );
+        }
+        return millis;
     }
 
 

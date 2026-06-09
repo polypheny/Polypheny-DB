@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -48,7 +47,7 @@ import org.polypheny.db.workflow.dag.variables.VariableStore;
 class ActivityRegistryTest {
 
     @BeforeAll
-    public static void start() throws SQLException {
+    public static void start() {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance(); // required for access to the plugin classloader, itself a requirement for detecting all activities
     }
@@ -75,6 +74,12 @@ class ActivityRegistryTest {
     @Test
     public void extractParquetActivityIsRegistered() {
         assertTrue( ActivityRegistry.getRegistry().containsKey( "extractParquet" ) );
+    }
+
+
+    @Test
+    public void loadParquetActivityIsRegistered() {
+        assertTrue( ActivityRegistry.getRegistry().containsKey( "loadParquet" ) );
     }
 
 
