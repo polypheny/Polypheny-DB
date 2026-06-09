@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -80,43 +79,43 @@ public class ParquetFileDiscovery {
         }
 
         List<DiscoveredSourceFile> sourceFiles = discoverSourceFiles( baseDir );
-        Map<String, List<ExportedColumn>> tables = new HashMap<>();
+        Map<String, ExportedSchema> tables = new LinkedHashMap<>();
 
         for ( DiscoveredSourceFile sourceFile : sourceFiles ) {
             String tableName = prefixedTableName( tableNamePrefix, ParquetNameNormalizer.computePhysicalTableName( sourceFile.fileName() ) );
-            List<ExportedColumn> columns = schemaReader( sourceFile.url() ).exportedColumns( tableName );
-            if ( !columns.isEmpty() ) {
-                tables.put( sourceFile.key(), columns );
+            ExportedSchema exportedSchema = schemaReader( sourceFile.url() ).exportedSchema( tableName );
+            if ( !exportedSchema.columns().isEmpty() ) {
+                tables.put( sourceFile.key(), exportedSchema );
             }
         }
 
         if ( sourceFiles.stream().anyMatch( sourceFile -> !sourceFile.partitionValues().isEmpty() ) ) {
             String tableName = prefixedTableName( tableNamePrefix, tableNameFromSource( baseDir ) );
-            if ( !canConsolidateSchemas( tables.values() ) ) {
+            if ( !canConsolidateSchemas( tables ) ) {
                 throw new GenericRuntimeException( "Parquet partitioned table '%s' contains files with incompatible schemas.", tableName );
             }
             return Map.of( tableName, discoverPartitionedTable( tableName, tables, sourceFiles ) );
         }
 
-        if ( canExposeAsSingleTable( baseDir, tables.values() ) ) {
+        if ( canExposeAsSingleTable( baseDir, tables ) ) {
             String tableName = prefixedTableName( tableNamePrefix, tableNameFromSource( baseDir ) );
             return Map.of( tableName, discoverConsolidatedTable( tableName, tables, sourceFiles ) );
         }
 
         Map<String, DiscoveredTable> discoveredTables = new LinkedHashMap<>();
 
-        for ( Map.Entry<String, List<ExportedColumn>> entry : tables.entrySet() ) {
-            String tableName = entry.getValue().get( 0 ).physicalTableName();
+        for ( Map.Entry<String, ExportedSchema> entry : tables.entrySet() ) {
+            String tableName = entry.getValue().columns().get( 0 ).physicalTableName();
             discoveredTables.put(
                     tableName,
                     new DiscoveredTable(
                             tableName,
-                            entry.getValue(),
+                            entry.getValue().columns(),
                             new DiscoveredTableBinding(
                                     List.of( toSourceFile( sourceFiles, entry.getKey() ) ),
                                     null,
                                     List.of(),
-                                    columnPaths( entry.getValue() ) ) ) );
+                                    entry.getValue().columnPaths() ) ) );
         }
 
         return discoveredTables;
@@ -259,7 +258,7 @@ public class ParquetFileDiscovery {
     /**
      * Builds one DiscoveredTable for a partitioned folder layout. Adds data columns plus virtual partition columns.
      */
-    private static DiscoveredTable discoverPartitionedTable( String tableName, Map<String, List<ExportedColumn>> tables, List<DiscoveredSourceFile> sourceFiles ) {
+    private static DiscoveredTable discoverPartitionedTable( String tableName, Map<String, ExportedSchema> tables, List<DiscoveredSourceFile> sourceFiles ) {
         List<String> partitionColumnNames = partitionColumnNames( sourceFiles );
         validatePartitionColumnCollisions( tables, sourceFiles, partitionColumnNames );
         Collection<ExportedColumn> columns = getConsolidatedExportedColumns( tables ).stream()
@@ -276,29 +275,29 @@ public class ParquetFileDiscovery {
                         sourceFiles.stream().map( ParquetFileDiscovery::toSourceFile ).toList(),
                         null,
                         List.of(),
-                        columnPaths( columns ) ) );
+                        columnPaths( tables.values(), columns ) ) );
     }
 
 
     /**
      * Handles the case where a Parquet file already has a column with the same name as a partition folder key
      */
-    private static void validatePartitionColumnCollisions( Map<String, List<ExportedColumn>> tables, List<DiscoveredSourceFile> sourceFiles, List<String> partitionColumnNames ) {
+    private static void validatePartitionColumnCollisions( Map<String, ExportedSchema> tables, List<DiscoveredSourceFile> sourceFiles, List<String> partitionColumnNames ) {
         for ( DiscoveredSourceFile sourceFile : sourceFiles ) {
-            List<ExportedColumn> columns = tables.get( sourceFile.key() );
-            if ( columns == null ) {
+            ExportedSchema exportedSchema = tables.get( sourceFile.key() );
+            if ( exportedSchema == null ) {
                 continue;
             }
-            for ( ExportedColumn column : columns ) {
+            for ( ExportedColumn column : exportedSchema.columns() ) {
                 if ( partitionColumnNames.contains( column.name() ) ) {
-                    validatePartitionColumnCollision( sourceFile, column );
+                    validatePartitionColumnCollision( sourceFile, column, exportedSchema.columnPaths().get( column.name() ) );
                 }
             }
         }
     }
 
 
-    private static void validatePartitionColumnCollision( DiscoveredSourceFile sourceFile, ExportedColumn column ) {
+    private static void validatePartitionColumnCollision( DiscoveredSourceFile sourceFile, ExportedColumn column, List<String> sourcePath ) {
         String partitionValue = sourceFile.partitionValues().get( column.name() );
         if ( partitionValue == null ) {
             return;
@@ -307,7 +306,7 @@ public class ParquetFileDiscovery {
         var schemaReader = schemaReader( sourceFile.url() );
         for ( var footer : schemaReader.getFooters() ) {
             for ( BlockMetaData block : footer.getBlocks() ) {
-                ColumnChunkMetaData columnChunk = findColumnChunk( block, column.physicalColumnName() );
+                ColumnChunkMetaData columnChunk = findColumnChunk( block, sourcePath );
                 if ( columnChunk == null ) {
                     continue;
                 }
@@ -323,9 +322,12 @@ public class ParquetFileDiscovery {
     }
 
 
-    private static ColumnChunkMetaData findColumnChunk( BlockMetaData block, String physicalColumnName ) {
+    private static ColumnChunkMetaData findColumnChunk( BlockMetaData block, List<String> sourcePath ) {
+        if ( sourcePath == null || sourcePath.isEmpty() ) {
+            return null;
+        }
         for ( ColumnChunkMetaData column : block.getColumns() ) {
-            if ( List.of( column.getPath().toArray() ).equals( List.of( physicalColumnName ) ) ) {
+            if ( List.of( column.getPath().toArray() ).equals( sourcePath ) ) {
                 return column;
             }
         }
@@ -357,7 +359,7 @@ public class ParquetFileDiscovery {
     /**
      * Builds one DiscoveredTable from multiple compatible non-partitioned files.
      */
-    private static DiscoveredTable discoverConsolidatedTable( String tableName, Map<String, List<ExportedColumn>> tables, List<DiscoveredSourceFile> sourceFiles ) {
+    private static DiscoveredTable discoverConsolidatedTable( String tableName, Map<String, ExportedSchema> tables, List<DiscoveredSourceFile> sourceFiles ) {
         Collection<ExportedColumn> columns = getConsolidatedExportedColumns( tables );
         return new DiscoveredTable(
                 tableName,
@@ -366,21 +368,27 @@ public class ParquetFileDiscovery {
                         sourceFiles.stream().map( ParquetFileDiscovery::toSourceFile ).toList(),
                         null,
                         List.of(),
-                        columnPaths( columns ) ) );
+                        columnPaths( tables.values(), columns ) ) );
     }
 
 
-    private static boolean canExposeAsSingleTable( URL baseDir, Collection<List<ExportedColumn>> columnsSet ) {
-        if ( columnsSet.size() < 2 || Sources.of( baseDir ).file().isFile() ) {
+    private static boolean canExposeAsSingleTable( URL baseDir, Map<String, ExportedSchema> tables ) {
+        if ( tables.size() < 2 || Sources.of( baseDir ).file().isFile() ) {
             return false;
         }
-        return canConsolidateSchemas( columnsSet );
+        return canConsolidateSchemas( tables );
     }
 
     /**
      * Checks whether multiple files are similar enough to be one logical table
      */
-    private static boolean canConsolidateSchemas( Collection<List<ExportedColumn>> columnsSet ) {
+    private static boolean canConsolidateSchemas( Map<String, ExportedSchema> tables ) {
+        return columnTypesAreCompatible( columnLists( tables ) )
+                && columnPathsAreCompatible( tables.values() );
+    }
+
+
+    private static boolean columnTypesAreCompatible( Collection<List<ExportedColumn>> columnsSet ) {
         List<Set<String>> columnSets = new ArrayList<>();
         Map<String, PolyType> consolidatedTypes = new LinkedHashMap<>();
 
@@ -397,6 +405,20 @@ public class ParquetFileDiscovery {
         }
 
         return columnSets.size() == 1 || schemasAreSimilarEnough( columnSets );
+    }
+
+
+    private static boolean columnPathsAreCompatible( Collection<ExportedSchema> schemas ) {
+        Map<String, List<String>> pathsByName = new LinkedHashMap<>();
+        for ( ExportedSchema schema : schemas ) {
+            for ( Map.Entry<String, List<String>> entry : schema.columnPaths().entrySet() ) {
+                List<String> existing = pathsByName.putIfAbsent( entry.getKey(), entry.getValue() );
+                if ( existing != null && !existing.equals( entry.getValue() ) ) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
 
@@ -426,10 +448,15 @@ public class ParquetFileDiscovery {
     }
 
 
-    private static Collection<ExportedColumn> getConsolidatedExportedColumns( Map<String, List<ExportedColumn>> tables ) {
+    private static Collection<List<ExportedColumn>> columnLists( Map<String, ExportedSchema> tables ) {
+        return tables.values().stream().map( ExportedSchema::columns ).toList();
+    }
+
+
+    private static Collection<ExportedColumn> getConsolidatedExportedColumns( Map<String, ExportedSchema> tables ) {
         Map<String, ExportedColumn> columnsByName = new LinkedHashMap<>();
-        for ( List<ExportedColumn> columns : tables.values() ) {
-            for ( ExportedColumn column : columns ) {
+        for ( ExportedSchema schema : tables.values() ) {
+            for ( ExportedColumn column : schema.columns() ) {
                 columnsByName.putIfAbsent( column.name(), column );
             }
         }
@@ -437,8 +464,21 @@ public class ParquetFileDiscovery {
     }
 
 
-    private static Map<String, List<String>> columnPaths( Collection<ExportedColumn> columns ) {
-        return columns.stream().collect( LinkedHashMap::new, ( map, column ) -> map.put( column.name(), List.of( column.physicalColumnName() ) ), LinkedHashMap::putAll );
+    private static Map<String, List<String>> columnPaths( Collection<ExportedSchema> schemas, Collection<ExportedColumn> columns ) {
+        Map<String, List<String>> pathsByName = new LinkedHashMap<>();
+        for ( ExportedSchema schema : schemas ) {
+            schema.columnPaths().forEach( pathsByName::putIfAbsent );
+        }
+
+        return columns.stream().collect(
+                LinkedHashMap::new,
+                ( map, column ) -> {
+                    List<String> sourcePath = pathsByName.get( column.name() );
+                    if ( sourcePath != null ) {
+                        map.put( column.name(), sourcePath );
+                    }
+                },
+                LinkedHashMap::putAll );
     }
 
 

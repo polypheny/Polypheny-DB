@@ -17,11 +17,13 @@
 package org.polypheny.db.adapter.parquet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -43,6 +45,7 @@ import org.polypheny.db.adapter.parquet.relational.schema.DiscoveredTable;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSchemaNormalizer;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSyntheticColumns;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetFileDiscovery;
+import org.polypheny.db.type.PolyType;
 
 
 class ParquetFileDiscoveryTest {
@@ -168,14 +171,39 @@ class ParquetFileDiscoveryTest {
 
 
     @Test
-    void flatDiscoveryBindsTopLevelListColumnToRootPath() throws Exception {
+    void flatDiscoveryFlattensNonRepeatedNestedColumnsAndKeepsRepeatedColumns() throws Exception {
         writeParquet( tempDir.resolve( "flickr.parquet" ), flickrSchema(), flickrRow() );
 
         Map<String, DiscoveredTable> tables = ParquetFileDiscovery.discoverTables( tempDir.toUri().toURL(), PREFIX );
 
         DiscoveredTable table = tables.get( PREFIX + "__flickr" );
-        assertEquals( List.of( "id", "captions", "image" ), columnNames( table.columns() ) );
+        assertEquals( List.of( "id", "metadata_source", "metadata_size_width", "metadata_size_height", "captions", "image" ), columnNames( table.columns() ) );
+        assertFalse( table.columns().get( 0 ).nullable() );
+        assertTrue( table.columns().get( 0 ).primary() );
+        assertEquals( PolyType.DOCUMENT, table.columns().get( 4 ).type() );
+        assertEquals( List.of( "metadata", "source" ), table.binding().columnPaths().get( "metadata_source" ) );
+        assertEquals( List.of( "metadata", "size", "width" ), table.binding().columnPaths().get( "metadata_size_width" ) );
         assertEquals( List.of( "captions" ), table.binding().columnPaths().get( "captions" ) );
+    }
+
+
+    @Test
+    void flatDiscoveryKeepsOrdersDbPrimaryKeys() throws Exception {
+        URL ordersDb = ParquetFileDiscoveryTest.class.getClassLoader().getResource( "orders_db" );
+        Map<String, DiscoveredTable> tables = ParquetFileDiscovery.discoverTables( ordersDb, PREFIX );
+
+        assertPrimaryColumn( tables.get( PREFIX + "__customers" ), "customer_id" );
+        assertPrimaryColumn( tables.get( PREFIX + "__products" ), "product_id" );
+        assertPrimaryColumn( tables.get( PREFIX + "__orders" ), "order_id" );
+        assertPrimaryColumn( tables.get( PREFIX + "__order_items" ), "order_item_id" );
+    }
+
+
+    private static void assertPrimaryColumn( DiscoveredTable table, String columnName ) {
+        ExportedColumn column = table.columns().get( 0 );
+        assertEquals( columnName, column.name() );
+        assertFalse( column.nullable() );
+        assertTrue( column.primary() );
     }
 
 
@@ -208,6 +236,13 @@ class ParquetFileDiscoveryTest {
         return MessageTypeParser.parseMessageType( """
                 message test {
                   optional binary id (STRING);
+                  optional group metadata {
+                    optional binary source (STRING);
+                    optional group size {
+                      optional int64 width;
+                      optional int64 height;
+                    }
+                  }
                   optional group captions (LIST) {
                     repeated group list {
                       optional binary element (STRING);
@@ -220,7 +255,7 @@ class ParquetFileDiscoveryTest {
 
 
     private static Object[] flickrRow() {
-        return row( "image-1.jpg", List.of( "a dog in grass", "a puppy outside" ), "image-bytes" );
+        return row( "image-1.jpg", null, List.of( "a dog in grass", "a puppy outside" ), "image-bytes" );
     }
 
 
@@ -229,6 +264,9 @@ class ParquetFileDiscoveryTest {
         Group group = groupFactory.newGroup();
         for ( int i = 0; i < values.length; i++ ) {
             Object value = values[i];
+            if ( value == null ) {
+                continue;
+            }
             if ( value instanceof String string ) {
                 group.add( i, string );
             } else if ( value instanceof List<?> list ) {

@@ -28,6 +28,9 @@ import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.hadoop.util.HadoopInputFile;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
+import org.apache.parquet.schema.LogicalTypeAnnotation.ListLogicalTypeAnnotation;
+import org.apache.parquet.schema.LogicalTypeAnnotation.MapLogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
@@ -115,35 +118,136 @@ public class ParquetSchemaReader {
     }
 
 
-    public List<ExportedColumn> exportedColumns( String tableName ) {
+    public ExportedSchema exportedSchema( String tableName ) {
         try {
             ParquetTypeConverter typeConverter = new ParquetTypeConverter();
             List<ExportedColumn> columns = new ArrayList<>();
+            Map<String, List<String>> columnPaths = new LinkedHashMap<>();
+            Map<String, Integer> seenColumnNames = new LinkedHashMap<>();
             List<Type> fields = getSchema().getFields();
-            for ( int i = 0; i < fields.size(); i++ ) {
-                Type field = fields.get( i );
-                columns.add(
-                        new ExportedColumn(
-                                ParquetNameNormalizer.normalizeFieldName( field.getName() ),
-                                typeConverter.fromParquetTypeToPolyType( field ),
-                                null,
-                                null,
-                                null,
-                                null,
-                                null,
-                                false,
-                                tableName,
-                                tableName,
-                                field.getName(),
-                                i,
-                                i == 0
-                        )
-                );
+            for ( Type field : fields ) {
+                collectFlatColumns(
+                        tableName,
+                        field,
+                        List.of( field.getName() ),
+                        List.of( normalizedPathElement( field ) ),
+                        columns,
+                        columnPaths,
+                        seenColumnNames,
+                        typeConverter );
             }
-            return columns;
+            return new ExportedSchema( columns, columnPaths );
         } catch ( Exception e ) {
             throw new GenericRuntimeException( e );
         }
+    }
+
+
+    /***
+     *  Decides whether a Parquet field becomes a column itself, or whether its children become
+     *  columns on the parent table.
+     */
+    private void collectFlatColumns(
+            String tableName,
+            Type field,
+            List<String> sourcePath,
+            List<String> normalizedPath,
+            List<ExportedColumn> columns,
+            Map<String, List<String>> columnPaths,
+            Map<String, Integer> seenColumnNames,
+            ParquetTypeConverter typeConverter ) {
+        if ( shouldPreserveAsNestedColumn( field ) || field.isPrimitive() ) {
+            addFlatColumn(
+                    tableName,
+                    field,
+                    sourcePath,
+                    normalizedPath,
+                    columns,
+                    columnPaths,
+                    seenColumnNames,
+                    typeConverter );
+            return;
+        }
+
+        for ( Type child : field.asGroupType().getFields() ) {
+            collectFlatColumns(
+                    tableName,
+                    child,
+                    appendPath( sourcePath, child.getName() ),
+                    appendPath( normalizedPath, normalizedPathElement( child ) ),
+                    columns,
+                    columnPaths,
+                    seenColumnNames,
+                    typeConverter );
+        }
+    }
+
+
+    /***
+     * Creates ExportedColumn and stores its path.
+     */
+    private void addFlatColumn(
+            String tableName,
+            Type field,
+            List<String> sourcePath,
+            List<String> normalizedPath,
+            List<ExportedColumn> columns,
+            Map<String, List<String>> columnPaths,
+            Map<String, Integer> seenColumnNames,
+            ParquetTypeConverter typeConverter ) {
+        String columnName = uniqueColumnName( seenColumnNames, String.join( "_", normalizedPath ) );
+        columns.add( new ExportedColumn(
+                columnName,
+                typeConverter.fromParquetTypeToPolyType( field ),
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+                tableName,
+                tableName,
+                String.join( ".", sourcePath ),
+                columns.size(),
+                columns.isEmpty() ) );
+        columnPaths.put( columnName, sourcePath );
+    }
+
+
+    /***
+     * Prevents repeated/list/map fields from being flattened
+     */
+    private static boolean shouldPreserveAsNestedColumn( Type field ) {
+        return field.isRepetition( Type.Repetition.REPEATED ) || isLogicalListOrMap( field );
+    }
+
+
+    private static boolean isLogicalListOrMap( Type field ) {
+        LogicalTypeAnnotation logical = field.getLogicalTypeAnnotation();
+        return logical instanceof ListLogicalTypeAnnotation || logical instanceof MapLogicalTypeAnnotation;
+    }
+
+
+    private static String normalizedPathElement( Type field ) {
+        String normalized = ParquetNameNormalizer.normalizeFieldName( field.getName() );
+        return normalized.isBlank() ? "field" : normalized;
+    }
+
+
+    private static String uniqueColumnName( Map<String, Integer> seenColumnNames, String baseName ) {
+        if ( baseName.isBlank() ) {
+            baseName = "field";
+        }
+        int count = seenColumnNames.getOrDefault( baseName, 0 );
+        seenColumnNames.put( baseName, count + 1 );
+        return count == 0 ? baseName : baseName + "_" + (count + 1);
+    }
+
+
+    private static List<String> appendPath( List<String> path, String element ) {
+        List<String> next = new ArrayList<>( path );
+        next.add( element );
+        return next;
     }
 
 

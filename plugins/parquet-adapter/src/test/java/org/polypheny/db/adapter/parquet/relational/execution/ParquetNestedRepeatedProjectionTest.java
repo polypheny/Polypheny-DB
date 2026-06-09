@@ -51,6 +51,7 @@ import org.polypheny.db.adapter.parquet.shared.io.ParquetSchemaReader;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
@@ -108,6 +109,37 @@ class ParquetNestedRepeatedProjectionTest {
     }
 
 
+    @Test
+    void flatTableProjectsNonRepeatedNestedFieldsAndRepeatedDocumentsFromBindings() throws Exception {
+        Path file = tempDir.resolve( "flat-nested.parquet" );
+        writeFlatNestedParquet( file );
+
+        ParquetSourceFile sourceFile = new ParquetSourceFile( file.toUri().toURL().toString(), Map.of(), Map.of() );
+        ParquetRelTable table = flatNestedRootTable( sourceFile );
+        ParquetSchemaReader schemaReader = new ParquetSchemaReader( sourceFile.asSource() );
+
+        try ( Enumerator<PolyValue[]> enumerator = ParquetRelExecutor.enumeratorForFile(
+                table,
+                sourceFile,
+                new int[]{ 0, 1, 2, 3, 4 },
+                new int[]{ 0, 1, 2, 3, 4 },
+                schemaReader,
+                new AtomicBoolean( false ),
+                FiltersContainer.empty ) ) {
+            assertTrue( enumerator.moveNext() );
+            PolyValue[] row = enumerator.current();
+            assertEquals( "image-1.jpg", row[0].asString().value );
+            assertEquals( "camera", row[1].asString().value );
+            assertEquals( 640L, row[2].asNumber().longValue() );
+            assertTrue( row[3].isDocument() );
+            assertTrue( row[3].asDocument().containsKey( PolyString.of( "list" ) ) );
+            assertEquals( "image-bytes", row[4].asString().value );
+
+            assertFalse( enumerator.moveNext() );
+        }
+    }
+
+
     private static ParquetRelTable captionsListTable( ParquetSourceFile sourceFile ) {
         PhysicalColumn rowId = column( 10, ParquetSyntheticColumns.ROW_ID, 0, PolyType.VARCHAR );
         PhysicalColumn parentRowId = column( 11, ParquetSyntheticColumns.PARENT_ROW_ID, 1, PolyType.VARCHAR );
@@ -137,6 +169,37 @@ class ParquetNestedRepeatedProjectionTest {
     }
 
 
+    private static ParquetRelTable flatNestedRootTable( ParquetSourceFile sourceFile ) {
+        PhysicalColumn id = column( 20, "id", 0, PolyType.VARCHAR );
+        PhysicalColumn source = column( 21, "metadata_source", 1, PolyType.VARCHAR );
+        PhysicalColumn width = column( 22, "metadata_size_width", 2, PolyType.BIGINT );
+        PhysicalColumn captions = column( 23, "captions", 3, PolyType.DOCUMENT );
+        PhysicalColumn image = column( 24, "image", 4, PolyType.VARCHAR );
+        PhysicalTable physicalTable = new PhysicalTable(
+                2,
+                1,
+                1,
+                "flickr8k",
+                List.of( id, source, width, captions, image ),
+                1,
+                "public",
+                List.of(),
+                1 );
+
+        ParquetTableBinding binding = new ParquetTableBinding(
+                List.of( sourceFile ),
+                null,
+                List.of(),
+                Map.of(
+                        id.id, new ParquetColumnBinding( id.id, id.name, ParquetColumnRole.DATA, List.of( "id" ) ),
+                        source.id, new ParquetColumnBinding( source.id, source.name, ParquetColumnRole.DATA, List.of( "metadata", "source" ) ),
+                        width.id, new ParquetColumnBinding( width.id, width.name, ParquetColumnRole.DATA, List.of( "metadata", "size", "width" ) ),
+                        captions.id, new ParquetColumnBinding( captions.id, captions.name, ParquetColumnRole.DATA, List.of( "captions" ) ),
+                        image.id, new ParquetColumnBinding( image.id, image.name, ParquetColumnRole.DATA, List.of( "image" ) ) ) );
+        return new ParquetRelTable( 2, physicalTable, binding, null );
+    }
+
+
     private static PhysicalColumn column( long id, String name, int position, PolyType type ) {
         return new PhysicalColumn( id, name, name, 1, 1, 1, position, type, null, null, null, null, null, false, null, null );
     }
@@ -157,6 +220,43 @@ class ParquetNestedRepeatedProjectionTest {
 
         SimpleGroupFactory groupFactory = new SimpleGroupFactory( schema );
         Group row = groupFactory.newGroup().append( "id", "image-1.jpg" );
+        Group captions = row.addGroup( "captions" );
+        captions.addGroup( "list" ).append( "element", "a dog in grass" );
+        captions.addGroup( "list" ).append( "element", "a puppy outside" );
+
+        try ( ParquetWriter<Group> writer = ExampleParquetWriter.builder( new LocalOutputFile( file ) )
+                .withType( schema )
+                .build() ) {
+            writer.write( row );
+        }
+    }
+
+
+    private static void writeFlatNestedParquet( Path file ) throws Exception {
+        MessageType schema = MessageTypeParser.parseMessageType( """
+                message test {
+                  optional binary id (STRING);
+                  optional group metadata {
+                    optional binary source (STRING);
+                    optional group size {
+                      optional int64 width;
+                    }
+                  }
+                  optional group captions (LIST) {
+                    repeated group list {
+                      optional binary element (STRING);
+                    }
+                  }
+                  optional binary image (STRING);
+                }
+                """ );
+
+        SimpleGroupFactory groupFactory = new SimpleGroupFactory( schema );
+        Group row = groupFactory.newGroup()
+                .append( "id", "image-1.jpg" )
+                .append( "image", "image-bytes" );
+        Group metadata = row.addGroup( "metadata" ).append( "source", "camera" );
+        metadata.addGroup( "size" ).append( "width", 640L );
         Group captions = row.addGroup( "captions" );
         captions.addGroup( "list" ).append( "element", "a dog in grass" );
         captions.addGroup( "list" ).append( "element", "a puppy outside" );
