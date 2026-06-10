@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.csv;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.net.JarURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -28,6 +29,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.experimental.Delegate;
@@ -77,6 +80,7 @@ import org.slf4j.LoggerFactory;
 public class CsvSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
     private static final Logger log = LoggerFactory.getLogger( CsvSource.class );
+    private static final String CLASSPATH_PREFIX = "classpath://";
     @Delegate(excludes = Excludes.class)
     private final RelationalScanDelegate delegate;
     private final ConnectionMethod connectionMethod;
@@ -147,9 +151,13 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
         if ( connectionMethod == ConnectionMethod.LINK ) {
             dir = settings.get( "directoryName" );
         }
+        if ( dir == null || dir.isBlank() ) {
+            throw new GenericRuntimeException( "CSV directory setting is missing." );
+        }
+        dir = dir.trim();
 
-        if ( dir.startsWith( "classpath://" ) ) {
-            csvDir = this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
+        if ( dir.startsWith( CLASSPATH_PREFIX ) ) {
+            csvDir = resolveClasspathDirectory( dir.substring( CLASSPATH_PREFIX.length() ) );
         } else {
             try {
                 csvDir = new File( dir ).toURI().toURL();
@@ -157,6 +165,18 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
                 throw new GenericRuntimeException( e );
             }
         }
+    }
+
+
+    private URL resolveClasspathDirectory( String directory ) {
+        String normalized = directory.endsWith( "/" ) ? directory : directory + "/";
+        ClassLoader classLoader = this.getClass().getClassLoader();
+        URL directoryUrl = classLoader.getResource( normalized );
+        if ( directoryUrl != null ) {
+            return directoryUrl;
+        }
+
+        throw new GenericRuntimeException( "Could not resolve CSV directory: " + CLASSPATH_PREFIX + directory );
     }
 
 
@@ -172,14 +192,18 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
             // if we upload, file will not be changed, and we can cache the columns information, if "link" is used this is not advised
             return exportedColumnCache;
         }
+        if ( csvDir == null ) {
+            throw new GenericRuntimeException( "CSV directory is not configured." );
+        }
         Map<String, List<ExportedColumn>> exportedColumnCache = new HashMap<>();
         Set<String> fileNames;
         if ( csvDir.getProtocol().equals( "jar" ) ) {
-
-            List<AllocationEntity> placements = Catalog.snapshot().alloc().getEntitiesOnAdapter( getAdapterId() ).orElse( List.of() );
-            fileNames = new HashSet<>();
-            for ( AllocationEntity ccp : placements ) {
-                fileNames.add( ccp.getNamespaceName() );
+            fileNames = getCsvFileNamesFromJar( csvDir );
+            if ( fileNames.isEmpty() ) {
+                List<AllocationEntity> placements = Catalog.snapshot().alloc().getEntitiesOnAdapter( getAdapterId() ).orElse( List.of() );
+                for ( AllocationEntity ccp : placements ) {
+                    fileNames.add( ccp.getNamespaceName() );
+                }
             }
         } else if ( Sources.of( csvDir ).file().isFile() ) {
             // single files
@@ -277,6 +301,35 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
         }
         this.exportedColumnCache = exportedColumnCache;
         return exportedColumnCache;
+    }
+
+
+    private Set<String> getCsvFileNamesFromJar( URL directoryUrl ) {
+        Set<String> fileNames = new HashSet<>();
+        try {
+            JarURLConnection connection = (JarURLConnection) directoryUrl.openConnection();
+            connection.setUseCaches( false );
+            String directory = connection.getEntryName();
+            if ( directory == null ) {
+                directory = "";
+            } else if ( !directory.endsWith( "/" ) ) {
+                directory += "/";
+            }
+            String directoryPrefix = directory;
+
+            try ( JarFile jarFile = connection.getJarFile() ) {
+                jarFile.stream()
+                        .map( JarEntry::getName )
+                        .filter( name -> name.startsWith( directoryPrefix ) && !name.equals( directoryPrefix ) )
+                        .map( name -> name.substring( directoryPrefix.length() ) )
+                        .filter( name -> !name.contains( "/" ) )
+                        .filter( name -> name.endsWith( ".csv" ) || name.endsWith( ".csv.gz" ) )
+                        .forEach( fileNames::add );
+            }
+        } catch ( IOException e ) {
+            throw new GenericRuntimeException( e );
+        }
+        return fileNames;
     }
 
 

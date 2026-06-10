@@ -55,7 +55,7 @@ subprojects {
         dependsOn(tasks.named('classes'))
         into('classes') {
             from sourceSets.main.output.classesDirs
-            from(sourceSets.main.output.resourcesDir) {
+            from({ sourceSets.main.resources.srcDirs }) {
                 exclude 'java/**'
             }
         }
