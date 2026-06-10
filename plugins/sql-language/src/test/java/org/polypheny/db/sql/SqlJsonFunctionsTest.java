@@ -203,6 +203,20 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
                 null,
                 is( PolyString.of( "bar" ) ) );
         assertJsonValueAny(
+                PathContext.withReturned( Functions.PathMode.LAX, PolyList.of( PolyString.of( "bar" ), PolyString.of( "baz" ) ) ),
+                JsonValueEmptyOrErrorBehavior.NULL,
+                null,
+                JsonValueEmptyOrErrorBehavior.NULL,
+                null,
+                is( PolyString.of( "[\"bar\",\"baz\"]" ) ) );
+        assertJsonValueAny(
+                PathContext.withReturned( Functions.PathMode.LAX, PolyList.of( PolyDocument.EMPTY_DOCUMENT ) ),
+                JsonValueEmptyOrErrorBehavior.NULL,
+                null,
+                JsonValueEmptyOrErrorBehavior.NULL,
+                null,
+                nullValue() );
+        assertJsonValueAny(
                 PathContext.withReturned( Functions.PathMode.LAX, null ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
@@ -224,21 +238,21 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
                 null,
                 errorMatches( new PolyphenyDbException( "Empty result of JSON_VALUE function is not allowed", null ) ) );
         assertJsonValueAny(
-                PathContext.withReturned( Functions.PathMode.LAX, PolyList.EMPTY_LIST ),
+                PathContext.withReturned( Functions.PathMode.LAX, PolyList.EMPTY_LIST, true ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 nullValue() );
         assertJsonValueAny(
-                PathContext.withReturned( Functions.PathMode.LAX, PolyList.EMPTY_LIST ),
+                PathContext.withReturned( Functions.PathMode.LAX, PolyList.EMPTY_LIST, true ),
                 JsonValueEmptyOrErrorBehavior.DEFAULT,
                 PolyString.of( "empty" ),
                 JsonValueEmptyOrErrorBehavior.NULL,
                 null,
                 is( PolyString.of( "empty" ) ) );
         assertJsonValueAnyFailed(
-                PathContext.withReturned( Functions.PathMode.LAX, PolyList.EMPTY_LIST ),
+                PathContext.withReturned( Functions.PathMode.LAX, PolyList.EMPTY_LIST, true ),
                 JsonValueEmptyOrErrorBehavior.ERROR,
                 null,
                 JsonValueEmptyOrErrorBehavior.NULL,

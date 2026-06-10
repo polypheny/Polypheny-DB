@@ -2474,6 +2474,20 @@ public class Functions {
     }
 
 
+    private static boolean isFlatScalarArray( PolyValue value ) {
+        return value != null
+                && value.isList()
+                && value.asList().stream().allMatch( Functions::isScalarPolyValue );
+    }
+
+
+    private static boolean isScalarPolyValue( PolyValue value ) {
+        return value == null
+                || value.isNull()
+                || (!value.isList() && !value.isMap() && !value.isDocument());
+    }
+
+
     public static Object jsonValueExpression( PolyString input ) {
         try {
             return dejsonize( input );
@@ -2618,7 +2632,9 @@ public class Functions {
             exc = context.exc;
         } else {
             PolyValue value = context.pathReturned;
-            if ( value == null || context.mode == PathMode.LAX && !isScalarObject( value ) ) {
+            if ( context.emptyResultSequence
+                    || value == null
+                    || context.mode == PathMode.LAX && !isScalarObject( value ) && !isFlatScalarArray( value ) ) {
                 return switch ( emptyBehavior ) {
                     case ERROR -> throw Static.RESOURCE.emptyResultOfJsonValueFuncNotAllowed().ex();
                     case NULL -> null;
@@ -2627,7 +2643,7 @@ public class Functions {
             } else if ( context.mode == PathMode.STRICT && !isScalarObject( value ) ) {
                 exc = Static.RESOURCE.scalarValueRequiredInStrictModeOfJsonValueFunc( value.toString() ).ex();
             } else {
-                return value;
+                return isFlatScalarArray( value ) ? PolyString.of( value.toJson() ) : value;
             }
         }
         return switch ( errorBehavior ) {

@@ -133,7 +133,7 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
 
 
     @Test
-    public void jsonValueMissingAndNonScalarPathsReturnNullTest() {
+    public void jsonValueMissingObjectAndObjectArrayPathsReturnNullTest() {
         executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format(
                     "SELECT "
@@ -146,7 +146,7 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
                     DATABASE_NAME,
                     EDGE_COLLECTION_NAME ) );
 
-            TestHelper.checkResultSet( result, List.<Object[]>of( new Object[]{ null, null, null, null } ) );
+            TestHelper.checkResultSet( result, List.<Object[]>of( new Object[]{ null, "[\"urgent\",\"blue\"]", null, null } ) );
         } );
     }
 
@@ -239,6 +239,50 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
                 ) );
             } finally {
                 s.executeUpdate( "DROP TABLE IF EXISTS cross_doc_groups" );
+            }
+        } );
+    }
+
+
+    @Test
+    public void sqlJoinRelationalTableWithDocumentJsonFlatArrayValueTest() {
+        executeStatements( ( s, c ) -> {
+            String collection = "crossSymptomsCollection";
+            s.executeUpdate( "DROP TABLE IF EXISTS cross_patients_info" );
+            try {
+                s.executeUpdate( "CREATE TABLE cross_patients_info( patient_id VARCHAR(36) NOT NULL, age INTEGER, sex VARCHAR(10), healthcare_worker BOOLEAN, outcome VARCHAR(20), PRIMARY KEY (patient_id) )" );
+                s.executeUpdate( "INSERT INTO cross_patients_info VALUES ('00000000-0000-0000-0000-0000000005dd', 41, 'female', true, 'recovered')" );
+
+                MqlTestTemplate.createCollection( collection, DATABASE_NAME );
+                MqlTestTemplate.execute(
+                        "db." + collection + ".insertMany(["
+                                + "{\"patient_id\":\"00000000-0000-0000-0000-0000000005dd\",\"viral_load_day1\":4.72,"
+                                + "\"symptoms_day1\":[\"pain level: 2\",\"fever\",\"headache\",\"difficulty_swallowing\",\"sweating\",\"muscle_pain\"]}"
+                                + "])",
+                        DATABASE_NAME );
+
+                ResultSet result = s.executeQuery( String.format(
+                        "SELECT p.patient_id, p.age, p.sex, p.healthcare_worker, p.outcome, "
+                                + "JSON_VALUE(s.d, 'lax $.viral_load_day1') AS viral_load_day1, "
+                                + "JSON_VALUE(s.d, 'lax $.symptoms_day1') AS symptoms_day1 "
+                                + "FROM cross_patients_info p "
+                                + "JOIN %s.%s s ON p.patient_id = JSON_VALUE(s.d, 'lax $.patient_id')",
+                        DATABASE_NAME,
+                        collection ) );
+
+                TestHelper.checkResultSet( result, List.<Object[]>of(
+                        new Object[]{
+                                "00000000-0000-0000-0000-0000000005dd",
+                                41,
+                                "female",
+                                true,
+                                "recovered",
+                                "4.72",
+                                "[\"pain level: 2\",\"fever\",\"headache\",\"difficulty_swallowing\",\"sweating\",\"muscle_pain\"]" }
+                ) );
+            } finally {
+                MqlTestTemplate.execute( "db." + collection + ".drop()", DATABASE_NAME );
+                s.executeUpdate( "DROP TABLE IF EXISTS cross_patients_info" );
             }
         } );
     }

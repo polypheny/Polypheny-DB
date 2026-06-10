@@ -117,7 +117,7 @@ class PostgresqlSqlDialectTest {
         String sql = call.toSqlString( PostgresqlSqlDialect.DEFAULT ).getSql();
 
         assertEquals(
-                "(CASE WHEN jsonb_typeof(jsonb_path_query_first((\"d\" )::jsonb, 'lax $.patient_id' , '{}'::jsonb, true)) IN ('object', 'array') THEN NULL ELSE jsonb_path_query_first((\"d\" )::jsonb, 'lax $.patient_id' , '{}'::jsonb, true) #>> '{}' END)",
+                "(CASE WHEN jsonb_typeof(jsonb_path_query_first((\"d\" )::jsonb, 'lax $.patient_id' , '{}'::jsonb, true)) = 'object' THEN NULL WHEN jsonb_typeof(jsonb_path_query_first((\"d\" )::jsonb, 'lax $.patient_id' , '{}'::jsonb, true)) = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements(jsonb_path_query_first((\"d\" )::jsonb, 'lax $.patient_id' , '{}'::jsonb, true)) AS elem(value) WHERE jsonb_typeof(elem.value) IN ('object', 'array')) THEN NULL WHEN jsonb_typeof(jsonb_path_query_first((\"d\" )::jsonb, 'lax $.patient_id' , '{}'::jsonb, true)) = 'array' THEN jsonb_path_query_first((\"d\" )::jsonb, 'lax $.patient_id' , '{}'::jsonb, true)::text ELSE jsonb_path_query_first((\"d\" )::jsonb, 'lax $.patient_id' , '{}'::jsonb, true) #>> '{}' END)",
                 sql );
     }
 

@@ -389,7 +389,15 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
         writer.print( "(CASE WHEN jsonb_typeof(" );
         unparseJsonPathQueryFirst( writer, commonSyntax, leftPrec, rightPrec );
-        writer.print( ") IN ('object', 'array') THEN NULL ELSE " );
+        writer.print( ") = 'object' THEN NULL WHEN jsonb_typeof(" );
+        unparseJsonPathQueryFirst( writer, commonSyntax, leftPrec, rightPrec );
+        writer.print( ") = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements(" );
+        unparseJsonPathQueryFirst( writer, commonSyntax, leftPrec, rightPrec );
+        writer.print( ") AS elem(value) WHERE jsonb_typeof(elem.value) IN ('object', 'array')) THEN NULL WHEN jsonb_typeof(" );
+        unparseJsonPathQueryFirst( writer, commonSyntax, leftPrec, rightPrec );
+        writer.print( ") = 'array' THEN " );
+        unparseJsonPathQueryFirst( writer, commonSyntax, leftPrec, rightPrec );
+        writer.print( "::text ELSE " );
         unparseJsonPathQueryFirst( writer, commonSyntax, leftPrec, rightPrec );
         writer.print( " #>> '{}' END)" );
         return true;
