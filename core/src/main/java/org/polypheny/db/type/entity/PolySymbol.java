@@ -18,6 +18,7 @@ package org.polypheny.db.type.entity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonToken;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -95,8 +96,17 @@ public class PolySymbol extends PolyValue {
 
 
     @Override
+    public String toJson() {
+        if ( value != null ) {
+            return value.name();
+        }
+        return object == null ? JsonToken.VALUE_NULL.asString() : object.toString();
+    }
+
+
+    @Override
     public String toString() {
-        return value.name();
+        return toJson();
     }
 
 }
