@@ -26,6 +26,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnRole;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetRelTable;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
+import org.polypheny.db.adapter.parquet.shared.planning.ParquetPolyAlgDisplay;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.CorrelationId;

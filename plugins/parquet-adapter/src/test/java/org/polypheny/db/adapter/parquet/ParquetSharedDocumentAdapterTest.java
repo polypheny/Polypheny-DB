@@ -52,9 +52,12 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.nodes.SpecialOperator;
+import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
@@ -179,12 +182,37 @@ class ParquetSharedDocumentAdapterTest {
         ParquetAdapterFilter<?> translated = translator.translate(
                 columns,
                 call( boolType, Kind.EQUALS, new RexNameRef( "Status", null, stringType ), new RexDynamicParam( stringType, 4 ) ) );
+        ParquetAdapterFilter<?> mqlGt = translator.translate(
+                columns,
+                call( boolType, Kind.GREATER_THAN, new RexNameRef( "status", null, stringType ), new RexDynamicParam( stringType, 6 ) ) );
         RexNode nested = call( boolType, Kind.EQUALS, new RexNameRef( List.of( "address", "city" ), null, stringType ), new RexDynamicParam( stringType, 5 ) );
+        RexBuilder rexBuilder = new RexBuilder( typeFactory );
+        RexCall path = new RexCall(
+                typeFactory.createArrayType( typeFactory.createPolyType( PolyType.CHAR, 6 ), 1 ),
+                new SpecialOperator( Kind.ARRAY_VALUE_CONSTRUCTOR.name(), Kind.ARRAY_VALUE_CONSTRUCTOR ),
+                List.of( rexBuilder.makeLiteral( "status" ) ) );
+        RexNode loweredMqlFilter = call(
+                boolType,
+                Kind.GREATER_THAN,
+                new RexCall(
+                        stringType,
+                        new SpecialOperator( Kind.MQL_QUERY_VALUE.name(), Kind.MQL_QUERY_VALUE ),
+                        List.of( RexIndexRef.of( 0, DocumentType.ofDoc() ), path ) ),
+                new RexDynamicParam( stringType, 7 ) );
 
         assertNotNull( translated );
         assertEquals( 3, translated.columnIndex() );
         assertEquals( Kind.EQUALS, translated.operator() );
         assertEquals( 4L, translated.dynamicParamIndex() );
+        assertNotNull( mqlGt );
+        assertEquals( 3, mqlGt.columnIndex() );
+        assertEquals( Kind.GREATER_THAN, mqlGt.operator() );
+        assertEquals( 6L, mqlGt.dynamicParamIndex() );
+        ParquetAdapterFilter<?> loweredMql = translator.translate( columns, loweredMqlFilter );
+        assertNotNull( loweredMql );
+        assertEquals( 3, loweredMql.columnIndex() );
+        assertEquals( Kind.GREATER_THAN, loweredMql.operator() );
+        assertEquals( 7L, loweredMql.dynamicParamIndex() );
         assertNull( translator.translate( columns, nested ) );
     }
 

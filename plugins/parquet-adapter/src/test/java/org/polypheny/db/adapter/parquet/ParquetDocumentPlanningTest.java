@@ -19,29 +19,23 @@ package org.polypheny.db.adapter.parquet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import sun.misc.Unsafe;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.parquet.document.ParquetDocumentSource;
-import org.polypheny.db.adapter.parquet.document.planning.ParquetDocFilter;
-import org.polypheny.db.adapter.parquet.document.planning.ParquetDocFilterRule;
 import org.polypheny.db.adapter.parquet.document.planning.ParquetDocScan;
 import org.polypheny.db.adapter.parquet.document.schema.ParquetDocument;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -51,15 +45,14 @@ import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexIndexRef;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
+import sun.misc.Unsafe;
+
 
 class ParquetDocumentPlanningTest {
 
@@ -71,6 +64,35 @@ class ParquetDocumentPlanningTest {
         } catch ( Exception e ) {
             // Already initialized by another test.
         }
+    }
+
+
+    private static AlgCluster cluster() {
+        AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        VolcanoPlanner planner = new VolcanoPlanner();
+        return AlgCluster.createDocument( planner, new RexBuilder( typeFactory ), null );
+    }
+
+
+    private static PhysicalCollection collection( String name ) {
+        return new PhysicalCollection( 10L, 20L, 30L, 40L, name, "public", 50L );
+    }
+
+
+    private static ParquetSourceFile sourceFile() {
+        return new ParquetSourceFile( "file:/tmp/orders.parquet", Map.of(), Map.of() );
+    }
+
+
+    private static ExportedColumn exportedColumn( String name, PolyType type, int position, boolean nullable ) {
+        return new ExportedColumn( name, type, null, null, null, null, null, nullable, "public", "orders", name, position, false );
+    }
+
+
+    private static TestParquetSource testSource() throws Exception {
+        java.lang.reflect.Field field = Unsafe.class.getDeclaredField( "theUnsafe" );
+        field.setAccessible( true );
+        return (TestParquetSource) ((Unsafe) field.get( null )).allocateInstance( TestParquetSource.class );
     }
 
 
@@ -112,81 +134,6 @@ class ParquetDocumentPlanningTest {
 
         VolcanoPlanner planner = new VolcanoPlanner();
         scan.register( planner );
-    }
-
-
-    @Test
-    void docFilterCopyPreservesEntityAndDelegatesToScanInput() {
-        ParquetDocument document = new ParquetDocument( collection( "orders" ), List.of( sourceFile() ), null );
-        AlgCluster cluster = cluster();
-        ParquetDocScan scan = new ParquetDocScan( cluster, document, List.of() );
-        RexNode condition = ref( cluster, 0 );
-        ParquetDocFilter filter = new ParquetDocFilter( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), scan, condition, document );
-
-        ParquetDocFilter copied = filter.copy( cluster.traitSetOf( EnumerableConvention.INSTANCE ), scan, condition );
-
-        assertNotSame( filter, copied );
-        assertSame( document, copied.getEntity() );
-        assertSame( scan, copied.getInput() );
-    }
-
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void docFilterRuleSplitsNestedAndConjunctions() throws Exception {
-        AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        AlgDataType boolType = typeFactory.createPolyType( PolyType.BOOLEAN );
-        RexNode left = new RexIndexRef( 0, boolType );
-        RexNode middle = new RexIndexRef( 1, boolType );
-        RexNode right = new RexIndexRef( 2, boolType );
-        RexNode condition = new RexCall(
-                boolType,
-                new org.polypheny.db.nodes.SpecialOperator( Kind.AND.name(), Kind.AND ),
-                List.of( left, new RexCall( boolType, new org.polypheny.db.nodes.SpecialOperator( Kind.AND.name(), Kind.AND ), List.of( middle, right ) ) ) );
-        ParquetDocFilterRule rule = new ParquetDocFilterRule( AlgFactories.LOGICAL_BUILDER, null );
-        Method splitConjunctions = ParquetDocFilterRule.class.getDeclaredMethod( "splitConjunctions", RexNode.class );
-        splitConjunctions.setAccessible( true );
-
-        List<RexNode> split = (List<RexNode>) splitConjunctions.invoke( rule, condition );
-        List<RexNode> single = (List<RexNode>) splitConjunctions.invoke( rule, left );
-
-        assertEquals( List.of( left, middle, right ), split );
-        assertEquals( List.of( left ), single );
-    }
-
-
-    private static AlgCluster cluster() {
-        AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        VolcanoPlanner planner = new VolcanoPlanner();
-        return AlgCluster.createDocument( planner, new RexBuilder( typeFactory ), null );
-    }
-
-
-    @SuppressWarnings("SameParameterValue")
-    private static RexNode ref( AlgCluster cluster, int index ) {
-        return new RexIndexRef( index, cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ) );
-    }
-
-
-    private static PhysicalCollection collection( String name ) {
-        return new PhysicalCollection( 10L, 20L, 30L, 40L, name, "public", 50L );
-    }
-
-
-    private static ParquetSourceFile sourceFile() {
-        return new ParquetSourceFile( "file:/tmp/orders.parquet", Map.of(), Map.of() );
-    }
-
-
-    private static ExportedColumn exportedColumn( String name, PolyType type, int position, boolean nullable ) {
-        return new ExportedColumn( name, type, null, null, null, null, null, nullable, "public", "orders", name, position, false );
-    }
-
-
-    private static TestParquetSource testSource() throws Exception {
-        java.lang.reflect.Field field = Unsafe.class.getDeclaredField( "theUnsafe" );
-        field.setAccessible( true );
-        return (TestParquetSource) ((Unsafe) field.get( null )).allocateInstance( TestParquetSource.class );
     }
 
 

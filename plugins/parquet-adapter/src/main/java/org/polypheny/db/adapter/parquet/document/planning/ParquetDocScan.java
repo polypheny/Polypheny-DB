@@ -16,13 +16,17 @@
 
 package org.polypheny.db.adapter.parquet.document.planning;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.parquet.document.schema.ParquetDocument;
+import org.polypheny.db.adapter.parquet.relational.planning.ParquetConvention;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
+import org.polypheny.db.adapter.parquet.shared.planning.ParquetPolyAlgDisplay;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -34,6 +38,9 @@ import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
@@ -41,6 +48,7 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.type.entity.PolyValue;
 
 /**
  * The planner node that sets up document reading.
@@ -50,10 +58,10 @@ import org.polypheny.db.plan.AlgTraitSet;
 @Getter
 public class ParquetDocScan extends DocumentScan<ParquetDocument> implements EnumerableAlg {
 
-    private final List<ParquetAdapterFilter> filters;
+    private final List<ParquetAdapterFilter<PolyValue>> filters;
 
 
-    public ParquetDocScan( AlgCluster cluster, ParquetDocument entity, List<ParquetAdapterFilter> filters ) {
+    public ParquetDocScan( AlgCluster cluster, ParquetDocument entity, List<ParquetAdapterFilter<PolyValue>> filters ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), entity );
         this.filters = List.copyOf( filters );
     }
@@ -71,6 +79,13 @@ public class ParquetDocScan extends DocumentScan<ParquetDocument> implements Enu
     }
 
 
+    public ParquetDocScan withFilters( List<ParquetAdapterFilter<PolyValue>> filters ) {
+        List<ParquetAdapterFilter<PolyValue>> combinedFilters = new ArrayList<>( this.filters );
+        combinedFilters.addAll( filters );
+        return new ParquetDocScan( getCluster(), entity, combinedFilters );
+    }
+
+
     @Override
     public AlgDataType deriveRowType() {
         final List<AlgDataTypeField> fieldList = DocumentType.ofId().getFields();
@@ -85,8 +100,21 @@ public class ParquetDocScan extends DocumentScan<ParquetDocument> implements Enu
 
 
     @Override
+    public PolyAlgArgs bindArguments() {
+        int[] fields = IntStream.range( 0, entity.getTupleType().getFields().size() ).toArray();
+        List<String> fieldNames = ParquetPolyAlgDisplay.fieldNames( entity, fields );
+        List<String> tableFieldNames = ParquetPolyAlgDisplay.fieldNames( entity );
+        return super.bindArguments()
+                .put( "fields", new ListArg<>( fieldNames, StringArg::new ) )
+                .put( "filters", new ListArg<>( ParquetPolyAlgDisplay.filters( filters, tableFieldNames ), StringArg::new ) );
+    }
+
+
+    @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( ((double) entity.getParquetSource().getExportedColumns().size() + 2D) / ((double) entity.getTupleType().getFieldCount() + 2D) );
+        double fieldRatio = ((double) entity.getParquetSource().getExportedColumns().size() + 2D) / ((double) entity.getTupleType().getFieldCount() + 2D);
+        double filterRatio = filters.isEmpty() ? 1D : 0.5D;
+        return super.computeSelfCost( planner, mq ).multiplyBy( ParquetConvention.COST_MULTIPLIER * fieldRatio * filterRatio );
     }
 
 
@@ -108,7 +136,7 @@ public class ParquetDocScan extends DocumentScan<ParquetDocument> implements Enu
 
     @Override
     public void register( AlgPlanner planner ) {
-        planner.addRuleDuringRuntime( new ParquetDocFilterRule( AlgFactories.LOGICAL_BUILDER, entity ) );
+        planner.addRuleDuringRuntime( new ParquetDocCalcRule( AlgFactories.LOGICAL_BUILDER ) );
     }
 
 }
