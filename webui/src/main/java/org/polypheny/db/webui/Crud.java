@@ -216,6 +216,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     private static final Gson gson = new Gson();
     public static final String ORIGIN = "Polypheny-UI";
+    private static final int POSTGRES_MAX_VARCHAR_LENGTH = 10_485_760;
     private final TransactionManager transactionManager;
 
     public final LanguageCrud languageCrud;
@@ -459,6 +460,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void renameTable( final Context ctx ) {
         RenameEntityRequest table = ctx.bodyAsClass( RenameEntityRequest.class );
+        if ( !ensureTableModifiable( table.getEntityId(), ctx ) ) {
+            return;
+        }
         String query = String.format( "ALTER TABLE %s RENAME TO \"%s\"", getFullEntityName( table.getEntityId() ), table.getEntityName() );
         QueryLanguage language = QueryLanguage.from( "sql" );
         Result<?, ?> result = LanguageCrud.anyQueryResult(
@@ -544,6 +548,23 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         LogicalTable table = Catalog.snapshot().rel().getTable( entityId ).orElseThrow();
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( table.namespaceId ).orElseThrow();
         return String.format( "\"%s\".\"%s\"", namespace.name, table.name );
+    }
+
+
+    private boolean ensureTableModifiable( long entityId, Context ctx ) {
+        LogicalTable table = Catalog.snapshot().rel().getTable( entityId ).orElseThrow();
+        if ( table.modifiable ) {
+            return true;
+        }
+        ctx.json( RelationalResult.builder().error( "Unable to modify a table marked as read-only!" ).build() );
+        return false;
+    }
+
+
+    private boolean ensureTableModifiable( String namespaceName, String tableName, Context ctx ) {
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceName ).orElseThrow();
+        LogicalTable table = Catalog.snapshot().rel().getTable( namespace.id, tableName ).orElseThrow();
+        return ensureTableModifiable( table.id, ctx );
     }
 
 
@@ -671,6 +692,59 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    void createConnectedSourceMaterialization( final Context ctx ) {
+        SourceSnapshotRequest request = ctx.bodyAsClass( SourceSnapshotRequest.class );
+        Snapshot snapshot = Catalog.snapshot();
+        LogicalTable sourceTable = snapshot.rel().getTable( request.getSourceEntityId() ).orElseThrow();
+        LogicalNamespace sourceNamespace = snapshot.getNamespace( sourceTable.namespaceId ).orElseThrow();
+        long targetNamespaceId = request.getTargetNamespaceId() == null ? sourceNamespace.id : request.getTargetNamespaceId();
+        LogicalNamespace targetNamespace = snapshot.getNamespace( targetNamespaceId ).orElseThrow();
+        LogicalAdapter targetStore = snapshot.getAdapter( request.getTargetStoreId() ).orElseThrow();
+
+        if ( sourceTable.entityType != EntityType.SOURCE ) {
+            ctx.json( RelationalResult.builder()
+                    .error( "Connected source materialization can only be created for source tables." )
+                    .build() );
+            return;
+        }
+
+        String materializedTableName = getNextConnectedSourceTableName( targetNamespace.id, sourceTable.name );
+        String targetTable = quoteQualified( targetNamespace.name, materializedTableName );
+        String sourceTableName = quoteQualified( sourceNamespace.name, sourceTable.name );
+        List<LogicalColumn> columns = snapshot.rel().getColumns( sourceTable.id ).stream().sorted().toList();
+
+        String createQuery = buildCreateSnapshotTableQuery( targetTable, targetStore.uniqueName, sourceTable, columns );
+        Result<?, ?> createResult = executeSql( createQuery );
+        if ( createResult.error != null ) {
+            ctx.json( createResult );
+            return;
+        }
+
+        String columnList = columns.stream()
+                .map( column -> quoteIdentifier( column.name ) )
+                .collect( Collectors.joining( ", " ) );
+        String insertQuery = String.format( "INSERT INTO %s SELECT %s FROM %s", targetTable, columnList, sourceTableName );
+        Result<?, ?> insertResult = executeSql( insertQuery );
+        if ( insertResult.error != null ) {
+            executeSql( "DROP TABLE " + targetTable );
+            ctx.json( insertResult );
+            return;
+        }
+
+        LogicalTable materializedTable = Catalog.snapshot().rel().getTable( targetNamespace.id, materializedTableName ).orElseThrow();
+        Catalog.getInstance().getLogicalRel( targetNamespace.id ).setTableModifiable( materializedTable.id, false );
+        Catalog.getInstance().updateSnapshot();
+
+        ctx.json( RelationalResult.builder()
+                .table( materializedTableName )
+                .namespace( targetNamespace.name )
+                .query( insertQuery )
+                .queryType( QueryType.DML )
+                .affectedTuples( insertResult.affectedTuples )
+                .build() );
+    }
+
+
     void createSourceCollectionSnapshot( final Context ctx ) {
         SourceSnapshotRequest request = ctx.bodyAsClass( SourceSnapshotRequest.class );
         Snapshot snapshot = Catalog.snapshot();
@@ -789,10 +863,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         if ( column.length != null && column.scale != null && column.type.allowsPrecScale( true, true ) ) {
             builder.append( "(" ).append( column.length ).append( ", " ).append( column.scale ).append( ")" );
         } else if ( column.length != null && column.type.allowsPrecNoScale() ) {
-            builder.append( "(" ).append( column.length ).append( ")" );
+            builder.append( "(" ).append( getSnapshotColumnLength( column ) ).append( ")" );
         }
 
-        if ( column.collectionsType != null ) {
+        if ( isSnapshotCollectionType( column.collectionsType ) ) {
             builder.append( " " ).append( column.collectionsType.getName() );
             if ( column.dimension != null ) {
                 builder.append( "(" ).append( column.dimension );
@@ -806,8 +880,33 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    private static int getSnapshotColumnLength( LogicalColumn column ) {
+        if ( column.type == PolyType.VARCHAR && column.length > POSTGRES_MAX_VARCHAR_LENGTH ) {
+            return POSTGRES_MAX_VARCHAR_LENGTH;
+        }
+        return column.length;
+    }
+
+
+    private static boolean isSnapshotCollectionType( PolyType collectionsType ) {
+        return collectionsType == PolyType.ARRAY || collectionsType == PolyType.MAP;
+    }
+
+
     private static String getNextSnapshotTableName( long namespaceId, String sourceTableName ) {
         String baseName = sourceTableName + "_snapshot";
+        String candidate = baseName;
+        int suffix = 2;
+        while ( Catalog.snapshot().rel().getTable( namespaceId, candidate ).isPresent() ) {
+            candidate = baseName + suffix;
+            suffix++;
+        }
+        return candidate;
+    }
+
+
+    private static String getNextConnectedSourceTableName( long namespaceId, String sourceTableName ) {
+        String baseName = sourceTableName + "_connected";
         String candidate = baseName;
         int suffix = 2;
         while ( Catalog.snapshot().rel().getTable( namespaceId, candidate ).isPresent() ) {
@@ -1470,6 +1569,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void updateColumn( final Context ctx ) {
         ColumnRequest request = ctx.bodyAsClass( ColumnRequest.class );
+        if ( !ensureTableModifiable( request.entityId, ctx ) ) {
+            return;
+        }
 
         UiColumnDefinition oldColumn = request.oldColumn;
         UiColumnDefinition newColumn = request.newColumn;
@@ -1590,6 +1692,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void addColumn( final Context ctx ) {
         ColumnRequest request = ctx.bodyAsClass( ColumnRequest.class );
+        if ( !ensureTableModifiable( request.entityId, ctx ) ) {
+            return;
+        }
 
         String tableId = getFullEntityName( request.entityId );
 
@@ -1666,6 +1771,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void dropColumn( final Context ctx ) {
         ColumnRequest request = ctx.bodyAsClass( ColumnRequest.class );
+        if ( !ensureTableModifiable( request.entityId, ctx ) ) {
+            return;
+        }
 
         String tableId = getFullEntityName( request.entityId );
         String query = String.format( "ALTER TABLE %s DROP COLUMN \"%s\"", tableId, request.oldColumn.name );
@@ -1745,6 +1853,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void dropConstraint( final Context ctx ) {
         ConstraintRequest request = ctx.bodyAsClass( ConstraintRequest.class );
+        if ( !ensureTableModifiable( request.entityId, ctx ) ) {
+            return;
+        }
 
         long entityId = request.entityId;
         String fullEntityName = getFullEntityName( entityId );
@@ -1780,6 +1891,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void addPrimaryKey( final Context ctx ) {
         ConstraintRequest request = ctx.bodyAsClass( ConstraintRequest.class );
+        if ( !ensureTableModifiable( request.entityId, ctx ) ) {
+            return;
+        }
 
         long entityId = request.entityId;
         String tableId = getFullEntityName( entityId );
@@ -1813,6 +1927,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void addUniqueConstraint( final Context ctx ) {
         ConstraintRequest request = ctx.bodyAsClass( ConstraintRequest.class );
+        if ( !ensureTableModifiable( request.entityId, ctx ) ) {
+            return;
+        }
 
         long entityId = request.entityId;
         String tableName = getFullEntityName( entityId );
@@ -1906,6 +2023,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void dropIndex( final Context ctx ) {
         IndexModel index = ctx.bodyAsClass( IndexModel.class );
+        if ( !ensureTableModifiable( index.entityId, ctx ) ) {
+            return;
+        }
 
         String tableName = getFullEntityName( index.entityId );
         String query = String.format( "ALTER TABLE %s DROP INDEX \"%s\"", tableName, index.getName() );
@@ -1926,6 +2046,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void createIndex( final Context ctx ) {
         IndexModel index = ctx.bodyAsClass( IndexModel.class );
+        if ( !ensureTableModifiable( index.entityId, ctx ) ) {
+            return;
+        }
 
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( index.namespaceId ).orElseThrow();
         LogicalTable table = Catalog.snapshot().rel().getTable( index.entityId ).orElseThrow();
@@ -2018,6 +2141,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void addDropPlacement( final Context ctx ) {
         PlacementFieldsModel placementFields = ctx.bodyAsClass( PlacementFieldsModel.class );
+        if ( !ensureTableModifiable( placementFields.entityId(), ctx ) ) {
+            return;
+        }
         if ( placementFields.method() == null ) {
             ctx.json( RelationalResult.builder().error( "Invalid request" ).build() );
             return;
@@ -2163,6 +2289,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void partitionTable( final Context ctx ) {
         PartitionFunctionModel request = ctx.bodyAsClass( PartitionFunctionModel.class );
+        if ( !ensureTableModifiable( request.schemaName, request.tableName, ctx ) ) {
+            return;
+        }
 
         // Get correct partition function
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
@@ -2211,6 +2340,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void mergePartitions( final Context ctx ) {
         PartitioningRequest request = ctx.bodyAsClass( PartitioningRequest.class );
+        if ( !ensureTableModifiable( request.schemaName, request.tableName, ctx ) ) {
+            return;
+        }
         String query = String.format( "ALTER TABLE \"%s\".\"%s\" MERGE PARTITIONS", request.schemaName, request.tableName );
         QueryLanguage language = QueryLanguage.from( "sql" );
         Result<?, ?> res = LanguageCrud.anyQueryResult(
@@ -2226,6 +2358,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void modifyPartitions( final Context ctx ) {
         ModifyPartitionRequest request = ctx.bodyAsClass( ModifyPartitionRequest.class );
+        if ( !ensureTableModifiable( request.schemaName, request.tableName, ctx ) ) {
+            return;
+        }
         StringJoiner partitions = new StringJoiner( "," );
         for ( String partition : request.partitions ) {
             partitions.add( "\"" + partition + "\"" );

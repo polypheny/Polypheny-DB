@@ -94,6 +94,14 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
     void renameTable( long tableId, String name );
 
     /**
+     * Updates whether the content of a table can be modified.
+     *
+     * @param tableId The id of the table
+     * @param modifiable Whether the content of the table can be modified
+     */
+    void setTableModifiable( long tableId, boolean modifiable );
+
+    /**
      * Delete the specified table. Columns need to be deleted before.
      *
      * @param tableId The id of the table to delete

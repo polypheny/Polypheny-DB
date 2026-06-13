@@ -207,6 +207,13 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
+    public void setTableModifiable( long tableId, boolean modifiable ) {
+        tables.put( tableId, tables.get( tableId ).toBuilder().modifiable( modifiable ).build() );
+        change( CatalogEvent.LOGICAL_REL_ENTITY_RENAMED, tableId, tables.get( tableId ).name );
+    }
+
+
+    @Override
     public void deleteTable( long tableId ) {
         tables.get( tableId ).getColumnIds().forEach( columns::remove );
         tables.remove( tableId );
