@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -150,6 +151,11 @@ public class LanguageCrud {
 
 
     public static List<? extends Result<?, ?>> anyQueryResult( QueryContext context, UIRequest request ) {
+        Optional<RelationalResult> rejectedConnectedSourceQuery = rejectConnectedSourceQuery( context, request );
+        if ( rejectedConnectedSourceQuery.isPresent() ) {
+            return List.of( rejectedConnectedSourceQuery.get() );
+        }
+
         context = context.getLanguage().limitRemover().apply( context );
         Transaction transaction;
         QueryAnalyzer queryAnalyzer = null;
@@ -186,6 +192,71 @@ public class LanguageCrud {
         commitAndFinish( executedContexts, queryAnalyzer, results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElse( -1L ) );
 
         return results;
+    }
+
+
+    private static Optional<RelationalResult> rejectConnectedSourceQuery( QueryContext context, UIRequest request ) {
+        if ( !(request instanceof QueryRequest) || !Objects.equals( context.getLanguage().serializedName(), "sql" ) ) {
+            return Optional.empty();
+        }
+
+        Optional<LogicalTable> referencedSource = getReferencedConnectedSource( context.getQuery() );
+        if ( referencedSource.isEmpty() ) {
+            return Optional.empty();
+        }
+
+        LogicalTable source = referencedSource.get();
+        String sourceName = getFullTableName( source );
+        String connectedName = Catalog.snapshot().rel().getTables( (org.polypheny.db.catalog.logistic.Pattern) null, null ).stream()
+                .filter( table -> Objects.equals( table.connectedSourceEntityId, source.id ) )
+                .findFirst()
+                .map( LanguageCrud::getFullTableName )
+                .orElse( "its connected materialized table" );
+
+        return Optional.of( RelationalResult.builder()
+                .error( "Queries against source table " + sourceName + " are disabled because it is materialized as " + connectedName + ". Query the connected materialized table instead." )
+                .query( context.getQuery() )
+                .build() );
+    }
+
+
+    private static Optional<LogicalTable> getReferencedConnectedSource( String query ) {
+        List<LogicalTable> tables = Catalog.snapshot().rel().getTables( (org.polypheny.db.catalog.logistic.Pattern) null, null );
+        Set<Long> connectedSourceIds = tables.stream()
+                .map( table -> table.connectedSourceEntityId )
+                .filter( Objects::nonNull )
+                .collect( Collectors.toSet() );
+
+        return tables.stream()
+                .filter( table -> table.entityType == EntityType.SOURCE )
+                .filter( table -> connectedSourceIds.contains( table.id ) )
+                .filter( table -> referencesTable( query, table ) )
+                .findFirst();
+    }
+
+
+    private static boolean referencesTable( String query, LogicalTable table ) {
+        String namespaceName = Catalog.snapshot().getNamespace( table.namespaceId ).map( namespace -> namespace.name ).orElse( "" );
+        String tableReference = tableReferencePattern( namespaceName, table.name );
+        return Pattern.compile( "(?is)\\b(?:from|join|update|into|table)\\s+" + tableReference ).matcher( query ).find();
+    }
+
+
+    private static String tableReferencePattern( String namespaceName, String tableName ) {
+        String identifierEnd = "(?![A-Za-z0-9_])";
+        String unquotedTable = Pattern.quote( tableName ) + identifierEnd;
+        String quotedTable = Pattern.quote( "\"" + tableName.replace( "\"", "\"\"" ) + "\"" );
+        String qualifiedTable = Pattern.quote( namespaceName ) + "\\s*\\.\\s*" + unquotedTable;
+        String quotedQualifiedTable = Pattern.quote( "\"" + namespaceName.replace( "\"", "\"\"" ) + "\"" ) + "\\s*\\.\\s*" + quotedTable;
+
+        return "(?:" + quotedQualifiedTable + "|" + qualifiedTable + "|" + quotedTable + "|" + unquotedTable + ")";
+    }
+
+
+    private static String getFullTableName( LogicalTable table ) {
+        return Catalog.snapshot().getNamespace( table.namespaceId )
+                .map( namespace -> namespace.name + "." + table.name )
+                .orElse( table.name );
     }
 
 

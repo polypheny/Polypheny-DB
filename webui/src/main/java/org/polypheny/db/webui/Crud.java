@@ -733,6 +733,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         LogicalTable materializedTable = Catalog.snapshot().rel().getTable( targetNamespace.id, materializedTableName ).orElseThrow();
         Catalog.getInstance().getLogicalRel( targetNamespace.id ).setTableModifiable( materializedTable.id, false );
+        Catalog.getInstance().getLogicalRel( targetNamespace.id ).setConnectedSourceEntity( materializedTable.id, sourceTable.id );
         Catalog.getInstance().updateSnapshot();
 
         ctx.json( RelationalResult.builder()

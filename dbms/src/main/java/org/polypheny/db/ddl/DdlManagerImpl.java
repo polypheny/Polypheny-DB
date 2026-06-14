@@ -149,6 +149,13 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    private void checkIfTableModifiable( LogicalTable table ) {
+        if ( table.connectedSourceEntityId != null ) {
+            throw new GenericRuntimeException( "Unable to modify a read-only table." );
+        }
+    }
+
+
     private void checkViewDependencies( LogicalTable catalogTable ) {
         List<LogicalView> entities = catalog.getSnapshot().rel().getConnectedViews( catalogTable.id );
         if ( entities.isEmpty() ) {
@@ -1786,6 +1793,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement ) {
+        checkIfTableModifiable( table );
         columnName = adjustNameIfNeeded( columnName, table.namespaceId );
         // Check if the column either allows null values or has a default value defined.
         if ( defaultValue == null && !nullable ) {
@@ -1857,6 +1865,7 @@ public class DdlManagerImpl extends DdlManager {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
         checkIfDdlPossible( refTable.entityType );
+        checkIfTableModifiable( table );
 
         List<Long> columnIds = new ArrayList<>();
         for ( String columnName : columnNames ) {
@@ -1877,6 +1886,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void createIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement ) throws TransactionException {
+        checkIfTableModifiable( table );
         List<Long> columnIds = new ArrayList<>();
         for ( String columnName : columnNames ) {
             LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
@@ -2064,6 +2074,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void createAllocationPlacement( LogicalTable table, List<LogicalColumn> newColumns, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> dataStore, Statement statement ) {
+        checkIfTableModifiable( table );
 
         // check if allocation already exists
         if ( catalog.getSnapshot().alloc().getPlacement( dataStore.getAdapterId(), table.id ).isPresent() ) {
@@ -2106,6 +2117,7 @@ public class DdlManagerImpl extends DdlManager {
     public void createPrimaryKey( LogicalTable table, List<String> columnNames, Statement statement ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
+        checkIfTableModifiable( table );
 
         checkModelLogic( table );
 
@@ -2163,6 +2175,7 @@ public class DdlManagerImpl extends DdlManager {
     public void createUniqueConstraint( LogicalTable table, List<String> columnNames, String constraintName, Statement statement ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
+        checkIfTableModifiable( table );
 
         checkModelLogic( table, null );
 
@@ -2189,6 +2202,7 @@ public class DdlManagerImpl extends DdlManager {
      */
     @Override
     public void dropColumn( LogicalTable table, String columnName, Statement statement ) {
+        checkIfTableModifiable( table );
         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
         LogicalColumn column = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
         LogicalRelSnapshot snapshot = catalog.getSnapshot().rel();
@@ -2255,6 +2269,7 @@ public class DdlManagerImpl extends DdlManager {
     public void dropConstraint( Transaction transaction, LogicalTable table, long id ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
+        checkIfTableModifiable( table );
 
         LogicalConstraint constraint = catalog.getSnapshot().rel().getConstraint( table.id, id ).orElseThrow();
 
@@ -2301,10 +2316,7 @@ public class DdlManagerImpl extends DdlManager {
     public void dropForeignKey( LogicalTable table, String foreignKeyName ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
-
-        if ( !table.modifiable ) {
-            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", table.name );
-        }
+        checkIfTableModifiable( table );
 
         LogicalForeignKey foreignKey = catalog.getSnapshot().rel().getForeignKey( table.id, foreignKeyName ).orElseThrow();
         catalog.getLogicalRel( table.namespaceId ).deleteForeignKey( foreignKey.id );
@@ -2319,6 +2331,7 @@ public class DdlManagerImpl extends DdlManager {
     public void dropIndex( LogicalTable table, String indexName, Statement statement ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
+        checkIfTableModifiable( table );
 
         LogicalIndex index = catalog.getSnapshot().rel().getIndex( table.id, indexName ).orElseThrow();
 
@@ -2401,6 +2414,7 @@ public class DdlManagerImpl extends DdlManager {
     public void dropPrimaryKey( LogicalTable table ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
+        checkIfTableModifiable( table );
         catalog.getLogicalRel( table.namespaceId ).deletePrimaryKey( table.id );
         catalog.getSnapshot().rel()
                 .getConstraints( table.id )
@@ -2413,6 +2427,7 @@ public class DdlManagerImpl extends DdlManager {
     public void setColumnType( LogicalTable table, String columnName, ColumnTypeInformation type, Statement statement ) {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
+        checkIfTableModifiable( table );
 
         // check if model permits operation
         checkModelLogic( table, columnName );
@@ -2462,6 +2477,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
+        checkIfTableModifiable( table );
 
         // Check if model permits operation
         checkModelLogic( table, columnName );
@@ -2480,6 +2496,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void setColumnPosition( LogicalTable table, String columnName, String beforeColumnName, String afterColumnName, Statement statement ) {
+        checkIfTableModifiable( table );
         // Check if model permits operation
         checkModelLogic( table, columnName );
 
@@ -2538,6 +2555,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfDdlPossible( table.entityType );
+        checkIfTableModifiable( table );
 
         catalog.getLogicalRel( table.namespaceId ).setCollation( logicalColumn.id, collation );
 
@@ -2548,6 +2566,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void setDefaultValue( LogicalTable table, String columnName, PolyValue defaultValue, Statement statement ) {
+        checkIfTableModifiable( table );
         LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
 
         // Check if model permits operation
@@ -2562,6 +2581,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropDefaultValue( LogicalTable table, String columnName, Statement statement ) {
+        checkIfTableModifiable( table );
         LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
 
         // check if model permits operation
@@ -2576,6 +2596,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void modifyPlacement( LogicalTable table, List<Long> columns, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> store, Statement statement ) {
+        checkIfTableModifiable( table );
         Optional<AllocationPlacement> placementOptional = statement.getDataContext().getSnapshot().alloc().getPlacement( store.getAdapterId(), table.id );
         // Check whether this placement exists
         if ( placementOptional.isEmpty() ) {
@@ -2793,6 +2814,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void createColumnPlacement( LogicalTable table, LogicalColumn logicalColumn, DataStore<?> store, Statement statement ) {
+        checkIfTableModifiable( table );
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         // Check whether this placement already exists
         Optional<AllocationPlacement> optPlacement = snapshot.alloc().getPlacement( store.getAdapterId(), table.id );
@@ -2853,6 +2875,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropColumnPlacement( LogicalTable table, LogicalColumn column, DataStore<?> store, Statement statement ) {
+        checkIfTableModifiable( table );
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         // Check whether this placement even exists
@@ -2897,6 +2920,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void renameTable( LogicalTable table, String newTableName, Statement statement ) {
+        checkIfTableModifiable( table );
         if ( catalog.getSnapshot().rel().getTable( table.namespaceId, newTableName ).isPresent() ) {
             throw new GenericRuntimeException( "An entity with name %s already exists", newTableName );
         }
@@ -2935,6 +2959,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void renameColumn( LogicalTable table, String columnName, String newColumnName, Statement statement ) {
+        checkIfTableModifiable( table );
         LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
 
         if ( catalog.getSnapshot().rel().getColumn( table.id, newColumnName ).isPresent() ) {

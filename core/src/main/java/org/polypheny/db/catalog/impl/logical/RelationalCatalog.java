@@ -155,7 +155,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Override
     public LogicalTable addTable( String name, EntityType entityType, boolean modifiable ) {
         long id = idBuilder.getNewLogicalId();
-        LogicalTable table = new LogicalTable( id, name, logicalNamespace.id, entityType, null, modifiable );
+        LogicalTable table = new LogicalTable( id, name, logicalNamespace.id, entityType, null, null, modifiable );
         tables.put( id, table );
         change( CatalogEvent.LOGICAL_REL_ENTITY_CREATED, null, id );
         return table;
@@ -209,6 +209,13 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Override
     public void setTableModifiable( long tableId, boolean modifiable ) {
         tables.put( tableId, tables.get( tableId ).toBuilder().modifiable( modifiable ).build() );
+        change( CatalogEvent.LOGICAL_REL_ENTITY_RENAMED, tableId, tables.get( tableId ).name );
+    }
+
+
+    @Override
+    public void setConnectedSourceEntity( long tableId, Long sourceEntityId ) {
+        tables.put( tableId, tables.get( tableId ).toBuilder().connectedSourceEntityId( sourceEntityId ).build() );
         change( CatalogEvent.LOGICAL_REL_ENTITY_RENAMED, tableId, tables.get( tableId ).name );
     }
 

@@ -102,6 +102,14 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
     void setTableModifiable( long tableId, boolean modifiable );
 
     /**
+     * Links a connected materialized table to its original source table.
+     *
+     * @param tableId The id of the connected materialized table
+     * @param sourceEntityId The id of the original source table
+     */
+    void setConnectedSourceEntity( long tableId, Long sourceEntityId );
+
+    /**
      * Delete the specified table. Columns need to be deleted before.
      *
      * @param tableId The id of the table to delete
