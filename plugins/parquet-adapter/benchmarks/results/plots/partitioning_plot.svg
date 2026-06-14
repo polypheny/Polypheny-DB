@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="700" viewBox="0 0 1180 700">
+<rect width="100%" height="100%" fill="white"/>
+<text x="590.0" y="34" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="700">Partitioning</text>
+<text x="90" y="62" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Mean execution time (s, log scale)</text>
+<line x1="90" y1="580.00" x2="920" y2="580.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="584.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.01</text>
+<line x1="90" y1="529.83" x2="920" y2="529.83" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="533.83" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.02</text>
+<line x1="90" y1="463.50" x2="920" y2="463.50" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="467.50" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.05</text>
+<line x1="90" y1="413.33" x2="920" y2="413.33" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="417.33" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.1</text>
+<line x1="90" y1="363.16" x2="920" y2="363.16" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="367.16" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.2</text>
+<line x1="90" y1="296.84" x2="920" y2="296.84" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="300.84" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.5</text>
+<line x1="90" y1="246.67" x2="920" y2="246.67" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="250.67" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">1</text>
+<line x1="90" y1="196.50" x2="920" y2="196.50" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="200.50" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">2</text>
+<line x1="90" y1="130.17" x2="920" y2="130.17" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="134.17" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">5</text>
+<line x1="90" y1="80.00" x2="920" y2="80.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="84.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">10</text>
+<line x1="90" y1="80" x2="90" y2="580" stroke="#333" stroke-width="1.2"/>
+<line x1="90" y1="580" x2="920" y2="580" stroke="#333" stroke-width="1.2"/>
+<rect x="101.50" y="533.54" width="9.60" height="46.46" fill="#2f6fbb"><title>Polypheny Relational Q01: 0.019 s</title></rect>
+<rect x="114.10" y="426.65" width="9.60" height="153.35" fill="#c94c4c"><title>DuckDB Repartitioned Q01: 0.083 s</title></rect>
+<rect x="139.30" y="214.02" width="9.60" height="365.98" fill="#f0a22e"><title>Apache Spark Repartitioned Q01: 1.570 s</title></rect>
+<text x="131.50" y="610" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q01</text>
+<rect x="184.50" y="542.45" width="9.60" height="37.55" fill="#2f6fbb"><title>Polypheny Relational Q02: 0.017 s</title></rect>
+<rect x="197.10" y="446.32" width="9.60" height="133.68" fill="#c94c4c"><title>DuckDB Repartitioned Q02: 0.063 s</title></rect>
+<rect x="222.30" y="271.93" width="9.60" height="308.07" fill="#f0a22e"><title>Apache Spark Repartitioned Q02: 0.705 s</title></rect>
+<text x="214.50" y="610" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q02</text>
+<rect x="267.50" y="531.29" width="9.60" height="48.71" fill="#2f6fbb"><title>Polypheny Relational Q03: 0.020 s</title></rect>
+<rect x="280.10" y="500.96" width="9.60" height="79.04" fill="#c94c4c"><title>DuckDB Repartitioned Q03: 0.030 s</title></rect>
+<rect x="305.30" y="308.36" width="9.60" height="271.64" fill="#f0a22e"><title>Apache Spark Repartitioned Q03: 0.426 s</title></rect>
+<text x="297.50" y="610" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q03</text>
+<rect x="350.50" y="338.86" width="9.60" height="241.14" fill="#2f6fbb"><title>Polypheny Relational Q04: 0.280 s</title></rect>
+<rect x="363.10" y="476.47" width="9.60" height="103.53" fill="#c94c4c"><title>DuckDB Repartitioned Q04: 0.042 s</title></rect>
+<rect x="388.30" y="205.90" width="9.60" height="374.10" fill="#f0a22e"><title>Apache Spark Repartitioned Q04: 1.756 s</title></rect>
+<text x="380.50" y="610" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q04</text>
+<rect x="433.50" y="425.44" width="9.60" height="154.56" fill="#2f6fbb"><title>Polypheny Relational Q05: 0.085 s</title></rect>
+<rect x="446.10" y="520.98" width="9.60" height="59.02" fill="#c94c4c"><title>DuckDB Repartitioned Q05: 0.023 s</title></rect>
+<rect x="471.30" y="256.13" width="9.60" height="323.87" fill="#f0a22e"><title>Apache Spark Repartitioned Q05: 0.877 s</title></rect>
+<text x="463.50" y="610" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q05</text>
+<rect x="516.50" y="559.90" width="9.60" height="20.10" fill="#2f6fbb"><title>Polypheny Relational Q06: 0.013 s</title></rect>
+<rect x="541.70" y="452.76" width="9.60" height="127.24" fill="#4f9d55"><title>DuckDB Unpartitioned Q06: 0.058 s</title></rect>
+<rect x="566.90" y="223.61" width="9.60" height="356.39" fill="#7b61b9"><title>Apache Spark Unpartitioned Q06: 1.375 s</title></rect>
+<text x="546.50" y="610" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q06</text>
+<rect x="599.50" y="556.69" width="9.60" height="23.31" fill="#2f6fbb"><title>Polypheny Relational Q07: 0.014 s</title></rect>
+<rect x="624.70" y="424.42" width="9.60" height="155.58" fill="#4f9d55"><title>DuckDB Unpartitioned Q07: 0.086 s</title></rect>
+<rect x="649.90" y="197.27" width="9.60" height="382.73" fill="#7b61b9"><title>Apache Spark Unpartitioned Q07: 1.979 s</title></rect>
+<text x="629.50" y="610" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q07</text>
+<rect x="682.50" y="546.89" width="9.60" height="33.11" fill="#2f6fbb"><title>Polypheny Relational Q08: 0.016 s</title></rect>
+<rect x="707.70" y="434.74" width="9.60" height="145.26" fill="#4f9d55"><title>DuckDB Unpartitioned Q08: 0.074 s</title></rect>
+<rect x="732.90" y="242.85" width="9.60" height="337.15" fill="#7b61b9"><title>Apache Spark Unpartitioned Q08: 1.054 s</title></rect>
+<text x="712.50" y="610" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q08</text>
+<rect x="765.50" y="344.17" width="9.60" height="235.83" fill="#2f6fbb"><title>Polypheny Relational Q09: 0.260 s</title></rect>
+<rect x="790.70" y="525.61" width="9.60" height="54.39" fill="#4f9d55"><title>DuckDB Unpartitioned Q09: 0.021 s</title></rect>
+<rect x="815.90" y="253.84" width="9.60" height="326.16" fill="#7b61b9"><title>Apache Spark Unpartitioned Q09: 0.906 s</title></rect>
+<text x="795.50" y="610" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q09</text>
+<rect x="848.50" y="428.76" width="9.60" height="151.24" fill="#2f6fbb"><title>Polypheny Relational Q10: 0.081 s</title></rect>
+<rect x="873.70" y="539.08" width="9.60" height="40.92" fill="#4f9d55"><title>DuckDB Unpartitioned Q10: 0.018 s</title></rect>
+<rect x="898.90" y="271.66" width="9.60" height="308.34" fill="#7b61b9"><title>Apache Spark Unpartitioned Q10: 0.708 s</title></rect>
+<text x="878.50" y="610" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q10</text>
+<text x="955" y="77" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700">System</text>
+<rect x="955" y="83" width="16" height="16" fill="#2f6fbb"/>
+<text x="979" y="96" font-family="Helvetica, Arial, sans-serif" font-size="12">Polypheny Relational</text>
+<rect x="955" y="111" width="16" height="16" fill="#c94c4c"/>
+<text x="979" y="124" font-family="Helvetica, Arial, sans-serif" font-size="12">DuckDB Repartitioned</text>
+<rect x="955" y="139" width="16" height="16" fill="#4f9d55"/>
+<text x="979" y="152" font-family="Helvetica, Arial, sans-serif" font-size="12">DuckDB Unpartitioned</text>
+<rect x="955" y="167" width="16" height="16" fill="#f0a22e"/>
+<text x="979" y="180" font-family="Helvetica, Arial, sans-serif" font-size="12">Apache Spark Repartitioned</text>
+<rect x="955" y="195" width="16" height="16" fill="#7b61b9"/>
+<text x="979" y="208" font-family="Helvetica, Arial, sans-serif" font-size="12">Apache Spark Unpartitioned</text>
+</svg>

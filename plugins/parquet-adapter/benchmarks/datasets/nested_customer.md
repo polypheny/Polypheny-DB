@@ -127,6 +127,22 @@ c_orders: array<struct<
 >>
 ```
 
+```text
+Customer
+  Order #123
+    Lineitem 1: part A, quantity 2, price 50
+    Lineitem 2: part B, quantity 1, price 20
+    Lineitem 3: part C, quantity 5, price 10
+```
+
+```text
+customer
+  c_orders
+    order
+      o_lineitems
+        lineitem
+```
+
 ## Benchmark Use
 
 Recommended benchmark role:

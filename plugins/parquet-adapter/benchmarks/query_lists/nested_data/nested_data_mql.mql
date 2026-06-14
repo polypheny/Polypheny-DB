@@ -1,0 +1,91 @@
+-- Q01: Filtered full customer documents.
+ncpd_document.ncpd__nestedcustomer.find({
+  "c_mktsegment": "BUILDING",
+  "c_nationkey": { "$gte": 5, "$lte": 15 }
+}).limit(100000);
+
+-- Q02: Filtered explicit customer projection.
+ncpd_document.ncpd__nestedcustomer.find(
+  {
+    "c_mktsegment": "BUILDING",
+    "c_acctbal": { "$gte": 0 }
+  },
+  {
+    "c_custkey": 1,
+    "c_name": 1,
+    "c_address": 1,
+    "c_nationkey": 1,
+    "c_phone": 1,
+    "c_acctbal": 1,
+    "c_mktsegment": 1,
+    "c_comment": 1
+  }
+).limit(100000);
+
+-- Q03: Filtered order projection.
+ncpd_document.ncpd__nestedcustomer.aggregate([
+  { "$unwind": "$c_orders" },
+  {
+    "$match": {
+      "c_orders.o_orderstatus": "F",
+      "c_orders.o_totalprice": { "$gte": 100000 }
+    }
+  },
+  {
+    "$project": {
+      "o_orderkey": "$c_orders.o_orderkey",
+      "o_orderstatus": "$c_orders.o_orderstatus",
+      "o_totalprice": "$c_orders.o_totalprice",
+      "o_orderdate": "$c_orders.o_orderdate",
+      "o_orderpriority": "$c_orders.o_orderpriority",
+      "o_clerk": "$c_orders.o_clerk"
+    }
+  },
+  { "$limit": 100000 }
+]);
+
+-- Q04: Filtered lineitem projection.
+ncpd_document.ncpd__nestedcustomer.aggregate([
+  { "$unwind": "$c_orders" },
+  { "$unwind": "$c_orders.o_lineitems" },
+  {
+    "$match": {
+      "c_orders.o_lineitems.l_returnflag": "R",
+      "c_orders.o_lineitems.l_shipmode": "MAIL"
+    }
+  },
+  {
+    "$project": {
+      "l_partkey": "$c_orders.o_lineitems.l_partkey",
+      "l_suppkey": "$c_orders.o_lineitems.l_suppkey",
+      "l_linenumber": "$c_orders.o_lineitems.l_linenumber",
+      "l_quantity": "$c_orders.o_lineitems.l_quantity",
+      "l_extendedprice": "$c_orders.o_lineitems.l_extendedprice",
+      "l_discount": "$c_orders.o_lineitems.l_discount",
+      "l_returnflag": "$c_orders.o_lineitems.l_returnflag",
+      "l_shipmode": "$c_orders.o_lineitems.l_shipmode"
+    }
+  },
+  { "$limit": 100000 }
+]);
+
+-- Q05: Unfiltered two-level nested lineitem projection.
+ncpd_document.ncpd__nestedcustomer.aggregate([
+  { "$unwind": "$c_orders" },
+  { "$unwind": "$c_orders.o_lineitems" },
+  {
+    "$project": {
+      "o_orderkey": "$c_orders.o_orderkey",
+      "o_orderstatus": "$c_orders.o_orderstatus",
+      "l_partkey": "$c_orders.o_lineitems.l_partkey",
+      "l_suppkey": "$c_orders.o_lineitems.l_suppkey",
+      "l_linenumber": "$c_orders.o_lineitems.l_linenumber",
+      "l_quantity": "$c_orders.o_lineitems.l_quantity",
+      "l_extendedprice": "$c_orders.o_lineitems.l_extendedprice",
+      "l_discount": "$c_orders.o_lineitems.l_discount",
+      "l_returnflag": "$c_orders.o_lineitems.l_returnflag",
+      "l_shipmode": "$c_orders.o_lineitems.l_shipmode"
+    }
+  },
+  { "$limit": 100000 }
+]);
