@@ -23,6 +23,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.parquet.relational.filter.ParquetMultiFilterEvaluator;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetRelTable;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
+import org.polypheny.db.adapter.parquet.shared.execution.aggregate.ParquetDataAggregateExecutor;
 import org.polypheny.db.adapter.parquet.shared.filter.FiltersContainer;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetSchemaReader;
@@ -48,7 +49,7 @@ public final class ParquetEnumeratorsFactory {
         this.allFields = Arrays.copyOf( allFields, allFields.length );
         this.schemaReader = schemaReader;
         this.cancelFlag = cancelFlag;
-        this.sourceFileEvaluator = ParquetRelExecutor.createParquetSourceFileEvaluatorsChain( f -> ParquetRelExecutor.selectPhysicalBinding( table, f.columnIndex() ) );
+        this.sourceFileEvaluator = ParquetDataAggregateExecutor.createParquetSourceFileEvaluatorsChain( f -> ParquetRelExecutor.selectPhysicalBinding( table, f.columnIndex() ) );
     }
 
 

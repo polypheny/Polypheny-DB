@@ -27,7 +27,7 @@ import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelMetadataA
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelNestedJoinExecutor;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelProjectExecutor;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelDataAggregateExecutor;
-import org.polypheny.db.adapter.parquet.relational.planning.ParquetConvention;
+import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelConvention;
 import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelScan;
 import org.polypheny.db.adapter.parquet.relational.planning.PhysicalScan;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
@@ -127,7 +127,7 @@ public class ParquetRelTable extends PhysicalTable implements TranslatableEntity
      */
     @Override
     public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
-        ParquetConvention.INSTANCE.register( cluster.getPlanner() );
+        ParquetRelConvention.INSTANCE.register( cluster.getPlanner() );
         return new ParquetRelScan( cluster, this, fieldIndexes );
     }
 

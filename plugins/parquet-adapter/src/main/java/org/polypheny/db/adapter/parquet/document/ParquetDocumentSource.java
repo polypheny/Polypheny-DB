@@ -29,7 +29,6 @@ import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.parquet.relational.schema.DiscoveredTableBinding;
-import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
@@ -98,7 +97,7 @@ public class ParquetDocumentSource extends AbstractParquetSource implements Docu
         // handle multi-files
         var physical = currentNamespace.createParquetCollection(
                 collection,
-                getCollectionSourceFiles( logical.getName() ),
+                getCollectionBinding( logical.getName() ),
                 this );
         adapterCatalog.replacePhysical( physical );
         return List.of( physical );
@@ -112,7 +111,7 @@ public class ParquetDocumentSource extends AbstractParquetSource implements Docu
         // handle multi-files
         var physical = currentNamespace.createParquetCollection(
                 collection.unwrapOrThrow( PhysicalCollection.class ),
-                getCollectionSourceFiles( collection.name ),
+                getCollectionBinding( collection.name ),
                 this );
         adapterCatalog.addPhysical( alloc, physical );
     }
@@ -168,11 +167,10 @@ public class ParquetDocumentSource extends AbstractParquetSource implements Docu
     }
 
 
-    private List<ParquetSourceFile> getCollectionSourceFiles( String collectionName ) {
+    private DiscoveredTableBinding getCollectionBinding( String collectionName ) {
         // handle multi-files
         return getTableBinding( collectionName )
-                .map( DiscoveredTableBinding::sourceFiles )
-                .filter( sourceFiles -> !sourceFiles.isEmpty() )
+                .filter( binding -> !binding.sourceFiles().isEmpty() )
                 .orElseThrow( () -> new GenericRuntimeException( "Missing discovered Parquet file binding for collection: %s", collectionName ) );
     }
 

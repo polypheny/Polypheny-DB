@@ -61,7 +61,7 @@ public class ParquetRelScan extends RelScan<ParquetRelTable> implements ParquetA
 
 
     public ParquetRelScan(AlgCluster cluster, ParquetRelTable table, int[] fields, List<ParquetAdapterFilter<PolyValue>> filters) {
-        super(cluster, cluster.traitSetOf(ParquetConvention.INSTANCE).replace(ModelTrait.RELATIONAL), table);
+        super(cluster, cluster.traitSetOf(ParquetRelConvention.INSTANCE).replace(ModelTrait.RELATIONAL), table);
         this.fields = fields;
         this.filters = List.copyOf(filters);
     }
@@ -109,7 +109,7 @@ public class ParquetRelScan extends RelScan<ParquetRelTable> implements ParquetA
 
     @Override
     public void register(AlgPlanner planner) {
-        ParquetConvention.INSTANCE.register(planner);
+        ParquetRelConvention.INSTANCE.register(planner);
     }
 
 
@@ -117,7 +117,7 @@ public class ParquetRelScan extends RelScan<ParquetRelTable> implements ParquetA
     public AlgOptCost computeSelfCost(AlgPlanner planner, AlgMetadataQuery mq) {
         double fieldRatio = ((double) fields.length + 2D) / ((double) entity.getTupleType().getFieldCount() + 2D);
         double filterRatio = filters.isEmpty() ? 1D : 0.5D;
-        return super.computeSelfCost(planner, mq).multiplyBy(ParquetConvention.COST_MULTIPLIER * fieldRatio * filterRatio);
+        return super.computeSelfCost(planner, mq).multiplyBy(ParquetRelConvention.COST_MULTIPLIER * fieldRatio * filterRatio);
     }
 
 

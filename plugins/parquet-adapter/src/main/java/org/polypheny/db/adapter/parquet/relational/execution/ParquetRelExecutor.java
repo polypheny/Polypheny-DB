@@ -21,12 +21,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.parquet.relational.filter.ParquetMultiFilterEvaluator;
-import org.polypheny.db.adapter.parquet.relational.filter.ParquetSourceFilePartitionFilterEvaluator;
-import org.polypheny.db.adapter.parquet.relational.filter.ParquetSourceFileStatisticsFilterEvaluator;
 import org.polypheny.db.adapter.parquet.relational.filter.ParquetFilterResolver;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnRole;
@@ -80,7 +76,7 @@ public abstract class ParquetRelExecutor {
      * @param filtersContainer a container for multiple lists of filters.
      * @return one of the selected enumerators.
      */
-    protected static Enumerator<PolyValue[]> enumeratorForFile( ParquetRelTable table, ParquetSourceFile sourceFile, int[] fields, int[] allFields, ParquetSchemaReader schemaReader, AtomicBoolean cancelFlag, FiltersContainer filtersContainer ) {
+    public static Enumerator<PolyValue[]> enumeratorForFile( ParquetRelTable table, ParquetSourceFile sourceFile, int[] fields, int[] allFields, ParquetSchemaReader schemaReader, AtomicBoolean cancelFlag, FiltersContainer filtersContainer ) {
         boolean nestedTable = isNestedTable( table );
         boolean requiresRowValidation = !filtersContainer.adapterFilters().isEmpty();
         boolean bindingScan = nestedTable || needsBindingScan( table, schemaReader, fields );
@@ -328,23 +324,6 @@ public abstract class ParquetRelExecutor {
 
 
     /**
-     * Creates a chain of source file filter evaluators. Currently, supports two filter evaluators:
-     * 1. partition value based filter evaluator
-     * 2. source file statistics based filter evaluator.
-     * Those filter evaluators can skip files if they do not contain filtered data.
-     *
-     * @param selector a column binding selector.
-     * @return an evaluators chain.
-     */
-    public static ParquetMultiFilterEvaluator<ParquetSourceFile> createParquetSourceFileEvaluatorsChain( Function<ParquetAdapterFilter<PolyValue>, ParquetColumnBinding> selector ) {
-        return new ParquetMultiFilterEvaluator<>( List.of(
-                new ParquetSourceFilePartitionFilterEvaluator( selector ),
-                new ParquetSourceFileStatisticsFilterEvaluator( selector ) )
-        );
-    }
-
-
-    /**
      * Selects a column binding according to a physical column index.
      *
      * @param table a table to look for a column binding in.
@@ -356,37 +335,6 @@ public abstract class ParquetRelExecutor {
             throw new GenericRuntimeException( "Invalid physical filter column index: " + columnIndex );
         }
         return table.getBinding().getColumnBinding( table.columns.get( columnIndex ).id );
-    }
-
-
-    /**
-     * Checks if the specified filter is a partition filter.
-     *
-     * @param table a table containing the binding information.
-     * @param filter a filter to check.
-     * @return {@code true} if the provided filter is a partition filter and {@code false} otherwise.
-     */
-    protected static boolean isPartitionFilter( ParquetRelTable table, ParquetAdapterFilter<PolyValue> filter ) {
-        if ( filter.isLogical() ) {
-            return filter.operands().stream().allMatch( operand -> isPartitionFilter( table, operand ) );
-        }
-        return isPartitionColumn( table, filter.columnIndex() );
-    }
-
-
-    /**
-     * Checks if the specified filter is a partition filter.
-     *
-     * @param table a table containing the binding information.
-     * @param columnIndex a column index of the filter.
-     * @return {@code true} if the provided filter is a partition filter and {@code false} otherwise.
-     */
-    protected static boolean isPartitionColumn( ParquetRelTable table, int columnIndex ) {
-        if ( columnIndex < 0 || columnIndex >= table.columns.size() ) {
-            return false;
-        }
-        ParquetColumnBinding columnBinding = table.getBinding().getColumnBinding( table.columns.get( columnIndex ).id );
-        return columnBinding != null && columnBinding.role() == ParquetColumnRole.PARTITION;
     }
 
 

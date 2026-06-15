@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.parquet.document.execution;
 
 
 import java.util.List;
+import java.util.Objects;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.adapter.parquet.shared.execution.AbstractFilterTranslator;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
@@ -41,6 +42,17 @@ public class ParquetDocFilterTranslator extends AbstractFilterTranslator {
      * @return ParquetFilter
      */
     public ParquetAdapterFilter<PolyValue> translate( List<ExportedColumn> columns, RexNode filter ) {
+        filter = unwrapCast( filter );
+        if ( filter instanceof RexCall call ) {
+            if ( filter.isA( Kind.AND ) || filter.isA( Kind.OR ) ) {
+                return translateLogical( columns, filter.getKind(), call.getOperands() );
+            }
+            if ( filter.isA( Kind.NOT ) && call.getOperands().size() == 1 ) {
+                ParquetAdapterFilter<PolyValue> operand = translate( columns, call.getOperands().get( 0 ) );
+                return operand == null ? null : ParquetAdapterFilter.logical( Kind.NOT, List.of( operand ) );
+            }
+        }
+
         ParsedFilter parsed = parse( filter );
         if ( parsed == null ) {
             return null;
@@ -67,6 +79,22 @@ public class ParquetDocFilterTranslator extends AbstractFilterTranslator {
     }
 
 
+    private ParquetAdapterFilter<PolyValue> translateLogical( List<ExportedColumn> columns, Kind operator, List<RexNode> operands ) {
+        if ( operands.isEmpty() ) {
+            return null;
+        }
+
+        List<ParquetAdapterFilter<PolyValue>> translated = operands.stream()
+                .map( operand -> translate( columns, operand ) )
+                .toList();
+        if ( translated.stream().anyMatch( Objects::isNull ) ) {
+            return null;
+        }
+
+        return ParquetAdapterFilter.logical( operator, translated );
+    }
+
+
     private String fieldName( RexNode node ) {
         if ( node instanceof RexNameRef nameRef ) {
             return nameRef.names.size() == 1 ? nameRef.names.get( 0 ) : null;
@@ -77,6 +105,10 @@ public class ParquetDocFilterTranslator extends AbstractFilterTranslator {
         }
 
         RexNode path = call.getOperands().get( 1 );
+        String foldedPath = foldedSingleFieldPath( path );
+        if ( foldedPath != null ) {
+            return foldedPath;
+        }
         if ( !(path instanceof RexCall pathCall) || pathCall.getKind() != Kind.ARRAY_VALUE_CONSTRUCTOR || pathCall.getOperands().size() != 1 ) {
             return null;
         }
@@ -87,6 +119,18 @@ public class ParquetDocFilterTranslator extends AbstractFilterTranslator {
         }
 
         return literal.getValue().asString().value;
+    }
+
+
+    private String foldedSingleFieldPath( RexNode path ) {
+        if ( !(path instanceof RexLiteral literal) || literal.getValue() == null || !literal.getValue().isList() ) {
+            return null;
+        }
+        List<? extends PolyValue> elements = literal.getValue().asList();
+        if ( elements.size() != 1 || !elements.get( 0 ).isString() ) {
+            return null;
+        }
+        return elements.get( 0 ).asString().value;
     }
 
 }

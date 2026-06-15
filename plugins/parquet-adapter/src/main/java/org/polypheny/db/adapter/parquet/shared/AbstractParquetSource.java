@@ -136,7 +136,7 @@ public abstract class AbstractParquetSource extends DataSource<DocAdapterCatalog
     }
 
 
-    protected Optional<DiscoveredTableBinding> getTableBinding( String tableName ) {
+    public Optional<DiscoveredTableBinding> getTableBinding( String tableName ) {
         if ( discoveredTables == null ) {
             discoveredTables = ParquetFileDiscovery.discoverTables( parquetDir, getUniqueName() );
         }

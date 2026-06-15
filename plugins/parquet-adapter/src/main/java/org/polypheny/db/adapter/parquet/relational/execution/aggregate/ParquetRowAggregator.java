@@ -28,7 +28,7 @@ import org.polypheny.db.type.entity.PolyValue;
 /**
  * Generic row-by-row aggregate fallback shared by direct and Calc projections.
  */
-final class ParquetRowAggregator {
+public final class ParquetRowAggregator {
 
     private ParquetRowAggregator() {
     }
@@ -42,7 +42,7 @@ final class ParquetRowAggregator {
      * @param projector a row projector that customizes values reading.
      * @return a grouped aggregations.
      */
-    static Map<GroupKey, AggregateGroupState> aggregate( Enumerator<PolyValue[]> rows, AggregateCallDescriptor[] aggregateCalls, AggregateRowProjector projector ) {
+    public static Map<GroupKey, AggregateGroupState> aggregate( Enumerator<PolyValue[]> rows, AggregateCallDescriptor[] aggregateCalls, AggregateRowProjector projector ) {
         Map<GroupKey, AggregateGroupState> aggregates = new LinkedHashMap<>();
         try ( rows ) {
             while ( rows.moveNext() ) {

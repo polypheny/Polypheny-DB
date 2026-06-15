@@ -10,48 +10,64 @@ build jar:
 run jar:
 java -Xms8g -Xmx16g "-Dfile.encoding=UTF-8" -jar .\dbms\build\libs\dbms-0.10.1-SNAPSHOT.jar
 
-PR
+PR flat
+
 ```powershell
 powershell -ExecutionPolicy Bypass `
   -File plugins\parquet-adapter\benchmarks\scripts\runners\run_polypheny_benchmark.ps1 `
--Queries plugins\parquet-adapter\benchmarks\query_lists\access_model_comparison\access_model_comparison_rf.sql `
+  -Queries plugins\parquet-adapter\benchmarks\query_lists\access_model_comparison\access_model_comparison_rf.sql `
   -Output plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_rf_tlcp_results.csv `
--Warmups 1 `
+  -Warmups 1 `
   -Runs 5 `
--NoTableNameMapping
+  -NoTableNameMapping
+```
+
+PR normalized
+
+```powershell
+powershell -ExecutionPolicy Bypass `
+  -File plugins\parquet-adapter\benchmarks\scripts\runners\run_polypheny_benchmark.ps1 `
+  -Queries plugins\parquet-adapter\benchmarks\query_lists\access_model_comparison\access_model_comparison_rn.sql `
+  -Output plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_rn_tlcpn_results.csv `
+  -Warmups 1 `
+  -Runs 5 `
+  -NoTableNameMapping
 ```
 
 PD
+
 ```powershell
 powershell -ExecutionPolicy Bypass `
   -File plugins\parquet-adapter\benchmarks\scripts\runners\run_polypheny_mql_benchmark.ps1 `
--Namespace tlcpd_document `
+  -Namespace tlcpd_document `
   -Queries plugins\parquet-adapter\benchmarks\query_lists\access_model_comparison\access_model_comparison_mql.mql `
--Output plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_mql_tlcp_results.csv `
+  -Output plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_mql_tlcp_results.csv `
   -Warmups 1 `
--Runs 5
+  -Runs 5
 ```
 
 DuckDB
+
 ```powershell
 powershell -ExecutionPolicy Bypass `
   -File plugins\parquet-adapter\benchmarks\scripts\runners\run_duckdb_benchmark.ps1 `
--DataDir C:\PolyData\tlc_partitioned `
+  -DataDir C:\PolyData\tlc_partitioned `
   -Queries plugins\parquet-adapter\benchmarks\query_lists\access_model_comparison\access_model_comparison_sql.sql `
--Output plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_duckdb_tlcp_results.csv `
+  -Output plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_duckdb_tlcp_results.csv `
   -Warmups 1 `
--Runs 5
+  -Runs 5
 ```
 
 Spark
+
 ```powershell
 powershell -ExecutionPolicy Bypass `
   -File plugins\parquet-adapter\benchmarks\scripts\runners\run_spark_benchmark.ps1 `
--DataDir C:\PolyData\tlc_partitioned `
+  -DataDir C:\PolyData\tlc_partitioned `
   -Queries plugins\parquet-adapter\benchmarks\query_lists\access_model_comparison\access_model_comparison_sql.sql `
--Output plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_spark_tlcp_results.csv `
+  -Output plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_spark_tlcp_results.csv `
   -Warmups 1 `
--Runs 5
+  -Runs 5
 ```
 
 ## Create summary
@@ -61,11 +77,12 @@ powershell -ExecutionPolicy Bypass `
 
 python plugins\parquet-adapter\benchmarks\scripts\summarize_benchmark_results.py `
   --title "Access Model Comparison TLCP Summary" `
---output plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_tlcp_summary.md `
-  "Polypheny Relational=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_rf_tlcp_results.csv" `
-"Polypheny Document MQL=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_mql_tlcp_results.csv" `
+  --output plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_tlcp_summary.md `
+  "Polypheny Relational Flat=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_rf_tlcp_results.csv" `
+  "Polypheny Relational Normalized=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_rn_tlcpn_results.csv" `
+  "Polypheny Document MQL=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_mql_tlcp_results.csv" `
   "DuckDB=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_duckdb_tlcp_results.csv" `
-"Apache Spark=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_spark_tlcp_results.csv"
+  "Apache Spark=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_spark_tlcp_results.csv"
 
 ```
 
@@ -73,9 +90,10 @@ python plugins\parquet-adapter\benchmarks\scripts\summarize_benchmark_results.py
 
 ```powershell
 python plugins\parquet-adapter\benchmarks\scripts\plot_generation\benchmark_result_plot_generator.py `
-  --title "Access Model Comparison TLCP" `
+  --title "Access Model Comparison" `
   --name access_model_comparison_tlcp_plot `
-  "Polypheny Relational=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_rf_tlcp_results.csv" `
+  "Polypheny Relational Flat=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_rf_tlcp_results.csv" `
+  "Polypheny Relational Normalized=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_rn_tlcpn_results.csv" `
   "Polypheny Document MQL=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_mql_tlcp_results.csv" `
   "DuckDB=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_duckdb_tlcp_results.csv" `
   "Apache Spark=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_spark_tlcp_results.csv"

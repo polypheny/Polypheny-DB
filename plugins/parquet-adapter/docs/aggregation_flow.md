@@ -1,19 +1,19 @@
 # Aggregation Flow
 
-## ParquetRelMetadataAggregateExecutor
-`plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/execution/ParquetRelMetadataAggregateExecutor.java`
+## ParquetMetadataAggregateExecutor
+`plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/shared/execution/aggregate/ParquetMetadataAggregateExecutor.java`
 Performs the following:
 1. filter by file level: partition values / column statistics
 2. find group key for each file
 3. update COUNT / MIN / MAX using file metadata
 4. return result as Enumerable
 
-## ParquetRelDataAggregateExecutor
-`plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/execution/ParquetRelDataAggregateExecutor.java'`
-ParquetRelAggregateExecutor creates following Enumerators:
-1. ParquetFileGroupedAggregateRelEnumerator
+## ParquetDataAggregateExecutor
+`plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/shared/execution/aggregate/ParquetDataAggregateExecutor.java'`
+ParquetAggregateExecutor creates following Enumerators:
+1. ParquetFileGroupedAggregateEnumerator
    - aggregation can be done per whole file, because each file belongs to exactly one group.
-2. ParquetGroupedAggregateRelEnumerator 
+2. ParquetGroupedAggregateEnumerator 
    - grouped COUNT(*). For queries like:
       ```text
        SELECT category, COUNT(*)
@@ -34,7 +34,7 @@ ParquetRelAggregateExecutor creates following Enumerators:
       Conditions:
       - filters are supported 
       - aggregate functions by column
-3. ParquetRowAggregateRelEnumerator - default
+3. ParquetRowAggregateEnumerator - default
 
 ## Flow Diagram 
 

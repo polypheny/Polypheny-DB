@@ -43,14 +43,16 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.polypheny.db.adapter.parquet.relational.execution.aggregate.ParquetGroupedAggregateRelEnumerator;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnRole;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetRelTable;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetTableBinding;
 import org.polypheny.db.adapter.parquet.shared.aggregate.AggregateCallDescriptor;
+import org.polypheny.db.adapter.parquet.shared.execution.aggregate.ParquetAggregateSource;
+import org.polypheny.db.adapter.parquet.shared.execution.aggregate.ParquetGroupedAggregateEnumerator;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
+import org.polypheny.db.adapter.parquet.shared.io.ParquetSchemaReader;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -91,8 +93,8 @@ class ParquetGroupedAggregateRelEnumeratorTest {
                 row( "Y", "Y" ) ) );
 
         Set<List<String>> values = new HashSet<>();
-        try ( ParquetGroupedAggregateRelEnumerator enumerator = new ParquetGroupedAggregateRelEnumerator(
-                table( file ),
+        try ( ParquetGroupedAggregateEnumerator enumerator = new ParquetGroupedAggregateEnumerator(
+                aggregateSource( table( file ) ),
                 new int[]{ 0, 1 },
                 2,
                 new AggregateCallDescriptor[0],
@@ -117,8 +119,8 @@ class ParquetGroupedAggregateRelEnumeratorTest {
                 .named( "test" );
         writeParquet( file, schema, List.<Object[]>of( row( "Y", "N" ) ) );
 
-        try ( ParquetGroupedAggregateRelEnumerator enumerator = new ParquetGroupedAggregateRelEnumerator(
-                table( file ),
+        try ( ParquetGroupedAggregateEnumerator enumerator = new ParquetGroupedAggregateEnumerator(
+                aggregateSource( table( file ) ),
                 new int[]{ 0 },
                 0,
                 new AggregateCallDescriptor[]{ AggregateCallDescriptor.countStar() },
@@ -144,6 +146,41 @@ class ParquetGroupedAggregateRelEnumeratorTest {
                         flagA.id, new ParquetColumnBinding( flagA.id, "flag_a", ParquetColumnRole.DATA, List.of( "flag_a" ) ),
                         flagB.id, new ParquetColumnBinding( flagB.id, "flag_b", ParquetColumnRole.DATA, List.of( "flag_b" ) ) ) );
         return new ParquetRelTable( 1, physicalTable, binding, null );
+    }
+
+
+    private static ParquetAggregateSource aggregateSource( ParquetRelTable table ) {
+        ParquetSchemaReader schemaReader = new ParquetSchemaReader( table.getBinding().sourceFiles().stream().map( ParquetSourceFile::asSource ).toList() );
+        return new ParquetAggregateSource() {
+            @Override
+            public List<ParquetSourceFile> sourceFiles() {
+                return table.getBinding().sourceFiles();
+            }
+
+
+            @Override
+            public ParquetSchemaReader schemaReader() {
+                return schemaReader;
+            }
+
+
+            @Override
+            public int fieldCount() {
+                return table.columns.size();
+            }
+
+
+            @Override
+            public PolyType fieldType( int field ) {
+                return table.columns.get( field ).type;
+            }
+
+
+            @Override
+            public ParquetColumnBinding binding( int field ) {
+                return table.getBinding().getColumnBinding( table.columns.get( field ).id );
+            }
+        };
     }
 
 

@@ -50,7 +50,7 @@ public class EnumerableParquet extends ConverterImpl implements EnumerableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( ParquetConvention.COST_MULTIPLIER );
+        return super.computeSelfCost( planner, mq ).multiplyBy( ParquetRelConvention.COST_MULTIPLIER );
     }
 
 

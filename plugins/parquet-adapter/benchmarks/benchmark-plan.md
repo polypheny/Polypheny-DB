@@ -57,7 +57,7 @@ Parquet workloads where the same logical operation can be expressed.
 
 ## Suite 1: Access Model Comparison
 
-Status: implemented and executed for the TLC `green_tripdata` table.
+Status: implemented for the TLC `green_tripdata` table.
 
 ### Purpose
 
@@ -68,13 +68,10 @@ schema generation or partition pruning.
 ### Compared Systems and Access Paths
 
 - Polypheny relational adapter in flat schema mode;
+- Polypheny relational adapter in normalized schema mode;
 - Polypheny document adapter queried through MQL;
 - DuckDB;
 - Apache Spark.
-
-Normalized relational mode is not included in this suite because the selected
-`green_tripdata` table is flat and does not produce meaningful generated child
-tables.
 
 ### Dataset
 
@@ -85,17 +82,19 @@ Input table: `green_tripdata` from the partitioned TLC dataset.
 
 Polypheny table and collection names used by the current query files:
 
-- relational table: `tlcp__green_tripdata`;
+- relational flat table: `tlcp__green_tripdata`;
+- relational normalized table: `tlcpn__green_tripdata`;
 - document collection: `tlcpd_document.tlcpd__green_tripdata`;
 - DuckDB and Spark view: `green_tripdata`.
 
 ### Query Files
 
-| System                 | Query file                                                                                               |
-|------------------------|----------------------------------------------------------------------------------------------------------|
-| Polypheny relational   | `plugins/parquet-adapter/benchmarks/query_lists/access_model_comparison/access_model_comparison_rf.sql`  |
-| Polypheny document MQL | `plugins/parquet-adapter/benchmarks/query_lists/access_model_comparison/access_model_comparison_mql.mql` |
-| DuckDB and Spark       | `plugins/parquet-adapter/benchmarks/query_lists/access_model_comparison/access_model_comparison_sql.sql` |
+| System                           | Query file                                                                                               |
+|----------------------------------|----------------------------------------------------------------------------------------------------------|
+| Polypheny relational flat        | `plugins/parquet-adapter/benchmarks/query_lists/access_model_comparison/access_model_comparison_rf.sql`  |
+| Polypheny relational normalized  | `plugins/parquet-adapter/benchmarks/query_lists/access_model_comparison/access_model_comparison_rn.sql`  |
+| Polypheny document MQL           | `plugins/parquet-adapter/benchmarks/query_lists/access_model_comparison/access_model_comparison_mql.mql` |
+| DuckDB and Spark                 | `plugins/parquet-adapter/benchmarks/query_lists/access_model_comparison/access_model_comparison_sql.sql` |
 
 ### Query Groups
 
@@ -108,8 +107,18 @@ plugins/parquet-adapter/benchmarks/query_lists/access_model_comparison/access_mo
 
 Raw and summarized results are stored in:
 
-```text[..](..)
+```text
 plugins/parquet-adapter/benchmarks/results/access_model_comparison/
+```
+
+Expected raw result files:
+
+```text
+plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_polypheny_rf_tlcp_results.csv
+plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_polypheny_rn_tlcpn_results.csv
+plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_polypheny_mql_tlcp_results.csv
+plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_duckdb_tlcp_results.csv
+plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_spark_tlcp_results.csv
 ```
 
 The current summary file is:
@@ -227,7 +236,7 @@ plugins/parquet-adapter/benchmarks/query_lists/arrregation/aggregation_query_spe
 
 ### Compared Systems and Access Paths
 
-- Polypheny relational before and after optimization, where both versions are available;
+- Polypheny relational flat before and after optimization, where both versions are available;
 - Polypheny document adapter queried through MQL;
 - DuckDB;
 - Apache Spark.

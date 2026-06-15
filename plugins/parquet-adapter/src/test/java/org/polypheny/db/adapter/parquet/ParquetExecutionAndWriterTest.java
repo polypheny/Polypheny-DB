@@ -49,6 +49,7 @@ import org.polypheny.db.adapter.parquet.shared.execution.VirtualGroup;
 import org.polypheny.db.adapter.parquet.shared.filter.FiltersContainer;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetPrimitiveValueFilterEvaluator;
+import org.polypheny.db.adapter.parquet.shared.io.OutputLocalFile;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceReader;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceWriter;
 import org.polypheny.db.adapter.parquet.shared.schema.ParquetMessageTypeBuilder;
@@ -189,7 +190,7 @@ class ParquetExecutionAndWriterTest {
         MessageType schema = new ParquetMessageTypeBuilder( schemaState, "writer_rel" ).build();
         List<Long> progress = new ArrayList<>();
 
-        try ( ParquetSourceWriter writer = new ParquetSourceWriter( file, schema, ParquetSourceWriter.COMPRESSION_UNCOMPRESSED, schemaState, false ) ) {
+        try ( ParquetSourceWriter writer = new ParquetSourceWriter( new OutputLocalFile( file ), schema, ParquetSourceWriter.COMPRESSION_UNCOMPRESSED, schemaState, false ) ) {
             writer.writeRows( List.of(
                     List.of( PolyLong.of( 101 ), PolyString.of( "Alice" ), PolyInteger.of( 9 ) ),
                     List.of( PolyLong.of( 102 ), PolyString.of( "Bob" ), PolyInteger.of( 7 ) ) ).iterator(), progress::add );
@@ -222,7 +223,7 @@ class ParquetExecutionAndWriterTest {
         schemaState.mergeDocumentSchema( document, false );
         MessageType schema = new ParquetMessageTypeBuilder( schemaState, "writer_doc" ).build();
 
-        try ( ParquetSourceWriter writer = new ParquetSourceWriter( file, schema, ParquetSourceWriter.COMPRESSION_UNCOMPRESSED, schemaState, false ) ) {
+        try ( ParquetSourceWriter writer = new ParquetSourceWriter( new OutputLocalFile( file ), schema, ParquetSourceWriter.COMPRESSION_UNCOMPRESSED, schemaState, false ) ) {
             writer.writeRows( List.of( document ).iterator(), null );
         }
 
@@ -249,9 +250,9 @@ class ParquetExecutionAndWriterTest {
         MessageType schema = new ParquetMessageTypeBuilder( schemaState, "writer_errors" ).build();
 
         //noinspection resource
-        assertThrows( GenericRuntimeException.class, () -> new ParquetSourceWriter( badCompression, schema, "brotli", schemaState, false ) );
+        assertThrows( GenericRuntimeException.class, () -> new ParquetSourceWriter( new OutputLocalFile( badCompression ), schema, "brotli", schemaState, false ) );
 
-        try ( ParquetSourceWriter writer = new ParquetSourceWriter( tempDir.resolve( "bad-value.parquet" ).toFile(), schema, ParquetSourceWriter.COMPRESSION_UNCOMPRESSED, schemaState, false ) ) {
+        try ( ParquetSourceWriter writer = new ParquetSourceWriter( new OutputLocalFile( tempDir.resolve( "bad-value.parquet" ).toFile() ), schema, ParquetSourceWriter.COMPRESSION_UNCOMPRESSED, schemaState, false ) ) {
             assertThrows( GenericRuntimeException.class, () -> writer.writeRows( List.of( List.<PolyValue>of( PolyString.of( "not-a-number" ) ) ).iterator(), null ) );
         }
     }

@@ -19,11 +19,14 @@ package org.polypheny.db.adapter.parquet;
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.parquet.document.ParquetDocumentSource;
+import org.polypheny.db.adapter.parquet.document.planning.ParquetDocAggregate;
+import org.polypheny.db.adapter.parquet.document.planning.ParquetDocMetadataScan;
 import org.polypheny.db.adapter.parquet.document.planning.ParquetDocScan;
+import org.polypheny.db.adapter.parquet.document.planning.ParquetDocConvention;
 import org.polypheny.db.adapter.parquet.relational.ParquetRelationalSource;
 import org.polypheny.db.adapter.parquet.relational.planning.EnumerableParquet;
-import org.polypheny.db.adapter.parquet.relational.planning.ParquetEnumerableUnion;
-import org.polypheny.db.adapter.parquet.relational.planning.ParquetConvention;
+import org.polypheny.db.adapter.parquet.shared.planning.ParquetEnumerableUnion;
+import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelConvention;
 import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelAggregate;
 import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelJoin;
 import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelMetadataScan;
@@ -87,7 +90,7 @@ public class ParquetPlugin extends PolyPlugin {
 
         PolyAlgRegistry.register( ParquetRelScan.class, PolyAlgDeclaration.builder()
                 .model( DataModel.RELATIONAL )
-                .opName( "P_SCAN" ).convention( ParquetConvention.INSTANCE ).numInputs( 0 ).opTags( physTags )
+                .opName( "P_SCAN" ).convention( ParquetRelConvention.INSTANCE ).numInputs( 0 ).opTags( physTags )
                 .params( PolyAlgRegistry.getParams( LogicalRelScan.class ) )
                 .param( Parameter.builder().name( "fields" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "filters" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
@@ -95,7 +98,7 @@ public class ParquetPlugin extends PolyPlugin {
 
         PolyAlgRegistry.register( ParquetRelMetadataScan.class, PolyAlgDeclaration.builder()
                 .model( DataModel.RELATIONAL )
-                .opName( "P_METADATA_SCAN" ).convention( ParquetConvention.INSTANCE ).numInputs( 0 ).opTags( physTags )
+                .opName( "P_METADATA_SCAN" ).convention( ParquetRelConvention.INSTANCE ).numInputs( 0 ).opTags( physTags )
                 .params( PolyAlgRegistry.getParams( LogicalRelScan.class ) )
                 .param( Parameter.builder().name( "fields" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "filters" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
@@ -103,7 +106,7 @@ public class ParquetPlugin extends PolyPlugin {
 
         PolyAlgRegistry.register( ParquetRelJoin.class, PolyAlgDeclaration.builder()
                 .model( DataModel.RELATIONAL )
-                .opName( "P_JOIN" ).convention( ParquetConvention.INSTANCE ).numInputs( 2 ).opTags( physTags )
+                .opName( "P_JOIN" ).convention( ParquetRelConvention.INSTANCE ).numInputs( 2 ).opTags( physTags )
                 .params( PolyAlgRegistry.getParams( EnumerableJoin.class ) )
                 .param( Parameter.builder().name( "leftIsParent" ).type( ParamType.BOOLEAN ).defaultValue( BooleanArg.FALSE ).build() )
                 .param( Parameter.builder().name( "leftFields" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
@@ -115,7 +118,7 @@ public class ParquetPlugin extends PolyPlugin {
 
         PolyAlgRegistry.register( ParquetRelAggregate.class, PolyAlgDeclaration.builder()
                 .model( DataModel.RELATIONAL )
-                .opName( "P_AGGREGATE" ).convention( ParquetConvention.INSTANCE ).numInputs( 1 ).opTags( physTags )
+                .opName( "P_AGGREGATE" ).convention( ParquetRelConvention.INSTANCE ).numInputs( 1 ).opTags( physTags )
                 .param( Parameter.builder().name( "mode" ).type( ParamType.STRING ).build() )
                 .param( Parameter.builder().name( "fields" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "groups" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
@@ -126,9 +129,27 @@ public class ParquetPlugin extends PolyPlugin {
 
         PolyAlgRegistry.register( ParquetDocScan.class, PolyAlgDeclaration.builder()
                 .model( DataModel.DOCUMENT )
-                .opName( "P_DOC_SCAN" ).convention( EnumerableConvention.INSTANCE ).numInputs( 0 ).opTags( physTags )
+                .opName( "P_DOC_SCAN" ).convention( ParquetDocConvention.INSTANCE ).numInputs( 0 ).opTags( physTags )
                 .params( PolyAlgRegistry.getParams( LogicalDocumentScan.class ) )
                 .param( Parameter.builder().name( "fields" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "filters" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
+                .build() );
+
+        PolyAlgRegistry.register( ParquetDocMetadataScan.class, PolyAlgDeclaration.builder()
+                .model( DataModel.DOCUMENT )
+                .opName( "P_DOC_METADATA_SCAN" ).convention( ParquetDocConvention.INSTANCE ).numInputs( 0 ).opTags( physTags )
+                .params( PolyAlgRegistry.getParams( LogicalDocumentScan.class ) )
+                .param( Parameter.builder().name( "fields" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "filters" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
+                .build() );
+
+        PolyAlgRegistry.register( ParquetDocAggregate.class, PolyAlgDeclaration.builder()
+                .model( DataModel.DOCUMENT )
+                .opName( "P_DOC_AGGREGATE" ).convention( ParquetDocConvention.INSTANCE ).numInputs( 1 ).opTags( physTags )
+                .param( Parameter.builder().name( "mode" ).type( ParamType.STRING ).build() )
+                .param( Parameter.builder().name( "fields" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "groups" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
+                .param( Parameter.builder().name( "aggregates" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "filters" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
     }

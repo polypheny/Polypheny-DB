@@ -58,6 +58,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
@@ -191,6 +192,10 @@ class ParquetSharedDocumentAdapterTest {
                 typeFactory.createArrayType( typeFactory.createPolyType( PolyType.CHAR, 6 ), 1 ),
                 new SpecialOperator( Kind.ARRAY_VALUE_CONSTRUCTOR.name(), Kind.ARRAY_VALUE_CONSTRUCTOR ),
                 List.of( rexBuilder.makeLiteral( "status" ) ) );
+        RexLiteral foldedPath = new RexLiteral(
+                PolyList.of( PolyString.of( "status" ) ),
+                typeFactory.createArrayType( typeFactory.createPolyType( PolyType.CHAR, 255 ), -1 ),
+                PolyType.ARRAY );
         RexNode loweredMqlFilter = call(
                 boolType,
                 Kind.GREATER_THAN,
@@ -199,6 +204,29 @@ class ParquetSharedDocumentAdapterTest {
                         new SpecialOperator( Kind.MQL_QUERY_VALUE.name(), Kind.MQL_QUERY_VALUE ),
                         List.of( RexIndexRef.of( 0, DocumentType.ofDoc() ), path ) ),
                 new RexDynamicParam( stringType, 7 ) );
+        RexNode castedConjunction = call(
+                boolType,
+                Kind.CAST,
+                call(
+                        boolType,
+                        Kind.AND,
+                        loweredMqlFilter,
+                        call(
+                                boolType,
+                                Kind.LESS_THAN,
+                                new RexCall(
+                                        stringType,
+                                        new SpecialOperator( Kind.MQL_QUERY_VALUE.name(), Kind.MQL_QUERY_VALUE ),
+                        List.of( RexIndexRef.of( 0, DocumentType.ofDoc() ), path ) ),
+                                new RexDynamicParam( stringType, 8 ) ) ) );
+        RexNode foldedMqlFilter = call(
+                boolType,
+                Kind.LESS_THAN,
+                new RexCall(
+                        stringType,
+                        new SpecialOperator( Kind.MQL_QUERY_VALUE.name(), Kind.MQL_QUERY_VALUE ),
+                        List.of( RexIndexRef.of( 0, DocumentType.ofDoc() ), foldedPath ) ),
+                new RexDynamicParam( stringType, 9 ) );
 
         assertNotNull( translated );
         assertEquals( 3, translated.columnIndex() );
@@ -213,6 +241,17 @@ class ParquetSharedDocumentAdapterTest {
         assertEquals( 3, loweredMql.columnIndex() );
         assertEquals( Kind.GREATER_THAN, loweredMql.operator() );
         assertEquals( 7L, loweredMql.dynamicParamIndex() );
+        ParquetAdapterFilter<?> logical = translator.translate( columns, castedConjunction );
+        assertNotNull( logical );
+        assertEquals( Kind.AND, logical.operator() );
+        assertEquals( 2, logical.operands().size() );
+        assertEquals( Kind.GREATER_THAN, logical.operands().get( 0 ).operator() );
+        assertEquals( Kind.LESS_THAN, logical.operands().get( 1 ).operator() );
+        ParquetAdapterFilter<?> foldedMql = translator.translate( columns, foldedMqlFilter );
+        assertNotNull( foldedMql );
+        assertEquals( 3, foldedMql.columnIndex() );
+        assertEquals( Kind.LESS_THAN, foldedMql.operator() );
+        assertEquals( 9L, foldedMql.dynamicParamIndex() );
         assertNull( translator.translate( columns, nested ) );
     }
 

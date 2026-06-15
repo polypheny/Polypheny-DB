@@ -27,3 +27,178 @@ plugins/parquet-adapter/benchmarks/query_lists/partitioning/partitioning_reparti
 plugins/parquet-adapter/benchmarks/query_lists/partitioning/partitioning_repartitioned_sql.sql
 plugins/parquet-adapter/benchmarks/query_lists/partitioning/partitioning_unpartitioned_sql.sql
 ```
+
+## Q1 - Repartitioned full table baseline
+
+Text:
+
+```text
+Count all Yellow Taxi trip records in the repartitioned dataset.
+```
+
+SQL:
+
+```text
+SELECT count(*) AS row_count
+FROM tlcr__yellow_tripdata;
+```
+
+## Q2 - Repartitioned partition by year
+
+Text:
+
+```text
+Count Yellow Taxi trip records in the repartitioned dataset for partition year
+2022.
+```
+
+SQL:
+
+```text
+SELECT count(*) AS row_count
+FROM tlcr__yellow_tripdata
+WHERE "year" = '2022';
+```
+
+## Q3 - Repartitioned partition by month
+
+Text:
+
+```text
+Count Yellow Taxi trip records in the repartitioned dataset for partition year
+2022 and partition month 10.
+```
+
+SQL:
+
+```text
+SELECT count(*) AS row_count
+FROM tlcr__yellow_tripdata
+WHERE "year" = '2022'
+  AND "month" = '10';
+```
+
+## Q4 - Repartitioned filtered count, full scan
+
+Text:
+
+```text
+Count Green Taxi trip records in the repartitioned dataset where trip distance
+is at least 10.0 and total amount is at least 40.0.
+```
+
+SQL:
+
+```text
+SELECT count(*) AS row_count
+FROM tlcr__green_tripdata
+WHERE trip_distance >= 10.0
+  AND total_amount >= 40.0;
+```
+
+## Q5 - Repartitioned filtered count, partition by year
+
+Text:
+
+```text
+Count Green Taxi trip records in the repartitioned dataset for partition year
+2022 where trip distance is at least 10.0 and total amount is at least 40.0.
+```
+
+SQL:
+
+```text
+SELECT count(*) AS row_count
+FROM tlcr__green_tripdata
+WHERE "year" = '2022'
+  AND trip_distance >= 10.0
+  AND total_amount >= 40.0;
+```
+
+## Q6 - Unpartitioned full table baseline
+
+Text:
+
+```text
+Count all Yellow Taxi trip records in the unpartitioned dataset.
+```
+
+SQL:
+
+```text
+SELECT count(*) AS row_count
+FROM tlcu__yellow_tripdata;
+```
+
+## Q7 - Unpartitioned partition-column filter by year
+
+Text:
+
+```text
+Count Yellow Taxi trip records in the unpartitioned dataset where the physical
+year column is 2022.
+```
+
+SQL:
+
+```text
+SELECT count(*) AS row_count
+FROM tlcu__yellow_tripdata
+WHERE "year" = '2022';
+```
+
+## Q8 - Unpartitioned partition-column filter by month
+
+Text:
+
+```text
+Count Yellow Taxi trip records in the unpartitioned dataset where the physical
+year column is 2022 and the physical month column is 10.
+```
+
+SQL:
+
+```text
+SELECT count(*) AS row_count
+FROM tlcu__yellow_tripdata
+WHERE "year" = '2022'
+  AND "month" = '10';
+```
+
+## Q9 - Unpartitioned filtered count, full scan
+
+Text:
+
+```text
+Count Green Taxi trip records in the unpartitioned dataset where trip distance
+is at least 10.0 and total amount is at least 40.0.
+```
+
+SQL:
+
+```text
+SELECT count(*) AS row_count
+FROM tlcu__green_tripdata
+WHERE trip_distance >= 10.0
+  AND total_amount >= 40.0;
+```
+
+## Q10 - Unpartitioned filtered count with year filter
+
+Text:
+
+```text
+Count Green Taxi trip records in the unpartitioned dataset where the physical
+year column is 2022, trip distance is at least 10.0, and total amount is at
+least 40.0.
+```
+
+SQL:
+
+```text
+SELECT count(*) AS row_count
+FROM tlcu__green_tripdata
+WHERE "year" = '2022'
+  AND trip_distance >= 10.0
+  AND total_amount >= 40.0;
+```

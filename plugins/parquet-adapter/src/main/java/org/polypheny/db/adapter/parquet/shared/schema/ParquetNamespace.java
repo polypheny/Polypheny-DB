@@ -4,6 +4,7 @@ import java.net.URL;
 import java.util.List;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.parquet.document.schema.ParquetDocument;
+import org.polypheny.db.adapter.parquet.relational.schema.DiscoveredTableBinding;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetTableBinding;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
@@ -49,8 +50,8 @@ public class ParquetNamespace extends Namespace {
 
 
 
-    public ParquetDocument createParquetCollection( PhysicalCollection collection, List<ParquetSourceFile> sourceFiles, AbstractParquetSource sourceAdapter ) {
-        return new ParquetDocument( collection, sourceFiles, sourceAdapter );     // handle multi-files
+    public ParquetDocument createParquetCollection( PhysicalCollection collection, DiscoveredTableBinding binding, AbstractParquetSource sourceAdapter ) {
+        return new ParquetDocument( collection, binding, sourceAdapter );     // handle multi-files
     }
 
 

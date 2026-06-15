@@ -81,7 +81,7 @@ public class ParquetRelJoin extends Join implements ParquetAlg {
 
     public static ParquetRelJoin create(ParquetRelScan left, ParquetRelScan right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType, boolean leftIsParent) {
         AlgCluster cluster = left.getCluster();
-        AlgTraitSet traitSet = cluster.traitSetOf(ParquetConvention.INSTANCE).replace(ModelTrait.RELATIONAL);
+        AlgTraitSet traitSet = cluster.traitSetOf(ParquetRelConvention.INSTANCE).replace(ModelTrait.RELATIONAL);
         return new ParquetRelJoin(
                 cluster,
                 traitSet,
@@ -196,7 +196,7 @@ public class ParquetRelJoin extends Join implements ParquetAlg {
     @Override
     public AlgOptCost computeSelfCost(AlgPlanner planner, AlgMetadataQuery mq) {
         Optional<Double> count = mq.getTupleCount(this);
-        return planner.getCostFactory().makeCost(count.orElse(estimateTupleCount(mq)), 0, 0).multiplyBy(ParquetConvention.COST_MULTIPLIER);
+        return planner.getCostFactory().makeCost(count.orElse(estimateTupleCount(mq)), 0, 0).multiplyBy(ParquetRelConvention.COST_MULTIPLIER);
     }
 
 

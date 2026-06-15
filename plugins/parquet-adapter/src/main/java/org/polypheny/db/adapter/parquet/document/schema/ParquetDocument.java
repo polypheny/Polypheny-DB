@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.parquet.document.schema;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Getter;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -27,15 +28,18 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
+import org.polypheny.db.adapter.parquet.document.execution.ParquetDocAggregateExecutor;
 import org.polypheny.db.adapter.parquet.document.execution.ParquetDocEnumerator;
 import org.polypheny.db.adapter.parquet.document.planning.ParquetDocScan;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetMultiFileEnumerator;
+import org.polypheny.db.adapter.parquet.relational.schema.DiscoveredTableBinding;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
 import org.polypheny.db.adapter.parquet.shared.filter.FiltersContainer;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetSourceReader;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -47,6 +51,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.ImmutableBitSet;
 
 /**
  * Physical collection wrapper for the document model.
@@ -56,10 +61,11 @@ import org.polypheny.db.type.entity.PolyValue;
 public class ParquetDocument extends PhysicalCollection implements ScannableEntity, TranslatableEntity {
 
     private final List<ParquetSourceFile> sourceFiles;
+    private final Map<String, List<String>> columnPaths;
     private final AbstractParquetSource parquetSource;
 
 
-    public ParquetDocument( PhysicalCollection collection, List<ParquetSourceFile> sourceFiles, AbstractParquetSource parquetSource ) {
+    public ParquetDocument( PhysicalCollection collection, DiscoveredTableBinding binding, AbstractParquetSource parquetSource ) {
         super(
                 collection.id,
                 collection.allocationId,
@@ -68,7 +74,8 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
                 collection.name,
                 collection.namespaceName,
                 collection.adapterId );
-        this.sourceFiles = List.copyOf( sourceFiles ); // add multi-file handling
+        this.sourceFiles = List.copyOf( binding.sourceFiles() ); // add multi-file handling
+        this.columnPaths = Map.copyOf( binding.columnPaths() );
         this.parquetSource = parquetSource;
     }
 
@@ -130,6 +137,73 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
     }
 
 
+    /**
+     * Creates a data enumerator that should go though the parquet file.
+     *
+     * @param dataContext a Polypheny data context.
+     * @param fields an array of field indexes.
+     * @param filters a list of filters to be applied.
+     * @param groupFields an array of group field indexes.
+     * @param aggregateKinds an array of aggregate functions.
+     * @param aggregateArgs an array of aggregate functions arguments indexes.
+     * @return an enumerator
+     */
+    @SuppressWarnings("unused")
+    public Enumerable<PolyValue[]> dataAggregate( DataContext dataContext, int[] fields, List<ParquetAdapterFilter<PolyValue>> filters, int[] groupFields, String[] aggregateKinds, int[] aggregateArgs ) {
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( parquetSource );
+        return new ParquetDocAggregateExecutor( sourceFiles, exportedColumns(), columnPaths )
+                .createDataEnumerator( dataContext, fields, filters, groupFields, aggregateKinds, aggregateArgs );
+    }
+
+
+    /**
+     * Creates a metadata enumerator that reads only parquet file statistics, no data is being read.
+     *
+     * @param dataContext a Polypheny data context.
+     * @param fields an array of field indexes.
+     * @param filters a list of filters to be applied.
+     * @param groupFields an array of group field indexes.
+     * @param aggregateKinds an array of aggregate functions.
+     * @param aggregateArgs an array of aggregate functions arguments indexes.
+     * @return an enumerator.
+     */
+    @SuppressWarnings("unused")
+    public Enumerable<PolyValue[]> metadataAggregate( DataContext dataContext, int[] fields, List<ParquetAdapterFilter<PolyValue>> filters, int[] groupFields, String[] aggregateKinds, int[] aggregateArgs ) {
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( parquetSource );
+        return new ParquetDocAggregateExecutor( sourceFiles, exportedColumns(), columnPaths )
+                .createMetadataEnumerator( dataContext, fields, filters, groupFields, aggregateKinds, aggregateArgs );
+    }
+
+
+    /**
+     * Checks whether all provided aggregate functions are supported by data aggregates. Currently only COUNT, SUM, MIN and MAX for the numeric types are supported.
+     *
+     * @param fields an array of field indexes.
+     * @param groupSet a set of group by fields.
+     * @param aggregateCalls a list of aggregation functions to validate.
+     * @return {@code true} if all provided aggregation functions can be applied and {@code false} otherwise.
+     */
+    public boolean supportsDataAggregate( int[] fields, ImmutableBitSet groupSet, List<AggregateCall> aggregateCalls ) {
+        return new ParquetDocAggregateExecutor( sourceFiles, exportedColumns(), columnPaths )
+                .supportsDataAggregate( fields, groupSet, aggregateCalls );
+    }
+
+
+    /**
+     * Checks whether all provided aggregate functions are supported by metadata aggregates. Currently only COUNT, SUM, MIN and MAX for the numeric types are supported.
+     *
+     * @param fields an array of field indexes.
+     * @param filters a list of filters.
+     * @param groupSet a set of group by fields.
+     * @param aggregateCalls a list of aggregation functions to validate.
+     * @return {@code true} if all provided aggregation functions can be applied and {@code false} otherwise.
+     */
+    public boolean supportsMetadataAggregate( int[] fields, List<ParquetAdapterFilter<PolyValue>> filters, ImmutableBitSet groupSet, List<AggregateCall> aggregateCalls ) {
+        return new ParquetDocAggregateExecutor( sourceFiles, exportedColumns(), columnPaths )
+                .supportsMetadataAggregate( fields, filters, groupSet, aggregateCalls );
+    }
+
+
     @Override
     public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         return new ParquetDocScan( cluster, this, List.of() );
@@ -149,7 +223,7 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
 
 
     private AlgDataType buildDocumentType( AlgDataTypeFactory typeFactory ) {
-        List<ExportedColumn> columns = parquetSource.getExportedColumns().get( name );
+        List<ExportedColumn> columns = exportedColumns();
         if ( columns == null || columns.isEmpty() ) {
             return DocumentType.ofId();
         }
@@ -166,6 +240,11 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
     }
 
 
+    private List<ExportedColumn> exportedColumns() {
+        return parquetSource.getExportedColumns().getOrDefault( name, List.of() );
+    }
+
+
     /**
      * add dynamic parameters to parquet filter if needed
      *
@@ -174,6 +253,11 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
      * @return ParquetFilter
      */
     private ParquetAdapterFilter<PolyValue> resolveFilter( DataContext dataContext, ParquetAdapterFilter<PolyValue> filter ) {
+        if ( filter.isLogical() ) {
+            return ParquetAdapterFilter.logical( filter.operator(), filter.operands().stream()
+                    .map( operand -> resolveFilter( dataContext, operand ) )
+                    .toList() );
+        }
         if ( filter.dynamicParamIndex() == null ) {
             return filter;
         }

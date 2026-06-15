@@ -38,6 +38,7 @@ public abstract class AbstractFilterTranslator {
      * @return ParsedFilter
      */
     protected ParsedFilter parse( RexNode filter ) {
+        filter = unwrapCast( filter );
         if ( !(filter instanceof RexCall call) || !isSupportedOperator( filter.getKind() ) || call.getOperands().size() != 2 ) {
             return null;
         }

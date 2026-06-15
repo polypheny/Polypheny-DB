@@ -30,6 +30,7 @@ import org.polypheny.db.adapter.parquet.relational.schema.ParquetColumnBinding;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetRelTable;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
 import org.polypheny.db.adapter.parquet.shared.AbstractParquetSource;
+import org.polypheny.db.adapter.parquet.shared.execution.aggregate.ParquetDataAggregateExecutor;
 import org.polypheny.db.adapter.parquet.shared.filter.JoinFiltersContainer;
 import org.polypheny.db.adapter.parquet.shared.filter.JoinFiltersSplitter;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
@@ -168,7 +169,7 @@ public class ParquetRelNestedJoinExecutor extends ParquetRelExecutor {
                 return new ParquetMultiFileEnumerator(
                         parent.table().getBinding().sourceFiles(),
                         sourceFile -> nestedJoinEnumeratorForFile( parent.table(), sourceFile, child.table(), parent.fields(), child.fields(), cancelFlag, filterContainer, leftIsParent, emitUnmatchedParents ),
-                        createParquetSourceFileEvaluatorsChain( f -> parent.selectPhysicalBinding( f.columnIndex() ) ),
+                        ParquetDataAggregateExecutor.createParquetSourceFileEvaluatorsChain( f -> parent.selectPhysicalBinding( f.columnIndex() ) ),
                         parentFileFilters );
             }
         };

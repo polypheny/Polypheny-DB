@@ -26,6 +26,7 @@ import org.apache.parquet.example.data.simple.SimpleGroupFactory;
 import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.parquet.hadoop.example.ExampleParquetWriter;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
+import org.apache.parquet.io.OutputFile;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
@@ -62,11 +63,31 @@ public class ParquetSourceWriter implements AutoCloseable {
      * @param compression - compression type setting
      */
     public ParquetSourceWriter( File file, MessageType schema, String compression, SchemaState schemaState, boolean keepId ) {
+        this( file, new Path( file.toURI() ), schema, compression, schemaState, keepId );
+    }
+
+
+    public ParquetSourceWriter( OutputFile outputFile, MessageType schema, String compression, SchemaState schemaState, boolean keepId ) {
         try {
             this.schemaState = schemaState;
             this.keepId = keepId;
             this.groupFactory = new SimpleGroupFactory( schema );
-            this.writer = ExampleParquetWriter.builder( new Path( file.toURI() ) )
+            this.writer = ExampleParquetWriter.builder( outputFile )
+                    .withType( schema )
+                    .withCompressionCodec( getCompressionCodec( compression ) )
+                    .build();
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( "Unable to open parquet output for writing: " + outputFile.getPath(), e );
+        }
+    }
+
+
+    private ParquetSourceWriter( File file, Path path, MessageType schema, String compression, SchemaState schemaState, boolean keepId ) {
+        try {
+            this.schemaState = schemaState;
+            this.keepId = keepId;
+            this.groupFactory = new SimpleGroupFactory( schema );
+            this.writer = ExampleParquetWriter.builder( path )
                     .withType( schema )
                     .withCompressionCodec( getCompressionCodec( compression ) )
                     .build();

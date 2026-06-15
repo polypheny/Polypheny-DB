@@ -20,23 +20,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import lombok.Getter;
-import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.parquet.document.schema.ParquetDocument;
-import org.polypheny.db.adapter.parquet.relational.planning.ParquetConvention;
+import org.polypheny.db.adapter.parquet.relational.planning.ParquetAlg;
+import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelConvention;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.planning.ParquetPolyAlgDisplay;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
-import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
-import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.algebra.enumerable.EnumerableConvention;
-import org.polypheny.db.algebra.enumerable.PhysType;
-import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
@@ -56,13 +51,13 @@ import org.polypheny.db.type.entity.PolyValue;
  * the entity’s scanFiltered() method
  */
 @Getter
-public class ParquetDocScan extends DocumentScan<ParquetDocument> implements EnumerableAlg {
+public class ParquetDocScan extends DocumentScan<ParquetDocument> implements ParquetAlg {
 
     private final List<ParquetAdapterFilter<PolyValue>> filters;
 
 
     public ParquetDocScan( AlgCluster cluster, ParquetDocument entity, List<ParquetAdapterFilter<PolyValue>> filters ) {
-        super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), entity );
+        super( cluster, cluster.traitSetOf( ParquetDocConvention.INSTANCE ), entity );
         this.filters = List.copyOf( filters );
     }
 
@@ -114,29 +109,25 @@ public class ParquetDocScan extends DocumentScan<ParquetDocument> implements Enu
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         double fieldRatio = ((double) entity.getParquetSource().getExportedColumns().size() + 2D) / ((double) entity.getTupleType().getFieldCount() + 2D);
         double filterRatio = filters.isEmpty() ? 1D : 0.5D;
-        return super.computeSelfCost( planner, mq ).multiplyBy( ParquetConvention.COST_MULTIPLIER * fieldRatio * filterRatio );
+        return super.computeSelfCost( planner, mq ).multiplyBy( ParquetRelConvention.COST_MULTIPLIER * fieldRatio * filterRatio );
     }
 
 
     @Override
-    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
-        PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), pref.preferArray() );
+    public Expression implement( EnumerableAlgImplementor implementor ) {
         Expression runtimeFilters = EnumUtils.expressionList( filters.stream().map( ParquetAdapterFilter::toExpression ).toList() );
         // create runtime code that will call scanFiltered() on the ParquetDocument entity
-        return implementor.result(
-                physType,
-                Blocks.toBlock(
-                        Expressions.call(
-                                entity.asExpression(),
-                                "scanFiltered",
-                                implementor.getRootExpression(),
-                                runtimeFilters ) ) );
+        return Expressions.call(
+                entity.asExpression(),
+                "scanFiltered",
+                implementor.getRootExpression(),
+                runtimeFilters );
     }
 
 
     @Override
     public void register( AlgPlanner planner ) {
-        planner.addRuleDuringRuntime( new ParquetDocCalcRule( AlgFactories.LOGICAL_BUILDER ) );
+        ParquetDocConvention.INSTANCE.register( planner );
     }
 
 }

@@ -24,7 +24,7 @@ import org.polypheny.db.type.entity.PolyValue;
 /**
  * Maps an input row into the grouping and aggregate values consumed by the generic row aggregate engine.
  */
-interface AggregateRowProjector {
+public interface AggregateRowProjector {
 
     /**
      * Evaluates condition expression if there is any.

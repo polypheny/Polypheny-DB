@@ -45,7 +45,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.parquet.relational.execution.aggregate.ParquetFileGroupedAggregateRelEnumerator;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelDataAggregateExecutor;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelMetadataAggregateExecutor;
 import org.polypheny.db.adapter.parquet.relational.execution.ParquetRelProjectExecutor;
@@ -58,6 +57,8 @@ import org.polypheny.db.adapter.parquet.relational.schema.ParquetRelTable;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetSourceFile;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetTableBinding;
 import org.polypheny.db.adapter.parquet.shared.aggregate.ColumnAggregateProjection;
+import org.polypheny.db.adapter.parquet.shared.execution.aggregate.ParquetAggregateSource;
+import org.polypheny.db.adapter.parquet.shared.execution.aggregate.ParquetFileGroupedAggregateEnumerator;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
 import org.polypheny.db.adapter.parquet.shared.filter.FiltersContainer;
 import org.polypheny.db.adapter.parquet.shared.io.ParquetSchemaReader;
@@ -236,8 +237,8 @@ class ParquetMetadataAggregateTest {
                         List.<Object[]>of( row( 3L, "2022", "11" ) ) ) );
 
         Map<List<String>, Double> sums = new LinkedHashMap<>();
-        try ( ParquetFileGroupedAggregateRelEnumerator enumerator = new ParquetFileGroupedAggregateRelEnumerator(
-                table,
+        try ( ParquetFileGroupedAggregateEnumerator enumerator = new ParquetFileGroupedAggregateEnumerator(
+                aggregateSource( table ),
                 new int[]{ 0, 1, 2 },
                 new int[]{ 1, 2 },
                 new String[]{ Kind.SUM.name() },
@@ -305,8 +306,8 @@ class ParquetMetadataAggregateTest {
         ParquetRelTable table = physicalPartitionColumnTable(
                 List.of( List.of( row( 1L, "2022", "10" ), row( 2L, "2022", "10" ) ) ) );
 
-        try ( ParquetFileGroupedAggregateRelEnumerator enumerator = new ParquetFileGroupedAggregateRelEnumerator(
-                table,
+        try ( ParquetFileGroupedAggregateEnumerator enumerator = new ParquetFileGroupedAggregateEnumerator(
+                aggregateSource( table ),
                 new int[]{ 0, 1, 2 },
                 new int[0],
                 new String[]{ Kind.COUNT.name() },
@@ -416,6 +417,41 @@ class ParquetMetadataAggregateTest {
         return new ParquetRelDataAggregateExecutor( table, null, new int[]{ 0, 1, 2 }, schemaReader ) {
             @Override
             protected void registerAdapter( DataContext dataContext ) {
+            }
+        };
+    }
+
+
+    private static ParquetAggregateSource aggregateSource( ParquetRelTable table ) {
+        ParquetSchemaReader schemaReader = new ParquetSchemaReader( table.getBinding().sourceFiles().stream().map( ParquetSourceFile::asSource ).toList() );
+        return new ParquetAggregateSource() {
+            @Override
+            public List<ParquetSourceFile> sourceFiles() {
+                return table.getBinding().sourceFiles();
+            }
+
+
+            @Override
+            public ParquetSchemaReader schemaReader() {
+                return schemaReader;
+            }
+
+
+            @Override
+            public int fieldCount() {
+                return table.columns.size();
+            }
+
+
+            @Override
+            public PolyType fieldType( int field ) {
+                return table.columns.get( field ).type;
+            }
+
+
+            @Override
+            public ParquetColumnBinding binding( int field ) {
+                return table.getBinding().getColumnBinding( table.columns.get( field ).id );
             }
         };
     }

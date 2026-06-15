@@ -23,16 +23,15 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.parquet.relational.schema.ParquetRelTable;
 import org.polypheny.db.adapter.parquet.shared.filter.ParquetAdapterFilter;
+import org.polypheny.db.adapter.parquet.shared.optimization.aggregate.ParquetAggregateSupport;
 import org.polypheny.db.adapter.parquet.shared.planning.ParquetPolyAlgDisplay;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
@@ -74,7 +73,7 @@ public class ParquetRelAggregate extends SingleAlg implements ParquetAlg {
         }
         return new ParquetRelAggregate(
                 aggregate.getCluster(),
-                aggregate.getCluster().traitSetOf( ParquetConvention.INSTANCE ).replace( ModelTrait.RELATIONAL ),
+                aggregate.getCluster().traitSetOf( ParquetRelConvention.INSTANCE ).replace( ModelTrait.RELATIONAL ),
                 mode == AggregateMode.METADATA ? new ParquetRelMetadataScan( scan ) : scan,
                 scan.getEntity(),
                 scan.getFields(),
@@ -99,7 +98,7 @@ public class ParquetRelAggregate extends SingleAlg implements ParquetAlg {
             String[] aggregateKinds,
             int[] aggregateArgs,
             AlgDataType rowType ) {
-        super( cluster, traitSet.replace( ParquetConvention.INSTANCE ).replace( ModelTrait.RELATIONAL ), input );
+        super( cluster, traitSet.replace( ParquetRelConvention.INSTANCE ).replace( ModelTrait.RELATIONAL ), input );
         this.table = table;
         this.fields = fields.clone();
         this.filters = List.copyOf( filters );
@@ -133,17 +132,7 @@ public class ParquetRelAggregate extends SingleAlg implements ParquetAlg {
      * @return {@code true} if the aggregate call is supported and {@code false} otherwise.
      */
     public static boolean supportsMetadataAggregateCall( AggregateCall aggregateCall ) {
-        if ( aggregateCall.isDistinct() || aggregateCall.isApproximate() || aggregateCall.filterArg >= 0 ) {
-            return false;
-        }
-        AggFunction aggregation = aggregateCall.getAggregation();
-        if ( aggregation.getKind() == Kind.COUNT ) {
-            return aggregateCall.getArgList().size() <= 1;
-        }
-        if ( aggregation.getKind() == Kind.MIN || aggregation.getKind() == Kind.MAX ) {
-            return aggregateCall.getArgList().size() == 1;
-        }
-        return false;
+        return ParquetAggregateSupport.supportsMetadataAggregateCall( aggregateCall );
     }
 
 
@@ -221,13 +210,13 @@ public class ParquetRelAggregate extends SingleAlg implements ParquetAlg {
 
     @Override
     public void register( AlgPlanner planner ) {
-        ParquetConvention.INSTANCE.register( planner );
+        ParquetRelConvention.INSTANCE.register( planner );
     }
 
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( ParquetConvention.COST_MULTIPLIER * 0.01D );
+        return super.computeSelfCost( planner, mq ).multiplyBy( ParquetRelConvention.COST_MULTIPLIER * 0.01D );
     }
 
 

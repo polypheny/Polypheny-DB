@@ -7,29 +7,31 @@ plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_
 ```
 
 The access model comparison run completed successfully for all systems. Every
-query has `5/5` successful measured runs, and the result row counts match across
-Polypheny relational, Polypheny document MQL, DuckDB, and Apache Spark.
+query has `5/5` successful measured runs, and result row counts now match across
+Polypheny relational flat, Polypheny relational normalized, Polypheny document
+MQL, DuckDB, and Apache Spark.
 
 ## Main Findings
 
 DuckDB is fastest for all five access-pattern queries.
 
-Polypheny relational is much faster than Polypheny document MQL on this flat TLC
-table. This is expected for a relational dataset because the document path adds
-document materialization overhead without a nested-data advantage.
+Polypheny relational flat and normalized mode are close for root-table access.
+Normalized mode is somewhat slower for full-row reads and filtered full-row
+reads, but it does not show a major performance regression for these flat
+queries. Filtered projection is slightly faster in normalized mode.
 
-Projection has a clear effect. In Polypheny relational, the full scan Q01 takes
-60716.2 ms, while the projection Q02 takes 21946.2 ms. The same pattern appears
-for filtered access: Q04 takes 7431.0 ms, while filtered projection Q05 takes
-2284.0 ms.
+The MQL filter issue is resolved. Q04 and Q05 now return `283006` rows, matching
+the SQL systems. MQL remains slower than Polypheny relational for document
+materialization, but filtered MQL queries are now much closer to the relational
+runtime than in the previous bad run.
 
 ## Interpretation
 
-Polypheny relational behaves best when the query can avoid full row
-materialization. It is especially competitive with Spark on filtered count and
-filtered projection queries, but DuckDB remains the strongest baseline.
+Projection has a strong effect across engines. In Polypheny relational flat,
+Q01 takes `29741.8 ms`, while Q02 takes `9650.6 ms`; Q04 takes `6073.4 ms`,
+while Q05 takes `2528.8 ms`.
 
-Polypheny document MQL is not a good fit for this flat-table access-model
-workload. Its runtimes stay high even for filtered count and projection queries,
-which suggests limited benefit from projection and filter pushdown through the
-document benchmark path.
+For this flat TLC workload, normalized relational mode does not appear to damage
+performance significantly when queries access only root fields. The document
+path is still more expensive for large result materialization, but filter
+pushdown now behaves consistently with the other systems.

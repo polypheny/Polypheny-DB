@@ -25,12 +25,12 @@ import org.polypheny.db.type.entity.PolyValue;
 /**
  * Projects aggregate input directly from row fields.
  */
-final class DirectAggregateRowProjector implements AggregateRowProjector {
+public final class DirectAggregateRowProjector implements AggregateRowProjector {
 
     private final int[] groupFields;
 
 
-    DirectAggregateRowProjector( int[] groupFields ) {
+    public DirectAggregateRowProjector( int[] groupFields ) {
         this.groupFields = Arrays.copyOf( groupFields, groupFields.length );
     }
 

@@ -17,13 +17,20 @@
 package org.polypheny.db.adapter.parquet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Proxy;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.adapter.parquet.relational.optimization.aggregate.AggregateDecomposition;
-import org.polypheny.db.adapter.parquet.relational.optimization.aggregate.PartialAggregate;
+import org.polypheny.db.adapter.parquet.document.planning.ParquetDocRules;
+import org.polypheny.db.adapter.parquet.document.planning.ParquetDocConvention;
+import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelRules;
+import org.polypheny.db.adapter.parquet.relational.planning.ParquetRelConvention;
+import org.polypheny.db.adapter.parquet.shared.optimization.ParquetOptimizationSettings;
+import org.polypheny.db.adapter.parquet.shared.optimization.aggregate.AggregateDecomposition;
+import org.polypheny.db.adapter.parquet.shared.optimization.aggregate.PartialAggregate;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
@@ -49,6 +56,46 @@ class ParquetAggregateOptimizationTest {
         assertSame( count, partialCount.partialCall() );
         assertSame( sumFunction, partialCount.finalFunction() );
         assertSame( maxFunction, partialMax.finalFunction() );
+    }
+
+
+    @Test
+    void aggregateOptimizationRulesCanBeDisabledWithSystemProperty() {
+        String previous = System.getProperty( ParquetOptimizationSettings.OPTIMIZE_AGGREGATION_PROPERTY );
+        try {
+            System.setProperty( ParquetOptimizationSettings.OPTIMIZE_AGGREGATION_PROPERTY, "false" );
+
+            List<String> relationalRules = ParquetRelRules.rules( ParquetRelConvention.INSTANCE ).stream()
+                    .map( Object::toString )
+                    .toList();
+            List<String> documentRules = ParquetDocRules.rules( ParquetDocConvention.INSTANCE ).stream()
+                    .map( Object::toString )
+                    .toList();
+
+            assertFalse( containsRule( relationalRules, "aggregateOnScan" ) );
+            assertFalse( containsRule( relationalRules, "aggregateOnCalcScan" ) );
+            assertFalse( containsRule( relationalRules, "partialAggregateOnUnion" ) );
+            assertFalse( containsRule( relationalRules, "partialAggregateOnCalcUnion" ) );
+            assertFalse( containsRule( documentRules, "documentAggregateOnScan" ) );
+            assertFalse( containsRule( documentRules, "documentAggregateOnProjectScan" ) );
+            assertFalse( containsRule( documentRules, "documentAggregateOnCalcScan" ) );
+            assertFalse( containsRule( documentRules, "partialAggregateOnUnion" ) );
+            assertFalse( containsRule( documentRules, "partialAggregateOnCalcUnion" ) );
+
+            assertTrue( containsRule( relationalRules, "EnumerableParquetRule" ) );
+            assertTrue( containsRule( documentRules, "EnumerableParquetDocumentRule" ) );
+        } finally {
+            if ( previous == null ) {
+                System.clearProperty( ParquetOptimizationSettings.OPTIMIZE_AGGREGATION_PROPERTY );
+            } else {
+                System.setProperty( ParquetOptimizationSettings.OPTIMIZE_AGGREGATION_PROPERTY, previous );
+            }
+        }
+    }
+
+
+    private static boolean containsRule( List<String> rules, String name ) {
+        return rules.stream().anyMatch( rule -> rule.contains( name ) );
     }
 
 

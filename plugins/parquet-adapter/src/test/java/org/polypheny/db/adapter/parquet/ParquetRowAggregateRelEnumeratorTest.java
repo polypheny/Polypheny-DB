@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.apache.calcite.linq4j.Linq4j;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.adapter.parquet.relational.execution.aggregate.ParquetRowAggregateRelEnumerator;
+import org.polypheny.db.adapter.parquet.shared.execution.aggregate.ParquetRowAggregateEnumerator;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
@@ -55,7 +55,7 @@ class ParquetRowAggregateRelEnumeratorTest {
                 { PolyLong.of( 2023 ), PolyLong.of( 7 ), PolyNull.NULL }
         };
 
-        try ( ParquetRowAggregateRelEnumerator enumerator = new ParquetRowAggregateRelEnumerator(
+        try ( ParquetRowAggregateEnumerator enumerator = new ParquetRowAggregateEnumerator(
                 Linq4j.asEnumerable( rows ).enumerator(),
                 new int[]{ 0 },
                 new String[]{ Kind.COUNT.name(), Kind.SUM.name(), Kind.MIN.name(), Kind.MAX.name() },
@@ -99,7 +99,7 @@ class ParquetRowAggregateRelEnumeratorTest {
                 { PolyNull.NULL, PolyLong.of( 1 ), PolyNull.NULL }
         };
 
-        try ( ParquetRowAggregateRelEnumerator enumerator = new ParquetRowAggregateRelEnumerator(
+        try ( ParquetRowAggregateEnumerator enumerator = new ParquetRowAggregateEnumerator(
                 Linq4j.asEnumerable( rows ).enumerator(),
                 new int[]{ 0, 1 },
                 new String[]{ Kind.COUNT.name(), Kind.SUM.name(), Kind.MIN.name(), Kind.MAX.name() },
