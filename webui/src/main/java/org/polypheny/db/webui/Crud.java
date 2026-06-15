@@ -272,7 +272,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         Transaction transaction = getTransaction();
         try {
             Statement ddlStatement = transaction.createStatement();
-            List<String> changeDescriptions = DdlManager.getInstance().refreshSourceSchemaIfNeeded( request.entityId, ddlStatement );
+            LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElse( null );
+            List<String> changeDescriptions;
+            if ( table != null && table.connectedSourceEntityId != null ) {
+                changeDescriptions = "connectedApply".equalsIgnoreCase( request.refreshTrigger )
+                        ? DdlManager.getInstance().refreshConnectedSourceMaterializationColumns( request.entityId, ddlStatement )
+                        : DdlManager.getInstance().previewConnectedSourceMaterializationRefresh( request.entityId );
+            } else {
+                changeDescriptions = DdlManager.getInstance().refreshSourceSchemaIfNeeded( request.entityId, ddlStatement );
+            }
             transaction.commit();
             return changeDescriptions;
         } catch ( Exception e ) {

@@ -134,6 +134,7 @@ import org.polypheny.db.view.MaterializedViewManager;
 public class DdlManagerImpl extends DdlManager {
 
     public static final String UNPARTITIONED = "part0";
+    private static final int POSTGRESQL_TEXT_VARCHAR_PRECISION = 10 * 1024 * 1024;
     private final Catalog catalog;
 
 
@@ -713,7 +714,7 @@ public class DdlManagerImpl extends DdlManager {
             List<ExportedForeignKey> sourceForeignKeys,
             List<ExportedColumn> missingColumns,
             List<LogicalColumn> droppedColumns,
-            List<PhysicalColumn> changedTypeColumns,
+            List<String> changedTypeColumnNames,
             boolean hasReorderedColumns,
             Snapshot snapshot,
             AdapterCatalog sourceAdapterCatalog,
@@ -726,8 +727,8 @@ public class DdlManagerImpl extends DdlManager {
         if ( !droppedColumns.isEmpty() ) {
             changeDescriptions.add( "Removed columns: " + joinNames( droppedColumns.stream().map( LogicalColumn::getName ).toList() ) );
         }
-        if ( !changedTypeColumns.isEmpty() ) {
-            changeDescriptions.add( "Changed column types: " + joinNames( changedTypeColumns.stream().map( PhysicalColumn::getName ).toList() ) );
+        if ( !changedTypeColumnNames.isEmpty() ) {
+            changeDescriptions.add( "Changed column types: " + joinNames( changedTypeColumnNames ) );
         }
         if ( hasReorderedColumns ) {
             changeDescriptions.add( "Changed column order" );
@@ -895,15 +896,41 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         AllocationEntity sourceAllocation = allocs.get( 0 );
-        long sourceAdapterId = sourceAllocation.adapterId;
+        SourceSchemaRefreshPlan refreshPlan = buildSourceSchemaRefreshPlan( logicalTable, sourceAllocation, snapshot );
 
-        DataSource<?> sourceAdapter = AdapterManager.getInstance().getSource( sourceAdapterId ).orElseThrow();
-        if ( !supportsDynamicSourceTableDiscovery( sourceAdapter ) ) {
+        if ( refreshPlan.unsupported() ) {
             log.info(
                     "Schema refresh is not supported for table {} because this source type does not support it",
                     logicalTable.name
             );
             return List.of();
+        }
+        
+        if ( refreshPlan.orderedSourceColumns().isEmpty() ) {
+            log.info( "No source columns found for table '{}.{}'", refreshPlan.sourceSchemaName(), refreshPlan.sourceTableName() );
+            return List.of();
+        }
+
+        if ( !refreshPlan.hasChanges() ) {
+            log.info( "No schema refresh needed for table {}", logicalTable.name );
+            return refreshPlan.changeDescriptions();
+        }
+
+        applySourceSchemaRefreshPlan( refreshPlan, statement );
+        catalog.updateSnapshot();
+        statement.getQueryProcessor().resetCaches();
+
+        log.info( "Schema refresh finished successfully for table {}", logicalTable.name );
+        return refreshPlan.changeDescriptions();
+    }
+
+
+    private SourceSchemaRefreshPlan buildSourceSchemaRefreshPlan( LogicalTable logicalTable, AllocationEntity sourceAllocation, Snapshot snapshot ) {
+        long sourceAdapterId = sourceAllocation.adapterId;
+
+        DataSource<?> sourceAdapter = AdapterManager.getInstance().getSource( sourceAdapterId ).orElseThrow();
+        if ( !supportsDynamicSourceTableDiscovery( sourceAdapter ) ) {
+            return SourceSchemaRefreshPlan.unsupported( logicalTable );
         }
 
         AdapterCatalog sourceAdapterCatalog = catalog
@@ -925,8 +952,7 @@ public class DdlManagerImpl extends DdlManager {
                         .getExportedColumnsForTable( sourceSchemaName, sourceTableName );
 
         if ( currentSourceColumns == null || currentSourceColumns.isEmpty() ) {
-            log.info( "No source columns found for table '{}.{}'", sourceSchemaName, sourceTableName );
-            return List.of();
+            return SourceSchemaRefreshPlan.empty( logicalTable, sourceSchemaName, sourceTableName );
         }
 
         // Keep only columns that belong to the expected schema
@@ -984,24 +1010,254 @@ public class DdlManagerImpl extends DdlManager {
                 currentSourceForeignKeys,
                 missingColumns,
                 droppedColumns,
-                changedTypeColumns,
+                changedTypeColumns.stream().map( PhysicalColumn::getName ).toList(),
                 hasReorderedColumns,
                 snapshot,
                 sourceAdapterCatalog,
                 sourceAdapterId );
 
-        if ( missingColumns.isEmpty() && droppedColumns.isEmpty() && changedTypeColumns.isEmpty() && !hasReorderedColumns && !hasChangedPrimaryKey && !hasChangedForeignKeys ) {
-            log.info( "No schema refresh needed for table {}", logicalTable.name );
-            return changeDescriptions;
+        return new SourceSchemaRefreshPlan(
+                logicalTable,
+                sourceAllocation,
+                sourceSchemaName,
+                sourceTableName,
+                sourceAdapterCatalog,
+                sourceAdapterId,
+                currentLogicalColumns,
+                orderedSourceColumns,
+                currentSourceForeignKeys,
+                sourceColumnsByPhysicalName,
+                missingColumns,
+                droppedColumns,
+                changedTypeColumns,
+                hasReorderedColumns,
+                hasChangedPrimaryKey,
+                hasChangedForeignKeys,
+                changeDescriptions,
+                false );
+    }
+
+    @Override
+    public List<String> previewConnectedSourceMaterializationRefresh( long entityId ) {
+        return buildConnectedSourceMaterializationRefreshPlan( entityId ).changeDescriptions();
+    }
+
+
+    @Override
+    public List<String> refreshConnectedSourceMaterializationColumns( long entityId, Statement statement ) {
+        ConnectedSourceMaterializationRefreshPlan plan = buildConnectedSourceMaterializationRefreshPlan( entityId );
+        if ( plan.missingColumns().isEmpty() && plan.droppedColumns().isEmpty() && plan.changedTypeColumns().isEmpty() && !plan.hasReorderedColumns() ) {
+            return List.of();
         }
 
-        List<LogicalColumn> refreshedLogicalColumns = new ArrayList<>( currentLogicalColumns );
-        List<AllocationColumn> refreshedAllocationColumns = snapshot.alloc().getColumns( sourceAllocation.placementId ).stream()
-                .filter( c -> c.logicalTableId == logicalTable.id )
+        LogicalTable connectedTable = plan.connectedTable();
+        AllocationEntity connectedAllocation = plan.connectedAllocation();
+        List<LogicalColumn> refreshedLogicalColumns = new ArrayList<>( plan.connectedColumns() );
+        List<AllocationColumn> refreshedAllocationColumns = catalog.getSnapshot().alloc().getColumns( connectedAllocation.placementId ).stream()
+                .filter( c -> c.logicalTableId == connectedTable.id )
+                .sorted( Comparator.comparingInt( AllocationColumn::getPosition ) )
+                .collect( Collectors.toCollection( ArrayList::new ) );
+        List<LogicalColumn> addedColumns = new ArrayList<>();
+        List<String> appliedChanges = new ArrayList<>();
+
+        for ( ExportedColumn missing : plan.missingColumns() ) {
+            addMissingSourceColumnForRefresh(
+                    connectedTable,
+                    missing,
+                    missing.name(),
+                    null,
+                    connectedAllocation,
+                    refreshedLogicalColumns,
+                    refreshedAllocationColumns );
+            addedColumns.add( refreshedLogicalColumns.get( refreshedLogicalColumns.size() - 1 ) );
+        }
+
+        List<Long> changedTypeColumnIds = new ArrayList<>();
+        for ( LogicalColumn changedTypeColumn : plan.changedTypeColumns() ) {
+            ExportedColumn sourceColumn = plan.sourceColumnsByPhysicalName().get( normalizeIdentifier( changedTypeColumn.name ) );
+            updateSourceColumnTypeForRefresh(
+                    connectedTable,
+                    changedTypeColumn.name,
+                    sourceColumn,
+                    refreshedLogicalColumns );
+            changedTypeColumnIds.add( changedTypeColumn.id );
+        }
+
+        statement.getTransaction().attachCommitAction( () -> {
+            for ( AllocationEntity allocationEntity : catalog.getSnapshot().alloc().getAllocsOfPlacement( connectedAllocation.placementId ) ) {
+                if ( allocationEntity.logicalId != connectedTable.id ) {
+                    continue;
+                }
+                for ( LogicalColumn addedColumn : addedColumns ) {
+                    AdapterManager.getInstance().getStore( connectedAllocation.adapterId ).orElseThrow()
+                            .addColumn( statement.getPrepareContext(), allocationEntity.id, addedColumn );
+                }
+            }
+        } );
+
+        List<Long> currentPrimaryKeyIds = getCurrentPrimaryKeyIds( connectedTable, catalog.getSnapshot().rel() );
+        List<Long> currentForeignKeyColumnIds = getCurrentForeignKeyColumnIds( connectedTable, catalog.getSnapshot().rel() );
+        for ( LogicalColumn dropped : plan.droppedColumns() ) {
+            dropRemovedSourceColumnForRefresh(
+                    connectedTable,
+                    dropped,
+                    statement,
+                    catalog.getSnapshot().rel(),
+                    catalog.getSnapshot().alloc().getColumnFromLogical( dropped.id ).orElse( List.of() ),
+                    refreshedLogicalColumns,
+                    refreshedAllocationColumns,
+                    currentPrimaryKeyIds,
+                    currentForeignKeyColumnIds );
+            compactLogicalColumnPositionsAfterDrop( connectedTable, refreshedLogicalColumns );
+        }
+        if ( plan.hasReorderedColumns() ) {
+            syncConnectedMaterializedColumnPositionsForRefresh(
+                    connectedTable,
+                    plan.orderedSourceColumns(),
+                    refreshedLogicalColumns );
+        }
+
+        catalog.updateSnapshot();
+        for ( long changedTypeColumnId : changedTypeColumnIds ) {
+            for ( AllocationColumn allocationColumn : catalog.getSnapshot().alloc().getColumnFromLogical( changedTypeColumnId ).orElseThrow() ) {
+                statement.getTransaction().attachCommitAction( () -> {
+                    for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocsOfPlacement( allocationColumn.placementId ) ) {
+                        if ( allocation.logicalId != connectedTable.id ) {
+                            continue;
+                        }
+                        AdapterManager.getInstance().getStore( allocationColumn.adapterId )
+                                .orElseThrow()
+                                .updateColumnType(
+                                        statement.getPrepareContext(),
+                                        allocation.id,
+                                        catalog.getSnapshot().rel().getColumn( changedTypeColumnId ).orElseThrow() );
+                    }
+                } );
+            }
+        }
+        statement.getQueryProcessor().resetCaches();
+        if ( !plan.missingColumns().isEmpty() ) {
+            appliedChanges.add( "Added columns: " + joinNames( plan.missingColumns().stream().map( ExportedColumn::physicalColumnName ).toList() ) );
+        }
+        if ( !plan.droppedColumns().isEmpty() ) {
+            appliedChanges.add( "Removed columns: " + joinNames( plan.droppedColumns().stream().map( LogicalColumn::getName ).toList() ) );
+        }
+        if ( !plan.changedTypeColumns().isEmpty() ) {
+            appliedChanges.add( "Changed column types: " + joinNames( plan.changedTypeColumns().stream().map( LogicalColumn::getName ).toList() ) );
+        }
+        if ( plan.hasReorderedColumns() ) {
+            appliedChanges.add( "Changed column order" );
+        }
+        return appliedChanges;
+    }
+
+
+    private ConnectedSourceMaterializationRefreshPlan buildConnectedSourceMaterializationRefreshPlan( long entityId ) {
+        Snapshot snapshot = catalog.getSnapshot();
+        LogicalTable connectedTable = snapshot.rel().getTable( entityId ).orElseThrow();
+        if ( connectedTable.connectedSourceEntityId == null ) {
+            return ConnectedSourceMaterializationRefreshPlan.empty( connectedTable );
+        }
+
+        LogicalTable sourceTable = snapshot.rel().getTable( connectedTable.connectedSourceEntityId ).orElseThrow();
+        List<AllocationEntity> sourceAllocations = snapshot.alloc().getFromLogical( sourceTable.id );
+        if ( sourceAllocations.size() != 1 ) {
+            throw new GenericRuntimeException(
+                    "Expected exactly one placement for source table '" + sourceTable.name +
+                            "', but found " + sourceAllocations.size()
+            );
+        }
+        List<AllocationEntity> connectedAllocations = snapshot.alloc().getFromLogical( connectedTable.id );
+        if ( connectedAllocations.size() != 1 ) {
+            throw new GenericRuntimeException(
+                    "Expected exactly one placement for connected materialized table '" + connectedTable.name +
+                            "', but found " + connectedAllocations.size()
+            );
+        }
+
+        SourceSchemaRefreshPlan sourceRefreshPlan = buildSourceSchemaRefreshPlan( sourceTable, sourceAllocations.get( 0 ), snapshot );
+        if ( sourceRefreshPlan.unsupported() || sourceRefreshPlan.orderedSourceColumns().isEmpty() ) {
+            return ConnectedSourceMaterializationRefreshPlan.empty( connectedTable );
+        }
+
+        List<LogicalColumn> connectedColumns = sortByPosition( snapshot.rel().getColumns( connectedTable.id ) );
+        Set<String> sourcePhysicalColumnNames = sourceRefreshPlan.orderedSourceColumns().stream()
+                .map( c -> normalizeIdentifier( c.physicalColumnName() ) )
+                .collect( Collectors.toSet() );
+        Set<String> connectedColumnNames = connectedColumns.stream()
+                .map( c -> normalizeIdentifier( c.name ) )
+                .collect( Collectors.toSet() );
+        Map<String, ExportedColumn> sourceColumnsByPhysicalName = sourceRefreshPlan.sourceColumnsByPhysicalName();
+
+        List<ExportedColumn> missingColumns = sourceRefreshPlan.orderedSourceColumns().stream()
+                .filter( c -> !connectedColumnNames.contains( normalizeIdentifier( c.physicalColumnName() ) ) )
+                .toList();
+        List<LogicalColumn> droppedColumns = connectedColumns.stream()
+                .filter( logicalColumn -> !sourcePhysicalColumnNames.contains( normalizeIdentifier( logicalColumn.name ) ) )
+                .sorted( Comparator.comparingInt( LogicalColumn::getPosition ).reversed() )
+                .toList();
+        List<LogicalColumn> changedTypeColumns = connectedColumns.stream()
+                .filter( logicalColumn -> sourceColumnsByPhysicalName.containsKey( normalizeIdentifier( logicalColumn.name ) ) )
+                .filter( logicalColumn -> hasDifferentType( logicalColumn, sourceColumnsByPhysicalName.get( normalizeIdentifier( logicalColumn.name ) ) ) )
+                .sorted( Comparator.comparingInt( LogicalColumn::getPosition ) )
+                .toList();
+        boolean hasReorderedColumns = hasReorderedColumns( connectedColumns, sourceRefreshPlan.orderedSourceColumns() );
+        List<String> changeDescriptions = buildSourceSchemaChangeDescriptions(
+                connectedTable,
+                connectedColumns,
+                sourceRefreshPlan.orderedSourceColumns(),
+                sourceRefreshPlan.sourceForeignKeys(),
+                missingColumns,
+                droppedColumns,
+                changedTypeColumns.stream().map( LogicalColumn::getName ).toList(),
+                hasReorderedColumns,
+                snapshot,
+                sourceRefreshPlan.sourceAdapterCatalog(),
+                sourceRefreshPlan.sourceAdapterId() );
+
+        return new ConnectedSourceMaterializationRefreshPlan(
+                connectedTable,
+                connectedAllocations.get( 0 ),
+                connectedColumns,
+                missingColumns,
+                droppedColumns,
+                changedTypeColumns,
+                sourceColumnsByPhysicalName,
+                sourceRefreshPlan.orderedSourceColumns(),
+                hasReorderedColumns,
+                changeDescriptions );
+    }
+
+
+    private record ConnectedSourceMaterializationRefreshPlan(
+            LogicalTable connectedTable,
+            AllocationEntity connectedAllocation,
+            List<LogicalColumn> connectedColumns,
+            List<ExportedColumn> missingColumns,
+            List<LogicalColumn> droppedColumns,
+            List<LogicalColumn> changedTypeColumns,
+            Map<String, ExportedColumn> sourceColumnsByPhysicalName,
+            List<ExportedColumn> orderedSourceColumns,
+            boolean hasReorderedColumns,
+            List<String> changeDescriptions ) {
+
+        static ConnectedSourceMaterializationRefreshPlan empty( LogicalTable connectedTable ) {
+            return new ConnectedSourceMaterializationRefreshPlan( connectedTable, null, List.of(), List.of(), List.of(), List.of(), Map.of(), List.of(), false, List.of() );
+        }
+
+    }
+
+
+    private void applySourceSchemaRefreshPlan( SourceSchemaRefreshPlan refreshPlan, Statement statement ) {
+        LogicalTable logicalTable = refreshPlan.logicalTable();
+        AllocationEntity sourceAllocation = refreshPlan.sourceAllocation();
+        List<LogicalColumn> refreshedLogicalColumns = new ArrayList<>( refreshPlan.currentLogicalColumns() );
+        List<AllocationColumn> refreshedAllocationColumns = catalog.getSnapshot().alloc().getColumns( sourceAllocation.placementId ).stream()
+                .filter( c -> c.logicalTableId == refreshPlan.logicalTable().id )
                 .sorted( Comparator.comparingInt( AllocationColumn::getPosition ) )
                 .collect( Collectors.toCollection( ArrayList::new ) );
 
-        for ( ExportedColumn missing : missingColumns ) {
+        for ( ExportedColumn missing : refreshPlan.missingColumns() ) {
             log.info(
                     "Adding missing source column '{}' to table '{}'",
                     missing.physicalColumnName(),
@@ -1019,9 +1275,9 @@ public class DdlManagerImpl extends DdlManager {
             );
         }
 
-        if ( !changedTypeColumns.isEmpty() ) {
-            for ( PhysicalColumn changedTypeColumn : changedTypeColumns ) {
-                ExportedColumn sourceColumn = sourceColumnsByPhysicalName.get( normalizeIdentifier( changedTypeColumn.name ) );
+        if ( !refreshPlan.changedTypeColumns().isEmpty() ) {
+            for ( PhysicalColumn changedTypeColumn : refreshPlan.changedTypeColumns() ) {
+                ExportedColumn sourceColumn = refreshPlan.sourceColumnsByPhysicalName().get( normalizeIdentifier( changedTypeColumn.name ) );
                 log.info(
                         "Updating type of source column '{}' on table '{}'",
                         sourceColumn.physicalColumnName(),
@@ -1037,10 +1293,17 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        ImmutableList<Long> refreshedPkIds = syncSourcePrimaryKeyForRefresh( logicalTable, orderedSourceColumns, refreshedLogicalColumns, statement );
-        List<Long> refreshedForeignKeyColumnIds = syncSourceForeignKeysForRefresh( logicalTable, currentSourceForeignKeys, refreshedLogicalColumns, statement, snapshot, sourceAdapterCatalog, sourceAdapterId );
+        ImmutableList<Long> refreshedPkIds = syncSourcePrimaryKeyForRefresh( logicalTable, refreshPlan.orderedSourceColumns(), refreshedLogicalColumns, statement );
+        List<Long> refreshedForeignKeyColumnIds = syncSourceForeignKeysForRefresh(
+                logicalTable,
+                refreshPlan.sourceForeignKeys(),
+                refreshedLogicalColumns,
+                statement,
+                catalog.getSnapshot(),
+                refreshPlan.sourceAdapterCatalog(),
+                refreshPlan.sourceAdapterId() );
 
-        for ( LogicalColumn dropped : droppedColumns ) {
+        for ( LogicalColumn dropped : refreshPlan.droppedColumns() ) {
             log.info(
                     "Dropping removed source column '{}' from table '{}'",
                     dropped.name,
@@ -1051,8 +1314,8 @@ public class DdlManagerImpl extends DdlManager {
                     logicalTable,
                     dropped,
                     statement,
-                    snapshot.rel(),
-                    snapshot.alloc().getColumnFromLogical( dropped.id ).orElse( List.of() ),
+                    catalog.getSnapshot().rel(),
+                    catalog.getSnapshot().alloc().getColumnFromLogical( dropped.id ).orElse( List.of() ),
                     refreshedLogicalColumns,
                     refreshedAllocationColumns,
                     refreshedPkIds,
@@ -1060,21 +1323,58 @@ public class DdlManagerImpl extends DdlManager {
             );
         }
 
-        syncSourceColumnPositionsForRefresh( logicalTable, sourceAllocation, orderedSourceColumns, refreshedLogicalColumns, refreshedAllocationColumns );
+        syncSourceColumnPositionsForRefresh( logicalTable, sourceAllocation, refreshPlan.orderedSourceColumns(), refreshedLogicalColumns, refreshedAllocationColumns );
 
         refreshPhysicalSourceTableMetadata(
                 logicalTable,
                 sourceAllocation.unwrapOrThrow( AllocationTable.class ),
-                sourceSchemaName,
+                refreshPlan.sourceSchemaName(),
                 refreshedLogicalColumns,
                 refreshedAllocationColumns,
                 refreshedPkIds
         );
-        catalog.updateSnapshot();
-        statement.getQueryProcessor().resetCaches();
+    }
 
-        log.info( "Schema refresh finished successfully for table {}", logicalTable.name );
-        return changeDescriptions;
+
+    private record SourceSchemaRefreshPlan(
+            LogicalTable logicalTable,
+            AllocationEntity sourceAllocation,
+            String sourceSchemaName,
+            String sourceTableName,
+            AdapterCatalog sourceAdapterCatalog,
+            long sourceAdapterId,
+            List<LogicalColumn> currentLogicalColumns,
+            List<ExportedColumn> orderedSourceColumns,
+            List<ExportedForeignKey> sourceForeignKeys,
+            Map<String, ExportedColumn> sourceColumnsByPhysicalName,
+            List<ExportedColumn> missingColumns,
+            List<LogicalColumn> droppedColumns,
+            List<PhysicalColumn> changedTypeColumns,
+            boolean hasReorderedColumns,
+            boolean hasChangedPrimaryKey,
+            boolean hasChangedForeignKeys,
+            List<String> changeDescriptions,
+            boolean unsupported ) {
+
+        static SourceSchemaRefreshPlan empty( LogicalTable table, String sourceSchemaName, String sourceTableName ) {
+            return new SourceSchemaRefreshPlan( table, null, sourceSchemaName, sourceTableName, null, -1, List.of(), List.of(), List.of(), Map.of(), List.of(), List.of(), List.of(), false, false, false, List.of(), false );
+        }
+
+
+        static SourceSchemaRefreshPlan unsupported( LogicalTable table ) {
+            return new SourceSchemaRefreshPlan( table, null, null, null, null, -1, List.of(), List.of(), List.of(), Map.of(), List.of(), List.of(), List.of(), false, false, false, List.of(), true );
+        }
+
+
+        boolean hasChanges() {
+            return !missingColumns.isEmpty()
+                    || !droppedColumns.isEmpty()
+                    || !changedTypeColumns.isEmpty()
+                    || hasReorderedColumns
+                    || hasChangedPrimaryKey
+                    || hasChangedForeignKeys;
+        }
+
     }
 
 
@@ -1095,6 +1395,53 @@ public class DdlManagerImpl extends DdlManager {
         refreshedAllocationColumns.removeIf( c -> c.columnId == column.id );
 
         prepareMonitoring( statement, Kind.DROP_COLUMN, table, column );
+    }
+
+
+    private void compactLogicalColumnPositionsAfterDrop(
+            LogicalTable table,
+            List<LogicalColumn> refreshedLogicalColumns ) {
+
+        List<LogicalColumn> sortedColumns = sortByPosition( refreshedLogicalColumns );
+        for ( int i = 0; i < sortedColumns.size(); i++ ) {
+            int position = i + 1;
+            LogicalColumn column = sortedColumns.get( i );
+            if ( column.position != position ) {
+                catalog.getLogicalRel( table.namespaceId ).setColumnPosition( column.id, position );
+                replaceLogicalColumn( refreshedLogicalColumns, column.toBuilder().position( position ).build() );
+            }
+        }
+    }
+
+
+    private void syncConnectedMaterializedColumnPositionsForRefresh(
+            LogicalTable table,
+            List<ExportedColumn> sourceColumns,
+            List<LogicalColumn> refreshedLogicalColumns ) {
+
+        Map<String, LogicalColumn> logicalColumnsByName = getLogicalColumnsByName( refreshedLogicalColumns );
+        List<LogicalColumn> orderedLogicalColumns = sourceColumns.stream()
+                .filter( c -> logicalColumnsByName.containsKey( normalizeIdentifier( c.physicalColumnName() ) ) )
+                .sorted( Comparator.comparingInt( ExportedColumn::physicalPosition ) )
+                .map( c -> logicalColumnsByName.get( normalizeIdentifier( c.physicalColumnName() ) ) )
+                .collect( Collectors.toCollection( ArrayList::new ) );
+
+        Set<Long> orderedColumnIds = orderedLogicalColumns.stream().map( c -> c.id ).collect( Collectors.toSet() );
+        refreshedLogicalColumns.stream()
+                .filter( c -> !orderedColumnIds.contains( c.id ) )
+                .sorted( Comparator.comparingInt( LogicalColumn::getPosition ) )
+                .forEach( orderedLogicalColumns::add );
+
+        for ( int i = 0; i < orderedLogicalColumns.size(); i++ ) {
+            int position = i + 1;
+            LogicalColumn logicalColumn = orderedLogicalColumns.get( i );
+            if ( logicalColumn.position != position ) {
+                catalog.getLogicalRel( table.namespaceId ).setColumnPosition( logicalColumn.id, position );
+                replaceLogicalColumn( refreshedLogicalColumns, logicalColumn.toBuilder().position( position ).build() );
+            }
+        }
+
+        refreshedLogicalColumns.sort( Comparator.comparingInt( LogicalColumn::getPosition ) );
     }
 
 
@@ -1736,6 +2083,13 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private boolean hasDifferentType( PhysicalColumn physicalColumn, ExportedColumn sourceColumn ) {
+        if ( isTextCompatibleVarchar( physicalColumn.type, physicalColumn.length, sourceColumn.type(), sourceColumn.length() ) ) {
+            return physicalColumn.collectionsType != sourceColumn.collectionsType()
+                    || !Objects.equals( physicalColumn.scale, sourceColumn.scale() )
+                    || !Objects.equals( physicalColumn.dimension, sourceColumn.dimension() )
+                    || !Objects.equals( physicalColumn.cardinality, sourceColumn.cardinality() )
+                    || physicalColumn.nullable != sourceColumn.nullable();
+        }
         return physicalColumn.type != sourceColumn.type()
                 || physicalColumn.collectionsType != sourceColumn.collectionsType()
                 || !Objects.equals( physicalColumn.length, sourceColumn.length() )
@@ -1743,6 +2097,45 @@ public class DdlManagerImpl extends DdlManager {
                 || !Objects.equals( physicalColumn.dimension, sourceColumn.dimension() )
                 || !Objects.equals( physicalColumn.cardinality, sourceColumn.cardinality() )
                 || physicalColumn.nullable != sourceColumn.nullable();
+    }
+
+
+    private boolean hasDifferentType( LogicalColumn logicalColumn, ExportedColumn sourceColumn ) {
+        if ( isTextCompatibleVarchar( logicalColumn.type, logicalColumn.length, sourceColumn.type(), sourceColumn.length() ) ) {
+            return logicalColumn.collectionsType != sourceColumn.collectionsType()
+                    || !Objects.equals( logicalColumn.scale, sourceColumn.scale() )
+                    || !Objects.equals( logicalColumn.dimension, sourceColumn.dimension() )
+                    || !Objects.equals( logicalColumn.cardinality, sourceColumn.cardinality() )
+                    || logicalColumn.nullable != sourceColumn.nullable();
+        }
+        return logicalColumn.type != sourceColumn.type()
+                || logicalColumn.collectionsType != sourceColumn.collectionsType()
+                || !Objects.equals( logicalColumn.length, sourceColumn.length() )
+                || !Objects.equals( logicalColumn.scale, sourceColumn.scale() )
+                || !Objects.equals( logicalColumn.dimension, sourceColumn.dimension() )
+                || !Objects.equals( logicalColumn.cardinality, sourceColumn.cardinality() )
+                || logicalColumn.nullable != sourceColumn.nullable();
+    }
+
+
+    private boolean isTextCompatibleVarchar( PolyType currentType, Integer currentLength, PolyType sourceType, Integer sourceLength ) {
+        if ( currentType == sourceType ) {
+            return currentType == PolyType.VARCHAR && isPostgresTextVarcharLength( currentLength ) && isPostgresTextVarcharLength( sourceLength );
+        }
+        return isTextType( currentType, currentLength ) && isTextType( sourceType, sourceLength );
+    }
+
+
+    private boolean isTextType( PolyType type, Integer length ) {
+        if ( type == PolyType.TEXT ) {
+            return true;
+        }
+        return type == PolyType.VARCHAR && isPostgresTextVarcharLength( length );
+    }
+
+
+    private boolean isPostgresTextVarcharLength( Integer length ) {
+        return length != null && length >= POSTGRESQL_TEXT_VARCHAR_PRECISION;
     }
 
 
