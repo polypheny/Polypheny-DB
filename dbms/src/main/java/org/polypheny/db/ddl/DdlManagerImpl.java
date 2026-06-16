@@ -715,6 +715,7 @@ public class DdlManagerImpl extends DdlManager {
             List<ExportedColumn> missingColumns,
             List<LogicalColumn> droppedColumns,
             List<String> changedTypeColumnNames,
+            List<String> changedNullabilityDescriptions,
             boolean hasReorderedColumns,
             Snapshot snapshot,
             AdapterCatalog sourceAdapterCatalog,
@@ -729,6 +730,9 @@ public class DdlManagerImpl extends DdlManager {
         }
         if ( !changedTypeColumnNames.isEmpty() ) {
             changeDescriptions.add( "Changed column types: " + joinNames( changedTypeColumnNames ) );
+        }
+        if ( !changedNullabilityDescriptions.isEmpty() ) {
+            changeDescriptions.add( "Changed column nullability: " + String.join( ", ", changedNullabilityDescriptions ) );
         }
         if ( hasReorderedColumns ) {
             changeDescriptions.add( "Changed column order" );
@@ -1010,7 +1014,14 @@ public class DdlManagerImpl extends DdlManager {
                 currentSourceForeignKeys,
                 missingColumns,
                 droppedColumns,
-                changedTypeColumns.stream().map( PhysicalColumn::getName ).toList(),
+                changedTypeColumns.stream()
+                        .filter( column -> hasDifferentTypeWithoutNullability( column, sourceColumnsByPhysicalName.get( normalizeIdentifier( column.name ) ) ) )
+                        .map( PhysicalColumn::getName )
+                        .toList(),
+                changedTypeColumns.stream()
+                        .filter( column -> hasDifferentNullability( column, sourceColumnsByPhysicalName.get( normalizeIdentifier( column.name ) ) ) )
+                        .map( column -> formatNullabilityChange( column.name, column.nullable, sourceColumnsByPhysicalName.get( normalizeIdentifier( column.name ) ).nullable() ) )
+                        .toList(),
                 hasReorderedColumns,
                 snapshot,
                 sourceAdapterCatalog,
@@ -1119,21 +1130,12 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.updateSnapshot();
         for ( long changedTypeColumnId : changedTypeColumnIds ) {
-            for ( AllocationColumn allocationColumn : catalog.getSnapshot().alloc().getColumnFromLogical( changedTypeColumnId ).orElseThrow() ) {
-                statement.getTransaction().attachCommitAction( () -> {
-                    for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocsOfPlacement( allocationColumn.placementId ) ) {
-                        if ( allocation.logicalId != connectedTable.id ) {
-                            continue;
-                        }
-                        AdapterManager.getInstance().getStore( allocationColumn.adapterId )
-                                .orElseThrow()
-                                .updateColumnType(
-                                        statement.getPrepareContext(),
-                                        allocation.id,
-                                        catalog.getSnapshot().rel().getColumn( changedTypeColumnId ).orElseThrow() );
-                    }
-                } );
-            }
+            statement.getTransaction().attachCommitAction( () -> AdapterManager.getInstance().getStore( connectedAllocation.adapterId )
+                    .orElseThrow()
+                    .updateColumnType(
+                            statement.getPrepareContext(),
+                            connectedAllocation.id,
+                            catalog.getSnapshot().rel().getColumn( changedTypeColumnId ).orElseThrow() ) );
         }
         statement.getQueryProcessor().resetCaches();
         if ( !plan.missingColumns().isEmpty() ) {
@@ -1143,7 +1145,20 @@ public class DdlManagerImpl extends DdlManager {
             appliedChanges.add( "Removed columns: " + joinNames( plan.droppedColumns().stream().map( LogicalColumn::getName ).toList() ) );
         }
         if ( !plan.changedTypeColumns().isEmpty() ) {
-            appliedChanges.add( "Changed column types: " + joinNames( plan.changedTypeColumns().stream().map( LogicalColumn::getName ).toList() ) );
+            List<String> changedTypeColumnNames = plan.changedTypeColumns().stream()
+                    .filter( column -> hasDifferentTypeWithoutNullability( column, plan.sourceColumnsByPhysicalName().get( normalizeIdentifier( column.name ) ) ) )
+                    .map( LogicalColumn::getName )
+                    .toList();
+            List<String> changedNullabilityDescriptions = plan.changedTypeColumns().stream()
+                    .filter( column -> hasDifferentNullability( column, plan.sourceColumnsByPhysicalName().get( normalizeIdentifier( column.name ) ) ) )
+                    .map( column -> formatNullabilityChange( column.name, column.nullable, plan.sourceColumnsByPhysicalName().get( normalizeIdentifier( column.name ) ).nullable() ) )
+                    .toList();
+            if ( !changedTypeColumnNames.isEmpty() ) {
+                appliedChanges.add( "Changed column types: " + joinNames( changedTypeColumnNames ) );
+            }
+            if ( !changedNullabilityDescriptions.isEmpty() ) {
+                appliedChanges.add( "Changed column nullability: " + String.join( ", ", changedNullabilityDescriptions ) );
+            }
         }
         if ( plan.hasReorderedColumns() ) {
             appliedChanges.add( "Changed column order" );
@@ -1217,7 +1232,14 @@ public class DdlManagerImpl extends DdlManager {
                 sourceRefreshPlan.sourceForeignKeys(),
                 missingColumns,
                 droppedColumns,
-                changedTypeColumns.stream().map( LogicalColumn::getName ).toList(),
+                changedTypeColumns.stream()
+                        .filter( column -> hasDifferentTypeWithoutNullability( column, sourceColumnsByPhysicalName.get( normalizeIdentifier( column.name ) ) ) )
+                        .map( LogicalColumn::getName )
+                        .toList(),
+                changedTypeColumns.stream()
+                        .filter( column -> hasDifferentNullability( column, sourceColumnsByPhysicalName.get( normalizeIdentifier( column.name ) ) ) )
+                        .map( column -> formatNullabilityChange( column.name, column.nullable, sourceColumnsByPhysicalName.get( normalizeIdentifier( column.name ) ).nullable() ) )
+                        .toList(),
                 hasReorderedColumns,
                 snapshot,
                 sourceRefreshPlan.sourceAdapterCatalog(),
@@ -2125,6 +2147,58 @@ public class DdlManagerImpl extends DdlManager {
                 || !Objects.equals( logicalColumn.dimension, sourceColumn.dimension() )
                 || !Objects.equals( logicalColumn.cardinality, sourceColumn.cardinality() )
                 || logicalColumn.nullable != sourceColumn.nullable();
+    }
+
+
+    private boolean hasDifferentTypeWithoutNullability( PhysicalColumn physicalColumn, ExportedColumn sourceColumn ) {
+        if ( isTextCompatibleVarchar( physicalColumn.type, physicalColumn.length, sourceColumn.type(), sourceColumn.length() ) ) {
+            return physicalColumn.collectionsType != sourceColumn.collectionsType()
+                    || !Objects.equals( physicalColumn.scale, sourceColumn.scale() )
+                    || !Objects.equals( physicalColumn.dimension, sourceColumn.dimension() )
+                    || !Objects.equals( physicalColumn.cardinality, sourceColumn.cardinality() );
+        }
+        return physicalColumn.type != sourceColumn.type()
+                || physicalColumn.collectionsType != sourceColumn.collectionsType()
+                || !Objects.equals( physicalColumn.length, sourceColumn.length() )
+                || !Objects.equals( physicalColumn.scale, sourceColumn.scale() )
+                || !Objects.equals( physicalColumn.dimension, sourceColumn.dimension() )
+                || !Objects.equals( physicalColumn.cardinality, sourceColumn.cardinality() );
+    }
+
+
+    private boolean hasDifferentTypeWithoutNullability( LogicalColumn logicalColumn, ExportedColumn sourceColumn ) {
+        if ( isTextCompatibleVarchar( logicalColumn.type, logicalColumn.length, sourceColumn.type(), sourceColumn.length() ) ) {
+            return logicalColumn.collectionsType != sourceColumn.collectionsType()
+                    || !Objects.equals( logicalColumn.scale, sourceColumn.scale() )
+                    || !Objects.equals( logicalColumn.dimension, sourceColumn.dimension() )
+                    || !Objects.equals( logicalColumn.cardinality, sourceColumn.cardinality() );
+        }
+        return logicalColumn.type != sourceColumn.type()
+                || logicalColumn.collectionsType != sourceColumn.collectionsType()
+                || !Objects.equals( logicalColumn.length, sourceColumn.length() )
+                || !Objects.equals( logicalColumn.scale, sourceColumn.scale() )
+                || !Objects.equals( logicalColumn.dimension, sourceColumn.dimension() )
+                || !Objects.equals( logicalColumn.cardinality, sourceColumn.cardinality() );
+    }
+
+
+    private boolean hasDifferentNullability( PhysicalColumn physicalColumn, ExportedColumn sourceColumn ) {
+        return physicalColumn.nullable != sourceColumn.nullable();
+    }
+
+
+    private boolean hasDifferentNullability( LogicalColumn logicalColumn, ExportedColumn sourceColumn ) {
+        return logicalColumn.nullable != sourceColumn.nullable();
+    }
+
+
+    private String formatNullabilityChange( String columnName, boolean currentNullable, boolean sourceNullable ) {
+        return columnName + ": " + formatNullability( currentNullable ) + " -> " + formatNullability( sourceNullable );
+    }
+
+
+    private String formatNullability( boolean nullable ) {
+        return nullable ? "nullable" : "not nullable";
     }
 
 

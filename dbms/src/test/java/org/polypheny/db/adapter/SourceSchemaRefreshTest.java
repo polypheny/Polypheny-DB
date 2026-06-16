@@ -193,6 +193,45 @@ class SourceSchemaRefreshTest {
 
 
     @Test
+    void refreshRequestUpdatesPolyphenyColumnNullabilityAfterExternalNullabilityChanged() throws Exception {
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
+        TestHelper.getInstance();
+
+        try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( DATABASE, USERNAME, PASSWORD ) ) {
+            postgres.execute( "CREATE TABLE public." + SOURCE_TABLE + " (id INTEGER PRIMARY KEY, name VARCHAR(255), city VARCHAR(255) NOT NULL)" );
+            postgres.execute( "INSERT INTO public." + SOURCE_TABLE + " (id, name, city) VALUES (1, 'Alice', 'Basel')" );
+
+            TestHelper.addPostgresSource(
+                    ADAPTER_NAME,
+                    postgres.getHost(),
+                    postgres.getPort(),
+                    DATABASE,
+                    USERNAME,
+                    PASSWORD,
+                    "public." + SOURCE_TABLE );
+
+            try {
+                long entityId = TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, SOURCE_TABLE, 30 ).id;
+                assertTrue( Catalog.snapshot().rel().getColumn( entityId, "name" ).orElseThrow().nullable );
+                assertFalse( Catalog.snapshot().rel().getColumn( entityId, "city" ).orElseThrow().nullable );
+
+                postgres.execute( "ALTER TABLE public." + SOURCE_TABLE + " ALTER COLUMN name SET NOT NULL" );
+                postgres.execute( "ALTER TABLE public." + SOURCE_TABLE + " ALTER COLUMN city DROP NOT NULL" );
+
+                RelationalResult refreshed = TestHelper.sendRefreshRequest( entityId );
+                assertNotNull( refreshed );
+                assertTrue( refreshed.getError() == null || refreshed.getError().isBlank(), "Refresh returned error: " + refreshed.getError() );
+                assertEquals( List.of( "id", "name", "city" ), Arrays.stream( refreshed.getHeader() ).map( h -> h.getName() ).toList() );
+                assertFalse( Catalog.snapshot().rel().getColumn( entityId, "name" ).orElseThrow().nullable );
+                assertTrue( Catalog.snapshot().rel().getColumn( entityId, "city" ).orElseThrow().nullable );
+            } finally {
+                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + ADAPTER_NAME + "\"" );
+            }
+        }
+    }
+
+
+    @Test
     void refreshRequestUpdatesPolyphenyColumnOrderAfterExternalColumnsWereReordered() throws Exception {
         Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for MySQL integration tests" );
         TestHelper.getInstance();

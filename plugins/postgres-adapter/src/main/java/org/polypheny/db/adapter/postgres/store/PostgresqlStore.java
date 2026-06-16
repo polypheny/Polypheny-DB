@@ -80,6 +80,7 @@ import org.polypheny.db.util.PasswordGenerator;
         description = "Maximum number of concurrent JDBC connections.")
 public class PostgresqlStore extends AbstractJdbcStore {
 
+    private static final int POSTGRESQL_TEXT_VARCHAR_PRECISION = 10 * 1024 * 1024;
 
     private String host;
     private int port;
@@ -199,11 +200,12 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 .append( "." )
                 .append( dialect.quoteIdentifier( physicalTable.name ) );
         builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( column.name ) );
-        builder.append( " TYPE " ).append( getTypeString( column.type ) );
-        if ( column.collectionsType != null ) {
+        PolyType targetType = getPostgresDdlType( column );
+        builder.append( " TYPE " ).append( getTypeString( targetType ) );
+        if ( column.collectionsType != null && targetType == column.type ) {
             builder.append( " " ).append( column.collectionsType );
         }
-        if ( column.length != null && doesTypeUseLength( column.type ) ) {
+        if ( column.length != null && doesTypeUseLength( targetType ) ) {
             builder.append( "(" );
             builder.append( column.length );
             if ( column.scale != null ) {
@@ -214,9 +216,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
         builder.append( " USING " )
                 .append( dialect.quoteIdentifier( column.name ) )
                 .append( "::" )
-                .append( getTypeString( column.type ) );
+                .append( getTypeString( targetType ) );
 
-        if ( column.collectionsType != null ) {
+        if ( column.collectionsType != null && targetType == column.type ) {
             builder.append( " " ).append( column.collectionsType );
         }
         executeUpdate( builder, context );
@@ -317,6 +319,14 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
         // TODO: Implement disconnect and reconnect to PostgreSQL instance.
+    }
+
+
+    private PolyType getPostgresDdlType( PhysicalColumn column ) {
+        if ( column.type == PolyType.VARCHAR && column.length != null && column.length >= POSTGRESQL_TEXT_VARCHAR_PRECISION ) {
+            return PolyType.TEXT;
+        }
+        return column.type;
     }
 
 
