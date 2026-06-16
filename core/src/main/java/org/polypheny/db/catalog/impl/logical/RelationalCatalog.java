@@ -542,26 +542,57 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
                     ? getOrAddKeyRefresh( tableId, columnIds, EnforcementTime.ON_COMMIT )
                     : getOrAddKey( tableId, columnIds, EnforcementTime.ON_COMMIT );
 
-            LogicalForeignKey key = new LogicalForeignKey(
-                    keyId,
-                    constraintName,
-                    tableId,
-                    table.namespaceId,
-                    refKey.id,
-                    refKey.entityId,
-                    refKey.namespaceId,
-                    columnIds,
-                    referencesIds,
-                    onUpdate,
-                    onDelete );
-            synchronized ( this ) {
-                keys.put( keyId, key );
-                change( CatalogEvent.FOREIGN_KEY_CREATED, null, keyId );
+            return addForeignKey( keyId, constraintName, table, refKey.id, refKey.entityId, refKey.namespaceId, columnIds, referencesIds, onUpdate, onDelete );
+        }
+
+        if ( refresh ) {
+            int i = 0;
+            for ( long referencedColumnId : referencesIds ) {
+                LogicalColumn referencingColumn = Objects.requireNonNull( columns.get( columnIds.get( i++ ) ) );
+                LogicalColumn referencedColumn = Objects.requireNonNull( columns.get( referencedColumnId ) );
+                if ( referencedColumn.type != referencingColumn.type ) {
+                    throw new GenericRuntimeException( "The data type of the referenced columns does not match the data type of the referencing column: %s != %s", referencingColumn.type.name(), referencedColumn.type );
+                }
             }
-            return keyId;
+            long referencedKeyId = getOrAddKeyRefresh( referencesTableId, referencesIds, EnforcementTime.ON_QUERY );
+            LogicalTable referencedTable = Objects.requireNonNull( tables.get( referencesTableId ) );
+            long keyId = getOrAddKeyRefresh( tableId, columnIds, EnforcementTime.ON_COMMIT );
+
+            return addForeignKey( keyId, constraintName, table, referencedKeyId, referencedTable.id, referencedTable.namespaceId, columnIds, referencesIds, onUpdate, onDelete );
         }
         throw new GenericRuntimeException( "Referenced columns are not defined as UNIQUE, which is required for foreign keys." );
 
+    }
+
+
+    private long addForeignKey(
+            long keyId,
+            String constraintName,
+            LogicalTable table,
+            long referencedKeyId,
+            long referencedTableId,
+            long referencedNamespaceId,
+            List<Long> columnIds,
+            List<Long> referencesIds,
+            ForeignKeyOption onUpdate,
+            ForeignKeyOption onDelete ) {
+        LogicalForeignKey key = new LogicalForeignKey(
+                keyId,
+                constraintName,
+                table.id,
+                table.namespaceId,
+                referencedKeyId,
+                referencedTableId,
+                referencedNamespaceId,
+                columnIds,
+                referencesIds,
+                onUpdate,
+                onDelete );
+        synchronized ( this ) {
+            keys.put( keyId, key );
+            change( CatalogEvent.FOREIGN_KEY_CREATED, null, keyId );
+        }
+        return keyId;
     }
 
 

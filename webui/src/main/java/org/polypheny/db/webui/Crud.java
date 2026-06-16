@@ -78,11 +78,13 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
+import org.polypheny.db.adapter.RelationalDataSource.ExportedForeignKey;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
@@ -100,6 +102,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -743,6 +747,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         Catalog.getInstance().getLogicalRel( targetNamespace.id ).setTableModifiable( materializedTable.id, false );
         Catalog.getInstance().getLogicalRel( targetNamespace.id ).setConnectedSourceEntity( materializedTable.id, sourceTable.id );
         Catalog.getInstance().updateSnapshot();
+        List<String> foreignKeyWarnings = buildConnectedSourceMaterializationForeignKeyWarnings( sourceTable, materializedTableName );
 
         ctx.json( RelationalResult.builder()
                 .table( materializedTableName )
@@ -750,7 +755,96 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .query( insertQuery )
                 .queryType( QueryType.DML )
                 .affectedTuples( insertResult.affectedTuples )
+                .changeDescriptions( foreignKeyWarnings.toArray( new String[0] ) )
                 .build() );
+    }
+
+
+    private List<String> buildConnectedSourceMaterializationForeignKeyWarnings( LogicalTable sourceTable, String materializedTableName ) {
+        Snapshot snapshot = Catalog.snapshot();
+        AllocationEntity sourceAllocation = snapshot.alloc().getFromLogical( sourceTable.id ).stream()
+                .findFirst()
+                .orElse( null );
+        if ( sourceAllocation == null ) {
+            return List.of();
+        }
+
+        AdapterCatalog sourceAdapterCatalog = Catalog.getInstance().getAdapterCatalog( sourceAllocation.adapterId ).orElse( null );
+        DataSource<?> sourceAdapter = AdapterManager.getInstance().getSource( sourceAllocation.adapterId ).orElse( null );
+        if ( sourceAdapterCatalog == null || sourceAdapter == null ) {
+            return List.of();
+        }
+
+        PhysicalTable sourcePhysicalTable = sourceAdapterCatalog.getPhysicalsFromAllocs( sourceAllocation.id ).stream()
+                .findFirst()
+                .flatMap( physical -> physical.unwrap( PhysicalTable.class ) )
+                .orElse( null );
+        if ( sourcePhysicalTable == null ) {
+            return List.of();
+        }
+
+        Map<Long, LogicalTable> connectedTablesBySourceId = snapshot.rel().getTables(
+                        (org.polypheny.db.catalog.logistic.Pattern) null,
+                        (org.polypheny.db.catalog.logistic.Pattern) null ).stream()
+                .filter( table -> table.connectedSourceEntityId != null )
+                .collect( Collectors.toMap( table -> table.connectedSourceEntityId, table -> table, ( left, right ) -> left ) );
+
+        Map<String, LogicalTable> sourceTablesByPhysicalName = getSourceTablesByPhysicalName( snapshot, sourceAdapterCatalog, sourceAllocation.adapterId );
+        return sourceAdapter.asRelationalDataSource()
+                .getExportedForeignKeysForTable( sourcePhysicalTable.namespaceName, sourcePhysicalTable.name ).stream()
+                .map( foreignKey -> formatConnectedSourceMaterializationForeignKeyWarning( foreignKey, materializedTableName, sourceTablesByPhysicalName, connectedTablesBySourceId ) )
+                .filter( Objects::nonNull )
+                .sorted()
+                .toList();
+    }
+
+
+    private String formatConnectedSourceMaterializationForeignKeyWarning(
+            ExportedForeignKey foreignKey,
+            String materializedTableName,
+            Map<String, LogicalTable> sourceTablesByPhysicalName,
+            Map<Long, LogicalTable> connectedTablesBySourceId ) {
+        LogicalTable referencedSourceTable = sourceTablesByPhysicalName.get( toPhysicalTableKey( foreignKey.referencedPhysicalSchemaName(), foreignKey.referencedPhysicalTableName() ) );
+        if ( referencedSourceTable != null && connectedTablesBySourceId.containsKey( referencedSourceTable.id ) ) {
+            return null;
+        }
+
+        String referencedSourceTableName = referencedSourceTable == null
+                ? foreignKey.referencedPhysicalTableName()
+                : referencedSourceTable.name;
+        return "Foreign key " + foreignKey.name()
+                + " references source table " + referencedSourceTableName
+                + " and cannot be preserved. Materialize " + referencedSourceTableName
+                + " first, then refresh " + materializedTableName
+                + " to add the foreign key.";
+    }
+
+
+    private Map<String, LogicalTable> getSourceTablesByPhysicalName( Snapshot snapshot, AdapterCatalog sourceAdapterCatalog, long sourceAdapterId ) {
+        Map<String, LogicalTable> tablesByPhysicalName = new HashMap<>();
+        for ( AllocationEntity allocation : snapshot.alloc().getAllocations().stream().filter( allocation -> allocation.adapterId == sourceAdapterId ).toList() ) {
+            LogicalTable logicalTable = snapshot.rel().getTable( allocation.logicalId ).orElse( null );
+            if ( logicalTable == null || logicalTable.entityType != EntityType.SOURCE ) {
+                continue;
+            }
+
+            for ( PhysicalEntity physicalEntity : sourceAdapterCatalog.getPhysicalsFromAllocs( allocation.id ) ) {
+                physicalEntity.unwrap( PhysicalTable.class ).ifPresent( physicalTable -> tablesByPhysicalName.put(
+                        toPhysicalTableKey( physicalTable.namespaceName, physicalTable.name ),
+                        logicalTable ) );
+            }
+        }
+        return tablesByPhysicalName;
+    }
+
+
+    private static String toPhysicalTableKey( String schemaName, String tableName ) {
+        return normalizePhysicalName( schemaName ) + "." + normalizePhysicalName( tableName );
+    }
+
+
+    private static String normalizePhysicalName( String name ) {
+        return name == null ? "" : name.toLowerCase();
     }
 
 
