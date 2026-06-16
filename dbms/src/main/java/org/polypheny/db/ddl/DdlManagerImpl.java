@@ -1046,7 +1046,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public List<String> refreshConnectedSourceMaterializationColumns( long entityId, Statement statement ) {
         ConnectedSourceMaterializationRefreshPlan plan = buildConnectedSourceMaterializationRefreshPlan( entityId );
-        if ( plan.missingColumns().isEmpty() && plan.droppedColumns().isEmpty() && plan.changedTypeColumns().isEmpty() && !plan.hasReorderedColumns() ) {
+        if ( plan.missingColumns().isEmpty() && plan.droppedColumns().isEmpty() && plan.changedTypeColumns().isEmpty() && !plan.hasReorderedColumns() && plan.primaryKeyChangeDescription() == null ) {
             return List.of();
         }
 
@@ -1095,7 +1095,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         } );
 
-        List<Long> currentPrimaryKeyIds = getCurrentPrimaryKeyIds( connectedTable, catalog.getSnapshot().rel() );
+        List<Long> refreshedPkIds = syncSourcePrimaryKeyForRefresh( connectedTable, plan.orderedSourceColumns(), refreshedLogicalColumns, statement );
         List<Long> currentForeignKeyColumnIds = getCurrentForeignKeyColumnIds( connectedTable, catalog.getSnapshot().rel() );
         for ( LogicalColumn dropped : plan.droppedColumns() ) {
             dropRemovedSourceColumnForRefresh(
@@ -1106,7 +1106,7 @@ public class DdlManagerImpl extends DdlManager {
                     catalog.getSnapshot().alloc().getColumnFromLogical( dropped.id ).orElse( List.of() ),
                     refreshedLogicalColumns,
                     refreshedAllocationColumns,
-                    currentPrimaryKeyIds,
+                    refreshedPkIds,
                     currentForeignKeyColumnIds );
             compactLogicalColumnPositionsAfterDrop( connectedTable, refreshedLogicalColumns );
         }
@@ -1147,6 +1147,9 @@ public class DdlManagerImpl extends DdlManager {
         }
         if ( plan.hasReorderedColumns() ) {
             appliedChanges.add( "Changed column order" );
+        }
+        if ( plan.primaryKeyChangeDescription() != null ) {
+            appliedChanges.add( plan.primaryKeyChangeDescription() );
         }
         return appliedChanges;
     }
@@ -1202,6 +1205,11 @@ public class DdlManagerImpl extends DdlManager {
                 .sorted( Comparator.comparingInt( LogicalColumn::getPosition ) )
                 .toList();
         boolean hasReorderedColumns = hasReorderedColumns( connectedColumns, sourceRefreshPlan.orderedSourceColumns() );
+        String primaryKeyChangeDescription = buildPrimaryKeyChangeDescription(
+                connectedTable,
+                connectedColumns,
+                sourceRefreshPlan.orderedSourceColumns(),
+                snapshot.rel() );
         List<String> changeDescriptions = buildSourceSchemaChangeDescriptions(
                 connectedTable,
                 connectedColumns,
@@ -1225,6 +1233,7 @@ public class DdlManagerImpl extends DdlManager {
                 sourceColumnsByPhysicalName,
                 sourceRefreshPlan.orderedSourceColumns(),
                 hasReorderedColumns,
+                primaryKeyChangeDescription,
                 changeDescriptions );
     }
 
@@ -1239,10 +1248,11 @@ public class DdlManagerImpl extends DdlManager {
             Map<String, ExportedColumn> sourceColumnsByPhysicalName,
             List<ExportedColumn> orderedSourceColumns,
             boolean hasReorderedColumns,
+            String primaryKeyChangeDescription,
             List<String> changeDescriptions ) {
 
         static ConnectedSourceMaterializationRefreshPlan empty( LogicalTable connectedTable ) {
-            return new ConnectedSourceMaterializationRefreshPlan( connectedTable, null, List.of(), List.of(), List.of(), List.of(), Map.of(), List.of(), false, List.of() );
+            return new ConnectedSourceMaterializationRefreshPlan( connectedTable, null, List.of(), List.of(), List.of(), List.of(), Map.of(), List.of(), false, null, List.of() );
         }
 
     }
