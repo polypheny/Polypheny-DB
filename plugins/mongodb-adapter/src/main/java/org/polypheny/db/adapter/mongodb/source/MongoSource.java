@@ -157,6 +157,12 @@ public class MongoSource extends DataSource<DocAdapterCatalog> implements Docume
 
 
     @Override
+    public boolean supportsDynamicCollectionDiscovery() {
+        return true;
+    }
+
+
+    @Override
     public AdapterCatalog getCatalog() {
         return adapterCatalog;
     }

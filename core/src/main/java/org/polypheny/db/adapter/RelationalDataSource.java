@@ -29,6 +29,10 @@ public interface RelationalDataSource {
         return getExportedColumns();
     }
 
+    default boolean supportsDynamicTableDiscovery() {
+        return false;
+    }
+
     /**
      * Returns the exported columns for a specific table, optionally filtered by schema.
      *

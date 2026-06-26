@@ -95,6 +95,11 @@ public class PostgresqlSource extends AbstractJdbcSource {
         return true;
     }
 
+    @Override
+    public boolean supportsDynamicTableDiscovery() {
+        return true;
+    }
+
 
     @Override
     public RelationalDataSource asRelationalDataSource() {

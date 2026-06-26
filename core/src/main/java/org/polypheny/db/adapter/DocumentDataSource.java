@@ -23,6 +23,10 @@ public interface DocumentDataSource {
 
     List<ExportedDocument> getExportedCollections();
 
+    default boolean supportsDynamicCollectionDiscovery() {
+        return false;
+    }
+
     record ExportedDocument( String name, boolean isModifiable, EntityType type ) {
 
     }

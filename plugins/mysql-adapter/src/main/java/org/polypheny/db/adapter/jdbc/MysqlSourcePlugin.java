@@ -121,6 +121,12 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
 
         @Override
+        public boolean supportsDynamicTableDiscovery() {
+            return true;
+        }
+
+
+        @Override
         public RelationalDataSource asRelationalDataSource() {
             return this;
         }

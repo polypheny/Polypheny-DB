@@ -694,13 +694,12 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private boolean supportsDynamicSourceTableDiscovery( DataSource<?> sourceAdapter ) {
-        return "PostgreSQL".equalsIgnoreCase( sourceAdapter.adapterName )
-                || "MySQL".equalsIgnoreCase( sourceAdapter.adapterName );
+        return sourceAdapter.asRelationalDataSource().supportsDynamicTableDiscovery();
     }
 
 
     private boolean supportsDynamicSourceCollectionDiscovery( DataSource<?> sourceAdapter ) {
-        return "MongoDB".equalsIgnoreCase( sourceAdapter.adapterName );
+        return sourceAdapter.asDocumentDataSource().supportsDynamicCollectionDiscovery();
     }
 
 
