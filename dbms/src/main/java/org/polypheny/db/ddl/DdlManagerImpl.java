@@ -35,6 +35,9 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import lombok.Builder;
+import lombok.Value;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.Adapter;
@@ -1065,25 +1068,26 @@ public class DdlManagerImpl extends DdlManager {
                 sourceAdapterId,
                 true );
 
-        return new SourceSchemaRefreshPlan(
-                logicalTable,
-                sourceAllocation,
-                sourceSchemaName,
-                sourceTableName,
-                sourceAdapterCatalog,
-                sourceAdapterId,
-                currentLogicalColumns,
-                orderedSourceColumns,
-                currentSourceForeignKeys,
-                sourceColumnsByPhysicalName,
-                missingColumns,
-                droppedColumns,
-                changedTypeColumns,
-                hasReorderedColumns,
-                hasChangedPrimaryKey,
-                hasChangedForeignKeys,
-                changeDescriptions,
-                false );
+        return SourceSchemaRefreshPlan.builder()
+                .logicalTable( logicalTable )
+                .sourceAllocation( sourceAllocation )
+                .sourceSchemaName( sourceSchemaName )
+                .sourceTableName( sourceTableName )
+                .sourceAdapterCatalog( sourceAdapterCatalog )
+                .sourceAdapterId( sourceAdapterId )
+                .currentLogicalColumns( currentLogicalColumns )
+                .orderedSourceColumns( orderedSourceColumns )
+                .sourceForeignKeys( currentSourceForeignKeys )
+                .sourceColumnsByPhysicalName( sourceColumnsByPhysicalName )
+                .missingColumns( missingColumns )
+                .droppedColumns( droppedColumns )
+                .changedTypeColumns( changedTypeColumns )
+                .hasReorderedColumns( hasReorderedColumns )
+                .hasChangedPrimaryKey( hasChangedPrimaryKey )
+                .hasChangedForeignKeys( hasChangedForeignKeys )
+                .changeDescriptions( changeDescriptions )
+                .unsupported( false )
+                .build();
     }
 
     @Override
@@ -1300,40 +1304,59 @@ public class DdlManagerImpl extends DdlManager {
         changeDescriptions.addAll( applicableForeignKeyChangeDescriptions );
         changeDescriptions.addAll( foreignKeyRefreshInfo.blockedDescriptions() );
 
-        return new ConnectedSourceMaterializationRefreshPlan(
-                connectedTable,
-                connectedAllocations.get( 0 ),
-                connectedColumns,
-                missingColumns,
-                droppedColumns,
-                changedTypeColumns,
-                sourceColumnsByPhysicalName,
-                sourceRefreshPlan.orderedSourceColumns(),
-                foreignKeyRefreshInfo.signatures(),
-                hasReorderedColumns,
-                primaryKeyChangeDescription,
-                applicableForeignKeyChangeDescriptions,
-                changeDescriptions );
+        return ConnectedSourceMaterializationRefreshPlan.builder()
+                .connectedTable( connectedTable )
+                .connectedAllocation( connectedAllocations.get( 0 ) )
+                .connectedColumns( connectedColumns )
+                .missingColumns( missingColumns )
+                .droppedColumns( droppedColumns )
+                .changedTypeColumns( changedTypeColumns )
+                .sourceColumnsByPhysicalName( sourceColumnsByPhysicalName )
+                .orderedSourceColumns( sourceRefreshPlan.orderedSourceColumns() )
+                .sourceForeignKeySignatures( foreignKeyRefreshInfo.signatures() )
+                .hasReorderedColumns( hasReorderedColumns )
+                .primaryKeyChangeDescription( primaryKeyChangeDescription )
+                .applicableForeignKeyChangeDescriptions( applicableForeignKeyChangeDescriptions )
+                .changeDescriptions( changeDescriptions )
+                .build();
     }
 
 
-    private record ConnectedSourceMaterializationRefreshPlan(
-            LogicalTable connectedTable,
-            AllocationEntity connectedAllocation,
-            List<LogicalColumn> connectedColumns,
-            List<ExportedColumn> missingColumns,
-            List<LogicalColumn> droppedColumns,
-            List<LogicalColumn> changedTypeColumns,
-            Map<String, ExportedColumn> sourceColumnsByPhysicalName,
-            List<ExportedColumn> orderedSourceColumns,
-            List<ForeignKeySignature> sourceForeignKeySignatures,
-            boolean hasReorderedColumns,
-            String primaryKeyChangeDescription,
-            List<String> applicableForeignKeyChangeDescriptions,
-            List<String> changeDescriptions ) {
+    @Value
+    @Builder
+    @Accessors(fluent = true)
+    private static class ConnectedSourceMaterializationRefreshPlan {
+
+        LogicalTable connectedTable;
+        AllocationEntity connectedAllocation;
+        List<LogicalColumn> connectedColumns;
+        List<ExportedColumn> missingColumns;
+        List<LogicalColumn> droppedColumns;
+        List<LogicalColumn> changedTypeColumns;
+        Map<String, ExportedColumn> sourceColumnsByPhysicalName;
+        List<ExportedColumn> orderedSourceColumns;
+        List<ForeignKeySignature> sourceForeignKeySignatures;
+        boolean hasReorderedColumns;
+        String primaryKeyChangeDescription;
+        List<String> applicableForeignKeyChangeDescriptions;
+        List<String> changeDescriptions;
 
         static ConnectedSourceMaterializationRefreshPlan empty( LogicalTable connectedTable ) {
-            return new ConnectedSourceMaterializationRefreshPlan( connectedTable, null, List.of(), List.of(), List.of(), List.of(), Map.of(), List.of(), List.of(), false, null, List.of(), List.of() );
+            return ConnectedSourceMaterializationRefreshPlan.builder()
+                    .connectedTable( connectedTable )
+                    .connectedAllocation( null )
+                    .connectedColumns( List.of() )
+                    .missingColumns( List.of() )
+                    .droppedColumns( List.of() )
+                    .changedTypeColumns( List.of() )
+                    .sourceColumnsByPhysicalName( Map.of() )
+                    .orderedSourceColumns( List.of() )
+                    .sourceForeignKeySignatures( List.of() )
+                    .hasReorderedColumns( false )
+                    .primaryKeyChangeDescription( null )
+                    .applicableForeignKeyChangeDescriptions( List.of() )
+                    .changeDescriptions( List.of() )
+                    .build();
         }
 
     }
@@ -1427,33 +1450,75 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private record SourceSchemaRefreshPlan(
-            LogicalTable logicalTable,
-            AllocationEntity sourceAllocation,
-            String sourceSchemaName,
-            String sourceTableName,
-            AdapterCatalog sourceAdapterCatalog,
-            long sourceAdapterId,
-            List<LogicalColumn> currentLogicalColumns,
-            List<ExportedColumn> orderedSourceColumns,
-            List<ExportedForeignKey> sourceForeignKeys,
-            Map<String, ExportedColumn> sourceColumnsByPhysicalName,
-            List<ExportedColumn> missingColumns,
-            List<LogicalColumn> droppedColumns,
-            List<PhysicalColumn> changedTypeColumns,
-            boolean hasReorderedColumns,
-            boolean hasChangedPrimaryKey,
-            boolean hasChangedForeignKeys,
-            List<String> changeDescriptions,
-            boolean unsupported ) {
+    @Value
+    @Builder
+    @Accessors(fluent = true)
+    private static class SourceSchemaRefreshPlan {
+
+        LogicalTable logicalTable;
+        AllocationEntity sourceAllocation;
+        String sourceSchemaName;
+        String sourceTableName;
+        AdapterCatalog sourceAdapterCatalog;
+        long sourceAdapterId;
+        List<LogicalColumn> currentLogicalColumns;
+        List<ExportedColumn> orderedSourceColumns;
+        List<ExportedForeignKey> sourceForeignKeys;
+        Map<String, ExportedColumn> sourceColumnsByPhysicalName;
+        List<ExportedColumn> missingColumns;
+        List<LogicalColumn> droppedColumns;
+        List<PhysicalColumn> changedTypeColumns;
+        boolean hasReorderedColumns;
+        boolean hasChangedPrimaryKey;
+        boolean hasChangedForeignKeys;
+        List<String> changeDescriptions;
+        boolean unsupported;
 
         static SourceSchemaRefreshPlan empty( LogicalTable table, String sourceSchemaName, String sourceTableName ) {
-            return new SourceSchemaRefreshPlan( table, null, sourceSchemaName, sourceTableName, null, -1, List.of(), List.of(), List.of(), Map.of(), List.of(), List.of(), List.of(), false, false, false, List.of(), false );
+            return SourceSchemaRefreshPlan.builder()
+                    .logicalTable( table )
+                    .sourceAllocation( null )
+                    .sourceSchemaName( sourceSchemaName )
+                    .sourceTableName( sourceTableName )
+                    .sourceAdapterCatalog( null )
+                    .sourceAdapterId( -1 )
+                    .currentLogicalColumns( List.of() )
+                    .orderedSourceColumns( List.of() )
+                    .sourceForeignKeys( List.of() )
+                    .sourceColumnsByPhysicalName( Map.of() )
+                    .missingColumns( List.of() )
+                    .droppedColumns( List.of() )
+                    .changedTypeColumns( List.of() )
+                    .hasReorderedColumns( false )
+                    .hasChangedPrimaryKey( false )
+                    .hasChangedForeignKeys( false )
+                    .changeDescriptions( List.of() )
+                    .unsupported( false )
+                    .build();
         }
 
 
         static SourceSchemaRefreshPlan unsupported( LogicalTable table ) {
-            return new SourceSchemaRefreshPlan( table, null, null, null, null, -1, List.of(), List.of(), List.of(), Map.of(), List.of(), List.of(), List.of(), false, false, false, List.of(), true );
+            return SourceSchemaRefreshPlan.builder()
+                    .logicalTable( table )
+                    .sourceAllocation( null )
+                    .sourceSchemaName( null )
+                    .sourceTableName( null )
+                    .sourceAdapterCatalog( null )
+                    .sourceAdapterId( -1 )
+                    .currentLogicalColumns( List.of() )
+                    .orderedSourceColumns( List.of() )
+                    .sourceForeignKeys( List.of() )
+                    .sourceColumnsByPhysicalName( Map.of() )
+                    .missingColumns( List.of() )
+                    .droppedColumns( List.of() )
+                    .changedTypeColumns( List.of() )
+                    .hasReorderedColumns( false )
+                    .hasChangedPrimaryKey( false )
+                    .hasChangedForeignKeys( false )
+                    .changeDescriptions( List.of() )
+                    .unsupported( true )
+                    .build();
         }
 
 
