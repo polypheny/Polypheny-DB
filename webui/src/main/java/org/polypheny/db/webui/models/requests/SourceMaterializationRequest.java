@@ -21,7 +21,7 @@ import lombok.Value;
 
 
 @Value
-public class SourceSnapshotRequest {
+public class SourceMaterializationRequest {
 
     long sourceEntityId;
     long targetStoreId;

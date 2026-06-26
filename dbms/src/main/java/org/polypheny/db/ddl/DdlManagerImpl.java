@@ -154,7 +154,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void checkIfTableModifiable( LogicalTable table ) {
-        if ( table.connectedSourceEntityId != null ) {
+        if ( table.synchronizedSourceEntityId != null ) {
             throw new GenericRuntimeException( "Unable to modify a read-only table." );
         }
     }
@@ -1091,14 +1091,14 @@ public class DdlManagerImpl extends DdlManager {
     }
 
     @Override
-    public List<String> previewConnectedSourceMaterializationRefresh( long entityId ) {
-        return buildConnectedSourceMaterializationRefreshPlan( entityId ).changeDescriptions();
+    public List<String> previewSynchronizedSourceMaterializationRefresh( long entityId ) {
+        return buildSynchronizedSourceMaterializationRefreshPlan( entityId ).changeDescriptions();
     }
 
 
     @Override
-    public List<String> refreshConnectedSourceMaterializationColumns( long entityId, Statement statement ) {
-        ConnectedSourceMaterializationRefreshPlan plan = buildConnectedSourceMaterializationRefreshPlan( entityId );
+    public List<String> refreshSynchronizedSourceMaterializationColumns( long entityId, Statement statement ) {
+        SynchronizedSourceMaterializationRefreshPlan plan = buildSynchronizedSourceMaterializationRefreshPlan( entityId );
         if ( plan.missingColumns().isEmpty() && plan.droppedColumns().isEmpty() && plan.changedTypeColumns().isEmpty() && !plan.hasReorderedColumns() && plan.primaryKeyChangeDescription() == null && plan.applicableForeignKeyChangeDescriptions().isEmpty() ) {
             return List.of();
         }
@@ -1149,7 +1149,7 @@ public class DdlManagerImpl extends DdlManager {
         } );
 
         List<Long> refreshedPkIds = syncSourcePrimaryKeyForRefresh( connectedTable, plan.orderedSourceColumns(), refreshedLogicalColumns, statement );
-        List<Long> refreshedForeignKeyColumnIds = syncConnectedSourceForeignKeysForRefresh(
+        List<Long> refreshedForeignKeyColumnIds = syncSynchronizedSourceForeignKeysForRefresh(
                 connectedTable,
                 plan.sourceForeignKeySignatures(),
                 statement,
@@ -1170,7 +1170,7 @@ public class DdlManagerImpl extends DdlManager {
             compactLogicalColumnPositionsAfterDrop( connectedTable, refreshedLogicalColumns );
         }
         if ( plan.hasReorderedColumns() ) {
-            syncConnectedMaterializedColumnPositionsForRefresh(
+            syncSynchronizedMaterializedColumnPositionsForRefresh(
                     connectedTable,
                     plan.orderedSourceColumns(),
                     refreshedLogicalColumns );
@@ -1219,14 +1219,14 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private ConnectedSourceMaterializationRefreshPlan buildConnectedSourceMaterializationRefreshPlan( long entityId ) {
+    private SynchronizedSourceMaterializationRefreshPlan buildSynchronizedSourceMaterializationRefreshPlan( long entityId ) {
         Snapshot snapshot = catalog.getSnapshot();
         LogicalTable connectedTable = snapshot.rel().getTable( entityId ).orElseThrow();
-        if ( connectedTable.connectedSourceEntityId == null ) {
-            return ConnectedSourceMaterializationRefreshPlan.empty( connectedTable );
+        if ( connectedTable.synchronizedSourceEntityId == null ) {
+            return SynchronizedSourceMaterializationRefreshPlan.empty( connectedTable );
         }
 
-        LogicalTable sourceTable = snapshot.rel().getTable( connectedTable.connectedSourceEntityId ).orElseThrow();
+        LogicalTable sourceTable = snapshot.rel().getTable( connectedTable.synchronizedSourceEntityId ).orElseThrow();
         List<AllocationEntity> sourceAllocations = snapshot.alloc().getFromLogical( sourceTable.id );
         if ( sourceAllocations.size() != 1 ) {
             throw new GenericRuntimeException(
@@ -1237,14 +1237,14 @@ public class DdlManagerImpl extends DdlManager {
         List<AllocationEntity> connectedAllocations = snapshot.alloc().getFromLogical( connectedTable.id );
         if ( connectedAllocations.size() != 1 ) {
             throw new GenericRuntimeException(
-                    "Expected exactly one placement for connected materialized table '" + connectedTable.name +
+                    "Expected exactly one placement for synchronized materialization '" + connectedTable.name +
                             "', but found " + connectedAllocations.size()
             );
         }
 
         SourceSchemaRefreshPlan sourceRefreshPlan = buildSourceSchemaRefreshPlan( sourceTable, sourceAllocations.get( 0 ), snapshot );
         if ( sourceRefreshPlan.unsupported() || sourceRefreshPlan.orderedSourceColumns().isEmpty() ) {
-            return ConnectedSourceMaterializationRefreshPlan.empty( connectedTable );
+            return SynchronizedSourceMaterializationRefreshPlan.empty( connectedTable );
         }
 
         List<LogicalColumn> connectedColumns = sortByPosition( snapshot.rel().getColumns( connectedTable.id ) );
@@ -1274,7 +1274,7 @@ public class DdlManagerImpl extends DdlManager {
                 connectedColumns,
                 sourceRefreshPlan.orderedSourceColumns(),
                 snapshot.rel() );
-        ConnectedForeignKeyRefreshInfo foreignKeyRefreshInfo = getConnectedSourceForeignKeyRefreshInfo(
+        SynchronizedForeignKeyRefreshInfo foreignKeyRefreshInfo = getSynchronizedSourceForeignKeyRefreshInfo(
                 sourceRefreshPlan.sourceForeignKeys(),
                 connectedColumns,
                 snapshot,
@@ -1304,7 +1304,7 @@ public class DdlManagerImpl extends DdlManager {
         changeDescriptions.addAll( applicableForeignKeyChangeDescriptions );
         changeDescriptions.addAll( foreignKeyRefreshInfo.blockedDescriptions() );
 
-        return ConnectedSourceMaterializationRefreshPlan.builder()
+        return SynchronizedSourceMaterializationRefreshPlan.builder()
                 .connectedTable( connectedTable )
                 .connectedAllocation( connectedAllocations.get( 0 ) )
                 .connectedColumns( connectedColumns )
@@ -1325,7 +1325,7 @@ public class DdlManagerImpl extends DdlManager {
     @Value
     @Builder
     @Accessors(fluent = true)
-    private static class ConnectedSourceMaterializationRefreshPlan {
+    private static class SynchronizedSourceMaterializationRefreshPlan {
 
         LogicalTable connectedTable;
         AllocationEntity connectedAllocation;
@@ -1341,8 +1341,8 @@ public class DdlManagerImpl extends DdlManager {
         List<String> applicableForeignKeyChangeDescriptions;
         List<String> changeDescriptions;
 
-        static ConnectedSourceMaterializationRefreshPlan empty( LogicalTable connectedTable ) {
-            return ConnectedSourceMaterializationRefreshPlan.builder()
+        static SynchronizedSourceMaterializationRefreshPlan empty( LogicalTable connectedTable ) {
+            return SynchronizedSourceMaterializationRefreshPlan.builder()
                     .connectedTable( connectedTable )
                     .connectedAllocation( null )
                     .connectedColumns( List.of() )
@@ -1570,7 +1570,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void syncConnectedMaterializedColumnPositionsForRefresh(
+    private void syncSynchronizedMaterializedColumnPositionsForRefresh(
             LogicalTable table,
             List<ExportedColumn> sourceColumns,
             List<LogicalColumn> refreshedLogicalColumns ) {
@@ -2000,7 +2000,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private List<Long> syncConnectedSourceForeignKeysForRefresh(
+    private List<Long> syncSynchronizedSourceForeignKeysForRefresh(
             LogicalTable table,
             List<ForeignKeySignature> sourceSignatures,
             Statement statement,
@@ -2022,7 +2022,7 @@ public class DdlManagerImpl extends DdlManager {
                 continue;
             }
 
-            log.info( "Dropping removed connected source foreign key '{}' on table '{}'", currentForeignKey.name, table.name );
+            log.info( "Dropping removed synchronized source foreign key '{}' on table '{}'", currentForeignKey.name, table.name );
             deleteForeignKeyForRefresh( table, currentForeignKey, snapshot.rel(), logicalCatalog );
         }
 
@@ -2031,7 +2031,7 @@ public class DdlManagerImpl extends DdlManager {
                 continue;
             }
 
-            log.info( "Adding connected source foreign key '{}' on table '{}'", sourceForeignKey.name(), table.name );
+            log.info( "Adding synchronized source foreign key '{}' on table '{}'", sourceForeignKey.name(), table.name );
             addForeignKeyForRefresh( table, sourceForeignKey, statement, logicalCatalog );
         }
 
@@ -2146,7 +2146,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private ConnectedForeignKeyRefreshInfo getConnectedSourceForeignKeyRefreshInfo(
+    private SynchronizedForeignKeyRefreshInfo getSynchronizedSourceForeignKeyRefreshInfo(
             List<ExportedForeignKey> sourceForeignKeys,
             List<LogicalColumn> connectedColumns,
             Snapshot snapshot,
@@ -2154,13 +2154,13 @@ public class DdlManagerImpl extends DdlManager {
             long sourceAdapterId ) {
 
         if ( sourceForeignKeys == null || sourceForeignKeys.isEmpty() ) {
-            return new ConnectedForeignKeyRefreshInfo( List.of(), List.of() );
+            return new SynchronizedForeignKeyRefreshInfo( List.of(), List.of() );
         }
 
         Map<String, LogicalTable> sourceTablesByPhysicalName = getSourceTablesByPhysicalName( snapshot, sourceAdapterCatalog, sourceAdapterId );
         Map<Long, LogicalTable> connectedTablesBySourceId = snapshot.rel().getTables( (Pattern) null, (Pattern) null ).stream()
-                .filter( table -> table.connectedSourceEntityId != null )
-                .collect( Collectors.toMap( table -> table.connectedSourceEntityId, table -> table, ( left, right ) -> left ) );
+                .filter( table -> table.synchronizedSourceEntityId != null )
+                .collect( Collectors.toMap( table -> table.synchronizedSourceEntityId, table -> table, ( left, right ) -> left ) );
 
         List<ForeignKeySignature> signatures = new ArrayList<>();
         List<String> blockedDescriptions = new ArrayList<>();
@@ -2180,7 +2180,7 @@ public class DdlManagerImpl extends DdlManager {
 
             LogicalTable referencedConnectedTable = connectedTablesBySourceId.get( referencedSourceTable.id );
             if ( referencedConnectedTable == null ) {
-                blockedDescriptions.add( formatBlockedConnectedForeignKey( sourceForeignKey, referencedSourceTable ) );
+                blockedDescriptions.add( formatBlockedSynchronizedForeignKey( sourceForeignKey, referencedSourceTable ) );
                 continue;
             }
 
@@ -2199,7 +2199,7 @@ public class DdlManagerImpl extends DdlManager {
                     sourceForeignKey.deleteRule() ) );
         }
 
-        return new ConnectedForeignKeyRefreshInfo( signatures, blockedDescriptions.stream().sorted().toList() );
+        return new SynchronizedForeignKeyRefreshInfo( signatures, blockedDescriptions.stream().sorted().toList() );
     }
 
 
@@ -2365,16 +2365,16 @@ public class DdlManagerImpl extends DdlManager {
 
     }
 
-    private record ConnectedForeignKeyRefreshInfo(
+    private record SynchronizedForeignKeyRefreshInfo(
             List<ForeignKeySignature> signatures,
             List<String> blockedDescriptions ) {
 
     }
 
 
-    private String formatBlockedConnectedForeignKey( ExportedForeignKey foreignKey, LogicalTable referencedSourceTable ) {
+    private String formatBlockedSynchronizedForeignKey( ExportedForeignKey foreignKey, LogicalTable referencedSourceTable ) {
         return "Foreign key " + normalizeIdentifier( foreignKey.name() )
-                + " requires connected materialization for source table "
+                + " requires synchronized materialization for source table "
                 + referencedSourceTable.name
                 + ". Materialize that source table first, then refresh this table again.";
     }

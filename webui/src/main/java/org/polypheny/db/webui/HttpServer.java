@@ -272,11 +272,11 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/createTable", crud::createTable );
 
-        webuiServer.post( "/createSourceSnapshot", crud::createSourceSnapshot );
+        webuiServer.post( "/createIndependentSourceMaterialization", crud::createIndependentSourceMaterialization );
 
-        webuiServer.post( "/createConnectedSourceMaterialization", crud::createConnectedSourceMaterialization );
+        webuiServer.post( "/createSynchronizedSourceMaterialization", crud::createSynchronizedSourceMaterialization );
 
-        webuiServer.post( "/createSourceCollectionSnapshot", crud::createSourceCollectionSnapshot );
+        webuiServer.post( "/createIndependentSourceCollectionMaterialization", crud::createIndependentSourceCollectionMaterialization );
 
         webuiServer.get( "/getGeneratedNames", crud::getGeneratedNames );
 

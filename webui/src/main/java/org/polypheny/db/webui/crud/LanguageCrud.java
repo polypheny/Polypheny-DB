@@ -151,9 +151,9 @@ public class LanguageCrud {
 
 
     public static List<? extends Result<?, ?>> anyQueryResult( QueryContext context, UIRequest request ) {
-        Optional<RelationalResult> rejectedConnectedSourceQuery = rejectConnectedSourceQuery( context, request );
-        if ( rejectedConnectedSourceQuery.isPresent() ) {
-            return List.of( rejectedConnectedSourceQuery.get() );
+        Optional<RelationalResult> rejectedSynchronizedSourceQuery = rejectSynchronizedSourceQuery( context, request );
+        if ( rejectedSynchronizedSourceQuery.isPresent() ) {
+            return List.of( rejectedSynchronizedSourceQuery.get() );
         }
 
         context = context.getLanguage().limitRemover().apply( context );
@@ -195,41 +195,41 @@ public class LanguageCrud {
     }
 
 
-    private static Optional<RelationalResult> rejectConnectedSourceQuery( QueryContext context, UIRequest request ) {
+    private static Optional<RelationalResult> rejectSynchronizedSourceQuery( QueryContext context, UIRequest request ) {
         if ( !(request instanceof QueryRequest) || !Objects.equals( context.getLanguage().serializedName(), "sql" ) ) {
             return Optional.empty();
         }
 
-        Optional<LogicalTable> referencedSource = getReferencedConnectedSource( context.getQuery() );
+        Optional<LogicalTable> referencedSource = getReferencedSynchronizedSource( context.getQuery() );
         if ( referencedSource.isEmpty() ) {
             return Optional.empty();
         }
 
         LogicalTable source = referencedSource.get();
         String sourceName = getFullTableName( source );
-        String connectedName = Catalog.snapshot().rel().getTables( (org.polypheny.db.catalog.logistic.Pattern) null, null ).stream()
-                .filter( table -> Objects.equals( table.connectedSourceEntityId, source.id ) )
+        String synchronizedName = Catalog.snapshot().rel().getTables( (org.polypheny.db.catalog.logistic.Pattern) null, null ).stream()
+                .filter( table -> Objects.equals( table.synchronizedSourceEntityId, source.id ) )
                 .findFirst()
                 .map( LanguageCrud::getFullTableName )
-                .orElse( "its connected materialized table" );
+                .orElse( "its synchronized materialization" );
 
         return Optional.of( RelationalResult.builder()
-                .error( "Queries against source table " + sourceName + " are disabled because it is materialized as " + connectedName + ". Query the connected materialized table instead." )
+                .error( "Queries against source table " + sourceName + " are disabled because it is materialized as " + synchronizedName + ". Query the synchronized materialization instead." )
                 .query( context.getQuery() )
                 .build() );
     }
 
 
-    private static Optional<LogicalTable> getReferencedConnectedSource( String query ) {
+    private static Optional<LogicalTable> getReferencedSynchronizedSource( String query ) {
         List<LogicalTable> tables = Catalog.snapshot().rel().getTables( (org.polypheny.db.catalog.logistic.Pattern) null, null );
-        Set<Long> connectedSourceIds = tables.stream()
-                .map( table -> table.connectedSourceEntityId )
+        Set<Long> synchronizedSourceIds = tables.stream()
+                .map( table -> table.synchronizedSourceEntityId )
                 .filter( Objects::nonNull )
                 .collect( Collectors.toSet() );
 
         return tables.stream()
                 .filter( table -> table.entityType == EntityType.SOURCE )
-                .filter( table -> connectedSourceIds.contains( table.id ) )
+                .filter( table -> synchronizedSourceIds.contains( table.id ) )
                 .filter( table -> referencesTable( query, table ) )
                 .findFirst();
     }

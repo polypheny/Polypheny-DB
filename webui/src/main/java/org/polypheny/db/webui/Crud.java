@@ -202,7 +202,7 @@ import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
 import org.polypheny.db.webui.models.requests.PolyAlgRequest;
 import org.polypheny.db.webui.models.requests.RenameEntityRequest;
-import org.polypheny.db.webui.models.requests.SourceSnapshotRequest;
+import org.polypheny.db.webui.models.requests.SourceMaterializationRequest;
 import org.polypheny.db.webui.models.requests.SourceRefreshRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.requests.UpdateAdapterRequest;
@@ -278,10 +278,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             Statement ddlStatement = transaction.createStatement();
             LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElse( null );
             List<String> changeDescriptions;
-            if ( table != null && table.connectedSourceEntityId != null ) {
-                changeDescriptions = "connectedApply".equalsIgnoreCase( request.refreshTrigger )
-                        ? DdlManager.getInstance().refreshConnectedSourceMaterializationColumns( request.entityId, ddlStatement )
-                        : DdlManager.getInstance().previewConnectedSourceMaterializationRefresh( request.entityId );
+            if ( table != null && table.synchronizedSourceEntityId != null ) {
+                changeDescriptions = "synchronizedApply".equalsIgnoreCase( request.refreshTrigger )
+                        ? DdlManager.getInstance().refreshSynchronizedSourceMaterializationColumns( request.entityId, ddlStatement )
+                        : DdlManager.getInstance().previewSynchronizedSourceMaterializationRefresh( request.entityId );
             } else {
                 changeDescriptions = DdlManager.getInstance().refreshSourceSchemaIfNeeded( request.entityId, ddlStatement );
             }
@@ -662,8 +662,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    void createSourceSnapshot( final Context ctx ) {
-        SourceSnapshotRequest request = ctx.bodyAsClass( SourceSnapshotRequest.class );
+    void createIndependentSourceMaterialization( final Context ctx ) {
+        SourceMaterializationRequest request = ctx.bodyAsClass( SourceMaterializationRequest.class );
         Snapshot snapshot = Catalog.snapshot();
         LogicalTable sourceTable = snapshot.rel().getTable( request.getSourceEntityId() ).orElseThrow();
         LogicalNamespace sourceNamespace = snapshot.getNamespace( sourceTable.namespaceId ).orElseThrow();
@@ -671,12 +671,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         LogicalNamespace targetNamespace = snapshot.getNamespace( targetNamespaceId ).orElseThrow();
         LogicalAdapter targetStore = snapshot.getAdapter( request.getTargetStoreId() ).orElseThrow();
 
-        String snapshotTableName = getNextSnapshotTableName( targetNamespace.id, sourceTable.name );
-        String targetTable = quoteQualified( targetNamespace.name, snapshotTableName );
+        String independentTableName = getNextIndependentMaterializationTableName( targetNamespace.id, sourceTable.name );
+        String targetTable = quoteQualified( targetNamespace.name, independentTableName );
         String sourceTableName = quoteQualified( sourceNamespace.name, sourceTable.name );
         List<LogicalColumn> columns = snapshot.rel().getColumns( sourceTable.id ).stream().sorted().toList();
 
-        String createQuery = buildCreateSnapshotTableQuery( targetTable, targetStore.uniqueName, sourceTable, columns );
+        String createQuery = buildCreateMaterializationTableQuery( targetTable, targetStore.uniqueName, sourceTable, columns );
         Result<?, ?> createResult = executeSql( createQuery );
         if ( createResult.error != null ) {
             ctx.json( createResult );
@@ -695,7 +695,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         ctx.json( RelationalResult.builder()
-                .table( snapshotTableName )
+                .table( independentTableName )
                 .namespace( targetNamespace.name )
                 .query( insertQuery )
                 .queryType( QueryType.DML )
@@ -704,8 +704,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    void createConnectedSourceMaterialization( final Context ctx ) {
-        SourceSnapshotRequest request = ctx.bodyAsClass( SourceSnapshotRequest.class );
+    void createSynchronizedSourceMaterialization( final Context ctx ) {
+        SourceMaterializationRequest request = ctx.bodyAsClass( SourceMaterializationRequest.class );
         Snapshot snapshot = Catalog.snapshot();
         LogicalTable sourceTable = snapshot.rel().getTable( request.getSourceEntityId() ).orElseThrow();
         LogicalNamespace sourceNamespace = snapshot.getNamespace( sourceTable.namespaceId ).orElseThrow();
@@ -715,17 +715,17 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         if ( sourceTable.entityType != EntityType.SOURCE ) {
             ctx.json( RelationalResult.builder()
-                    .error( "Connected source materialization can only be created for source tables." )
+                    .error( "Synchronized Materialization can only be created for source tables." )
                     .build() );
             return;
         }
 
-        String materializedTableName = getNextConnectedSourceTableName( targetNamespace.id, sourceTable.name );
+        String materializedTableName = getNextSynchronizedMaterializationTableName( targetNamespace.id, sourceTable.name );
         String targetTable = quoteQualified( targetNamespace.name, materializedTableName );
         String sourceTableName = quoteQualified( sourceNamespace.name, sourceTable.name );
         List<LogicalColumn> columns = snapshot.rel().getColumns( sourceTable.id ).stream().sorted().toList();
 
-        String createQuery = buildCreateSnapshotTableQuery( targetTable, targetStore.uniqueName, sourceTable, columns );
+        String createQuery = buildCreateMaterializationTableQuery( targetTable, targetStore.uniqueName, sourceTable, columns );
         Result<?, ?> createResult = executeSql( createQuery );
         if ( createResult.error != null ) {
             ctx.json( createResult );
@@ -745,9 +745,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         LogicalTable materializedTable = Catalog.snapshot().rel().getTable( targetNamespace.id, materializedTableName ).orElseThrow();
         Catalog.getInstance().getLogicalRel( targetNamespace.id ).setTableModifiable( materializedTable.id, false );
-        Catalog.getInstance().getLogicalRel( targetNamespace.id ).setConnectedSourceEntity( materializedTable.id, sourceTable.id );
+        Catalog.getInstance().getLogicalRel( targetNamespace.id ).setSynchronizedSourceEntity( materializedTable.id, sourceTable.id );
         Catalog.getInstance().updateSnapshot();
-        List<String> foreignKeyWarnings = buildConnectedSourceMaterializationForeignKeyWarnings( sourceTable, materializedTableName );
+        List<String> foreignKeyWarnings = buildSynchronizedSourceMaterializationForeignKeyWarnings( sourceTable, materializedTableName );
 
         ctx.json( RelationalResult.builder()
                 .table( materializedTableName )
@@ -760,7 +760,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private List<String> buildConnectedSourceMaterializationForeignKeyWarnings( LogicalTable sourceTable, String materializedTableName ) {
+    private List<String> buildSynchronizedSourceMaterializationForeignKeyWarnings( LogicalTable sourceTable, String materializedTableName ) {
         Snapshot snapshot = Catalog.snapshot();
         AllocationEntity sourceAllocation = snapshot.alloc().getFromLogical( sourceTable.id ).stream()
                 .findFirst()
@@ -783,29 +783,29 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return List.of();
         }
 
-        Map<Long, LogicalTable> connectedTablesBySourceId = snapshot.rel().getTables(
+        Map<Long, LogicalTable> synchronizedTablesBySourceId = snapshot.rel().getTables(
                         (org.polypheny.db.catalog.logistic.Pattern) null,
                         (org.polypheny.db.catalog.logistic.Pattern) null ).stream()
-                .filter( table -> table.connectedSourceEntityId != null )
-                .collect( Collectors.toMap( table -> table.connectedSourceEntityId, table -> table, ( left, right ) -> left ) );
+                .filter( table -> table.synchronizedSourceEntityId != null )
+                .collect( Collectors.toMap( table -> table.synchronizedSourceEntityId, table -> table, ( left, right ) -> left ) );
 
         Map<String, LogicalTable> sourceTablesByPhysicalName = getSourceTablesByPhysicalName( snapshot, sourceAdapterCatalog, sourceAllocation.adapterId );
         return sourceAdapter.asRelationalDataSource()
                 .getExportedForeignKeysForTable( sourcePhysicalTable.namespaceName, sourcePhysicalTable.name ).stream()
-                .map( foreignKey -> formatConnectedSourceMaterializationForeignKeyWarning( foreignKey, materializedTableName, sourceTablesByPhysicalName, connectedTablesBySourceId ) )
+                .map( foreignKey -> formatSynchronizedSourceMaterializationForeignKeyWarning( foreignKey, materializedTableName, sourceTablesByPhysicalName, synchronizedTablesBySourceId ) )
                 .filter( Objects::nonNull )
                 .sorted()
                 .toList();
     }
 
 
-    private String formatConnectedSourceMaterializationForeignKeyWarning(
+    private String formatSynchronizedSourceMaterializationForeignKeyWarning(
             ExportedForeignKey foreignKey,
             String materializedTableName,
             Map<String, LogicalTable> sourceTablesByPhysicalName,
-            Map<Long, LogicalTable> connectedTablesBySourceId ) {
+            Map<Long, LogicalTable> synchronizedTablesBySourceId ) {
         LogicalTable referencedSourceTable = sourceTablesByPhysicalName.get( toPhysicalTableKey( foreignKey.referencedPhysicalSchemaName(), foreignKey.referencedPhysicalTableName() ) );
-        if ( referencedSourceTable != null && connectedTablesBySourceId.containsKey( referencedSourceTable.id ) ) {
+        if ( referencedSourceTable != null && synchronizedTablesBySourceId.containsKey( referencedSourceTable.id ) ) {
             return null;
         }
 
@@ -848,8 +848,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    void createSourceCollectionSnapshot( final Context ctx ) {
-        SourceSnapshotRequest request = ctx.bodyAsClass( SourceSnapshotRequest.class );
+    void createIndependentSourceCollectionMaterialization( final Context ctx ) {
+        SourceMaterializationRequest request = ctx.bodyAsClass( SourceMaterializationRequest.class );
         Snapshot snapshot = Catalog.snapshot();
         LogicalCollection sourceCollection = snapshot.doc().getCollection( request.getSourceEntityId() ).orElseThrow();
         LogicalNamespace sourceNamespace = snapshot.getNamespace( sourceCollection.namespaceId ).orElseThrow();
@@ -857,7 +857,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         LogicalNamespace targetNamespace = snapshot.getNamespace( targetNamespaceId ).orElseThrow();
         LogicalAdapter targetStore = snapshot.getAdapter( request.getTargetStoreId() ).orElseThrow();
 
-        String snapshotCollectionName = getNextSnapshotCollectionName( targetNamespace.id, sourceCollection.name );
+        String independentCollectionName = getNextIndependentMaterializationCollectionName( targetNamespace.id, sourceCollection.name );
         String findQuery = String.format( "db.%s.find({})", sourceCollection.name );
         Result<?, ?> findResult = executeMql( findQuery, sourceNamespace.name, true );
         if ( findResult.error != null ) {
@@ -865,7 +865,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return;
         }
 
-        String createQuery = buildCreateSnapshotCollectionQuery( snapshotCollectionName, targetStore.uniqueName );
+        String createQuery = buildCreateMaterializationCollectionQuery( independentCollectionName, targetStore.uniqueName );
         Result<?, ?> createResult = executeMql( createQuery, targetNamespace.name, false );
         if ( createResult.error != null ) {
             ctx.json( createResult );
@@ -876,7 +876,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         if ( documents.length == 0 ) {
             ctx.json( RelationalResult.builder()
                     .dataModel( DataModel.DOCUMENT )
-                    .table( snapshotCollectionName )
+                    .table( independentCollectionName )
                     .namespace( targetNamespace.name )
                     .query( createQuery )
                     .queryType( QueryType.DML )
@@ -885,17 +885,17 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return;
         }
 
-        String insertQuery = buildInsertManyQuery( snapshotCollectionName, documents );
+        String insertQuery = buildInsertManyQuery( independentCollectionName, documents );
         Result<?, ?> insertResult = executeMql( insertQuery, targetNamespace.name, false );
         if ( insertResult.error != null ) {
-            executeMql( "db." + snapshotCollectionName + ".drop()", targetNamespace.name, false );
+            executeMql( "db." + independentCollectionName + ".drop()", targetNamespace.name, false );
             ctx.json( insertResult );
             return;
         }
 
         ctx.json( RelationalResult.builder()
                 .dataModel( DataModel.DOCUMENT )
-                .table( snapshotCollectionName )
+                .table( independentCollectionName )
                 .namespace( targetNamespace.name )
                 .query( insertQuery )
                 .queryType( QueryType.DML )
@@ -931,10 +931,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private String buildCreateSnapshotTableQuery( String targetTable, String targetStoreName, LogicalTable sourceTable, List<LogicalColumn> columns ) {
+    private String buildCreateMaterializationTableQuery( String targetTable, String targetStoreName, LogicalTable sourceTable, List<LogicalColumn> columns ) {
         StringJoiner columnJoiner = new StringJoiner( ", " );
         for ( LogicalColumn column : columns ) {
-            columnJoiner.add( buildSnapshotColumnDefinition( column ) );
+            columnJoiner.add( buildMaterializationColumnDefinition( column ) );
         }
 
         if ( sourceTable.primaryKey != null ) {
@@ -951,9 +951,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static String buildSnapshotColumnDefinition( LogicalColumn column ) {
+    private static String buildMaterializationColumnDefinition( LogicalColumn column ) {
         StringBuilder builder = new StringBuilder();
-        builder.append( quoteIdentifier( column.name ) ).append( " " ).append( buildSnapshotColumnType( column ) );
+        builder.append( quoteIdentifier( column.name ) ).append( " " ).append( buildMaterializationColumnType( column ) );
         if ( !column.nullable ) {
             builder.append( " NOT NULL" );
         }
@@ -961,15 +961,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static String buildSnapshotColumnType( LogicalColumn column ) {
+    private static String buildMaterializationColumnType( LogicalColumn column ) {
         StringBuilder builder = new StringBuilder( column.type.getName() );
         if ( column.length != null && column.scale != null && column.type.allowsPrecScale( true, true ) ) {
             builder.append( "(" ).append( column.length ).append( ", " ).append( column.scale ).append( ")" );
         } else if ( column.length != null && column.type.allowsPrecNoScale() ) {
-            builder.append( "(" ).append( getSnapshotColumnLength( column ) ).append( ")" );
+            builder.append( "(" ).append( getMaterializationColumnLength( column ) ).append( ")" );
         }
 
-        if ( isSnapshotCollectionType( column.collectionsType ) ) {
+        if ( isMaterializationCollectionType( column.collectionsType ) ) {
             builder.append( " " ).append( column.collectionsType.getName() );
             if ( column.dimension != null ) {
                 builder.append( "(" ).append( column.dimension );
@@ -983,7 +983,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static int getSnapshotColumnLength( LogicalColumn column ) {
+    private static int getMaterializationColumnLength( LogicalColumn column ) {
         if ( column.type == PolyType.VARCHAR && column.length > POSTGRES_MAX_VARCHAR_LENGTH ) {
             return POSTGRES_MAX_VARCHAR_LENGTH;
         }
@@ -991,13 +991,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static boolean isSnapshotCollectionType( PolyType collectionsType ) {
+    private static boolean isMaterializationCollectionType( PolyType collectionsType ) {
         return collectionsType == PolyType.ARRAY || collectionsType == PolyType.MAP;
     }
 
 
-    private static String getNextSnapshotTableName( long namespaceId, String sourceTableName ) {
-        String baseName = sourceTableName + "_snapshot";
+    private static String getNextIndependentMaterializationTableName( long namespaceId, String sourceTableName ) {
+        String baseName = sourceTableName + "_independent";
         String candidate = baseName;
         int suffix = 2;
         while ( Catalog.snapshot().rel().getTable( namespaceId, candidate ).isPresent() ) {
@@ -1008,8 +1008,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static String getNextConnectedSourceTableName( long namespaceId, String sourceTableName ) {
-        String baseName = sourceTableName + "_connected";
+    private static String getNextSynchronizedMaterializationTableName( long namespaceId, String sourceTableName ) {
+        String baseName = sourceTableName + "_synchronized";
         String candidate = baseName;
         int suffix = 2;
         while ( Catalog.snapshot().rel().getTable( namespaceId, candidate ).isPresent() ) {
@@ -1020,8 +1020,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static String getNextSnapshotCollectionName( long namespaceId, String sourceCollectionName ) {
-        String baseName = sourceCollectionName + "_snapshot";
+    private static String getNextIndependentMaterializationCollectionName( long namespaceId, String sourceCollectionName ) {
+        String baseName = sourceCollectionName + "_independent";
         String candidate = baseName;
         int suffix = 2;
         while ( Catalog.snapshot().doc().getCollection( namespaceId, candidate ).isPresent() ) {
@@ -1032,7 +1032,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static String buildCreateSnapshotCollectionQuery( String targetCollectionName, String targetStoreName ) {
+    private static String buildCreateMaterializationCollectionQuery( String targetCollectionName, String targetStoreName ) {
         return String.format( "db.createCollection(\"%s\").store(\"%s\")", targetCollectionName, targetStoreName );
     }
 

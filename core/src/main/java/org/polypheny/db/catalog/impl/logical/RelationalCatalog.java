@@ -214,9 +214,9 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
-    public void setConnectedSourceEntity( long tableId, Long sourceEntityId ) {
-        tables.put( tableId, tables.get( tableId ).toBuilder().connectedSourceEntityId( sourceEntityId ).build() );
-        change( CatalogEvent.LOGICAL_REL_ENTITY_CONNECTED_SOURCE_CHANGED, tableId, sourceEntityId );
+    public void setSynchronizedSourceEntity( long tableId, Long sourceEntityId ) {
+        tables.put( tableId, tables.get( tableId ).toBuilder().synchronizedSourceEntityId( sourceEntityId ).build() );
+        change( CatalogEvent.LOGICAL_REL_ENTITY_SYNCHRONIZED_SOURCE_CHANGED, tableId, sourceEntityId );
     }
 
 

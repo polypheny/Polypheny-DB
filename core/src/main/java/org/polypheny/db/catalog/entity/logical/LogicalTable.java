@@ -56,7 +56,7 @@ public class LogicalTable extends LogicalEntity {
     @Serialize
     @SerializeNullable
     @JsonProperty
-    public Long connectedSourceEntityId;
+    public Long synchronizedSourceEntityId;
 
 
     public LogicalTable(
@@ -76,11 +76,11 @@ public class LogicalTable extends LogicalEntity {
             @Deserialize("namespaceId") final long namespaceId,
             @Deserialize("entityType") @NonNull final EntityType type,
             @Deserialize("primaryKey") final Long primaryKey,
-            @Deserialize("connectedSourceEntityId") final Long connectedSourceEntityId,
+            @Deserialize("synchronizedSourceEntityId") final Long synchronizedSourceEntityId,
             @Deserialize("modifiable") boolean modifiable ) {
         super( id, name, namespaceId, type, DataModel.RELATIONAL, modifiable );
         this.primaryKey = primaryKey;
-        this.connectedSourceEntityId = connectedSourceEntityId;
+        this.synchronizedSourceEntityId = synchronizedSourceEntityId;
 
     }
 
@@ -145,7 +145,7 @@ public class LogicalTable extends LogicalEntity {
     public String toString() {
         return "LogicalTable{" +
                 "primaryKey=" + primaryKey +
-                ", connectedSourceEntityId=" + connectedSourceEntityId +
+                ", synchronizedSourceEntityId=" + synchronizedSourceEntityId +
                 ", id=" + id +
                 ", entityType=" + entityType +
                 ", namespaceType=" + dataModel +

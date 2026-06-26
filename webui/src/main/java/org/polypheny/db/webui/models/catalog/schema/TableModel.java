@@ -29,7 +29,7 @@ import org.polypheny.db.catalog.logistic.EntityType;
 public class TableModel extends EntityModel {
 
     @JsonProperty
-    public Long connectedSourceEntityId;
+    public Long synchronizedSourceEntityId;
 
 
     public TableModel(
@@ -39,14 +39,14 @@ public class TableModel extends EntityModel {
             @JsonProperty("modifiable") boolean modifiable,
             @JsonProperty("dataModel") DataModel dataModel,
             @JsonProperty("entityType") EntityType entityType,
-            @JsonProperty("connectedSourceEntityId") @Nullable Long connectedSourceEntityId ) {
+            @JsonProperty("synchronizedSourceEntityId") @Nullable Long synchronizedSourceEntityId ) {
         super( id, name, namespaceId, modifiable, dataModel, entityType );
-        this.connectedSourceEntityId = connectedSourceEntityId;
+        this.synchronizedSourceEntityId = synchronizedSourceEntityId;
     }
 
 
     public static TableModel from( LogicalTable table ) {
-        return new TableModel( table.id, table.name, table.namespaceId, table.modifiable, table.dataModel, table.entityType, table.connectedSourceEntityId );
+        return new TableModel( table.id, table.name, table.namespaceId, table.modifiable, table.dataModel, table.entityType, table.synchronizedSourceEntityId );
     }
 
 }

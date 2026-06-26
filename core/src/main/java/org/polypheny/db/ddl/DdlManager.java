@@ -166,10 +166,10 @@ public abstract class DdlManager {
     public abstract List<String> refreshSourceSchemaIfNeeded( long entityId, Statement statement );
 
 
-    public abstract List<String> previewConnectedSourceMaterializationRefresh( long entityId );
+    public abstract List<String> previewSynchronizedSourceMaterializationRefresh( long entityId );
 
 
-    public abstract List<String> refreshConnectedSourceMaterializationColumns( long entityId, Statement statement );
+    public abstract List<String> refreshSynchronizedSourceMaterializationColumns( long entityId, Statement statement );
 
 
     public List<String> refreshSelectedSources( List<Long> sourceIds, Statement statement ) {
