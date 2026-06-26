@@ -209,14 +209,14 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Override
     public void setTableModifiable( long tableId, boolean modifiable ) {
         tables.put( tableId, tables.get( tableId ).toBuilder().modifiable( modifiable ).build() );
-        change( CatalogEvent.LOGICAL_REL_ENTITY_RENAMED, tableId, tables.get( tableId ).name );
+        change( CatalogEvent.LOGICAL_REL_ENTITY_MODIFIABILITY_CHANGED, tableId, modifiable );
     }
 
 
     @Override
     public void setConnectedSourceEntity( long tableId, Long sourceEntityId ) {
         tables.put( tableId, tables.get( tableId ).toBuilder().connectedSourceEntityId( sourceEntityId ).build() );
-        change( CatalogEvent.LOGICAL_REL_ENTITY_RENAMED, tableId, tables.get( tableId ).name );
+        change( CatalogEvent.LOGICAL_REL_ENTITY_CONNECTED_SOURCE_CHANGED, tableId, sourceEntityId );
     }
 
 
@@ -347,7 +347,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Override
     public void renameColumn( long columnId, String name ) {
         columns.put( columnId, columns.get( columnId ).toBuilder().name( name ).build() );
-        change( CatalogEvent.LOGICAL_REL_ENTITY_RENAMED, columnId, name );
+        change( CatalogEvent.LOGICAL_REL_FIELD_RENAMED, columnId, name );
     }
 
 
