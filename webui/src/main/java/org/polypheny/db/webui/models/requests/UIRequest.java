@@ -88,6 +88,9 @@ public class UIRequest extends RequestModel {
     @JsonProperty
     public String refreshTrigger;
 
+    @JsonProperty
+    public boolean confirmedDataRefresh;
+
 
     protected UIRequest() {
         super( null, null, null );

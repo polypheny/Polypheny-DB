@@ -226,8 +226,11 @@ public class WebSocket implements Consumer<WsConfig> {
                             } else {
                                 log.info( "Refreshing table {} after table selection", table );
                             }
-                            List<String> changeDescriptions = crud.refreshSourceSchemaIfNeeded( refreshRequest );
-                            yield crud.getTable( refreshRequest ).toBuilder().changeDescriptions( changeDescriptions.toArray( new String[0] ) ).build();
+                            Crud.SourceMaterializationRefreshResult refresh = crud.refreshSourceSchemaIfNeeded( refreshRequest );
+                            yield crud.getTable( refreshRequest ).toBuilder()
+                                    .changeDescriptions( refresh.changeDescriptions().toArray( new String[0] ) )
+                                    .dataRefreshRowCount( refresh.dataRefreshRowCount() )
+                                    .build();
                         }
                         case DOCUMENT -> {
                             String entity = Catalog.snapshot().doc().getCollection( refreshRequest.entityId ).map( c -> c.name ).orElse( "" );

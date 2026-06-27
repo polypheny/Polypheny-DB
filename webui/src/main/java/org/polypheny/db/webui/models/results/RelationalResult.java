@@ -58,6 +58,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
      */
     public ResultType type;
     public String[] changeDescriptions;
+    public Long dataRefreshRowCount;
 
 
     @JsonCreator
@@ -79,6 +80,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
             @JsonProperty("int") int affectedTuples,
             @JsonProperty("ResultType") ResultType type,
             @JsonProperty("changeDescriptions") String[] changeDescriptions,
+            @JsonProperty("dataRefreshRowCount") Long dataRefreshRowCount,
             @JsonProperty("hasMoreRows") boolean hasMore,
             @JsonProperty("language") QueryLanguage language,
             @JsonProperty("isRolledBack") boolean isRolledBack ) {
@@ -103,6 +105,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
         this.request = request;
         this.type = type;
         this.changeDescriptions = changeDescriptions;
+        this.dataRefreshRowCount = dataRefreshRowCount;
     }
 
 
@@ -132,6 +135,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
         private Throwable exception;
         private ResultType type;
         private String[] changeDescriptions;
+        private Long dataRefreshRowCount;
 
 
         public B table( String table ) {
@@ -166,6 +170,12 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
 
         public B changeDescriptions( String[] changeDescriptions ) {
             this.changeDescriptions = changeDescriptions;
+            return self();
+        }
+
+
+        public B dataRefreshRowCount( Long dataRefreshRowCount ) {
+            this.dataRefreshRowCount = dataRefreshRowCount;
             return self();
         }
 

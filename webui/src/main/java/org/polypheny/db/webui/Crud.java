@@ -272,7 +272,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      * @param request UI request containing the target entity identifier
      * @throws GenericRuntimeException if the refresh fails
      */
-    public List<String> refreshSourceSchemaIfNeeded( UIRequest request ) {
+    public SourceMaterializationRefreshResult refreshSourceSchemaIfNeeded( UIRequest request ) {
         Transaction transaction = getTransaction();
         boolean refreshSynchronizedData = "synchronizedApplyWithData".equalsIgnoreCase( request.refreshTrigger );
         LogicalTable synchronizedMaterialization = null;
@@ -283,20 +283,27 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             List<String> changeDescriptions;
             if ( table != null && table.synchronizedSourceEntityId != null ) {
                 synchronizedMaterialization = table;
-                changeDescriptions = "synchronizedApply".equalsIgnoreCase( request.refreshTrigger ) || refreshSynchronizedData
-                        ? DdlManager.getInstance().refreshSynchronizedSourceMaterializationColumns( request.entityId, ddlStatement )
-                        : DdlManager.getInstance().previewSynchronizedSourceMaterializationRefresh( request.entityId );
+                if ( "synchronizedApply".equalsIgnoreCase( request.refreshTrigger ) || (refreshSynchronizedData && request.confirmedDataRefresh) ) {
+                    DdlManager.getInstance().refreshSourceSchemaIfNeeded( table.synchronizedSourceEntityId, ddlStatement );
+                    changeDescriptions = DdlManager.getInstance().refreshSynchronizedSourceMaterializationColumns( request.entityId, ddlStatement );
+                } else {
+                    changeDescriptions = DdlManager.getInstance().previewSynchronizedSourceMaterializationRefresh( request.entityId );
+                }
             } else {
                 changeDescriptions = DdlManager.getInstance().refreshSourceSchemaIfNeeded( request.entityId, ddlStatement );
             }
             transaction.commit();
             committed = true;
             if ( refreshSynchronizedData && synchronizedMaterialization != null ) {
+                long rowCount = countSynchronizedSourceMaterializationRows( synchronizedMaterialization.id );
+                if ( !request.confirmedDataRefresh ) {
+                    return new SourceMaterializationRefreshResult( changeDescriptions, rowCount );
+                }
                 refreshSynchronizedSourceMaterializationData( synchronizedMaterialization.id );
                 changeDescriptions = new ArrayList<>( changeDescriptions );
                 changeDescriptions.add( "Refreshed data from source" );
             }
-            return changeDescriptions;
+            return new SourceMaterializationRefreshResult( changeDescriptions, null );
         } catch ( Exception e ) {
             if ( !committed ) {
                 try {
@@ -308,6 +315,31 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             throw new GenericRuntimeException(
                     "Could not refresh source catalog for entity " + request.entityId, e );
         }
+    }
+
+
+    public record SourceMaterializationRefreshResult( List<String> changeDescriptions, Long dataRefreshRowCount ) {
+
+    }
+
+
+    private long countSynchronizedSourceMaterializationRows( long materializedTableId ) {
+        Snapshot snapshot = Catalog.snapshot();
+        LogicalTable materializedTable = snapshot.rel().getTable( materializedTableId ).orElseThrow();
+        if ( materializedTable.synchronizedSourceEntityId == null ) {
+            return 0;
+        }
+        LogicalTable sourceTable = snapshot.rel().getTable( materializedTable.synchronizedSourceEntityId ).orElseThrow();
+        LogicalNamespace sourceNamespace = snapshot.getNamespace( sourceTable.namespaceId ).orElseThrow();
+        String sourceTableName = quoteQualified( sourceNamespace.name, sourceTable.name );
+        RelationalResult countResult = (RelationalResult) executeSql( "SELECT COUNT(*) FROM " + sourceTableName );
+        if ( countResult.error != null ) {
+            throw new GenericRuntimeException( countResult.error );
+        }
+        if ( countResult.data == null || countResult.data.length == 0 || countResult.data[0].length == 0 ) {
+            return 0;
+        }
+        return Long.parseLong( countResult.data[0][0] );
     }
 
 
