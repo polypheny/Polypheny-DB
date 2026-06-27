@@ -26,5 +26,6 @@ public class SourceMaterializationRequest {
     long sourceEntityId;
     long targetStoreId;
     Long targetNamespaceId;
+    String targetEntityName;
 
 }

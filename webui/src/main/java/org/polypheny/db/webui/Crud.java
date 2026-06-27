@@ -671,7 +671,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         LogicalNamespace targetNamespace = snapshot.getNamespace( targetNamespaceId ).orElseThrow();
         LogicalAdapter targetStore = snapshot.getAdapter( request.getTargetStoreId() ).orElseThrow();
 
-        String independentTableName = getNextIndependentMaterializationTableName( targetNamespace.id, sourceTable.name );
+        String independentTableName;
+        try {
+            independentTableName = resolveMaterializationTableName( request.getTargetEntityName(), targetNamespace.id, getNextIndependentMaterializationTableName( targetNamespace.id, sourceTable.name ), "Independent Materialization" );
+        } catch ( GenericRuntimeException e ) {
+            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
+            return;
+        }
         String targetTable = quoteQualified( targetNamespace.name, independentTableName );
         String sourceTableName = quoteQualified( sourceNamespace.name, sourceTable.name );
         List<LogicalColumn> columns = snapshot.rel().getColumns( sourceTable.id ).stream().sorted().toList();
@@ -720,7 +726,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return;
         }
 
-        String materializedTableName = getNextSynchronizedMaterializationTableName( targetNamespace.id, sourceTable.name );
+        String materializedTableName;
+        try {
+            materializedTableName = resolveMaterializationTableName( request.getTargetEntityName(), targetNamespace.id, getNextSynchronizedMaterializationTableName( targetNamespace.id, sourceTable.name ), "Synchronized Materialization" );
+        } catch ( GenericRuntimeException e ) {
+            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
+            return;
+        }
         String targetTable = quoteQualified( targetNamespace.name, materializedTableName );
         String sourceTableName = quoteQualified( sourceNamespace.name, sourceTable.name );
         List<LogicalColumn> columns = snapshot.rel().getColumns( sourceTable.id ).stream().sorted().toList();
@@ -857,7 +869,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         LogicalNamespace targetNamespace = snapshot.getNamespace( targetNamespaceId ).orElseThrow();
         LogicalAdapter targetStore = snapshot.getAdapter( request.getTargetStoreId() ).orElseThrow();
 
-        String independentCollectionName = getNextIndependentMaterializationCollectionName( targetNamespace.id, sourceCollection.name );
+        String independentCollectionName;
+        try {
+            independentCollectionName = resolveMaterializationCollectionName( request.getTargetEntityName(), targetNamespace.id, getNextIndependentMaterializationCollectionName( targetNamespace.id, sourceCollection.name ), "Independent Materialization" );
+        } catch ( GenericRuntimeException e ) {
+            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
+            return;
+        }
         String findQuery = String.format( "db.%s.find({})", sourceCollection.name );
         Result<?, ?> findResult = executeMql( findQuery, sourceNamespace.name, true );
         if ( findResult.error != null ) {
@@ -993,6 +1011,38 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     private static boolean isMaterializationCollectionType( PolyType collectionsType ) {
         return collectionsType == PolyType.ARRAY || collectionsType == PolyType.MAP;
+    }
+
+
+    private static String resolveMaterializationTableName( String requestedName, long namespaceId, String generatedName, String materializationType ) {
+        String targetName = normalizeRequestedMaterializationName( requestedName );
+        if ( targetName == null ) {
+            return generatedName;
+        }
+        if ( Catalog.snapshot().rel().getTable( namespaceId, targetName ).isPresent() ) {
+            throw new GenericRuntimeException( materializationType + " target table '" + targetName + "' already exists." );
+        }
+        return targetName;
+    }
+
+
+    private static String resolveMaterializationCollectionName( String requestedName, long namespaceId, String generatedName, String materializationType ) {
+        String targetName = normalizeRequestedMaterializationName( requestedName );
+        if ( targetName == null ) {
+            return generatedName;
+        }
+        if ( Catalog.snapshot().doc().getCollection( namespaceId, targetName ).isPresent() ) {
+            throw new GenericRuntimeException( materializationType + " target collection '" + targetName + "' already exists." );
+        }
+        return targetName;
+    }
+
+
+    private static String normalizeRequestedMaterializationName( String requestedName ) {
+        if ( requestedName == null || requestedName.trim().isEmpty() ) {
+            return null;
+        }
+        return requestedName.trim();
     }
 
 
