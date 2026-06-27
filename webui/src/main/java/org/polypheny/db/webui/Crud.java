@@ -274,24 +274,36 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     public List<String> refreshSourceSchemaIfNeeded( UIRequest request ) {
         Transaction transaction = getTransaction();
+        boolean refreshSynchronizedData = "synchronizedApplyWithData".equalsIgnoreCase( request.refreshTrigger );
+        LogicalTable synchronizedMaterialization = null;
+        boolean committed = false;
         try {
             Statement ddlStatement = transaction.createStatement();
             LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElse( null );
             List<String> changeDescriptions;
             if ( table != null && table.synchronizedSourceEntityId != null ) {
-                changeDescriptions = "synchronizedApply".equalsIgnoreCase( request.refreshTrigger )
+                synchronizedMaterialization = table;
+                changeDescriptions = "synchronizedApply".equalsIgnoreCase( request.refreshTrigger ) || refreshSynchronizedData
                         ? DdlManager.getInstance().refreshSynchronizedSourceMaterializationColumns( request.entityId, ddlStatement )
                         : DdlManager.getInstance().previewSynchronizedSourceMaterializationRefresh( request.entityId );
             } else {
                 changeDescriptions = DdlManager.getInstance().refreshSourceSchemaIfNeeded( request.entityId, ddlStatement );
             }
             transaction.commit();
+            committed = true;
+            if ( refreshSynchronizedData && synchronizedMaterialization != null ) {
+                refreshSynchronizedSourceMaterializationData( synchronizedMaterialization.id );
+                changeDescriptions = new ArrayList<>( changeDescriptions );
+                changeDescriptions.add( "Refreshed data from source" );
+            }
             return changeDescriptions;
         } catch ( Exception e ) {
-            try {
-                transaction.rollback( "Error while refreshing source catalog: " + e.getMessage() );
-            } catch ( Exception rollbackException ) {
-                log.error( "Rollback also failed", rollbackException );
+            if ( !committed ) {
+                try {
+                    transaction.rollback( "Error while refreshing source catalog: " + e.getMessage() );
+                } catch ( Exception rollbackException ) {
+                    log.error( "Rollback also failed", rollbackException );
+                }
             }
             throw new GenericRuntimeException(
                     "Could not refresh source catalog for entity " + request.entityId, e );
@@ -769,6 +781,43 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .affectedTuples( insertResult.affectedTuples )
                 .changeDescriptions( foreignKeyWarnings.toArray( new String[0] ) )
                 .build() );
+    }
+
+
+    private void refreshSynchronizedSourceMaterializationData( long materializedTableId ) {
+        Snapshot snapshot = Catalog.snapshot();
+        LogicalTable materializedTable = snapshot.rel().getTable( materializedTableId ).orElseThrow();
+        if ( materializedTable.synchronizedSourceEntityId == null ) {
+            return;
+        }
+
+        LogicalTable sourceTable = snapshot.rel().getTable( materializedTable.synchronizedSourceEntityId ).orElseThrow();
+        LogicalNamespace materializedNamespace = snapshot.getNamespace( materializedTable.namespaceId ).orElseThrow();
+        LogicalNamespace sourceNamespace = snapshot.getNamespace( sourceTable.namespaceId ).orElseThrow();
+        List<LogicalColumn> columns = snapshot.rel().getColumns( materializedTable.id ).stream().sorted().toList();
+        String columnList = columns.stream()
+                .map( column -> quoteIdentifier( column.name ) )
+                .collect( Collectors.joining( ", " ) );
+        String materializedTableName = quoteQualified( materializedNamespace.name, materializedTable.name );
+        String sourceTableName = quoteQualified( sourceNamespace.name, sourceTable.name );
+
+        Catalog.getInstance().getLogicalRel( materializedNamespace.id ).setTableModifiable( materializedTable.id, true );
+        Catalog.getInstance().updateSnapshot();
+        try {
+            Result<?, ?> deleteResult = executeSql( "DELETE FROM " + materializedTableName );
+            if ( deleteResult.error != null ) {
+                throw new GenericRuntimeException( deleteResult.error );
+            }
+            String insertQuery = String.format( "INSERT INTO %s SELECT %s FROM %s", materializedTableName, columnList, sourceTableName );
+            log.info( "Refreshing synchronized materialization data with query: {}", insertQuery );
+            Result<?, ?> insertResult = executeSql( insertQuery );
+            if ( insertResult.error != null ) {
+                throw new GenericRuntimeException( insertResult.error );
+            }
+        } finally {
+            Catalog.getInstance().getLogicalRel( materializedNamespace.id ).setTableModifiable( materializedTable.id, false );
+            Catalog.getInstance().updateSnapshot();
+        }
     }
 
 
