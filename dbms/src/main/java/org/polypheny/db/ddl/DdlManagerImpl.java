@@ -568,12 +568,14 @@ public class DdlManagerImpl extends DdlManager {
                 .filter( table -> table.entityType == EntityType.SOURCE )
                 .filter( table -> snapshot.alloc().getFromLogical( table.id ).stream().anyMatch( alloc -> sourceIds.contains( alloc.adapterId ) ) )
                 .filter( table -> postDetectionSnapshot.rel().getTable( table.id ).isPresent() )
+                .filter( table -> !isSynchronizedMaterializedSource( table, postDetectionSnapshot ) )
                 .toList();
 
         List<LogicalCollection> sourceCollections = snapshot.doc().getCollections( (Pattern) null, (Pattern) null ).stream()
                 .filter( collection -> collection.entityType == EntityType.SOURCE )
                 .filter( collection -> snapshot.alloc().getFromLogical( collection.id ).stream().anyMatch( alloc -> sourceIds.contains( alloc.adapterId ) ) )
                 .filter( collection -> postDetectionSnapshot.doc().getCollection( collection.id ).isPresent() )
+                .filter( collection -> !isSynchronizedMaterializedSource( collection, postDetectionSnapshot ) )
                 .toList();
 
         List<String> refreshedSources = new ArrayList<>( sourceTables.stream().map( table -> table.name ).toList() );
@@ -609,6 +611,7 @@ public class DdlManagerImpl extends DdlManager {
 
         List<Map.Entry<String, LogicalTable>> removedTables = discovery.knownTablesByIdentifier().entrySet().stream()
                 .filter( entry -> !discovery.exportedTablesByIdentifier().containsKey( entry.getKey() ) )
+                .filter( entry -> !isSynchronizedMaterializedSource( entry.getValue(), snapshot ) )
                 .sorted( Comparator.comparing( Map.Entry::getKey ) )
                 .toList();
 
@@ -645,6 +648,7 @@ public class DdlManagerImpl extends DdlManager {
         List<LogicalCollection> removedCollections = discovery.knownCollectionsByIdentifier().entrySet().stream()
                 .filter( entry -> !discovery.exportedCollectionsByIdentifier().containsKey( entry.getKey() ) )
                 .map( Map.Entry::getValue )
+                .filter( collection -> !isSynchronizedMaterializedSource( collection, snapshot ) )
                 .sorted( Comparator.comparing( LogicalCollection::getName ) )
                 .toList();
 
@@ -684,6 +688,20 @@ public class DdlManagerImpl extends DdlManager {
             log.info( "No removed source collections detected on MongoDB source {}", discovery.sourceAdapter().getUniqueName() );
         }
         return summaries;
+    }
+
+
+    private boolean isSynchronizedMaterializedSource( LogicalTable table, Snapshot snapshot ) {
+        return table.entityType == EntityType.SOURCE
+                && snapshot.rel().getTables( (Pattern) null, (Pattern) null ).stream()
+                        .anyMatch( candidate -> Objects.equals( candidate.synchronizedSourceEntityId, table.id ) );
+    }
+
+
+    private boolean isSynchronizedMaterializedSource( LogicalCollection collection, Snapshot snapshot ) {
+        return collection.entityType == EntityType.SOURCE
+                && snapshot.doc().getCollections( (Pattern) null, (Pattern) null ).stream()
+                        .anyMatch( candidate -> Objects.equals( candidate.synchronizedSourceEntityId, collection.id ) );
     }
 
 
