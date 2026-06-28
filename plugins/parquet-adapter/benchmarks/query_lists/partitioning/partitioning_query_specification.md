@@ -7,18 +7,18 @@ identifier suffix indicates the layout:
 - `P`: repartitioned, Hive-style partitioned layout
 - `NP`: unpartitioned layout with `year` and `month` stored as physical columns
 
-| Query | Layout        | Operation                                      | Predicate                                                            | Returned data   | Purpose                                                               |
-|-------|---------------|------------------------------------------------|----------------------------------------------------------------------|-----------------|-----------------------------------------------------------------------|
-| Q1_P | Repartitioned | Full table baseline                            | None                                                                 | Aggregate count | Measures baseline count over repartitioned `yellow_tripdata`          |
-| Q1_NP | Unpartitioned | Full table baseline                            | None                                                                 | Aggregate count | Measures baseline count over unpartitioned `yellow_tripdata`          |
-| Q2_P | Repartitioned | Filter by year                                 | `year = '2022'`                                                      | Aggregate count | Measures year-level partition pruning                                 |
-| Q2_NP | Unpartitioned | Physical year-column filter                    | `year = '2022'`                                                      | Aggregate count | Measures filtering on the physical year column                        |
-| Q3_P | Repartitioned | Filter by year and month                       | `year = '2022'` and `month = '10'`                                   | Aggregate count | Measures pruning with both partition levels                           |
-| Q3_NP | Unpartitioned | Physical year/month-column filter              | `year = '2022'` and `month = '10'`                                   | Aggregate count | Measures filtering on physical year and month columns                 |
-| Q4_P | Repartitioned | Filtered count, full scan                      | `trip_distance >= 10.0` and `total_amount >= 40.0`                   | Aggregate count | Measures data-column filtering without partition restriction          |
-| Q4_NP | Unpartitioned | Filtered count, full scan                      | `trip_distance >= 10.0` and `total_amount >= 40.0`                   | Aggregate count | Measures data-column filtering on unpartitioned data                  |
-| Q5_P | Repartitioned | Filtered count with year partition             | `year = '2022'`, `trip_distance >= 10.0`, and `total_amount >= 40.0` | Aggregate count | Measures combined partition pruning and data-column filtering         |
-| Q5_NP | Unpartitioned | Filtered count with physical year column       | `year = '2022'`, `trip_distance >= 10.0`, and `total_amount >= 40.0` | Aggregate count | Measures combined physical-column filtering and data-column filtering |
+| Query | Layout        | Operation                                | Predicate                                                            | Returned data   | Purpose                                                               |
+|-------|---------------|------------------------------------------|----------------------------------------------------------------------|-----------------|-----------------------------------------------------------------------|
+| Q1_P  | Repartitioned | Full table baseline                      | None                                                                 | Aggregate count | Measures baseline count over repartitioned `yellow_tripdata`          |
+| Q1_NP | Unpartitioned | Full table baseline                      | None                                                                 | Aggregate count | Measures baseline count over unpartitioned `yellow_tripdata`          |
+| Q2_P  | Repartitioned | Filter by year                           | `year = '2022'`                                                      | Aggregate count | Measures year-level partition pruning                                 |
+| Q2_NP | Unpartitioned | Physical year-column filter              | `year = '2022'`                                                      | Aggregate count | Measures filtering on the physical year column                        |
+| Q3_P  | Repartitioned | Filter by year and month                 | `year = '2022'` and `month = '10'`                                   | Aggregate count | Measures pruning with both partition levels                           |
+| Q3_NP | Unpartitioned | Physical year/month-column filter        | `year = '2022'` and `month = '10'`                                   | Aggregate count | Measures filtering on physical year and month columns                 |
+| Q4_P  | Repartitioned | Filtered count, full scan                | `trip_distance >= 10.0` and `total_amount >= 40.0`                   | Aggregate count | Measures data-column filtering without partition restriction          |
+| Q4_NP | Unpartitioned | Filtered count, full scan                | `trip_distance >= 10.0` and `total_amount >= 40.0`                   | Aggregate count | Measures data-column filtering on unpartitioned data                  |
+| Q5_P  | Repartitioned | Filtered count with year partition       | `year = '2022'`, `trip_distance >= 10.0`, and `total_amount >= 40.0` | Aggregate count | Measures combined partition pruning and data-column filtering         |
+| Q5_NP | Unpartitioned | Filtered count with physical year column | `year = '2022'`, `trip_distance >= 10.0`, and `total_amount >= 40.0` | Aggregate count | Measures combined physical-column filtering and data-column filtering |
 
 Q1_P, Q1_NP, Q2_P, Q2_NP, Q3_P, and Q3_NP run on `yellow_tripdata`.
 Q4_P, Q4_NP, Q5_P, and Q5_NP run on `green_tripdata`.

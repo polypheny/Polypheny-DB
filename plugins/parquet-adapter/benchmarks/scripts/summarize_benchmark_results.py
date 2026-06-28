@@ -172,27 +172,41 @@ def render_markdown(summaries, inputs, args):
             row.append(format_values(by_system_query.get((system, query_id)), "rows"))
         lines.append("| " + " | ".join(row) + " |")
 
-    lines.extend(
-        [
-            "",
-            f"## Detailed Summary ({unit_label})",
-            "",
-            "| System | Query | Description | Runs | Mean | Median | Std Dev | Min | Max | Rows | Columns | Status |",
-            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
-        ]
-    )
-    for system in systems:
-        for query_id in query_ids:
-            summary = by_system_query.get((system, query_id))
-            if summary is None:
-                continue
-            lines.append(
-                "| "
-                + " | ".join(
+    lines.extend(["", f"## Detailed Summary ({unit_label})", ""])
+    for group_id, group_query_ids in detailed_query_groups(query_ids):
+        has_variants = len(group_query_ids) > 1
+        heading = f"### {escape_md(group_id)}"
+        if not has_variants:
+            description = description_by_query.get(group_query_ids[0], "").strip().rstrip(".")
+            if description:
+                heading += f" - {escape_md(description)}"
+        lines.extend([heading, ""])
+
+        if has_variants:
+            lines.extend(
+                [
+                    "| System | Query | Description | Runs | Mean | Median | Std Dev | Min | Max | Rows | Columns | Status |",
+                    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+                ]
+            )
+        else:
+            lines.extend(
+                [
+                    "| System | Runs | Mean | Median | Std Dev | Min | Max | Rows | Columns | Status |",
+                    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+                ]
+            )
+
+        for system in systems:
+            for query_id in group_query_ids:
+                summary = by_system_query.get((system, query_id))
+                if summary is None:
+                    continue
+                row = [escape_md(system)]
+                if has_variants:
+                    row.extend([escape_md(query_id), escape_md(summary.description)])
+                row.extend(
                     [
-                        escape_md(system),
-                        escape_md(query_id),
-                        escape_md(summary.description),
                         f"{summary.successful_runs}/{summary.total_runs}",
                         format_stat(summary, statistics.mean, args.unit),
                         format_stat(summary, statistics.median, args.unit),
@@ -204,8 +218,8 @@ def render_markdown(summaries, inputs, args):
                         escape_md(status(summary)),
                     ]
                 )
-                + " |"
-            )
+                lines.append("| " + " | ".join(row) + " |")
+        lines.append("")
 
     lines.append("")
     return "\n".join(lines)
@@ -216,6 +230,23 @@ def description_map(summaries):
     for summary in sorted(summaries, key=lambda item: natural_key(item.query_id)):
         result.setdefault(summary.query_id, summary.description)
     return result
+
+
+def detailed_query_groups(query_ids):
+    groups = {}
+    for query_id in query_ids:
+        group_id = logical_query_id(query_id)
+        groups.setdefault(group_id, []).append(query_id)
+    return groups.items()
+
+
+def logical_query_id(query_id):
+    if "_" not in query_id:
+        return query_id
+    prefix, suffix = query_id.rsplit("_", 1)
+    if suffix in {"P", "NP", "RP", "UP"}:
+        return prefix
+    return query_id
 
 
 def format_mean(summary, unit):

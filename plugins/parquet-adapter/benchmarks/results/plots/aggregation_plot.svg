@@ -38,43 +38,43 @@
 <line x1="90" y1="80" x2="90" y2="590" stroke="#333" stroke-width="1.2"/>
 <line x1="90" y1="590" x2="1386" y2="590" stroke="#333" stroke-width="1.2"/>
 <rect x="102.30" y="479.19" width="24.00" height="110.81" fill="#4f9d55"><title>Polypheny Relational Q01: 0.012 s</title></rect>
-<rect x="129.30" y="360.06" width="24.00" height="229.94" fill="#7b61b9"><title>Polypheny Document MQL Q01: 0.180 s</title></rect>
+<rect x="129.30" y="426.15" width="24.00" height="163.85" fill="#7b61b9"><title>Polypheny Document MQL Q01: 0.040 s</title></rect>
 <rect x="156.30" y="451.88" width="24.00" height="138.12" fill="#f0a22e"><title>DuckDB Q01: 0.023 s</title></rect>
 <rect x="183.30" y="268.62" width="24.00" height="321.38" fill="#2f6fbb"><title>Apache Spark Q01: 1.415 s</title></rect>
 <rect x="231.90" y="486.26" width="24.00" height="103.74" fill="#4f9d55"><title>Polypheny Relational Q02: 0.010 s</title></rect>
-<rect x="258.90" y="353.35" width="24.00" height="236.65" fill="#7b61b9"><title>Polypheny Document MQL Q02: 0.209 s</title></rect>
+<rect x="258.90" y="424.64" width="24.00" height="165.36" fill="#7b61b9"><title>Polypheny Document MQL Q02: 0.042 s</title></rect>
 <rect x="285.90" y="491.69" width="24.00" height="98.31" fill="#f0a22e"><title>DuckDB Q02: 0.009 s</title></rect>
 <rect x="312.90" y="326.96" width="24.00" height="263.04" fill="#2f6fbb"><title>Apache Spark Q02: 0.379 s</title></rect>
 <rect x="361.50" y="272.21" width="24.00" height="317.79" fill="#4f9d55"><title>Polypheny Relational Q03: 1.305 s</title></rect>
-<rect x="388.50" y="286.09" width="24.00" height="303.91" fill="#7b61b9"><title>Polypheny Document MQL Q03: 0.954 s</title></rect>
+<rect x="388.50" y="312.66" width="24.00" height="277.34" fill="#7b61b9"><title>Polypheny Document MQL Q03: 0.524 s</title></rect>
 <rect x="415.50" y="360.21" width="24.00" height="229.79" fill="#f0a22e"><title>DuckDB Q03: 0.179 s</title></rect>
 <rect x="442.50" y="208.59" width="24.00" height="381.41" fill="#2f6fbb"><title>Apache Spark Q03: 5.486 s</title></rect>
 <rect x="491.10" y="243.97" width="24.00" height="346.03" fill="#4f9d55"><title>Polypheny Relational Q04: 2.469 s</title></rect>
-<rect x="518.10" y="232.15" width="24.00" height="357.85" fill="#7b61b9"><title>Polypheny Document MQL Q04: 3.223 s</title></rect>
+<rect x="518.10" y="248.09" width="24.00" height="341.91" fill="#7b61b9"><title>Polypheny Document MQL Q04: 2.249 s</title></rect>
 <rect x="545.10" y="295.84" width="24.00" height="294.16" fill="#f0a22e"><title>DuckDB Q04: 0.765 s</title></rect>
 <rect x="572.10" y="224.56" width="24.00" height="365.44" fill="#2f6fbb"><title>Apache Spark Q04: 3.826 s</title></rect>
 <rect x="620.70" y="256.96" width="24.00" height="333.04" fill="#4f9d55"><title>Polypheny Relational Q05: 1.841 s</title></rect>
-<rect x="647.70" y="253.13" width="24.00" height="336.87" fill="#7b61b9"><title>Polypheny Document MQL Q05: 2.008 s</title></rect>
+<rect x="647.70" y="266.97" width="24.00" height="323.03" fill="#7b61b9"><title>Polypheny Document MQL Q05: 1.469 s</title></rect>
 <rect x="674.70" y="276.18" width="24.00" height="313.82" fill="#f0a22e"><title>DuckDB Q05: 1.193 s</title></rect>
 <rect x="701.70" y="208.91" width="24.00" height="381.09" fill="#2f6fbb"><title>Apache Spark Q05: 5.447 s</title></rect>
 <rect x="750.30" y="478.47" width="24.00" height="111.53" fill="#4f9d55"><title>Polypheny Relational Q06: 0.012 s</title></rect>
-<rect x="777.30" y="360.56" width="24.00" height="229.44" fill="#7b61b9"><title>Polypheny Document MQL Q06: 0.178 s</title></rect>
+<rect x="777.30" y="420.98" width="24.00" height="169.02" fill="#7b61b9"><title>Polypheny Document MQL Q06: 0.045 s</title></rect>
 <rect x="804.30" y="369.42" width="24.00" height="220.58" fill="#f0a22e"><title>DuckDB Q06: 0.145 s</title></rect>
 <rect x="831.30" y="252.69" width="24.00" height="337.31" fill="#2f6fbb"><title>Apache Spark Q06: 2.027 s</title></rect>
 <rect x="879.90" y="472.47" width="24.00" height="117.53" fill="#4f9d55"><title>Polypheny Relational Q07: 0.014 s</title></rect>
-<rect x="906.90" y="354.11" width="24.00" height="235.89" fill="#7b61b9"><title>Polypheny Document MQL Q07: 0.205 s</title></rect>
+<rect x="906.90" y="410.44" width="24.00" height="179.56" fill="#7b61b9"><title>Polypheny Document MQL Q07: 0.058 s</title></rect>
 <rect x="933.90" y="433.79" width="24.00" height="156.21" fill="#f0a22e"><title>DuckDB Q07: 0.034 s</title></rect>
 <rect x="960.90" y="341.09" width="24.00" height="248.91" fill="#2f6fbb"><title>Apache Spark Q07: 0.276 s</title></rect>
 <rect x="1009.50" y="160.70" width="24.00" height="429.30" fill="#4f9d55"><title>Polypheny Relational Q08: 16.174 s</title></rect>
-<rect x="1036.50" y="168.20" width="24.00" height="421.80" fill="#7b61b9"><title>Polypheny Document MQL Q08: 13.654 s</title></rect>
+<rect x="1036.50" y="171.48" width="24.00" height="418.52" fill="#7b61b9"><title>Polypheny Document MQL Q08: 12.681 s</title></rect>
 <rect x="1063.50" y="216.55" width="24.00" height="373.45" fill="#f0a22e"><title>DuckDB Q08: 4.585 s</title></rect>
 <rect x="1090.50" y="166.31" width="24.00" height="423.69" fill="#2f6fbb"><title>Apache Spark Q08: 14.251 s</title></rect>
 <rect x="1139.10" y="162.33" width="24.00" height="427.67" fill="#4f9d55"><title>Polypheny Relational Q09: 15.590 s</title></rect>
-<rect x="1166.10" y="168.94" width="24.00" height="421.06" fill="#7b61b9"><title>Polypheny Document MQL Q09: 13.427 s</title></rect>
+<rect x="1166.10" y="169.64" width="24.00" height="420.36" fill="#7b61b9"><title>Polypheny Document MQL Q09: 13.218 s</title></rect>
 <rect x="1193.10" y="187.44" width="24.00" height="402.56" fill="#f0a22e"><title>DuckDB Q09: 8.844 s</title></rect>
 <rect x="1220.10" y="127.37" width="24.00" height="462.63" fill="#2f6fbb"><title>Apache Spark Q09: 34.325 s</title></rect>
 <rect x="1268.70" y="208.82" width="24.00" height="381.18" fill="#4f9d55"><title>Polypheny Relational Q10: 5.458 s</title></rect>
-<rect x="1295.70" y="219.17" width="24.00" height="370.83" fill="#7b61b9"><title>Polypheny Document MQL Q10: 4.321 s</title></rect>
+<rect x="1295.70" y="219.56" width="24.00" height="370.44" fill="#7b61b9"><title>Polypheny Document MQL Q10: 4.283 s</title></rect>
 <rect x="1322.70" y="320.83" width="24.00" height="269.17" fill="#f0a22e"><title>DuckDB Q10: 0.435 s</title></rect>
 <rect x="1349.70" y="209.23" width="24.00" height="380.77" fill="#2f6fbb"><title>Apache Spark Q10: 5.408 s</title></rect>
 <text x="154.80" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q01</text>

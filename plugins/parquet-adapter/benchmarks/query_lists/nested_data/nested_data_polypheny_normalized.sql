@@ -1,4 +1,4 @@
--- Q01: Filtered full customer rows.
+-- Q01: Filtered full customer rows. Use only root level fields
 SELECT *
 FROM ncp__nestedcustomer
 WHERE c_mktsegment = 'BUILDING'

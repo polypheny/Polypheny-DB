@@ -10,6 +10,7 @@
 - Every query has `5/5` successful measured runs
 - Result row counts match across Polypheny relational flat, Polypheny relational normalized, Polypheny document
 MQL, DuckDB, and Apache Spark.
+- Standard deviations remain within 12.4% of the corresponding mean runtimes, indicating generally stable repeated measurements.
 
 
 ### Main Findings
@@ -26,16 +27,10 @@ MQL, DuckDB, and Apache Spark.
 
 ## Related Documents
 
-Full summary:
+Summary:
 
 ```text
 plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_tlcp_summary.md
-
-plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_polypheny_rf_tlcp_results.csv
-plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_polypheny_rn_tlcpn_results.csv
-plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_polypheny_mql_tlcp_results.csv
-plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_duckdb_tlcp_results.csv
-plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_spark_tlcp_results.csv
 ```
 
 Plot:

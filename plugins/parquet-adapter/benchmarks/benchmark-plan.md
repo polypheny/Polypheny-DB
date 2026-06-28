@@ -126,11 +126,19 @@ plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_
 plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_spark_tlcp_results.csv
 ```
 
-The current summary and analysis files are:
+Result summary:
 
 ```text
 plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_tlcp_summary.md
-plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_tlcp_results_analysis.md
+```
+
+### Result Interpretation
+
+The generated plot and manual interpretation of the benchmark results are
+documented in:
+
+```text
+plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_tlcp_result_analysis.md
 ```
 
 ### Run Pipeline
@@ -195,14 +203,28 @@ Raw and summarized results are stored in:
 plugins/parquet-adapter/benchmarks/results/nested_data/
 ```
 
-Executed raw result and summary files:
+Executed raw result files:
 
 ```text
 plugins/parquet-adapter/benchmarks/results/nested_data/nested_data_polypheny_normalized_results.csv
 plugins/parquet-adapter/benchmarks/results/nested_data/nested_data_polypheny_mql_results.csv
 plugins/parquet-adapter/benchmarks/results/nested_data/nested_data_duckdb_results.csv
 plugins/parquet-adapter/benchmarks/results/nested_data/nested_data_spark_results.csv
+```
+
+Result summary:
+
+```text
 plugins/parquet-adapter/benchmarks/results/nested_data/nested_data_summary.md
+```
+
+### Result Interpretation
+
+The generated plot and manual interpretation of the benchmark results are
+documented in:
+
+```text
+plugins/parquet-adapter/benchmarks/results/nested_data/nested_data_result_analysis.md
 ```
 
 ### Run Pipeline
@@ -293,12 +315,20 @@ plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_duckdb_values
 plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_spark_values.jsonl
 ```
 
-The current summary, correctness summary, and analysis files are:
+Result and correctness summaries:
 
 ```text
 plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_summary.md
 plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_correctness_summary.md
-plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_results_analysis.md
+```
+
+### Result Interpretation
+
+The generated plot and manual interpretation of the benchmark results are
+documented in:
+
+```text
+plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_result_analysis.md
 ```
 
 ### Run Pipeline
@@ -379,11 +409,19 @@ plugins/parquet-adapter/benchmarks/results/partitioning/partitioning_spark_repar
 plugins/parquet-adapter/benchmarks/results/partitioning/partitioning_spark_unpartitioned_results.csv
 ```
 
-The current summary and analysis files are:
+Result summary:
 
 ```text
 plugins/parquet-adapter/benchmarks/results/partitioning/partitioning_summary.md
-plugins/parquet-adapter/benchmarks/results/partitioning/partitioning_results_analysis.md
+```
+
+### Result Interpretation
+
+The generated plot and manual interpretation of the benchmark results are
+documented in:
+
+```text
+plugins/parquet-adapter/benchmarks/results/partitioning/partitioning_result_analysis.md
 ```
 
 ### Query Themes

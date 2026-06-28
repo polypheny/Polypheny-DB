@@ -77,17 +77,17 @@ Each table includes the reference system so that mismatches can be inspected dir
 | year=2023 / min_distance | 0.0 |  | 0.0 | 0.0 |
 | year=2023 / max_distance | 258928.15 |  | 258928.15 | 258928.15 |
 | _id=2020 / max_distance |  | 350914.89 |  |  |
-| _id=2020 / min_distance |  | -30.62 |  |  |
 | _id=2020 / gross_amount |  | 454079334.16108584 |  |  |
+| _id=2020 / min_distance |  | -30.62 |  |  |
 | _id=2021 / max_distance |  | 351613.36 |  |  |
-| _id=2021 / min_distance |  | 0.0 |  |  |
 | _id=2021 / gross_amount |  | 608700670.9132242 |  |  |
+| _id=2021 / min_distance |  | 0.0 |  |  |
 | _id=2022 / max_distance |  | 389678.46 |  |  |
-| _id=2022 / min_distance |  | 0.0 |  |  |
 | _id=2022 / gross_amount |  | 859397945.173023 |  |  |
+| _id=2022 / min_distance |  | 0.0 |  |  |
 | _id=2023 / max_distance |  | 258928.15 |  |  |
-| _id=2023 / min_distance |  | 0.0 |  |  |
 | _id=2023 / gross_amount |  | 82865192.2197824 |  |  |
+| _id=2023 / min_distance |  | 0.0 |  |  |
 
 ### Q06
 
@@ -131,22 +131,22 @@ Each table includes the reference system so that mismatches can be inspected dir
 | year=2023 / driver_pay | 310164377.32070553 |  | 3.1016437732070553E8 | 310164377.32070553 |
 | year=2023 / min_miles | 0.0 |  | 0.0 | 0.0 |
 | year=2023 / max_miles | 407.563 |  | 407.563 | 407.563 |
-| _id=2020 / driver_pay |  | 2036707828.5292335 |  |  |
+| _id=2020 / min_miles |  | 0.0 |  |  |
 | _id=2020 / passenger_fare |  | 2527548383.5690694 |  |  |
 | _id=2020 / max_miles |  | 1310.51 |  |  |
-| _id=2020 / min_miles |  | 0.0 |  |  |
-| _id=2021 / driver_pay |  | 3085990462.630042 |  |  |
+| _id=2020 / driver_pay |  | 2036707828.5292335 |  |  |
+| _id=2021 / min_miles |  | 0.0 |  |  |
 | _id=2021 / passenger_fare |  | 3839172144.575017 |  |  |
 | _id=2021 / max_miles |  | 738.95 |  |  |
-| _id=2021 / min_miles |  | 0.0 |  |  |
-| _id=2022 / driver_pay |  | 3966957717.7361007 |  |  |
+| _id=2021 / driver_pay |  | 3085990462.630042 |  |  |
+| _id=2022 / min_miles |  | 0.0 |  |  |
 | _id=2022 / passenger_fare |  | 5029617856.472827 |  |  |
 | _id=2022 / max_miles |  | 634.32 |  |  |
-| _id=2022 / min_miles |  | 0.0 |  |  |
-| _id=2023 / driver_pay |  | 310164377.32070553 |  |  |
+| _id=2022 / driver_pay |  | 3966957717.7361007 |  |  |
+| _id=2023 / min_miles |  | 0.0 |  |  |
 | _id=2023 / passenger_fare |  | 398327570.2230424 |  |  |
 | _id=2023 / max_miles |  | 407.563 |  |  |
-| _id=2023 / min_miles |  | 0.0 |  |  |
+| _id=2023 / driver_pay |  | 310164377.32070553 |  |  |
 
 ### Q10
 

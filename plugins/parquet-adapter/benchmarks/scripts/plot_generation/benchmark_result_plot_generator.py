@@ -492,9 +492,65 @@ def aligned_text_x(x, value, size, bold, anchor):
     raise ValueError(f"Unsupported text anchor: {anchor}")
 
 
+def font_widths(*groups):
+    return {
+        character: width
+        for width, characters in groups
+        for character in characters
+    }
+
+
+# Adobe Font Metrics widths for the built-in PDF Helvetica fonts, expressed in
+# thousandths of an em. Using the real glyph widths keeps independently drawn
+# lines centered on the same x coordinate.
+HELVETICA_WIDTHS = font_widths(
+    (191, "'"),
+    (222, "ijl"),
+    (260, "|"),
+    (278, " !,./:;I[\\]ft"),
+    (333, "()-`r"),
+    (334, "{}"),
+    (355, '"'),
+    (389, "*"),
+    (469, "^"),
+    (500, "Jcksvxyz"),
+    (556, "#$0123456789?_Labdeghnopqu"),
+    (584, "+<=>~"),
+    (611, "FTZ"),
+    (667, "&ABEKPSXY"),
+    (722, "CDHNRUVw"),
+    (778, "GOQ"),
+    (833, "Mm"),
+    (889, "%"),
+    (944, "W"),
+    (1015, "@"),
+)
+
+HELVETICA_BOLD_WIDTHS = font_widths(
+    (238, "'"),
+    (278, " ,./I\\ijl"),
+    (280, "|"),
+    (333, "!()-:;[]`ft"),
+    (389, "*r{}"),
+    (474, '"'),
+    (500, "z"),
+    (556, "#$0123456789J_aceksvxy"),
+    (584, "+<=>^~"),
+    (611, "?FLTZbdghnopqu"),
+    (667, "EPSVXY"),
+    (722, "&ABCDHKNRU"),
+    (778, "GOQw"),
+    (833, "M"),
+    (889, "%m"),
+    (944, "W"),
+    (975, "@"),
+)
+
+
 def approximate_text_width(value, size, bold):
-    factor = 0.58 if bold else 0.52
-    return len(str(value)) * size * factor
+    widths = HELVETICA_BOLD_WIDTHS if bold else HELVETICA_WIDTHS
+    width_units = sum(widths.get(character, 556) for character in str(value))
+    return width_units * size / 1000
 
 
 def pdf_escape(value):

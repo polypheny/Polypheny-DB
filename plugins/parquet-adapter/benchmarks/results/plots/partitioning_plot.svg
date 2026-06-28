@@ -71,11 +71,14 @@
 <text x="716.60" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q4_NP</text>
 <text x="820.89" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q5_P</text>
 <text x="892.43" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q5_NP</text>
-<text x="153.34" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Full baseline</text>
-<text x="329.17" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Year filter</text>
-<text x="505.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Year + month filter</text>
-<text x="680.83" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Data-column filter</text>
-<text x="856.66" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Year + data filter</text>
+<text x="153.34" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Full-count baseline</text>
+<text x="329.17" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Year-filtered count</text>
+<text x="505.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Year-and-month-filtered</text>
+<text x="505.00" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">count</text>
+<text x="680.83" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Data-column filtering, no</text>
+<text x="680.83" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">partition restriction</text>
+<text x="856.66" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Year and data-column</text>
+<text x="856.66" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">filtering</text>
 <text x="955" y="80" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700">System</text>
 <rect x="955" y="100" width="16" height="16" fill="#4f9d55"/>
 <text x="979" y="113" font-family="Helvetica, Arial, sans-serif" font-size="12">Polypheny Relational</text>
@@ -84,7 +87,7 @@
 <rect x="955" y="156" width="16" height="16" fill="#2f6fbb"/>
 <text x="979" y="169" font-family="Helvetica, Arial, sans-serif" font-size="12">Apache Spark</text>
 <text x="955" y="214" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#333">P</text>
-<text x="961.96" y="214" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#333"> - partitioned</text>
+<text x="963.004" y="214" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#333"> - partitioned</text>
 <text x="955" y="232" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#333">NP</text>
-<text x="968.92" y="232" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#333"> - not partitioned</text>
+<text x="971.668" y="232" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#333"> - not partitioned</text>
 </svg>

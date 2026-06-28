@@ -15,79 +15,79 @@ endobj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
 endobj
 6 0 obj
-<< /Length 5584 >>
+<< /Length 5846 >>
 stream
 1.000 1.000 1.000 rg
 0.00 0.00 1180.00 720.00 re f
 0.000 0.000 0.000 rg
-BT /F2 24 Tf 1 0 0 1 381.20 686.00 Tm (Partitioning by Year and Month) Tj ET
+BT /F2 24 Tf 1 0 0 1 412.64 686.00 Tm (Partitioning by Year and Month) Tj ET
 0.200 0.200 0.200 rg
 BT /F1 13 Tf 1 0 0 1 90.00 658.00 Tm (Mean execution time \(s, log scale\)) Tj ET
 0.886 0.886 0.886 RG
 1.00 w
 90.00 130.00 m 920.00 130.00 l S
 0.200 0.200 0.200 rg
-BT /F1 11 Tf 1 0 0 1 49.40 126.00 Tm (0.001) Tj ET
+BT /F1 11 Tf 1 0 0 1 50.48 126.00 Tm (0.001) Tj ET
 0.886 0.886 0.886 RG
 1.00 w
 90.00 168.38 m 920.00 168.38 l S
 0.200 0.200 0.200 rg
-BT /F1 11 Tf 1 0 0 1 49.40 164.38 Tm (0.002) Tj ET
+BT /F1 11 Tf 1 0 0 1 50.48 164.38 Tm (0.002) Tj ET
 0.886 0.886 0.886 RG
 1.00 w
 90.00 219.12 m 920.00 219.12 l S
 0.200 0.200 0.200 rg
-BT /F1 11 Tf 1 0 0 1 49.40 215.12 Tm (0.005) Tj ET
+BT /F1 11 Tf 1 0 0 1 50.48 215.12 Tm (0.005) Tj ET
 0.886 0.886 0.886 RG
 1.00 w
 90.00 257.50 m 920.00 257.50 l S
 0.200 0.200 0.200 rg
-BT /F1 11 Tf 1 0 0 1 55.12 253.50 Tm (0.01) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.59 253.50 Tm (0.01) Tj ET
 0.886 0.886 0.886 RG
 1.00 w
 90.00 295.88 m 920.00 295.88 l S
 0.200 0.200 0.200 rg
-BT /F1 11 Tf 1 0 0 1 55.12 291.88 Tm (0.02) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.59 291.88 Tm (0.02) Tj ET
 0.886 0.886 0.886 RG
 1.00 w
 90.00 346.62 m 920.00 346.62 l S
 0.200 0.200 0.200 rg
-BT /F1 11 Tf 1 0 0 1 55.12 342.62 Tm (0.05) Tj ET
+BT /F1 11 Tf 1 0 0 1 56.59 342.62 Tm (0.05) Tj ET
 0.886 0.886 0.886 RG
 1.00 w
 90.00 385.00 m 920.00 385.00 l S
 0.200 0.200 0.200 rg
-BT /F1 11 Tf 1 0 0 1 60.84 381.00 Tm (0.1) Tj ET
+BT /F1 11 Tf 1 0 0 1 62.71 381.00 Tm (0.1) Tj ET
 0.886 0.886 0.886 RG
 1.00 w
 90.00 423.38 m 920.00 423.38 l S
 0.200 0.200 0.200 rg
-BT /F1 11 Tf 1 0 0 1 60.84 419.38 Tm (0.2) Tj ET
+BT /F1 11 Tf 1 0 0 1 62.71 419.38 Tm (0.2) Tj ET
 0.886 0.886 0.886 RG
 1.00 w
 90.00 474.12 m 920.00 474.12 l S
 0.200 0.200 0.200 rg
-BT /F1 11 Tf 1 0 0 1 60.84 470.12 Tm (0.5) Tj ET
+BT /F1 11 Tf 1 0 0 1 62.71 470.12 Tm (0.5) Tj ET
 0.886 0.886 0.886 RG
 1.00 w
 90.00 512.50 m 920.00 512.50 l S
 0.200 0.200 0.200 rg
-BT /F1 11 Tf 1 0 0 1 72.28 508.50 Tm (1) Tj ET
+BT /F1 11 Tf 1 0 0 1 71.88 508.50 Tm (1) Tj ET
 0.886 0.886 0.886 RG
 1.00 w
 90.00 550.88 m 920.00 550.88 l S
 0.200 0.200 0.200 rg
-BT /F1 11 Tf 1 0 0 1 72.28 546.88 Tm (2) Tj ET
+BT /F1 11 Tf 1 0 0 1 71.88 546.88 Tm (2) Tj ET
 0.886 0.886 0.886 RG
 1.00 w
 90.00 601.62 m 920.00 601.62 l S
 0.200 0.200 0.200 rg
-BT /F1 11 Tf 1 0 0 1 72.28 597.62 Tm (5) Tj ET
+BT /F1 11 Tf 1 0 0 1 71.88 597.62 Tm (5) Tj ET
 0.886 0.886 0.886 RG
 1.00 w
 90.00 640.00 m 920.00 640.00 l S
 0.200 0.200 0.200 rg
-BT /F1 11 Tf 1 0 0 1 66.56 636.00 Tm (10) Tj ET
+BT /F1 11 Tf 1 0 0 1 65.77 636.00 Tm (10) Tj ET
 0.200 0.200 0.200 RG
 1.20 w
 90.00 640.00 m 90.00 130.00 l S
@@ -155,35 +155,41 @@ BT /F1 11 Tf 1 0 0 1 66.56 636.00 Tm (10) Tj ET
 0.184 0.435 0.733 rg
 903.62 130.00 16.38 384.43 re f
 0.000 0.000 0.000 rg
-BT /F2 12 Tf 1 0 0 1 103.65 100.00 Tm (Q1_P) Tj ET
+BT /F2 12 Tf 1 0 0 1 102.23 100.00 Tm (Q1_P) Tj ET
 0.000 0.000 0.000 rg
-BT /F2 12 Tf 1 0 0 1 171.71 100.00 Tm (Q1_NP) Tj ET
+BT /F2 12 Tf 1 0 0 1 169.43 100.00 Tm (Q1_NP) Tj ET
 0.000 0.000 0.000 rg
-BT /F2 12 Tf 1 0 0 1 279.48 100.00 Tm (Q2_P) Tj ET
+BT /F2 12 Tf 1 0 0 1 278.06 100.00 Tm (Q2_P) Tj ET
 0.000 0.000 0.000 rg
-BT /F2 12 Tf 1 0 0 1 347.54 100.00 Tm (Q2_NP) Tj ET
+BT /F2 12 Tf 1 0 0 1 345.26 100.00 Tm (Q2_NP) Tj ET
 0.000 0.000 0.000 rg
-BT /F2 12 Tf 1 0 0 1 455.31 100.00 Tm (Q3_P) Tj ET
+BT /F2 12 Tf 1 0 0 1 453.89 100.00 Tm (Q3_P) Tj ET
 0.000 0.000 0.000 rg
-BT /F2 12 Tf 1 0 0 1 523.37 100.00 Tm (Q3_NP) Tj ET
+BT /F2 12 Tf 1 0 0 1 521.09 100.00 Tm (Q3_NP) Tj ET
 0.000 0.000 0.000 rg
-BT /F2 12 Tf 1 0 0 1 631.14 100.00 Tm (Q4_P) Tj ET
+BT /F2 12 Tf 1 0 0 1 629.72 100.00 Tm (Q4_P) Tj ET
 0.000 0.000 0.000 rg
-BT /F2 12 Tf 1 0 0 1 699.20 100.00 Tm (Q4_NP) Tj ET
+BT /F2 12 Tf 1 0 0 1 696.92 100.00 Tm (Q4_NP) Tj ET
 0.000 0.000 0.000 rg
-BT /F2 12 Tf 1 0 0 1 806.97 100.00 Tm (Q5_P) Tj ET
+BT /F2 12 Tf 1 0 0 1 805.55 100.00 Tm (Q5_P) Tj ET
 0.000 0.000 0.000 rg
-BT /F2 12 Tf 1 0 0 1 875.03 100.00 Tm (Q5_NP) Tj ET
+BT /F2 12 Tf 1 0 0 1 872.75 100.00 Tm (Q5_NP) Tj ET
 0.200 0.200 0.200 rg
-BT /F1 13 Tf 1 0 0 1 109.40 75.00 Tm (Full baseline) Tj ET
+BT /F1 13 Tf 1 0 0 1 98.79 75.00 Tm (Full-count baseline) Tj ET
 0.200 0.200 0.200 rg
-BT /F1 13 Tf 1 0 0 1 291.99 75.00 Tm (Year filter) Tj ET
+BT /F1 13 Tf 1 0 0 1 276.07 75.00 Tm (Year-filtered count) Tj ET
 0.200 0.200 0.200 rg
-BT /F1 13 Tf 1 0 0 1 440.78 75.00 Tm (Year + month filter) Tj ET
+BT /F1 13 Tf 1 0 0 1 436.37 75.00 Tm (Year-and-month-filtered) Tj ET
 0.200 0.200 0.200 rg
-BT /F1 13 Tf 1 0 0 1 619.99 75.00 Tm (Data-column filter) Tj ET
+BT /F1 13 Tf 1 0 0 1 489.10 58.00 Tm (count) Tj ET
 0.200 0.200 0.200 rg
-BT /F1 13 Tf 1 0 0 1 795.82 75.00 Tm (Year + data filter) Tj ET
+BT /F1 13 Tf 1 0 0 1 610.39 75.00 Tm (Data-column filtering, no) Tj ET
+0.200 0.200 0.200 rg
+BT /F1 13 Tf 1 0 0 1 627.73 58.00 Tm (partition restriction) Tj ET
+0.200 0.200 0.200 rg
+BT /F1 13 Tf 1 0 0 1 792.71 75.00 Tm (Year and data-column) Tj ET
+0.200 0.200 0.200 rg
+BT /F1 13 Tf 1 0 0 1 835.71 58.00 Tm (filtering) Tj ET
 0.000 0.000 0.000 rg
 BT /F2 13 Tf 1 0 0 1 955.00 640.00 Tm (System) Tj ET
 0.310 0.616 0.333 rg
@@ -201,11 +207,11 @@ BT /F1 12 Tf 1 0 0 1 979.00 551.00 Tm (Apache Spark) Tj ET
 0.200 0.200 0.200 rg
 BT /F2 12 Tf 1 0 0 1 955.00 506.00 Tm (P) Tj ET
 0.200 0.200 0.200 rg
-BT /F1 12 Tf 1 0 0 1 961.96 506.00 Tm ( - partitioned) Tj ET
+BT /F1 12 Tf 1 0 0 1 963.00 506.00 Tm ( - partitioned) Tj ET
 0.200 0.200 0.200 rg
 BT /F2 12 Tf 1 0 0 1 955.00 488.00 Tm (NP) Tj ET
 0.200 0.200 0.200 rg
-BT /F1 12 Tf 1 0 0 1 968.92 488.00 Tm ( - not partitioned) Tj ET
+BT /F1 12 Tf 1 0 0 1 971.67 488.00 Tm ( - not partitioned) Tj ET
 endstream
 endobj
 xref
@@ -220,5 +226,5 @@ xref
 trailer
 << /Size 7 /Root 1 0 R >>
 startxref
-6033
+6295
 %%EOF

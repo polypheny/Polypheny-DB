@@ -111,8 +111,8 @@ class ParquetDocumentPlanningTest {
     }
 
 
-    private static ParquetSourceFile sourceFile() {
-        return new ParquetSourceFile( "file:/tmp/orders.parquet", Map.of(), Map.of() );
+    private static ParquetSourceFile sourceFile( Path file ) throws Exception {
+        return ParquetSourceFile.of( file.toUri().toURL().toString(), Map.of() );
     }
 
 
@@ -135,17 +135,20 @@ class ParquetDocumentPlanningTest {
 
     @Test
     void documentBuildsTupleTypeFromExportedColumnsAndFallsBackToDocumentId() throws Exception {
+        Path file = tempDir.resolve( "tuple-type.parquet" );
+        writeOrdersParquet( file );
+        ParquetSourceFile sourceFile = sourceFile( file );
         TestParquetSource.exportedColumns = Map.of(
                 "orders", List.of(
                         exportedColumn( "name", PolyType.VARCHAR, 0, true ),
                         exportedColumn( "score", PolyType.INTEGER, 1, false ) ) );
-        ParquetDocument document = new ParquetDocument( collection( "orders" ), binding( List.of( sourceFile() ), Map.of( "name", List.of( "name" ), "score", List.of( "score" ) ) ), testSource() );
+        ParquetDocument document = new ParquetDocument( collection( "orders" ), binding( List.of( sourceFile ), Map.of( "name", List.of( "name" ), "score", List.of( "score" ) ) ), testSource() );
         AlgDataType tupleType = document.getTupleType( AlgDataTypeFactory.DEFAULT );
 
         assertEquals( List.of( "name", "score" ), tupleType.getFieldNames() );
         assertTrue( tupleType.getFields().get( 0 ).getType().isNullable() );
         assertFalse( tupleType.getFields().get( 1 ).getType().isNullable() );
-        assertEquals( List.of( sourceFile() ), document.getSourceFiles() );
+        assertEquals( List.of( sourceFile ), document.getSourceFiles() );
 
         TestParquetSource.exportedColumns = Map.of();
         ParquetDocument fallback = new ParquetDocument( collection( "missing" ), binding( List.of(), Map.of() ), testSource() );
@@ -155,8 +158,9 @@ class ParquetDocumentPlanningTest {
 
 
     @Test
-    void docScanCopiesFiltersDerivesDocumentRowAndRegistersFilterRule() {
-        ParquetDocument document = new ParquetDocument( collection( "orders" ), binding( List.of( sourceFile() ), Map.of() ), null );
+    void docScanCopiesFiltersDerivesDocumentRowAndRegistersFilterRule() throws Exception {
+        TestParquetSource.exportedColumns = Map.of();
+        ParquetDocument document = new ParquetDocument( collection( "orders" ), binding( List.of(), Map.of() ), testSource() );
         AlgCluster cluster = cluster();
         ParquetAdapterFilter<PolyValue> filter = new ParquetAdapterFilter<>( 0, Kind.EQUALS, PolyString.of( "Alice" ) );
         ParquetDocScan scan = new ParquetDocScan( cluster, document, List.of( filter ) );
@@ -264,13 +268,15 @@ class ParquetDocumentPlanningTest {
 
     @Test
     void documentMetadataScanCopiesAndHasZeroCost() throws Exception {
+        Path file = tempDir.resolve( "metadata-scan.parquet" );
+        writeOrdersParquet( file );
         TestParquetSource.exportedColumns = Map.of(
                 "orders", List.of(
                         exportedColumn( "customer", PolyType.VARCHAR, 0, false ),
                         exportedColumn( "amount", PolyType.DOUBLE, 1, false ) ) );
         ParquetDocument document = new ParquetDocument(
                 collection( "orders" ),
-                binding( List.of( sourceFile() ), Map.of( "customer", List.of( "customer" ), "amount", List.of( "amount" ) ) ),
+                binding( List.of( sourceFile( file ) ), Map.of( "customer", List.of( "customer" ), "amount", List.of( "amount" ) ) ),
                 testSource() );
         AlgCluster cluster = cluster();
         ParquetDocScan scan = new ParquetDocScan( cluster, document, List.of() );
@@ -278,6 +284,35 @@ class ParquetDocumentPlanningTest {
 
         assertInstanceOf( ParquetDocMetadataScan.class, metadataScan.copy( metadataScan.getTraitSet(), List.of() ) );
         assertEquals( 0D, metadataScan.computeSelfCost( new VolcanoPlanner(), null ).getRows() );
+    }
+
+
+    @Test
+    void documentReusesAggregateSchemaMetadata() throws Exception {
+        Path file = tempDir.resolve( "cached-metadata.parquet" );
+        writeOrdersParquet( file );
+        TestParquetSource.exportedColumns = Map.of(
+                "orders", List.of(
+                        exportedColumn( "customer", PolyType.VARCHAR, 0, false ),
+                        exportedColumn( "amount", PolyType.DOUBLE, 1, false ) ) );
+        ParquetDocument document = new ParquetDocument(
+                collection( "orders" ),
+                binding( List.of( sourceFile( file ) ), Map.of( "customer", List.of( "customer" ), "amount", List.of( "amount" ) ) ),
+                testSource() );
+        Files.delete( file );
+
+        AggregateCall count = AggregateCall.create(
+                aggregateFunction( Kind.COUNT, "COUNT" ),
+                false,
+                false,
+                List.of(),
+                -1,
+                AlgCollations.EMPTY,
+                AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.BIGINT ),
+                "count" );
+
+        assertTrue( document.supportsMetadataAggregate( new int[]{ 0, 1 }, List.of(), ImmutableBitSet.of(), List.of( count ) ) );
+        assertTrue( document.supportsMetadataAggregate( new int[]{ 0, 1 }, List.of(), ImmutableBitSet.of(), List.of( count ) ) );
     }
 
 

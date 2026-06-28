@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.AccessLevel;
 import lombok.Getter;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
@@ -46,6 +47,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.types.ScannableEntity;
@@ -63,6 +65,10 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
     private final List<ParquetSourceFile> sourceFiles;
     private final Map<String, List<String>> columnPaths;
     private final AbstractParquetSource parquetSource;
+    @Getter(AccessLevel.NONE)
+    private final List<ExportedColumn> exportedColumns;
+    @Getter(AccessLevel.NONE)
+    private final ParquetDocAggregateExecutor aggregateExecutor;
 
 
     public ParquetDocument( PhysicalCollection collection, DiscoveredTableBinding binding, AbstractParquetSource parquetSource ) {
@@ -77,6 +83,10 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
         this.sourceFiles = List.copyOf( binding.sourceFiles() ); // add multi-file handling
         this.columnPaths = Map.copyOf( binding.columnPaths() );
         this.parquetSource = parquetSource;
+        this.exportedColumns = List.copyOf( parquetSource.getExportedColumns().getOrDefault( name, List.of() ) );
+        this.aggregateExecutor = sourceFiles.isEmpty()
+                ? null
+                : new ParquetDocAggregateExecutor( sourceFiles, exportedColumns, columnPaths );
     }
 
 
@@ -151,8 +161,7 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
     @SuppressWarnings("unused")
     public Enumerable<PolyValue[]> dataAggregate( DataContext dataContext, int[] fields, List<ParquetAdapterFilter<PolyValue>> filters, int[] groupFields, String[] aggregateKinds, int[] aggregateArgs ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( parquetSource );
-        return new ParquetDocAggregateExecutor( sourceFiles, exportedColumns(), columnPaths )
-                .createDataEnumerator( dataContext, fields, filters, groupFields, aggregateKinds, aggregateArgs );
+        return aggregateExecutor().createDataEnumerator( dataContext, fields, filters, groupFields, aggregateKinds, aggregateArgs );
     }
 
 
@@ -170,8 +179,7 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
     @SuppressWarnings("unused")
     public Enumerable<PolyValue[]> metadataAggregate( DataContext dataContext, int[] fields, List<ParquetAdapterFilter<PolyValue>> filters, int[] groupFields, String[] aggregateKinds, int[] aggregateArgs ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( parquetSource );
-        return new ParquetDocAggregateExecutor( sourceFiles, exportedColumns(), columnPaths )
-                .createMetadataEnumerator( dataContext, fields, filters, groupFields, aggregateKinds, aggregateArgs );
+        return aggregateExecutor().createMetadataEnumerator( dataContext, fields, filters, groupFields, aggregateKinds, aggregateArgs );
     }
 
 
@@ -184,8 +192,7 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
      * @return {@code true} if all provided aggregation functions can be applied and {@code false} otherwise.
      */
     public boolean supportsDataAggregate( int[] fields, ImmutableBitSet groupSet, List<AggregateCall> aggregateCalls ) {
-        return new ParquetDocAggregateExecutor( sourceFiles, exportedColumns(), columnPaths )
-                .supportsDataAggregate( fields, groupSet, aggregateCalls );
+        return aggregateExecutor().supportsDataAggregate( fields, groupSet, aggregateCalls );
     }
 
 
@@ -199,8 +206,7 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
      * @return {@code true} if all provided aggregation functions can be applied and {@code false} otherwise.
      */
     public boolean supportsMetadataAggregate( int[] fields, List<ParquetAdapterFilter<PolyValue>> filters, ImmutableBitSet groupSet, List<AggregateCall> aggregateCalls ) {
-        return new ParquetDocAggregateExecutor( sourceFiles, exportedColumns(), columnPaths )
-                .supportsMetadataAggregate( fields, filters, groupSet, aggregateCalls );
+        return aggregateExecutor().supportsMetadataAggregate( fields, filters, groupSet, aggregateCalls );
     }
 
 
@@ -241,7 +247,15 @@ public class ParquetDocument extends PhysicalCollection implements ScannableEnti
 
 
     private List<ExportedColumn> exportedColumns() {
-        return parquetSource.getExportedColumns().getOrDefault( name, List.of() );
+        return exportedColumns;
+    }
+
+
+    private ParquetDocAggregateExecutor aggregateExecutor() {
+        if ( aggregateExecutor == null ) {
+            throw new GenericRuntimeException( "Cannot create a Parquet document aggregate executor without source files." );
+        }
+        return aggregateExecutor;
     }
 
 

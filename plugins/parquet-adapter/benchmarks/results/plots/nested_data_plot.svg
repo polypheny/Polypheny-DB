@@ -59,11 +59,16 @@
 <text x="505.00" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q03</text>
 <text x="671.00" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q04</text>
 <text x="837.00" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q05</text>
-<text x="173.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Customer access</text>
-<text x="339.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Customer projection</text>
-<text x="505.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Order projection</text>
-<text x="671.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Lineitem projection</text>
-<text x="837.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Lineitem max</text>
+<text x="173.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Root-filtered full</text>
+<text x="173.00" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">customer access</text>
+<text x="339.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Root-filtered customer</text>
+<text x="339.00" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">projection</text>
+<text x="505.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Level-1 nested filtered</text>
+<text x="505.00" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">order projection</text>
+<text x="671.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Level-2 nested filtered</text>
+<text x="671.00" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">lineitem projection</text>
+<text x="837.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Level-2 nested lineitem</text>
+<text x="837.00" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">MAX aggregation</text>
 <text x="955" y="80" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700">System</text>
 <rect x="955" y="100" width="16" height="16" fill="#c94c4c"/>
 <text x="979" y="113" font-family="Helvetica, Arial, sans-serif" font-size="12">Polypheny Relational Normalized</text>
