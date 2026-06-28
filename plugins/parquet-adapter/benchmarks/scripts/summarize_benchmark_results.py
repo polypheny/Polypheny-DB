@@ -125,7 +125,7 @@ def render_markdown(summaries, inputs, args):
         f"# {args.title}",
         "",
         f"Phase summarized: `{args.phase}`.",
-        "Warmup rows are excluded. Mean and median values use successful runs only.",
+        "Warmup rows are excluded. Mean, median, and standard deviation values use successful runs only.",
         "",
         "## Source Files",
         "",
@@ -177,8 +177,8 @@ def render_markdown(summaries, inputs, args):
             "",
             f"## Detailed Summary ({unit_label})",
             "",
-            "| System | Query | Description | Runs | Mean | Median | Min | Max | Rows | Columns | Status |",
-            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+            "| System | Query | Description | Runs | Mean | Median | Std Dev | Min | Max | Rows | Columns | Status |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
         ]
     )
     for system in systems:
@@ -196,6 +196,7 @@ def render_markdown(summaries, inputs, args):
                         f"{summary.successful_runs}/{summary.total_runs}",
                         format_stat(summary, statistics.mean, args.unit),
                         format_stat(summary, statistics.median, args.unit),
+                        format_stddev(summary, args.unit),
                         format_stat(summary, min, args.unit),
                         format_stat(summary, max, args.unit),
                         format_values(summary, "rows"),
@@ -225,6 +226,18 @@ def format_stat(summary, fn, unit):
     if summary is None or not summary.elapsed_values:
         return ""
     value = fn(summary.elapsed_values)
+    if unit == "s":
+        return f"{value / 1000.0:,.3f}"
+    return f"{value:,.1f}"
+
+
+def format_stddev(summary, unit):
+    if summary is None or len(summary.elapsed_values) < 2:
+        return ""
+    return format_number(statistics.stdev(summary.elapsed_values), unit)
+
+
+def format_number(value, unit):
     if unit == "s":
         return f"{value / 1000.0:,.3f}"
     return f"{value:,.1f}"
@@ -287,6 +300,11 @@ def format_int(value):
 
 
 def natural_key(value):
+    suffix_order = {"P": 0, "RP": 0, "NP": 1, "UP": 1}
+    if "_" in value:
+        prefix, suffix = value.rsplit("_", 1)
+        if suffix in suffix_order:
+            return natural_key(prefix) + [suffix_order[suffix]]
     return [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", value)]
 
 

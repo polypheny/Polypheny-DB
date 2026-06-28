@@ -3,6 +3,7 @@ param(
     [string]$NestedCustomerFile = "",
     [string]$Queries = (Join-Path $PSScriptRoot "..\..\query_lists\access_model_comparison\access_model_comparison_sql.sql"),
     [string]$Output = (Join-Path $PSScriptRoot "..\..\results\access_model_comparison\spark_results.csv"),
+    [string]$ResultValuesOutput = "",
     [int]$Warmups = 1,
     [int]$Runs = 5,
     [int]$Threads = 8,
@@ -72,6 +73,16 @@ $outputHost = Resolve-UnderRepo $Output
 $outputParent = Split-Path $outputHost -Parent
 if ($outputParent) {
     New-Item -ItemType Directory -Force -Path $outputParent | Out-Null
+}
+
+$resultValuesOutputContainer = ""
+if ($ResultValuesOutput) {
+    $resultValuesOutputHost = Resolve-UnderRepo $ResultValuesOutput
+    $resultValuesOutputParent = Split-Path $resultValuesOutputHost -Parent
+    if ($resultValuesOutputParent) {
+        New-Item -ItemType Directory -Force -Path $resultValuesOutputParent | Out-Null
+    }
+    $resultValuesOutputContainer = Convert-ToContainerRepoPath $resultValuesOutputHost
 }
 
 $sqlFileContainer = ""
@@ -154,6 +165,10 @@ if ($Sql) {
 
 if ($sqlFileContainer) {
     $benchmarkArgs += @("--sql-file", $sqlFileContainer)
+}
+
+if ($resultValuesOutputContainer) {
+    $benchmarkArgs += @("--result-values-output", $resultValuesOutputContainer)
 }
 
 if ($PrintRows) {

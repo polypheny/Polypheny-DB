@@ -112,8 +112,13 @@ python plugins\parquet-adapter\benchmarks\scripts\summarize_benchmark_results.py
 
 ```powershell
 python plugins\parquet-adapter\benchmarks\scripts\plot_generation\benchmark_result_plot_generator.py `
-  --title "Partitioning" `
+  --title "Partitioning by Year and Month" `
   --name partitioning_plot `
+  --query-order "Q1_P,Q1_NP,Q2_P,Q2_NP,Q3_P,Q3_NP,Q4_P,Q4_NP,Q5_P,Q5_NP" `
+  --query-descriptions "Q1=Full baseline;Q2=Year filter;Q3=Year + month filter;Q4=Data-column filter;Q5=Year + data filter" `
+  --query-description-wrap-chars 30 `
+  --query-description-max-lines 1 `
+  --side-note "P - partitioned;NP - not partitioned" `
   "Polypheny Relational=plugins\parquet-adapter\benchmarks\results\partitioning\partitioning_polypheny_results.csv" `
   "DuckDB Repartitioned=plugins\parquet-adapter\benchmarks\results\partitioning\partitioning_duckdb_repartitioned_results.csv" `
   "DuckDB Unpartitioned=plugins\parquet-adapter\benchmarks\results\partitioning\partitioning_duckdb_unpartitioned_results.csv" `

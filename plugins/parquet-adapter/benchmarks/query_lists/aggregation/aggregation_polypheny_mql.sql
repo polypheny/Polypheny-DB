@@ -38,7 +38,7 @@ tlcpd_document.tlcpd__yellow_tripdata.aggregate([
   { "$count": "row_count" }
 ]);
 
--- Q05: Monthly Yellow Taxi Amount And Distance Summary
+-- Q05: Yearly Yellow Taxi Amount And Distance Summary
 tlcpd_document.tlcpd__yellow_tripdata.aggregate([
   {
     "$group": {
@@ -78,7 +78,7 @@ tlcpd_document.tlcpd__fhvhv_tripdata.aggregate([
   { "$count": "row_count" }
 ]);
 
--- Q09: Monthly High-Volume FHV Fare And Distance Summary
+-- Q09: Yearly High-Volume FHV Fare And Distance Summary
 tlcpd_document.tlcpd__fhvhv_tripdata.aggregate([
   {
     "$group": {
@@ -92,7 +92,7 @@ tlcpd_document.tlcpd__fhvhv_tripdata.aggregate([
   { "$sort": { "_id": 1 } }
 ]);
 
--- Q10: High-Volume FHV Shared-Ride Flag Distribution
+-- Q10: High-Volume FHV Shared-Request Flag Distribution
 tlcpd_document.tlcpd__fhvhv_tripdata.aggregate([
   {
     "$match": {

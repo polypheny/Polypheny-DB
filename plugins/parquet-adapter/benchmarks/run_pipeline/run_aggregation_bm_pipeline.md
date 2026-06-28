@@ -40,8 +40,9 @@ PR
 ```powershell
 powershell -ExecutionPolicy Bypass `
   -File plugins\parquet-adapter\benchmarks\scripts\runners\run_polypheny_benchmark.ps1 `
-  -Queries plugins\parquet-adapter\benchmarks\query_lists\arrregation\aggregation_polypheny.sql `
+  -Queries plugins\parquet-adapter\benchmarks\query_lists\aggregation\aggregation_polypheny.sql `
   -Output plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_polypheny_results.csv `
+  -ResultValuesOutput plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_polypheny_values.jsonl `
   -Warmups 1 `
   -Runs 5 `
   -NoTableNameMapping
@@ -53,8 +54,9 @@ PD
 powershell -ExecutionPolicy Bypass `
   -File plugins\parquet-adapter\benchmarks\scripts\runners\run_polypheny_mql_benchmark.ps1 `
   -Namespace tlcpd_document `
-  -Queries plugins\parquet-adapter\benchmarks\query_lists\arrregation\aggregation_polypheny_mql.sql `
+  -Queries plugins\parquet-adapter\benchmarks\query_lists\aggregation\aggregation_polypheny_mql.sql `
   -Output plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_polypheny_mql_results.csv `
+  -ResultValuesOutput plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_polypheny_mql_values.jsonl `
   -Warmups 1 `
   -Runs 5
 ```
@@ -65,8 +67,9 @@ DuckDB
 powershell -ExecutionPolicy Bypass `
   -File plugins\parquet-adapter\benchmarks\scripts\runners\run_duckdb_benchmark.ps1 `
   -DataDir C:\PolyData\tlc_partitioned `
-  -Queries plugins\parquet-adapter\benchmarks\query_lists\arrregation\aggregation_sql.sql `
+  -Queries plugins\parquet-adapter\benchmarks\query_lists\aggregation\aggregation_sql.sql `
   -Output plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_duckdb_results.csv `
+  -ResultValuesOutput plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_duckdb_values.jsonl `
   -Warmups 1 `
   -Runs 5
 ```
@@ -77,10 +80,24 @@ Spark
 powershell -ExecutionPolicy Bypass `
   -File plugins\parquet-adapter\benchmarks\scripts\runners\run_spark_benchmark.ps1 `
   -DataDir C:\PolyData\tlc_partitioned `
-  -Queries plugins\parquet-adapter\benchmarks\query_lists\arrregation\aggregation_sql.sql `
+  -Queries plugins\parquet-adapter\benchmarks\query_lists\aggregation\aggregation_sql.sql `
   -Output plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_spark_results.csv `
+  -ResultValuesOutput plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_spark_values.jsonl `
   -Warmups 1 `
   -Runs 5
+```
+
+## Create correctness summary
+
+```powershell
+python plugins\parquet-adapter\benchmarks\scripts\compare_aggregation_results.py `
+  --title "Aggregation Correctness Summary" `
+  --output plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_correctness_summary.md `
+  --reference DuckDB `
+  "Polypheny Relational=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_polypheny_values.jsonl" `
+  "Polypheny Document MQL=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_polypheny_mql_values.jsonl" `
+  "DuckDB=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_duckdb_values.jsonl" `
+  "Apache Spark=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_spark_values.jsonl"
 ```
 
 ## Create summary
@@ -99,8 +116,12 @@ python plugins\parquet-adapter\benchmarks\scripts\summarize_benchmark_results.py
 
 ```powershell
 python plugins\parquet-adapter\benchmarks\scripts\plot_generation\benchmark_result_plot_generator.py `
-  --title "Aggregation" `
+  --title "Aggregation on Partitioned TLC Data" `
   --name aggregation_plot `
+  --query-order "Q01,Q02,Q03,Q04,Q05,Q06,Q07,Q08,Q09,Q10" `
+  --query-descriptions "Q01=Yellow total row count;Q02=Yellow one-month count;Q03=Yellow one-day count;Q04=Yellow filtered row count;Q05=Yellow summary by year;Q06=FHV total row count;Q07=FHV one-month count;Q08=FHV filtered row count;Q09=FHV summary by year;Q10=FHV count by shared-request flag" `
+  --query-description-wrap-chars 14 `
+  --query-description-max-lines 3 `
   "Polypheny Relational=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_polypheny_results.csv" `
   "Polypheny Document MQL=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_polypheny_mql_results.csv" `
   "DuckDB=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_duckdb_results.csv" `

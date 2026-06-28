@@ -1,25 +1,25 @@
--- Q06: Unpartitioned full table baseline
+-- Q1_NP: Unpartitioned full table baseline
 SELECT count(*) AS row_count
 FROM yellow_tripdata;
 
--- Q07: Unpartitioned partition by year
+-- Q2_NP: Unpartitioned physical year-column filter
 SELECT count(*) AS row_count
 FROM yellow_tripdata
 WHERE "year" = '2022';
 
--- Q08: Unpartitioned partition by month
+-- Q3_NP: Unpartitioned physical year/month-column filter
 SELECT count(*) AS row_count
 FROM yellow_tripdata
 WHERE "year" = '2022'
   AND "month" = '10';
 
--- Q09: Unpartitioned filtered count, full scan
+-- Q4_NP: Unpartitioned filtered count, full scan
 SELECT count(*) AS row_count
 FROM green_tripdata
 WHERE trip_distance >= 10.0
   AND total_amount >= 40.0;
 
--- Q10: Unpartitioned filtered count, partition by year
+-- Q5_NP: Unpartitioned filtered count with physical year column
 SELECT count(*) AS row_count
 FROM green_tripdata
 WHERE  "year" = '2022'

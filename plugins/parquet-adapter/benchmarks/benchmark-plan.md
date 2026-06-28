@@ -2,7 +2,7 @@
 
 ## Goals
 
-The benchmarks evaluate the Parquet adapter from following perspectives:
+The benchmarks evaluate the Parquet adapter from the following perspectives:
 
 - correctness of the implemented access paths;
 - runtime performance for representative analytical workloads;
@@ -21,11 +21,12 @@ Unless a benchmark suite states otherwise, each query is executed with:
 - result row count and column count recorded for correctness checks;
 - failures and timeouts recorded instead of runtime values.
 
-Warmup runs are excluded from reported results. The benchmark clients consume
-query results according to the result boundary described in the report
-methodology. Polypheny and DuckDB use JDBC clients that drain the complete result
-set. Spark is executed in local mode inside Docker and consumes rows in the
-Spark runner.
+Warmup runs are excluded from reported results. Summary tables report mean,
+median, sample standard deviation, minimum, and maximum elapsed time over
+successful measured runs only. The benchmark clients consume query results
+according to the result boundary described in the report methodology. Polypheny
+and DuckDB use JDBC clients that drain the complete result set. Spark is
+executed in local mode inside Docker and consumes rows in the Spark runner.
 
 Raw benchmark outputs are stored as CSV files. Summary tables are generated with:
 
@@ -35,10 +36,12 @@ python plugins\parquet-adapter\benchmarks\scripts\summarize_benchmark_results.py
 
 ## Datasets
 
-| Dataset                | Local input                   | Main purpose                                           |
-|------------------------|-------------------------------|--------------------------------------------------------|
-| NYC TLC Trip Records   | `C:\PolyData\tlc_partitioned` | Flat analytical data and Hive-style partitioning       |
-| Nested Customer        | `C:\PolyData\nested_customer` | Deep nested structures and generated normalized tables |
+| Dataset                     | Local input                                      | Main purpose                                           |
+|-----------------------------|--------------------------------------------------|--------------------------------------------------------|
+| NYC TLC partitioned         | `C:\PolyData\tlc_partitioned`                    | Access model and aggregation workloads                 |
+| NYC TLC repartitioned       | `C:\PolyData\tlc_repartitioned`                  | Hive-style partitioning and partition-pruning checks   |
+| NYC TLC unpartitioned       | `C:\PolyData\tlc_unpartitioned`                  | Physical `year`/`month` column comparison              |
+| Nested Customer             | `C:\PolyData\nested_customer\nestedcustomer.parquet` | Deep nested structures and generated normalized tables |
 
 The TLC snapshot contains data from January 2020 through January 2023. This
 period is used because newer TLC files introduce schema changes that make a
@@ -57,7 +60,9 @@ Parquet workloads where the same logical operation can be expressed.
 
 ## Suite 1: Access Model Comparison
 
-Status: implemented for the TLC `green_tripdata` table.
+Status: executed for the TLC `green_tripdata` table. All five evaluated
+systems completed `5/5` measured runs for Q01-Q05, and result row counts matched
+across systems.
 
 ### Purpose
 
@@ -111,7 +116,7 @@ Raw and summarized results are stored in:
 plugins/parquet-adapter/benchmarks/results/access_model_comparison/
 ```
 
-Expected raw result files:
+Executed raw result files:
 
 ```text
 plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_polypheny_rf_tlcp_results.csv
@@ -121,10 +126,11 @@ plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_
 plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_spark_tlcp_results.csv
 ```
 
-The current summary file is:
+The current summary and analysis files are:
 
 ```text
 plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_tlcp_summary.md
+plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_tlcp_results_analysis.md
 ```
 
 ### Run Pipeline
@@ -138,12 +144,15 @@ plugins/parquet-adapter/benchmarks/run_pipeline/run_access_model_comparison_bm_p
 
 ## Suite 2: Nested Data
 
-Status: planned.
+Status: executed. Polypheny relational normalized, DuckDB, and Apache Spark
+completed `5/5` measured runs for Q01-Q05. Polypheny document MQL completed
+Q01-Q02, while Q03-Q05 failed in all measured runs because the nested MQL path
+hit runtime index/conversion errors recorded in the summary.
 
 ### Purpose
 
-This suite evaluates nested Parquet data, repeated fields, large binary fields,
-and generated normalized relational tables.
+This suite evaluates nested Parquet data, repeated fields, and generated
+normalized relational tables.
 
 ### Dataset
 
@@ -151,6 +160,8 @@ and generated normalized relational tables.
   
 Dataset description:
 `plugins/parquet-adapter/benchmarks/datasets/nested_customer.md`
+
+Input file: `C:\PolyData\nested_customer\nestedcustomer.parquet`.
 
 ### Compared Systems and Access Paths
 
@@ -184,9 +195,13 @@ Raw and summarized results are stored in:
 plugins/parquet-adapter/benchmarks/results/nested_data/
 ```
 
-Summary file:
+Executed raw result and summary files:
 
 ```text
+plugins/parquet-adapter/benchmarks/results/nested_data/nested_data_polypheny_normalized_results.csv
+plugins/parquet-adapter/benchmarks/results/nested_data/nested_data_polypheny_mql_results.csv
+plugins/parquet-adapter/benchmarks/results/nested_data/nested_data_duckdb_results.csv
+plugins/parquet-adapter/benchmarks/results/nested_data/nested_data_spark_results.csv
 plugins/parquet-adapter/benchmarks/results/nested_data/nested_data_summary.md
 ```
 
@@ -200,12 +215,15 @@ plugins/parquet-adapter/benchmarks/run_pipeline/run_nested_data_bm_pipeline.md
 
 ## Suite 3: Aggregation and Optimization
 
-Status: planned.
+Status: executed. Polypheny relational, Polypheny document MQL, DuckDB, and
+Apache Spark completed `5/5` measured runs for Q01-Q10. Result row counts match
+across systems in the timing summary; the correctness comparison records
+remaining MQL grouped-result column-shape differences for Q05, Q09, and Q10.
 
 ### Purpose
 
-This suite evaluates analytical aggregations and the effect of optimization work
-introduced during development.
+This suite evaluates analytical aggregations and the effect of Parquet-specific
+optimization work introduced during development.
 
 ### Dataset
 
@@ -216,14 +234,14 @@ TLC tables from `C:\PolyData\tlc_partitioned`. The aggregation suite runs on
 
 | System                 | Query file                                                                                 |
 |------------------------|--------------------------------------------------------------------------------------------|
-| Polypheny relational   | `plugins/parquet-adapter/benchmarks/query_lists/arrregation/aggregation_polypheny.sql`     |
-| Polypheny document MQL | `plugins/parquet-adapter/benchmarks/query_lists/arrregation/aggregation_polypheny_mql.sql` |
-| DuckDB and Spark       | `plugins/parquet-adapter/benchmarks/query_lists/arrregation/aggregation_sql.sql`           |
+| Polypheny relational   | `plugins/parquet-adapter/benchmarks/query_lists/aggregation/aggregation_polypheny.sql`     |
+| Polypheny document MQL | `plugins/parquet-adapter/benchmarks/query_lists/aggregation/aggregation_polypheny_mql.sql` |
+| DuckDB and Spark       | `plugins/parquet-adapter/benchmarks/query_lists/aggregation/aggregation_sql.sql`           |
 
 Human-readable query source:
 
 ```text
-plugins/parquet-adapter/benchmarks/query_lists/aggregation_queries.md
+plugins/parquet-adapter/benchmarks/query_lists/aggregation/aggregation_query_specification.md
 ```
 
 ### Query Groups
@@ -231,12 +249,12 @@ plugins/parquet-adapter/benchmarks/query_lists/aggregation_queries.md
 Specification stored in:
 
 ```text
-plugins/parquet-adapter/benchmarks/query_lists/arrregation/aggregation_query_specification.md
+plugins/parquet-adapter/benchmarks/query_lists/aggregation/aggregation_query_specification.md
 ```
 
 ### Compared Systems and Access Paths
 
-- Polypheny relational flat before and after optimization, where both versions are available;
+- Polypheny relational adapter;
 - Polypheny document adapter queried through MQL;
 - DuckDB;
 - Apache Spark.
@@ -246,8 +264,42 @@ plugins/parquet-adapter/benchmarks/query_lists/arrregation/aggregation_query_spe
 - full-table counts;
 - counts over one partition month;
 - selective filtered counts;
-- grouped monthly aggregations;
+- grouped yearly aggregations;
 - grouped aggregations over large TLC tables.
+
+### Result Files
+
+Raw and summarized results are stored in:
+
+```text
+plugins/parquet-adapter/benchmarks/results/aggregation/
+```
+
+Executed raw result files:
+
+```text
+plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_polypheny_results.csv
+plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_polypheny_mql_results.csv
+plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_duckdb_results.csv
+plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_spark_results.csv
+```
+
+Captured result values used for correctness checks:
+
+```text
+plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_polypheny_values.jsonl
+plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_polypheny_mql_values.jsonl
+plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_duckdb_values.jsonl
+plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_spark_values.jsonl
+```
+
+The current summary, correctness summary, and analysis files are:
+
+```text
+plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_summary.md
+plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_correctness_summary.md
+plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_results_analysis.md
+```
 
 ### Run Pipeline
 
@@ -259,7 +311,9 @@ plugins/parquet-adapter/benchmarks/run_pipeline/run_aggregation_bm_pipeline.md
 
 ## Suite 4: Partitioning
 
-Status: planned.
+Status: executed. Polypheny relational, DuckDB repartitioned, DuckDB
+unpartitioned, Apache Spark repartitioned, and Apache Spark unpartitioned all
+completed `5/5` measured runs for their applicable query/layout combinations.
 
 ### Purpose
 
@@ -269,7 +323,12 @@ on Parquet workloads.
 ### Dataset
 
 Partitioned and derived unpartitioned or repartitioned variants of the TLC
-dataset.
+dataset:
+
+```text
+C:\PolyData\tlc_repartitioned
+C:\PolyData\tlc_unpartitioned
+```
 
 ### Compared Systems and Access Paths
 
@@ -294,12 +353,45 @@ Specification stored in:
 plugins/parquet-adapter/benchmarks/query_lists/partitioning/partitioning_query_specification.md
 ```
 
+The query identifiers use paired layout suffixes:
+
+- `Q1_P` / `Q1_NP`: full count baseline;
+- `Q2_P` / `Q2_NP`: year predicate;
+- `Q3_P` / `Q3_NP`: year and month predicate;
+- `Q4_P` / `Q4_NP`: data-column filtered count;
+- `Q5_P` / `Q5_NP`: year plus data-column filtered count.
+
+### Result Files
+
+Raw and summarized results are stored in:
+
+```text
+plugins/parquet-adapter/benchmarks/results/partitioning/
+```
+
+Executed raw result files:
+
+```text
+plugins/parquet-adapter/benchmarks/results/partitioning/partitioning_polypheny_results.csv
+plugins/parquet-adapter/benchmarks/results/partitioning/partitioning_duckdb_repartitioned_results.csv
+plugins/parquet-adapter/benchmarks/results/partitioning/partitioning_duckdb_unpartitioned_results.csv
+plugins/parquet-adapter/benchmarks/results/partitioning/partitioning_spark_repartitioned_results.csv
+plugins/parquet-adapter/benchmarks/results/partitioning/partitioning_spark_unpartitioned_results.csv
+```
+
+The current summary and analysis files are:
+
+```text
+plugins/parquet-adapter/benchmarks/results/partitioning/partitioning_summary.md
+plugins/parquet-adapter/benchmarks/results/partitioning/partitioning_results_analysis.md
+```
+
 ### Query Themes
 
 - filters on partition columns such as `year` and `month`;
 - filters on physical Parquet columns;
 - combinations of partition filters and data filters;
-- aggregations grouped by partition columns.
+- count aggregation over equivalent partitioned and unpartitioned layouts.
 
 ### Run Pipeline
 

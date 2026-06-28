@@ -56,21 +56,11 @@ WHERE l.l_returnflag = 'R'
   AND l.l_shipmode = 'MAIL'
 LIMIT 100000;
 
--- Q05: Unfiltered two-join lineitem projection.
+-- Q05: Nested lineitem MAX aggregation grouped by return flag.
 SELECT
-  oli.__polypheny_row_id AS lineitems_group_row_id,
-  olil.__polypheny_row_id AS lineitems_list_row_id,
-  l.l_partkey,
-  l.l_suppkey,
-  l.l_linenumber,
-  l.l_quantity,
-  l.l_extendedprice,
-  l.l_discount,
   l.l_returnflag,
-  l.l_shipmode
-FROM ncp__nestedcustomer__c_orders__list__element__o_lineitems oli
-JOIN ncp__nestedcustomer__c_orders__list__element__o_lineitems__list olil
-  ON olil.__polypheny_parent_row_id = oli.__polypheny_row_id
+  MAX(l.l_extendedprice) AS max_extendedprice
+FROM ncp__nestedcustomer__c_orders__list__element__o_lineitems__list olil
 JOIN ncp__nestedcustomer__c_orders__list__element__o_lineitems__list__element l
   ON l.__polypheny_parent_row_id = olil.__polypheny_row_id
-LIMIT 100000;
+GROUP BY l.l_returnflag;

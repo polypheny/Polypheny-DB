@@ -4,6 +4,8 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -20,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.polypheny.jdbc.dependency.prism.CloseStatementRequest;
+import org.polypheny.jdbc.dependency.prism.ColumnMeta;
 import org.polypheny.jdbc.dependency.prism.ConnectionProperties;
 import org.polypheny.jdbc.dependency.prism.ConnectionRequest;
 import org.polypheny.jdbc.dependency.prism.DisconnectRequest;
@@ -28,9 +31,12 @@ import org.polypheny.jdbc.dependency.prism.ExecuteUnparameterizedStatementReques
 import org.polypheny.jdbc.dependency.prism.FetchRequest;
 import org.polypheny.jdbc.dependency.prism.Frame;
 import org.polypheny.jdbc.dependency.prism.ProtoDocument;
+import org.polypheny.jdbc.dependency.prism.ProtoEntry;
+import org.polypheny.jdbc.dependency.prism.ProtoValue;
 import org.polypheny.jdbc.dependency.prism.RelationalFrame;
 import org.polypheny.jdbc.dependency.prism.Request;
 import org.polypheny.jdbc.dependency.prism.Response;
+import org.polypheny.jdbc.dependency.prism.Row;
 import org.polypheny.jdbc.dependency.prism.StatementResponse;
 import org.polypheny.jdbc.dependency.prism.StatementResult;
 
@@ -52,6 +58,7 @@ public class PolyphenyMqlBenchmark {
             int apiMinor,
             Path queries,
             Path output,
+            Path resultValuesOutput,
             int warmups,
             int runs,
             int fetchSize,
@@ -62,6 +69,9 @@ public class PolyphenyMqlBenchmark {
     }
 
     private record RunResult(long rows, int columns) {
+    }
+
+    private record ResultValues(List<String> columns, List<List<String>> rows) {
     }
 
     private record FrameStats(long rows, int columns) {
@@ -111,6 +121,8 @@ public class PolyphenyMqlBenchmark {
                     executeAndRecord(client, writer, query, "measured", i, config);
                 }
             }
+
+            captureResultValues(client, queries, config);
         }
     }
 
@@ -148,6 +160,43 @@ public class PolyphenyMqlBenchmark {
     }
 
 
+    private static void captureResultValues(PrismClient client, List<Query> queries, Config config) throws IOException {
+        if (config.resultValuesOutput() == null) {
+            return;
+        }
+        if (config.resultValuesOutput().getParent() != null) {
+            Files.createDirectories(config.resultValuesOutput().getParent());
+        }
+        try (BufferedWriter writer = Files.newBufferedWriter(config.resultValuesOutput(), StandardCharsets.UTF_8)) {
+            System.out.printf("Writing result values to %s%n", config.resultValuesOutput());
+            for (Query query : queries) {
+                writeResultValues(client, writer, query, config);
+            }
+        }
+    }
+
+
+    private static void writeResultValues(PrismClient client, BufferedWriter writer, Query query, Config config) throws IOException {
+        List<String> columns = List.of();
+        List<List<String>> rows = List.of();
+        boolean success = false;
+        String error = "";
+
+        try {
+            ResultValues values = client.executeAndCollectValues(query.mql(), config);
+            columns = values.columns();
+            rows = values.rows();
+            success = true;
+        } catch (Exception e) {
+            error = e.getClass().getSimpleName() + ": " + e.getMessage();
+        }
+
+        writer.write(resultValuesJson(query, success, error, columns, rows));
+        writer.newLine();
+        writer.flush();
+    }
+
+
     private static void writeCsvRow(BufferedWriter writer, Query query, String phase, int run, long elapsedMs, long rows, int columns, boolean success, String error) throws IOException {
         writer.write(String.join(",",
                 csv(Instant.now().toString()),
@@ -168,6 +217,85 @@ public class PolyphenyMqlBenchmark {
     private static String csv(String value) {
         String escaped = value.replace("\"", "\"\"");
         return "\"" + escaped + "\"";
+    }
+
+
+    private static String resultValuesJson(Query query, boolean success, String error, List<String> columns, List<List<String>> rows) {
+        StringBuilder json = new StringBuilder();
+        json.append('{');
+        appendJsonField(json, "timestamp", Instant.now().toString());
+        json.append(',');
+        appendJsonField(json, "query_id", query.id());
+        json.append(',');
+        appendJsonField(json, "description", query.description());
+        json.append(",\"success\":").append(success);
+        json.append(',');
+        appendJsonField(json, "error", error);
+        json.append(",\"columns\":");
+        appendJsonStringArray(json, columns);
+        json.append(",\"rows\":");
+        appendJsonRows(json, rows);
+        json.append('}');
+        return json.toString();
+    }
+
+
+    private static void appendJsonField(StringBuilder json, String name, String value) {
+        json.append('"').append(jsonEscape(name)).append("\":").append(jsonString(value));
+    }
+
+
+    private static void appendJsonStringArray(StringBuilder json, List<String> values) {
+        json.append('[');
+        for (int i = 0; i < values.size(); i++) {
+            if (i > 0) {
+                json.append(',');
+            }
+            json.append(jsonString(values.get(i)));
+        }
+        json.append(']');
+    }
+
+
+    private static void appendJsonRows(StringBuilder json, List<List<String>> rows) {
+        json.append('[');
+        for (int rowIndex = 0; rowIndex < rows.size(); rowIndex++) {
+            if (rowIndex > 0) {
+                json.append(',');
+            }
+            appendJsonStringArray(json, rows.get(rowIndex));
+        }
+        json.append(']');
+    }
+
+
+    private static String jsonString(String value) {
+        return value == null ? "null" : "\"" + jsonEscape(value) + "\"";
+    }
+
+
+    private static String jsonEscape(String value) {
+        StringBuilder escaped = new StringBuilder();
+        for (int i = 0; i < value.length(); i++) {
+            char ch = value.charAt(i);
+            switch (ch) {
+                case '"' -> escaped.append("\\\"");
+                case '\\' -> escaped.append("\\\\");
+                case '\b' -> escaped.append("\\b");
+                case '\f' -> escaped.append("\\f");
+                case '\n' -> escaped.append("\\n");
+                case '\r' -> escaped.append("\\r");
+                case '\t' -> escaped.append("\\t");
+                default -> {
+                    if (ch < 0x20) {
+                        escaped.append(String.format("\\u%04x", (int) ch));
+                    } else {
+                        escaped.append(ch);
+                    }
+                }
+            }
+        }
+        return escaped.toString();
     }
 
 
@@ -273,6 +401,7 @@ public class PolyphenyMqlBenchmark {
                 parseInt(values, "api-minor", 9),
                 Path.of(values.getOrDefault("queries", defaultQueries.toString())),
                 Path.of(values.getOrDefault("output", defaultOutput.toString())),
+                optionalPath(values.get("result-values-output")),
                 parseInt(values, "warmups", 1),
                 parseInt(values, "runs", 5),
                 parseInt(values, "fetch-size", 1000),
@@ -285,6 +414,11 @@ public class PolyphenyMqlBenchmark {
 
     private static boolean isBooleanFlag(String key) {
         return key.equalsIgnoreCase("print-rows");
+    }
+
+
+    private static Path optionalPath(String value) {
+        return value == null || value.isBlank() ? null : Path.of(value);
     }
 
 
@@ -309,6 +443,65 @@ public class PolyphenyMqlBenchmark {
                 .filter(part -> !part.isEmpty())
                 .map(part -> part.toUpperCase(Locale.ROOT))
                 .collect(Collectors.toSet());
+    }
+
+
+    private static Map<String, String> documentToMap(ProtoDocument document) {
+        Map<String, String> row = new LinkedHashMap<>();
+        for (ProtoEntry entry : document.getEntriesList()) {
+            String key = entry.hasKey() ? protoValueToString(entry.getKey()) : "";
+            row.put(key, entry.hasValue() ? protoValueToString(entry.getValue()) : null);
+        }
+        return row;
+    }
+
+
+    private static String protoValueToString(ProtoValue value) {
+        return switch (value.getValueCase()) {
+            case BOOLEAN -> Boolean.toString(value.getBoolean().getBoolean());
+            case INTEGER -> Integer.toString(value.getInteger().getInteger());
+            case LONG -> Long.toString(value.getLong().getLong());
+            case BIG_DECIMAL -> protoBigDecimalToString(value);
+            case FLOAT -> Float.toString(value.getFloat().getFloat());
+            case DOUBLE -> Double.toString(value.getDouble().getDouble());
+            case DATE -> Long.toString(value.getDate().getDate());
+            case TIME -> Integer.toString(value.getTime().getTime());
+            case TIMESTAMP -> Long.toString(value.getTimestamp().getTimestamp());
+            case INTERVAL -> value.getInterval().getMonths() + ":" + value.getInterval().getMilliseconds();
+            case STRING -> value.getString().getString();
+            case BINARY -> value.getBinary().getBinary().toString();
+            case NULL, VALUE_NOT_SET -> null;
+            case LIST -> protoListToString(value);
+            case DOCUMENT -> protoDocumentToString(value.getDocument());
+            case FILE -> value.getFile().getBinary().toString();
+        };
+    }
+
+
+    private static String protoBigDecimalToString(ProtoValue value) {
+        return new BigDecimal(
+                new BigInteger(value.getBigDecimal().getUnscaledValue().toByteArray()),
+                value.getBigDecimal().getScale()).toPlainString();
+    }
+
+
+    private static String protoListToString(ProtoValue value) {
+        List<String> values = value.getList().getValuesList().stream()
+                .map(PolyphenyMqlBenchmark::protoValueToString)
+                .map(item -> item == null ? "null" : item)
+                .toList();
+        return "[" + String.join(",", values) + "]";
+    }
+
+
+    private static String protoDocumentToString(ProtoDocument document) {
+        List<String> values = new ArrayList<>();
+        for (ProtoEntry entry : document.getEntriesList()) {
+            String key = entry.hasKey() ? protoValueToString(entry.getKey()) : "";
+            String value = entry.hasValue() ? protoValueToString(entry.getValue()) : null;
+            values.add(key + ":" + (value == null ? "null" : value));
+        }
+        return "{" + String.join(",", values) + "}";
     }
 
 
@@ -384,6 +577,52 @@ public class PolyphenyMqlBenchmark {
         }
 
 
+        ResultValues executeAndCollectValues(String mql, Config config) throws IOException {
+            int statementId = -1;
+            try {
+                long requestId = nextRequestId++;
+                ExecuteUnparameterizedStatementRequest executeRequest = ExecuteUnparameterizedStatementRequest.newBuilder()
+                        .setLanguageName(config.language())
+                        .setStatement(mql)
+                        .setFetchSize(config.fetchSize())
+                        .setNamespaceName(config.namespace())
+                        .build();
+                send(Request.newBuilder()
+                        .setId(requestId)
+                        .setExecuteUnparameterizedStatementRequest(executeRequest)
+                        .build());
+
+                StatementResult result = null;
+                while (true) {
+                    Response response = receive(requestId);
+                    if (!response.hasStatementResponse()) {
+                        throw new IOException("Expected statement_response, got " + response.getTypeCase());
+                    }
+                    StatementResponse statementResponse = response.getStatementResponse();
+                    statementId = statementResponse.getStatementId();
+                    if (statementResponse.hasResult()) {
+                        result = statementResponse.getResult();
+                    }
+                    if (response.getLast()) {
+                        break;
+                    }
+                }
+
+                if (result == null) {
+                    return new ResultValues(List.of(), List.of());
+                }
+                if (!result.hasFrame()) {
+                    return new ResultValues(List.of("scalar"), List.of(List.of(Long.toString(result.getScalar()))));
+                }
+                return collectFrames(statementId, result.getFrame(), config);
+            } finally {
+                if (statementId > 0) {
+                    closeStatement(statementId);
+                }
+            }
+        }
+
+
         private RunResult drainFrames(int statementId, Frame firstFrame, Config config) throws IOException {
             long rows = 0;
             int columns = 0;
@@ -394,6 +633,57 @@ public class PolyphenyMqlBenchmark {
                 columns = Math.max(columns, stats.columns());
                 if (frame.getIsLast()) {
                     return new RunResult(rows, columns);
+                }
+                frame = fetchFrame(statementId, config.fetchSize());
+            }
+        }
+
+
+        private ResultValues collectFrames(int statementId, Frame firstFrame, Config config) throws IOException {
+            List<String> columns = new ArrayList<>();
+            List<List<String>> rows = new ArrayList<>();
+            List<Map<String, String>> documentRows = new ArrayList<>();
+            boolean documentMode = false;
+            Frame frame = firstFrame;
+            while (true) {
+                if (frame.hasDocumentFrame()) {
+                    documentMode = true;
+                    DocumentFrame documentFrame = frame.getDocumentFrame();
+                    for (ProtoDocument document : documentFrame.getDocumentsList()) {
+                        Map<String, String> row = documentToMap(document);
+                        for (String column : row.keySet()) {
+                            if (!columns.contains(column)) {
+                                columns.add(column);
+                            }
+                        }
+                        documentRows.add(row);
+                    }
+                } else if (frame.hasRelationalFrame()) {
+                    RelationalFrame relationalFrame = frame.getRelationalFrame();
+                    if (columns.isEmpty()) {
+                        for (ColumnMeta meta : relationalFrame.getColumnMetaList()) {
+                            columns.add(meta.getColumnLabel().isBlank() ? meta.getColumnName() : meta.getColumnLabel());
+                        }
+                    }
+                    for (Row row : relationalFrame.getRowsList()) {
+                        List<String> values = new ArrayList<>();
+                        for (ProtoValue value : row.getValuesList()) {
+                            values.add(protoValueToString(value));
+                        }
+                        rows.add(values);
+                    }
+                }
+                if (frame.getIsLast()) {
+                    if (documentMode) {
+                        for (Map<String, String> documentRow : documentRows) {
+                            List<String> values = new ArrayList<>();
+                            for (String column : columns) {
+                                values.add(documentRow.get(column));
+                            }
+                            rows.add(values);
+                        }
+                    }
+                    return new ResultValues(columns, rows);
                 }
                 frame = fetchFrame(statementId, config.fetchSize());
             }

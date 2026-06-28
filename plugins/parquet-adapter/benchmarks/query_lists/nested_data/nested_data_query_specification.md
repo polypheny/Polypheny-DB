@@ -2,17 +2,18 @@
 
 | Query | Operation                                       | Predicate                                                      | Returned data                      | Purpose                                                                |
 |-------|-------------------------------------------------|----------------------------------------------------------------|------------------------------------|------------------------------------------------------------------------|
-| Q01   | Filtered full customer scan                     | `c_mktsegment = 'BUILDING'` and `c_nationkey BETWEEN 5 AND 15` | Full customer rows or documents    | Measures filtered root-level access with full customer materialization |
+| Q01   | Filtered full customer access                   | `c_mktsegment = 'BUILDING'` and `c_nationkey BETWEEN 5 AND 15` | Full customer rows or documents    | Measures filtered root-level access with full customer materialization |
 | Q02   | Filtered customer projection                    | `c_mktsegment = 'BUILDING'` and `c_acctbal >= 0`               | Explicit customer scalar fields    | Measures filtered projection over root-level customer fields           |
-| Q03   | Filtered nested order projection                | `o_orderstatus = 'F'` and `o_totalprice >= 100000`             | Selected order fields              | Measures one-level nested access to order elements                     |
-| Q04   | Filtered deeply nested lineitem projection      | `l_returnflag = 'R'` and `l_shipmode = 'MAIL'`                 | Selected lineitem fields           | Measures deeper nested access to lineitem elements                     |
-| Q05   | Unfiltered two-level nested lineitem projection | None                                                           | Selected order and lineitem fields | Measures multi-step nested traversal without filter interaction        |
+| Q03   | Filtered order projection                       | `o_orderstatus = 'F'` and `o_totalprice >= 100000`             | Selected order fields              | Measures one-level nested access to order elements                     |
+| Q04   | Filtered lineitem projection                    | `l_returnflag = 'R'` and `l_shipmode = 'MAIL'`                 | Selected lineitem fields           | Measures deeper nested access to lineitem elements                     |
+| Q05   | Nested lineitem MAX aggregation grouped by return flag | None                                                     | Return flag and maximum extended price | Measures aggregation over deeply nested repeated lineitem values       |
 
-All queries cap the returned result set at `100000` rows or documents. The
-Polypheny relational query list intentionally keeps Q03 and Q04 to one
-parent-child join, while Q05 is the explicit two-join nested traversal probe.
+Q01-Q04 cap the returned result set at `100000` rows or documents. Q05 returns
+one aggregate row per lineitem return flag. The Polypheny relational query list
+keeps Q03 and Q04 to one parent-child join, while Q05 uses the same deeply
+nested lineitem relationship for an aggregate query.
 
-## Q1 - Filtered full customer scan
+## Q1 - Filtered full customer access
 
 Text:
 
@@ -58,7 +59,7 @@ WHERE c_mktsegment = 'BUILDING'
 LIMIT 100000;
 ```
 
-## Q3 - Filtered nested order projection
+## Q3 - Filtered order projection
 
 Text:
 
@@ -87,7 +88,7 @@ WHERE o.o_orderstatus = 'F'
 LIMIT 100000;
 ```
 
-## Q4 - Filtered deeply nested lineitem projection
+## Q4 - Filtered lineitem projection
 
 Text:
 
@@ -118,33 +119,23 @@ WHERE l.l_returnflag = 'R'
 LIMIT 100000;
 ```
 
-## Q5 - Unfiltered two-level nested lineitem projection
+## Q5 - Nested lineitem MAX aggregation grouped by return flag
 
 Text:
 
 ```text
-Traverse from nested order lineitem groups to lineitem list elements without a
-filter, and return selected lineitem fields.
+Traverse nested lineitem elements, group them by return flag, and return the
+maximum extended price for each group.
 ```
 
 SQL:
 
 ```text
 SELECT
-  oli.__polypheny_row_id AS lineitems_group_row_id,
-  olil.__polypheny_row_id AS lineitems_list_row_id,
-  l.l_partkey,
-  l.l_suppkey,
-  l.l_linenumber,
-  l.l_quantity,
-  l.l_extendedprice,
-  l.l_discount,
   l.l_returnflag,
-  l.l_shipmode
-FROM ncp__nestedcustomer__c_orders__list__element__o_lineitems oli
-JOIN ncp__nestedcustomer__c_orders__list__element__o_lineitems__list olil
-  ON olil.__polypheny_parent_row_id = oli.__polypheny_row_id
+  MAX(l.l_extendedprice) AS max_extendedprice
+FROM ncp__nestedcustomer__c_orders__list__element__o_lineitems__list olil
 JOIN ncp__nestedcustomer__c_orders__list__element__o_lineitems__list__element l
   ON l.__polypheny_parent_row_id = olil.__polypheny_row_id
-LIMIT 100000;
+GROUP BY l.l_returnflag;
 ```

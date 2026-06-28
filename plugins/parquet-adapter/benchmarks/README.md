@@ -28,7 +28,7 @@ and result artifacts for the Polypheny Parquet adapter comparison.
 | `query_lists/data_configuration.md`    | Local data paths and Polypheny adapter names used by the query files.                                                                              |
 | `query_lists/access_model_comparison/` | Access-model comparison benchmark queries for Polypheny relational flat, Polypheny relational normalized, Polypheny MQL, DuckDB, and Spark.        |
 | `query_lists/nested_data/`             | Nested Customer benchmark queries. Engine-specific files are used because nested access syntax differs.                                            |
-| `query_lists/arrregation/`             | Aggregation benchmark query files for Polypheny relational, Polypheny MQL, DuckDB, and Spark. The directory name is kept as-is for existing paths. | 
+| `query_lists/aggregation/`             | Aggregation benchmark query files for Polypheny relational, Polypheny MQL, DuckDB, and Spark.                                                       |
 | `query_lists/partitioning/`            | Partitioning benchmark queries for repartitioned and unpartitioned TLC layouts.                                                                    |
 
 File naming:
@@ -67,10 +67,24 @@ run the benchmark clients, and generate the suite summary and plot.
 | `scripts/implementation/`                | Java/Python benchmark clients called by the runners.                         |
 | `scripts/ds_preprocessing/`              | Dataset materialization and preprocessing utilities.                         |
 | `scripts/summarize_benchmark_results.py` | Creates markdown summaries from benchmark CSV files.                         |
+| `scripts/compare_aggregation_results.py` | Compares captured aggregation result values across systems.                  |
 | `scripts/plot_generation/`               | Plot generation scripts, including the generic SVG/PDF/PNG benchmark CSV plot generator. |
 
 PNG plot output requires Pillow. SVG and PDF output use only the Python
 standard library.
+
+### Plot Color Convention
+
+Benchmark plots use a fixed color convention so that the same system or access
+path has the same color across all result figures.
+
+| System or access path | Color |
+|-----------------------|-------|
+| Polypheny Relational Flat | Green (`#4f9d55`) |
+| Polypheny Relational Normalized | Red (`#c94c4c`) |
+| Polypheny Document | Purple (`#7b61b9`) |
+| DuckDB | Orange (`#f0a22e`) |
+| Apache Spark | Blue (`#2f6fbb`) |
 
 ## Results
 
@@ -83,6 +97,7 @@ results/
 Result conventions:
 
 - `*_results.csv`: raw benchmark output from a runner.
+- `*_values.jsonl`: captured query result values used for correctness checks.
 - `*_summary.md`: generated comparison summary from `scripts/summarize_benchmark_results.py`.
 - `*_results_analysis.md`: short manual interpretation of a generated summary.
 - `results/plots/`: generated plot artifacts such as SVG, PDF, and PNG files.

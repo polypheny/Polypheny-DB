@@ -7,6 +7,7 @@ param(
     [string]$Language = "mongo",
     [string]$Queries = (Join-Path $PSScriptRoot "..\..\query_lists\access_model_comparison\access_model_comparison_mql.mql"),
     [string]$Output = (Join-Path $PSScriptRoot "..\..\results\access_model_comparison\polypheny_mql_results.csv"),
+    [string]$ResultValuesOutput = "",
     [int]$Warmups = 1,
     [int]$Runs = 5,
     [int]$FetchSize = 1000,
@@ -77,6 +78,10 @@ if ($Mql) {
 
 if ($MqlFile) {
     $argsList += @("--mql-file", $MqlFile)
+}
+
+if ($ResultValuesOutput) {
+    $argsList += @("--result-values-output", $ResultValuesOutput)
 }
 
 if ($PrintRows) {

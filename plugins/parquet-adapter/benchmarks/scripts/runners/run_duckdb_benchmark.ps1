@@ -3,6 +3,7 @@ param(
     [string]$DataDir = "C:\PolyData\tlc_partitioned",
     [string]$Queries = (Join-Path $PSScriptRoot "..\..\query_lists\access_model_comparison\access_model_comparison_sql.sql"),
     [string]$Output = (Join-Path $PSScriptRoot "..\..\results\access_model_comparison\duckdb_results.csv"),
+    [string]$ResultValuesOutput = "",
     [int]$Warmups = 1,
     [int]$Runs = 5,
     [int]$FetchSize = 1000,
@@ -71,6 +72,10 @@ if ($Sql) {
 
 if ($SqlFile) {
     $argsList += @("--sql-file", $SqlFile)
+}
+
+if ($ResultValuesOutput) {
+    $argsList += @("--result-values-output", $ResultValuesOutput)
 }
 
 if ($PrintRows) {

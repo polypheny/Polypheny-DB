@@ -83,7 +83,12 @@ public abstract class ParquetPageReader {
     protected void consumeRemaining( ColumnReader[] readers, boolean[] consumed ) {
         for ( int i = 0; i < readers.length; i++ ) {
             if ( !consumed[i] ) {
-                readers[i].consume();
+                ColumnReader reader = readers[i];
+                ColumnDescriptor column = columns[i];
+                if ( column.getMaxDefinitionLevel() == 0 || reader.getCurrentDefinitionLevel() == column.getMaxDefinitionLevel() ) {
+                    reader.skip();
+                }
+                reader.consume();
             }
         }
     }

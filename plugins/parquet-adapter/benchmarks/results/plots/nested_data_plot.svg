@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="720" viewBox="0 0 1180 720">
+<rect width="100%" height="100%" fill="white"/>
+<text x="590.0" y="34" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="700">Nested Data</text>
+<text x="90" y="62" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Mean execution time (s, log scale)</text>
+<line x1="90" y1="590.00" x2="920" y2="590.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="594.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.1</text>
+<line x1="90" y1="559.29" x2="920" y2="559.29" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="563.29" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.2</text>
+<line x1="90" y1="518.71" x2="920" y2="518.71" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="522.71" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.5</text>
+<line x1="90" y1="488.00" x2="920" y2="488.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="492.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">1</text>
+<line x1="90" y1="457.29" x2="920" y2="457.29" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="461.29" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">2</text>
+<line x1="90" y1="416.71" x2="920" y2="416.71" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="420.71" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">5</text>
+<line x1="90" y1="386.00" x2="920" y2="386.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="390.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">10</text>
+<line x1="90" y1="355.29" x2="920" y2="355.29" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="359.29" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">20</text>
+<line x1="90" y1="314.71" x2="920" y2="314.71" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="318.71" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">50</text>
+<line x1="90" y1="284.00" x2="920" y2="284.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="288.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">100</text>
+<line x1="90" y1="253.29" x2="920" y2="253.29" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="257.29" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">200</text>
+<line x1="90" y1="212.71" x2="920" y2="212.71" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="216.71" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">500</text>
+<line x1="90" y1="182.00" x2="920" y2="182.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="186.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">1000</text>
+<line x1="90" y1="151.29" x2="920" y2="151.29" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="155.29" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">2000</text>
+<line x1="90" y1="110.71" x2="920" y2="110.71" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="114.71" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">5000</text>
+<line x1="90" y1="80.00" x2="920" y2="80.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="84.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">10000</text>
+<line x1="90" y1="80" x2="90" y2="590" stroke="#333" stroke-width="1.2"/>
+<line x1="90" y1="590" x2="920" y2="590" stroke="#333" stroke-width="1.2"/>
+<rect x="120.50" y="448.06" width="24.00" height="141.94" fill="#c94c4c"><title>Polypheny Relational Normalized Q01: 2.464 s</title></rect>
+<rect x="147.50" y="246.52" width="24.00" height="343.48" fill="#7b61b9"><title>Polypheny Document MQL Q01: 233.059 s</title></rect>
+<rect x="174.50" y="212.32" width="24.00" height="377.68" fill="#f0a22e"><title>DuckDB Q01: 504.360 s</title></rect>
+<rect x="201.50" y="295.03" width="24.00" height="294.97" fill="#2f6fbb"><title>Apache Spark Q01: 77.967 s</title></rect>
+<rect x="286.50" y="480.79" width="24.00" height="109.21" fill="#c94c4c"><title>Polypheny Relational Normalized Q02: 1.177 s</title></rect>
+<rect x="313.50" y="274.97" width="24.00" height="315.03" fill="#7b61b9"><title>Polypheny Document MQL Q02: 122.618 s</title></rect>
+<rect x="340.50" y="507.74" width="24.00" height="82.26" fill="#f0a22e"><title>DuckDB Q02: 0.640 s</title></rect>
+<rect x="367.50" y="463.16" width="24.00" height="126.84" fill="#2f6fbb"><title>Apache Spark Q02: 1.752 s</title></rect>
+<rect x="452.50" y="443.55" width="24.00" height="146.45" fill="#c94c4c"><title>Polypheny Relational Normalized Q03: 2.728 s</title></rect>
+<rect x="506.50" y="285.77" width="24.00" height="304.23" fill="#f0a22e"><title>DuckDB Q03: 96.091 s</title></rect>
+<rect x="533.50" y="372.97" width="24.00" height="217.03" fill="#2f6fbb"><title>Apache Spark Q03: 13.421 s</title></rect>
+<rect x="618.50" y="382.40" width="24.00" height="207.60" fill="#c94c4c"><title>Polypheny Relational Normalized Q04: 10.846 s</title></rect>
+<rect x="672.50" y="161.87" width="24.00" height="428.13" fill="#f0a22e"><title>DuckDB Q04: 1575.231 s</title></rect>
+<rect x="699.50" y="363.15" width="24.00" height="226.85" fill="#2f6fbb"><title>Apache Spark Q04: 16.749 s</title></rect>
+<rect x="784.50" y="248.59" width="24.00" height="341.41" fill="#c94c4c"><title>Polypheny Relational Normalized Q05: 222.409 s</title></rect>
+<rect x="838.50" y="123.76" width="24.00" height="466.24" fill="#f0a22e"><title>DuckDB Q05: 3724.019 s</title></rect>
+<rect x="865.50" y="367.11" width="24.00" height="222.89" fill="#2f6fbb"><title>Apache Spark Q05: 15.316 s</title></rect>
+<text x="173.00" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q01</text>
+<text x="339.00" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q02</text>
+<text x="505.00" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q03</text>
+<text x="671.00" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q04</text>
+<text x="837.00" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q05</text>
+<text x="173.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Customer access</text>
+<text x="339.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Customer projection</text>
+<text x="505.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Order projection</text>
+<text x="671.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Lineitem projection</text>
+<text x="837.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Lineitem max</text>
+<text x="955" y="80" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700">System</text>
+<rect x="955" y="100" width="16" height="16" fill="#c94c4c"/>
+<text x="979" y="113" font-family="Helvetica, Arial, sans-serif" font-size="12">Polypheny Relational Normalized</text>
+<rect x="955" y="128" width="16" height="16" fill="#7b61b9"/>
+<text x="979" y="141" font-family="Helvetica, Arial, sans-serif" font-size="12">Polypheny Document MQL</text>
+<rect x="955" y="156" width="16" height="16" fill="#f0a22e"/>
+<text x="979" y="169" font-family="Helvetica, Arial, sans-serif" font-size="12">DuckDB</text>
+<rect x="955" y="184" width="16" height="16" fill="#2f6fbb"/>
+<text x="979" y="197" font-family="Helvetica, Arial, sans-serif" font-size="12">Apache Spark</text>
+</svg>

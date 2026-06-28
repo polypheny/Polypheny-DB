@@ -2,6 +2,7 @@ param(
     [string]$Url = "jdbc:polypheny://pa:@localhost:20590/public",
     [string]$Queries = (Join-Path $PSScriptRoot "..\..\query_lists\access_model_comparison\access_model_comparison_rf.sql"),
     [string]$Output = (Join-Path $PSScriptRoot "..\..\results\access_model_comparison\polypheny_results.csv"),
+    [string]$ResultValuesOutput = "",
     [int]$Warmups = 1,
     [int]$Runs = 5,
     [int]$FetchSize = 1000,
@@ -69,6 +70,10 @@ if ($Sql) {
 
 if ($SqlFile) {
     $argsList += @("--sql-file", $SqlFile)
+}
+
+if ($ResultValuesOutput) {
+    $argsList += @("--result-values-output", $ResultValuesOutput)
 }
 
 if ($PrintRows) {

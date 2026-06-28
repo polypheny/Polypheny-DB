@@ -69,23 +69,14 @@ ncpd_document.ncpd__nestedcustomer.aggregate([
   { "$limit": 100000 }
 ]);
 
--- Q05: Unfiltered two-level nested lineitem projection.
+-- Q05: Nested lineitem MAX aggregation grouped by return flag.
 ncpd_document.ncpd__nestedcustomer.aggregate([
   { "$unwind": "$c_orders" },
   { "$unwind": "$c_orders.o_lineitems" },
   {
-    "$project": {
-      "o_orderkey": "$c_orders.o_orderkey",
-      "o_orderstatus": "$c_orders.o_orderstatus",
-      "l_partkey": "$c_orders.o_lineitems.l_partkey",
-      "l_suppkey": "$c_orders.o_lineitems.l_suppkey",
-      "l_linenumber": "$c_orders.o_lineitems.l_linenumber",
-      "l_quantity": "$c_orders.o_lineitems.l_quantity",
-      "l_extendedprice": "$c_orders.o_lineitems.l_extendedprice",
-      "l_discount": "$c_orders.o_lineitems.l_discount",
-      "l_returnflag": "$c_orders.o_lineitems.l_returnflag",
-      "l_shipmode": "$c_orders.o_lineitems.l_shipmode"
+    "$group": {
+      "_id": "$c_orders.o_lineitems.l_returnflag",
+      "max_extendedprice": { "$max": "$c_orders.o_lineitems.l_extendedprice" }
     }
-  },
-  { "$limit": 100000 }
+  }
 ]);

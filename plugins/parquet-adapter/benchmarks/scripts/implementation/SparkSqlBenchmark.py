@@ -2,6 +2,7 @@
 
 import argparse
 import csv
+import json
 import re
 import sys
 import time
@@ -77,6 +78,7 @@ def parse_args():
     parser.add_argument("--app-name", default="ParquetAdapterSparkBenchmark")
     parser.add_argument("--shuffle-partitions", type=int, default=8)
     parser.add_argument("--console-prefix", default="")
+    parser.add_argument("--result-values-output", default="")
     parser.add_argument(
         "--drain-mode",
         choices=("executor", "driver"),
@@ -154,6 +156,8 @@ def run_queries(spark, queries, args, output):
             for run in range(1, args.runs + 1):
                 execute_and_record(spark, writer, handle, query, "measured", run, args)
 
+    capture_result_values(spark, queries, args)
+
 
 def execute_and_record(spark, writer, handle, query, phase, run, args):
     start = time.perf_counter()
@@ -196,6 +200,40 @@ def execute_and_record(spark, writer, handle, query, phase, run, args):
         ]
     )
     handle.flush()
+
+
+def capture_result_values(spark, queries, args):
+    if not args.result_values_output:
+        return
+
+    output = Path(args.result_values_output)
+    if output.parent:
+        output.parent.mkdir(parents=True, exist_ok=True)
+
+    log(spark, f"Writing result values to {output}")
+    with output.open("w", encoding="utf-8") as handle:
+        for query in queries:
+            record = {
+                "timestamp": timestamp_utc(),
+                "query_id": query.query_id,
+                "description": query.description,
+                "success": False,
+                "error": "",
+                "columns": [],
+                "rows": [],
+            }
+            try:
+                result = spark.sql(prepare_sql_for_spark(query.sql))
+                record["columns"] = list(result.columns)
+                record["rows"] = [
+                    [value_to_string(value) for value in row]
+                    for row in result.collect()
+                ]
+                record["success"] = True
+            except Exception as exc:
+                record["error"] = f"{exc.__class__.__name__}: {exc}".replace("\r", " ").replace("\n", " ")
+            handle.write(json.dumps(record, ensure_ascii=False, separators=(",", ":")))
+            handle.write("\n")
 
 
 def load_queries(path):
@@ -276,6 +314,10 @@ def timestamp_utc():
 
 def format_cell(value):
     return "NULL" if value is None else str(value)
+
+
+def value_to_string(value):
+    return None if value is None else str(value)
 
 
 if __name__ == "__main__":

@@ -10,18 +10,28 @@ from pathlib import Path
 
 
 COLORS = (
-    "#2f6fbb",
-    "#c94c4c",
     "#4f9d55",
-    "#f0a22e",
+    "#c94c4c",
     "#7b61b9",
+    "#f0a22e",
+    "#2f6fbb",
     "#4aa3a1",
+)
+
+SYSTEM_COLORS = (
+    ("Polypheny Relational Normalized", "#c94c4c"),
+    ("Polypheny Relational Flat", "#4f9d55"),
+    ("Polypheny Relational", "#4f9d55"),
+    ("Polypheny Document", "#7b61b9"),
+    ("DuckDB", "#f0a22e"),
+    ("Apache Spark", "#2f6fbb"),
 )
 
 
 @dataclass
 class Series:
     label: str
+    visual_label: str
     color: str
     values: dict[str, float]
 
@@ -39,19 +49,32 @@ class PlotGeometry:
     lower: float
     upper: float
     ticks: list[float]
-    group_width: float
     bar_gap: int
     bar_width: float
+    query_centers: dict[str, float]
 
 
 def main():
     args = parse_args()
     inputs = [parse_input(value) for value in args.csv]
-    series = [
-        Series(label, COLORS[index % len(COLORS)], read_means(path, args.phase))
-        for index, (label, path) in enumerate(inputs)
-    ]
-    query_ids = sorted({query_id for item in series for query_id in item.values}, key=natural_key)
+    query_descriptions = parse_query_descriptions(args.query_descriptions)
+    color_by_label = {}
+    fallback_color_index = 0
+    series = []
+    for label, path in inputs:
+        visual_label = normalize_visual_label(label)
+        if visual_label not in color_by_label:
+            color, fallback_color_index = color_for_label(visual_label, fallback_color_index)
+            color_by_label[visual_label] = color
+        series.append(
+            Series(
+                label,
+                visual_label,
+                color_by_label[visual_label],
+                read_means(path, args.phase),
+            )
+        )
+    query_ids = ordered_query_ids(series, args.query_order)
     if not query_ids:
         raise ValueError("No successful benchmark rows found.")
 
@@ -60,11 +83,40 @@ def main():
     for file_format in parse_formats(args.formats):
         output = output_dir / f"{args.name}.{file_format}"
         if file_format == "svg":
-            output.write_text(render_svg(series, query_ids, args.title), encoding="utf-8")
+            output.write_text(
+                render_svg(
+                    series,
+                    query_ids,
+                    args.title,
+                    query_descriptions,
+                    args.query_description_wrap_chars,
+                    args.query_description_max_lines,
+                    args.side_note,
+                ),
+                encoding="utf-8",
+            )
         elif file_format == "png":
-            write_png(output, series, query_ids, args.title)
+            write_png(
+                output,
+                series,
+                query_ids,
+                args.title,
+                query_descriptions,
+                args.query_description_wrap_chars,
+                args.query_description_max_lines,
+                args.side_note,
+            )
         elif file_format == "pdf":
-            write_pdf(output, series, query_ids, args.title)
+            write_pdf(
+                output,
+                series,
+                query_ids,
+                args.title,
+                query_descriptions,
+                args.query_description_wrap_chars,
+                args.query_description_max_lines,
+                args.side_note,
+            )
         else:
             raise ValueError(f"Unsupported plot format: {file_format}")
         print(f"Wrote {output}")
@@ -96,6 +148,33 @@ def parse_args():
         default="measured",
         help="Benchmark phase to plot. Default: measured.",
     )
+    parser.add_argument(
+        "--query-order",
+        default="",
+        help="Comma-separated query IDs that define the x-axis order. Missing IDs are appended using natural order.",
+    )
+    parser.add_argument(
+        "--query-descriptions",
+        default="",
+        help="Semicolon-separated query descriptions, for example Q1=Full count;Q2=Year filter.",
+    )
+    parser.add_argument(
+        "--query-description-wrap-chars",
+        type=int,
+        default=18,
+        help="Approximate line length for query descriptions. Default: 18.",
+    )
+    parser.add_argument(
+        "--query-description-max-lines",
+        type=int,
+        default=2,
+        help="Maximum number of lines per query description. Default: 2.",
+    )
+    parser.add_argument(
+        "--side-note",
+        default="",
+        help="Semicolon-separated note lines to render below the legend.",
+    )
     return parser.parse_args()
 
 
@@ -122,6 +201,30 @@ def parse_input(value):
     return path.stem, path
 
 
+def parse_query_descriptions(value):
+    descriptions = {}
+    for part in value.split(";"):
+        if "=" not in part:
+            continue
+        query_id, description = part.split("=", 1)
+        query_id = query_id.strip()
+        description = description.strip()
+        if query_id and description:
+            descriptions[query_id] = description
+    return descriptions
+
+
+def parse_side_note(value):
+    return [part.strip() for part in value.split(";") if part.strip()]
+
+
+def side_note_parts(note):
+    if " - " not in note:
+        return note, ""
+    prefix, rest = note.split(" - ", 1)
+    return prefix, " - " + rest
+
+
 def read_means(path, phase):
     elapsed_by_query = {}
     with path.open(newline="", encoding="utf-8-sig") as handle:
@@ -142,8 +245,31 @@ def read_means(path, phase):
     }
 
 
-def render_svg(series, query_ids, title):
-    geometry = make_geometry(series, query_ids)
+def ordered_query_ids(series, query_order):
+    available = {query_id for item in series for query_id in item.values}
+    if not query_order:
+        return sorted(available, key=natural_key)
+
+    requested = [part.strip() for part in query_order.split(",") if part.strip()]
+    ordered = []
+    seen = set()
+    for query_id in requested:
+        if query_id in available and query_id not in seen:
+            ordered.append(query_id)
+            seen.add(query_id)
+
+    ordered.extend(sorted(available - seen, key=natural_key))
+    return ordered
+
+
+def render_svg(series, query_ids, title, query_descriptions, description_wrap_chars, description_max_lines, side_note=""):
+    geometry = make_geometry(
+        series,
+        query_ids,
+        query_descriptions,
+        description_wrap_chars,
+        description_max_lines,
+    )
 
     lines = [
         '<?xml version="1.0" encoding="UTF-8"?>',
@@ -169,28 +295,46 @@ def render_svg(series, query_ids, title):
         )
 
     for query_index, query_id in enumerate(query_ids):
-        center = geometry.left + query_index * geometry.group_width + geometry.group_width / 2
+        center = geometry.query_centers[query_id]
         lines.append(f'<text x="{center:.2f}" y="{geometry.top + geometry.plot_height + 30}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">{escape(query_id)}</text>')
 
+    for center, description_lines in query_description_items(query_ids, geometry, query_descriptions, description_wrap_chars, description_max_lines):
+        for line_index, description in enumerate(description_lines):
+            y = geometry.top + geometry.plot_height + 55 + line_index * 17
+            lines.append(f'<text x="{center:.2f}" y="{y}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">{escape(description)}</text>')
+
     legend_x = geometry.left + geometry.plot_width + 35
-    legend_y = geometry.top + 15
-    lines.append(f'<text x="{legend_x}" y="{legend_y - 18}" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700">System</text>')
-    for index, item in enumerate(series):
+    legend_y = geometry.top + 32
+    lines.append(f'<text x="{legend_x}" y="{legend_y - 32}" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700">System</text>')
+    for index, item in enumerate(legend_items(series)):
         y = legend_y + index * 28
-        lines.append(f'<rect x="{legend_x}" y="{y - 12}" width="16" height="16" fill="{item.color}"/>')
-        lines.append(f'<text x="{legend_x + 24}" y="{y + 1}" font-family="Helvetica, Arial, sans-serif" font-size="12">{escape(item.label)}</text>')
+        label, color = item
+        lines.append(f'<rect x="{legend_x}" y="{y - 12}" width="16" height="16" fill="{color}"/>')
+        lines.append(f'<text x="{legend_x + 24}" y="{y + 1}" font-family="Helvetica, Arial, sans-serif" font-size="12">{escape(label)}</text>')
+
+    for index, note in enumerate(parse_side_note(side_note)):
+        y = legend_y + len(legend_items(series)) * 28 + 18 + index * 18
+        prefix, rest = side_note_parts(note)
+        lines.append(f'<text x="{legend_x}" y="{y}" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#333">{escape(prefix)}</text>')
+        lines.append(f'<text x="{legend_x + approximate_text_width(prefix, 12, True)}" y="{y}" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#333">{escape(rest)}</text>')
 
     lines.append("</svg>")
     return "\n".join(lines)
 
 
-def write_png(output, series, query_ids, title):
+def write_png(output, series, query_ids, title, query_descriptions, description_wrap_chars, description_max_lines, side_note=""):
     try:
         from PIL import Image, ImageDraw, ImageFont
     except ImportError as error:
         raise RuntimeError("PNG output requires Pillow.") from error
 
-    geometry = make_geometry(series, query_ids)
+    geometry = make_geometry(
+        series,
+        query_ids,
+        query_descriptions,
+        description_wrap_chars,
+        description_max_lines,
+    )
     image = Image.new("RGB", (geometry.width, geometry.height), "white")
     draw = ImageDraw.Draw(image)
     fonts = {
@@ -198,8 +342,10 @@ def write_png(output, series, query_ids, title):
         "subtitle": load_font(ImageFont, 13),
         "tick": load_font(ImageFont, 11),
         "axis": load_font(ImageFont, 12, bold=True),
+        "description": load_font(ImageFont, 13),
         "legend": load_font(ImageFont, 12),
         "legend_title": load_font(ImageFont, 13, bold=True),
+        "note_bold": load_font(ImageFont, 12, bold=True),
     }
 
     draw.text((geometry.width / 2, 34), title, anchor="mm", font=fonts["title"], fill="#000000")
@@ -217,22 +363,40 @@ def write_png(output, series, query_ids, title):
         draw.rectangle((x, y, x + width, y + height), fill=item.color)
 
     for query_index, query_id in enumerate(query_ids):
-        center = geometry.left + query_index * geometry.group_width + geometry.group_width / 2
+        center = geometry.query_centers[query_id]
         draw.text((center, geometry.top + geometry.plot_height + 30), query_id, anchor="mm", font=fonts["axis"], fill="#000000")
 
+    for center, description_lines in query_description_items(query_ids, geometry, query_descriptions, description_wrap_chars, description_max_lines):
+        for line_index, description in enumerate(description_lines):
+            y = geometry.top + geometry.plot_height + 55 + line_index * 17
+            draw.text((center, y), description, anchor="mm", font=fonts["description"], fill="#333333")
+
     legend_x = geometry.left + geometry.plot_width + 35
-    legend_y = geometry.top + 15
-    draw.text((legend_x, legend_y - 18), "System", anchor="la", font=fonts["legend_title"], fill="#000000")
-    for index, item in enumerate(series):
+    legend_y = geometry.top + 32
+    draw.text((legend_x, legend_y - 32), "System", anchor="la", font=fonts["legend_title"], fill="#000000")
+    for index, item in enumerate(legend_items(series)):
         y = legend_y + index * 28
-        draw.rectangle((legend_x, y - 12, legend_x + 16, y + 4), fill=item.color)
-        draw.text((legend_x + 24, y), item.label, anchor="lm", font=fonts["legend"], fill="#000000")
+        label, color = item
+        draw.rectangle((legend_x, y - 12, legend_x + 16, y + 4), fill=color)
+        draw.text((legend_x + 24, y), label, anchor="lm", font=fonts["legend"], fill="#000000")
+
+    for index, note in enumerate(parse_side_note(side_note)):
+        y = legend_y + len(legend_items(series)) * 28 + 18 + index * 18
+        prefix, rest = side_note_parts(note)
+        draw.text((legend_x, y), prefix, anchor="la", font=fonts["note_bold"], fill="#333333")
+        draw.text((legend_x + draw.textlength(prefix, font=fonts["note_bold"]), y), rest, anchor="la", font=fonts["legend"], fill="#333333")
 
     image.save(output)
 
 
-def write_pdf(output, series, query_ids, title):
-    geometry = make_geometry(series, query_ids)
+def write_pdf(output, series, query_ids, title, query_descriptions, description_wrap_chars, description_max_lines, side_note=""):
+    geometry = make_geometry(
+        series,
+        query_ids,
+        query_descriptions,
+        description_wrap_chars,
+        description_max_lines,
+    )
     commands = []
 
     def py(y):
@@ -286,16 +450,28 @@ def write_pdf(output, series, query_ids, title):
         rect(x, y, width, height, item.color)
 
     for query_index, query_id in enumerate(query_ids):
-        center = geometry.left + query_index * geometry.group_width + geometry.group_width / 2
+        center = geometry.query_centers[query_id]
         text(center, geometry.top + geometry.plot_height + 30, query_id, 12, bold=True, anchor="center")
 
+    for center, description_lines in query_description_items(query_ids, geometry, query_descriptions, description_wrap_chars, description_max_lines):
+        for line_index, description in enumerate(description_lines):
+            y = geometry.top + geometry.plot_height + 55 + line_index * 17
+            text(center, y, description, 13, color="#333333", anchor="center")
+
     legend_x = geometry.left + geometry.plot_width + 35
-    legend_y = geometry.top + 15
-    text(legend_x, legend_y - 18, "System", 13, bold=True)
-    for index, item in enumerate(series):
+    legend_y = geometry.top + 32
+    text(legend_x, legend_y - 32, "System", 13, bold=True)
+    for index, item in enumerate(legend_items(series)):
         y = legend_y + index * 28
-        rect(legend_x, y - 12, 16, 16, item.color)
-        text(legend_x + 24, y + 1, item.label, 12)
+        label, color = item
+        rect(legend_x, y - 12, 16, 16, color)
+        text(legend_x + 24, y + 1, label, 12)
+
+    for index, note in enumerate(parse_side_note(side_note)):
+        y = legend_y + len(legend_items(series)) * 28 + 18 + index * 18
+        prefix, rest = side_note_parts(note)
+        text(legend_x, y, prefix, 12, color="#333333", bold=True)
+        text(legend_x + approximate_text_width(prefix, 12, True), y, rest, 12, color="#333333")
 
     write_simple_pdf(output, geometry.width, geometry.height, "\n".join(commands))
 
@@ -370,20 +546,25 @@ def load_font(image_font, size, bold=False):
     return image_font.load_default()
 
 
-def make_geometry(series, query_ids):
-    width = 1180
-    height = 700
+def make_geometry(series, query_ids, query_descriptions=None, description_wrap_chars=18, description_max_lines=2):
+    width = plot_width_for_descriptions(
+        query_ids,
+        query_descriptions,
+        description_wrap_chars,
+        description_max_lines,
+    )
+    height = 720 if query_descriptions else 620
     left = 90
     right = 260
     top = 80
-    bottom = 120
+    bottom = 130 if query_descriptions else 80
     plot_width = width - left - right
     plot_height = height - top - bottom
     lower, upper = plot_bounds(series)
     ticks = nice_log_ticks(lower, upper)
-    group_width = plot_width / len(query_ids)
     bar_gap = 3
-    bar_width = min(24, (group_width - 20) / len(series) - bar_gap)
+    slots = series_slots(series)
+    bar_width, query_centers = query_layout(query_ids, slots, plot_width, left, bar_gap)
     return PlotGeometry(
         width,
         height,
@@ -396,25 +577,178 @@ def make_geometry(series, query_ids):
         lower,
         upper,
         ticks,
-        group_width,
         bar_gap,
         max(1.0, bar_width),
+        query_centers,
     )
 
 
+def plot_width_for_descriptions(query_ids, query_descriptions, description_wrap_chars, description_max_lines):
+    base_width = 1180
+    left = 90
+    right = 260
+    groups = description_groups(query_ids, query_descriptions)
+    if not groups:
+        return base_width
+
+    longest_line = max(
+        len(line)
+        for _prefix, description in groups
+        for line in wrap_text(description, description_wrap_chars, description_max_lines)
+    )
+    group_width = min(145, max(105, longest_line * 7.4 + 26))
+    return max(base_width, int(left + right + len(groups) * group_width))
+
+
 def bars(series, query_ids, geometry):
-    for query_index, query_id in enumerate(query_ids):
-        group_x = geometry.left + query_index * geometry.group_width
-        total_bar_width = len(series) * geometry.bar_width + (len(series) - 1) * geometry.bar_gap
-        start_x = group_x + (geometry.group_width - total_bar_width) / 2
-        for series_index, item in enumerate(series):
+    slots = series_slots(series)
+    slot_indexes = {label: index for index, label in enumerate(slots)}
+    for query_id in query_ids:
+        total_bar_width = len(slots) * geometry.bar_width + (len(slots) - 1) * geometry.bar_gap
+        start_x = geometry.query_centers[query_id] - total_bar_width / 2
+        for item in series:
             value = item.values.get(query_id)
             if value is None:
                 continue
-            x = start_x + series_index * (geometry.bar_width + geometry.bar_gap)
+            x = start_x + slot_indexes[item.visual_label] * (geometry.bar_width + geometry.bar_gap)
             y = y_for(value, geometry)
             height = geometry.top + geometry.plot_height - y
             yield x, y, geometry.bar_width, height, item, query_id, value
+
+
+def query_layout(query_ids, slots, plot_width, left, bar_gap):
+    pair_gap_units = layout_pair_gap_units(query_ids)
+    use_pair_spacing = any(unit == 1 for unit in pair_gap_units)
+    if not use_pair_spacing:
+        group_width = plot_width / len(query_ids)
+        bar_width = max(1.0, min(24, (group_width - 20) / len(slots) - bar_gap))
+        centers = {
+            query_id: left + index * group_width + group_width / 2
+            for index, query_id in enumerate(query_ids)
+        }
+        return bar_width, centers
+
+    fixed_gap_width = len(query_ids) * (len(slots) - 1) * bar_gap
+    bar_units = len(query_ids) * len(slots) + sum(pair_gap_units)
+    bar_width = max(1.0, min(24, (plot_width - fixed_gap_width) / bar_units))
+    group_bar_width = len(slots) * bar_width + (len(slots) - 1) * bar_gap
+    required_width = len(query_ids) * group_bar_width + sum(unit * bar_width for unit in pair_gap_units)
+    cursor = left + max(0, (plot_width - required_width) / 2)
+
+    centers = {}
+    for index, query_id in enumerate(query_ids):
+        centers[query_id] = cursor + group_bar_width / 2
+        cursor += group_bar_width
+        if index < len(pair_gap_units):
+            cursor += pair_gap_units[index] * bar_width
+    return bar_width, centers
+
+
+def layout_pair_gap_units(query_ids):
+    return [
+        1 if paired_layout_prefix(left) is not None and paired_layout_prefix(left) == paired_layout_prefix(right) else 3
+        for left, right in zip(query_ids, query_ids[1:])
+    ]
+
+
+def paired_layout_prefix(query_id):
+    if "_" not in query_id:
+        return None
+    prefix, suffix = query_id.rsplit("_", 1)
+    if suffix in {"P", "NP", "RP", "UP"}:
+        return prefix
+    return None
+
+
+def description_groups(query_ids, query_descriptions):
+    if not query_descriptions:
+        return []
+    groups = []
+    seen = set()
+    for query_id in query_ids:
+        prefix = paired_layout_prefix(query_id) or query_id
+        if prefix in seen:
+            continue
+        seen.add(prefix)
+        description = query_descriptions.get(prefix) or query_descriptions.get(query_id)
+        if description:
+            groups.append((prefix, description))
+    return groups
+
+
+def query_description_items(query_ids, geometry, query_descriptions, description_wrap_chars, description_max_lines):
+    if not query_descriptions:
+        return []
+    items = []
+    seen = set()
+    for query_id in query_ids:
+        prefix = paired_layout_prefix(query_id) or query_id
+        if prefix in seen:
+            continue
+        seen.add(prefix)
+        related = [
+            item
+            for item in query_ids
+            if (paired_layout_prefix(item) or item) == prefix
+        ]
+        description = query_descriptions.get(prefix) or query_descriptions.get(query_id)
+        if not description:
+            continue
+        center = sum(geometry.query_centers[item] for item in related) / len(related)
+        items.append((center, wrap_text(description, description_wrap_chars, description_max_lines)))
+    return items
+
+
+def wrap_text(text, max_chars, max_lines):
+    lines = []
+    current = ""
+    for word in text.split():
+        candidate = word if not current else current + " " + word
+        if len(candidate) <= max_chars:
+            current = candidate
+            continue
+        if current:
+            lines.append(current)
+        current = word
+    if current:
+        lines.append(current)
+    return lines[:max_lines]
+
+
+def normalize_visual_label(label):
+    for suffix in (" Repartitioned", " Unpartitioned"):
+        if label.endswith(suffix):
+            return label[: -len(suffix)]
+    return label
+
+
+def color_for_label(label, fallback_color_index):
+    for prefix, color in SYSTEM_COLORS:
+        if label.startswith(prefix):
+            return color, fallback_color_index
+    return COLORS[fallback_color_index % len(COLORS)], fallback_color_index + 1
+
+
+def series_slots(series):
+    slots = []
+    seen = set()
+    for item in series:
+        if item.visual_label in seen:
+            continue
+        seen.add(item.visual_label)
+        slots.append(item.visual_label)
+    return slots
+
+
+def legend_items(series):
+    items = []
+    seen = set()
+    for item in series:
+        if item.visual_label in seen:
+            continue
+        seen.add(item.visual_label)
+        items.append((item.visual_label, item.color))
+    return items
 
 
 def plot_bounds(series):
@@ -455,6 +789,12 @@ def format_tick(value):
 
 
 def natural_key(value):
+    suffix_order = {"P": 0, "RP": 0, "NP": 1, "UP": 1}
+    if "_" in value:
+        prefix, suffix = value.rsplit("_", 1)
+        if suffix in suffix_order:
+            return natural_key(prefix) + [suffix_order[suffix]]
+
     parts = []
     current = ""
     for char in value:

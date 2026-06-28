@@ -1,5 +1,6 @@
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,6 +30,7 @@ public class DuckDbJdbcBenchmark {
             Path dataDir,
             Path queries,
             Path output,
+            Path resultValuesOutput,
             int warmups,
             int runs,
             boolean printRows,
@@ -89,6 +91,8 @@ public class DuckDbJdbcBenchmark {
                     executeAndRecord( connection, writer, query, "measured", i, config );
                 }
             }
+
+            captureResultValues( connection, queries, config );
         }
     }
 
@@ -168,6 +172,66 @@ public class DuckDbJdbcBenchmark {
     }
 
 
+    private static void captureResultValues( Connection connection, List<Query> queries, Config config ) throws IOException {
+        if ( config.resultValuesOutput() == null ) {
+            return;
+        }
+        if ( config.resultValuesOutput().getParent() != null ) {
+            Files.createDirectories( config.resultValuesOutput().getParent() );
+        }
+        try ( BufferedWriter writer = Files.newBufferedWriter( config.resultValuesOutput(), StandardCharsets.UTF_8 ) ) {
+            System.out.printf( "Writing result values to %s%n", config.resultValuesOutput() );
+            for ( Query query : queries ) {
+                writeResultValues( connection, writer, query, config );
+            }
+        }
+    }
+
+
+    private static void writeResultValues( Connection connection, BufferedWriter writer, Query query, Config config ) throws IOException {
+        List<String> columns = new ArrayList<>();
+        List<List<String>> rows = new ArrayList<>();
+        boolean success = false;
+        String error = "";
+
+        try ( Statement statement = connection.createStatement() ) {
+            if ( config.fetchSize() > 0 ) {
+                statement.setFetchSize( config.fetchSize() );
+            }
+            if ( config.queryTimeoutSeconds() > 0 ) {
+                statement.setQueryTimeout( config.queryTimeoutSeconds() );
+            }
+
+            boolean hasResultSet = statement.execute( query.sql() );
+            if ( hasResultSet ) {
+                try ( ResultSet resultSet = statement.getResultSet() ) {
+                    ResultSetMetaData metaData = resultSet.getMetaData();
+                    for ( int i = 1; i <= metaData.getColumnCount(); i++ ) {
+                        columns.add( metaData.getColumnLabel( i ) );
+                    }
+                    while ( resultSet.next() ) {
+                        List<String> row = new ArrayList<>();
+                        for ( int i = 1; i <= metaData.getColumnCount(); i++ ) {
+                            row.add( valueToString( resultSet.getObject( i ) ) );
+                        }
+                        rows.add( row );
+                    }
+                }
+            } else {
+                columns.add( "update_count" );
+                rows.add( List.of( Long.toString( statement.getUpdateCount() ) ) );
+            }
+            success = true;
+        } catch ( SQLException e ) {
+            error = e.getClass().getSimpleName() + ": " + e.getMessage();
+        }
+
+        writer.write( resultValuesJson( query, success, error, columns, rows ) );
+        writer.newLine();
+        writer.flush();
+    }
+
+
     private static void printRow( ResultSet resultSet, ResultSetMetaData metaData ) throws SQLException {
         List<String> values = new ArrayList<>();
         for ( int i = 1; i <= metaData.getColumnCount(); i++ ) {
@@ -198,6 +262,96 @@ public class DuckDbJdbcBenchmark {
     private static String csv( String value ) {
         String escaped = value == null ? "" : value.replace( "\"", "\"\"" );
         return "\"" + escaped + "\"";
+    }
+
+
+    private static String resultValuesJson( Query query, boolean success, String error, List<String> columns, List<List<String>> rows ) {
+        StringBuilder json = new StringBuilder();
+        json.append( '{' );
+        appendJsonField( json, "timestamp", Instant.now().toString() );
+        json.append( ',' );
+        appendJsonField( json, "query_id", query.id() );
+        json.append( ',' );
+        appendJsonField( json, "description", query.description() );
+        json.append( ",\"success\":" ).append( success );
+        json.append( ',' );
+        appendJsonField( json, "error", error );
+        json.append( ",\"columns\":" );
+        appendJsonStringArray( json, columns );
+        json.append( ",\"rows\":" );
+        appendJsonRows( json, rows );
+        json.append( '}' );
+        return json.toString();
+    }
+
+
+    private static void appendJsonField( StringBuilder json, String name, String value ) {
+        json.append( '"' ).append( jsonEscape( name ) ).append( "\":" ).append( jsonString( value ) );
+    }
+
+
+    private static void appendJsonStringArray( StringBuilder json, List<String> values ) {
+        json.append( '[' );
+        for ( int i = 0; i < values.size(); i++ ) {
+            if ( i > 0 ) {
+                json.append( ',' );
+            }
+            json.append( jsonString( values.get( i ) ) );
+        }
+        json.append( ']' );
+    }
+
+
+    private static void appendJsonRows( StringBuilder json, List<List<String>> rows ) {
+        json.append( '[' );
+        for ( int rowIndex = 0; rowIndex < rows.size(); rowIndex++ ) {
+            if ( rowIndex > 0 ) {
+                json.append( ',' );
+            }
+            appendJsonStringArray( json, rows.get( rowIndex ) );
+        }
+        json.append( ']' );
+    }
+
+
+    private static String jsonString( String value ) {
+        return value == null ? "null" : "\"" + jsonEscape( value ) + "\"";
+    }
+
+
+    private static String jsonEscape( String value ) {
+        StringBuilder escaped = new StringBuilder();
+        for ( int i = 0; i < value.length(); i++ ) {
+            char ch = value.charAt( i );
+            switch ( ch ) {
+                case '"' -> escaped.append( "\\\"" );
+                case '\\' -> escaped.append( "\\\\" );
+                case '\b' -> escaped.append( "\\b" );
+                case '\f' -> escaped.append( "\\f" );
+                case '\n' -> escaped.append( "\\n" );
+                case '\r' -> escaped.append( "\\r" );
+                case '\t' -> escaped.append( "\\t" );
+                default -> {
+                    if ( ch < 0x20 ) {
+                        escaped.append( String.format( "\\u%04x", (int) ch ) );
+                    } else {
+                        escaped.append( ch );
+                    }
+                }
+            }
+        }
+        return escaped.toString();
+    }
+
+
+    private static String valueToString( Object value ) {
+        if ( value == null ) {
+            return null;
+        }
+        if ( value instanceof BigDecimal decimal ) {
+            return decimal.toPlainString();
+        }
+        return value.toString();
     }
 
 
@@ -282,6 +436,7 @@ public class DuckDbJdbcBenchmark {
                 Path.of( values.getOrDefault( "data-dir", "C:\\tmp\\tlc\\flat_partitioned" ) ),
                 Path.of( values.getOrDefault( "queries", "plugins/parquet-adapter/benchmarks/query_lists/access_model_comparison/access_model_comparison_sql.sql" ) ),
                 Path.of( values.getOrDefault( "output", "plugins/parquet-adapter/benchmarks/results/access_model_comparison/duckdb_results.csv" ) ),
+                optionalPath( values.get( "result-values-output" ) ),
                 parseInt( values, "warmups", 1 ),
                 parseInt( values, "runs", 5 ),
                 parseBoolean( values, "print-rows", false ),
@@ -305,6 +460,11 @@ public class DuckDbJdbcBenchmark {
 
     private static boolean parseBoolean( Map<String, String> values, String key, boolean defaultValue ) {
         return values.containsKey( key ) ? Boolean.parseBoolean( values.get( key ) ) : defaultValue;
+    }
+
+
+    private static Path optionalPath( String value ) {
+        return value == null || value.isBlank() ? null : Path.of( value );
     }
 
 }

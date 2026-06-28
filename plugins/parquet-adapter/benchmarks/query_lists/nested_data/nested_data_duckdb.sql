@@ -78,40 +78,19 @@ WHERE l.l_returnflag = 'R'
   AND l.l_shipmode = 'MAIL'
 LIMIT 100000;
 
--- Q05: Unfiltered two-level nested lineitem projection.
+-- Q05: Nested lineitem MAX aggregation grouped by return flag.
 SELECT
-  o.o_orderkey,
-  o.o_orderstatus,
-  l.l_partkey,
-  l.l_suppkey,
-  l.l_linenumber,
-  l.l_quantity,
-  l.l_extendedprice,
-  l.l_discount,
   l.l_returnflag,
-  l.l_shipmode
+  MAX(l.l_extendedprice) AS max_extendedprice
 FROM nested_customer c,
+UNNEST(c.c_orders) AS orders(o),
 UNNEST(
   list_transform(
-    c.c_orders,
-    o -> struct_pack(
-      o_orderkey := o.o_orderkey,
-      o_orderstatus := o.o_orderstatus,
-      o_lineitems := list_transform(
-        o.o_lineitems,
-        l -> struct_pack(
-          l_partkey := l.l_partkey,
-          l_suppkey := l.l_suppkey,
-          l_linenumber := l.l_linenumber,
-          l_quantity := l.l_quantity,
-          l_extendedprice := l.l_extendedprice,
-          l_discount := l.l_discount,
-          l_returnflag := l.l_returnflag,
-          l_shipmode := l.l_shipmode
-        )
-      )
+    o.o_lineitems,
+    l -> struct_pack(
+      l_extendedprice := l.l_extendedprice,
+      l_returnflag := l.l_returnflag
     )
   )
-) AS orders(o),
-UNNEST(o.o_lineitems) AS lineitems(l)
-LIMIT 100000;
+) AS lineitems(l)
+GROUP BY l.l_returnflag;

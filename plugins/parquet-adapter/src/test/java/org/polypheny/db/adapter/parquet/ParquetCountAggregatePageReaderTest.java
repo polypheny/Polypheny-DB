@@ -106,6 +106,36 @@ class ParquetCountAggregatePageReaderTest {
     }
 
 
+    @Test
+    void keepsUnreadPredicateColumnsAlignedAfterShortCircuit() throws Exception {
+        MessageType schema = Types.buildMessage()
+                .required( PrimitiveTypeName.DOUBLE ).named( "trip_distance" )
+                .required( PrimitiveTypeName.DOUBLE ).named( "total_amount" )
+                .named( "test" );
+        Path file = writeTwoColumnParquet( schema );
+        List<ParquetAdapterFilter<PolyValue>> filters = List.of(
+                new ParquetAdapterFilter<>( 0, Kind.GREATER_THAN_OR_EQUAL, PolyDouble.of( 10D ) ),
+                new ParquetAdapterFilter<>( 1, Kind.GREATER_THAN_OR_EQUAL, PolyDouble.of( 40D ) ) );
+
+        Configuration conf = HadoopConfigurationFactory.create( getClass().getClassLoader() );
+        org.apache.hadoop.fs.Path parquetPath = new org.apache.hadoop.fs.Path( file.toUri() );
+        try ( ParquetFileReader fileReader = ParquetFileReader.open( HadoopInputFile.fromPath( parquetPath, conf ), ParquetReadOptions.builder().build() ) ) {
+            fileReader.setRequestedSchema( schema );
+            try ( PageReadStore pages = fileReader.readNextRowGroup() ) {
+                ColumnReadStore store = new ColumnReadStoreImpl( pages, new NoOpColumnConverter( schema ), schema, fileReader.getFileMetaData().getCreatedBy() );
+                ColumnDescriptor[] descriptors = schema.getColumns().toArray( ColumnDescriptor[]::new );
+                AggregateCallDescriptor[] aggregateCalls = new AggregateCallDescriptor[]{ AggregateCallDescriptor.countStar() };
+                Map<GroupKey, AggregateGroupState> aggregates = new LinkedHashMap<>();
+
+                new ParquetCountAggregatePageReader( pages, store, descriptors, ParquetPrimitivePredicate.compile( schema, filters ) )
+                        .read( aggregates, aggregateCalls, filters, new AtomicBoolean( false ) );
+
+                assertEquals( 0, aggregates.get( GroupKey.Empty ).count( 0 ) );
+            }
+        }
+    }
+
+
     private Path writeParquet( MessageType schema ) throws Exception {
         Path file = tempDir.resolve( "count.parquet" );
         SimpleGroupFactory factory = new SimpleGroupFactory( schema );
@@ -116,6 +146,21 @@ class ParquetCountAggregatePageReaderTest {
             writer.write( factory.newGroup().append( "trip_miles", 5D ) );
             writer.write( factory.newGroup().append( "trip_miles", 7D ) );
             writer.write( factory.newGroup().append( "trip_miles", 8D ) );
+        }
+        return file;
+    }
+
+
+    private Path writeTwoColumnParquet( MessageType schema ) throws Exception {
+        Path file = tempDir.resolve( "count_two_columns.parquet" );
+        SimpleGroupFactory factory = new SimpleGroupFactory( schema );
+        try ( ParquetWriter<Group> writer = ExampleParquetWriter.builder( new LocalOutputFile( file ) )
+                .withType( schema )
+                .build() ) {
+            writer.write( factory.newGroup().append( "trip_distance", 1D ).append( "total_amount", 100D ) );
+            writer.write( factory.newGroup().append( "trip_distance", 10D ).append( "total_amount", 20D ) );
+            writer.write( factory.newGroup().append( "trip_distance", 11D ).append( "total_amount", 20D ) );
+            writer.write( factory.newGroup().append( "trip_distance", 12D ).append( "total_amount", 20D ) );
         }
         return file;
     }

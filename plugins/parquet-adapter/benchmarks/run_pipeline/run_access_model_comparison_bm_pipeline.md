@@ -92,6 +92,10 @@ python plugins\parquet-adapter\benchmarks\scripts\summarize_benchmark_results.py
 python plugins\parquet-adapter\benchmarks\scripts\plot_generation\benchmark_result_plot_generator.py `
   --title "Access Model Comparison" `
   --name access_model_comparison_tlcp_plot `
+  --query-order "Q01,Q02,Q03,Q04,Q05" `
+  --query-descriptions "Q01=Full access;Q02=Projection;Q03=Filtered count;Q04=Filtered full access;Q05=Filtered projection" `
+  --query-description-wrap-chars 30 `
+  --query-description-max-lines 1 `
   "Polypheny Relational Flat=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_rf_tlcp_results.csv" `
   "Polypheny Relational Normalized=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_rn_tlcpn_results.csv" `
   "Polypheny Document MQL=plugins\parquet-adapter\benchmarks\results\access_model_comparison\access_model_comparison_polypheny_mql_tlcp_results.csv" `

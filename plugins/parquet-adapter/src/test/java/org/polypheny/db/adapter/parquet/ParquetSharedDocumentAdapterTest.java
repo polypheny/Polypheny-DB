@@ -35,6 +35,7 @@ import org.apache.parquet.io.OutputFile;
 import org.apache.parquet.io.PositionOutputStream;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.MessageTypeParser;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Types;
 import org.jetbrains.annotations.NotNull;
@@ -156,6 +157,40 @@ class ParquetSharedDocumentAdapterTest {
         assertEquals( "Berlin", addresses.get( 0 ).asDocument().get( PolyString.of( "city" ) ).asString().value );
         assertEquals( 10115L, addresses.get( 0 ).asDocument().get( PolyString.of( "zip" ) ).asNumber().longValue() );
         assertEquals( "Zurich", addresses.get( 1 ).asDocument().get( PolyString.of( "city" ) ).asString().value );
+    }
+
+
+    @Test
+    void extractDocumentUnwrapsStandardParquetListElements() {
+        MessageType schema = MessageTypeParser.parseMessageType( """
+                message doc_schema {
+                  optional group c_orders (LIST) {
+                    repeated group list {
+                      optional group element {
+                        optional int64 o_orderkey;
+                        optional binary o_orderstatus (STRING);
+                      }
+                    }
+                  }
+                }
+                """ );
+        SimpleGroupFactory factory = new SimpleGroupFactory( schema );
+        Group row = factory.newGroup();
+        Group orders = row.addGroup( "c_orders" );
+        orders.addGroup( "list" ).addGroup( "element" )
+                .append( "o_orderkey", 1L )
+                .append( "o_orderstatus", "F" );
+        orders.addGroup( "list" ).addGroup( "element" )
+                .append( "o_orderkey", 2L )
+                .append( "o_orderstatus", "O" );
+
+        PolyDocument document = new ParquetDocValueExtractor().extractDocument( row, schema, PolyString.of( "generated-id" ) );
+
+        PolyList<PolyValue> ordersList = document.get( PolyString.of( "c_orders" ) ).asList();
+        assertEquals( 2, ordersList.size() );
+        assertEquals( 1L, ordersList.get( 0 ).asDocument().get( PolyString.of( "o_orderkey" ) ).asNumber().longValue() );
+        assertEquals( "F", ordersList.get( 0 ).asDocument().get( PolyString.of( "o_orderstatus" ) ).asString().value );
+        assertFalse( ordersList.get( 0 ).asDocument().containsKey( PolyString.of( "element" ) ) );
     }
 
 

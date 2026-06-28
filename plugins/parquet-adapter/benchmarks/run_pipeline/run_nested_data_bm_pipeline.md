@@ -96,6 +96,10 @@ python plugins\parquet-adapter\benchmarks\scripts\summarize_benchmark_results.py
 python plugins\parquet-adapter\benchmarks\scripts\plot_generation\benchmark_result_plot_generator.py `
   --title "Nested Data" `
   --name nested_data_plot `
+  --query-order "Q01,Q02,Q03,Q04,Q05" `
+  --query-descriptions "Q01=Customer access;Q02=Customer projection;Q03=Order projection;Q04=Lineitem projection;Q05=Lineitem max" `
+  --query-description-wrap-chars 30 `
+  --query-description-max-lines 1 `
   "Polypheny Relational Normalized=plugins\parquet-adapter\benchmarks\results\nested_data\nested_data_polypheny_normalized_results.csv" `
   "Polypheny Document MQL=plugins\parquet-adapter\benchmarks\results\nested_data\nested_data_polypheny_mql_results.csv" `
   "DuckDB=plugins\parquet-adapter\benchmarks\results\nested_data\nested_data_duckdb_results.csv" `
