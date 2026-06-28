@@ -16,7 +16,10 @@
 
 package org.polypheny.db.catalog.entity.logical;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeNullable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
@@ -35,14 +38,31 @@ public class LogicalCollection extends LogicalEntity implements PolyObject {
 
     private static final long serialVersionUID = -6490762948368178584L;
 
+    @Serialize
+    @SerializeNullable
+    @JsonProperty
+    public Long synchronizedSourceEntityId;
+
 
     public LogicalCollection(
             @Deserialize("id") long id,
             @Deserialize("name") String name,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("entityType") EntityType entityType,
+            @Deserialize("synchronizedSourceEntityId") Long synchronizedSourceEntityId,
             @Deserialize("modifiable") boolean modifiable ) {
         super( id, name, namespaceId, entityType, DataModel.DOCUMENT, modifiable );
+        this.synchronizedSourceEntityId = synchronizedSourceEntityId;
+    }
+
+
+    public LogicalCollection(
+            long id,
+            String name,
+            long namespaceId,
+            EntityType entityType,
+            boolean modifiable ) {
+        this( id, name, namespaceId, entityType, null, modifiable );
     }
 
 

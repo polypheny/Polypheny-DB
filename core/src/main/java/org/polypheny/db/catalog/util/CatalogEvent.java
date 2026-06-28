@@ -49,6 +49,8 @@ public enum CatalogEvent {
     LOGICAL_DOC_ENTITY_CREATED(),
     LOGICAL_DOC_ENTITY_DROPPED(),
     LOGICAL_DOC_ENTITY_RENAMED(),
+    LOGICAL_DOC_ENTITY_MODIFIABILITY_CHANGED(),
+    LOGICAL_DOC_ENTITY_SYNCHRONIZED_SOURCE_CHANGED(),
 
     //////////////////////////////////////////
     // graph /////////////////////////////////

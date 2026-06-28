@@ -536,6 +536,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void renameCollection( final Context ctx ) {
         RenameEntityRequest request = ctx.bodyAsClass( RenameEntityRequest.class );
         LogicalCollection collection = Catalog.snapshot().doc().getCollection( request.getEntityId() ).orElseThrow();
+        if ( !ensureCollectionModifiable( collection.id, ctx ) ) {
+            return;
+        }
         String query = String.format( "db.\"%s\".renameCollection(\"%s\")", collection.name, request.getEntityName() );
         QueryLanguage language = QueryLanguage.from( "mql" );
         Result<?, ?> result = LanguageCrud.anyQueryResult(
@@ -621,6 +624,16 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceName ).orElseThrow();
         LogicalTable table = Catalog.snapshot().rel().getTable( namespace.id, tableName ).orElseThrow();
         return ensureTableModifiable( table.id, ctx );
+    }
+
+
+    private boolean ensureCollectionModifiable( long entityId, Context ctx ) {
+        LogicalCollection collection = Catalog.snapshot().doc().getCollection( entityId ).orElseThrow();
+        if ( collection.modifiable ) {
+            return true;
+        }
+        ctx.json( RelationalResult.builder().error( "Unable to modify a collection marked as read-only!" ).build() );
+        return false;
     }
 
 
@@ -1003,6 +1016,78 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    void createSynchronizedSourceCollectionMaterialization( final Context ctx ) {
+        SourceMaterializationRequest request = ctx.bodyAsClass( SourceMaterializationRequest.class );
+        Snapshot snapshot = Catalog.snapshot();
+        LogicalCollection sourceCollection = snapshot.doc().getCollection( request.getSourceEntityId() ).orElseThrow();
+        LogicalNamespace sourceNamespace = snapshot.getNamespace( sourceCollection.namespaceId ).orElseThrow();
+        long targetNamespaceId = request.getTargetNamespaceId() == null ? sourceNamespace.id : request.getTargetNamespaceId();
+        LogicalNamespace targetNamespace = snapshot.getNamespace( targetNamespaceId ).orElseThrow();
+        LogicalAdapter targetStore = snapshot.getAdapter( request.getTargetStoreId() ).orElseThrow();
+
+        String synchronizedCollectionName;
+        try {
+            synchronizedCollectionName = resolveMaterializationCollectionName( request.getTargetEntityName(), targetNamespace.id, getNextSynchronizedMaterializationCollectionName( targetNamespace.id, sourceCollection.name ), "Synchronized Materialization" );
+        } catch ( GenericRuntimeException e ) {
+            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
+            return;
+        }
+        String findQuery = String.format( "db.%s.find({})", sourceCollection.name );
+        Result<?, ?> findResult = executeMql( findQuery, sourceNamespace.name, true );
+        if ( findResult.error != null ) {
+            ctx.json( findResult );
+            return;
+        }
+
+        String createQuery = buildCreateMaterializationCollectionQuery( synchronizedCollectionName, targetStore.uniqueName );
+        Result<?, ?> createResult = executeMql( createQuery, targetNamespace.name, false );
+        if ( createResult.error != null ) {
+            ctx.json( createResult );
+            return;
+        }
+
+        String[] documents = (String[]) findResult.data;
+        if ( documents.length == 0 ) {
+            setSynchronizedCollectionMetadata( targetNamespace.id, synchronizedCollectionName, sourceCollection.id );
+            ctx.json( RelationalResult.builder()
+                    .dataModel( DataModel.DOCUMENT )
+                    .table( synchronizedCollectionName )
+                    .namespace( targetNamespace.name )
+                    .query( createQuery )
+                    .queryType( QueryType.DML )
+                    .affectedTuples( 0 )
+                    .build() );
+            return;
+        }
+
+        String insertQuery = buildInsertManyQuery( synchronizedCollectionName, documents );
+        Result<?, ?> insertResult = executeMql( insertQuery, targetNamespace.name, false );
+        if ( insertResult.error != null ) {
+            executeMql( "db." + synchronizedCollectionName + ".drop()", targetNamespace.name, false );
+            ctx.json( insertResult );
+            return;
+        }
+
+        setSynchronizedCollectionMetadata( targetNamespace.id, synchronizedCollectionName, sourceCollection.id );
+
+        ctx.json( RelationalResult.builder()
+                .dataModel( DataModel.DOCUMENT )
+                .table( synchronizedCollectionName )
+                .namespace( targetNamespace.name )
+                .query( insertQuery )
+                .queryType( QueryType.DML )
+                .affectedTuples( documents.length )
+                .build() );
+    }
+
+    private static void setSynchronizedCollectionMetadata( long namespaceId, String collectionName, long sourceCollectionId ) {
+        LogicalCollection collection = Catalog.snapshot().doc().getCollection( namespaceId, collectionName ).orElseThrow();
+        Catalog.getInstance().getLogicalDoc( namespaceId ).setCollectionModifiable( collection.id, false );
+        Catalog.getInstance().getLogicalDoc( namespaceId ).setSynchronizedSourceEntity( collection.id, sourceCollectionId );
+        Catalog.getInstance().updateSnapshot();
+    }
+
+
     private Result<?, ?> executeSql( String query ) {
         return LanguageCrud.anyQueryResult(
                 QueryContext.builder()
@@ -1153,6 +1238,18 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     private static String getNextIndependentMaterializationCollectionName( long namespaceId, String sourceCollectionName ) {
         String baseName = sourceCollectionName + "_independent";
+        String candidate = baseName;
+        int suffix = 2;
+        while ( Catalog.snapshot().doc().getCollection( namespaceId, candidate ).isPresent() ) {
+            candidate = baseName + suffix;
+            suffix++;
+        }
+        return candidate;
+    }
+
+
+    private static String getNextSynchronizedMaterializationCollectionName( long namespaceId, String sourceCollectionName ) {
+        String baseName = sourceCollectionName + "_synchronized";
         String candidate = baseName;
         int suffix = 2;
         while ( Catalog.snapshot().doc().getCollection( namespaceId, candidate ).isPresent() ) {

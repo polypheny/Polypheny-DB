@@ -106,6 +106,9 @@ public class CatalogCrud {
         List<SidebarElement> collectionTree = new ArrayList<>();
         List<LogicalCollection> collections = Catalog.snapshot().doc().getCollections( namespace.id, null );
         for ( LogicalCollection collection : collections ) {
+            if ( isSynchronizedMaterializedSource( collection, collections ) ) {
+                continue;
+            }
             SidebarElement tableElement = attachCollectionElement( namespace, request, collection );
 
             collectionTree.add( tableElement );
@@ -147,6 +150,9 @@ public class CatalogCrud {
         List<SidebarElement> collectionTree = new ArrayList<>();
         List<LogicalTable> tables = Catalog.snapshot().rel().getTables( namespace.id, null );
         for ( LogicalTable table : tables ) {
+            if ( isSynchronizedMaterializedSource( table, tables ) ) {
+                continue;
+            }
             String icon = "fa fa-table";
             if ( table.entityType == EntityType.SOURCE ) {
                 icon = "fa fa-plug";
@@ -183,6 +189,16 @@ public class CatalogCrud {
         } else {
             schemaTree.addChildren( collectionTree ).setRouterLink( "" );
         }
+    }
+
+
+    private static boolean isSynchronizedMaterializedSource( LogicalCollection collection, List<LogicalCollection> collections ) {
+        return collection.entityType == EntityType.SOURCE && collections.stream().anyMatch( candidate -> candidate.synchronizedSourceEntityId != null && collection.id == candidate.synchronizedSourceEntityId );
+    }
+
+
+    private static boolean isSynchronizedMaterializedSource( LogicalTable table, List<LogicalTable> tables ) {
+        return table.entityType == EntityType.SOURCE && tables.stream().anyMatch( candidate -> candidate.synchronizedSourceEntityId != null && table.id == candidate.synchronizedSourceEntityId );
     }
 
 

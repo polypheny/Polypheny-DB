@@ -196,7 +196,16 @@ public class LanguageCrud {
 
 
     private static Optional<RelationalResult> rejectSynchronizedSourceQuery( QueryContext context, UIRequest request ) {
-        if ( !(request instanceof QueryRequest) || !Objects.equals( context.getLanguage().serializedName(), "sql" ) ) {
+        boolean isQueryRequest = request instanceof QueryRequest;
+        boolean isEntityRequest = request.entityId != null;
+        if ( !isQueryRequest && !isEntityRequest ) {
+            return Optional.empty();
+        }
+
+        if ( isDocumentQueryLanguage( context ) ) {
+            return rejectSynchronizedSourceCollectionQuery( context, request );
+        }
+        if ( !isQueryRequest || !Objects.equals( context.getLanguage().serializedName(), "sql" ) ) {
             return Optional.empty();
         }
 
@@ -217,6 +226,63 @@ public class LanguageCrud {
                 .error( "Queries against source table " + sourceName + " are disabled because it is materialized as " + synchronizedName + ". Query the synchronized materialization instead." )
                 .query( context.getQuery() )
                 .build() );
+    }
+
+
+    private static boolean isDocumentQueryLanguage( QueryContext context ) {
+        return context.getLanguage().dataModel() == DataModel.DOCUMENT;
+    }
+
+
+    private static Optional<RelationalResult> rejectSynchronizedSourceCollectionQuery( QueryContext context, UIRequest request ) {
+        Optional<LogicalCollection> referencedSource = getReferencedSynchronizedSourceCollection( context.getQuery(), context.getNamespaceId(), request.entityId );
+        if ( referencedSource.isEmpty() ) {
+            return Optional.empty();
+        }
+
+        LogicalCollection source = referencedSource.get();
+        String sourceName = getFullCollectionName( source );
+        String synchronizedName = Catalog.snapshot().doc().getCollections( source.namespaceId, null ).stream()
+                .filter( collection -> isSynchronizedMaterializationForSourceCollection( source, collection ) )
+                .findFirst()
+                .map( LanguageCrud::getFullCollectionName )
+                .orElse( "its synchronized materialization" );
+
+        log.info( "Rejecting query against source collection {} because it is materialized as {}", sourceName, synchronizedName );
+        return Optional.of( RelationalResult.builder()
+                .error( "Queries against source collection " + sourceName + " are disabled because it is materialized as " + synchronizedName + ". Query the synchronized materialization instead." )
+                .query( context.getQuery() )
+                .build() );
+    }
+
+
+    private static Optional<LogicalCollection> getReferencedSynchronizedSourceCollection( String query, long namespaceId, Long entityId ) {
+        List<LogicalCollection> collections = Catalog.snapshot().doc().getCollections( namespaceId, null );
+
+        return collections.stream()
+                .filter( collection -> collection.entityType == EntityType.SOURCE )
+                .filter( collection -> hasSynchronizedMaterialization( collection, collections ) )
+                .filter( collection -> Objects.equals( entityId, collection.id ) || referencesCollection( query, collection ) )
+                .findFirst();
+    }
+
+
+    private static boolean hasSynchronizedMaterialization( LogicalCollection source, List<LogicalCollection> collections ) {
+        return collections.stream().anyMatch( collection -> isSynchronizedMaterializationForSourceCollection( source, collection ) );
+    }
+
+
+    private static boolean isSynchronizedMaterializationForSourceCollection( LogicalCollection source, LogicalCollection collection ) {
+        return Objects.equals( collection.synchronizedSourceEntityId, source.id );
+    }
+
+
+    private static boolean referencesCollection( String query, LogicalCollection collection ) {
+        String unquotedCollection = Pattern.quote( collection.name ) + "(?![A-Za-z0-9_])";
+        String doubleQuotedCollection = Pattern.quote( "\"" + collection.name.replace( "\"", "\\\"" ) + "\"" );
+        String singleQuotedCollection = Pattern.quote( "'" + collection.name.replace( "'", "\\'" ) + "'" );
+        String collectionReference = "(?:" + doubleQuotedCollection + "|" + singleQuotedCollection + "|" + unquotedCollection + ")";
+        return Pattern.compile( "(?is)\\bdb\\s*(?:\\.\\s*(?:" + collectionReference + "|getCollection\\s*\\(\\s*" + collectionReference + "\\s*\\))|\\[\\s*" + collectionReference + "\\s*\\])" ).matcher( query ).find();
     }
 
 
@@ -257,6 +323,13 @@ public class LanguageCrud {
         return Catalog.snapshot().getNamespace( table.namespaceId )
                 .map( namespace -> namespace.name + "." + table.name )
                 .orElse( table.name );
+    }
+
+
+    private static String getFullCollectionName( LogicalCollection collection ) {
+        return Catalog.snapshot().getNamespace( collection.namespaceId )
+                .map( namespace -> namespace.name + "." + collection.name )
+                .orElse( collection.name );
     }
 
 

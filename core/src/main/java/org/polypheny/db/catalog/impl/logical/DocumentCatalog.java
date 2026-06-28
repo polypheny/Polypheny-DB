@@ -106,6 +106,20 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
 
 
     @Override
+    public void setCollectionModifiable( long collectionId, boolean modifiable ) {
+        collections.put( collectionId, collections.get( collectionId ).toBuilder().modifiable( modifiable ).build() );
+        change( CatalogEvent.LOGICAL_DOC_ENTITY_MODIFIABILITY_CHANGED, collectionId, modifiable );
+    }
+
+
+    @Override
+    public void setSynchronizedSourceEntity( long collectionId, long sourceEntityId ) {
+        collections.put( collectionId, collections.get( collectionId ).toBuilder().synchronizedSourceEntityId( sourceEntityId ).build() );
+        change( CatalogEvent.LOGICAL_DOC_ENTITY_SYNCHRONIZED_SOURCE_CHANGED, collectionId, sourceEntityId );
+    }
+
+
+    @Override
     public LogicalCatalog withLogicalNamespace( LogicalNamespace namespace ) {
         return toBuilder().logicalNamespace( namespace ).build();
     }

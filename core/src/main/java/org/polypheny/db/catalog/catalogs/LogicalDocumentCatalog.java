@@ -49,4 +49,10 @@ public interface LogicalDocumentCatalog extends LogicalCatalog {
 
     void renameCollection( LogicalCollection collection, String newName );
 
+
+    void setCollectionModifiable( long collectionId, boolean modifiable );
+
+
+    void setSynchronizedSourceEntity( long collectionId, long sourceEntityId );
+
 }

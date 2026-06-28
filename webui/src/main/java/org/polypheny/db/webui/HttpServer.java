@@ -278,6 +278,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/createIndependentSourceCollectionMaterialization", crud::createIndependentSourceCollectionMaterialization );
 
+        webuiServer.post( "/createSynchronizedSourceCollectionMaterialization", crud::createSynchronizedSourceCollectionMaterialization );
+
         webuiServer.get( "/getGeneratedNames", crud::getGeneratedNames );
 
         webuiServer.post( "/getConstraints", crud::getConstraints );

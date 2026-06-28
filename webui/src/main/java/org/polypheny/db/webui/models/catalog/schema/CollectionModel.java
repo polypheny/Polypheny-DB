@@ -28,6 +28,9 @@ import org.polypheny.db.catalog.logistic.EntityType;
 @Value
 public class CollectionModel extends EntityModel {
 
+    @JsonProperty
+    public Long synchronizedSourceEntityId;
+
 
     public CollectionModel(
             @JsonProperty("id") @Nullable Long id,
@@ -35,13 +38,15 @@ public class CollectionModel extends EntityModel {
             @JsonProperty("namespaceId") Long namespaceId,
             @JsonProperty("modifiable") boolean modifiable,
             @JsonProperty("dataModel") DataModel dataModel,
-            @JsonProperty("entityType") EntityType entityType ) {
+            @JsonProperty("entityType") EntityType entityType,
+            @JsonProperty("synchronizedSourceEntityId") @Nullable Long synchronizedSourceEntityId ) {
         super( id, name, namespaceId, modifiable, dataModel, entityType );
+        this.synchronizedSourceEntityId = synchronizedSourceEntityId;
     }
 
 
     public static CollectionModel from( LogicalCollection collection ) {
-        return new CollectionModel( collection.id, collection.name, collection.namespaceId, collection.modifiable, collection.dataModel, collection.entityType );
+        return new CollectionModel( collection.id, collection.name, collection.namespaceId, collection.modifiable, collection.dataModel, collection.entityType, collection.synchronizedSourceEntityId );
     }
 
 }
