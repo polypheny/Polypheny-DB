@@ -1088,6 +1088,82 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    public Long refreshSynchronizedSourceCollectionMaterializationData( UIRequest request ) {
+        LogicalCollection materializedCollection = Catalog.snapshot().doc().getCollection( request.entityId ).orElseThrow();
+        if ( materializedCollection.synchronizedSourceEntityId == null ) {
+            return null;
+        }
+
+        long documentCount = countSynchronizedSourceCollectionMaterializationDocuments( materializedCollection.id );
+        if ( !request.confirmedDataRefresh ) {
+            return documentCount;
+        }
+
+        refreshSynchronizedSourceCollectionMaterializationData( materializedCollection.id );
+        return null;
+    }
+
+
+    private long countSynchronizedSourceCollectionMaterializationDocuments( long materializedCollectionId ) {
+        Snapshot snapshot = Catalog.snapshot();
+        LogicalCollection materializedCollection = snapshot.doc().getCollection( materializedCollectionId ).orElseThrow();
+        if ( materializedCollection.synchronizedSourceEntityId == null ) {
+            return 0;
+        }
+        LogicalCollection sourceCollection = snapshot.doc().getCollection( materializedCollection.synchronizedSourceEntityId ).orElseThrow();
+        LogicalNamespace sourceNamespace = snapshot.getNamespace( sourceCollection.namespaceId ).orElseThrow();
+        Result<?, ?> countResult = executeMql( "db." + sourceCollection.name + ".countDocuments({})", sourceNamespace.name, true );
+        if ( countResult.error != null ) {
+            throw new GenericRuntimeException( countResult.error );
+        }
+        if ( countResult.data == null || countResult.data.length == 0 ) {
+            return 0;
+        }
+        Matcher matcher = Pattern.compile( "-?\\d+" ).matcher( String.valueOf( countResult.data[0] ) );
+        if ( !matcher.find() ) {
+            throw new GenericRuntimeException( "Could not determine document count for source collection " + sourceCollection.name + "." );
+        }
+        return Long.parseLong( matcher.group() );
+    }
+
+
+    private void refreshSynchronizedSourceCollectionMaterializationData( long materializedCollectionId ) {
+        Snapshot snapshot = Catalog.snapshot();
+        LogicalCollection materializedCollection = snapshot.doc().getCollection( materializedCollectionId ).orElseThrow();
+        if ( materializedCollection.synchronizedSourceEntityId == null ) {
+            return;
+        }
+
+        LogicalCollection sourceCollection = snapshot.doc().getCollection( materializedCollection.synchronizedSourceEntityId ).orElseThrow();
+        LogicalNamespace materializedNamespace = snapshot.getNamespace( materializedCollection.namespaceId ).orElseThrow();
+        LogicalNamespace sourceNamespace = snapshot.getNamespace( sourceCollection.namespaceId ).orElseThrow();
+        Result<?, ?> findResult = executeMql( String.format( "db.%s.find({})", sourceCollection.name ), sourceNamespace.name, true );
+        if ( findResult.error != null ) {
+            throw new GenericRuntimeException( findResult.error );
+        }
+
+        Catalog.getInstance().getLogicalDoc( materializedNamespace.id ).setCollectionModifiable( materializedCollection.id, true );
+        Catalog.getInstance().updateSnapshot();
+        try {
+            Result<?, ?> deleteResult = executeMql( "db." + materializedCollection.name + ".deleteMany({})", materializedNamespace.name, false );
+            if ( deleteResult.error != null ) {
+                throw new GenericRuntimeException( deleteResult.error );
+            }
+
+            String[] documents = (String[]) findResult.data;
+            if ( documents.length > 0 ) {
+                Result<?, ?> insertResult = executeMql( buildInsertManyQuery( materializedCollection.name, documents ), materializedNamespace.name, false );
+                if ( insertResult.error != null ) {
+                    throw new GenericRuntimeException( insertResult.error );
+                }
+            }
+        } finally {
+            Catalog.getInstance().getLogicalDoc( materializedNamespace.id ).setCollectionModifiable( materializedCollection.id, false );
+            Catalog.getInstance().updateSnapshot();
+        }
+    }
+
+
     private Result<?, ?> executeSql( String query ) {
         return LanguageCrud.anyQueryResult(
                 QueryContext.builder()

@@ -234,6 +234,17 @@ public class WebSocket implements Consumer<WsConfig> {
                         }
                         case DOCUMENT -> {
                             String entity = Catalog.snapshot().doc().getCollection( refreshRequest.entityId ).map( c -> c.name ).orElse( "" );
+                            if ( "synchronizedApplyWithData".equalsIgnoreCase( refreshRequest.refreshTrigger ) ) {
+                                Long documentCount = crud.refreshSynchronizedSourceCollectionMaterializationData( refreshRequest );
+                                if ( documentCount != null ) {
+                                    yield RelationalResult.builder()
+                                            .dataModel( DataModel.DOCUMENT )
+                                            .namespace( namespace.name )
+                                            .table( entity )
+                                            .dataRefreshRowCount( documentCount )
+                                            .build();
+                                }
+                            }
                             yield LanguageCrud.anyQueryResult(
                                     QueryContext.builder()
                                             .query( String.format( "db.%s.find({})", entity ) )
