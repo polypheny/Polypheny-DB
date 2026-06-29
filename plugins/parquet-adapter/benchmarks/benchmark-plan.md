@@ -13,22 +13,25 @@ The benchmarks evaluate the Parquet adapter from the following perspectives:
 
 ## Common Execution Setup
 
-Unless a benchmark suite states otherwise, each query is executed with:
+- Unless a benchmark suite states otherwise, each query is executed with:
 
-- one warmup run;
-- five measured runs;
-- elapsed wall-clock time recorded in milliseconds;
-- result row count and column count recorded for correctness checks;
-- failures and timeouts recorded instead of runtime values.
+  - one warmup run;
+  - five measured runs;
+  - elapsed wall-clock time recorded in milliseconds;
+  - result row count and column count recorded for correctness checks;
+  - failures and timeouts recorded instead of runtime values.
 
-Warmup runs are excluded from reported results. Summary tables report mean,
-median, sample standard deviation, minimum, and maximum elapsed time over
-successful measured runs only. The benchmark clients consume query results
-according to the result boundary described in the report methodology. Polypheny
-and DuckDB use JDBC clients that drain the complete result set. Spark is
+- Warmup runs are excluded from reported results. 
+- Summary tables report mean, median, sample standard deviation, minimum, and maximum elapsed time over
+successful measured runs only. 
+- Where comparable, aggregation benchmarks also capture and compare grouping keys and aggregate values across systems. Numeric results are compared using the configured tolerance, while intentional result-schema differences are documented separately.
+- The benchmark clients consume query results
+according to the result boundary described in the report methodology. 
+- Polypheny and DuckDB use JDBC clients that drain the complete result set. Spark is
 executed in local mode inside Docker and consumes rows in the Spark runner.
 
-Raw benchmark outputs are stored as CSV files. Summary tables are generated with:
+- Raw benchmark outputs are stored as CSV files. 
+- Summary tables are generated with:
 
 ```powershell
 python plugins\parquet-adapter\benchmarks\scripts\summarize_benchmark_results.py

@@ -1,4 +1,4 @@
-# Competitive Technologies for Planned Parquet Aggregation Benchmarks
+# Technology Comparison for Parquet Benchmarks
 
 ## Purpose
 
