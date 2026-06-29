@@ -301,6 +301,10 @@ public class DdlManagerImpl extends DdlManager {
         // Create table, columns etc.
         Map<String, LogicalTable> createdTablesByPhysicalName = new HashMap<>();
         for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
+            if ( entry.getValue().isEmpty() ) {
+                log.warn( "Skipping source table '{}' on source {} because no columns were exported", entry.getKey(), adapter.getUniqueName() );
+                continue;
+            }
             LogicalTable table = createRelationalSourceTable( transaction, adapter, namespace, entry.getKey(), entry.getValue() );
             createdTablesByPhysicalName.put( getExportedSourceTableIdentifier( entry ), table );
         }
@@ -630,6 +634,11 @@ public class DdlManagerImpl extends DdlManager {
 
         for ( Map.Entry<String, List<ExportedColumn>> addedTable : addedTables ) {
             log.info( "Adding newly detected source table '{}' on source {}", addedTable.getKey(), discovery.sourceAdapter().getUniqueName() );
+            if ( addedTable.getValue().isEmpty() ) {
+                log.warn( "Skipping newly detected source table '{}' on source {} because no columns were exported", addedTable.getKey(), discovery.sourceAdapter().getUniqueName() );
+                summaries.add( new SourceRefreshSummary( sourceName, addedTable.getKey(), DataModel.RELATIONAL, List.of( "Skipped source table because no columns were exported" ) ) );
+                continue;
+            }
             createRelationalSourceTable( statement.getTransaction(), discovery.sourceAdapter(), namespaceId, addedTable.getKey(), addedTable.getValue() );
             summaries.add( new SourceRefreshSummary( sourceName, addedTable.getKey(), DataModel.RELATIONAL, List.of( "Added source table" ) ) );
         }
@@ -968,6 +977,12 @@ public class DdlManagerImpl extends DdlManager {
             return List.of();
         }
         
+        if ( refreshPlan.sourceEntityDeleted() ) {
+            log.info( "Source table '{}.{}' no longer exists", refreshPlan.sourceSchemaName(), refreshPlan.sourceTableName() );
+            dropRemovedSourceTable( logicalTable, statement );
+            return List.of( sourceTableDeletedMessage( logicalTable, snapshot ) );
+        }
+
         if ( refreshPlan.orderedSourceColumns().isEmpty() ) {
             log.info( "No source columns found for table '{}.{}'", refreshPlan.sourceSchemaName(), refreshPlan.sourceTableName() );
             return List.of();
@@ -984,6 +999,67 @@ public class DdlManagerImpl extends DdlManager {
 
         log.info( "Schema refresh finished successfully for table {}", logicalTable.name );
         return refreshPlan.changeDescriptions();
+    }
+
+
+    private String sourceTableDeletedMessage( LogicalTable table, Snapshot snapshot ) {
+        String namespaceName = snapshot.getNamespace( table.namespaceId ).map( n -> n.name ).orElse( String.valueOf( table.namespaceId ) );
+        return String.format( "Source table %s.%s was deleted in the source.", namespaceName, table.name );
+    }
+
+
+    @Override
+    public List<String> refreshSourceCollectionIfNeeded( long entityId, Statement statement ) {
+        return refreshSourceCollectionIfNeeded( entityId, statement, true );
+    }
+
+
+    @Override
+    public List<String> previewSourceCollectionRefresh( long entityId ) {
+        return refreshSourceCollectionIfNeeded( entityId, null, false );
+    }
+
+
+    private List<String> refreshSourceCollectionIfNeeded( long entityId, Statement statement, boolean dropDeletedCollection ) {
+        Snapshot snapshot = catalog.getSnapshot();
+        LogicalCollection collection = snapshot.doc().getCollection( entityId ).orElseThrow();
+
+        if ( collection.entityType != EntityType.SOURCE ) {
+            log.info( "Refresh skipped: {} is not a source collection.", collection.name );
+            return List.of();
+        }
+
+        List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( collection.id );
+        if ( allocs.size() != 1 ) {
+            throw new GenericRuntimeException(
+                    "Expected exactly one placement for collection '" + collection.name +
+                            "', but found " + allocs.size()
+            );
+        }
+
+        long sourceId = allocs.get( 0 ).adapterId;
+        SourceCollectionDiscovery discovery = buildSourceCollectionDiscovery( sourceId, snapshot );
+        if ( discovery == null ) {
+            log.info( "Collection refresh is not supported for collection {} because this source type does not support it", collection.name );
+            return List.of();
+        }
+
+        String collectionIdentifier = formatSourceCollectionIdentifier( collection.name );
+        if ( collectionIdentifier != null && !discovery.exportedCollectionsByIdentifier().containsKey( collectionIdentifier ) ) {
+            log.info( "Source collection '{}' no longer exists on source {}", collection.name, discovery.sourceAdapter().getUniqueName() );
+            if ( dropDeletedCollection ) {
+                dropCollection( collection, statement );
+            }
+            return List.of( sourceCollectionDeletedMessage( collection, snapshot ) );
+        }
+
+        return List.of();
+    }
+
+
+    private String sourceCollectionDeletedMessage( LogicalCollection collection, Snapshot snapshot ) {
+        String namespaceName = snapshot.getNamespace( collection.namespaceId ).map( n -> n.name ).orElse( String.valueOf( collection.namespaceId ) );
+        return String.format( "Source collection %s.%s was deleted in the source.", namespaceName, collection.name );
     }
 
 
@@ -1014,7 +1090,7 @@ public class DdlManagerImpl extends DdlManager {
                         .getExportedColumnsForTable( sourceSchemaName, sourceTableName );
 
         if ( currentSourceColumns == null || currentSourceColumns.isEmpty() ) {
-            return SourceSchemaRefreshPlan.empty( logicalTable, sourceSchemaName, sourceTableName );
+            return SourceSchemaRefreshPlan.deleted( logicalTable, sourceSchemaName, sourceTableName );
         }
 
         // Keep only columns that belong to the expected schema
@@ -1022,6 +1098,9 @@ public class DdlManagerImpl extends DdlManager {
             currentSourceColumns = currentSourceColumns.stream()
                     .filter( c -> sourceSchemaName.equalsIgnoreCase( c.physicalSchemaName() ) )
                     .toList();
+        }
+        if ( currentSourceColumns.isEmpty() ) {
+            return SourceSchemaRefreshPlan.deleted( logicalTable, sourceSchemaName, sourceTableName );
         }
         List<ExportedForeignKey> currentSourceForeignKeys = sourceAdapter.asRelationalDataSource()
                 .getExportedForeignKeysForTable( sourceSchemaName, sourceTableName );
@@ -1105,6 +1184,7 @@ public class DdlManagerImpl extends DdlManager {
                 .hasChangedForeignKeys( hasChangedForeignKeys )
                 .changeDescriptions( changeDescriptions )
                 .unsupported( false )
+                .sourceEntityDeleted( false )
                 .build();
     }
 
@@ -1117,6 +1197,9 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public List<String> refreshSynchronizedSourceMaterializationColumns( long entityId, Statement statement ) {
         SynchronizedSourceMaterializationRefreshPlan plan = buildSynchronizedSourceMaterializationRefreshPlan( entityId );
+        if ( plan.sourceEntityDeleted() ) {
+            return plan.changeDescriptions();
+        }
         if ( plan.missingColumns().isEmpty() && plan.droppedColumns().isEmpty() && plan.changedTypeColumns().isEmpty() && !plan.hasReorderedColumns() && plan.primaryKeyChangeDescription() == null && plan.applicableForeignKeyChangeDescriptions().isEmpty() ) {
             return List.of();
         }
@@ -1261,6 +1344,9 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         SourceSchemaRefreshPlan sourceRefreshPlan = buildSourceSchemaRefreshPlan( sourceTable, sourceAllocations.get( 0 ), snapshot );
+        if ( sourceRefreshPlan.sourceEntityDeleted() ) {
+            return SynchronizedSourceMaterializationRefreshPlan.sourceDeleted( connectedTable, sourceTableDeletedMessage( sourceTable, snapshot ) );
+        }
         if ( sourceRefreshPlan.unsupported() || sourceRefreshPlan.orderedSourceColumns().isEmpty() ) {
             return SynchronizedSourceMaterializationRefreshPlan.empty( connectedTable );
         }
@@ -1336,6 +1422,7 @@ public class DdlManagerImpl extends DdlManager {
                 .primaryKeyChangeDescription( primaryKeyChangeDescription )
                 .applicableForeignKeyChangeDescriptions( applicableForeignKeyChangeDescriptions )
                 .changeDescriptions( changeDescriptions )
+                .sourceEntityDeleted( false )
                 .build();
     }
 
@@ -1358,6 +1445,7 @@ public class DdlManagerImpl extends DdlManager {
         String primaryKeyChangeDescription;
         List<String> applicableForeignKeyChangeDescriptions;
         List<String> changeDescriptions;
+        boolean sourceEntityDeleted;
 
         static SynchronizedSourceMaterializationRefreshPlan empty( LogicalTable connectedTable ) {
             return SynchronizedSourceMaterializationRefreshPlan.builder()
@@ -1374,6 +1462,27 @@ public class DdlManagerImpl extends DdlManager {
                     .primaryKeyChangeDescription( null )
                     .applicableForeignKeyChangeDescriptions( List.of() )
                     .changeDescriptions( List.of() )
+                    .sourceEntityDeleted( false )
+                    .build();
+        }
+
+
+        static SynchronizedSourceMaterializationRefreshPlan sourceDeleted( LogicalTable connectedTable, String message ) {
+            return SynchronizedSourceMaterializationRefreshPlan.builder()
+                    .connectedTable( connectedTable )
+                    .connectedAllocation( null )
+                    .connectedColumns( List.of() )
+                    .missingColumns( List.of() )
+                    .droppedColumns( List.of() )
+                    .changedTypeColumns( List.of() )
+                    .sourceColumnsByPhysicalName( Map.of() )
+                    .orderedSourceColumns( List.of() )
+                    .sourceForeignKeySignatures( List.of() )
+                    .hasReorderedColumns( false )
+                    .primaryKeyChangeDescription( null )
+                    .applicableForeignKeyChangeDescriptions( List.of() )
+                    .changeDescriptions( List.of( message ) )
+                    .sourceEntityDeleted( true )
                     .build();
         }
 
@@ -1491,6 +1600,7 @@ public class DdlManagerImpl extends DdlManager {
         boolean hasChangedForeignKeys;
         List<String> changeDescriptions;
         boolean unsupported;
+        boolean sourceEntityDeleted;
 
         static SourceSchemaRefreshPlan empty( LogicalTable table, String sourceSchemaName, String sourceTableName ) {
             return SourceSchemaRefreshPlan.builder()
@@ -1512,6 +1622,32 @@ public class DdlManagerImpl extends DdlManager {
                     .hasChangedForeignKeys( false )
                     .changeDescriptions( List.of() )
                     .unsupported( false )
+                    .sourceEntityDeleted( false )
+                    .build();
+        }
+
+
+        static SourceSchemaRefreshPlan deleted( LogicalTable table, String sourceSchemaName, String sourceTableName ) {
+            return SourceSchemaRefreshPlan.builder()
+                    .logicalTable( table )
+                    .sourceAllocation( null )
+                    .sourceSchemaName( sourceSchemaName )
+                    .sourceTableName( sourceTableName )
+                    .sourceAdapterCatalog( null )
+                    .sourceAdapterId( -1 )
+                    .currentLogicalColumns( List.of() )
+                    .orderedSourceColumns( List.of() )
+                    .sourceForeignKeys( List.of() )
+                    .sourceColumnsByPhysicalName( Map.of() )
+                    .missingColumns( List.of() )
+                    .droppedColumns( List.of() )
+                    .changedTypeColumns( List.of() )
+                    .hasReorderedColumns( false )
+                    .hasChangedPrimaryKey( false )
+                    .hasChangedForeignKeys( false )
+                    .changeDescriptions( List.of() )
+                    .unsupported( false )
+                    .sourceEntityDeleted( true )
                     .build();
         }
 
@@ -1536,6 +1672,7 @@ public class DdlManagerImpl extends DdlManager {
                     .hasChangedForeignKeys( false )
                     .changeDescriptions( List.of() )
                     .unsupported( true )
+                    .sourceEntityDeleted( false )
                     .build();
         }
 

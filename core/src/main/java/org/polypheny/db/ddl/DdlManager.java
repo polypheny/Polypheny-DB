@@ -166,6 +166,12 @@ public abstract class DdlManager {
     public abstract List<String> refreshSourceSchemaIfNeeded( long entityId, Statement statement );
 
 
+    public abstract List<String> refreshSourceCollectionIfNeeded( long entityId, Statement statement );
+
+
+    public abstract List<String> previewSourceCollectionRefresh( long entityId );
+
+
     public abstract List<String> previewSynchronizedSourceMaterializationRefresh( long entityId );
 
 

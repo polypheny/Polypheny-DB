@@ -227,23 +227,52 @@ public class WebSocket implements Consumer<WsConfig> {
                                 log.info( "Refreshing table {} after table selection", table );
                             }
                             Crud.SourceMaterializationRefreshResult refresh = crud.refreshSourceSchemaIfNeeded( refreshRequest );
+                            if ( refresh.sourceEntityDeleted() ) {
+                                yield RelationalResult.builder()
+                                        .dataModel( DataModel.RELATIONAL )
+                                        .namespace( refreshRequest.namespace )
+                                        .table( table )
+                                        .changeDescriptions( refresh.changeDescriptions().toArray( new String[0] ) )
+                                        .sourceEntityDeleted( true )
+                                        .build();
+                            }
                             yield crud.getTable( refreshRequest ).toBuilder()
                                     .changeDescriptions( refresh.changeDescriptions().toArray( new String[0] ) )
                                     .dataRefreshRowCount( refresh.dataRefreshRowCount() )
+                                    .sourceEntityDeleted( refresh.sourceEntityDeleted() )
                                     .build();
                         }
                         case DOCUMENT -> {
                             String entity = Catalog.snapshot().doc().getCollection( refreshRequest.entityId ).map( c -> c.name ).orElse( "" );
                             if ( "synchronizedApplyWithData".equalsIgnoreCase( refreshRequest.refreshTrigger ) ) {
-                                Long documentCount = crud.refreshSynchronizedSourceCollectionMaterializationData( refreshRequest );
-                                if ( documentCount != null ) {
+                                Crud.SourceMaterializationRefreshResult refresh = crud.refreshSynchronizedSourceCollectionMaterializationData( refreshRequest );
+                                if ( refresh.sourceEntityDeleted() ) {
                                     yield RelationalResult.builder()
                                             .dataModel( DataModel.DOCUMENT )
                                             .namespace( namespace.name )
                                             .table( entity )
-                                            .dataRefreshRowCount( documentCount )
+                                            .changeDescriptions( refresh.changeDescriptions().toArray( new String[0] ) )
+                                            .sourceEntityDeleted( true )
                                             .build();
                                 }
+                                if ( refresh.dataRefreshRowCount() != null ) {
+                                    yield RelationalResult.builder()
+                                            .dataModel( DataModel.DOCUMENT )
+                                            .namespace( namespace.name )
+                                            .table( entity )
+                                            .dataRefreshRowCount( refresh.dataRefreshRowCount() )
+                                            .build();
+                                }
+                            }
+                            Crud.SourceMaterializationRefreshResult refresh = crud.refreshSourceCollectionIfNeeded( refreshRequest );
+                            if ( refresh.sourceEntityDeleted() ) {
+                                yield RelationalResult.builder()
+                                        .dataModel( DataModel.DOCUMENT )
+                                        .namespace( namespace.name )
+                                        .table( entity )
+                                        .changeDescriptions( refresh.changeDescriptions().toArray( new String[0] ) )
+                                        .sourceEntityDeleted( true )
+                                        .build();
                             }
                             yield LanguageCrud.anyQueryResult(
                                     QueryContext.builder()

@@ -59,6 +59,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
     public ResultType type;
     public String[] changeDescriptions;
     public Long dataRefreshRowCount;
+    public boolean sourceEntityDeleted;
 
 
     @JsonCreator
@@ -81,6 +82,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
             @JsonProperty("ResultType") ResultType type,
             @JsonProperty("changeDescriptions") String[] changeDescriptions,
             @JsonProperty("dataRefreshRowCount") Long dataRefreshRowCount,
+            @JsonProperty("sourceEntityDeleted") boolean sourceEntityDeleted,
             @JsonProperty("hasMoreRows") boolean hasMore,
             @JsonProperty("language") QueryLanguage language,
             @JsonProperty("isRolledBack") boolean isRolledBack ) {
@@ -106,6 +108,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
         this.type = type;
         this.changeDescriptions = changeDescriptions;
         this.dataRefreshRowCount = dataRefreshRowCount;
+        this.sourceEntityDeleted = sourceEntityDeleted;
     }
 
 
@@ -136,6 +139,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
         private ResultType type;
         private String[] changeDescriptions;
         private Long dataRefreshRowCount;
+        private boolean sourceEntityDeleted;
 
 
         public B table( String table ) {
@@ -176,6 +180,11 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
 
         public B dataRefreshRowCount( Long dataRefreshRowCount ) {
             this.dataRefreshRowCount = dataRefreshRowCount;
+            return self();
+        }
+
+        public B sourceEntityDeleted( boolean sourceEntityDeleted ) {
+            this.sourceEntityDeleted = sourceEntityDeleted;
             return self();
         }
 

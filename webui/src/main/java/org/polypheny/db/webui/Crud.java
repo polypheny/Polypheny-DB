@@ -281,29 +281,35 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             Statement ddlStatement = transaction.createStatement();
             LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElse( null );
             List<String> changeDescriptions;
+            boolean sourceEntityDeleted = false;
             if ( table != null && table.synchronizedSourceEntityId != null ) {
                 synchronizedMaterialization = table;
-                if ( "synchronizedApply".equalsIgnoreCase( request.refreshTrigger ) || (refreshSynchronizedData && request.confirmedDataRefresh) ) {
+                List<String> previewChangeDescriptions = DdlManager.getInstance().previewSynchronizedSourceMaterializationRefresh( request.entityId );
+                sourceEntityDeleted = hasSourceDeletedChange( previewChangeDescriptions );
+                if ( sourceEntityDeleted ) {
+                    changeDescriptions = previewChangeDescriptions;
+                } else if ( "synchronizedApply".equalsIgnoreCase( request.refreshTrigger ) || (refreshSynchronizedData && request.confirmedDataRefresh) ) {
                     DdlManager.getInstance().refreshSourceSchemaIfNeeded( table.synchronizedSourceEntityId, ddlStatement );
                     changeDescriptions = DdlManager.getInstance().refreshSynchronizedSourceMaterializationColumns( request.entityId, ddlStatement );
                 } else {
-                    changeDescriptions = DdlManager.getInstance().previewSynchronizedSourceMaterializationRefresh( request.entityId );
+                    changeDescriptions = previewChangeDescriptions;
                 }
             } else {
                 changeDescriptions = DdlManager.getInstance().refreshSourceSchemaIfNeeded( request.entityId, ddlStatement );
+                sourceEntityDeleted = table != null && Catalog.snapshot().rel().getTable( request.entityId ).isEmpty();
             }
             transaction.commit();
             committed = true;
-            if ( refreshSynchronizedData && synchronizedMaterialization != null ) {
+            if ( refreshSynchronizedData && synchronizedMaterialization != null && !sourceEntityDeleted ) {
                 long rowCount = countSynchronizedSourceMaterializationRows( synchronizedMaterialization.id );
                 if ( !request.confirmedDataRefresh ) {
-                    return new SourceMaterializationRefreshResult( changeDescriptions, rowCount );
+                    return new SourceMaterializationRefreshResult( changeDescriptions, rowCount, sourceEntityDeleted );
                 }
                 refreshSynchronizedSourceMaterializationData( synchronizedMaterialization.id );
                 changeDescriptions = new ArrayList<>( changeDescriptions );
                 changeDescriptions.add( "Refreshed data from source" );
             }
-            return new SourceMaterializationRefreshResult( changeDescriptions, null );
+            return new SourceMaterializationRefreshResult( changeDescriptions, null, sourceEntityDeleted );
         } catch ( Exception e ) {
             if ( !committed ) {
                 try {
@@ -318,8 +324,38 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    public record SourceMaterializationRefreshResult( List<String> changeDescriptions, Long dataRefreshRowCount ) {
+    public record SourceMaterializationRefreshResult( List<String> changeDescriptions, Long dataRefreshRowCount, boolean sourceEntityDeleted ) {
 
+    }
+
+
+    private boolean hasSourceDeletedChange( List<String> changeDescriptions ) {
+        return changeDescriptions.stream().anyMatch( description -> description.startsWith( "Source " ) && description.endsWith( " was deleted in the source." ) );
+    }
+
+
+    public SourceMaterializationRefreshResult refreshSourceCollectionIfNeeded( UIRequest request ) {
+        Transaction transaction = getTransaction();
+        boolean committed = false;
+        try {
+            Statement ddlStatement = transaction.createStatement();
+            boolean sourceEntityDeleted = false;
+            List<String> changeDescriptions = DdlManager.getInstance().refreshSourceCollectionIfNeeded( request.entityId, ddlStatement );
+            sourceEntityDeleted = Catalog.snapshot().doc().getCollection( request.entityId ).isEmpty();
+            transaction.commit();
+            committed = true;
+            return new SourceMaterializationRefreshResult( changeDescriptions, null, sourceEntityDeleted );
+        } catch ( Exception e ) {
+            if ( !committed ) {
+                try {
+                    transaction.rollback( "Error while refreshing source collection catalog: " + e.getMessage() );
+                } catch ( Exception rollbackException ) {
+                    log.error( "Rollback also failed", rollbackException );
+                }
+            }
+            throw new GenericRuntimeException(
+                    "Could not refresh source collection catalog for entity " + request.entityId, e );
+        }
     }
 
 
@@ -1080,6 +1116,57 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .build() );
     }
 
+
+    void dropSynchronizedSourceMaterialization( final Context ctx ) {
+        UIRequest request = ctx.bodyAsClass( UIRequest.class );
+        Transaction transaction = getTransaction();
+        boolean committed = false;
+        try {
+            Statement statement = transaction.createStatement();
+            Snapshot snapshot = Catalog.snapshot();
+            Optional<LogicalTable> table = snapshot.rel().getTable( request.entityId );
+            if ( table.isPresent() ) {
+                if ( table.get().synchronizedSourceEntityId == null ) {
+                    transaction.rollback( "Selected table is not a synchronized materialization." );
+                    ctx.json( RelationalResult.builder().error( "Selected table is not a synchronized materialization." ).build() );
+                    return;
+                }
+                DdlManager.getInstance().dropTable( table.get(), statement );
+                transaction.commit();
+                committed = true;
+                ctx.json( RelationalResult.builder().build() );
+                return;
+            }
+
+            Optional<LogicalCollection> collection = snapshot.doc().getCollection( request.entityId );
+            if ( collection.isPresent() ) {
+                if ( collection.get().synchronizedSourceEntityId == null ) {
+                    transaction.rollback( "Selected collection is not a synchronized materialization." );
+                    ctx.json( RelationalResult.builder().error( "Selected collection is not a synchronized materialization." ).build() );
+                    return;
+                }
+                DdlManager.getInstance().dropCollection( collection.get(), statement );
+                transaction.commit();
+                committed = true;
+                ctx.json( RelationalResult.builder().build() );
+                return;
+            }
+
+            transaction.rollback( "Selected entity does not exist." );
+            ctx.json( RelationalResult.builder().error( "Selected entity does not exist." ).build() );
+        } catch ( Exception e ) {
+            if ( !committed ) {
+                try {
+                    transaction.rollback( "Error while dropping synchronized materialization: " + e.getMessage() );
+                } catch ( Exception rollbackException ) {
+                    log.error( "Rollback also failed", rollbackException );
+                }
+            }
+            ctx.json( RelationalResult.builder().error( "Could not drop synchronized materialization: " + e.getMessage() ).build() );
+        }
+    }
+
+
     private static void setSynchronizedCollectionMetadata( long namespaceId, String collectionName, long sourceCollectionId ) {
         LogicalCollection collection = Catalog.snapshot().doc().getCollection( namespaceId, collectionName ).orElseThrow();
         Catalog.getInstance().getLogicalDoc( namespaceId ).setCollectionModifiable( collection.id, false );
@@ -1088,19 +1175,24 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    public Long refreshSynchronizedSourceCollectionMaterializationData( UIRequest request ) {
+    public SourceMaterializationRefreshResult refreshSynchronizedSourceCollectionMaterializationData( UIRequest request ) {
         LogicalCollection materializedCollection = Catalog.snapshot().doc().getCollection( request.entityId ).orElseThrow();
         if ( materializedCollection.synchronizedSourceEntityId == null ) {
-            return null;
+            return new SourceMaterializationRefreshResult( List.of(), null, false );
+        }
+
+        List<String> sourceRefreshPreview = DdlManager.getInstance().previewSourceCollectionRefresh( materializedCollection.synchronizedSourceEntityId );
+        if ( hasSourceDeletedChange( sourceRefreshPreview ) ) {
+            return new SourceMaterializationRefreshResult( sourceRefreshPreview, null, true );
         }
 
         long documentCount = countSynchronizedSourceCollectionMaterializationDocuments( materializedCollection.id );
         if ( !request.confirmedDataRefresh ) {
-            return documentCount;
+            return new SourceMaterializationRefreshResult( List.of(), documentCount, false );
         }
 
         refreshSynchronizedSourceCollectionMaterializationData( materializedCollection.id );
-        return null;
+        return new SourceMaterializationRefreshResult( List.of(), null, false );
     }
 
 
