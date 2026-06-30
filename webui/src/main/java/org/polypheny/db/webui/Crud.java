@@ -298,7 +298,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 }
             } else {
                 changeDescriptions = DdlManager.getInstance().refreshSourceSchemaIfNeeded( request.entityId, ddlStatement );
-                sourceEntityDeleted = table != null && Catalog.snapshot().rel().getTable( request.entityId ).isEmpty();
+                sourceEntityDeleted = hasSourceDeletedChange( changeDescriptions );
             }
             transaction.commit();
             committed = true;

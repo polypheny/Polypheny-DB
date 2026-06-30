@@ -2477,12 +2477,13 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void deleteForeignKeyForRefresh( LogicalTable table, LogicalForeignKey foreignKey, LogicalRelSnapshot snapshot, LogicalRelationalCatalog logicalCatalog ) {
-        snapshot.getConstraints( table.id ).stream()
+        LogicalRelationalCatalog foreignKeyCatalog = catalog.getLogicalRel( foreignKey.namespaceId );
+        snapshot.getConstraints( foreignKey.entityId ).stream()
                 .filter( constraint -> constraint.type == ConstraintType.FOREIGN )
                 .filter( constraint -> constraint.keyId == foreignKey.id )
                 .toList()
-                .forEach( constraint -> logicalCatalog.deleteConstraint( constraint.id ) );
-        logicalCatalog.deleteForeignKeyRefresh( foreignKey.id );
+                .forEach( constraint -> foreignKeyCatalog.deleteConstraint( constraint.id ) );
+        foreignKeyCatalog.deleteForeignKeyRefresh( foreignKey.id );
     }
 
 
@@ -5288,6 +5289,11 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         catalog.getAllocRel( table.namespaceId ).deleteProperty( table.id );
+
+        LogicalRelationalCatalog logicalCatalog = catalog.getLogicalRel( table.namespaceId );
+        for ( LogicalForeignKey foreignKey : snapshot.rel().getExportedKeys( table.id ) ) {
+            deleteForeignKeyForRefresh( table, foreignKey, snapshot.rel(), logicalCatalog );
+        }
 
         // delete constraints
         for ( LogicalConstraint constraint : snapshot.rel().getConstraints( table.id ) ) {
