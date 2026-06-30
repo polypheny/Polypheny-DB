@@ -87,7 +87,7 @@ public class StatisticQueryProcessor {
         return snapshot.getNamespaces( null )
                 .stream()
                 .filter( n -> n.dataModel == DataModel.RELATIONAL )
-                .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( t -> t.entityType != EntityType.VIEW ).flatMap( t -> snapshot.rel().getColumns( t.id ).stream() ) )
+                .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( StatisticQueryProcessor::supportsStatistics ).flatMap( t -> snapshot.rel().getColumns( t.id ).stream() ) )
                 .map( QueryResult::fromCatalogColumn )
                 .toList();
     }
@@ -101,7 +101,12 @@ public class StatisticQueryProcessor {
     public List<LogicalTable> getAllRelEntites() {
         Snapshot snapshot = Catalog.snapshot();
         return snapshot.getNamespaces( null ).stream().filter( n -> n.dataModel == DataModel.RELATIONAL )
-                .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( t -> t.entityType != EntityType.VIEW ) ).collect( Collectors.toList() );
+                .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( StatisticQueryProcessor::supportsStatistics ) ).collect( Collectors.toList() );
+    }
+
+
+    private static boolean supportsStatistics( LogicalTable table ) {
+        return table.entityType != EntityType.VIEW && table.entityType != EntityType.SOURCE;
     }
 
 

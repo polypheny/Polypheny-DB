@@ -427,6 +427,9 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     private StatisticQueryResult prepareNode( QueryResult queryResult, NodeType nodeType ) {
         StatisticQueryResult statisticQueryColumn = null;
+        if ( queryResult.getEntity().entityType == EntityType.SOURCE ) {
+            return null;
+        }
         if ( Catalog.snapshot().getLogicalEntity( queryResult.getEntity().id ).isPresent() ) {
             AlgNode queryNode = getQueryNode( queryResult, nodeType );
             statisticQueryColumn = statisticQueryInterface.selectOneColumnStat( queryNode, transaction, statement, queryResult );
