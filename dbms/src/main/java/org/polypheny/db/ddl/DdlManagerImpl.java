@@ -627,21 +627,26 @@ public class DdlManagerImpl extends DdlManager {
 
         long namespaceId = getSourceNamespaceId( sourceId, discovery.sourceAdapter(), snapshot );
 
-        List<Map.Entry<String, List<ExportedColumn>>> addedTables = discovery.exportedTablesByIdentifier().entrySet().stream()
-                .filter( entry -> !discovery.knownTablesByIdentifier().containsKey( entry.getKey() ) )
-                .map( Map.Entry::getValue )
-                .toList();
+        Map<String, LogicalTable> sourceTablesByPhysicalName = new HashMap<>( discovery.knownTablesByIdentifier() );
+        Map<String, List<ExportedColumn>> addedExportedColumns = new LinkedHashMap<>();
 
-        for ( Map.Entry<String, List<ExportedColumn>> addedTable : addedTables ) {
-            log.info( "Adding newly detected source table '{}' on source {}", addedTable.getKey(), discovery.sourceAdapter().getUniqueName() );
-            if ( addedTable.getValue().isEmpty() ) {
-                log.warn( "Skipping newly detected source table '{}' on source {} because no columns were exported", addedTable.getKey(), discovery.sourceAdapter().getUniqueName() );
-                summaries.add( new SourceRefreshSummary( sourceName, addedTable.getKey(), DataModel.RELATIONAL, List.of( "Skipped source table because no columns were exported" ) ) );
+        for ( Map.Entry<String, Map.Entry<String, List<ExportedColumn>>> addedTable : discovery.exportedTablesByIdentifier().entrySet() ) {
+            if ( discovery.knownTablesByIdentifier().containsKey( addedTable.getKey() ) ) {
                 continue;
             }
-            createRelationalSourceTable( statement.getTransaction(), discovery.sourceAdapter(), namespaceId, addedTable.getKey(), addedTable.getValue() );
-            summaries.add( new SourceRefreshSummary( sourceName, addedTable.getKey(), DataModel.RELATIONAL, List.of( "Added source table" ) ) );
+            Map.Entry<String, List<ExportedColumn>> exportedTable = addedTable.getValue();
+            log.info( "Adding newly detected source table '{}' on source {}", exportedTable.getKey(), discovery.sourceAdapter().getUniqueName() );
+            if ( exportedTable.getValue().isEmpty() ) {
+                log.warn( "Skipping newly detected source table '{}' on source {} because no columns were exported", exportedTable.getKey(), discovery.sourceAdapter().getUniqueName() );
+                summaries.add( new SourceRefreshSummary( sourceName, exportedTable.getKey(), DataModel.RELATIONAL, List.of( "Skipped source table because no columns were exported" ) ) );
+                continue;
+            }
+            LogicalTable createdTable = createRelationalSourceTable( statement.getTransaction(), discovery.sourceAdapter(), namespaceId, exportedTable.getKey(), exportedTable.getValue() );
+            sourceTablesByPhysicalName.put( addedTable.getKey(), createdTable );
+            addedExportedColumns.put( exportedTable.getKey(), exportedTable.getValue() );
+            summaries.add( new SourceRefreshSummary( sourceName, exportedTable.getKey(), DataModel.RELATIONAL, List.of( "Added source table" ) ) );
         }
+        importInitialSourceForeignKeys( statement, discovery.sourceAdapter(), addedExportedColumns, sourceTablesByPhysicalName );
         return summaries;
     }
 
@@ -818,8 +823,11 @@ public class DdlManagerImpl extends DdlManager {
         return snapshot.rel().getTables( (Pattern) null, (Pattern) null ).stream()
                 .filter( table -> table.entityType == EntityType.SOURCE )
                 .filter( table -> snapshot.alloc().getFromLogical( table.id ).stream().anyMatch( alloc -> alloc.adapterId == sourceId ) )
-                .map( table -> Map.entry( getKnownSourceTableIdentifier( table, snapshot ), table ) )
-                .filter( entry -> entry.getKey() != null )
+                .map( table -> {
+                    String identifier = getKnownSourceTableIdentifier( table, snapshot );
+                    return identifier == null ? null : Map.entry( identifier, table );
+                } )
+                .filter( Objects::nonNull )
                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue, ( left, right ) -> left, LinkedHashMap::new ) );
     }
 
@@ -846,7 +854,13 @@ public class DdlManagerImpl extends DdlManager {
             return null;
         }
 
-        Optional<PhysicalEntity> physicalEntity = adapterCatalog.get().getPhysicalsFromAllocs( allocation.id ).stream().findFirst();
+        List<PhysicalEntity> physicalEntities = adapterCatalog.get().getPhysicalsFromAllocs( allocation.id );
+        if ( physicalEntities == null ) {
+            log.info( "Skipping source table '{}' during source discovery because allocation {} has no physical entity", table.name, allocation.id );
+            return null;
+        }
+
+        Optional<PhysicalEntity> physicalEntity = physicalEntities.stream().findFirst();
         if ( physicalEntity.isEmpty() ) {
             return null;
         }
@@ -1075,7 +1089,12 @@ public class DdlManagerImpl extends DdlManager {
                 .getAdapterCatalog( sourceAdapterId )
                 .orElseThrow( () -> new GenericRuntimeException( "No adapter catalog found for adapter %s", sourceAdapterId ) );
 
-        PhysicalEntity currentPhysicalEntity = sourceAdapterCatalog.getPhysicalsFromAllocs( sourceAllocation.id ).stream()
+        List<PhysicalEntity> sourcePhysicalEntities = sourceAdapterCatalog.getPhysicalsFromAllocs( sourceAllocation.id );
+        if ( sourcePhysicalEntities == null || sourcePhysicalEntities.isEmpty() ) {
+            return SourceSchemaRefreshPlan.deleted( logicalTable, null, logicalTable.name );
+        }
+
+        PhysicalEntity currentPhysicalEntity = sourcePhysicalEntities.stream()
                 .findFirst()
                 .orElseThrow( () -> new GenericRuntimeException( "No physical entity found for allocation %s", sourceAllocation.id ) );
 
