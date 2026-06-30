@@ -5272,7 +5272,11 @@ public class DdlManagerImpl extends DdlManager {
 
         // delete constraints
         for ( LogicalConstraint constraint : snapshot.rel().getConstraints( table.id ) ) {
-            dropConstraint( statement.getTransaction(), table, constraint.id );
+            if ( table.entityType == EntityType.SOURCE ) {
+                catalog.getLogicalRel( table.namespaceId ).deleteConstraint( constraint.id );
+            } else {
+                dropConstraint( statement.getTransaction(), table, constraint.id );
+            }
         }
 
         // delete keys

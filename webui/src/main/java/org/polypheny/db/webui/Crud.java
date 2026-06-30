@@ -116,6 +116,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.SourceRefreshDetails;
+import org.polypheny.db.ddl.DdlManager.SourceRefreshSummary;
 import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
@@ -201,6 +202,7 @@ import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
 import org.polypheny.db.webui.models.requests.PolyAlgRequest;
+import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.RenameEntityRequest;
 import org.polypheny.db.webui.models.requests.SourceMaterializationRequest;
 import org.polypheny.db.webui.models.requests.SourceRefreshRequest;
@@ -398,6 +400,72 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 "refreshedSources", refreshDetails.refreshedSources(),
                 "refreshedCount", refreshDetails.refreshedSources().size(),
                 "refreshSummaries", refreshSummaries ) );
+    }
+
+
+    public void refreshSourcesForQuery( final Context ctx ) {
+        QueryRequest request = ctx.bodyAsClass( QueryRequest.class );
+        List<SourceRefreshSummary> summaries = refreshSourcesForQuery( request );
+        List<Map<String, Object>> refreshSummaries = summaries.stream()
+                .map( summary -> Map.<String, Object>of(
+                        "sourceName", summary.sourceName(),
+                        "entityName", summary.entityName(),
+                        "dataModel", summary.dataModel(),
+                        "changeDescriptions", summary.changeDescriptions() ) )
+                .toList();
+        ctx.json( Map.of(
+                "success", true,
+                "refreshedSources", summaries.stream().map( SourceRefreshSummary::entityName ).toList(),
+                "refreshedCount", summaries.size(),
+                "refreshSummaries", refreshSummaries ) );
+    }
+
+
+    public List<SourceRefreshSummary> refreshSourcesForQuery( QueryRequest request ) {
+        Snapshot snapshot = Catalog.snapshot();
+        long namespaceId = LanguageCrud.getNamespaceIdOrDefault( request.namespace );
+        List<LogicalTable> referencedTables = SourceQueryReferenceDetector.referencedSourceTables( request.query, request.language, namespaceId, snapshot );
+        List<LogicalCollection> referencedCollections = SourceQueryReferenceDetector.referencedSourceCollections( request.query, request.language, namespaceId, snapshot );
+
+        if ( referencedTables.isEmpty() && referencedCollections.isEmpty() ) {
+            return List.of();
+        }
+
+        Transaction transaction = getTransaction();
+        try {
+            Statement ddlStatement = transaction.createStatement();
+            List<SourceRefreshSummary> summaries = new ArrayList<>();
+            for ( LogicalTable table : referencedTables ) {
+                List<String> changeDescriptions = DdlManager.getInstance().refreshSourceSchemaIfNeeded( table.id, ddlStatement );
+                if ( !changeDescriptions.isEmpty() ) {
+                    summaries.add( new SourceRefreshSummary( getSourceNameForEntity( table.id, snapshot ), table.name, DataModel.RELATIONAL, changeDescriptions ) );
+                }
+            }
+            for ( LogicalCollection collection : referencedCollections ) {
+                List<String> changeDescriptions = DdlManager.getInstance().refreshSourceCollectionIfNeeded( collection.id, ddlStatement );
+                if ( !changeDescriptions.isEmpty() ) {
+                    summaries.add( new SourceRefreshSummary( getSourceNameForEntity( collection.id, snapshot ), collection.name, DataModel.DOCUMENT, changeDescriptions ) );
+                }
+            }
+            transaction.commit();
+            return summaries;
+        } catch ( Exception e ) {
+            try {
+                transaction.rollback( "Error while refreshing sources for query: " + e.getMessage() );
+            } catch ( Exception rollbackException ) {
+                log.error( "Rollback also failed", rollbackException );
+            }
+            throw new GenericRuntimeException( "Could not refresh sources for query", e );
+        }
+    }
+
+
+    private String getSourceNameForEntity( long entityId, Snapshot snapshot ) {
+        return snapshot.alloc().getFromLogical( entityId ).stream()
+                .findFirst()
+                .flatMap( allocation -> snapshot.getAdapter( allocation.adapterId ) )
+                .map( adapter -> adapter.uniqueName )
+                .orElse( String.valueOf( entityId ) );
     }
 
 

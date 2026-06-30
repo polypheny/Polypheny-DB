@@ -252,6 +252,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/refreshSelectedSources", crud::refreshSelectedSources );
 
+        webuiServer.post( "/refreshSourcesForQuery", crud::refreshSourcesForQuery );
+
         webuiServer.post( "/updateColumn", crud::updateColumn );
 
         webuiServer.post( "/getMaterializedInfo", crud::getMaterializedInfo );

@@ -34,7 +34,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -80,6 +79,7 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.Crud;
+import org.polypheny.db.webui.SourceQueryReferenceDetector;
 import org.polypheny.db.webui.TemporalFileManager;
 import org.polypheny.db.webui.models.IndexModel;
 import org.polypheny.db.webui.models.PlacementModel;
@@ -202,16 +202,9 @@ public class LanguageCrud {
             return Optional.empty();
         }
 
-        if ( isDocumentQueryLanguage( context ) ) {
-            return rejectSynchronizedSourceCollectionQuery( context, request );
-        }
-        if ( !isQueryRequest || !Objects.equals( context.getLanguage().serializedName(), "sql" ) ) {
-            return Optional.empty();
-        }
-
-        Optional<LogicalTable> referencedSource = getReferencedSynchronizedSource( context.getQuery() );
+        Optional<LogicalTable> referencedSource = getReferencedSynchronizedSource( context.getQuery(), context.getLanguage().serializedName(), context.getNamespaceId(), request.entityId );
         if ( referencedSource.isEmpty() ) {
-            return Optional.empty();
+            return rejectSynchronizedSourceCollectionQuery( context, request );
         }
 
         LogicalTable source = referencedSource.get();
@@ -229,13 +222,8 @@ public class LanguageCrud {
     }
 
 
-    private static boolean isDocumentQueryLanguage( QueryContext context ) {
-        return context.getLanguage().dataModel() == DataModel.DOCUMENT;
-    }
-
-
     private static Optional<RelationalResult> rejectSynchronizedSourceCollectionQuery( QueryContext context, UIRequest request ) {
-        Optional<LogicalCollection> referencedSource = getReferencedSynchronizedSourceCollection( context.getQuery(), context.getNamespaceId(), request.entityId );
+        Optional<LogicalCollection> referencedSource = getReferencedSynchronizedSourceCollection( context.getQuery(), context.getLanguage().serializedName(), context.getNamespaceId(), request.entityId );
         if ( referencedSource.isEmpty() ) {
             return Optional.empty();
         }
@@ -256,19 +244,18 @@ public class LanguageCrud {
     }
 
 
-    private static Optional<LogicalCollection> getReferencedSynchronizedSourceCollection( String query, long namespaceId, Long entityId ) {
-        List<LogicalCollection> collections = Catalog.snapshot().doc().getCollections( namespaceId, null );
+    private static Optional<LogicalCollection> getReferencedSynchronizedSourceCollection( String query, String language, long namespaceId, Long entityId ) {
+        List<LogicalCollection> collections = Catalog.snapshot().doc().getCollections( (org.polypheny.db.catalog.logistic.Pattern) null, null );
+        Set<Long> synchronizedSourceIds = collections.stream()
+                .map( collection -> collection.synchronizedSourceEntityId )
+                .filter( Objects::nonNull )
+                .collect( Collectors.toSet() );
 
         return collections.stream()
                 .filter( collection -> collection.entityType == EntityType.SOURCE )
-                .filter( collection -> hasSynchronizedMaterialization( collection, collections ) )
-                .filter( collection -> Objects.equals( entityId, collection.id ) || referencesCollection( query, collection ) )
+                .filter( collection -> synchronizedSourceIds.contains( collection.id ) )
+                .filter( collection -> Objects.equals( entityId, collection.id ) || SourceQueryReferenceDetector.referencesCollection( query, language, collection, namespaceId, Catalog.snapshot() ) )
                 .findFirst();
-    }
-
-
-    private static boolean hasSynchronizedMaterialization( LogicalCollection source, List<LogicalCollection> collections ) {
-        return collections.stream().anyMatch( collection -> isSynchronizedMaterializationForSourceCollection( source, collection ) );
     }
 
 
@@ -277,16 +264,7 @@ public class LanguageCrud {
     }
 
 
-    private static boolean referencesCollection( String query, LogicalCollection collection ) {
-        String unquotedCollection = Pattern.quote( collection.name ) + "(?![A-Za-z0-9_])";
-        String doubleQuotedCollection = Pattern.quote( "\"" + collection.name.replace( "\"", "\\\"" ) + "\"" );
-        String singleQuotedCollection = Pattern.quote( "'" + collection.name.replace( "'", "\\'" ) + "'" );
-        String collectionReference = "(?:" + doubleQuotedCollection + "|" + singleQuotedCollection + "|" + unquotedCollection + ")";
-        return Pattern.compile( "(?is)\\bdb\\s*(?:\\.\\s*(?:" + collectionReference + "|getCollection\\s*\\(\\s*" + collectionReference + "\\s*\\))|\\[\\s*" + collectionReference + "\\s*\\])" ).matcher( query ).find();
-    }
-
-
-    private static Optional<LogicalTable> getReferencedSynchronizedSource( String query ) {
+    private static Optional<LogicalTable> getReferencedSynchronizedSource( String query, String language, long namespaceId, Long entityId ) {
         List<LogicalTable> tables = Catalog.snapshot().rel().getTables( (org.polypheny.db.catalog.logistic.Pattern) null, null );
         Set<Long> synchronizedSourceIds = tables.stream()
                 .map( table -> table.synchronizedSourceEntityId )
@@ -296,26 +274,8 @@ public class LanguageCrud {
         return tables.stream()
                 .filter( table -> table.entityType == EntityType.SOURCE )
                 .filter( table -> synchronizedSourceIds.contains( table.id ) )
-                .filter( table -> referencesTable( query, table ) )
+                .filter( table -> Objects.equals( entityId, table.id ) || SourceQueryReferenceDetector.referencesTable( query, language, table, namespaceId, Catalog.snapshot() ) )
                 .findFirst();
-    }
-
-
-    private static boolean referencesTable( String query, LogicalTable table ) {
-        String namespaceName = Catalog.snapshot().getNamespace( table.namespaceId ).map( namespace -> namespace.name ).orElse( "" );
-        String tableReference = tableReferencePattern( namespaceName, table.name );
-        return Pattern.compile( "(?is)\\b(?:from|join|update|into|table)\\s+" + tableReference ).matcher( query ).find();
-    }
-
-
-    private static String tableReferencePattern( String namespaceName, String tableName ) {
-        String identifierEnd = "(?![A-Za-z0-9_])";
-        String unquotedTable = Pattern.quote( tableName ) + identifierEnd;
-        String quotedTable = Pattern.quote( "\"" + tableName.replace( "\"", "\"\"" ) + "\"" );
-        String qualifiedTable = Pattern.quote( namespaceName ) + "\\s*\\.\\s*" + unquotedTable;
-        String quotedQualifiedTable = Pattern.quote( "\"" + namespaceName.replace( "\"", "\"\"" ) + "\"" ) + "\\s*\\.\\s*" + quotedTable;
-
-        return "(?:" + quotedQualifiedTable + "|" + qualifiedTable + "|" + quotedTable + "|" + unquotedTable + ")";
     }
 
 
