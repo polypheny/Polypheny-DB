@@ -371,12 +371,13 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void importInitialSourceForeignKeys(
+    private Map<Long, List<String>> importInitialSourceForeignKeys(
             Statement statement,
             DataSource<?> adapter,
             Map<String, List<ExportedColumn>> exportedColumns,
             Map<String, LogicalTable> sourceTablesByPhysicalName ) {
         Snapshot snapshot = catalog.getSnapshot();
+        Map<Long, List<String>> importedForeignKeys = new LinkedHashMap<>();
 
         for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
             String tableIdentifier = getExportedSourceTableIdentifier( entry );
@@ -397,8 +398,12 @@ public class DdlManagerImpl extends DdlManager {
 
             for ( ForeignKeySignature sourceForeignKey : sourceSignatures ) {
                 addForeignKeyForRefresh( table, sourceForeignKey, statement, catalog.getLogicalRel( table.namespaceId ) );
+                importedForeignKeys.computeIfAbsent( table.id, ignored -> new ArrayList<>() )
+                        .add( formatForeignKeySignature( sourceForeignKey, snapshot ) );
             }
         }
+
+        return importedForeignKeys;
     }
 
 
@@ -629,6 +634,7 @@ public class DdlManagerImpl extends DdlManager {
 
         Map<String, LogicalTable> sourceTablesByPhysicalName = new HashMap<>( discovery.knownTablesByIdentifier() );
         Map<String, List<ExportedColumn>> addedExportedColumns = new LinkedHashMap<>();
+        Map<Long, String> addedTableNames = new LinkedHashMap<>();
 
         for ( Map.Entry<String, Map.Entry<String, List<ExportedColumn>>> addedTable : discovery.exportedTablesByIdentifier().entrySet() ) {
             if ( discovery.knownTablesByIdentifier().containsKey( addedTable.getKey() ) ) {
@@ -644,9 +650,25 @@ public class DdlManagerImpl extends DdlManager {
             LogicalTable createdTable = createRelationalSourceTable( statement.getTransaction(), discovery.sourceAdapter(), namespaceId, exportedTable.getKey(), exportedTable.getValue() );
             sourceTablesByPhysicalName.put( addedTable.getKey(), createdTable );
             addedExportedColumns.put( exportedTable.getKey(), exportedTable.getValue() );
-            summaries.add( new SourceRefreshSummary( sourceName, exportedTable.getKey(), DataModel.RELATIONAL, List.of( "Added source table" ) ) );
+            addedTableNames.put( createdTable.id, exportedTable.getKey() );
         }
-        importInitialSourceForeignKeys( statement, discovery.sourceAdapter(), addedExportedColumns, sourceTablesByPhysicalName );
+        Map<Long, List<String>> importedForeignKeys = importInitialSourceForeignKeys( statement, discovery.sourceAdapter(), addedExportedColumns, sourceTablesByPhysicalName );
+        for ( Map.Entry<Long, String> addedTable : addedTableNames.entrySet() ) {
+            List<String> changeDescriptions = new ArrayList<>();
+            changeDescriptions.add( "Added source table" );
+            List<String> primaryKeyColumns = addedExportedColumns.getOrDefault( addedTable.getValue(), List.of() ).stream()
+                    .filter( ExportedColumn::primary )
+                    .map( ExportedColumn::physicalColumnName )
+                    .toList();
+            if ( !primaryKeyColumns.isEmpty() ) {
+                changeDescriptions.add( "Added primary key: " + joinNames( primaryKeyColumns ) );
+            }
+            List<String> foreignKeys = importedForeignKeys.getOrDefault( addedTable.getKey(), List.of() );
+            if ( !foreignKeys.isEmpty() ) {
+                changeDescriptions.add( "Added foreign keys: " + joinNames( foreignKeys ) );
+            }
+            summaries.add( new SourceRefreshSummary( sourceName, addedTable.getValue(), DataModel.RELATIONAL, changeDescriptions ) );
+        }
         return summaries;
     }
 
@@ -1091,7 +1113,7 @@ public class DdlManagerImpl extends DdlManager {
 
         List<PhysicalEntity> sourcePhysicalEntities = sourceAdapterCatalog.getPhysicalsFromAllocs( sourceAllocation.id );
         if ( sourcePhysicalEntities == null || sourcePhysicalEntities.isEmpty() ) {
-            return SourceSchemaRefreshPlan.deleted( logicalTable, null, logicalTable.name );
+            return SourceSchemaRefreshPlan.unsupported( logicalTable );
         }
 
         PhysicalEntity currentPhysicalEntity = sourcePhysicalEntities.stream()
