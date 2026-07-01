@@ -679,6 +679,9 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Override
     public void deleteConstraint( long constraintId ) {
         LogicalConstraint logicalConstraint = constraints.get( constraintId );
+        if ( logicalConstraint == null ) {
+            return;
+        }
         synchronized ( this ) {
             constraints.remove( logicalConstraint.id );
         }

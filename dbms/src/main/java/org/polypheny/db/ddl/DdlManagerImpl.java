@@ -425,21 +425,35 @@ public class DdlManagerImpl extends DdlManager {
 
         LogicalAdapter adapter = catalog.getSnapshot().getAdapter( name ).orElseThrow();
         if ( adapter.type == AdapterType.SOURCE ) {
-            for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getEntitiesOnAdapter( adapter.id ).orElse( List.of() ) ) {
+            Snapshot snapshot = catalog.getSnapshot();
+            List<AllocationEntity> allocations = snapshot.alloc().getEntitiesOnAdapter( adapter.id ).orElse( List.of() );
+            Set<Long> droppedForeignKeys = new HashSet<>();
+            for ( AllocationEntity allocation : allocations ) {
+                if ( allocation.unwrap( AllocationTable.class ).isEmpty() ) {
+                    continue;
+                }
+                LogicalTable table = snapshot.rel().getTable( allocation.logicalId ).orElse( null );
+                if ( table == null ) {
+                    continue;
+                }
+                List<LogicalForeignKey> foreignKeys = new ArrayList<>( snapshot.rel().getForeignKeys( table.id ) );
+                foreignKeys.addAll( snapshot.rel().getExportedKeys( table.id ) );
+                for ( LogicalForeignKey foreignKey : foreignKeys ) {
+                    if ( droppedForeignKeys.add( foreignKey.id ) ) {
+                        deleteForeignKeyForRefresh( table, foreignKey, snapshot.rel(), catalog.getLogicalRel( foreignKey.namespaceId ) );
+                    }
+                }
+            }
+
+            for ( AllocationEntity allocation : allocations ) {
                 if ( catalog.getSnapshot().alloc().getFromLogical( allocation.logicalId ).isEmpty() ) {
                     continue;
                 }
-
                 if ( allocation.unwrap( AllocationCollection.class ).isPresent() ) {
                     dropNamespace( catalog.getSnapshot().doc().getCollection( allocation.logicalId ).orElseThrow().getNamespaceName(), true, statement );
                     continue;
                 }
                 if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {
-
-                    for ( LogicalForeignKey fk : catalog.getSnapshot().rel().getForeignKeys( allocation.logicalId ) ) {
-                        catalog.getLogicalRel( allocation.namespaceId ).deleteForeignKey( fk.id );
-                    }
-
                     LogicalTable table = catalog.getSnapshot().rel().getTable( allocation.logicalId ).orElseThrow();
 
                     // Make sure that there is only one adapter
@@ -461,6 +475,14 @@ public class DdlManagerImpl extends DdlManager {
 
                     // Remove primary keys
                     catalog.getLogicalRel( allocation.namespaceId ).deletePrimaryKey( table.id );
+
+                    // Delete remaining constraints and keys, e.g. keys created for source foreign key references
+                    for ( LogicalConstraint constraint : catalog.getSnapshot().rel().getConstraints( table.id ) ) {
+                        catalog.getLogicalRel( allocation.namespaceId ).deleteConstraint( constraint.id );
+                    }
+                    for ( LogicalKey key : catalog.getSnapshot().rel().getTableKeys( table.id ) ) {
+                        catalog.getLogicalRel( allocation.namespaceId ).deleteKey( key.id );
+                    }
 
                     // Delete columns
                     for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( allocation.logicalId ) ) {
