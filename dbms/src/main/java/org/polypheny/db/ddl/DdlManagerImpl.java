@@ -312,9 +312,10 @@ public class DdlManagerImpl extends DdlManager {
     }
 
     private LogicalTable createRelationalSourceTable( Transaction transaction, DataSource<?> adapter, long namespace, String exportedTableName, List<ExportedColumn> exportedColumns ) {
-        String tableName = getUniqueEntityName( namespace, exportedTableName, ( ns, en ) -> catalog.getSnapshot().rel().getTable( ns, en ) );
+        String tableName = getUniqueEntityName( namespace, normalizeIdentifier( exportedTableName ), ( ns, en ) -> catalog.getSnapshot().rel().getTable( ns, en ) );
 
         String physicalSchema = exportedColumns.get( 0 ).physicalSchemaName();
+        String physicalTable = exportedColumns.get( 0 ).physicalTableName();
 
         LogicalTable logical = catalog.getLogicalRel( namespace ).addTable( tableName, EntityType.SOURCE, !adapter.isDataReadOnly() );
         List<LogicalColumn> columns = new ArrayList<>();
@@ -327,6 +328,7 @@ public class DdlManagerImpl extends DdlManager {
         int colPos = 1;
 
         List<Long> pkIds = new ArrayList<>();
+        Map<Long, String> sourcePhysicalColumnNames = new HashMap<>();
         for ( ExportedColumn exportedColumn : exportedColumns ) {
             LogicalColumn column = catalog.getLogicalRel( namespace ).addColumn(
                     exportedColumn.name(),
@@ -351,6 +353,7 @@ public class DdlManagerImpl extends DdlManager {
 
             columns.add( column );
             aColumns.add( allocationColumn );
+            sourcePhysicalColumnNames.put( column.id, exportedColumn.physicalColumnName() );
             if ( exportedColumn.primary() ) {
                 pkIds.add( column.id );
             }
@@ -362,10 +365,10 @@ public class DdlManagerImpl extends DdlManager {
 
         buildRelationalNamespace( namespace, logical, adapter );
 
-        transaction.attachCommitAction( () ->
+        transaction.attachCommitAction( () -> {
                 // we can execute with initial logical and allocation data as this is a source and this will not change
-                adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns, physicalSchema ) )
-        );
+                adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns, physicalSchema, physicalTable, sourcePhysicalColumnNames ) );
+        } );
         catalog.updateSnapshot();
         return logical;
     }
@@ -1048,6 +1051,9 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( !refreshPlan.hasChanges() ) {
             log.info( "No schema refresh needed for table {}", logicalTable.name );
+            refreshUnchangedSourcePhysicalMetadata( refreshPlan, statement );
+            catalog.updateSnapshot();
+            statement.getQueryProcessor().resetCaches();
             return refreshPlan.changeDescriptions();
         }
 
@@ -1063,6 +1069,26 @@ public class DdlManagerImpl extends DdlManager {
     private String sourceTableDeletedMessage( LogicalTable table, Snapshot snapshot ) {
         String namespaceName = snapshot.getNamespace( table.namespaceId ).map( n -> n.name ).orElse( String.valueOf( table.namespaceId ) );
         return String.format( "Source table %s.%s was deleted in the source.", namespaceName, table.name );
+    }
+
+
+    private void refreshUnchangedSourcePhysicalMetadata( SourceSchemaRefreshPlan refreshPlan, Statement statement ) {
+        AllocationEntity sourceAllocation = refreshPlan.sourceAllocation();
+        List<AllocationColumn> refreshedAllocationColumns = catalog.getSnapshot().alloc().getColumns( sourceAllocation.placementId ).stream()
+                .filter( c -> c.logicalTableId == refreshPlan.logicalTable().id )
+                .sorted( Comparator.comparingInt( AllocationColumn::getPosition ) )
+                .collect( Collectors.toCollection( ArrayList::new ) );
+
+        refreshPhysicalSourceTableMetadata(
+                refreshPlan.logicalTable(),
+                sourceAllocation.unwrapOrThrow( AllocationTable.class ),
+                refreshPlan.sourceSchemaName(),
+                refreshPlan.sourceTableName(),
+                refreshPlan.currentLogicalColumns(),
+                refreshedAllocationColumns,
+                ImmutableList.copyOf( getCurrentPrimaryKeyIds( refreshPlan.logicalTable(), catalog.getSnapshot().rel() ) ),
+                refreshPlan.orderedSourceColumns()
+        );
     }
 
 
@@ -1153,13 +1179,20 @@ public class DdlManagerImpl extends DdlManager {
                         .getExportedColumnsForTable( sourceSchemaName, sourceTableName );
 
         if ( currentSourceColumns == null || currentSourceColumns.isEmpty() ) {
-            return SourceSchemaRefreshPlan.deleted( logicalTable, sourceSchemaName, sourceTableName );
+            currentSourceColumns = findRenamedSourceTableColumns( sourceAdapter, sourceSchemaName, sourceTableName );
+            if ( currentSourceColumns == null || currentSourceColumns.isEmpty() ) {
+                return SourceSchemaRefreshPlan.deleted( logicalTable, sourceSchemaName, sourceTableName );
+            }
+            ExportedColumn firstColumn = currentSourceColumns.get( 0 );
+            sourceSchemaName = firstColumn.physicalSchemaName();
+            sourceTableName = firstColumn.physicalTableName();
         }
 
         // Keep only columns that belong to the expected schema
         if ( sourceSchemaName != null ) {
+            String currentSourceSchemaName = sourceSchemaName;
             currentSourceColumns = currentSourceColumns.stream()
-                    .filter( c -> sourceSchemaName.equalsIgnoreCase( c.physicalSchemaName() ) )
+                    .filter( c -> currentSourceSchemaName.equalsIgnoreCase( c.physicalSchemaName() ) )
                     .toList();
         }
         if ( currentSourceColumns.isEmpty() ) {
@@ -1633,9 +1666,11 @@ public class DdlManagerImpl extends DdlManager {
                 logicalTable,
                 sourceAllocation.unwrapOrThrow( AllocationTable.class ),
                 refreshPlan.sourceSchemaName(),
+                refreshPlan.sourceTableName(),
                 refreshedLogicalColumns,
                 refreshedAllocationColumns,
-                refreshedPkIds
+                refreshedPkIds,
+                refreshPlan.orderedSourceColumns()
         );
     }
 
@@ -2778,9 +2813,11 @@ public class DdlManagerImpl extends DdlManager {
             LogicalTable table,
             AllocationTable allocationTable,
             String physicalSchema,
+            String physicalTable,
             List<LogicalColumn> logicalColumns,
             List<AllocationColumn> allocationColumns,
-            ImmutableList<Long> pkIds ) {
+            ImmutableList<Long> pkIds,
+            List<ExportedColumn> sourceColumns ) {
 
         DataSource<?> adapter = AdapterManager.getInstance()
                 .getSource( allocationTable.adapterId )
@@ -2791,8 +2828,31 @@ public class DdlManagerImpl extends DdlManager {
         adapter.createTable(
                 null,
                 LogicalTableWrapper.of( table, logicalColumns, pkIds ),
-                AllocationTableWrapper.of( allocationTable, allocationColumns, physicalSchema )
+                AllocationTableWrapper.of( allocationTable, allocationColumns, physicalSchema, physicalTable, getSourcePhysicalColumnNamesById( logicalColumns, sourceColumns ) )
         );
+    }
+
+
+    private List<ExportedColumn> findRenamedSourceTableColumns( DataSource<?> sourceAdapter, String sourceSchemaName, String sourceTableName ) {
+        String expectedIdentifier = formatSourceTableIdentifier( sourceSchemaName, sourceTableName );
+        if ( expectedIdentifier == null ) {
+            return List.of();
+        }
+
+        return sourceAdapter.asRelationalDataSource().getExportedColumnsFresh().entrySet().stream()
+                .filter( entry -> expectedIdentifier.equals( getExportedSourceTableIdentifier( entry ) ) )
+                .map( Map.Entry::getValue )
+                .findFirst()
+                .orElse( List.of() );
+    }
+
+
+    private Map<Long, String> getSourcePhysicalColumnNamesById( List<LogicalColumn> logicalColumns, List<ExportedColumn> sourceColumns ) {
+        Map<String, String> sourcePhysicalNames = sourceColumns.stream()
+                .collect( Collectors.toMap( c -> normalizeIdentifier( c.physicalColumnName() ), ExportedColumn::physicalColumnName, ( left, right ) -> left ) );
+        return logicalColumns.stream()
+                .filter( column -> sourcePhysicalNames.containsKey( normalizeIdentifier( column.name ) ) )
+                .collect( Collectors.toMap( column -> column.id, column -> sourcePhysicalNames.get( normalizeIdentifier( column.name ) ) ) );
     }
 
 

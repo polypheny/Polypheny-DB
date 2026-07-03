@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity.allocation;
 
 import java.util.List;
+import java.util.Map;
 import lombok.Value;
 
 @Value(staticConstructor = "of")
@@ -27,5 +28,14 @@ public class AllocationTableWrapper {
     public List<AllocationColumn> columns;
 
     public String physicalSchema;
+
+    public String physicalTableName;
+
+    public Map<Long, String> physicalColumnNames;
+
+
+    public static AllocationTableWrapper of( AllocationTable table, List<AllocationColumn> columns, String physicalSchema ) {
+        return of( table, columns, physicalSchema, null, Map.of() );
+    }
 
 }
