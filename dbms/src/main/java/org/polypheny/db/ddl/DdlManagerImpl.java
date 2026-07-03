@@ -501,7 +501,37 @@ public class DdlManagerImpl extends DdlManager {
 
             }
         }
+        if ( adapter.type == AdapterType.STORE ) {
+            dropSynchronizedSourceMaterializationsOnStore( adapter.id, statement );
+        }
         AdapterManager.getInstance().removeAdapter( catalog, adapter.id );
+    }
+
+
+    private void dropSynchronizedSourceMaterializationsOnStore( long adapterId, Statement statement ) {
+        Snapshot snapshot = catalog.getSnapshot();
+
+        List<LogicalTable> synchronizedTables = snapshot.rel().getTables( (Pattern) null, (Pattern) null ).stream()
+                .filter( table -> table.synchronizedSourceEntityId != null )
+                .filter( table -> isPlacedOnlyOnAdapter( table.id, adapterId, snapshot ) )
+                .toList();
+        for ( LogicalTable table : synchronizedTables ) {
+            dropRemovedSourceTable( table, statement );
+        }
+
+        List<LogicalCollection> synchronizedCollections = snapshot.doc().getCollections( (Pattern) null, (Pattern) null ).stream()
+                .filter( collection -> collection.synchronizedSourceEntityId != null )
+                .filter( collection -> isPlacedOnlyOnAdapter( collection.id, adapterId, snapshot ) )
+                .toList();
+        for ( LogicalCollection collection : synchronizedCollections ) {
+            dropRemovedSourceCollection( collection, statement );
+        }
+    }
+
+
+    private boolean isPlacedOnlyOnAdapter( long logicalId, long adapterId, Snapshot snapshot ) {
+        List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( logicalId );
+        return !allocations.isEmpty() && allocations.stream().allMatch( allocation -> allocation.adapterId == adapterId );
     }
 
 
@@ -5373,6 +5403,31 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    private void dropRemovedSourceCollection( LogicalCollection collection, Statement statement ) {
+        Snapshot snapshot = catalog.getSnapshot();
+
+        Set<Long> placementIds = new HashSet<>();
+        for ( AllocationEntity allocation : snapshot.alloc().getFromLogical( collection.id ) ) {
+            catalog.getAdapterCatalog( allocation.adapterId ).ifPresent( adapterCatalog -> adapterCatalog.removeAllocAndPhysical( allocation.id ) );
+            catalog.getAllocDoc( allocation.namespaceId ).removeAllocation( allocation.id );
+            placementIds.add( allocation.placementId );
+        }
+
+        for ( long placementId : placementIds ) {
+            catalog.getAllocDoc( collection.namespaceId ).removePlacement( placementId );
+        }
+
+        for ( AllocationPartition partition : snapshot.alloc().getPartitionsFromLogical( collection.id ) ) {
+            catalog.getAllocDoc( collection.namespaceId ).removePartition( partition.id );
+        }
+
+        catalog.getLogicalDoc( collection.namespaceId ).deleteCollection( collection.id );
+
+        statement.getQueryProcessor().resetCaches();
+        catalog.updateSnapshot();
+    }
+
+
     private void deleteTableCatalogEntries( LogicalTable table, Statement statement, Snapshot snapshot ) {
         // delete all partitions
         for ( AllocationPartition partition : snapshot.alloc().getPartitionsFromLogical( table.id ) ) {
@@ -5401,7 +5456,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // delete constraints
         for ( LogicalConstraint constraint : snapshot.rel().getConstraints( table.id ) ) {
-            if ( table.entityType == EntityType.SOURCE ) {
+            if ( table.entityType == EntityType.SOURCE || table.synchronizedSourceEntityId != null ) {
                 catalog.getLogicalRel( table.namespaceId ).deleteConstraint( constraint.id );
             } else {
                 dropConstraint( statement.getTransaction(), table, constraint.id );
