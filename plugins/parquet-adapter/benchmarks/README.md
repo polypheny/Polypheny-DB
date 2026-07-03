@@ -50,7 +50,7 @@ run_pipeline/
 | `run_partitioning_bm_pipeline.md`            | Partitioning            |
 
 Each pipeline file contains the commands to build/start Polypheny where needed,
-run the benchmark clients, and generate the suite summary and plot. The
+run the benchmark clients, and generate the suite summary, exploratory Welch analysis, and plots. The
 aggregation pipeline additionally captures result values and generates a
 correctness comparison. Result interpretation documents are updated manually
 after the generated artifacts have been reviewed.
@@ -65,6 +65,7 @@ after the generated artifacts have been reviewed.
 | `scripts/ds_preprocessing/`              | Dataset materialization and preprocessing utilities.                         |
 | `scripts/summarize_benchmark_results.py` | Creates markdown summaries with per-query runtime statistics from benchmark CSV files. |
 | `scripts/compare_aggregation_results.py` | Compares captured aggregation result values across systems.                  |
+| `scripts/benchmark_welch_analysis.py`    | Creates exploratory pairwise Welch-test reports with confidence intervals and Holm-adjusted p-values. |
 | `scripts/plot_generation/`               | Plot generation scripts, including the generic SVG/PDF/PNG benchmark CSV plot generator. |
 
 PNG plot output requires Pillow. SVG and PDF output use only the Python
@@ -97,6 +98,7 @@ Result conventions:
 - `*_values.jsonl`: captured query result values used for correctness checks where applicable.
 - `*_summary.md`: generated comparison summary from `scripts/summarize_benchmark_results.py`.
 - `*_correctness_summary.md`: generated comparison of captured result values where applicable.
+- `*_welch_analysis.md`: generated exploratory Welch-test report based on successful measured runs.
 - `*_result_analysis.md`: manually maintained result interpretation combining the generated plot, findings, and comparability notes.
 - `results/plots/`: generated plot artifacts such as SVG, PDF, and PNG files.
 
@@ -107,17 +109,19 @@ Result conventions:
 2. Summary scripts calculate per-query mean, median, sample standard deviation,
    minimum, and maximum runtimes. The aggregation comparison also checks
    captured grouping keys and aggregate values.
-3. The plot generator creates SVG, PDF, and PNG figures from the raw timing
+3. The Welch-analysis script compares successful measured runs, reports 95%
+   confidence intervals, and applies Holm adjustment to the p-values.
+4. The plot generators create SVG, PDF, and PNG figures from the raw timing
    results.
-4. The corresponding `*_result_analysis.md` file is updated manually with the
-   interpretation of the summary and plot.
+5. The corresponding `*_result_analysis.md` file is updated manually with the
+   interpretation of the summary, statistical report, and plots.
 
 Current result folders:
 
 | Path                               | Contents                                                                    |
 |------------------------------------|-----------------------------------------------------------------------------|
-| `results/access_model_comparison/` | Access-model raw CSVs, generated summary, and manual result interpretation. |
-| `results/aggregation/`             | Aggregation raw CSV/JSONL files, timing and correctness summaries, and manual result interpretation. |
-| `results/nested_data/`             | Nested-data raw CSVs, generated summary, and manual result interpretation.  |
-| `results/partitioning/`            | Partitioning raw CSVs, generated summary, and manual result interpretation. |
+| `results/access_model_comparison/` | Access-model raw CSVs, generated summary and Welch analysis, and manual result interpretation. |
+| `results/aggregation/`             | Aggregation raw CSV/JSONL files, timing, correctness, and Welch summaries, and manual result interpretation. |
+| `results/nested_data/`             | Nested-data raw CSVs, generated summary and Welch analysis, and manual result interpretation.  |
+| `results/partitioning/`            | Partitioning raw CSVs, generated summary and Welch analysis, and manual result interpretation. |
 | `results/plots/`                   | Generated SVG, PDF, and PNG benchmark plots.                                |

@@ -22,9 +22,11 @@ The benchmarks evaluate the Parquet adapter from the following perspectives:
   - failures and timeouts recorded instead of runtime values.
 
 - Warmup runs are excluded from reported results. 
+- Query and system execution order was not randomized; caching, time trends, or other order effects may therefore influence comparisons.
 - Summary tables report mean, median, sample standard deviation, minimum, and maximum elapsed time over
 successful measured runs only. 
 - Where comparable, aggregation benchmarks also capture and compare grouping keys and aggregate values across systems. Numeric results are compared using the configured tolerance, while intentional result-schema differences are documented separately.
+- Exploratory pairwise Welch tests use the five successful measured runs per compared group. The small samples and non-randomized execution order limit the strength of the conclusions. Reports include unadjusted 95% confidence intervals and Holm-adjusted p-values; non-significant results are not interpreted as proof of equal performance.
 - The benchmark clients consume query results
 according to the result boundary described in the report methodology. 
 - Polypheny and DuckDB use JDBC clients that drain the complete result set. Spark is
@@ -35,6 +37,12 @@ executed in local mode inside Docker and consumes rows in the Spark runner.
 
 ```powershell
 python plugins\parquet-adapter\benchmarks\scripts\summarize_benchmark_results.py
+```
+
+Exploratory Welch reports are generated with:
+
+```powershell
+python plugins\parquet-adapter\benchmarks\scripts\benchmark_welch_analysis.py
 ```
 
 ## Datasets
@@ -135,6 +143,12 @@ Result summary:
 plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_tlcp_summary.md
 ```
 
+Exploratory Welch analysis:
+
+```text
+plugins/parquet-adapter/benchmarks/results/access_model_comparison/access_model_comparison_welch_analysis.md
+```
+
 ### Result Interpretation
 
 The generated plot and manual interpretation of the benchmark results are
@@ -219,6 +233,12 @@ Result summary:
 
 ```text
 plugins/parquet-adapter/benchmarks/results/nested_data/nested_data_summary.md
+```
+
+Exploratory Welch analysis:
+
+```text
+plugins/parquet-adapter/benchmarks/results/nested_data/nested_data_welch_analysis.md
 ```
 
 ### Result Interpretation
@@ -325,6 +345,12 @@ plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_summary.md
 plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_correctness_summary.md
 ```
 
+Exploratory Welch analysis:
+
+```text
+plugins/parquet-adapter/benchmarks/results/aggregation/aggregation_welch_analysis.md
+```
+
 ### Result Interpretation
 
 The generated plot and manual interpretation of the benchmark results are
@@ -416,6 +442,12 @@ Result summary:
 
 ```text
 plugins/parquet-adapter/benchmarks/results/partitioning/partitioning_summary.md
+```
+
+Exploratory Welch analysis:
+
+```text
+plugins/parquet-adapter/benchmarks/results/partitioning/partitioning_welch_analysis.md
 ```
 
 ### Result Interpretation

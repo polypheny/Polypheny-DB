@@ -90,12 +90,42 @@ python plugins\parquet-adapter\benchmarks\scripts\summarize_benchmark_results.py
   "Apache Spark=plugins\parquet-adapter\benchmarks\results\nested_data\nested_data_spark_results.csv"
 ```
 
+## Create exploratory Welch analysis
+
+```powershell
+python plugins\parquet-adapter\benchmarks\scripts\benchmark_welch_analysis.py `
+  --title "Nested Data - Exploratory Welch Analysis" `
+  --output plugins\parquet-adapter\benchmarks\results\nested_data\nested_data_welch_analysis.md `
+  "Polypheny Relational Normalized=plugins\parquet-adapter\benchmarks\results\nested_data\nested_data_polypheny_normalized_results.csv" `
+  "Polypheny Document MQL=plugins\parquet-adapter\benchmarks\results\nested_data\nested_data_polypheny_mql_results.csv" `
+  "DuckDB=plugins\parquet-adapter\benchmarks\results\nested_data\nested_data_duckdb_results.csv" `
+  "Apache Spark=plugins\parquet-adapter\benchmarks\results\nested_data\nested_data_spark_results.csv"
+```
+
 ## Create plot
 
 ```powershell
 python plugins\parquet-adapter\benchmarks\scripts\plot_generation\benchmark_result_plot_generator.py `
   --title "Nested Data" `
   --name nested_data_plot `
+  --query-order "Q01,Q02,Q03,Q04,Q05" `
+  --query-descriptions "Q01=Root-filtered full customer access;Q02=Root-filtered customer projection;Q03=Level-1 nested filtered order projection;Q04=Level-2 nested filtered lineitem projection;Q05=Level-2 nested lineitem MAX aggregation" `
+  --query-description-wrap-chars 24 `
+  --query-description-max-lines 2 `
+  "Polypheny Relational Normalized=plugins\parquet-adapter\benchmarks\results\nested_data\nested_data_polypheny_normalized_results.csv" `
+  "Polypheny Document MQL=plugins\parquet-adapter\benchmarks\results\nested_data\nested_data_polypheny_mql_results.csv" `
+  "DuckDB=plugins\parquet-adapter\benchmarks\results\nested_data\nested_data_duckdb_results.csv" `
+  "Apache Spark=plugins\parquet-adapter\benchmarks\results\nested_data\nested_data_spark_results.csv"
+```
+
+## Create plot with standard-deviation whiskers
+
+This creates additional `_std` files and leaves the mean-only plot files unchanged.
+
+```powershell
+python plugins\parquet-adapter\benchmarks\scripts\plot_generation\benchmark_result_std_plot_generator.py `
+  --title "Nested Data" `
+  --name nested_data_plot_std `
   --query-order "Q01,Q02,Q03,Q04,Q05" `
   --query-descriptions "Q01=Root-filtered full customer access;Q02=Root-filtered customer projection;Q03=Level-1 nested filtered order projection;Q04=Level-2 nested filtered lineitem projection;Q05=Level-2 nested lineitem MAX aggregation" `
   --query-description-wrap-chars 24 `

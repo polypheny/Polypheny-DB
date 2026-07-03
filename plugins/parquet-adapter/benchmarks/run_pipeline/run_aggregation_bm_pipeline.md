@@ -112,12 +112,42 @@ python plugins\parquet-adapter\benchmarks\scripts\summarize_benchmark_results.py
   "Apache Spark=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_spark_results.csv"
 ```
 
+## Create exploratory Welch analysis
+
+```powershell
+python plugins\parquet-adapter\benchmarks\scripts\benchmark_welch_analysis.py `
+  --title "Aggregation - Exploratory Welch Analysis" `
+  --output plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_welch_analysis.md `
+  "Polypheny Relational=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_polypheny_results.csv" `
+  "Polypheny Document MQL=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_polypheny_mql_results.csv" `
+  "DuckDB=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_duckdb_results.csv" `
+  "Apache Spark=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_spark_results.csv"
+```
+
 ## Create plot
 
 ```powershell
 python plugins\parquet-adapter\benchmarks\scripts\plot_generation\benchmark_result_plot_generator.py `
   --title "Aggregation on Partitioned TLC Data" `
   --name aggregation_plot `
+  --query-order "Q01,Q02,Q03,Q04,Q05,Q06,Q07,Q08,Q09,Q10" `
+  --query-descriptions "Q01=Yellow total row count;Q02=Yellow one-month count;Q03=Yellow one-day count;Q04=Yellow filtered row count;Q05=Yellow summary by year;Q06=FHV total row count;Q07=FHV one-month count;Q08=FHV filtered row count;Q09=FHV summary by year;Q10=FHV count by shared-request flag" `
+  --query-description-wrap-chars 14 `
+  --query-description-max-lines 3 `
+  "Polypheny Relational=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_polypheny_results.csv" `
+  "Polypheny Document MQL=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_polypheny_mql_results.csv" `
+  "DuckDB=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_duckdb_results.csv" `
+  "Apache Spark=plugins\parquet-adapter\benchmarks\results\aggregation\aggregation_spark_results.csv"
+```
+
+## Create plot with standard-deviation whiskers
+
+This creates additional `_std` files and leaves the mean-only plot files unchanged.
+
+```powershell
+python plugins\parquet-adapter\benchmarks\scripts\plot_generation\benchmark_result_std_plot_generator.py `
+  --title "Aggregation on Partitioned TLC Data" `
+  --name aggregation_plot_std `
   --query-order "Q01,Q02,Q03,Q04,Q05,Q06,Q07,Q08,Q09,Q10" `
   --query-descriptions "Q01=Yellow total row count;Q02=Yellow one-month count;Q03=Yellow one-day count;Q04=Yellow filtered row count;Q05=Yellow summary by year;Q06=FHV total row count;Q07=FHV one-month count;Q08=FHV filtered row count;Q09=FHV summary by year;Q10=FHV count by shared-request flag" `
   --query-description-wrap-chars 14 `

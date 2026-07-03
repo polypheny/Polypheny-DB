@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="720" viewBox="0 0 1180 720">
+<rect width="100%" height="100%" fill="white"/>
+<text x="590.0" y="34" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="700">Access Model Comparison</text>
+<text x="90" y="62" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Mean execution time (s, log scale)</text>
+<line x1="90" y1="590.00" x2="920" y2="590.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="594.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.01</text>
+<line x1="90" y1="559.29" x2="920" y2="559.29" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="563.29" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.02</text>
+<line x1="90" y1="518.71" x2="920" y2="518.71" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="522.71" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.05</text>
+<line x1="90" y1="488.00" x2="920" y2="488.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="492.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.1</text>
+<line x1="90" y1="457.29" x2="920" y2="457.29" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="461.29" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.2</text>
+<line x1="90" y1="416.71" x2="920" y2="416.71" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="420.71" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.5</text>
+<line x1="90" y1="386.00" x2="920" y2="386.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="390.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">1</text>
+<line x1="90" y1="355.29" x2="920" y2="355.29" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="359.29" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">2</text>
+<line x1="90" y1="314.71" x2="920" y2="314.71" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="318.71" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">5</text>
+<line x1="90" y1="284.00" x2="920" y2="284.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="288.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">10</text>
+<line x1="90" y1="253.29" x2="920" y2="253.29" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="257.29" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">20</text>
+<line x1="90" y1="212.71" x2="920" y2="212.71" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="216.71" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">50</text>
+<line x1="90" y1="182.00" x2="920" y2="182.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="186.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">100</text>
+<line x1="90" y1="151.29" x2="920" y2="151.29" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="155.29" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">200</text>
+<line x1="90" y1="110.71" x2="920" y2="110.71" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="114.71" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">500</text>
+<line x1="90" y1="80.00" x2="920" y2="80.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="84.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">1000</text>
+<line x1="90" y1="80" x2="90" y2="590" stroke="#333" stroke-width="1.2"/>
+<line x1="90" y1="590" x2="920" y2="590" stroke="#333" stroke-width="1.2"/>
+<rect x="107.00" y="235.72" width="24.00" height="354.28" fill="#4f9d55"><title>Polypheny Relational Flat Q01: mean 29.742 s; sample SD 1.684 s; n=5</title></rect>
+<rect x="134.00" y="227.20" width="24.00" height="362.80" fill="#c94c4c"><title>Polypheny Relational Normalized Q01: mean 36.050 s; sample SD 0.280 s; n=5</title></rect>
+<rect x="161.00" y="166.33" width="24.00" height="423.67" fill="#7b61b9"><title>Polypheny Document MQL Q01: mean 142.441 s; sample SD 7.816 s; n=5</title></rect>
+<rect x="188.00" y="328.38" width="24.00" height="261.62" fill="#f0a22e"><title>DuckDB Q01: mean 3.672 s; sample SD 0.281 s; n=5</title></rect>
+<rect x="215.00" y="249.60" width="24.00" height="340.40" fill="#2f6fbb"><title>Apache Spark Q01: mean 21.738 s; sample SD 0.306 s; n=5</title></rect>
+<rect x="273.00" y="285.58" width="24.00" height="304.42" fill="#4f9d55"><title>Polypheny Relational Flat Q02: mean 9.651 s; sample SD 0.395 s; n=5</title></rect>
+<rect x="300.00" y="281.60" width="24.00" height="308.40" fill="#c94c4c"><title>Polypheny Relational Normalized Q02: mean 10.556 s; sample SD 1.124 s; n=5</title></rect>
+<rect x="327.00" y="179.13" width="24.00" height="410.87" fill="#7b61b9"><title>Polypheny Document MQL Q02: mean 106.694 s; sample SD 10.386 s; n=5</title></rect>
+<rect x="354.00" y="453.32" width="24.00" height="136.68" fill="#f0a22e"><title>DuckDB Q02: mean 0.219 s; sample SD 0.013 s; n=5</title></rect>
+<rect x="381.00" y="270.16" width="24.00" height="319.84" fill="#2f6fbb"><title>Apache Spark Q02: mean 13.668 s; sample SD 0.248 s; n=5</title></rect>
+<rect x="439.00" y="467.91" width="24.00" height="122.09" fill="#4f9d55"><title>Polypheny Relational Flat Q03: mean 0.157 s; sample SD 0.013 s; n=5</title></rect>
+<rect x="466.00" y="464.29" width="24.00" height="125.71" fill="#c94c4c"><title>Polypheny Relational Normalized Q03: mean 0.171 s; sample SD 0.012 s; n=5</title></rect>
+<rect x="493.00" y="423.93" width="24.00" height="166.07" fill="#7b61b9"><title>Polypheny Document MQL Q03: mean 0.425 s; sample SD 0.024 s; n=5</title></rect>
+<rect x="520.00" y="534.00" width="24.00" height="56.00" fill="#f0a22e"><title>DuckDB Q03: mean 0.035 s; sample SD 0.002 s; n=5</title></rect>
+<rect x="547.00" y="378.58" width="24.00" height="211.42" fill="#2f6fbb"><title>Apache Spark Q03: mean 1.182 s; sample SD 0.143 s; n=5</title></rect>
+<rect x="605.00" y="306.09" width="24.00" height="283.91" fill="#4f9d55"><title>Polypheny Relational Flat Q04: mean 6.073 s; sample SD 0.173 s; n=5</title></rect>
+<rect x="632.00" y="296.19" width="24.00" height="293.81" fill="#c94c4c"><title>Polypheny Relational Normalized Q04: mean 7.594 s; sample SD 0.342 s; n=5</title></rect>
+<rect x="659.00" y="266.78" width="24.00" height="323.22" fill="#7b61b9"><title>Polypheny Document MQL Q04: mean 14.753 s; sample SD 0.406 s; n=5</title></rect>
+<rect x="686.00" y="418.51" width="24.00" height="171.49" fill="#f0a22e"><title>DuckDB Q04: mean 0.480 s; sample SD 0.043 s; n=5</title></rect>
+<rect x="713.00" y="342.55" width="24.00" height="247.45" fill="#2f6fbb"><title>Apache Spark Q04: mean 2.667 s; sample SD 0.301 s; n=5</title></rect>
+<rect x="771.00" y="344.90" width="24.00" height="245.10" fill="#4f9d55"><title>Polypheny Relational Flat Q05: mean 2.529 s; sample SD 0.182 s; n=5</title></rect>
+<rect x="798.00" y="349.05" width="24.00" height="240.95" fill="#c94c4c"><title>Polypheny Relational Normalized Q05: mean 2.303 s; sample SD 0.286 s; n=5</title></rect>
+<rect x="825.00" y="273.47" width="24.00" height="316.53" fill="#7b61b9"><title>Polypheny Document MQL Q05: mean 12.683 s; sample SD 0.275 s; n=5</title></rect>
+<rect x="852.00" y="481.73" width="24.00" height="108.27" fill="#f0a22e"><title>DuckDB Q05: mean 0.115 s; sample SD 0.004 s; n=5</title></rect>
+<rect x="879.00" y="356.61" width="24.00" height="233.39" fill="#2f6fbb"><title>Apache Spark Q05: mean 1.941 s; sample SD 0.224 s; n=5</title></rect>
+<line x1="119.00" y1="233.28" x2="119.00" y2="238.30" stroke="#222" stroke-width="1.5"/>
+<line x1="113.00" y1="233.28" x2="125.00" y2="233.28" stroke="#222" stroke-width="1.5"/>
+<line x1="113.00" y1="238.30" x2="125.00" y2="238.30" stroke="#222" stroke-width="1.5"/>
+<line x1="146.00" y1="226.85" x2="146.00" y2="227.54" stroke="#222" stroke-width="1.5"/>
+<line x1="140.00" y1="226.85" x2="152.00" y2="226.85" stroke="#222" stroke-width="1.5"/>
+<line x1="140.00" y1="227.54" x2="152.00" y2="227.54" stroke="#222" stroke-width="1.5"/>
+<line x1="173.00" y1="163.96" x2="173.00" y2="168.83" stroke="#222" stroke-width="1.5"/>
+<line x1="167.00" y1="163.96" x2="179.00" y2="163.96" stroke="#222" stroke-width="1.5"/>
+<line x1="167.00" y1="168.83" x2="179.00" y2="168.83" stroke="#222" stroke-width="1.5"/>
+<line x1="200.00" y1="325.11" x2="200.00" y2="331.90" stroke="#222" stroke-width="1.5"/>
+<line x1="194.00" y1="325.11" x2="206.00" y2="325.11" stroke="#222" stroke-width="1.5"/>
+<line x1="194.00" y1="331.90" x2="206.00" y2="331.90" stroke="#222" stroke-width="1.5"/>
+<line x1="227.00" y1="248.98" x2="227.00" y2="250.23" stroke="#222" stroke-width="1.5"/>
+<line x1="221.00" y1="248.98" x2="233.00" y2="248.98" stroke="#222" stroke-width="1.5"/>
+<line x1="221.00" y1="250.23" x2="233.00" y2="250.23" stroke="#222" stroke-width="1.5"/>
+<line x1="285.00" y1="283.80" x2="285.00" y2="287.43" stroke="#222" stroke-width="1.5"/>
+<line x1="279.00" y1="283.80" x2="291.00" y2="283.80" stroke="#222" stroke-width="1.5"/>
+<line x1="279.00" y1="287.43" x2="291.00" y2="287.43" stroke="#222" stroke-width="1.5"/>
+<line x1="312.00" y1="277.12" x2="312.00" y2="286.59" stroke="#222" stroke-width="1.5"/>
+<line x1="306.00" y1="277.12" x2="318.00" y2="277.12" stroke="#222" stroke-width="1.5"/>
+<line x1="306.00" y1="286.59" x2="318.00" y2="286.59" stroke="#222" stroke-width="1.5"/>
+<line x1="339.00" y1="175.01" x2="339.00" y2="183.67" stroke="#222" stroke-width="1.5"/>
+<line x1="333.00" y1="175.01" x2="345.00" y2="175.01" stroke="#222" stroke-width="1.5"/>
+<line x1="333.00" y1="183.67" x2="345.00" y2="183.67" stroke="#222" stroke-width="1.5"/>
+<line x1="366.00" y1="450.82" x2="366.00" y2="455.95" stroke="#222" stroke-width="1.5"/>
+<line x1="360.00" y1="450.82" x2="372.00" y2="450.82" stroke="#222" stroke-width="1.5"/>
+<line x1="360.00" y1="455.95" x2="372.00" y2="455.95" stroke="#222" stroke-width="1.5"/>
+<line x1="393.00" y1="269.36" x2="393.00" y2="270.97" stroke="#222" stroke-width="1.5"/>
+<line x1="387.00" y1="269.36" x2="399.00" y2="269.36" stroke="#222" stroke-width="1.5"/>
+<line x1="387.00" y1="270.97" x2="399.00" y2="270.97" stroke="#222" stroke-width="1.5"/>
+<line x1="451.00" y1="464.31" x2="451.00" y2="471.82" stroke="#222" stroke-width="1.5"/>
+<line x1="445.00" y1="464.31" x2="457.00" y2="464.31" stroke="#222" stroke-width="1.5"/>
+<line x1="445.00" y1="471.82" x2="457.00" y2="471.82" stroke="#222" stroke-width="1.5"/>
+<line x1="478.00" y1="461.32" x2="478.00" y2="467.47" stroke="#222" stroke-width="1.5"/>
+<line x1="472.00" y1="461.32" x2="484.00" y2="461.32" stroke="#222" stroke-width="1.5"/>
+<line x1="472.00" y1="467.47" x2="484.00" y2="467.47" stroke="#222" stroke-width="1.5"/>
+<line x1="505.00" y1="421.52" x2="505.00" y2="426.47" stroke="#222" stroke-width="1.5"/>
+<line x1="499.00" y1="421.52" x2="511.00" y2="421.52" stroke="#222" stroke-width="1.5"/>
+<line x1="499.00" y1="426.47" x2="511.00" y2="426.47" stroke="#222" stroke-width="1.5"/>
+<line x1="532.00" y1="531.21" x2="532.00" y2="536.98" stroke="#222" stroke-width="1.5"/>
+<line x1="526.00" y1="531.21" x2="538.00" y2="531.21" stroke="#222" stroke-width="1.5"/>
+<line x1="526.00" y1="536.98" x2="538.00" y2="536.98" stroke="#222" stroke-width="1.5"/>
+<line x1="559.00" y1="373.53" x2="559.00" y2="384.28" stroke="#222" stroke-width="1.5"/>
+<line x1="553.00" y1="373.53" x2="565.00" y2="373.53" stroke="#222" stroke-width="1.5"/>
+<line x1="553.00" y1="384.28" x2="565.00" y2="384.28" stroke="#222" stroke-width="1.5"/>
+<line x1="617.00" y1="304.85" x2="617.00" y2="307.37" stroke="#222" stroke-width="1.5"/>
+<line x1="611.00" y1="304.85" x2="623.00" y2="304.85" stroke="#222" stroke-width="1.5"/>
+<line x1="611.00" y1="307.37" x2="623.00" y2="307.37" stroke="#222" stroke-width="1.5"/>
+<line x1="644.00" y1="294.24" x2="644.00" y2="298.23" stroke="#222" stroke-width="1.5"/>
+<line x1="638.00" y1="294.24" x2="650.00" y2="294.24" stroke="#222" stroke-width="1.5"/>
+<line x1="638.00" y1="298.23" x2="650.00" y2="298.23" stroke="#222" stroke-width="1.5"/>
+<line x1="671.00" y1="265.57" x2="671.00" y2="268.01" stroke="#222" stroke-width="1.5"/>
+<line x1="665.00" y1="265.57" x2="677.00" y2="265.57" stroke="#222" stroke-width="1.5"/>
+<line x1="665.00" y1="268.01" x2="677.00" y2="268.01" stroke="#222" stroke-width="1.5"/>
+<line x1="698.00" y1="414.74" x2="698.00" y2="422.63" stroke="#222" stroke-width="1.5"/>
+<line x1="692.00" y1="414.74" x2="704.00" y2="414.74" stroke="#222" stroke-width="1.5"/>
+<line x1="692.00" y1="422.63" x2="704.00" y2="422.63" stroke="#222" stroke-width="1.5"/>
+<line x1="725.00" y1="337.82" x2="725.00" y2="347.85" stroke="#222" stroke-width="1.5"/>
+<line x1="719.00" y1="337.82" x2="731.00" y2="337.82" stroke="#222" stroke-width="1.5"/>
+<line x1="719.00" y1="347.85" x2="731.00" y2="347.85" stroke="#222" stroke-width="1.5"/>
+<line x1="783.00" y1="341.83" x2="783.00" y2="348.20" stroke="#222" stroke-width="1.5"/>
+<line x1="777.00" y1="341.83" x2="789.00" y2="341.83" stroke="#222" stroke-width="1.5"/>
+<line x1="777.00" y1="348.20" x2="789.00" y2="348.20" stroke="#222" stroke-width="1.5"/>
+<line x1="810.00" y1="343.86" x2="810.00" y2="354.92" stroke="#222" stroke-width="1.5"/>
+<line x1="804.00" y1="343.86" x2="816.00" y2="343.86" stroke="#222" stroke-width="1.5"/>
+<line x1="804.00" y1="354.92" x2="816.00" y2="354.92" stroke="#222" stroke-width="1.5"/>
+<line x1="837.00" y1="272.52" x2="837.00" y2="274.44" stroke="#222" stroke-width="1.5"/>
+<line x1="831.00" y1="272.52" x2="843.00" y2="272.52" stroke="#222" stroke-width="1.5"/>
+<line x1="831.00" y1="274.44" x2="843.00" y2="274.44" stroke="#222" stroke-width="1.5"/>
+<line x1="864.00" y1="480.23" x2="864.00" y2="483.28" stroke="#222" stroke-width="1.5"/>
+<line x1="858.00" y1="480.23" x2="870.00" y2="480.23" stroke="#222" stroke-width="1.5"/>
+<line x1="858.00" y1="483.28" x2="870.00" y2="483.28" stroke="#222" stroke-width="1.5"/>
+<line x1="891.00" y1="351.77" x2="891.00" y2="362.05" stroke="#222" stroke-width="1.5"/>
+<line x1="885.00" y1="351.77" x2="897.00" y2="351.77" stroke="#222" stroke-width="1.5"/>
+<line x1="885.00" y1="362.05" x2="897.00" y2="362.05" stroke="#222" stroke-width="1.5"/>
+<text x="173.00" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q01</text>
+<text x="339.00" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q02</text>
+<text x="505.00" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q03</text>
+<text x="671.00" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q04</text>
+<text x="837.00" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q05</text>
+<text x="173.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Full access</text>
+<text x="339.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Projection</text>
+<text x="505.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Filtered count</text>
+<text x="671.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Filtered full access</text>
+<text x="837.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Filtered projection</text>
+<text x="955" y="80" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700">System</text>
+<rect x="955" y="100" width="16" height="16" fill="#4f9d55"/>
+<text x="979" y="113" font-family="Helvetica, Arial, sans-serif" font-size="12">Polypheny Relational Flat</text>
+<rect x="955" y="128" width="16" height="16" fill="#c94c4c"/>
+<text x="979" y="141" font-family="Helvetica, Arial, sans-serif" font-size="12">Polypheny Relational Normalized</text>
+<rect x="955" y="156" width="16" height="16" fill="#7b61b9"/>
+<text x="979" y="169" font-family="Helvetica, Arial, sans-serif" font-size="12">Polypheny Document MQL</text>
+<rect x="955" y="184" width="16" height="16" fill="#f0a22e"/>
+<text x="979" y="197" font-family="Helvetica, Arial, sans-serif" font-size="12">DuckDB</text>
+<rect x="955" y="212" width="16" height="16" fill="#2f6fbb"/>
+<text x="979" y="225" font-family="Helvetica, Arial, sans-serif" font-size="12">Apache Spark</text>
+<text x="955" y="270" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#333">Bars show mean;</text>
+<text x="1054.36" y="270" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#333"></text>
+<text x="955" y="288" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#333">whiskers show +/-1 sample SD.</text>
+<text x="1132.744" y="288" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#333"></text>
+</svg>
