@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
@@ -68,6 +69,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
@@ -90,6 +92,7 @@ import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.RunMode;
+import org.polypheny.db.webui.Crud.SourceMaterializationRefreshResult;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
@@ -217,6 +220,32 @@ public class TestHelper {
     public static void addHsqldb( String name, Statement statement ) throws SQLException {
         executeSQL( statement, "ALTER ADAPTERS ADD \"" + name + "\" USING 'Hsqldb' AS 'Store'"
                 + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+    }
+
+
+    public static void addPostgresStore( String name, String host, int port, String database, String username, String password ) throws SQLException {
+        executeSQL(
+                "ALTER ADAPTERS ADD \"" + name + "\" USING 'PostgreSQL' AS 'Store' WITH "
+                        + "'{"
+                        + "\"mode\":\"remote\","
+                        + "\"host\":\"" + host + "\","
+                        + "\"port\":\"" + port + "\","
+                        + "\"database\":\"" + database + "\","
+                        + "\"username\":\"" + username + "\","
+                        + "\"password\":\"" + password + "\","
+                        + "\"maxConnections\":\"25\""
+                        + "}'" );
+    }
+
+
+    public static void addMongoStore( String name ) throws SQLException {
+        executeSQL(
+                "ALTER ADAPTERS ADD \"" + name + "\" USING 'MongoDB' AS 'Store' WITH "
+                        + "'{"
+                        + "\"mode\":\"docker\","
+                        + "\"instanceId\":\"0\","
+                        + "\"trxLifetimeLimit\":\"1209600\""
+                        + "}'" );
     }
 
 
@@ -906,6 +935,156 @@ public class TestHelper {
         Method getTableMethod = crud.getClass().getDeclaredMethod( "getTable", UIRequest.class );
         getTableMethod.setAccessible( true );
         return (RelationalResult) getTableMethod.invoke( crud, request );
+    }
+
+
+    public static LogicalTable createSynchronizedSourceMaterialization( LogicalTable source, String materializedTableName, String storeName ) throws Exception {
+        RelationalResult result = postSourceMaterializationRequest(
+                "/createSynchronizedSourceMaterialization",
+                source.id,
+                Catalog.snapshot().getAdapter( storeName ).orElseThrow().id,
+                materializedTableName );
+        assertNull( result.error, result.error );
+        return Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, materializedTableName ).orElseThrow();
+    }
+
+
+    public static LogicalTable createIndependentSourceMaterialization( LogicalTable source, String materializedTableName, String storeName ) throws Exception {
+        RelationalResult result = postSourceMaterializationRequest(
+                "/createIndependentSourceMaterialization",
+                source.id,
+                Catalog.snapshot().getAdapter( storeName ).orElseThrow().id,
+                materializedTableName );
+        assertNull( result.error, result.error );
+        return Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, materializedTableName ).orElseThrow();
+    }
+
+
+    public static LogicalCollection createSynchronizedSourceCollectionMaterialization( LogicalCollection sourceCollection, String materializedCollectionName, String storeName ) throws Exception {
+        RelationalResult result = postSourceMaterializationRequest(
+                "/createSynchronizedSourceCollectionMaterialization",
+                sourceCollection.id,
+                Catalog.snapshot().getAdapter( storeName ).orElseThrow().id,
+                materializedCollectionName );
+        assertNull( result.error, result.error );
+        return Catalog.snapshot().doc().getCollection( sourceCollection.namespaceId, materializedCollectionName ).orElseThrow();
+    }
+
+
+    public static List<String> previewSynchronizedMaterializationSchemaRefresh( long materializationId ) throws Exception {
+        return refreshSynchronizedMaterializationSchema( materializationId, null ).changeDescriptions();
+    }
+
+
+    public static List<String> applySynchronizedMaterializationSchemaRefresh( long materializationId ) throws Exception {
+        return refreshSynchronizedMaterializationSchema( materializationId, "synchronizedApply" ).changeDescriptions();
+    }
+
+
+    public static void refreshSynchronizedMaterializationData( long materializationId ) throws Exception {
+        Object crud = getCrud();
+
+        UIRequest request = UIRequest.builder()
+                .type( "RefreshRequest" )
+                .entityId( materializationId )
+                .namespace( Catalog.DEFAULT_NAMESPACE_NAME )
+                .currentPage( 1 )
+                .noLimit( false )
+                .refreshTrigger( "synchronizedApplyWithData" )
+                .confirmedDataRefresh( true )
+                .build();
+
+        Method refreshMethod = crud.getClass().getMethod( "refreshSourceSchemaIfNeeded", UIRequest.class );
+        refreshMethod.invoke( crud, request );
+    }
+
+
+    private static SourceMaterializationRefreshResult refreshSynchronizedMaterializationSchema( long materializationId, String refreshTrigger ) throws Exception {
+        Object crud = getCrud();
+
+        UIRequest request = UIRequest.builder()
+                .type( "RefreshRequest" )
+                .entityId( materializationId )
+                .namespace( Catalog.DEFAULT_NAMESPACE_NAME )
+                .currentPage( 1 )
+                .noLimit( false )
+                .refreshTrigger( refreshTrigger )
+                .build();
+
+        Method refreshMethod = crud.getClass().getMethod( "refreshSourceSchemaIfNeeded", UIRequest.class );
+        return (SourceMaterializationRefreshResult) refreshMethod.invoke( crud, request );
+    }
+
+
+    public static void refreshSynchronizedCollectionMaterializationData( long materializationId ) throws Exception {
+        Object crud = getCrud();
+
+        UIRequest request = UIRequest.builder()
+                .type( "RefreshRequest" )
+                .entityId( materializationId )
+                .currentPage( 1 )
+                .noLimit( false )
+                .confirmedDataRefresh( true )
+                .build();
+
+        Method refreshMethod = crud.getClass().getMethod( "refreshSynchronizedSourceCollectionMaterializationData", UIRequest.class );
+        refreshMethod.invoke( crud, request );
+    }
+
+
+    public static int countRows( String tableName ) throws Exception {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                Statement statement = jdbcConnection.getConnection().createStatement();
+                ResultSet resultSet = statement.executeQuery( "SELECT COUNT(*) FROM " + quoteQualified( Catalog.DEFAULT_NAMESPACE_NAME, tableName ) ) ) {
+            assertTrue( resultSet.next() );
+            return resultSet.getInt( 1 );
+        }
+    }
+
+
+    public static int countDocuments( String namespaceName, String collectionName ) {
+        DocResult result = MongoConnection.executeGetResponse( "db." + collectionName + ".find({})", namespaceName );
+        return result.getData() == null ? 0 : result.getData().length;
+    }
+
+
+    private static Object getCrud() throws Exception {
+        Object httpServer = HttpServer.getInstance();
+        Field crudField = httpServer.getClass().getDeclaredField( "crud" );
+        crudField.setAccessible( true );
+        return crudField.get( httpServer );
+    }
+
+
+    private static String quoteQualified( String namespaceName, String entityName ) {
+        return quoteIdentifier( namespaceName ) + "." + quoteIdentifier( entityName );
+    }
+
+
+    private static String quoteIdentifier( String identifier ) {
+        return "\"" + identifier.replace( "\"", "\"\"" ) + "\"";
+    }
+
+
+    private static RelationalResult postSourceMaterializationRequest( String route, long sourceEntityId, long targetStoreId, String targetEntityName ) throws Exception {
+        JsonObject data = new JsonObject();
+        data.addProperty( "sourceEntityId", sourceEntityId );
+        data.addProperty( "targetStoreId", targetStoreId );
+        data.add( "targetNamespaceId", JsonNull.INSTANCE );
+        data.addProperty( "targetEntityName", targetEntityName );
+
+        HttpResponse<String> response = Unirest.post( "{protocol}://{host}:{port}" + route )
+                .header( "Content-Type", "application/json" )
+                .basicAuth( "pa", "" )
+                .routeParam( "protocol", "http" )
+                .routeParam( "host", "127.0.0.1" )
+                .routeParam( "port", String.valueOf( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() ) )
+                .body( data )
+                .asString();
+        if ( response.getStatus() >= 400 ) {
+            fail( "Source materialization request failed with HTTP " + response.getStatus() + ": " + response.getBody() );
+        }
+        return HttpServer.mapper.readValue( response.getBody(), RelationalResult.class );
     }
 
 
