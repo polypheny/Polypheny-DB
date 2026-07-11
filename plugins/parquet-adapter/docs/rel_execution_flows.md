@@ -1,13 +1,7 @@
-# Parquet Relational And Document Execution Flows
+# Relational And Document Execution Flows
 
-These diagrams describe the current Parquet runtime paths after aggregate
-execution was moved into shared infrastructure and document aggregation pushdown
-was added. They focus on runtime entry points reached from generated planner
-nodes, not on full planner rule matching.
-
-Relational execution starts at `ParquetRelTable`. Document execution starts at
-`ParquetDocument`. Both models use the shared aggregate executors through the
-`ParquetAggregateSource` abstraction.
+This document summarizes the current runtime entry points for relational scans,
+document scans, structural joins, and aggregate execution.
 
 ## Aggregate Entry Points
 
@@ -26,7 +20,7 @@ flowchart TD
     docWrapper["ParquetDocAggregateExecutor"]
 
     relSource["relational ParquetAggregateSource"]
-    docSource["DocumentAggregateSource"]
+    docSource["document ParquetAggregateSource"]
 
     dataExecutor["ParquetDataAggregateExecutor"]
     metadataExecutor["ParquetMetadataAggregateExecutor"]
@@ -42,7 +36,7 @@ flowchart TD
     docMetadataEntry --> docWrapper --> docSource --> metadataExecutor
 ```
 
-## Shared Data Aggregate Flow
+## Data Aggregate Flow
 
 ```mermaid
 flowchart TD
@@ -51,53 +45,23 @@ flowchart TD
     shared["ParquetDataAggregateExecutor.createEnumerator(...)"]
 
     resolveFilters["ParquetFilterResolver.resolveFilters(...)"]
-    strategy{"enumerator strategy"}
-
-    fileProjection["tryBuildAggregateProjection(...)"]
-    fileEnumerator["ParquetFileGroupedAggregateEnumerator"]
-    fileFilter["partition/statistics file filters"]
-    fileGroup["fileGroupKey(...) from ParquetConstantColumnResolver"]
-    countStarRows["COUNT(*) from source row count"]
-    columnReader["ParquetNoFilterColumnAggregateReader"]
-    columnAccumulator["AggregateColumnAccumulator"]
-    fileRows["build aggregate result rows"]
-
-    groupedCountProjection["tryBuildGroupedCountProjection(...)"]
-    groupedProjection["tryBuildGroupedAggregateProjection(...)"]
-    groupedEnumerator["ParquetGroupedAggregateEnumerator"]
-    groupedReader["ParquetGroupedAggregateReader"]
-    pageStrategy{"page strategy"}
-    countPage["ParquetCountAggregatePageReader"]
-    groupedPage["ParquetGroupedAggregatePageReader"]
-
-    fallbackRows["relational fallback rows from ParquetEnumeratorsFactory"]
+    strategy{"strategy"}
+    fileGrouped["ParquetFileGroupedAggregateEnumerator"]
+    grouped["ParquetGroupedAggregateEnumerator"]
+    fallbackRows["relational fallback rows"]
     rowAggregate["ParquetRowAggregateEnumerator"]
-    rowEngine["ParquetRowAggregator"]
-    directProjector["DirectAggregateRowProjector"]
+    unsupported["unsupported aggregate shape"]
 
-    unsupported["GenericRuntimeException"]
-
-    relEntry -->|"with row fallback"| shared
-    docEntry -->|"without row fallback"| shared
+    relEntry --> shared
+    docEntry --> shared
     shared --> resolveFilters --> strategy
-
-    strategy -->|"file-constant groups and exact file filters"| fileProjection --> fileEnumerator
-    fileEnumerator --> fileFilter --> fileGroup
-    fileGroup --> countStarRows --> fileRows
-    fileGroup -->|"aggregate columns projected"| columnReader --> columnAccumulator --> fileRows
-
-    strategy -->|"COUNT(*) grouped by flat data columns"| groupedCountProjection --> groupedEnumerator
-    strategy -->|"flat grouped aggregates with supported filters"| groupedProjection --> groupedEnumerator
-    groupedEnumerator --> groupedReader --> pageStrategy
-    pageStrategy -->|"COUNT(*) only and no group fields"| countPage
-    pageStrategy -->|"default grouped path"| groupedPage
-
-    strategy -->|"no aggregate reader strategy and relational fallback exists"| fallbackRows
-    fallbackRows --> rowAggregate --> rowEngine --> directProjector
-    strategy -->|"no aggregate reader strategy and no fallback"| unsupported
+    strategy -->|"file-constant groups and filters"| fileGrouped
+    strategy -->|"grouped primitive readers"| grouped
+    strategy -->|"relational fallback available"| fallbackRows --> rowAggregate
+    strategy -->|"no supported strategy"| unsupported
 ```
 
-## Shared Metadata Aggregate Flow
+## Metadata Aggregate Flow
 
 ```mermaid
 flowchart TD
@@ -109,78 +73,62 @@ flowchart TD
     evaluator["ParquetMultiFilterEvaluator"]
     partitionEval["ParquetSourceFilePartitionFilterEvaluator"]
     statsEval["ParquetSourceFileStatisticsFilterEvaluator"]
-
     loop["iterate ParquetAggregateSource.sourceFiles()"]
-    matches{"matchesExactly(...)"}
-    skip["skip source file"]
-    groupKey["fileGroupKey(...) from ParquetConstantColumnResolver"]
-    accumulator["MetadataAggregateAccumulator[] per group"]
-    aggregateKind{"aggregate kind"}
-    countStar["COUNT(*) uses sourceRowCount(...)"]
-    countColumn["COUNT(column) uses rowCount - nullCount"]
-    minMax["MIN/MAX uses ParquetColumnStatistics ranges"]
-    emptyGroup["if no groups and no matches, create empty aggregate row"]
-    rows["build PolyValue[] result rows"]
-    enumerable["Linq4j.asEnumerable(rows)"]
-
-    supportGate["supportsMetadataAggregate(...)"]
-    supportChecks["file-constant groups, metadata-decidable filters, COUNT/MIN/MAX support"]
+    match{"file matches exactly?"}
+    skip["skip file"]
+    groupKey["file group key"]
+    accumulate["metadata accumulators"]
+    rows["result rows"]
 
     relEntry --> executor
     docEntry --> executor
     executor --> resolveFilters --> evaluator
     evaluator --> partitionEval
     evaluator --> statsEval
-    evaluator --> loop --> matches
-    matches -->|"false"| skip
-    matches -->|"true"| groupKey --> accumulator --> aggregateKind
-    aggregateKind -->|"COUNT(*)"| countStar --> rows
-    aggregateKind -->|"COUNT(column)"| countColumn --> rows
-    aggregateKind -->|"MIN/MAX"| minMax --> rows
-    loop --> emptyGroup --> rows --> enumerable
-
-    supportGate -.-> supportChecks -.-> executor
+    evaluator --> loop --> match
+    match -->|"false"| skip
+    match -->|"true"| groupKey --> accumulate --> rows
 ```
 
-## Relational Projection And Row Scan Flow
+## Relational Projection Flow
 
 ```mermaid
 flowchart TD
     entry["ParquetRelTable.project(...)"]
-    factory["ParquetRelExecutorsFactory.getExecutor(ParquetRelProjectExecutor.class)"]
+    factory["ParquetRelExecutorsFactory"]
     executor["ParquetRelProjectExecutor.createEnumerator(...)"]
     resolveFilters["ParquetFilterResolver.resolveFilters(...)"]
     enumeratorsFactory["ParquetEnumeratorsFactory.create(...)"]
     multiFile["ParquetMultiFileEnumerator"]
-    fileEvaluator["partition/statistics source-file evaluator"]
-    fileMatches{"source file matches?"}
-    skip["skip source file"]
-    enumForFile["ParquetRelExecutor.enumeratorForFile(...)"]
+    fileEval["partition/statistics file evaluators"]
     shape{"table and projection shape"}
-
-    primitiveReader["ParquetPrimitiveRowReader"]
-    readerFilters["readerFilters(...)"]
-    outputProjection["primitiveRowProjection(...)"]
-    primitiveEnumerator["ParquetRowRelEnumerator"]
-
-    sourceReaderNested["ParquetSourceReader"]
+    primitive["ParquetPrimitiveRowReader + ParquetRowRelEnumerator"]
     nestedRepeated["ParquetNestedRepeatedRelEnumerator"]
-
-    sourceReaderBinding["ParquetSourceReader"]
     nestedNonRepeated["ParquetNestedNonRepeatedRelEnumerator"]
-
-    sourceReaderGeneric["ParquetSourceReader"]
-    relationalEnumerator["ParquetRelEnumerator"]
+    generic["ParquetRelEnumerator"]
 
     entry --> factory --> executor --> resolveFilters --> enumeratorsFactory --> multiFile
-    multiFile --> fileEvaluator --> fileMatches
-    fileMatches -->|"false"| skip
-    fileMatches -->|"true"| enumForFile --> shape
+    multiFile --> fileEval --> shape
+    shape -->|"flat primitive projection"| primitive
+    shape -->|"nested repeated table"| nestedRepeated
+    shape -->|"binding/path scan"| nestedNonRepeated
+    shape -->|"generic flat row path"| generic
+```
 
-    shape -->|"flat primitive projection"| primitiveReader --> readerFilters --> outputProjection --> primitiveEnumerator
-    shape -->|"nested table"| sourceReaderNested --> nestedRepeated
-    shape -->|"binding scan needed"| sourceReaderBinding --> nestedNonRepeated
-    shape -->|"generic flat row path"| sourceReaderGeneric --> relationalEnumerator
+## Structural Join Flow
+
+```mermaid
+flowchart TD
+    plan["ParquetRelJoin.implement(...)"]
+    table["ParquetRelTable.nestedJoin(...)"]
+    executor["ParquetRelNestedJoinExecutor.createEnumerator(...)"]
+    split["JoinFiltersSplitter"]
+    files["parent source-file pruning"]
+    reader["ParquetSourceReader"]
+    joinEnum["ParquetNestedJoinEnumerator"]
+    rows["joined PolyValue[] rows"]
+
+    plan --> table --> executor --> split --> files --> reader --> joinEnum --> rows
 ```
 
 ## Document Scan Flow
@@ -189,63 +137,27 @@ flowchart TD
 flowchart TD
     plan["ParquetDocScan.implement(...)"]
     scan["ParquetDocument.scanFiltered(...)"]
-    register["register involved Parquet adapter"]
     resolveDynamic["resolve dynamic filter parameters"]
-    filters["FiltersContainer.shared(...)"]
     multiFile["ParquetMultiFileEnumerator"]
-    sourceReader["ParquetSourceReader"]
-    docEnumerator["ParquetDocEnumerator"]
+    reader["ParquetSourceReader"]
+    docEnum["ParquetDocEnumerator"]
     extractor["ParquetDocValueExtractor"]
     row["PolyValue[] containing one PolyDocument"]
 
-    plan --> scan --> register --> resolveDynamic --> filters --> multiFile
-    multiFile -->|"for each source file"| sourceReader
-    sourceReader --> docEnumerator --> extractor --> row
-```
-
-## Document Aggregate Planning To Runtime
-
-```mermaid
-flowchart TD
-    scan["ParquetDocScan"]
-    filterRule["attachDocumentFiltersToScanUnderCalc"]
-    aggregateRules{"document aggregate rule"}
-    aggregateOnScan["documentAggregateOnScan"]
-    aggregateOnProject["documentAggregateOnProjectScan"]
-    aggregateOnCalc["documentAggregateOnCalcScan"]
-    fieldMapping["map top-level document fields to exported Parquet columns"]
-    aggregateNode["ParquetDocAggregate"]
-    mode{"aggregate mode"}
-    metadataScan["ParquetDocMetadataScan"]
-    metadataRuntime["ParquetDocument.metadataAggregate(...)"]
-    dataRuntime["ParquetDocument.dataAggregate(...)"]
-    sharedMetadata["ParquetMetadataAggregateExecutor"]
-    sharedData["ParquetDataAggregateExecutor"]
-
-    scan --> filterRule --> scan
-    scan --> aggregateRules
-    aggregateRules --> aggregateOnScan
-    aggregateRules --> aggregateOnProject
-    aggregateRules --> aggregateOnCalc
-    aggregateOnScan --> fieldMapping
-    aggregateOnProject --> fieldMapping
-    aggregateOnCalc --> fieldMapping
-    fieldMapping --> aggregateNode --> mode
-    mode -->|"metadata supported"| metadataScan --> metadataRuntime --> sharedMetadata
-    mode -->|"data aggregate supported"| dataRuntime --> sharedData
+    plan --> scan --> resolveDynamic --> multiFile
+    multiFile -->|"for each source file"| reader
+    reader --> docEnum --> extractor --> row
 ```
 
 ## Notes
 
-- Aggregate planner rules are registered only when
-  `ParquetOptimizationSettings.isOptimizeAggregation()` is enabled.
-- Metadata aggregation is exact-only. It requires file-constant group fields,
-  metadata-decidable filters, and supported `COUNT`, `MIN`, or `MAX` aggregate
-  calls.
-- Data aggregation supports the shared fast paths for file-level aggregates,
-  grouped counts, and grouped flat-column aggregates. The relational path also
-  provides a row fallback; the document path relies on the shared aggregate
-  readers.
-- Document aggregate pushdown only maps projected top-level document fields that
-  correspond to exported Parquet columns. More complex document expressions stay
-  outside the adapter aggregate path.
+- `ParquetRelTable` is the relational runtime facade for scans, joins, and
+  aggregates.
+- `ParquetDocument` is the document runtime facade for scans and aggregates.
+- `ParquetSourceReader` is the low-level reader used after source-file pruning.
+- `ParquetMultiFileEnumerator` handles file iteration and residual filter
+  reduction for multi-file tables.
+- Metadata aggregate execution is exact-only and uses partition values plus
+  footer statistics.
+- Data aggregate execution can use direct readers or relational row fallback,
+  depending on the shape of the aggregate.

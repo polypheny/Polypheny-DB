@@ -1,238 +1,131 @@
 # Planner Basics
 
-The planner takes a query and turns it into an executable plan.
+Polypheny turns a query into an executable algebra tree by applying planner
+rules. The Parquet adapter participates by registering Parquet-specific
+conventions, nodes, and rewrite rules.
 
-Polypheny does not execute the first query plan directly.
-The planner searches for a better plan by applying transformation rules.
-
-For the Parquet adapter, we register rules that recognize Parquet-specific opportunities.
-For example, a normal scan can become a ParquetRelScan.
-A filter or projection can be attached directly to that scan.
-A parent-child join between normalized Parquet tables can become a ParquetRelJoin.
-
-The planner compares possible plans using cost estimates.
-Plans that read fewer columns, apply filters earlier, or execute joins inside the adapter are cheaper.
-The selected plan is then converted back into an executable form.
-
-In simple words:
-
-```text
-SQL query
-  -> logical plan
-  -> optimized physical plan
-  -> runtime execution
-```
-
-## Plan Nodes
-
-A plan node is one operation in the query plan.
-
-Examples:
-
-```text
-Scan table
-Filter rows
-Project columns
-Join two inputs
-```
-
-In code, plan nodes are classes such as:
-
-```text
-LogicalRelJoin
-EnumerableJoin
-ParquetRelScan
-ParquetRelJoin
-```
-
-A plan is a tree of plan nodes. For example:
-
-```text
-LogicalRelProject
-  LogicalRelFilter
-    LogicalRelJoin
-      LogicalRelScan(customers)
-      LogicalRelScan(orders)
-```
-
-The node describes what should happen at that point in the tree.
-
-## Logical And Physical Nodes
-
-Logical nodes describe the operation, but not exactly how it will be executed.
-
-Example:
-
-```text
-LogicalRelJoin
-```
-
-means:
-
-```text
-join these two inputs
-```
-
-It does not yet say whether the join will be executed by Polypheny, by an adapter, or by generated enumerable code.
-
-Physical nodes describe a concrete execution strategy.
-
-Examples:
-
-```text
-ParquetRelScan
-ParquetRelJoin
-EnumerableJoin
-```
-
-`ParquetRelJoin` means:
-
-```text
-execute this supported join inside the Parquet adapter
-```
-
-## Rules
-
-A rule is not a plan node.
-
-A rule is a planner transformation. It looks for a specific plan shape and replaces it with another plan shape.
-
-Examples:
-
-```text
-ParquetRelScanRule
-ParquetRelJoinRule
-ParquetEnumerableJoinRule
-ParquetEnumerableFilterJoinRule
-ParquetEnumerableCalcJoinRule
-```
-
-A rule usually extends:
-
-```text
-AlgOptRule
-ConverterRule
-```
-
-Plan nodes usually extend or implement algebra classes, for example:
-
-```text
-ParquetRelScan extends RelScan<ParquetRelTable> implements EnumerableAlg
-ParquetRelJoin extends Join implements EnumerableAlg
-```
-
-So the difference is:
-
-```text
-Rule:
-  changes the plan during optimization
+## Main Concepts
 
 Plan node:
-  is part of the plan that will be optimized or executed
-```
 
-## Example: Projection Pushdown
+- represents one operation in the plan tree
+- examples: `ParquetRelScan`, `ParquetRelJoin`, `ParquetRelAggregate`,
+  `EnumerableParquet`
 
-`ParquetRelScanRule` matches:
+Rule:
 
-```text
-LogicalRelProject
-  ParquetRelScan
-```
+- recognizes a plan shape and replaces it with a cheaper or more specific shape
+- current Parquet rules are wrapped by `ParquetAlgOptRule`
+- relational matchers live in `ParquetRelPatternMatchers`
+- document matchers live in `ParquetDocPatternMatchers`
+- shared aggregate union rewrites live in `ParquetAggregatePatternMatchers`
 
-If the project only selects existing columns, the rule replaces it with:
+Convention:
 
-```text
-ParquetRelScan(projected fields only)
-```
+- marks which runtime owns a physical plan fragment
+- relational Parquet nodes use `ParquetRelConvention`
+- document Parquet nodes use `ParquetDocConvention`
+- Parquet plans are converted back to `EnumerableConvention` by
+  `EnumerableParquet`
 
-So this:
+## Relational Planning Path
 
-```sql
-SELECT name, age FROM customers
-```
+Relational tables are exposed through `ParquetRelTable`.
 
-can become a scan that reads only `name` and `age`.
+When Polypheny asks the source for a scan, `ParquetRelationalSource.getRelScan`
+adds `FilterSetOpTransposeRule` and returns a `ParquetRelScan`. The scan
+registers `ParquetRelConvention`, which registers rules from `ParquetRelRules`.
 
-Here:
+Always-registered relational rules:
 
-- `ParquetRelScanRule` is the rule.
-- `LogicalRelProject` and `ParquetRelScan` are plan nodes.
-- The rule removes the separate project node and creates a new `ParquetRelScan` node with fewer fields.
+- `ParquetRelPatternMatchers.attachFilterToJoinUnderCalc`
+- `ParquetRelPatternMatchers.attachFieldsAndFiltersToScanUnderCalc`
+- `ParquetRelRules.EnumerableParquetRule`
 
-## Example: Adapter-Level Join
+Rules registered when `ParquetOptimizationSettings.isOptimizeAggregation()` is
+enabled:
 
-Before the join rule applies, the planner may have:
+- `ParquetRelPatternMatchers.joinWithScanOnLeftAndScanOnRight`
+- `ParquetRelPatternMatchers.aggregateOnScan`
+- `ParquetRelPatternMatchers.aggregateOnCalcScan`
+- `ParquetAggregatePatternMatchers.partialAggregateOnUnion`
+- `ParquetAggregatePatternMatchers.partialAggregateOnCalcUnion`
 
-```text
-LogicalRelJoin
-  ParquetRelScan(parent)
-  ParquetRelScan(child)
-```
+## Document Planning Path
 
-`ParquetRelJoinRule` checks whether this is a supported Parquet parent-child join.
+Document collections are exposed through `ParquetDocument`.
 
-If it is supported, the rule replaces the logical join with:
+Document plans use `ParquetDocConvention` and rules from `ParquetDocRules`.
+Supported filters are attached directly to `ParquetDocScan`; the current code
+does not have a separate document-filter node.
 
-```text
-ParquetRelJoin
-  ParquetRelScan(parent)
-  ParquetRelScan(child)
-```
+Always-registered document rules:
 
-Here:
+- `ParquetDocPatternMatchers.attachFiltersToScanUnderCalc`
+- `ParquetDocRules.EnumerableParquetDocumentRule`
 
-- `ParquetRelJoinRule` is the rule.
-- `LogicalRelJoin`, `ParquetRelScan`, and `ParquetRelJoin` are plan nodes.
-- `ParquetRelJoin` is the physical node that later generates runtime code.
+Aggregate rules registered when `ParquetOptimizationSettings` enables
+aggregation optimization:
 
-At runtime, `ParquetRelJoin.implement(...)` calls:
+- `ParquetDocPatternMatchers.aggregateOnScan`
+- `ParquetDocPatternMatchers.aggregateOnProjectScan`
+- `ParquetDocPatternMatchers.aggregateOnCalcScan`
+- `ParquetAggregatePatternMatchers.partialAggregateOnUnion`
+- `ParquetAggregatePatternMatchers.partialAggregateOnCalcUnion`
 
-```text
-ParquetRelTable.nestedJoin(...)
-```
+## Projection And Filter Pushdown
 
-which returns rows through:
+The relational scan rule consumes a supported `EnumerableCalc` above an
+`EnumerableParquet -> ParquetRelScan` subtree. It can:
 
-```text
-Enumerable<PolyValue[]>
-```
+- keep simple projected field indexes on `ParquetRelScan`
+- translate supported predicates through `ParquetRelFilterTranslator`
+- remove the calc when all of its work is represented by the updated scan
 
-## Convention
+Document filter pushdown is similar, but the rule works with
+`ParquetDocPatternMatchers.attachFiltersToScanUnderCalc` and
+`ParquetDocFilterTranslator`.
 
-A convention describes how a plan node is implemented physically.
+## Structural Join Planning
 
-`Convention.NONE` means:
-
-```text
-logical node, no concrete execution strategy yet
-```
-
-`EnumerableConvention.INSTANCE` means:
-
-```text
-physical node that can execute through the enumerable row-iterator runtime
-```
-
-Enumerable does not mean there are many joins. It means rows are produced one by one through an `Enumerable` / `Enumerator`.
-
-For example, a single `ParquetRelJoin` can be enumerable because it produces joined rows one by one.
-
-## Short Mental Model
-
-Use this mental model:
+Adapter-level joins use `ParquetRelJoin`. The join matcher recognizes an
+`EnumerableJoin` whose inputs are both Parquet scans and whose condition is a
+generated structural parent/child key comparison:
 
 ```text
-Plan node = an operation in the plan tree
-Rule      = a rewrite that changes the plan tree
-Convention = the execution style of a plan node
+child.__polypheny_parent_row_id = parent.__polypheny_row_id
 ```
 
-Example:
+The matcher checks the bindings through `ParquetRelJoin.supportedDirection` and
+creates a `ParquetRelJoin` when the relationship is a direct generated
+parent/child relationship.
 
-```text
-ParquetRelJoinRule sees LogicalRelJoin
-  -> checks if adapter join is possible
-  -> creates ParquetRelJoin
-  -> ParquetRelJoin later executes the join
-```
+## Aggregate Planning
+
+Aggregate pushdown creates `ParquetRelAggregate` or `ParquetDocAggregate`.
+
+The aggregate node chooses:
+
+- `metadataAggregate`: exact footer/partition-statistics path for supported
+  `COUNT`, `MIN`, and `MAX` cases
+- `dataAggregate`: adapter-side row scan aggregate path for supported
+  `COUNT`, `SUM`, `MIN`, and `MAX` cases
+
+Shared union rewrites use `ParquetEnumerableUnion` as a marker so partial
+aggregate decomposition is not repeatedly applied to the same union subtree.
+
+## PolyAlg Names
+
+`ParquetPlugin` registers display names for the current planner nodes:
+
+| PolyAlg name | Class |
+| --- | --- |
+| `PE_CALC` | `EnumerableParquet` |
+| `PE_UNION` | `ParquetEnumerableUnion` |
+| `P_SCAN` | `ParquetRelScan` |
+| `P_METADATA_SCAN` | `ParquetRelMetadataScan` |
+| `P_JOIN` | `ParquetRelJoin` |
+| `P_AGGREGATE` | `ParquetRelAggregate` |
+| `P_DOC_SCAN` | `ParquetDocScan` |
+| `P_DOC_METADATA_SCAN` | `ParquetDocMetadataScan` |
+| `P_DOC_AGGREGATE` | `ParquetDocAggregate` |

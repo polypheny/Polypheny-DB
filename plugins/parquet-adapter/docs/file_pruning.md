@@ -1,73 +1,77 @@
 # File Pruning
 
-- Not matching file sources is filtered according to parquet statistics.
-- Statistics loaded when adapter created.
-- Statistics stored in Adapter Settings as part of Bindings and reused for Polypheny statistics (`ParquetTableStatisticsReader`)
+File pruning avoids opening Parquet files that cannot satisfy the pushed
+adapter filters. It works for both normal scans and aggregate execution.
 
-## Changes
+## Stored File Metadata
 
-### ParquetColumnStatistics
-`Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\relational\schema\ParquetColumnStatistics.java`
+Each physical file is represented by `ParquetSourceFile`:
 
-- per-file statistics
+```text
+fileUrl
+partitionValues
+columnStatistics
+```
 
-### ParquetSourceFile - record
-`Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\relational\schema\ParquetSourceFile.java`
+`partitionValues` come from Hive-style `key=value` folders. `columnStatistics`
+are read by `ParquetColumnStatisticsReader` from Parquet footer metadata when
+the source file is discovered.
 
-- Store column statistics per column: `Map<List<String>, ParquetColumnStatistics> columnStatistics`. Column path is a column identifier because field can be nested
-- ParquetSourceFile stored in ParquetTableBindings `Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\relational\schema\ParquetTableBinding.java`
+`ParquetTableBinding` stores the list of `ParquetSourceFile` objects and maps
+logical physical columns to `ParquetColumnBinding` instances. A column binding
+knows whether the column is real Parquet data, a partition value, or a synthetic
+normalized-schema column.
 
-### ParquetBindingSerializer
-`Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\relational\schema\ParquetBindingSerializer.java`
+## Evaluators
 
-New functions:
-- serializeColumnStatistics()
-- deserializeColumnStatistics()
+Current source-file pruning uses:
 
-### ParquetColumnStatisticsReader
-`Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\shared\statistics\ParquetColumnStatisticsReader.java`
-- Reads column statistics from Parquet footer metadata
-- returns ParquetColumnStatistics
+- `ParquetSourceFilePartitionFilterEvaluator`: evaluates filters over partition
+  columns using `ParquetSourceFile.partitionValues()`
+- `ParquetSourceFileStatisticsFilterEvaluator`: evaluates filters over data
+  columns using per-file `ParquetColumnStatistics`
+- `ParquetMultiFilterEvaluator`: combines evaluator results
+- `ParquetSourceFileFilterReducer`: rejects impossible files and returns
+  residual filters still needed at row level
 
-### ParquetTableStatisticsReader
-`Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\shared\statistics\ParquetTableStatisticsReader.java`
-- load Polypheny statistics from bindings
-- returns ProvidedColumnStatistics
+All source-file evaluators return true, false, or unknown. Unknown means the
+file is kept.
 
-### ParquetSourceFileStatisticsFilterEvaluator
-`Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\relational\execution\ParquetSourceFileStatisticsFilterEvaluator.java`
-- evaluateLeaf() function get statistics by column path and evaluates if file should be skipped
-- called from abstract class FilterEvaluator.evaluate() which is called from match()
+## Scan Flow
 
-### ParquetSourceFilePartitionFilterEvaluator
-`Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\relational\execution\ParquetSourceFilePartitionFilterEvaluator.java`
-- evaluateLeaf() function evaluate by folder name if file should be skipped
-- called from abstract class FilterEvaluator.evaluate() which is called from match()
+1. Planner rules attach supported filters to `ParquetRelScan`.
+2. `ParquetRelTable.project(...)` resolves dynamic parameters and physical
+   column bindings through `ParquetFilterResolver`.
+3. `ParquetRelExecutorsFactory` creates a `ParquetMultiFileEnumerator`.
+4. For each `ParquetSourceFile`, the file evaluator checks partition values and
+   footer statistics.
+5. If a file is proven false, the enumerator skips it without opening a reader.
+6. If a file is proven true for some filters, those filters can be removed from
+   the residual row-level filter list for that file.
+7. Remaining filters are passed to `ParquetSourceReader` for possible native
+   filtering and to the enumerator for exact row-level evaluation.
 
-### ParquetMultiFileEnumerator
-`Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\relational\execution\ParquetMultiFileEnumerator.java`
+## Aggregate Flow
 
-- creates relevant enumerator using factory
+`ParquetDataAggregateExecutor` and `ParquetMetadataAggregateExecutor` use the
+same partition/statistics file-evaluator chain. This allows aggregate plans to:
 
-### ParquetRelTable
-`Polypheny-DB\plugins\parquet-adapter\src\main\java\org\polypheny\db\adapter\parquet\relational\schema\ParquetRelTable.java'`
+- skip files rejected by partition or footer metadata
+- answer file-constant groups from file metadata
+- keep residual filters when a file-level evaluator cannot prove the result
 
-- creates ParquetMultiFileEnumerator
-- ParquetMultiFileEnumerator receives chain of evaluators
-- createParquetSourceFileEvaluatorsChain() - chain contains two evaluators: partition `ParquetSourceFilePartitionFilterEvaluator` and statistics `ParquetSourceFileStatisticsFilterEvaluator`
+## What Can Be Pruned
 
-## Flow
+File pruning is strongest when predicates target:
 
-1. Adapter creation / file discovery
-   Stores partition values + footer stats in ParquetSourceFile
-2. Adapter settings persist those ParquetSourceFiles. 
-3. Adapter/table loading
-   Restore ParquetSourceFiles containing partition values + footer from settings
-4. Query execution calls ParquetRelTable.project(...) / scan(...) / nestedJoin(...),
-   which creates ParquetMultiFileEnumerator.
-5. ParquetMultiFileEnumerator checks each ParquetSourceFile before opening it. Per-file pruning happens inside: `ParquetMultiFileEnumerator.moveNext()`
-6. Partition evaluator compares filters with sourceFile.partitionValues(). 
-7. Statistics evaluator compares filters with sourceFile.columnStatistics(). 
-8. If evaluators prove the file cannot match, the file is skipped. 
-9. If the result is unknown or possibly matching, the file reader is opened. 
-10. Row-level filtering still happens after opening the file.
+- partition columns such as `year` or `month`
+- columns with reliable footer min/max or null-count metadata
+- constant-per-file physical columns that can be proven from statistics
+
+The adapter keeps files for:
+
+- unsupported operators
+- unsupported logical combinations
+- missing or unreliable statistics
+- repeated/nested paths that cannot be decided at file level
+- predicates involving values only known after row expansion

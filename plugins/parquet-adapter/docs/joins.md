@@ -1,293 +1,119 @@
-# Adapter Level Joins
+# Adapter-Level Structural Joins
 
-## Goal: Perform join on parquet adapter level.
+Adapter-level joins let the Parquet adapter execute direct parent/child joins
+between generated normalized tables without materializing both sides as
+independent generic relational inputs first.
 
-For normalized nested tables, the relation is:
-`child.__polypheny_parent_row_id = parent.__polypheny_row_id`
+## Supported Relationship
 
-That relationship comes from one nested Parquet structure. So the adapter can process it closer to how the file is physically stored.
+The supported relationship is the generated structural key relationship:
 
-
-## Benefits of Adepter Level Join
-Adepter Level Join is faster because the adapter-level join uses file layout and nested-table semantics, 
-while Polypheny-level join treats everything as generic relational rows.
-
-### Polypheny join
-- read parent rows
-- read child rows
-- join outside adapter
-
-### Parquet adapter join:
-- read nested parent/child structure
-- apply filters while expanding
-- return already joined rows
-
-## Supported Joins
-
-We support only joins between virtual tables derived from the same physical parquet file.
-
-## Unsupported Joins
-
-### 1. LOWER(category) filter is not supported
-
-```sql
-SELECT product_id, name, category
-FROM pon__products
-WHERE LOWER(category) IS NOT NULL
-LIMIT 10;
-```
-
-![unsupported_lower.png](images/planner/unsupported_lower.png)
-
-### 2. LIMIT inside the FROM creates E_LIMIT node under the JOIN
-
-```sql
-SELECT i.order_item_id, d.code, d.amount
-FROM (
-    SELECT __polypheny_row_id, order_item_id
-    FROM pon__orders__items
-    LIMIT 100
-) i
-JOIN pon__orders__items__discounts d
-    ON d.__polypheny_parent_row_id = i.__polypheny_row_id
-LIMIT 10;
-```
-![unsupported_limit.png](images/planner/unsupported_limit.png)
-
-### 3. Two JOINs - the second join is not supported
-
-join `orders` with `order_items` was done on adapter level
-
-```sql
-SELECT o.order_id, i.product_id, d.code, d.amount
-FROM pon__orders o
-JOIN pon__orders__items i
-    ON i.__polypheny_parent_row_id = o.__polypheny_row_id
-JOIN pon__orders__items__discounts d
-    ON d.__polypheny_parent_row_id = i.__polypheny_row_id
-LIMIT 10;
-```
-![unsupported_2_joins.png](images/planner/unsupported_2_joins.png)
-
-### 4. Two JOINs - one join with another physical table
-
-```sql
-SELECT o.order_id, i.quantity, p.name, p.category
-FROM pon__orders o
-JOIN pon__orders__items i
-    ON i.__polypheny_parent_row_id = o.__polypheny_row_id
-JOIN pon__products p
-    ON p.product_id = i.product_id
-LIMIT 10;
-```
-![unsupported_2_joins_one_other_physical.png](images/planner/unsupported_2_joins_one_other_physical.png)
-
-## Main Changes
-
-### 1. Planner Nodes
-
-Two planner nodes were added
-
-#### 1.1. ParquetRelScan
-Planner node that represents reading a Parquet-backed table. It's responsibilities:
-- Represents a Parquet scan in the plan. It is the Parquet convention version of a table scan.
-- Stores projection
-- Stores pushed filters
-- Defines row type
-- Exposes fields and filters in the plan visualization
-- Generates execution call: `ParquetRelTable.project(dataContext, fields, filters)`
-
-#### 1.2 ParquetRelJoin
-Planner node that represents a join the Parquet adapter can execute itself. It determines:
-- If this join be executed inside the Parquet adapter
-- the side of parent table
-- which projected fields and filters belong to each scan
-- which join filters should be applied
-- How should this join be executed
-
-#### 1.3 EnumerableParquet
-Planner node that converts ParquetScan node from Parquet convention to enumerable convention
-
-### 2. Rules
-
-- `ParquetRules` class creates list of 4 rules
-- `PatternMatcher` class describes:
-  - what plan shape to match
-  - what transformation to run
-- `ParquetAlgOptRule` class
-  - wraps PatternMatcher as a real AlgOptRule
-    so Polypheny planner can register and execute it 
-- `PatternMatchers` class contains real rule logic
-
-Four planner rules were added:
-
-#### 2.1 EnumerableParquetRule
-
-Rule that converts a plan from Parquet convention into Enumerable convention.
-Parquet-specific plan wrapped as executable enumerable plan.
-The Parquet adapter first creates nodes (ParquetRelScan, ParquetRelJoin) in ParquetConvention. But Polypheny ultimately needs an executable plan in: EnumerableConvention
-So EnumerableParquetRule adds this wrapper:
-- Input convention: ParquetConvention
-- Output convention: EnumerableConvention
-- Matched node: any AlgNode in ParquetConvention
-- Result: EnumerableParquet wrapping that node
-
-#### 2.2 PatternMatchers.attachFieldsAndFiltersToScanUnderCalc
-
-Rule that pushes EnumerableCalc projection/filter into a ParquetRelScan.
-
-- finds Calc above Parquet scan
-- extracts simple projection
-- extracts supported filter
-- stores both on ParquetRelScan
-- removes the Calc from this part of the plan
-
-It matches this shape:
 ```text
-EnumerableCalc
-  EnumerableParquet
-    ParquetRelScan
+child.__polypheny_parent_row_id = parent.__polypheny_row_id
 ```
-and tries to replace with:
+
+Both tables must come from the same normalized Parquet structure, and the child
+must be a direct generated child of the parent.
+
+Examples:
+
+- `orders` -> `orders__items`
+- `orders` -> `orders__shipping_address`
+- `orders__items` -> `orders__items__discounts`
+
+## Planning
+
+The active relational planner path uses:
+
+- `ParquetRelConvention`
+- `ParquetRelRules`
+- `ParquetRelPatternMatchers`
+- `ParquetAlgOptRule`
+- `EnumerableParquet`
+- `ParquetRelScan`
+- `ParquetRelJoin`
+
+`ParquetRelPatternMatchers.joinWithScanOnLeftAndScanOnRight` recognizes an
+`EnumerableJoin` whose left and right inputs are Parquet scans. It asks
+`ParquetRelJoin.supportedDirection(...)` whether the join condition is a direct
+structural relationship.
+
+When supported, the generic join is replaced with `ParquetRelJoin` and wrapped
+back in `EnumerableParquet`.
+
+The structural join matcher is registered when
+`ParquetOptimizationSettings.isOptimizeAggregation()` is enabled. This setting
+defaults to enabled unless the corresponding system property or environment
+variable disables it.
+
+## Runtime
+
+`ParquetRelJoin.implement(...)` calls:
+
 ```text
-EnumerableParquet
-  ParquetRelScan(fields + filters updated)
-```
-If projection is complex or filter translation fails, the rule does nothing.
-
-#### 2.3 PatternMatchers.joinWithScanOnLeftAndScanOnRight
-
-Rule that converts a generic enumerable join into a Parquet adapter-level join.
-- finds generic join between two Parquet scans
-- checks if it is a nested parent/child join
-- replaces it with ParquetRelJoin
-- wraps it back into EnumerableParquet
-
-It matches this shape:
-```text
-EnumerableJoin
-    EnumerableParquet
-        ParquetRelScan
-
-    EnumerableParquet
-        ParquetRelScan
-```
-And tries to replace it with:
-```text
-EnumerableParquet
-    ParquetRelJoin
+ParquetRelTable.nestedJoin(...)
 ```
 
-#### 2.4 PatternMatchers.attachFilterToJoinUnderCalc
+Runtime execution is handled by:
 
-Rule that pushes a filter from a Calc above a ParquetRelJoin into the join node.
+- `ParquetRelNestedJoinExecutor`
+- `JoinFiltersSplitter`
+- `ParquetNestedJoinEnumerator`
+- `CombinedGroup`
+- `VirtualGroup`
 
-- finds Calc above ParquetRelJoin
-- extracts supported filter condition
-- converts it to ParquetAdapterFilter
-- stores it on ParquetRelJoin.joinFilters
-- removes that Calc from this part of the plan
+The executor:
 
-It matches this shape:
-```text
-EnumerableCalc
-  EnumerableParquet
-    ParquetRelJoin
-```
-and tries to replace with:
-```text
-EnumerableParquet
-  ParquetRelJoin(joinFilters updated)
-```
+1. resolves dynamic parameters
+2. combines filters already attached to the left and right scans
+3. maps filters to parent, child, native-reader, and joined-row residual paths
+4. prunes parent source files using partition/statistics filters
+5. reads parent rows
+6. expands direct child rows from the nested Parquet structure
+7. emits joined rows, including supported outer-join unmatched parent rows
 
-### 3. Registration of nodes
+## Filter Handling
 
-`ParquetPlugin.registerPolyAlg()` registers:
-- EnumerableParquet.class
-- ParquetRelScan.class
-- ParquetRelJoin.class
+Filters may originate from:
 
-### 4. Parquet Convention
- 
-`ParquetConvention` is the marker that tells the planner: This part of the plan is executable by the Parquet adapter.
-It defines a separate planner convention named: "PARQUET"
-and says that nodes in this convention must implement: ParquetAlg
+- the left scan
+- the right scan
+- a calc above the join
 
-Conceptually, a convention tells Polypheny who is responsible for executing a part of the query plan.
+`ParquetRelPatternMatchers.attachFilterToJoinUnderCalc` can attach supported
+filters above an already-created `ParquetRelJoin`.
 
-For the Parquet adapter, ParquetConvention means:
+At runtime, `JoinFiltersSplitter` separates filters into:
 
-“This part of the plan can be executed by the Parquet adapter.”
-It lets the planner distinguish generic Polypheny operations from Parquet-specific operations.
-It enables adapter-specific nodes such as ParquetRelScan and ParquetRelJoin.
-It allows planner rules to rewrite normal scans, filters, projections, and joins into Parquet-aware operations.
-At the end, the Parquet plan is converted back to EnumerableConvention, so Polypheny can execute it.
+- parent-only filters
+- child-only filters
+- joined-row adapter filters
+- native reader filters
 
+Parent filters can participate in source-file pruning. Child and joined-row
+filters are evaluated after nested child rows are expanded.
 
-## Planner Flow - Query Execution with Join
+## Supported Join Types
 
-1. ParquetRelScan.register() called
-- All rules from ParquetRules.rules added to Planner
+The adapter-level node can represent inner and outer structural joins when the
+planner produces a supported direct parent/child condition. Runtime uses the
+`emitUnmatchedParents` flag to preserve parent rows for parent-preserving outer
+join cases.
 
-2. ParquetRelTable.nestedJoin() called (if no join - project called)
-3. ParquetMultiFileEnumerator created
-4. ParquetMultiFileEnumerator performs file pruning
-5. ParquetMultiFileEnumerator creates ParquetNestedJoinEnumerator
+## Unsupported Or Fallback Cases
 
+The adapter does not execute these as structural joins:
 
-## Examples of Physical Plans:
+- root-to-root user-column joins
+- joins between unrelated Parquet tables
+- sibling child joins
+- ancestor-to-grandchild joins that skip the direct parent
+- self joins
+- joins on user columns instead of generated structural keys
+- multi-key structural joins
+- non-equality structural joins
+- disjunctive join conditions
+- joins whose inputs contain operators that cannot be represented inside the
+  Parquet join path, such as a limit below a join input
 
-### Node Names
-- P_SCAN - ParquetRelScan
-- PE_CALC - EnumerableParquet
-- P_JOIN - ParquetRelJoin
-
-### Rule 1: EnumerableParquetRule
-Create Enumerable node PE_CALC above P_SCAN 
-
-No filter, no projection, no join
-
-```sql
-SELECT *
-FROM pon__orders o;
-```
-![Schema display](images/planner/rule1.png)
-
-### Rule 2: PatternMatchers.attachFieldsAndFiltersToScanUnderCalc
-
-Pushing down of projection/filter from E_CALC into P_SCAN.
-
-```sql
-SELECT o.order_id, o.status
-FROM pon__orders o
-where o.order_id = 2 and total_price > 10;
-```
-![Schema display](images/planner/rule2.png)
-
-
-### Rule 3: PatternMatchers.joinWithScanOnLeftAndScanOnRight
-
-Convert E_JOIN with two P_SCANs under it into P_JOIN.
-
-```sql
-SELECT *
-FROM pon__orders o
-JOIN pon__orders__items i
-    ON i.__polypheny_parent_row_id = o.__polypheny_row_id;
-```
-![Schema display](images/planner/rule3.png)
-
-
-### Rule 4: PatternMatchers.attachFilterToJoinUnderCalc
-
-Get filters from E_CALC under E_JOIN and push it into the PE_JOIN.
-
-```sql
-SELECT o.order_id, i.product_id
-FROM pon__orders o
-JOIN pon__orders__items i
-ON i.__polypheny_parent_row_id = o.__polypheny_row_id
-WHERE i.__polypheny_elem_ordinal > 0 or i.product_id = 1;
-```
-
-![Schema display](images/planner/rule4.png)
+Unsupported cases remain available to the normal Polypheny planner and runtime.

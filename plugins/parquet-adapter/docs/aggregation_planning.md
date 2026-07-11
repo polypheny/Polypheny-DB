@@ -1,184 +1,167 @@
-# Aggregation Push-down
+# Aggregation Planning
 
-## Planner
+Parquet aggregate pushdown replaces supported enumerable aggregate plans with
+adapter-specific aggregate nodes. The current implementation supports both the
+relational and document models.
 
-### Nodes
+Aggregate optimization is controlled by `ParquetOptimizationSettings`.
 
-#### 1. ParquetRelMetadataScan - P_Metadata_Scan
+Configuration switches:
 
-`plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/planning/ParquetRelMetadataScan.java`
+- system property: `polypheny.parquet.optimizeAggregation`
+- environment variable: `POLYPHENY_PARQUET_OPTIMIZE_AGGREGATION`
 
-A planner node for “metadata-only Parquet access,” mainly so aggregate queries, such as COUNT, MIN, MAX, can be planned cheaply without pretending they need to read every row.
-Its cost is zero. That tells the optimizer: “this node itself does not scan data rows.”
+The default is enabled.
 
-Aggregates Supported By Metadata:
-- COUNT(*)
-- COUNT(column)
-- MIN(column)
-- MAX(column)
+## Planner Classes
 
-#### 2. ParquetRelAggregate - P_Aggregate
+Relational planning:
 
-`plugins/parquet-adapter/src/main/java/org/polypheny/db/adapter/parquet/relational/planning/ParquetRelAggregate.java`
+- `ParquetRelAggregate`
+- `ParquetRelMetadataScan`
+- `ParquetRelPatternMatchers.aggregateOnScan`
+- `ParquetRelPatternMatchers.aggregateOnCalcScan`
+- `ParquetRelRules`
 
-Planner node that says, “This aggregate can be handled by the Parquet adapter, either cheaply from file metadata or by scanning Parquet data directly.”
+Document planning:
 
-represents operations like:
-```text
-SELECT COUNT(*)
-SELECT MIN(price)
-SELECT MAX(age)
-SELECT category, COUNT(*) GROUP BY category
-```
+- `ParquetDocAggregate`
+- `ParquetDocMetadataScan`
+- `ParquetDocPatternMatchers.aggregateOnScan`
+- `ParquetDocPatternMatchers.aggregateOnProjectScan`
+- `ParquetDocPatternMatchers.aggregateOnCalcScan`
+- `ParquetDocRules`
 
-This class decides whether an aggregate can be done in one of two ways:
-1. metadataAggregate: use Parquet metadata only, without reading all rows. Example: COUNT(*), MIN(col), MAX(col) may be answerable from Parquet file statistics.
-In this case it wraps Scan to ParquetRelMetadataScan
+Shared planning:
 
-2. dataAggregate: read actual Parquet data and aggregate it.
-   This is the fallback when metadata is not enough, but Parquet can still perform the aggregate directly.
+- `ParquetAggregatePatternMatchers.partialAggregateOnUnion`
+- `ParquetAggregatePatternMatchers.partialAggregateOnCalcUnion`
+- `ParquetEnumerableUnion`
+- `AggregateDecomposition`
+- `PartialAggregate`
 
-The real runtime call is built in `implement`: call "metadataAggregate" or "dataAggregate" depending on the selected mode.
+## Relational Aggregate Rules
 
-`computeSelfCost` makes this node look very cheap to the optimizer.
-
-#### 3. ParquetEnumerableUnion
-
-Node combines rows from multiple child plans, just like a normal EnumerableUnion, but it has a special class name so planner rules know, 
-that this union was already rewritten for Parquet aggregate optimization.
-It prevents the same optimization rule from firing again and again.
-ParquetEnumerableUnion says: “This union has already been processed for Parquet partial aggregate pushdown.”
-
-### Rules
-
-Rules defined in PatternMatchers.java
-
-#### 1. aggregateOnScan
-
-If there is an aggregate directly above a Parquet scan, try to turn it into a Parquet-native aggregate.
-
-from:
+`aggregateOnScan` matches:
 
 ```text
 EnumerableAggregate
-    EnumerableParquet
-        ParquetRelScan
+  EnumerableParquet
+    ParquetRelScan
 ```
-to:
+
+and tries to create:
 
 ```text
 EnumerableParquet
-    ParquetRelAggregate
-        ParquetRelScan
+  ParquetRelAggregate
+    ParquetRelScan or ParquetRelMetadataScan
 ```
 
-#### 2. aggregateOnCalcScan
-Like aggregateOnScan, but there is a Calc between the aggregate and the Parquet scan.
+`aggregateOnCalcScan` handles the same idea when an `EnumerableCalc` between the
+aggregate and scan carries projection/filter work that can be represented by the
+Parquet scan.
 
-from:
+## Document Aggregate Rules
 
-```text
-EnumerableAggregate COUNT(*)
-  EnumerableCalc filter age > 30
-    EnumerableParquet
-      ParquetRelScan
-```
-to:
+Document aggregate rules map projected top-level document fields to exported
+Parquet columns before creating `ParquetDocAggregate`.
 
-```text
-EnumerableParquet
-  ParquetRelAggregate COUNT(*)
-    ParquetRelScan with filter age > 30
-```
+Supported shapes:
 
-#### 3. partialAggregateOnUnion
+- aggregate directly over `ParquetDocScan`
+- aggregate over field projection above `ParquetDocScan`
+- aggregate over a project/filter calc above `ParquetDocScan`
 
-If we see EnumerableUnion under EnumerableAggregate, and the union is UNION ALL, then push partial aggregates below the union, 
-use ParquetEnumerableUnion to union those partial results, then combine those partial results above ParquetEnumerableUnion.
+Document aggregate pushdown is limited to projected top-level fields that can be
+resolved to exported Parquet columns.
 
-from:
+## Metadata Aggregate Mode
+
+`ParquetRelAggregate` and `ParquetDocAggregate` first try metadata mode.
+
+Metadata mode is exact-only. It is selected only when:
+
+- aggregate calls are supported by `ParquetAggregateSupport`
+- grouping fields are file-constant or partition-derived where required
+- filters are decidable from partition values or footer statistics
+- the runtime source confirms support through `supportsMetadataAggregate(...)`
+
+Metadata-supported aggregate calls:
+
+- `COUNT(*)`
+- `COUNT(column)` when null-count metadata is available
+- `MIN(column)`
+- `MAX(column)`
+
+Unsupported metadata cases fall through to data mode if data mode can execute
+them.
+
+## Data Aggregate Mode
+
+Data mode scans Parquet data inside the adapter and aggregates before returning
+rows to the rest of the Polypheny plan.
+
+Supported data aggregate functions:
+
+- `COUNT`
+- `SUM`
+- `MIN`
+- `MAX`
+
+Data mode supports numeric aggregation columns and supported grouping/filter
+shapes. When a fast grouped reader path is not possible, the relational path can
+fall back to row aggregation over Parquet enumerator output.
+
+## Partial Aggregate Over Union
+
+The shared union rules decompose aggregates above `UNION ALL` into partial
+aggregates below the union and a final aggregate above it.
+
+Example shape:
 
 ```text
 EnumerableAggregate
-    EnumerableUnion
-        input1
-        input2
-        input3
-```
-to:
-
-```text
-EnumerableAggregate          <-- final aggregate: calculates aggregate from already computed values
-  ParquetEnumerableUnion     <-- marker UNION ALL
-    EnumerableAggregate      <-- partial aggregate
-      input1
-    EnumerableAggregate      <-- partial aggregate
-      input2
-    EnumerableAggregate      <-- partial aggregate
-      input3
+  EnumerableUnion
+    input1
+    input2
 ```
 
-#### 4. partialAggregateOnCalcUnion
-
-same idea as partialAggregateOnUnion, but there is a Calc between the aggregate and the union.
-
-If we see EnumerableUnion under EnumerableCalc under EnumerableAggregate, and the union is UNION ALL, 
-then copy the Calc into each union branch, push partial aggregates below the union, 
-use ParquetEnumerableUnion to union those partial results, then combine those partial results above ParquetEnumerableUnion.
-
-Calc should be copied, because the original plan applies the Calc after the union.
-
-from:
+becomes:
 
 ```text
 EnumerableAggregate
-  EnumerableCalc
-    EnumerableUnion
+  ParquetEnumerableUnion
+    EnumerableAggregate
       input1
+    EnumerableAggregate
       input2
 ```
 
-to:
+`ParquetEnumerableUnion` marks that the union subtree has already been processed
+for Parquet aggregate optimization.
 
-```text
-EnumerableAggregate                 <-- combines partial results
-  ParquetEnumerableUnion             <-- unions partial results
-    EnumerableAggregate              <-- partial aggregate for input1
-      EnumerableCalc                 <-- same calc copied here
-        input1
-    EnumerableAggregate              <-- partial aggregate for input2
-      EnumerableCalc                 <-- same calc copied here
-        input2
-```
+## Runtime Entry Points
 
-### Other Rules relevant files
+Relational runtime methods on `ParquetRelTable`:
 
-- `PatternMatchers.java` - defines rewrite rules
-- `ParquetRules.java` - collects all those matcher rules into a list
-- `ParquetAlgOptRule.java` - wraps them as planner rules
-- `ParquetConvention.java` - registers the rules with the planner
+- `metadataAggregate(...)`
+- `dataAggregate(...)`
+- `supportsMetadataAggregate(...)`
+- `supportsDataAggregate(...)`
 
-## Examples:
+Document runtime methods on `ParquetDocument`:
 
-```sql
-SELECT count(*) AS row_count
-FROM tlc__yellow_tripdata;
-```
+- `metadataAggregate(...)`
+- `dataAggregate(...)`
+- `supportsMetadataAggregate(...)`
+- `supportsDataAggregate(...)`
 
-![metadata_scan.png](images/aggregation/metadata_aggregate.png)
+Shared runtime executors:
 
+- `ParquetMetadataAggregateExecutor`
+- `ParquetDataAggregateExecutor`
 
-```sql
-SELECT
-  "year",
-  "month",
-  count(*) AS trips,
-  sum(total_amount) AS gross_amount,
-  min(trip_distance) AS min_distance,
-  max(trip_distance) AS max_distance
-FROM yellow_tripdata
-GROUP BY "year", "month"
-ORDER BY "year", "month";
-```
-
-![data_agregate.png](images/aggregation/data_agregate.png)
+See [Aggregation Runtime Flow](aggregation_flow.md) and
+[Relational and Document Execution Flows](rel_execution_flows.md) for runtime
+details.

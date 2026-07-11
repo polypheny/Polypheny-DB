@@ -1,260 +1,178 @@
-# Parquet Adapter Implementation
+# Parquet Adapter Documentation
 
----
+The Parquet adapter exposes Parquet files as read-only Polypheny sources. It
+supports relational tables, document collections, multi-file datasets,
+Hive-style partition folders, projection and filter pushdown, metadata-backed
+statistics, adapter-level structural joins, aggregate pushdown, and workflow
+import/export helpers.
 
-## Overview
+This folder contains project-code documentation only. The `REPORT` folder is a
+separate report draft area and is not part of the adapter documentation set.
 
-The Parquet adapter exposes `.parquet` files as Polypheny source tables.
-At a high level, the adapter is responsible for:
-- discovering Parquet files from the configured source location
-- extracting relational schema metadata from Parquet file footers
-- restoring and registering tables whose data is read from Parquet files
-- executing read queries over Parquet data
-- applying projection pushdown and supported native predicate pushdown during query execution
+## Source Types
 
-The adapter is read-only and supports relational and document source integration.
+The plugin registers two source templates in `ParquetPlugin`:
 
-The following sections describe the architecture, execution flow, package responsibilities, supported query behavior, and current limitations in more detail.
+- `Parquet Relational`: implemented by `ParquetRelationalSource`
+- `Parquet Document`: implemented by `ParquetDocumentSource`
 
-## Build and Integration Changes
+Both templates accept the same source-location modes:
 
-1\. To integrate the Parquet adapter as a plugin, the Gradle configuration must include the Parquet module and its dependencies.
+- `upload`: uploaded Parquet files or folders
+- `link`: a local file or directory path
+- `url`: a URL pointing to Parquet data
 
-Affected files:
-- `settings.gradle`
-- `gradle.properties`
-- `plugins/parquet-adapter/build.gradle`
+The relational adapter has an additional `schema mode` setting:
 
+- `flat`: expose each discovered table as one relational table, flattening
+  non-repeated nested scalar fields into columns where possible
+- `normalized`: expose nested structures as generated parent/child relational
+  tables with synthetic structural columns
 
-2\. Optional: To make Parquet the default data source, `PolyphenyDB.java` sets `defaultSourceName` to `parquet`.<br>
-During `restore()`, `Catalog.defaultSource` is populated from the configured adapter state.
+Adapter-backed entities are read-only. Workflow export to Parquet is handled by
+the workflow engine and shared writer classes; it does not make adapter source
+tables writable.
 
+## Core Runtime Flow
 
-## Execution Flow
+1. `ParquetPlugin` registers adapter templates and PolyAlg display nodes.
+2. `AbstractParquetSource` resolves the configured source location and delegates
+   discovery to `ParquetFileDiscovery`.
+3. `ParquetSchemaReader` reads Parquet footers and builds `ExportedSchema`
+   objects containing visible columns and source-path metadata.
+4. `ParquetNamespace` creates relational table wrappers or document collection
+   wrappers.
+5. Relational queries enter through `ParquetRelScan`; document queries enter
+   through `ParquetDocScan`.
+6. Runtime execution opens `ParquetSourceReader` instances through the
+   appropriate executor or enumerator and returns Polypheny rows/documents.
 
-1. **Plugin registration**
-    - **Responsible class:** `ParquetPlugin`
-    - Registers the Parquet adapter template during startup.
-    - Removes the template during shutdown.
-2. **Schema initialization**
-    - **Responsible classes:** `AbstractParquetSource`, `ParquetFileDiscovery`, `ParquetTypeConverter`
-    - Resolves the configured Parquet directory or file location.
-    - Discovers available `.parquet` files.
-    - Builds relational table or document collection metadata from Parquet file metadata.
-    - Maps Parquet field types to Polypheny types.
-    - Normalizes physical table names and column names.
-    - Initializes the information page from the extracted column definitions.
-3. **Namespace and entity creation**
-    - **Responsible classes:** `ParquetNamespace`, `ParquetRelTable`, `ParquetDocument`
-    - Creates table or collection wrappers for discovered Parquet files.
-    - Registers physical entities in the adapter catalog.
-4. **Restore during startup**
-    - **Responsible classes:** `ParquetRelationalSource`, `ParquetDocumentSource`, `ParquetNamespace`
-    - Recreates relational tables and document collections from persisted adapter state.
-    - Re-registers the wrappers in the adapter catalog.
-5. **Query entry into the adapter**
-    - **Responsible classes:** `ParquetRelScan`, `ParquetDocScan`, `AbstractParquetEnumerator`, `ParquetSourceReader`
-    - The query engine resolves the registered Parquet-backed physical entity.
-    - Projection and supported filter information are passed into the Parquet execution layer.
-    - Rows are read from the Parquet file and converted into Polypheny relational tuples or documents.
+## Relational Planning
 
-## Supported Filter Conditions
+The active relational planning path uses:
 
-The active predicate pushdown path currently supports only simple comparison conditions that can be translated into native Parquet predicates.
+- `ParquetRelConvention`
+- `ParquetRelRules`
+- `ParquetRelPatternMatchers`
+- `ParquetAlgOptRule`
+- `EnumerableParquet`
+- `ParquetRelScan`
+- `ParquetRelJoin`
+- `ParquetRelAggregate`
+- `ParquetRelMetadataScan`
+- `ParquetEnumerableUnion`
 
-Supported operators:
-- `=`
-- `!=`
-- `>`
-- `>=`
-- `<`
-- `<=`
+Always-registered rules attach supported projections and filters to scans and
+convert Parquet-convention plans back to enumerable convention. When
+`ParquetOptimizationSettings.isOptimizeAggregation()` is enabled, the planner
+also registers structural join and aggregate rewrite rules.
 
-Supported condition shape:
+## Document Planning
+
+The active document planning path uses:
+
+- `ParquetDocConvention`
+- `ParquetDocRules`
+- `ParquetDocPatternMatchers`
+- `ParquetDocScan`
+- `ParquetDocAggregate`
+- `ParquetDocMetadataScan`
+- `ParquetDocFilterTranslator`
+
+Document filters are stored directly on `ParquetDocScan`. The current
+implementation does not use a separate document-filter planner node.
+
+## Feature Documentation
+
+- [Workflow Integration](workflow.md)
+- [Planner Basics](planner.md)
+- [Filter Overview](filter_overview.md)
+- [File Pruning](file_pruning.md)
+- [Partitioned Layouts](partitions_overview.md)
+- [Nested Fields and Normalized Schemas](nested_fields.md)
+- [Adapter-Level Joins](joins.md)
+- [Aggregation Planning](aggregation_planning.md)
+- [Aggregation Runtime Flow](aggregation_flow.md)
+- [Statistics](statistics.md)
+- [Relational and Document Execution Flows](rel_execution_flows.md)
+
+## Supported Filtering
+
+Relational filter translation supports:
+
 - `column OP literal`
-- `column OP dynamic-parameter`
-
-Notes:
-- The left-hand side must be a column reference.
-- The right-hand side must be a literal value or dynamic parameter.
-- Simple casts on either side are unwrapped before translation.
-- Only pushdown-safe conditions are translated into adapter-specific filters.
-- Unsupported conditions remain outside the Parquet-specific filter flow.
-
-Supported pushdown types:
-- `BOOLEAN`: `=` and `!=`
-- `INTEGER`, `BIGINT`, `FLOAT`, `DOUBLE`, `DATE`, `TIME`, `TIMESTAMP`: all six comparison operators
-- `VARCHAR`, `CHAR`, `TEXT`: `=` and `!=`
-
-Notes:
-- Pushdown uses Parquet native filter APIs through `FilterCompat.Filter`.
-- Legacy Parquet `INT96` timestamp columns are currently not pushed down.
-
-
-## Parquet Adapter - Package Structure
-
-### `org.polypheny.db.adapter.parquet`
-
-Contains parquet functionality for Relational and Document data source.
-
-- `ParquetPlugin` - plugin entry point. Registers the relational and document adapter templates after catalog initialization and removes them again during shutdown.
-
-### `org.polypheny.db.adapter.parquet.document`
-
-Document-model integration for exposing Parquet files as read-only Polypheny document collections.
-
-- `ParquetDocumentSource` - document adapter implementation. Owns adapter metadata, performs discovery of Parquet-backed document collections, document restore, and delegation into the document scan APIs.
-
-#### `document.execution`
-
-- `ParquetDocEnumerator` - document runtime enumerator. Reads Parquet rows and create from each row a single `PolyDocument`.
-- `ParquetDocFilterTranslator` - translates supported document filter expressions into shared `ParquetAdapterFilter` instances.
-- `ParquetDocValueExtractor` - converts Parquet groups and nested values into Polypheny document values and synthesizes `_id` values when they are missing.
-
-#### `document.planning`
-
-- `ParquetDocFilter` - enumerable filter node used when a document filter can stay inside the Parquet-specific execution path.
-- `ParquetDocFilterRule` - planner rule that recognizes supported document filters and rewrites them into `ParquetDocFilter` plus `ParquetDocScan`.
-- `ParquetDocScan` - document scan algebra node that builds the enumerable execution call for reading Parquet-backed documents.
-
-#### `document.schema`
-
-- `ParquetDocument` - physical collection wrapper for the document model. Represents one Parquet-backed collection inside Polypheny and connects planning and execution to the source adapter.
-
-### `org.polypheny.db.adapter.parquet.relational`
-
-Relational-model integration for exposing Parquet files as source tables.
-
-- `ParquetRelationalSource` - relational adapter implementation. Manages exported table discovery, schema registration, information-page content, and restore of relational Parquet tables.
-
-#### `relational.execution`
-
-- `ParquetRelEnumerator` - relational runtime enumerator. Reads projected Parquet rows and returns them as relational tuples.
-- `ParquetRelFilterTranslator` - converts adapter-level filters into Parquet native predicates for relational scans.
-- `ParquetRelValueExtractor` - converts Parquet field values into Polypheny relational values with relational-specific scalar handling.
-
-#### `relational.planning`
-
-- `ParquetRelScan` - relational scan algebra node for Parquet-backed physical tables.
-- `ParquetRelScanRule` - planner rule that rewrites compatible scans and projections to the Parquet-specific relational scan node.
-
-#### `relational.schema`
-
-- `ParquetRelTable` - physical table wrapper for the relational model. Exposes the Parquet-backed table to Polypheny and ties the planner, scanner, and adapter metadata together.
-
-### `org.polypheny.db.adapter.parquet.shared`
-
-Shared infrastructure used by both the relational and document adapters.
-
-- `AbstractParquetSource` - common base class for both source types. Handles settings, file discovery, exported schema derivation, information-page setup, name normalization, and shared restore behavior.
-
-#### `shared.execution`
-
-- `AbstractParquetEnumerator` - common enumerator base. Manages row iteration, projection handling, cancellation support, and reader lifecycle for both models.
-- `AbstractParquetValueExtractor` - shared conversion base for mapping Parquet primitive and structured values into Polypheny values.
-- `ParquetFilterTranslationSupport` - reusable helper for parsing supported Rex predicates and turning them into adapter-level filters.
-- `ParquetValueExtractor` - small interface implemented by value extractors that can convert a Parquet field into a `PolyValue`.
-
-#### `shared.io`
-
-- `ParquetSourceReader` - low-level Parquet row-group reader. Opens the file, applies projection and native predicates, and streams groups to the enumerators.
-- `ParquetSourceWriter` - low-level Parquet writer used by workflow export. Owns file writer lifecycle, compression handling, and row writing.
-- `ParquetFileDiscovery` - locates valid `.parquet` files below the configured source location and filters out unsupported files.
-
-#### `shared.filter`
-
-- `ParquetAdapterFilter` - immutable filter description shared across planning and execution. Carries the target column index, comparison operator, literal value, and optional dynamic parameter index.
-- `ParquetNativeFilterBuilder`- creates native Parquet filter predicates for the supported comparison operators and value types.
-
-#### `shared.schema`
-
-- `ParquetNamespace` - namespace helper that creates the correct Parquet-backed physical wrapper for either a relational table or a document collection.
-- `ParquetMessageTypeBuilder` - builds Parquet `MessageType` definitions from inferred field schemas for workflow export.
-- `ParquetTypeConverter` - converts Parquet schema types and runtime values into the Polypheny type system.
-- `ParquetFieldNameNormalizer` - creates normalized filed names
-
-#### `shared.schema.inference`
-
-- `FieldSchema` - internal model for one inferred Parquet field used by workflow export.
-- `SchemaState` - accumulates inferred field definitions while sampled workflow input is inspected.
-- `ValueKind` - enum describing the logical value categories used during schema inference.
-- `ValueSchema` - recursive value-type model used to represent primitive, nested, and repeated Parquet field structures before building the final schema.
-
-#### `shared.util`
-
-- `HadoopConfigurationFactory` - builds Hadoop `Configuration` instances that work correctly inside the plugin classloader environment.
-
-
-## Schema Mapping Rules
-
-- Table names are derived from Parquet file names and normalized before registration.
-- Column names are derived from Parquet field names and normalized before registration.
-- Column types are mapped from Parquet schema types to Polypheny types.
-- String-like Parquet fields are mapped to `TEXT`.
-- Unlike SQL types with fixed length declarations, Parquet does not impose a fixed maximum string length.
-
-
-## Information Page
-The information page displays the following column metadata:
-
-- Position
-- Column name
-- Type
-- Nullable
-- Filename
-- Primary key flag
-
-
-The following figure shows an example of the displayed schema information.
-![Schema display](images/parquet_schema.png)
-
-## Data Presentation
-![Schema display](images/customers_data.png)
-
-## Query Projection
-![Schema display](images/query_projection.png)
-
-## Query Filter
-![Schema display](images/query_filter.png)
-
-## Workflow Integration
-
-Workflow-specific Parquet extract and load activities are documented separately in:
-- `docs/workflow.md`
-
-## Partitioned Folder Layouts
-
-Hive-style partitioned folder layout support is designed separately in:
-- `docs/partitioned_layouts.md`
-
-## Unit Tests
-___
-
-To run tests for parquet adapter:
-- `.\gradlew.bat :plugins:parquet-adapter:test`
-
-`plugins/parquet-adapter/build.gradle` should contain:
-- DBMS as a test dependency
-- Polypheny JDBC driver dependency
-
-
-## `ParquetPluginTest.java`
-contains the following tests:
-1. `importsAllTablesAndReadsRows()`
-2. `parquetSourceIsReadOnly()`
-3. `readsExpectedRowsFromCustomers()`
-4. `filtersRowsWithWhereClause()`
-5. `projectsOnlyRequestedColumns()`
-6. `supportsGreaterThanFilter()`
-7. `supportsAllComparisonFilterOperations()`
-8. `rejectsUpdateOnParquetSource()`
-9. `projectsAndFiltersOtherTables()`
-10. `returnsNestedShippingAddressAsJSON()`
-
-## `ParquetRelFilterTranslatorTest.java`
-contains focused unit tests for predicate translation behavior.
-
-Current test coverage includes:
-1. `rejectsInt96TimestampPredicatePushdown()`
-
-
+- `column OP dynamicParameter`
+- reversed value/column comparisons
+- casts around supported operands
+- `IS NULL` and `IS NOT NULL`
+- `AND`, `OR`, and `NOT` when all operands are translatable
+- `IN` as an `OR` tree of equality filters
+
+Supported binary operators are `=`, `!=`, `>`, `>=`, `<`, and `<=`.
+
+Relational type/operator support:
+
+| Polypheny type family | Supported operators |
+| --- | --- |
+| `BOOLEAN` | `=`, `!=`, `IS NULL`, `IS NOT NULL` |
+| `VARCHAR`, `CHAR`, `TEXT` | `=`, `!=`, `IS NULL`, `IS NOT NULL` |
+| `INTEGER`, `BIGINT`, `FLOAT`, `DOUBLE`, `DATE`, `TIME`, `TIMESTAMP` | all comparison operators plus null checks |
+
+Document filter translation supports top-level document fields referenced as
+`RexNameRef` or lowered `MQL_QUERY_VALUE(document, ARRAY['field'])` expressions.
+It supports the same six binary comparison operators plus logical `AND`, `OR`,
+and `NOT` when all child predicates are translatable. Document null checks,
+`IN`, nested document paths, field-to-field comparisons, and arbitrary
+functions are not pushed into the adapter.
+
+Native Parquet filtering is attempted when the translated filter can be mapped
+to a primitive non-repeated Parquet field. Exact adapter-level filtering remains
+the correctness path when native filtering is unavailable.
+
+## Package Overview
+
+Important packages:
+
+- `org.polypheny.db.adapter.parquet`: plugin entry point
+- `document`: document source, planning, execution, and schema wrappers
+- `relational`: relational source, planning, execution, filters, and schema
+  bindings
+- `shared.execution`: common enumerators, filter translation helpers, writer
+  buffer utilities, and virtual groups
+- `shared.execution.aggregate`: shared aggregate executors and aggregate
+  enumerators
+- `shared.filter`: immutable adapter filter trees and row/file evaluators
+- `shared.io`: file discovery, schema reading, source reading, primitive-row
+  reading, and source writing
+- `shared.optimization`: shared planner matcher wrappers and aggregate
+  decomposition helpers
+- `shared.planning`: shared PolyAlg display helpers and union marker node
+- `shared.schema`: type conversion, name normalization, namespace helpers, and
+  Parquet message building
+- `shared.schema.inference`: workflow export schema inference
+- `shared.statistics`: metadata-backed table and column statistics
+- `shared.util`: Hadoop configuration setup for the plugin classloader
+
+## Build And Tests
+
+Run the Parquet adapter tests with:
+
+```powershell
+.\gradlew.bat :plugins:parquet-adapter:test
+```
+
+Workflow Parquet support has additional tests in the workflow engine module.
+
+## Current Limitations
+
+- Adapter source tables and collections are read-only.
+- Graph model import/export is not supported by the Parquet adapter or Parquet
+  workflow export.
+- Only the first discovered partition column is represented as Polypheny
+  physical partition metadata; deeper partition columns remain adapter-level
+  partition values and can still be used for file pruning.
+- Native Parquet predicate pushdown is an optimization and only applies to
+  primitive non-repeated fields that Parquet can filter safely.
+- Adapter-level structural joins are limited to generated parent/child
+  relationships from the same physical Parquet structure.
+- Aggregate pushdown is controlled by `ParquetOptimizationSettings`.
