@@ -49,6 +49,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import kong.unirest.HttpRequest;
 import kong.unirest.HttpResponse;
@@ -74,6 +76,7 @@ import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.ddl.DdlManager.SourceRefreshDetails;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.processing.caching.ImplementationCache;
 import org.polypheny.db.processing.caching.QueryPlanCache;
@@ -938,6 +941,25 @@ public class TestHelper {
     }
 
 
+    public static SourceMaterializationRefreshResult refreshRelationalSourceSchema( long entityId ) throws Exception {
+        Object httpServer = HttpServer.getInstance();
+        Field crudField = httpServer.getClass().getDeclaredField( "crud" );
+        crudField.setAccessible( true );
+        Object crud = crudField.get( httpServer );
+
+        UIRequest request = UIRequest.builder()
+                .type( "RefreshRequest" )
+                .entityId( entityId )
+                .namespace( Catalog.DEFAULT_NAMESPACE_NAME )
+                .currentPage( 1 )
+                .noLimit( false )
+                .build();
+
+        Method refreshMethod = crud.getClass().getMethod( "refreshSourceSchemaIfNeeded", UIRequest.class );
+        return (SourceMaterializationRefreshResult) refreshMethod.invoke( crud, request );
+    }
+
+
     public static LogicalTable createSynchronizedSourceMaterialization( LogicalTable source, String materializedTableName, String storeName ) throws Exception {
         RelationalResult result = postSourceMaterializationRequest(
                 "/createSynchronizedSourceMaterialization",
@@ -1043,8 +1065,15 @@ public class TestHelper {
 
 
     public static int countDocuments( String namespaceName, String collectionName ) {
-        DocResult result = MongoConnection.executeGetResponse( "db." + collectionName + ".find({})", namespaceName );
-        return result.getData() == null ? 0 : result.getData().length;
+        DocResult result = MongoConnection.executeGetResponse( "db." + collectionName + ".countDocuments({})", namespaceName );
+        if ( result.getData() == null || result.getData().length == 0 ) {
+            return 0;
+        }
+        Matcher matcher = Pattern.compile( "-?\\d+" ).matcher( String.valueOf( result.getData()[0] ) );
+        if ( !matcher.find() ) {
+            throw new IllegalStateException( "Could not determine document count for collection " + collectionName );
+        }
+        return Integer.parseInt( matcher.group() );
     }
 
 
@@ -1075,6 +1104,8 @@ public class TestHelper {
 
         HttpResponse<String> response = Unirest.post( "{protocol}://{host}:{port}" + route )
                 .header( "Content-Type", "application/json" )
+                .connectTimeout( 1_800_000 )
+                .socketTimeout( 1_800_000 )
                 .basicAuth( "pa", "" )
                 .routeParam( "protocol", "http" )
                 .routeParam( "host", "127.0.0.1" )
@@ -1090,13 +1121,18 @@ public class TestHelper {
 
     @SuppressWarnings("unchecked")
     public static List<String> refreshSelectedSources( List<Long> sourceIds ) throws Exception {
+        return refreshSelectedSourcesWithDetails( sourceIds ).refreshedSources();
+    }
+
+
+    public static SourceRefreshDetails refreshSelectedSourcesWithDetails( List<Long> sourceIds ) throws Exception {
         Object httpServer = HttpServer.getInstance();
         Field crudField = httpServer.getClass().getDeclaredField( "crud" );
         crudField.setAccessible( true );
         Object crud = crudField.get( httpServer );
 
-        Method refreshMethod = crud.getClass().getMethod( "refreshSelectedSources", List.class );
-        return (List<String>) refreshMethod.invoke( crud, sourceIds );
+        Method refreshMethod = crud.getClass().getMethod( "refreshSelectedSourcesWithDetails", List.class );
+        return (SourceRefreshDetails) refreshMethod.invoke( crud, sourceIds );
     }
 
 

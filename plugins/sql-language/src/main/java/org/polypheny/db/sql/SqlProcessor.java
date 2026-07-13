@@ -258,6 +258,10 @@ public class SqlProcessor extends Processor {
 
             catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
 
+            if ( !(insert.getSource() instanceof SqlBasicCall) ) {
+                return;
+            }
+
             SqlNodeList newColumnList = new SqlNodeList( ParserPos.ZERO );
             int size = catalogTable.getColumns().size();
             if ( dataModel == DataModel.DOCUMENT ) {

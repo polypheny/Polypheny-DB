@@ -161,6 +161,7 @@ import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.Pair;
@@ -223,6 +224,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     private static final Gson gson = new Gson();
     public static final String ORIGIN = "Polypheny-UI";
     private static final int POSTGRES_MAX_VARCHAR_LENGTH = 10_485_760;
+    private static final int DOCUMENT_MATERIALIZATION_COPY_BATCH_SIZE = 5_000;
+    private static final int RELATIONAL_MATERIALIZATION_COPY_BATCH_SIZE = 10_000;
     private final TransactionManager transactionManager;
 
     public final LanguageCrud languageCrud;
@@ -850,11 +853,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return;
         }
 
-        String columnList = columns.stream()
-                .map( column -> quoteIdentifier( column.name ) )
-                .collect( Collectors.joining( ", " ) );
-        String insertQuery = String.format( "INSERT INTO %s SELECT %s FROM %s", targetTable, columnList, sourceTableName );
-        Result<?, ?> insertResult = executeSql( insertQuery );
+        String copyQueryDescription = buildBatchedRelationalCopyQueryDescription( targetTable, sourceTableName );
+        Result<?, ?> insertResult = copyRelationalTableRows( sourceTable, sourceTableName, targetTable, columns );
         if ( insertResult.error != null ) {
             executeSql( "DROP TABLE " + targetTable );
             ctx.json( insertResult );
@@ -864,7 +864,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         ctx.json( RelationalResult.builder()
                 .table( independentTableName )
                 .namespace( targetNamespace.name )
-                .query( insertQuery )
+                .query( copyQueryDescription )
                 .queryType( QueryType.DML )
                 .affectedTuples( insertResult.affectedTuples )
                 .build() );
@@ -943,8 +943,21 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         LogicalTable sourceTable = snapshot.rel().getTable( materializedTable.synchronizedSourceEntityId ).orElseThrow();
         LogicalNamespace materializedNamespace = snapshot.getNamespace( materializedTable.namespaceId ).orElseThrow();
         LogicalNamespace sourceNamespace = snapshot.getNamespace( sourceTable.namespaceId ).orElseThrow();
-        List<LogicalColumn> columns = snapshot.rel().getColumns( materializedTable.id ).stream().sorted().toList();
-        String columnList = columns.stream()
+        Map<String, LogicalColumn> materializedColumns = snapshot.rel().getColumns( materializedTable.id ).stream()
+                .collect( Collectors.toMap( column -> column.name, column -> column ) );
+        Map<Long, LogicalColumn> sourceColumnsById = snapshot.rel().getColumns( sourceTable.id ).stream()
+                .collect( Collectors.toMap( column -> column.id, column -> column ) );
+        AllocationEntity sourceAllocation = snapshot.alloc().getFromLogical( sourceTable.id ).stream().findFirst().orElseThrow();
+        List<LogicalColumn> columns = snapshot.alloc().getColumns( sourceAllocation.placementId ).stream()
+                .map( AllocationColumn::getColumnId )
+                .map( sourceColumnsById::get )
+                .filter( Objects::nonNull )
+                .filter( column -> materializedColumns.containsKey( column.name ) )
+                .toList();
+        String targetColumnList = columns.stream()
+                .map( column -> quoteIdentifier( materializedColumns.get( column.name ).name ) )
+                .collect( Collectors.joining( ", " ) );
+        String sourceColumnList = columns.stream()
                 .map( column -> quoteIdentifier( column.name ) )
                 .collect( Collectors.joining( ", " ) );
         String materializedTableName = quoteQualified( materializedNamespace.name, materializedTable.name );
@@ -957,7 +970,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             if ( deleteResult.error != null ) {
                 throw new GenericRuntimeException( deleteResult.error );
             }
-            String insertQuery = String.format( "INSERT INTO %s SELECT %s FROM %s", materializedTableName, columnList, sourceTableName );
+            String insertQuery = String.format( "INSERT INTO %s (%s) SELECT %s FROM %s", materializedTableName, targetColumnList, sourceColumnList, sourceTableName );
             log.info( "Refreshing synchronized materialization data with query: {}", insertQuery );
             Result<?, ?> insertResult = executeSql( insertQuery );
             if ( insertResult.error != null ) {
@@ -1074,13 +1087,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
             return;
         }
-        String findQuery = String.format( "db.%s.find({})", sourceCollection.name );
-        Result<?, ?> findResult = executeMql( findQuery, sourceNamespace.name, true );
-        if ( findResult.error != null ) {
-            ctx.json( findResult );
-            return;
-        }
-
         String createQuery = buildCreateMaterializationCollectionQuery( independentCollectionName, targetStore.uniqueName );
         Result<?, ?> createResult = executeMql( createQuery, targetNamespace.name, false );
         if ( createResult.error != null ) {
@@ -1088,24 +1094,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return;
         }
 
-        String[] documents = (String[]) findResult.data;
-        if ( documents.length == 0 ) {
-            ctx.json( RelationalResult.builder()
-                    .dataModel( DataModel.DOCUMENT )
-                    .table( independentCollectionName )
-                    .namespace( targetNamespace.name )
-                    .query( createQuery )
-                    .queryType( QueryType.DML )
-                    .affectedTuples( 0 )
-                    .build() );
-            return;
-        }
-
-        String insertQuery = buildInsertManyQuery( independentCollectionName, documents );
-        Result<?, ?> insertResult = executeMql( insertQuery, targetNamespace.name, false );
-        if ( insertResult.error != null ) {
+        long copiedDocuments;
+        try {
+            copiedDocuments = copyCollectionDocuments( sourceCollection, sourceNamespace.name, independentCollectionName, targetNamespace.name );
+        } catch ( GenericRuntimeException e ) {
             executeMql( "db." + independentCollectionName + ".drop()", targetNamespace.name, false );
-            ctx.json( insertResult );
+            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
             return;
         }
 
@@ -1113,9 +1107,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .dataModel( DataModel.DOCUMENT )
                 .table( independentCollectionName )
                 .namespace( targetNamespace.name )
-                .query( insertQuery )
+                .query( buildBatchedCopyQueryDescription( sourceCollection.name, independentCollectionName ) )
                 .queryType( QueryType.DML )
-                .affectedTuples( documents.length )
+                .affectedTuples( copiedDocuments )
                 .build() );
     }
 
@@ -1136,13 +1130,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
             return;
         }
-        String findQuery = String.format( "db.%s.find({})", sourceCollection.name );
-        Result<?, ?> findResult = executeMql( findQuery, sourceNamespace.name, true );
-        if ( findResult.error != null ) {
-            ctx.json( findResult );
-            return;
-        }
-
         String createQuery = buildCreateMaterializationCollectionQuery( synchronizedCollectionName, targetStore.uniqueName );
         Result<?, ?> createResult = executeMql( createQuery, targetNamespace.name, false );
         if ( createResult.error != null ) {
@@ -1150,25 +1137,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return;
         }
 
-        String[] documents = (String[]) findResult.data;
-        if ( documents.length == 0 ) {
-            setSynchronizedCollectionMetadata( targetNamespace.id, synchronizedCollectionName, sourceCollection.id );
-            ctx.json( RelationalResult.builder()
-                    .dataModel( DataModel.DOCUMENT )
-                    .table( synchronizedCollectionName )
-                    .namespace( targetNamespace.name )
-                    .query( createQuery )
-                    .queryType( QueryType.DML )
-                    .affectedTuples( 0 )
-                    .build() );
-            return;
-        }
-
-        String insertQuery = buildInsertManyQuery( synchronizedCollectionName, documents );
-        Result<?, ?> insertResult = executeMql( insertQuery, targetNamespace.name, false );
-        if ( insertResult.error != null ) {
+        long copiedDocuments;
+        try {
+            copiedDocuments = copyCollectionDocuments( sourceCollection, sourceNamespace.name, synchronizedCollectionName, targetNamespace.name );
+        } catch ( GenericRuntimeException e ) {
             executeMql( "db." + synchronizedCollectionName + ".drop()", targetNamespace.name, false );
-            ctx.json( insertResult );
+            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
             return;
         }
 
@@ -1178,9 +1152,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .dataModel( DataModel.DOCUMENT )
                 .table( synchronizedCollectionName )
                 .namespace( targetNamespace.name )
-                .query( insertQuery )
+                .query( buildBatchedCopyQueryDescription( sourceCollection.name, synchronizedCollectionName ) )
                 .queryType( QueryType.DML )
-                .affectedTuples( documents.length )
+                .affectedTuples( copiedDocuments )
                 .build() );
     }
 
@@ -1297,11 +1271,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         LogicalCollection sourceCollection = snapshot.doc().getCollection( materializedCollection.synchronizedSourceEntityId ).orElseThrow();
         LogicalNamespace materializedNamespace = snapshot.getNamespace( materializedCollection.namespaceId ).orElseThrow();
         LogicalNamespace sourceNamespace = snapshot.getNamespace( sourceCollection.namespaceId ).orElseThrow();
-        Result<?, ?> findResult = executeMql( String.format( "db.%s.find({})", sourceCollection.name ), sourceNamespace.name, true );
-        if ( findResult.error != null ) {
-            throw new GenericRuntimeException( findResult.error );
-        }
-
         Catalog.getInstance().getLogicalDoc( materializedNamespace.id ).setCollectionModifiable( materializedCollection.id, true );
         Catalog.getInstance().updateSnapshot();
         try {
@@ -1309,18 +1278,139 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             if ( deleteResult.error != null ) {
                 throw new GenericRuntimeException( deleteResult.error );
             }
-
-            String[] documents = (String[]) findResult.data;
-            if ( documents.length > 0 ) {
-                Result<?, ?> insertResult = executeMql( buildInsertManyQuery( materializedCollection.name, documents ), materializedNamespace.name, false );
-                if ( insertResult.error != null ) {
-                    throw new GenericRuntimeException( insertResult.error );
-                }
-            }
+            copyCollectionDocuments( sourceCollection, sourceNamespace.name, materializedCollection.name, materializedNamespace.name );
         } finally {
             Catalog.getInstance().getLogicalDoc( materializedNamespace.id ).setCollectionModifiable( materializedCollection.id, false );
             Catalog.getInstance().updateSnapshot();
         }
+    }
+
+
+    private long copyCollectionDocuments( LogicalCollection sourceCollection, String sourceNamespace, String targetCollectionName, String targetNamespace ) {
+        Transaction transaction = getTransaction();
+        ImplementationContext implementationContext = null;
+        ResultIterator iterator = null;
+        boolean committed = false;
+        try {
+            implementationContext = LanguageManager.getINSTANCE().anyPrepareQuery(
+                    QueryContext.builder()
+                            .query( String.format( "db.%s.find({})", sourceCollection.name ) )
+                            .language( QueryLanguage.from( "mql" ) )
+                            .origin( ORIGIN )
+                            .namespaceId( LanguageCrud.getNamespaceIdOrDefault( sourceNamespace ) )
+                            .batch( DOCUMENT_MATERIALIZATION_COPY_BATCH_SIZE )
+                            .transactions( List.of( transaction ) )
+                            .transactionManager( transactionManager )
+                            .build(), transaction ).get( 0 );
+            ExecutedContext executedContext = implementationContext.execute( implementationContext.getStatement() );
+            if ( executedContext.getException().isPresent() ) {
+                throw new GenericRuntimeException( executedContext.getException().get().getMessage() );
+            }
+
+            iterator = executedContext.getIterator();
+            long copiedDocuments = 0;
+            while ( true ) {
+                List<List<PolyValue>> batch = iterator.getNextBatch( DOCUMENT_MATERIALIZATION_COPY_BATCH_SIZE );
+                if ( batch.isEmpty() ) {
+                    transaction.commit();
+                    committed = true;
+                    return copiedDocuments;
+                }
+
+                String[] documents = batch.stream()
+                        .map( row -> row.get( 0 ).toJson() )
+                        .toArray( String[]::new );
+                Result<?, ?> insertResult = executeMql( buildInsertManyQuery( targetCollectionName, documents ), targetNamespace, false );
+                if ( insertResult.error != null ) {
+                    throw new GenericRuntimeException( insertResult.error );
+                }
+                copiedDocuments += documents.length;
+            }
+        } catch ( Exception e ) {
+            if ( !committed ) {
+                transaction.rollback( "Error while copying source collection documents: " + e.getMessage() );
+            }
+            if ( e instanceof GenericRuntimeException ) {
+                throw (GenericRuntimeException) e;
+            }
+            throw new GenericRuntimeException( e );
+        } finally {
+            if ( iterator != null ) {
+                iterator.close();
+            }
+        }
+    }
+
+
+    private static String buildBatchedCopyQueryDescription( String sourceCollectionName, String targetCollectionName ) {
+        return String.format( "db.%s.find({}) -> db.%s.insertMany(...) in batches", sourceCollectionName, targetCollectionName );
+    }
+
+
+    private Result<?, ?> copyRelationalTableRows( LogicalTable sourceTable, String sourceTableName, String targetTable, List<LogicalColumn> columns ) {
+        String columnList = columns.stream()
+                .map( column -> quoteIdentifier( column.name ) )
+                .collect( Collectors.joining( ", " ) );
+        String orderBy = buildMaterializationCopyOrderBy( sourceTable, columns );
+        long rowCount = countRelationalTableRows( sourceTableName );
+        long copiedRows = 0;
+        for ( long offset = 0; offset < rowCount; offset += RELATIONAL_MATERIALIZATION_COPY_BATCH_SIZE ) {
+            String insertQuery = String.format(
+                    "INSERT INTO %s (%s) SELECT %s FROM %s%s LIMIT %d OFFSET %d",
+                    targetTable,
+                    columnList,
+                    columnList,
+                    sourceTableName,
+                    orderBy,
+                    RELATIONAL_MATERIALIZATION_COPY_BATCH_SIZE,
+                    offset );
+            Result<?, ?> insertResult = executeSql( insertQuery );
+            if ( insertResult.error != null ) {
+                return insertResult;
+            }
+            copiedRows += insertResult.affectedTuples;
+        }
+        return RelationalResult.builder()
+                .query( buildBatchedRelationalCopyQueryDescription( targetTable, sourceTableName ) )
+                .queryType( QueryType.DML )
+                .affectedTuples( copiedRows )
+                .build();
+    }
+
+
+    private long countRelationalTableRows( String tableName ) {
+        RelationalResult countResult = (RelationalResult) executeSql( "SELECT COUNT(*) FROM " + tableName );
+        if ( countResult.error != null ) {
+            throw new GenericRuntimeException( countResult.error );
+        }
+        if ( countResult.data == null || countResult.data.length == 0 || countResult.data[0].length == 0 ) {
+            return 0;
+        }
+        return Long.parseLong( countResult.data[0][0] );
+    }
+
+
+    private static String buildMaterializationCopyOrderBy( LogicalTable sourceTable, List<LogicalColumn> columns ) {
+        if ( sourceTable.primaryKey == null ) {
+            return "";
+        }
+        LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( sourceTable.primaryKey ).orElse( null );
+        if ( primaryKey == null || primaryKey.fieldIds.isEmpty() ) {
+            return "";
+        }
+        Map<Long, String> columnNames = columns.stream()
+                .collect( Collectors.toMap( column -> column.id, column -> column.name ) );
+        String orderBy = primaryKey.fieldIds.stream()
+                .map( columnNames::get )
+                .filter( Objects::nonNull )
+                .map( Crud::quoteIdentifier )
+                .collect( Collectors.joining( ", " ) );
+        return orderBy.isEmpty() ? "" : " ORDER BY " + orderBy;
+    }
+
+
+    private static String buildBatchedRelationalCopyQueryDescription( String targetTable, String sourceTableName ) {
+        return String.format( "INSERT INTO %s SELECT ... FROM %s in batches", targetTable, sourceTableName );
     }
 
 

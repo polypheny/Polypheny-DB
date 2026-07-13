@@ -496,7 +496,11 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
      * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
      */
     private SqlNodeList physicalIdentifierList( JdbcTable entity, List<String> columnNames ) {
-        List<SqlIdentifier> columns = entity.columns.stream().filter( c -> columnNames.contains( c.logicalName ) ).map( c -> new SqlIdentifier( c.name, ParserPos.ZERO ) ).toList();
+        Map<String, String> physicalNames = entity.columns.stream().collect( ImmutableMap.toImmutableMap( c -> c.logicalName, c -> c.name ) );
+        List<SqlIdentifier> columns = columnNames.stream()
+                .filter( physicalNames::containsKey )
+                .map( name -> new SqlIdentifier( physicalNames.get( name ), ParserPos.ZERO ) )
+                .toList();
         if ( columns.isEmpty() ) {
             columns = entity.columns.stream().map( c -> new SqlIdentifier( c.name, ParserPos.ZERO ) ).toList();
         }
