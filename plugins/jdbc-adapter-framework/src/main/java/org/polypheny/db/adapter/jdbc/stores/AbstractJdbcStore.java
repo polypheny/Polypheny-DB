@@ -23,7 +23,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
@@ -266,10 +265,10 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         boolean supportsThisArray = column.collectionsType == PolyType.ARRAY && column.dimension != null && this.dialect.supportsArrays() && (this.dialect.supportsNestedArrays() || column.dimension == 1);
         AlgDataType algType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
         if ( algType instanceof VectorType vectorType && dialect.vectorPushdownTypeIsPresent( vectorType.getVectorElementType() ) ) {
-          builder.append( dialect.getTypeString( vectorType.getVectorElementType() ) )
-                  .append( "(" )
-                  .append( column.cardinality != null && column.cardinality > 0 ? column.cardinality : "" )
-                  .append( ")" );
+            builder.append( dialect.getTypeString( vectorType.getVectorElementType() ) )
+                    .append( "(" )
+                    .append( column.cardinality != null && column.cardinality > 0 ? column.cardinality : "" )
+                    .append( ")" );
         } else if ( supportsThisArray ) {
             // Returns e.g. TEXT if arrays are not supported
             builder.append( getTypeString( column.type ) ).append( " " ).append( getTypeString( PolyType.ARRAY ).repeat( column.dimension ) );
@@ -298,6 +297,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         }
         return builder.toString().trim();
     }
+
 
     protected void createColumnDefinition( PhysicalColumn column, StringBuilder builder ) {
         builder.append( getColumnDefinitionString( column ) );
@@ -534,7 +534,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     public List<String> getActiveFeatureNames() {
         return dialect.getSupportedFeatures().stream()
                 .map( SqlDbFeature::displayName )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 

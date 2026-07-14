@@ -25,6 +25,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
@@ -60,6 +61,7 @@ import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
@@ -185,8 +187,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
             PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
             ConnectionHandler handler = factory.getOrCreateConnectionHandler( xid );
             try ( java.sql.Statement statement = handler.getStatement() ) {
-                java.sql.Connection connection = statement.getConnection();
-                java.util.Set<org.polypheny.db.sql.language.SqlDbFeature> features = PostgresqlSource.detectFeatures( connection );
+                Connection connection = statement.getConnection();
+                Set<SqlDbFeature> features = PostgresqlSource.detectFeatures( connection );
                 dialect.addSupportedFeatures( features );
             }
         } catch ( ConnectionHandlerException | SQLException e ) {
@@ -387,7 +389,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 case "COSINE" -> "vector_cosine_ops";
                 case "INNER_PRODUCT" -> "vector_ip_ops";
                 case "HAMMING" -> "bit_hamming_ops";
-                default -> throw new GenericRuntimeException( "Unsupported distance metric for pgvector HNSW indexes: " + metric);
+                default -> throw new GenericRuntimeException( "Unsupported distance metric for pgvector IVFFlat indexes: " + metric);
             };
             builder.append( " " ).append( operatorClass );
         }

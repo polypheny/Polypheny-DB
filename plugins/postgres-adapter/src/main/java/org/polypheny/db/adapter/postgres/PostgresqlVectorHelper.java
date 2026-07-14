@@ -20,8 +20,11 @@ import com.pgvector.PGbit;
 import com.pgvector.PGhalfvec;
 import com.pgvector.PGsparsevec;
 import com.pgvector.PGvector;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDynamicParam;
 import org.polypheny.db.sql.language.SqlNode;
@@ -29,13 +32,12 @@ import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 public class PostgresqlVectorHelper {
 
-    private PostgresqlVectorHelper() {}
+    private PostgresqlVectorHelper() {
+    }
 
 
     public static void unparseAsPgVector( SqlWriter writer, SqlNode operand, int leftPrec, int rightPrec ) {
@@ -91,16 +93,19 @@ public class PostgresqlVectorHelper {
         }
         if ( vector != null ) {
             List<PolyValue> list = new ArrayList<>( vector.length );
-            for ( float f : vector ) list.add( PolyFloat.of( f ) );
+            for ( float f : vector ) {
+                list.add( PolyFloat.of( f ) );
+            }
             return list;
         }
         if ( bitvector != null ) {
             List<PolyValue> list = new ArrayList<>( bitvector.length );
-            for ( boolean b : bitvector ) list.add( PolyBoolean.of( b ) );
+            for ( boolean b : bitvector ) {
+                list.add( PolyBoolean.of( b ) );
+            }
             return list;
         }
-        log.warn( "Was not able to parse the vector object." );
-        return null;
+        throw new GenericRuntimeException( "Was not able to parse the vector object." );
     }
 
 

@@ -609,7 +609,8 @@ public class DdlManagerImpl extends DdlManager {
 
         IndexCategory requestedCategory = IndexCategory.REGULAR;
         if ( indexMethodName != null ) {
-            IndexMethodModel aim = IndexManager.getAvailableIndexMethods().stream()
+            IndexMethodModel aim = IndexManager.getAvailableIndexMethods()
+                    .stream()
                     .filter( m -> m.name().equals( indexMethodName ) )
                     .findFirst()
                     .orElse( null );
@@ -630,8 +631,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         for ( String columnName : columnNames ) {
-            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName
-            ).orElseThrow();
+            LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
             AlgDataType colType = logicalColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             boolean isVectorColumn = colType instanceof VectorType;
             if ( requestedCategory == IndexCategory.VECTOR && !isVectorColumn ) {

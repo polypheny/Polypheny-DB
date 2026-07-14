@@ -18,11 +18,11 @@ package org.polypheny.db.adapter.postgres;
 
 
 import com.google.common.collect.ImmutableList;
+import com.pgvector.PGbit;
+import com.pgvector.PGvector;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import com.pgvector.PGbit;
-import com.pgvector.PGvector;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -59,10 +59,10 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.inference.ReturnTypes;
 
-@Slf4j
 /**
  * A <code>SqlDialect</code> implementation for the PostgreSQL database.
  */
+@Slf4j
 public class PostgresqlSqlDialect extends SqlDialect {
 
     /**
@@ -93,8 +93,9 @@ public class PostgresqlSqlDialect extends SqlDialect {
         this( EMPTY_CONTEXT
                 .withNullCollation( NullCollation.HIGH )
                 .withIdentifierQuoteString( "\"" )
-                .withDataTypeSystem( POSTGRESQL_TYPE_SYSTEM )) ;
+                .withDataTypeSystem( POSTGRESQL_TYPE_SYSTEM ) );
     }
+
 
     /**
      * Creates a PostgresqlSqlDialect.
@@ -157,13 +158,13 @@ public class PostgresqlSqlDialect extends SqlDialect {
     @Override
     public List<OperatorName> supportedKnnFunctions() {
         return supportsVector() ?
-        ImmutableList.of(
-                OperatorName.L1_DISTANCE,
-                OperatorName.L2_DISTANCE,
-                OperatorName.COS_DISTANCE,
-                OperatorName.INNER_PRODUCT_DISTANCE,
-                OperatorName.HAMMING_DISTANCE,
-                OperatorName.JACCARD_DISTANCE )
+                ImmutableList.of(
+                        OperatorName.L1_DISTANCE,
+                        OperatorName.L2_DISTANCE,
+                        OperatorName.COS_DISTANCE,
+                        OperatorName.INNER_PRODUCT_DISTANCE,
+                        OperatorName.HAMMING_DISTANCE,
+                        OperatorName.JACCARD_DISTANCE )
                 : ImmutableList.of();
     }
 
@@ -200,11 +201,11 @@ public class PostgresqlSqlDialect extends SqlDialect {
     @Override
     public SqlNode getCastSpec( AlgDataType type ) {
         if ( type instanceof VectorType vectorType
-                && vectorPushdownTypeIsPresent( vectorType.getVectorElementType() )) {
+                && vectorPushdownTypeIsPresent( vectorType.getVectorElementType() ) ) {
 
             String typeName = "_" + getTypeString( vectorType.getVectorElementType() );
             return new SqlDataTypeSpec( new SqlIdentifier( typeName, ParserPos.ZERO ),
-                        (int) vectorType.getVectorDimension(), -1, null, null, ParserPos.ZERO );
+                    (int) vectorType.getVectorDimension(), -1, null, null, ParserPos.ZERO );
         }
 
         String castSpec;
@@ -370,7 +371,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
      */
     @Override
     public Optional<Expression> getCustomArrayRetrievalExpression( ParameterExpression resultSet, int i, AlgDataType fieldType ) {
-        if ( fieldType.getPolyType() != PolyType.ARRAY || !(fieldType instanceof VectorType vectorType)) {
+        if ( fieldType.getPolyType() != PolyType.ARRAY || !(fieldType instanceof VectorType vectorType) ) {
             return Optional.empty();
         }
         if ( vectorType.getVectorElementType() == ElementType.BIT ) {
@@ -421,7 +422,9 @@ public class PostgresqlSqlDialect extends SqlDialect {
         return switch ( vectorType ) {
             case FLOAT -> {
                 float[] fa = new float[vectorAsList.size()];
-                for ( int i = 0; i < vectorAsList.size(); ++i ) fa[i] = vectorAsList.get( i ).asNumber().floatValue();
+                for ( int i = 0; i < vectorAsList.size(); ++i ) {
+                    fa[i] = vectorAsList.get( i ).asNumber().floatValue();
+                }
                 yield new PGvector( fa );
             }
             case BIT -> {
@@ -443,8 +446,8 @@ public class PostgresqlSqlDialect extends SqlDialect {
         return switch ( vectorType ) {
             case FLOAT -> "vector";
             case BIT -> "bit";
-            case DOUBLE, INTEGER -> throw new UnsupportedOperationException("Vectors of type " + vectorType
-                    + " are not supported by PG and do therefore not have a dedicated type string");
+            case DOUBLE, INTEGER -> throw new UnsupportedOperationException( "Vectors of type " + vectorType
+                    + " are not supported by PG and do therefore not have a dedicated type string" );
         };
     }
 

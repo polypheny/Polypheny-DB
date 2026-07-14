@@ -120,7 +120,7 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
             @Deserialize("dimension") final Integer dimension,
             @Deserialize("cardinality") final Integer cardinality,
             @Deserialize("nullable") final boolean nullable,
-            @Deserialize( "elementsNullable" ) final boolean elementsNullable,
+            @Deserialize("elementsNullable") final boolean elementsNullable,
             @Deserialize("collation") final Collation collation,
             @Deserialize("defaultValue") final LogicalDefaultValue defaultValue ) {
         this.id = id;
@@ -160,8 +160,8 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
 
         if ( collectionsType == PolyType.ARRAY ) {
             if ( !elementsNullable && (elementType.getPolyType() == PolyType.FLOAT
-                            || elementType.getPolyType() == PolyType.REAL
-                            || elementType.getPolyType() == PolyType.BOOLEAN)
+                    || elementType.getPolyType() == PolyType.REAL
+                    || elementType.getPolyType() == PolyType.BOOLEAN)
                     && dimension == 1 && cardinality != null && cardinality > 0 ) {
                 elementType = typeFactory.createVectorType( elementType, cardinality );
             } else {

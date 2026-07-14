@@ -46,9 +46,6 @@ import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 
-import static org.polypheny.db.adapter.postgres.source.PostgresqlCatalogQueries.SQL_COLUMN_TYPE_MODIFIERS_AND_ATTR_DIMENSIONS;
-import static org.polypheny.db.adapter.postgres.source.PostgresqlCatalogQueries.SQL_INSTALLED_EXTENSIONS;
-
 
 @Slf4j
 @AdapterProperties(
@@ -91,7 +88,7 @@ public class PostgresqlSource extends AbstractJdbcSource {
                 Set<SqlDbFeature> features = detectFeatures( connection );
                 dialect.addSupportedFeatures( features );
             }
-        }  catch ( SQLException | ConnectionHandlerException e) {
+        } catch ( SQLException | ConnectionHandlerException e ) {
             log.error( "Could not query feature information.", e );
         }
     }
@@ -138,39 +135,40 @@ public class PostgresqlSource extends AbstractJdbcSource {
      * <p>Handled type names:
      * <ul>
      *   <li>{@code vector, halfvec}   - pgvector float4 and float2 vector, mapped to {@code
-    ARRAY<REAL>}</li>
+     * ARRAY<REAL>}</li>
      *  <li>{@code bit}       - bitvectors mappte to {@code ARRAY<BOOLEAN>}</li>
      *   <li>{@code _float4}  - PostgreSQL float4 array, mapped to {@code
-    ARRAY<REAL>}</li>
+     * ARRAY<REAL>}</li>
      *   <li>{@code _float8}  - PostgreSQL float8 array, mapped to {@code
-    ARRAY<DOUBLE>}</li>
+     * ARRAY<DOUBLE>}</li>
      *   <li>{@code _int4}    - PostgreSQL int4 array, mapped to {@code
-    ARRAY<INTEGER>}</li>
+     * ARRAY<INTEGER>}</li>
      *   <li>{@code _int8}    - PostgreSQL int8 array, mapped to {@code
-    ARRAY<BIGINT>}</li>
+     * ARRAY<BIGINT>}</li>
      * </ul>
      * <p><b>Note:</b> PostgreSQL has no enforced array size limits. We therefore only detect the specified (but not enforced) dimensions.</p>
+     *
      * @see <a href="https://www.postgresql.org/docs/current/arrays.html">PostgreSQL Arrays Documentation</a>
      */
     @Override
     protected Optional<ColumnTypeInfo> resolveNativeColumnType( Map<String, CollectionMetadata> metadata, String typeName, ResultSet columnRow ) throws SQLException {
         CollectionMetadata meta = metadata.get( columnRow.getString( "COLUMN_NAME" ).toLowerCase() );
         return switch ( typeName ) {
-            case "vector", "halfvec", "sparsevec" -> Optional.of(  new ColumnTypeInfo( PolyType.REAL, PolyType.ARRAY,
-                    null, null, 1,  meta != null ? meta.typeModifier() : null) );
-            case "bit" -> Optional.of(  new ColumnTypeInfo( PolyType.BOOLEAN, PolyType.ARRAY,
-                    null, null, 1,  meta != null ? meta.typeModifier() : null) );
+            case "vector", "halfvec", "sparsevec" -> Optional.of( new ColumnTypeInfo( PolyType.REAL, PolyType.ARRAY,
+                    null, null, 1, meta != null ? meta.typeModifier() : null ) );
+            case "bit" -> Optional.of( new ColumnTypeInfo( PolyType.BOOLEAN, PolyType.ARRAY,
+                    null, null, 1, meta != null ? meta.typeModifier() : null ) );
             case "_float4" -> Optional.of( new ColumnTypeInfo( PolyType.REAL, PolyType.ARRAY,
                     null, null, arrayDim( meta ), null ) );
             case "_float8" -> Optional.of( new ColumnTypeInfo( PolyType.DOUBLE, PolyType.ARRAY,
                     null, null, arrayDim( meta ), null ) );
-            case "_int4"   -> Optional.of( new ColumnTypeInfo( PolyType.INTEGER, PolyType.ARRAY,
+            case "_int4" -> Optional.of( new ColumnTypeInfo( PolyType.INTEGER, PolyType.ARRAY,
                     null, null, arrayDim( meta ), null ) );
-            case "_int8"   -> Optional.of( new ColumnTypeInfo( PolyType.BIGINT, PolyType.ARRAY,
+            case "_int8" -> Optional.of( new ColumnTypeInfo( PolyType.BIGINT, PolyType.ARRAY,
                     null, null, arrayDim( meta ), null ) );
             case "_bool" -> Optional.of( new ColumnTypeInfo( PolyType.BOOLEAN, PolyType.ARRAY,
                     null, null, arrayDim( meta ), null ) );
-            default        -> Optional.empty();
+            default -> Optional.empty();
         };
     }
 
@@ -192,14 +190,14 @@ public class PostgresqlSource extends AbstractJdbcSource {
     @Override
     protected Map<String, CollectionMetadata> fetchColumnMetadata( Connection conn, String schema, String table ) throws SQLException {
         Map<String, CollectionMetadata> result = new HashMap<>();
-        try ( PreparedStatement ps = conn.prepareStatement( SQL_COLUMN_TYPE_MODIFIERS_AND_ATTR_DIMENSIONS ) ) {
+        try ( PreparedStatement ps = conn.prepareStatement( PostgresqlCatalogQueries.SQL_COLUMN_TYPE_MODIFIERS_AND_ATTR_DIMENSIONS ) ) {
             ps.setString( 1, table );
             ps.setString( 2, schema );
             try ( ResultSet rs = ps.executeQuery() ) {
                 while ( rs.next() ) {
-                    String col      = rs.getString( "attname" );
-                    int    dims     = rs.getInt( "attndims" );
-                    int    rawMod   = rs.getInt( "atttypmod" );
+                    String col = rs.getString( "attname" );
+                    int dims = rs.getInt( "attndims" );
+                    int rawMod = rs.getInt( "atttypmod" );
                     Integer typeMod = rs.wasNull() ? null : rawMod;
                     result.put( col, new CollectionMetadata( dims, typeMod ) );
                     log.debug( "Column metadata: {} -> dims={}, typeMod={}", col, dims, typeMod );
@@ -212,7 +210,7 @@ public class PostgresqlSource extends AbstractJdbcSource {
 
     public static Set<SqlDbFeature> detectFeatures( Connection conn ) throws SQLException {
         Set<PostgresqlFeature> found = EnumSet.noneOf( PostgresqlFeature.class );
-        PreparedStatement ps = conn.prepareStatement( SQL_INSTALLED_EXTENSIONS );
+        PreparedStatement ps = conn.prepareStatement( PostgresqlCatalogQueries.SQL_INSTALLED_EXTENSIONS );
         String[] featureNames = Arrays.stream( PostgresqlFeature.values() )
                 .map( PostgresqlFeature::featureName )
                 .toArray( String[]::new );

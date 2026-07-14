@@ -23,7 +23,6 @@ import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Map;
 import lombok.NonNull;
 import lombok.Value;
@@ -71,7 +70,6 @@ public class LogicalIndex implements Serializable {
     public long keyId;
     @Serialize
     @JsonProperty
-    @SerializeNullable
     public Map<String, String> options;
 
 
@@ -97,7 +95,7 @@ public class LogicalIndex implements Serializable {
         this.keyId = keyId;
         this.key = key;
         this.physicalName = physicalName;
-        this.options = options == null ? new HashMap<>() : options;
+        this.options = options == null ? Map.of() : options;
     }
 
 }

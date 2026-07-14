@@ -25,9 +25,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
@@ -59,7 +60,6 @@ import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
-import javax.annotation.Nullable;
 
 
 @Slf4j
@@ -250,13 +250,13 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                     while ( row.next() ) {
                         int jdbcDataType = row.getInt( "DATA_TYPE" );
                         String typeName = row.getString( "TYPE_NAME" );
-                        log.debug( "PolyType integer read: {}", row.getInt( "DATA_TYPE" ) );
-                        log.debug( "PolyType name read: {}", typeName );
                         PolyType type;
                         PolyType collectionsType = null;
                         Integer length = null, scale = null, dimension = null, cardinality = null;
                         type = PolyType.getNameForJdbcType( jdbcDataType );
-                        if ( isNativeVectorType( typeName ) ) type = PolyType.OTHER;
+                        if ( isNativeVectorType( typeName ) ) {
+                            type = PolyType.OTHER;
+                        }
                         switch ( type ) {
                             case BOOLEAN:
                             case TINYINT:
@@ -297,7 +297,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                             case ARRAY:
                             case OTHER:
                                 Optional<ColumnTypeInfo> nativeType = resolveNativeColumnType( cardinalities, typeName, row );
-                                if ( nativeType.isPresent() ){
+                                if ( nativeType.isPresent() ) {
                                     ColumnTypeInfo info = nativeType.get();
                                     type = info.type;
                                     collectionsType = info.collectionType;
@@ -397,7 +397,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
      *
      * @param typeName {@code TYPE_NAME} from e.g. {@link DatabaseMetaData#getColumns}
      * @param columnRow {@link ResultSet} as current row of {@link
-     *   java.sql.DatabaseMetaData#getColumns}
+     * java.sql.DatabaseMetaData#getColumns}
      * @return {@link ColumnTypeInfo}
      * @throws SQLException
      */
@@ -426,24 +426,28 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
             @Nullable Integer length,
             @Nullable Integer scale,
             @Nullable Integer dimension,
-            @Nullable Integer cardinality ) {}
+            @Nullable Integer cardinality ) {
+
+    }
 
 
     /**
      * Raw PostgreSQL catalog metadata for a single column that is either
      * a typed collection (array, vector) or carries a type modifier.
      *
-     * @param arrayDimensions  value of {@code pg_attribute.attndims}; 0 for non-arrays
-     * @param typeModifier     value of {@code pg_attribute.atttypmod} if > 0, else null
+     * @param arrayDimensions value of {@code pg_attribute.attndims}; 0 for non-arrays
+     * @param typeModifier value of {@code pg_attribute.atttypmod} if > 0, else null
      */
-    public record CollectionMetadata( int arrayDimensions, @Nullable Integer typeModifier ) {}
+    public record CollectionMetadata( int arrayDimensions, @Nullable Integer typeModifier ) {
+
+    }
 
 
     @Override
     public List<String> getActiveFeatureNames() {
         return dialect.getSupportedFeatures().stream()
                 .map( SqlDbFeature::displayName )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
 }

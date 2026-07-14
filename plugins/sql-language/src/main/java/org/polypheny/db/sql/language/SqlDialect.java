@@ -22,6 +22,7 @@ import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -100,7 +101,7 @@ public class SqlDialect {
     AlgDataTypeSystem dataTypeSystem;
 
     @NonNull
-    protected Set<SqlDbFeature> supportedFeatures = new java.util.HashSet<>();
+    protected Set<SqlDbFeature> supportedFeatures = new HashSet<>();
 
 
     /**
@@ -728,7 +729,7 @@ public class SqlDialect {
     }
 
 
-    public void addSupportedFeatures( java.util.Set<SqlDbFeature> features ) {
+    public void addSupportedFeatures( Set<SqlDbFeature> features ) {
         supportedFeatures.addAll( features );
     }
 

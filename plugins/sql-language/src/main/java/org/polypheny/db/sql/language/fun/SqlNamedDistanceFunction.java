@@ -28,8 +28,7 @@ import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.CoreUtil;
-
-import static org.polypheny.db.util.Static.RESOURCE;
+import org.polypheny.db.util.Static;
 
 /**
  * Represents an {@link SqlDistanceFunction} function that is not parameterized anymore.
@@ -49,7 +48,9 @@ public class SqlNamedDistanceFunction extends SqlFunction {
 
     @Override
     public String getSignatureTemplate( int operandsCount ) {
-        if ( operandsCount == 3) return "{0}({1}, {2})";
+        if ( operandsCount == 3 ) {
+            return "{0}({1}, {2})";
+        }
         throw new AssertionError();
     }
 
@@ -65,7 +66,7 @@ public class SqlNamedDistanceFunction extends SqlFunction {
             // Make sure the first argument is not null
             if ( CoreUtil.isNullLiteral( callBinding.operand( 0 ), false ) ) {
                 if ( throwOnFailure ) {
-                    throw callBinding.getValidator().newValidationError( callBinding.operand( 0 ), RESOURCE.nullIllegal() );
+                    throw callBinding.getValidator().newValidationError( callBinding.operand( 0 ), Static.RESOURCE.nullIllegal() );
                 } else {
                     return false;
                 }
@@ -82,7 +83,7 @@ public class SqlNamedDistanceFunction extends SqlFunction {
             // Make sure the second argument is not null
             if ( CoreUtil.isNullLiteral( callBinding.operand( 1 ), false ) ) {
                 if ( throwOnFailure ) {
-                    throw callBinding.getValidator().newValidationError( callBinding.operand( 1 ), RESOURCE.nullIllegal() );
+                    throw callBinding.getValidator().newValidationError( callBinding.operand( 1 ), Static.RESOURCE.nullIllegal() );
                 } else {
                     return false;
                 }
@@ -98,6 +99,7 @@ public class SqlNamedDistanceFunction extends SqlFunction {
             }
             return true;
         }
+
 
         @Override
         public OperandCountRange getOperandCountRange() {
@@ -132,7 +134,7 @@ public class SqlNamedDistanceFunction extends SqlFunction {
             // Make sure the first argument is not null
             if ( CoreUtil.isNullLiteral( callBinding.operand( 0 ), false ) ) {
                 if ( throwOnFailure ) {
-                    throw callBinding.getValidator().newValidationError( callBinding.operand( 0 ), RESOURCE.nullIllegal() );
+                    throw callBinding.getValidator().newValidationError( callBinding.operand( 0 ), Static.RESOURCE.nullIllegal() );
                 } else {
                     return false;
                 }
@@ -149,7 +151,7 @@ public class SqlNamedDistanceFunction extends SqlFunction {
             // Make sure the second argument is not null
             if ( CoreUtil.isNullLiteral( callBinding.operand( 1 ), false ) ) {
                 if ( throwOnFailure ) {
-                    throw callBinding.getValidator().newValidationError( callBinding.operand( 1 ), RESOURCE.nullIllegal() );
+                    throw callBinding.getValidator().newValidationError( callBinding.operand( 1 ), Static.RESOURCE.nullIllegal() );
                 } else {
                     return false;
                 }

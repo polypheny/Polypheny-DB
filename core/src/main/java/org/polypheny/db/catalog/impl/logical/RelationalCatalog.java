@@ -27,8 +27,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
@@ -256,10 +256,11 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     private long getOrAddKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) {
-        return getKey(tableId, columnIds, enforcementTime)
+        return getKey( tableId, columnIds, enforcementTime )
                 .orElse( addKey( tableId, columnIds, enforcementTime ) );
     }
-    
+
+
     private Optional<Long> getKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) {
         return Catalog.snapshot()
                 .rel()
@@ -500,11 +501,11 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Override
     public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds, Statement statement ) {
         Optional<Long> keyId = getKey( tableId, columnIds, EnforcementTime.ON_QUERY );
-        if (keyId.isPresent()) {
+        if ( keyId.isPresent() ) {
             // Check if there is already a unique constraint
             List<LogicalConstraint> logicalConstraints = constraints.values().stream()
-                .filter( c -> c.keyId == keyId.get() && c.type == ConstraintType.UNIQUE )
-                .toList();
+                    .filter( c -> c.keyId == keyId.get() && c.type == ConstraintType.UNIQUE )
+                    .toList();
             if ( !logicalConstraints.isEmpty() ) {
                 throw new GenericRuntimeException( "There is already a unique constraint!" );
             }

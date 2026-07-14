@@ -18,6 +18,7 @@ package org.polypheny.db.functions;
 
 
 import java.util.List;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
@@ -104,7 +105,7 @@ public class DistanceFunctions {
         return PolyDouble.of( 1 - dot( value, target ).doubleValue() / (norm2( value ) * norm2( target )) );
     }
 
-    
+
     protected static PolyDouble cosineMetricWeighted( List<PolyNumber> value, List<PolyNumber> target, List<PolyNumber> weights ) {
         double dot = 0, normV = 0, normT = 0;
         for ( int i = 0; i < value.size(); i++ ) {
@@ -139,8 +140,8 @@ public class DistanceFunctions {
 
 
     protected static PolyDouble jaccardMetric( List<PolyBoolean> value, List<PolyBoolean> target ) {
-        double intersection = 0;
-        double union = 0;
+        long intersection = 0;
+        long union = 0;
         for ( int i = 0; i < value.size(); i++ ) {
             boolean a = value.get( i ).asBoolean().getValue();
             boolean b = target.get( i ).asBoolean().getValue();
@@ -152,11 +153,11 @@ public class DistanceFunctions {
             }
         }
 
-        if ( union == 0.0 ) {
+        if ( union == 0 ) {
             return PolyDouble.of( 0.0 );
         }
 
-        return PolyDouble.of( 1.0 - (intersection / union) );
+        return PolyDouble.of( 1.0 - ((double) intersection / union) );
     }
 
 
@@ -184,15 +185,16 @@ public class DistanceFunctions {
 
 
     protected static void verifyInputs( List<?> a, List<?> b, List<?> w ) {
-        if ( emptyArgument( a, b, w ) )
+        if ( emptyArgument( a, b, w ) ) {
             return;
+        }
 
         if ( !a.get( 0 ).getClass().isArray() || !b.get( 0 ).getClass().isArray() || (w != null && !w.get( 0 ).getClass().isArray()) ) {
             if ( !(a.get( 0 ) instanceof PolyNumber) || !(b.get( 0 ) instanceof PolyNumber) || (w != null && !(w.get( 0 ) instanceof PolyNumber)) ) {
-                throw new RuntimeException( "Inputs are not Numbers." );
+                throw new GenericRuntimeException( "Inputs are not Numbers." );
             }
         } else {
-            throw new RuntimeException( "Not usable Arrays" );
+            throw new GenericRuntimeException( "Not usable Arrays" );
         }
     }
 
@@ -203,7 +205,7 @@ public class DistanceFunctions {
         }
 
         if ( (a.size() != b.size()) || (w != null && a.size() != w.size()) ) {
-            throw new RuntimeException( "Sizes of inputs do not match." );
+            throw new GenericRuntimeException( "Sizes of inputs do not match." );
         }
         return false;
     }
