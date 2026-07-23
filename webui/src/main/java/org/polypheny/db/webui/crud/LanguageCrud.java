@@ -236,7 +236,6 @@ public class LanguageCrud {
                 .map( LanguageCrud::getFullCollectionName )
                 .orElse( "its synchronized materialization" );
 
-        log.info( "Rejecting query against source collection {} because it is materialized as {}", sourceName, synchronizedName );
         return Optional.of( RelationalResult.builder()
                 .error( "Queries against source collection " + sourceName + " are disabled because it is materialized as " + synchronizedName + ". Query the synchronized materialization instead." )
                 .query( context.getQuery() )

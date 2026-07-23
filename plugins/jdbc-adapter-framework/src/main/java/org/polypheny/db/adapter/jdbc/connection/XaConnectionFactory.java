@@ -99,7 +99,6 @@ public class XaConnectionFactory implements ConnectionFactory {
     public Connection getFreshConnection() throws SQLException {
         Connection connection = dataSource.getXAConnection().getConnection();
         connection.setAutoCommit( true );
-        log.info( "Created fresh XA metadata connection." );
         return connection;
     }
 

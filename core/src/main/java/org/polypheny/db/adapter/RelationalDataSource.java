@@ -25,10 +25,16 @@ public interface RelationalDataSource {
 
     Map<String, List<ExportedColumn>> getExportedColumns();
 
+    /**
+     * Returns the currently exported source columns using a new physical connection if the adapter supports it.
+     */
     default Map<String, List<ExportedColumn>> getExportedColumnsFresh() {
         return getExportedColumns();
     }
 
+    /**
+     * Whether the adapter can discover added and removed source tables after deployment.
+     */
     default boolean supportsDynamicTableDiscovery() {
         return false;
     }

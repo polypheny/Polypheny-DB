@@ -298,7 +298,6 @@ public class DdlManagerImpl extends DdlManager {
             AdapterManager.getInstance().removeAdapter( catalog, adapter.getAdapterId() );
             throw new GenericRuntimeException( "Could not deploy adapter", e );
         }
-        // Create table, columns etc.
         Map<String, LogicalTable> createdTablesByPhysicalName = new HashMap<>();
         for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
             if ( entry.getValue().isEmpty() ) {
@@ -459,27 +458,21 @@ public class DdlManagerImpl extends DdlManager {
                 if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {
                     LogicalTable table = catalog.getSnapshot().rel().getTable( allocation.logicalId ).orElseThrow();
 
-                    // Make sure that there is only one adapter
                     if ( catalog.getSnapshot().alloc().getPlacementsFromLogical( allocation.logicalId ).size() != 1 ) {
                         throw new GenericRuntimeException( "The data source contains tables with more than one placement. This should not happen!" );
                     }
 
-                    // Make sure table is of type source
                     if ( table.entityType != EntityType.SOURCE ) {
                         throw new GenericRuntimeException( "Trying to drop a table located on a data source which is not of table type SOURCE. This should not happen!" );
                     }
-                    // Delete column placement in catalog
                     for ( AllocationColumn column : allocation.unwrap( AllocationTable.class ).get().getColumns() ) {
                         catalog.getAllocRel( allocation.namespaceId ).deleteColumn( allocation.id, column.columnId );
                     }
 
-                    // delete allocation
                     catalog.getAllocRel( allocation.namespaceId ).deleteAllocation( allocation.id );
 
-                    // Remove primary keys
                     catalog.getLogicalRel( allocation.namespaceId ).deletePrimaryKey( table.id );
 
-                    // Delete remaining constraints and keys, e.g. keys created for source foreign key references
                     for ( LogicalConstraint constraint : catalog.getSnapshot().rel().getConstraints( table.id ) ) {
                         catalog.getLogicalRel( allocation.namespaceId ).deleteConstraint( constraint.id );
                     }
@@ -487,14 +480,11 @@ public class DdlManagerImpl extends DdlManager {
                         catalog.getLogicalRel( allocation.namespaceId ).deleteKey( key.id );
                     }
 
-                    // Delete columns
                     for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( allocation.logicalId ) ) {
                         catalog.getLogicalRel( allocation.namespaceId ).deleteColumn( column.id );
                     }
 
-                    // Delete the table
                     catalog.getLogicalRel( allocation.namespaceId ).deleteTable( table.id );
-                    // Reset plan cache implementation cache & routing cache
                     statement.getQueryProcessor().resetCaches();
                 }
 
@@ -570,13 +560,11 @@ public class DdlManagerImpl extends DdlManager {
         LogicalColumn afterColumn;
         afterColumn = afterColumnName == null ? null : catalog.getSnapshot().rel().getColumn( table.id, afterColumnName ).orElseThrow();
 
-        // Make sure that the table is of table type SOURCE
         if ( table.entityType != EntityType.SOURCE ) {
             throw new GenericRuntimeException( "Illegal operation on table of type %s", table.entityType );
         }
         List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( table.id );
 
-        // Make sure there is only one adapter
         if ( allocs.size() != 1 ) {
             throw new GenericRuntimeException( "The table has an unexpected number of placements!" );
         }
@@ -584,7 +572,6 @@ public class DdlManagerImpl extends DdlManager {
         AllocationEntity allocation = allocs.get( 0 );
 
         DataSource<?> dataSource = AdapterManager.getInstance().getSource( allocation.adapterId ).orElseThrow();
-        //String physicalTableName = catalog.getSnapshot().alloc().getPhysicalTable( catalogTable.id, adapterId ).name;
         List<ExportedColumn> exportedColumns = dataSource.asRelationalDataSource().getExportedColumns().get( table.name );
 
         if ( exportedColumns == null ) {
@@ -594,7 +581,6 @@ public class DdlManagerImpl extends DdlManager {
             );
         }
 
-        // Check if physicalColumnName is valid
         ExportedColumn exportedColumn = exportedColumns.stream()
                 .filter( ec -> ec.physicalColumnName().equalsIgnoreCase( columnPhysicalName ) )
                 .findAny()
@@ -612,7 +598,6 @@ public class DdlManagerImpl extends DdlManager {
                 catalog.getSnapshot().alloc().getColumns( allocation.placementId ).size()
         );
 
-        // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
 
@@ -645,11 +630,6 @@ public class DdlManagerImpl extends DdlManager {
         List<String> refreshedSources = new ArrayList<>( sourceTables.stream().map( table -> table.name ).toList() );
         refreshedSources.addAll( sourceCollections.stream().map( collection -> collection.name ).toList() );
 
-        List<String> sourceNames = sourceIds.stream()
-                .map( sourceId -> snapshot.getAdapter( sourceId ).map( a -> a.uniqueName ).orElse( String.valueOf( sourceId ) ) )
-                .toList();
-        log.info( "Refreshing source entities {} from source(s) {}", refreshedSources, sourceNames );
-
         for ( LogicalTable sourceTable : sourceTables ) {
             List<String> changeDescriptions = refreshSourceSchemaIfNeeded( sourceTable.id, statement );
             if ( !changeDescriptions.isEmpty() ) {
@@ -680,7 +660,6 @@ public class DdlManagerImpl extends DdlManager {
                 .toList();
 
         for ( Map.Entry<String, LogicalTable> removedTable : removedTables ) {
-            log.info( "Dropping removed source table '{}' from source {}", removedTable.getValue().name, discovery.sourceAdapter().getUniqueName() );
             dropRemovedSourceTable( removedTable.getValue(), statement );
             summaries.add( new SourceRefreshSummary( sourceName, removedTable.getValue().name, DataModel.RELATIONAL, List.of( "Removed source table" ) ) );
         }
@@ -696,7 +675,6 @@ public class DdlManagerImpl extends DdlManager {
                 continue;
             }
             Map.Entry<String, List<ExportedColumn>> exportedTable = addedTable.getValue();
-            log.info( "Adding newly detected source table '{}' on source {}", exportedTable.getKey(), discovery.sourceAdapter().getUniqueName() );
             if ( exportedTable.getValue().isEmpty() ) {
                 log.warn( "Skipping newly detected source table '{}' on source {} because no columns were exported", exportedTable.getKey(), discovery.sourceAdapter().getUniqueName() );
                 summaries.add( new SourceRefreshSummary( sourceName, exportedTable.getKey(), DataModel.RELATIONAL, List.of( "Skipped source table because no columns were exported" ) ) );
@@ -744,11 +722,6 @@ public class DdlManagerImpl extends DdlManager {
                 .toList();
 
         for ( LogicalCollection removedCollection : removedCollections ) {
-            log.info(
-                    "Dropping removed collections {} from MongoDB source {}",
-                    List.of( removedCollection.name ),
-                    discovery.sourceAdapter().getUniqueName()
-            );
             dropCollection( removedCollection, statement );
             summaries.add( new SourceRefreshSummary( sourceName, removedCollection.name, DataModel.DOCUMENT, List.of( "Removed source collection" ) ) );
         }
@@ -762,21 +735,10 @@ public class DdlManagerImpl extends DdlManager {
                 .toList();
 
         if ( !addedCollections.isEmpty() ) {
-            log.info(
-                    "Adding newly detected collections {} to MongoDB source {}",
-                    addedCollections.stream().map( ExportedDocument::name ).toList(),
-                    discovery.sourceAdapter().getUniqueName()
-            );
             for ( ExportedDocument addedCollection : addedCollections ) {
                 createDocumentSourceCollection( discovery.sourceAdapter(), namespaceId, addedCollection );
                 summaries.add( new SourceRefreshSummary( sourceName, addedCollection.name(), DataModel.DOCUMENT, List.of( "Added source collection" ) ) );
             }
-        } else {
-            log.info( "No new source collections detected on MongoDB source {}", discovery.sourceAdapter().getUniqueName() );
-        }
-
-        if ( removedCollections.isEmpty() ) {
-            log.info( "No removed source collections detected on MongoDB source {}", discovery.sourceAdapter().getUniqueName() );
         }
         return summaries;
     }
@@ -933,7 +895,6 @@ public class DdlManagerImpl extends DdlManager {
 
         List<PhysicalEntity> physicalEntities = adapterCatalog.get().getPhysicalsFromAllocs( allocation.id );
         if ( physicalEntities == null ) {
-            log.info( "Skipping source table '{}' during source discovery because allocation {} has no physical entity", table.name, allocation.id );
             return null;
         }
 
@@ -1045,7 +1006,6 @@ public class DdlManagerImpl extends DdlManager {
         LogicalTable logicalTable = snapshot.rel().getTable( entityId ).orElseThrow();
 
         if ( logicalTable.entityType != EntityType.SOURCE ) {
-            log.info( "Refresh skipped: {} is not a source table.", logicalTable.name );
             return List.of();
         }
 
@@ -1061,26 +1021,19 @@ public class DdlManagerImpl extends DdlManager {
         SourceSchemaRefreshPlan refreshPlan = buildSourceSchemaRefreshPlan( logicalTable, sourceAllocation, snapshot );
 
         if ( refreshPlan.unsupported() ) {
-            log.info(
-                    "Schema refresh is not supported for table {} because this source type does not support it",
-                    logicalTable.name
-            );
             return List.of();
         }
         
         if ( refreshPlan.sourceEntityDeleted() ) {
-            log.info( "Source table '{}.{}' no longer exists", refreshPlan.sourceSchemaName(), refreshPlan.sourceTableName() );
             dropRemovedSourceTable( logicalTable, statement );
             return List.of( sourceTableDeletedMessage( logicalTable, snapshot ) );
         }
 
         if ( refreshPlan.orderedSourceColumns().isEmpty() ) {
-            log.info( "No source columns found for table '{}.{}'", refreshPlan.sourceSchemaName(), refreshPlan.sourceTableName() );
             return List.of();
         }
 
         if ( !refreshPlan.hasChanges() ) {
-            log.info( "No schema refresh needed for table {}", logicalTable.name );
             refreshUnchangedSourcePhysicalMetadata( refreshPlan, statement );
             catalog.updateSnapshot();
             statement.getQueryProcessor().resetCaches();
@@ -1091,7 +1044,6 @@ public class DdlManagerImpl extends DdlManager {
         catalog.updateSnapshot();
         statement.getQueryProcessor().resetCaches();
 
-        log.info( "Schema refresh finished successfully for table {}", logicalTable.name );
         return refreshPlan.changeDescriptions();
     }
 
@@ -1129,7 +1081,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public List<String> previewSourceCollectionRefresh( long entityId ) {
+    public List<String> previewSynchronizedSourceCollectionRefresh( long entityId ) {
         return refreshSourceCollectionIfNeeded( entityId, null, false );
     }
 
@@ -1139,7 +1091,6 @@ public class DdlManagerImpl extends DdlManager {
         LogicalCollection collection = snapshot.doc().getCollection( entityId ).orElseThrow();
 
         if ( collection.entityType != EntityType.SOURCE ) {
-            log.info( "Refresh skipped: {} is not a source collection.", collection.name );
             return List.of();
         }
 
@@ -1154,13 +1105,11 @@ public class DdlManagerImpl extends DdlManager {
         long sourceId = allocs.get( 0 ).adapterId;
         SourceCollectionDiscovery discovery = buildSourceCollectionDiscovery( sourceId, snapshot );
         if ( discovery == null ) {
-            log.info( "Collection refresh is not supported for collection {} because this source type does not support it", collection.name );
             return List.of();
         }
 
         String collectionIdentifier = formatSourceCollectionIdentifier( collection.name );
         if ( collectionIdentifier != null && !discovery.exportedCollectionsByIdentifier().containsKey( collectionIdentifier ) ) {
-            log.info( "Source collection '{}' no longer exists on source {}", collection.name, discovery.sourceAdapter().getUniqueName() );
             if ( dropDeletedCollection ) {
                 dropCollection( collection, statement );
             }
@@ -1625,12 +1574,6 @@ public class DdlManagerImpl extends DdlManager {
                 .collect( Collectors.toCollection( ArrayList::new ) );
 
         for ( ExportedColumn missing : refreshPlan.missingColumns() ) {
-            log.info(
-                    "Adding missing source column '{}' to table '{}'",
-                    missing.physicalColumnName(),
-                    logicalTable.name
-            );
-
             addMissingSourceColumnForRefresh(
                     logicalTable,
                     missing,
@@ -1645,12 +1588,6 @@ public class DdlManagerImpl extends DdlManager {
         if ( !refreshPlan.changedTypeColumns().isEmpty() ) {
             for ( PhysicalColumn changedTypeColumn : refreshPlan.changedTypeColumns() ) {
                 ExportedColumn sourceColumn = refreshPlan.sourceColumnsByPhysicalName().get( normalizeIdentifier( changedTypeColumn.name ) );
-                log.info(
-                        "Updating type of source column '{}' on table '{}'",
-                        sourceColumn.physicalColumnName(),
-                        logicalTable.name
-                );
-
                 updateSourceColumnTypeForRefresh(
                         logicalTable,
                         changedTypeColumn.logicalName,
@@ -1671,12 +1608,6 @@ public class DdlManagerImpl extends DdlManager {
                 refreshPlan.sourceAdapterId() );
 
         for ( LogicalColumn dropped : refreshPlan.droppedColumns() ) {
-            log.info(
-                    "Dropping removed source column '{}' from table '{}'",
-                    dropped.name,
-                    logicalTable.name
-            );
-
             dropRemovedSourceColumnForRefresh(
                     logicalTable,
                     dropped,
@@ -2159,12 +2090,10 @@ public class DdlManagerImpl extends DdlManager {
 
         LogicalRelationalCatalog logicalCatalog = catalog.getLogicalRel( table.namespaceId );
         if ( sourcePkIds.isEmpty() ) {
-            log.info( "Dropping removed source primary key on table '{}'", table.name );
             logicalCatalog.deletePrimaryKey( table.id );
             return ImmutableList.of();
         }
 
-        log.info( "Updating source primary key on table '{}'", table.name );
         logicalCatalog.addPrimaryKeyRefresh( table.id, sourcePkIds, statement );
         return ImmutableList.copyOf( sourcePkIds );
     }
@@ -2250,7 +2179,6 @@ public class DdlManagerImpl extends DdlManager {
                 continue;
             }
 
-            log.info( "Dropping removed source foreign key '{}' on table '{}'", currentForeignKey.name, table.name );
             deleteForeignKeyForRefresh( table, currentForeignKey, snapshot.rel(), logicalCatalog );
         }
 
@@ -2259,7 +2187,6 @@ public class DdlManagerImpl extends DdlManager {
                 continue;
             }
 
-            log.info( "Adding source foreign key '{}' on table '{}'", sourceForeignKey.name(), table.name );
             addForeignKeyForRefresh( table, sourceForeignKey, statement, logicalCatalog );
         }
 
@@ -2305,7 +2232,6 @@ public class DdlManagerImpl extends DdlManager {
                 continue;
             }
 
-            log.info( "Dropping removed synchronized source foreign key '{}' on table '{}'", currentForeignKey.name, table.name );
             deleteForeignKeyForRefresh( table, currentForeignKey, snapshot.rel(), logicalCatalog );
         }
 
@@ -2314,7 +2240,6 @@ public class DdlManagerImpl extends DdlManager {
                 continue;
             }
 
-            log.info( "Adding synchronized source foreign key '{}' on table '{}'", sourceForeignKey.name(), table.name );
             addForeignKeyForRefresh( table, sourceForeignKey, statement, logicalCatalog );
         }
 

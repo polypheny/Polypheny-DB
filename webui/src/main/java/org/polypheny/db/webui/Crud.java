@@ -386,10 +386,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     public void refreshSelectedSources( final Context ctx ) {
         SourceRefreshRequest request = ctx.bodyAsClass( SourceRefreshRequest.class );
-        List<String> sourceNames = request.getSourceIds().stream()
-                .map( sourceId -> Catalog.snapshot().getAdapter( sourceId ).map( a -> a.uniqueName ).orElse( String.valueOf( sourceId ) ) )
-                .toList();
-        log.info( "Received a source refresh request for source(s) {}", sourceNames );
         SourceRefreshDetails refreshDetails = refreshSelectedSourcesWithDetails( request.getSourceIds() );
         List<Map<String, Object>> refreshSummaries = refreshDetails.summaries().stream()
                 .map( summary -> Map.<String, Object>of(
@@ -484,10 +480,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             SourceRefreshDetails refreshDetails = DdlManager.getInstance().refreshSelectedSourcesWithDetails( sourceIds, ddlStatement );
 
             transaction.commit();
-            List<String> sourceNames = sourceIds.stream()
-                    .map( sourceId -> Catalog.snapshot().getAdapter( sourceId ).map( a -> a.uniqueName ).orElse( String.valueOf( sourceId ) ) )
-                    .toList();
-            log.info( "Schema refresh finished successfully for selected source(s) {}", sourceNames );
             return refreshDetails;
         } catch ( Exception e ) {
             try {
@@ -971,7 +963,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 throw new GenericRuntimeException( deleteResult.error );
             }
             String insertQuery = String.format( "INSERT INTO %s (%s) SELECT %s FROM %s", materializedTableName, targetColumnList, sourceColumnList, sourceTableName );
-            log.info( "Refreshing synchronized materialization data with query: {}", insertQuery );
             Result<?, ?> insertResult = executeSql( insertQuery );
             if ( insertResult.error != null ) {
                 throw new GenericRuntimeException( insertResult.error );
@@ -1223,7 +1214,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return new SourceMaterializationRefreshResult( List.of(), null, false );
         }
 
-        List<String> sourceRefreshPreview = DdlManager.getInstance().previewSourceCollectionRefresh( materializedCollection.synchronizedSourceEntityId );
+        List<String> sourceRefreshPreview = DdlManager.getInstance().previewSynchronizedSourceCollectionRefresh( materializedCollection.synchronizedSourceEntityId );
         if ( hasSourceDeletedChange( sourceRefreshPreview ) ) {
             return new SourceMaterializationRefreshResult( sourceRefreshPreview, null, true );
         }
@@ -3824,7 +3815,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             AlgNode node = PolyPlanBuilder.buildFromPolyAlg( request.polyAlg, request.planType ).alg;
             ctx.json( node.serializePolyAlgebra( new ObjectMapper() ) );
         } catch ( Exception e ) {
-            //e.printStackTrace();
             ctx.json( Map.of( "errorMsg", e.getMessage() ) );
             ctx.status( 400 );
         }

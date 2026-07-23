@@ -166,31 +166,93 @@ public abstract class DdlManager {
     public abstract List<String> refreshSourceSchemaIfNeeded( long entityId, Statement statement );
 
 
+    /**
+     * Refreshes one logical source collection against its underlying document source.
+     * <p>
+     * Since document collections do not have a column schema, this catalog refresh only checks whether the collection still
+     * exists in the source.
+     *
+     * @param entityId the id of the logical source collection to refresh
+     * @param statement the statement used to execute catalog changes
+     * @return user-facing descriptions of detected changes
+     */
     public abstract List<String> refreshSourceCollectionIfNeeded( long entityId, Statement statement );
 
 
-    public abstract List<String> previewSourceCollectionRefresh( long entityId );
+    /**
+     * Checks the source collection before refreshing a synchronized materialized collection without modifying the catalog.
+     * <p>
+     * Since document collections do not maintain a schema, this currently only checks whether the source collection still
+     * exists.
+     *
+     * @param entityId the id of the logical source collection backing the materialization
+     * @return user-facing descriptions of detected changes
+     */
+    public abstract List<String> previewSynchronizedSourceCollectionRefresh( long entityId );
 
 
+    /**
+     * Computes the schema changes needed to bring a synchronized relational materialization back in sync with its source.
+     *
+     * @param entityId the id of the synchronized materialized table
+     * @return user-facing descriptions of pending schema changes
+     */
     public abstract List<String> previewSynchronizedSourceMaterializationRefresh( long entityId );
 
 
+    /**
+     * Computes and applies source-driven schema changes to a synchronized materialized table.
+     * <p>
+     * This refresh updates columns, primary keys, and foreign keys of the materialized table, but does not reload its data.
+     *
+     * @param entityId the id of the synchronized materialized table
+     * @param statement the statement used to execute catalog changes
+     * @return user-facing descriptions of applied changes
+     */
     public abstract List<String> refreshSynchronizedSourceMaterializationColumns( long entityId, Statement statement );
 
 
+    /**
+     * Refreshes all selected source adapters and returns the names of source entities that were checked.
+     *
+     * @param sourceIds ids of the selected source adapters
+     * @param statement the statement used to execute catalog changes
+     * @return names of source tables and collections checked during refresh
+     */
     public List<String> refreshSelectedSources( List<Long> sourceIds, Statement statement ) {
         return refreshSelectedSourcesWithDetails( sourceIds, statement ).refreshedSources();
     }
 
 
+    /**
+     * Refreshes all selected source adapters and returns both checked entities and detailed change summaries.
+     *
+     * @param sourceIds ids of the selected source adapters
+     * @param statement the statement used to execute catalog changes
+     * @return checked source entities and user-facing descriptions of detected changes
+     */
     public abstract SourceRefreshDetails refreshSelectedSourcesWithDetails( List<Long> sourceIds, Statement statement );
 
 
+    /**
+     * Result of a source refresh operation.
+     *
+     * @param refreshedSources source entity names that were checked
+     * @param summaries entities with actual detected changes
+     */
     public record SourceRefreshDetails( List<String> refreshedSources, List<SourceRefreshSummary> summaries ) {
 
     }
 
 
+    /**
+     * User-facing summary for changes detected on one source entity.
+     *
+     * @param sourceName adapter name of the source
+     * @param entityName table or collection name
+     * @param dataModel entity data model
+     * @param changeDescriptions descriptions of detected or applied changes
+     */
     public record SourceRefreshSummary( String sourceName, String entityName, DataModel dataModel, List<String> changeDescriptions ) {
 
     }

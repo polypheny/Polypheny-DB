@@ -365,8 +365,8 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                 types ) ) {
             while ( rs.next() ) {
                 String schema;
-                if (requiresSchema() ) {
-                    schema = rs.getString("TABLE_SCHEM");
+                if ( requiresSchema() ) {
+                    schema = rs.getString( "TABLE_SCHEM" );
                 } else {
                     schema = null;
                 }
@@ -374,10 +374,8 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                 String table = rs.getString( "TABLE_NAME" );
 
                 if ( schema != null ) {
-                    // log.info( "Discovered table: {}.{}", schema, table );
                     discoveredTables.add( schema + "." + table );
                 } else {
-                    // log.info( "Discovered table: {}", table );
                     discoveredTables.add( table );
                 }
             }
@@ -413,15 +411,6 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
         List<ExportedColumn> list = new ArrayList<>();
         try ( ResultSet row = dbmd.getColumns( settings.get( "database" ), schemaPattern, tableName, "%" ) ) {
             while ( row.next() ) {
-                /*
-                log.info(
-                        "Found source column: {}.{}.{}",
-                        requiresSchema() ? row.getString( "TABLE_SCHEM" ) : row.getString( "TABLE_CAT" ),
-                        row.getString( "TABLE_NAME" ),
-                        row.getString( "COLUMN_NAME" )
-                );
-                 */
-
                 PolyType type = PolyType.getNameForJdbcType( row.getInt( "DATA_TYPE" ) );
                 Integer length = null;
                 Integer scale = null;
