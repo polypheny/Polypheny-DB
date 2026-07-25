@@ -533,7 +533,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     @Override
     public List<String> getActiveFeatureNames() {
         return dialect.getSupportedFeatures().stream()
-                .map( SqlDbFeature::featureName )
+                .map( SqlDbFeature::displayName )
                 .collect( Collectors.toList() );
     }
 

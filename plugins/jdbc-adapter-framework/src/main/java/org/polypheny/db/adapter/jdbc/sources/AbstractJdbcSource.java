@@ -442,7 +442,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     @Override
     public List<String> getActiveFeatureNames() {
         return dialect.getSupportedFeatures().stream()
-                .map( SqlDbFeature::featureName )
+                .map( SqlDbFeature::displayName )
                 .collect( Collectors.toList() );
     }
 

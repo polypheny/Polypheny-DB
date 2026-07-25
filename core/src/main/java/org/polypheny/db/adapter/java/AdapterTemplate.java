@@ -31,6 +31,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingsPreset;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.docker.DockerManager;
@@ -44,17 +45,19 @@ public class AdapterTemplate {
     DeployFn deployer;
     public List<AbstractAdapterSetting> settings;
     public List<DeployMode> modes;
+    public List<AdapterSettingsPreset> presets;
     public long id;
     public String description;
 
 
-    public AdapterTemplate( long id, Class<?> clazz, String adapterName, List<AbstractAdapterSetting> settings, List<DeployMode> modes, String description, DeployFn deployer ) {
+    public AdapterTemplate( long id, Class<?> clazz, String adapterName, List<AbstractAdapterSetting> settings, List<DeployMode> modes, List<AdapterSettingsPreset> presets, String description, DeployFn deployer ) {
         this.id = id;
         this.adapterName = adapterName;
         this.description = description;
         this.clazz = clazz;
         this.settings = settings;
         this.modes = modes;
+        this.presets = presets;
         this.adapterType = getAdapterType( clazz );
         this.deployer = deployer;
     }
@@ -82,6 +85,30 @@ public class AdapterTemplate {
             settings.add( new AbstractAdapterSettingList( "instanceId", false, null, true, false, ids, List.of( DeploySetting.DOCKER ), instanceId, 0, null ) );
         }
         return settings;
+    }
+
+
+    /**
+     * Collects the deployment presets declared via {@link AdapterSettingsPreset} on the adapter class
+     * and validates them against the adapter's settings and supported deploy modes.
+     */
+    public static List<AdapterSettingsPreset> getAllPresets( Class<? extends Adapter<?>> clazz, List<AbstractAdapterSetting> settings, List<DeployMode> modes ) {
+        List<AdapterSettingsPreset> presets = Arrays.asList( clazz.getAnnotationsByType( AdapterSettingsPreset.class ) );
+        for ( AdapterSettingsPreset preset : presets ) {
+            if ( !modes.contains( preset.mode() ) ) {
+                throw new GenericRuntimeException( "Preset '%s' of adapter %s uses deploy mode %s, which the adapter does not support.", preset.name(), clazz.getSimpleName(), preset.mode() );
+            }
+            for ( AdapterSettingsPreset.Setting entry : preset.settings() ) {
+                AbstractAdapterSetting setting = settings.stream()
+                        .filter( s -> s.name.equals( entry.name() ) )
+                        .findFirst()
+                        .orElseThrow( () -> new GenericRuntimeException( "Preset '%s' of adapter %s references the unknown setting '%s'.", preset.name(), clazz.getSimpleName(), entry.name() ) );
+                if ( setting instanceof AbstractAdapterSettingList list && !list.options.contains( entry.value() ) ) {
+                    throw new GenericRuntimeException( "Preset '%s' of adapter %s uses the value '%s' for setting '%s', which is not one of its options.", preset.name(), clazz.getSimpleName(), entry.value(), entry.name() );
+                }
+            }
+        }
+        return presets;
     }
 
 

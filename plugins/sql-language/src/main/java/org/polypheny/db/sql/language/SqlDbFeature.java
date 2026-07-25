@@ -40,6 +40,14 @@ public interface SqlDbFeature {
      */
     String featureName();
 
+    /**
+     * Returns the human-readable name of this feature, intended for display in
+     * user interfaces.
+     *
+     * @return the feature's display name, never {@code null}
+     */
+    String displayName();
+
     boolean isSupported( SqlDialect dialect );
 
     /**

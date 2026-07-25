@@ -31,6 +31,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingsPreset;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
@@ -93,6 +94,18 @@ import org.polypheny.db.util.PasswordGenerator;
         position    = 7,
         description = "PostgreSQL Docker image variant to deploy.",
         appliesTo   = DeploySetting.DOCKER
+)
+@AdapterSettingsPreset(
+        name = "Minimal PostgreSQL",
+        description = "Plain Docker image, no extensions",
+        mode = DeployMode.DOCKER,
+        settings = { @AdapterSettingsPreset.Setting(name = "imageVariant", value = "Default") }
+)
+@AdapterSettingsPreset(
+        name = "Full PostgreSQL",
+        description = "Docker image with pgvector & PostGIS extensions installed",
+        mode = DeployMode.DOCKER,
+        settings = { @AdapterSettingsPreset.Setting(name = "imageVariant", value = "pgvector & PostGIS") }
 )
 public class PostgresqlStore extends AbstractJdbcStore {
 

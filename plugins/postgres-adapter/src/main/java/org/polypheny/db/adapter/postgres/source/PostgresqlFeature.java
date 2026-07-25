@@ -22,18 +22,20 @@ import java.util.function.Predicate;
 
 public enum PostgresqlFeature implements SqlDbFeature {
 
-    PGVECTOR( "vector", SqlDialect::supportsVector ),
+    PGVECTOR( "vector", "pgvector", SqlDialect::supportsVector ),
 
-    POSTGIS( "postgis", SqlDialect::supportsPostGIS );
+    POSTGIS( "postgis", "PostGIS", SqlDialect::supportsPostGIS );
 
     /**
      * Name as it appears in {@code pg_extension.extname}.
      */
     private final String name;
+    private final String displayName;
     private final Predicate<SqlDialect> supportCheck;
 
-    PostgresqlFeature(String name, Predicate<SqlDialect> supportCheck ) {
+    PostgresqlFeature( String name, String displayName, Predicate<SqlDialect> supportCheck ) {
         this.name = name;
+        this.displayName = displayName;
         this.supportCheck = supportCheck;
     }
 
@@ -41,6 +43,12 @@ public enum PostgresqlFeature implements SqlDbFeature {
     @Override
     public String featureName() {
         return name;
+    }
+
+
+    @Override
+    public String displayName() {
+        return displayName;
     }
 
 
