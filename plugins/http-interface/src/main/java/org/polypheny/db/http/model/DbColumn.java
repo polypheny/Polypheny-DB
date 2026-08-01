@@ -67,7 +67,7 @@ public class DbColumn {
         this.name = name;
         this.dataType = dataType;
         this.nullable = nullable;
-        if ( dataType.equals( "varchar" ) ) {
+        if ( "varchar".equals( dataType ) ) {
             this.precision = precision;
         }
         this.sort = sort;
