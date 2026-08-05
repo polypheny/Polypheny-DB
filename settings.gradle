@@ -60,4 +60,5 @@ include 'plugins:excel-adapter'
 
 // other plugins
 include 'plugins:notebooks'
+include 'plugins:demo'
 include 'plugins:workflow-engine'
