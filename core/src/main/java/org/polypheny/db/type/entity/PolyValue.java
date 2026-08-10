@@ -573,7 +573,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isDocument() ) {
             return (PolyDocument) this;
         }
-        throw cannotParse( this, PolyDocument.class );
+        return PolyDocument.fromJson( "{value: " + this.toJson() + "}" ).asDocument();
     }
 
 
@@ -706,6 +706,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyDate asDate() {
         if ( isDate() ) {
             return (PolyDate) this;
+        } else if ( isString() ) {
+            return PolyDate.convert( this );
         }
         throw cannotParse( this, PolyDate.class );
     }

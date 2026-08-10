@@ -20,7 +20,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonToken;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.Date;
 import lombok.Getter;
 import lombok.Value;
@@ -32,6 +34,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
@@ -121,6 +124,8 @@ public class PolyDate extends PolyTemporal {
 
         if ( value.isDate() ) {
             return value.asDate();
+        } else  if ( value.isString() ) {
+            return PolyDate.ofDays( (int) LocalDate.parse(value.asString().value).toEpochDay() );
         } else if ( value.isNumber() ) {
             return ofDays( value.asNumber().intValue() );
         }

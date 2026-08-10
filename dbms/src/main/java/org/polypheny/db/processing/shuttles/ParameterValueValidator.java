@@ -99,7 +99,7 @@ public class ParameterValueValidator extends AlgShuttleImpl {
                         valid = o.isNumber();
                         break;
                     case DATE:
-                        valid = o.isDate();
+                        valid = o.isDate() || o.isString();
                         break;
                     case TIME:
                         valid = o.isTime();
