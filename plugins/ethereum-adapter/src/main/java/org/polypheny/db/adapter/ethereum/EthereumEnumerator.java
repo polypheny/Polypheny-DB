@@ -162,7 +162,7 @@ class EthereumEnumerator implements Enumerator<PolyValue[]> {
             if ( fieldType == null ) {
                 throw new GenericRuntimeException( "This should not happen." );
             }
-            if ( string.isEmpty() ) {
+            if ( string == null || string.isEmpty() ) {
                 return PolyNull.NULL;
             }
             switch ( fieldType ) {

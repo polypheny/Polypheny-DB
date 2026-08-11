@@ -285,7 +285,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                                 columnDeclaration.getCollation(),
                                 defaultValue,
                                 position ) );
-
+                position++;
             } else if ( c.e instanceof SqlKeyConstraint constraint ) {
                 String constraintName = constraint.getName() != null ? constraint.getName().getSimple() : null;
 
@@ -293,7 +293,6 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             } else {
                 throw new AssertionError( c.e.getClass() );
             }
-            position++;
         }
 
         return new Pair<>( fieldInformation, constraintInformation );

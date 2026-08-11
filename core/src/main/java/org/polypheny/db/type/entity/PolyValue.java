@@ -692,6 +692,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyTemporal asTemporal() {
         if ( isTemporal() ) {
             return (PolyTemporal) this;
+        }else if ( this.isString() ) {
+            return this.asDate();
         }
         throw cannotParse( this, PolyTemporal.class );
     }

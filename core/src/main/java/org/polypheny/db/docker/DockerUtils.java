@@ -22,7 +22,7 @@ import org.polypheny.db.docker.models.DockerHost;
 public class DockerUtils {
 
     static final String CONTAINER_NAME = "polypheny-docker-connector";
-    static final String IMAGE_NAME = "polypheny/polypheny-docker-connector";
+    static final String IMAGE_NAME = "polypheny/polypheny-docker-connector:next";
     static final String VOLUME_NAME = "polypheny-docker-connector-data";
 
 

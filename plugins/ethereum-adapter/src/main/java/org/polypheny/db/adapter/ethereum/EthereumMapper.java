@@ -62,7 +62,7 @@ public enum EthereumMapper {
                     blk.getMiner(),
                     blk.getMixHash(),
                     safeToString( blk.getDifficulty() ),
-                    safeToString( blk.getTotalDifficulty() ),
+                    blk.getTotalDifficultyRaw() != null ? safeToString( blk.getTotalDifficulty() ): null,
                     blk.getExtraData(),
                     safeToString( blk.getSize() ),
                     safeToString( blk.getGasLimit() ),

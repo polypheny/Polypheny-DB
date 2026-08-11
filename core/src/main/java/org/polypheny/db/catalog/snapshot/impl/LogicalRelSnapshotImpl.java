@@ -361,7 +361,9 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public @NonNull List<LogicalColumn> getColumns( long tableId ) {
-        return Optional.ofNullable( tableColumns.get( tableId ) ).map( List::copyOf ).orElse( List.of() );
+        List<LogicalColumn> list = new ArrayList<>( Optional.ofNullable( tableColumns.get( tableId ) ).map( List::copyOf ).orElse( List.of() ) );
+        list.sort( Comparator.comparingInt( a -> a.position ) );
+        return list;
     }
 
 
