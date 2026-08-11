@@ -334,7 +334,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case REAL -> "REAL";
             case DOUBLE -> "FLOAT";
             case DECIMAL -> "DECIMAL";
-            case VARCHAR -> "VARCHAR";
+            case VARCHAR, CHAR -> "VARCHAR";
             case JSON, TEXT -> "TEXT";
             case GEOMETRY -> "GEOMETRY";
             case DATE -> "DATE";
