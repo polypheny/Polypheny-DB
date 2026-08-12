@@ -21,7 +21,7 @@ import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.parser.errors.ParseException;
-import java.awt.SystemTray;
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -126,7 +126,7 @@ public class PolyphenyDb {
     public boolean daemonMode = false;
 
     @Option(name = { "-defaultStore" }, description = "Type of default storeId")
-    public String defaultStoreName = "hsqldb";
+    public static String defaultStoreName = "hsqldb";
 
     @Option(name = { "-defaultSource" }, description = "Type of default source")
     public static String defaultSourceName = "csv";
@@ -187,6 +187,10 @@ public class PolyphenyDb {
         if ( resetDocker ) {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
+
+        // TODO: Remove after testing
+        String currentPath = System.getProperty( "user.home" );
+        log.info( "user.home: {}", currentPath );
 
         // Configuration shall not be persisted
         ConfigManager.memoryMode = (mode == RunMode.TEST || memoryCatalog);

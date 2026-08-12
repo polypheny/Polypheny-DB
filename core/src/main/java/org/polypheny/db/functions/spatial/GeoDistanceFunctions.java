@@ -28,7 +28,7 @@ import org.polypheny.db.type.entity.spatial.PolyGeometry;
 public class GeoDistanceFunctions {
 
     // Define the radius of the Earth's sphere (in meters)
-    private static final double EARTH_RADIUS_M = 6371.0 * 1000;
+    public static final double EARTH_RADIUS_M = 6371.0 * 1000;
 
 
     private GeoDistanceFunctions() {

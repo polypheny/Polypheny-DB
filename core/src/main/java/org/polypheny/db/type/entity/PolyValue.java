@@ -96,6 +96,7 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.numerical.PolyLong.PolyLongSerializerDef;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
+import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometryDeserializer;
 import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometrySerializer;
@@ -572,8 +573,9 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyDocument asDocument() {
         if ( isDocument() ) {
             return (PolyDocument) this;
+        } else {
+            return new PolyDocument( PolyString.of( "value" ), this );
         }
-        throw cannotParse( this, PolyDocument.class );
     }
 
 
@@ -875,6 +877,30 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
     @NotNull
     public PolyGeometry asGeometry() {
+        if ( this.type == PolyType.VARCHAR ) {
+            String value = this.asString().getValue();
+            PolyGeometry geometry = PolyGeometry.of( value );
+            if ( geometry == null ) {
+                if ( value.startsWith( "ST_GeomFromText" ) ) {
+                    value = value.replace( "ST_GeomFromText", "" );
+                    value = value.trim();
+                    value = value.substring( 1, value.length() - 2 );
+                    String[] splits = value.split( "," );
+                    try {
+                        if ( splits.length == 2 ) {
+                            return PolyGeometry.fromWKT( splits[0].replace( "'", "" ), Integer.parseInt( splits[1].trim() ) );
+                        }
+                        return PolyGeometry.fromWKT( value );
+                    } catch ( InvalidGeometryException e ) {
+                        throw cannotParse( this, PolyGeometry.class );
+                    }
+                }
+
+                throw cannotParse( this, PolyGeometry.class );
+            }
+            return geometry;
+        }
+
         if ( isGeometry() ) {
             return (PolyGeometry) this;
         }
@@ -901,7 +927,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         switch ( type ) {
             case INTEGER:
                 return PolyInteger.convert( value );
-            case DOCUMENT:
+            case DOCUMENT, GEOMETRY:
                 // docs accept all
                 return value;
             case BIGINT:

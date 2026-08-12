@@ -16,16 +16,26 @@
 
 package org.polypheny.db.functions;
 
+import static java.lang.Math.toRadians;
+import static org.polypheny.db.functions.spatial.GeoDistanceFunctions.EARTH_RADIUS_M;
+import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
+import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84_3D;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
@@ -38,7 +48,11 @@ import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyPoint;
 
 
 @Deterministic
@@ -421,5 +435,273 @@ public class CypherFunctions {
         return PolyBoolean.FALSE;
     }
 
+
+    /**
+     * 5 possible argument names with values:
+     * - 3 coordinates
+     * - 2 options
+     */
+    @SuppressWarnings("unused")
+    public static PolyGeometry point(
+            PolyValue argName1,
+            PolyValue argValue1,
+            PolyValue argName2,
+            PolyValue argValue2,
+            PolyValue argName3,
+            PolyValue argValue3,
+            PolyValue argName4,
+            PolyValue argValue4,
+            PolyValue argName5,
+            PolyValue argValue5 ) {
+        Map<PolyValue, PolyValue> map = new HashMap<>();
+        if ( argName1 != null && argValue1 != null ) {
+            map.put( argName1, argValue1 );
+        }
+        if ( argName2 != null && argValue2 != null ) {
+            map.put( argName2, argValue2 );
+        }
+        if ( argName3 != null && argValue3 != null ) {
+            map.put( argName3, argValue3 );
+        }
+        if ( argName4 != null && argValue4 != null ) {
+            map.put( argName4, argValue4 );
+        }
+        if ( argName5 != null && argValue5 != null ) {
+            map.put( argName5, argValue5 );
+        }
+        return point( PolyMap.of( map ) );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyGeometry point( PolyValue map ) {
+        if ( !map.isMap() ) {
+            throw new GenericRuntimeException( "point() expects a map." );
+        }
+
+        PolyMap<PolyValue, PolyValue> polyMap = map.asMap();
+        PolyString x = new PolyString( "x" );
+        PolyString y = new PolyString( "y" );
+        PolyString z = new PolyString( "z" );
+        PolyString longitude = new PolyString( "longitude" );
+        PolyString latitude = new PolyString( "latitude" );
+        PolyString height = new PolyString( "height" );
+        PolyString srid = new PolyString( "srid" );
+        PolyString crs = new PolyString( "crs" );
+
+        // In Cypher, it is possible to define the following four SRIDs
+        //  7203: cartesian with 2 coordinates (no relation to ESPG:7203) -> 0
+        //  9157: cartesian with 3 coordinates (no relation to ESPG:9157) -> 0
+        //  4326: spherical with 2 coordinates                            -> 4326
+        //  4979: spherical with 3 coordinates                            -> 4979
+        int SRID = 0;
+        Coordinate coordinate = new Coordinate();
+
+        if ( polyMap.containsKey( x ) && polyMap.containsKey( y ) ) {
+            if ( polyMap.get( x ).isNull() ) {
+                return null;
+            }
+            coordinate.setX( convertPolyValueToDouble( polyMap.get( x ) ) );
+            if ( polyMap.get( y ).isNull() ) {
+                return null;
+            }
+            coordinate.setY( convertPolyValueToDouble( polyMap.get( y ) ) );
+            if ( polyMap.containsKey( z ) ) {
+                if ( polyMap.get( z ).isNull() ) {
+                    return null;
+                }
+                coordinate.setZ( convertPolyValueToDouble( polyMap.get( z ) ) );
+            }
+
+            if ( polyMap.containsKey( srid ) ) {
+                SRID = switch ( polyMap.get( srid ).asInteger().intValue() ) {
+                    case WGS_84 -> WGS_84;
+                    case WGS_84_3D -> WGS_84_3D;
+                    default -> 0;
+                };
+            } else if ( polyMap.containsKey( crs ) ) {
+                SRID = switch ( polyMap.get( crs ).asString().value ) {
+                    case "WGS-84-2D" -> WGS_84;
+                    case "WGS-84-3D" -> WGS_84_3D;
+                    default -> 0;
+                };
+            }
+
+        } else if ( polyMap.containsKey( longitude ) && polyMap.containsKey( latitude ) ) {
+            if ( polyMap.get( longitude ).isNull() ) {
+                return null;
+            }
+            coordinate.setX( convertPolyValueToDouble( polyMap.get( longitude ) ) );
+            if ( polyMap.get( latitude ).isNull() ) {
+                return null;
+            }
+            coordinate.setY( convertPolyValueToDouble( polyMap.get( latitude ) ) );
+            if ( polyMap.containsKey( height ) ) {
+                if ( polyMap.get( height ).isNull() ) {
+                    return null;
+                }
+                coordinate.setZ( convertPolyValueToDouble( polyMap.get( height ) ) );
+                SRID = WGS_84_3D;
+            } else {
+                SRID = WGS_84;
+            }
+        }
+        GeometryFactory geometryFactory = new GeometryFactory( new PrecisionModel(), SRID );
+        return PolyGeometry.of( geometryFactory.createPoint( coordinate ) );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyDouble distance( PolyValue p1, PolyValue p2 ) {
+        PolyPoint g1 = p1.asGeometry().asPoint();
+        PolyPoint g2 = p2.asGeometry().asPoint();
+
+        if ( !Objects.equals( g1.getSRID(), g2.getSRID() ) ) {
+            throw new GenericRuntimeException( "Cannot compute point.distance(%s, %s) because of different SRIDs.".formatted( g1, g2 ) );
+        }
+        Integer srid = g1.getSRID();
+
+        try {
+            if ( g1.hasZ() && g2.hasZ() ) {
+                if ( srid == 0 ) {
+                    return new PolyDouble(
+                            Math.sqrt( Math.pow( g2.getX() - g1.getX(), 2 ) + Math.pow( g2.getY() - g1.getY(), 2 ) + Math.pow( g2.getZ() - g1.getZ(), 2 ) )
+                    );
+                } else if ( srid == WGS_84_3D ) {
+                    // See https://github.com/neo4j/neo4j/blob/5.20/community/values/src/main/java/org/neo4j/values/storable/CRSCalculator.java
+                    double greatCircleDistance = getGreatCircleDistance( g1, g2 );
+                    double avgHeight = (g1.getZ() + g2.getZ()) / 2;
+                    // Note: Neo4j uses a different earth radius of 6378140.0, which is why the same calculation
+                    //       in Neo4j does not yield (exactly) the same results.
+                    double distance2D = (EARTH_RADIUS_M + avgHeight) * greatCircleDistance;
+                    double heightDifference = g1.getZ() - g2.getZ();
+                    return new PolyDouble( Math.sqrt( Math.pow( distance2D, 2 ) + Math.pow( heightDifference, 2 ) ) );
+                }
+            } else {
+                return new PolyDouble( g1.distance( g2 ) );
+            }
+        } catch ( GeometryTopologicalException e ) {
+            throw new GenericRuntimeException( e );
+        }
+
+        throw new GenericRuntimeException( "This should not be possible!" );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyDouble distanceNeo4j( PolyValue p1, PolyValue p2 ) {
+        PolyPoint g1 = p1.asGeometry().asPoint();
+        PolyPoint g2 = p2.asGeometry().asPoint();
+
+        if ( !Objects.equals( g1.getSRID(), g2.getSRID() ) ) {
+            throw new GenericRuntimeException( "Cannot compute point.distance(%s, %s) because of different SRIDs.".formatted( g1, g2 ) );
+        }
+        Integer srid = g1.getSRID();
+
+        try {
+            if ( g1.hasZ() && g2.hasZ() ) {
+                if ( srid == 0 ) {
+                    return distance( g1, g2 );
+                } else if ( srid == WGS_84_3D ) {
+                    // See https://github.com/neo4j/neo4j/blob/5.20/community/values/src/main/java/org/neo4j/values/storable/CRSCalculator.java
+                    double greatCircleDistance = getGreatCircleDistance( g1, g2 );
+                    double avgHeight = (g1.getZ() + g2.getZ()) / 2;
+                    final double EARTH_RADIUS_M_NEO4J = 6378140.0;
+                    double distance2D = (EARTH_RADIUS_M_NEO4J + avgHeight) * greatCircleDistance;
+                    double heightDifference = g1.getZ() - g2.getZ();
+                    return new PolyDouble( Math.sqrt( Math.pow( distance2D, 2 ) + Math.pow( heightDifference, 2 ) ) );
+                }
+            } else {
+                return new PolyDouble( g1.distance( g2 ) );
+            }
+        } catch ( GeometryTopologicalException e ) {
+            throw new GenericRuntimeException( e );
+        }
+
+        throw new GenericRuntimeException( "This should not be possible!" );
+    }
+
+
+    /**
+     * Use same logic as Neo4j to calculate the spherical distance.
+     * See: <a href="https://github.com/neo4j/neo4j/blob/5.20/community/values/src/main/java/org/neo4j/values/storable/CRSCalculator.java">GitHub</a>
+     */
+    private static double getGreatCircleDistance( PolyPoint g1, PolyPoint g2 ) {
+        double lat1 = toRadians( g1.getY() );
+        double lat2 = toRadians( g2.getY() );
+        double latDifference = lat2 - lat1;
+        double lonDifference = toRadians( g2.getX() - g1.getX() );
+        double alpha = Math.pow( Math.sin( latDifference / 2 ), 2 ) +
+                Math.cos( lat1 ) * Math.cos( lat2 ) * Math.pow( Math.sin( lonDifference / 2 ), 2 );
+        return 2.0 * Math.atan2( Math.sqrt( alpha ), Math.sqrt( 1 - alpha ) );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyBoolean withinBBox( PolyValue point, PolyValue lowerLeft, PolyValue upperRight ) {
+        PolyPoint g = point.asGeometry().asPoint();
+        PolyPoint lowerLeftGeometry = lowerLeft.asGeometry().asPoint();
+        PolyPoint upperRightGeometry = upperRight.asGeometry().asPoint();
+
+        if ( !(g.getSRID().equals( lowerLeftGeometry.getSRID() ) && lowerLeftGeometry.getSRID().equals( upperRightGeometry.getSRID() )) ) {
+            // Return null if the CRS of all points are not the same.
+            //return PolyNull.NULL;
+            return null;
+        }
+        if ( !(g.hasZ() == lowerLeftGeometry.hasZ() && lowerLeftGeometry.hasZ() == upperRightGeometry.hasZ()) ) {
+            // Return null if the CRS of all points are not the same.
+            //return PolyNull.NULL;
+            return null;
+        }
+
+        PolyGeometry gBBox = createBbox( lowerLeftGeometry, upperRightGeometry );
+        return new PolyBoolean( g.coveredBy( gBBox ) );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyBoolean withinGeometry( PolyValue point, PolyValue geometry ) {
+        PolyPoint g = point.asGeometry().asPoint();
+        PolyGeometry polyGeometry = geometry.asGeometry();
+
+        if ( !(g.getSRID().equals( polyGeometry.getSRID() )) ) {
+            // Return null if the CRS of all points are not the same.
+            return null;
+        }
+
+        return new PolyBoolean( g.coveredBy( polyGeometry ) );
+    }
+
+
+    private static PolyGeometry createBbox( PolyPoint lowerLeft, PolyPoint upperRight ) {
+        Coordinate bottomLeft = new Coordinate( lowerLeft.getX(), lowerLeft.getY() );
+        Coordinate topRight = new Coordinate( upperRight.getX(), upperRight.getY() );
+        Coordinate topLeft = new Coordinate( bottomLeft.x, topRight.y );
+        Coordinate bottomRight = new Coordinate( topRight.x, bottomLeft.y );
+        // Form a closed Ring, starting on the bottom left and going clockwise.
+        Coordinate[] linearRing = new Coordinate[]{
+                bottomLeft,
+                topLeft,
+                topRight,
+                bottomRight,
+                bottomLeft
+        };
+        GeometryFactory geoFactory = new GeometryFactory();
+        return new PolyGeometry( geoFactory.createPolygon( linearRing ) );
+    }
+
+
+    private static double convertPolyValueToDouble( PolyValue value ) {
+        // This should be sufficient, as all numerical values from Cypher are stored as BigDecimal.
+        if ( value.isString() ) {
+            return Double.parseDouble( value.toString() );
+        }
+        if ( value.isDouble() ) {
+            return value.asDouble().doubleValue();
+        }
+
+        assert value.isBigDecimal() : "Extend method to handle other numerical data types.";
+        return Objects.requireNonNull( value.asBigDecimal().getValue() ).doubleValue();
+    }
 
 }
