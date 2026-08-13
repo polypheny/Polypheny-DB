@@ -28,7 +28,6 @@ import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
-import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
@@ -81,10 +80,9 @@ public abstract class AbstractAdapterSetting {
      * unpack DeploySettings.ALL to the available modes correctly
      *
      * @param annotations collection of annotations
-     * @param properties which are defined by the corresponding Adapter
      * @return a collection containing the available modes and the corresponding collections of AdapterSettings
      */
-    public static List<AbstractAdapterSetting> fromAnnotations( Annotation[] annotations, AdapterProperties properties ) {
+    public static List<AbstractAdapterSetting> fromAnnotations( Annotation[] annotations ) {
         List<AbstractAdapterSetting> settings = new ArrayList<>();
 
         for ( Annotation annotation : annotations ) {
@@ -119,6 +117,8 @@ public abstract class AbstractAdapterSetting {
      * In most subclasses, this method returns the defaultValue, because the UI overrides the defaultValue when a new value is set.
      */
     public abstract String getValue();
+
+    public abstract void validate( String s );
 
 
     public static List<AbstractAdapterSetting> serializeSettings( List<AbstractAdapterSetting> availableSettings, Map<String, String> currentSettings ) {

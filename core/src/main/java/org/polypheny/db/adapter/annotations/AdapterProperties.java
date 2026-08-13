@@ -34,5 +34,4 @@ public @interface AdapterProperties {
     DeployMode[] usedModes();
 
     DeployMode defaultMode();
-
 }

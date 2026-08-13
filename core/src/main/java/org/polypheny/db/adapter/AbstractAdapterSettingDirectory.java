@@ -65,4 +65,10 @@ public class AbstractAdapterSettingDirectory extends AbstractAdapterSetting {
         return directory;
     }
 
+
+    @Override
+    public void validate( String s ) {
+
+    }
+
 }

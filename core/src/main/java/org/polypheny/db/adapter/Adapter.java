@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter;
 
+import com.mongodb.lang.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -79,7 +80,7 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
     public Adapter( long adapterId, String uniqueName, Map<String, String> settings, DeployMode mode, ACatalog catalog ) {
         this.adapterCatalog = catalog;
         this.properties = getClass().getAnnotation( AdapterProperties.class );
-        if ( getClass().getAnnotation( AdapterProperties.class ) == null ) {
+        if ( this.properties == null ) {
             throw new GenericRuntimeException( "The used adapter does not annotate its properties correctly." );
         }
 
@@ -89,7 +90,7 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
         this.uniqueName = uniqueName;
         this.adapterName = properties.name();
         // Make sure the settings are actually valid
-        this.validateSettings( settings, true );
+        validateSettings( getClass(), deployMode, null, settings, true );
         this.settings = new HashMap<>( settings );
 
         informationPage = new InformationPage( uniqueName );
@@ -143,8 +144,8 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
     public abstract void rollback( PolyXid xid );
 
 
-    public List<AbstractAdapterSetting> getAvailableSettings( Class<?> clazz ) {
-        return AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), properties );
+    public static List<AbstractAdapterSetting> getAvailableSettings( Class<?> clazz ) {
+        return AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations() );
     }
 
 
@@ -181,32 +182,33 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
 
 
     public void updateSettings( Map<String, String> newSettings ) {
-        this.validateSettings( newSettings, false );
+        validateSettings( getClass(), deployMode, settings, newSettings, false );
         List<String> updatedSettings = this.applySettings( newSettings );
         this.reloadSettings( updatedSettings );
         Catalog.getInstance().updateAdapterSettings( getAdapterId(), newSettings );
     }
 
 
-    protected void validateSettings( Map<String, String> newSettings, boolean initialSetup ) {
-        for ( AbstractAdapterSetting s : getAvailableSettings( getClass() ) ) {
+    public static void validateSettings( Class<? extends Adapter> adapterClass, DeployMode deployMode, @Nullable Map<String, String> oldSettings, Map<String, String> newSettings, boolean initialSetup ) {
+        for ( AbstractAdapterSetting s : getAvailableSettings( adapterClass ) ) {
             // we only need to check settings which apply to the used mode
             if ( !s.appliesTo
                     .stream()
-                    .flatMap( setting -> setting.getModes( List.of( properties.usedModes() ) ).stream() )
+                    .flatMap( setting -> setting.getModes( List.of( adapterClass.getAnnotation( AdapterProperties.class ).usedModes() ) ).stream() )
                     .toList().contains( deployMode ) ) {
                 continue;
             }
 
             if ( newSettings.containsKey( s.name ) ) {
                 String newValue = newSettings.get( s.name );
+                s.validate( newValue );
                 if ( s.modifiable || initialSetup ) {
                     if ( !s.canBeNull && newValue == null ) {
                         throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be null." );
                     }
                 } else {
-                    assert settings != null;
-                    if ( !newValue.equals( settings.get( s.name ) ) ) {
+                    assert oldSettings != null;
+                    if ( !newValue.equals( oldSettings.get( s.name ) ) ) {
                         throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
                     }
                 }

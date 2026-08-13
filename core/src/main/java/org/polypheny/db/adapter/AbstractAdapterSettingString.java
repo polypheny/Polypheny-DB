@@ -49,4 +49,10 @@ public class AbstractAdapterSettingString extends AbstractAdapterSetting {
         return defaultValue;
     }
 
+
+    @Override
+    public void validate( String s ) {
+        // Always true
+    }
+
 }

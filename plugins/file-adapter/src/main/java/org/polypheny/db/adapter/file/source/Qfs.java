@@ -70,7 +70,8 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
         name = "QFS",
         description = "This data source maps a file system on the Polypheny-DB host system as a relational entity and allows to query it.",
         usedModes = DeployMode.EMBEDDED,
-        defaultMode = DeployMode.EMBEDDED)
+        defaultMode = DeployMode.EMBEDDED
+)
 @AdapterSettingString(name = "rootDir", defaultValue = "")
 public class Qfs extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
@@ -93,10 +94,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> implements RelationalData
 
 
     private void init( final Map<String, String> settings ) {
-        rootDir = new File( settings.get( "rootDir" ) );
-        if ( !rootDir.exists() ) {
-            throw new GenericRuntimeException( "The specified root dir does not exist!" );
-        }
+        validateRootdir( settings.get( "roodDir" ) );
     }
 
 
@@ -167,10 +165,8 @@ public class Qfs extends DataSource<RelAdapterCatalog> implements RelationalData
     }
 
 
-    @Override
-    protected void validateSettings( Map<String, String> newSettings, boolean initialSetup ) {
-        super.validateSettings( newSettings, initialSetup );
-        File rootDir = new File( newSettings.get( "rootDir" ) );
+    private static void validateRootdir( String rootDirPath ) {
+        File rootDir = new File( rootDirPath );
         if ( !rootDir.exists() ) {
             throw new GenericRuntimeException( "The specified QFS root dir does not exist!" );
         }
@@ -206,7 +202,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> implements RelationalData
             throw new GenericRuntimeException( "The QFS whitelist must contain at least one entry. The file can be edited in " + path );
         }
         if ( !allowed ) {
-            throw new GenericRuntimeException( "The selected path (" + newSettings.get( "rootDir" ) + ") is not allowed. It must be a subdirectory of one of the following paths:\n" + allowedPaths.toString() );
+            throw new GenericRuntimeException( "The selected path (" + rootDirPath + ") is not allowed. It must be a subdirectory of one of the following paths:\n" + allowedPaths );
         }
     }
 
