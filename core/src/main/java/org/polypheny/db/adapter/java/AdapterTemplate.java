@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Value;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSettingList;
@@ -32,6 +33,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingsPreset;
+import org.polypheny.db.adapter.annotations.AdapterSettingsPreset.Setting;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.docker.DockerManager;
@@ -98,15 +100,8 @@ public class AdapterTemplate {
             if ( !modes.contains( preset.mode() ) ) {
                 throw new GenericRuntimeException( "Preset '%s' of adapter %s uses deploy mode %s, which the adapter does not support.", preset.name(), clazz.getSimpleName(), preset.mode() );
             }
-            for ( AdapterSettingsPreset.Setting entry : preset.settings() ) {
-                AbstractAdapterSetting setting = settings.stream()
-                        .filter( s -> s.name.equals( entry.name() ) )
-                        .findFirst()
-                        .orElseThrow( () -> new GenericRuntimeException( "Preset '%s' of adapter %s references the unknown setting '%s'.", preset.name(), clazz.getSimpleName(), entry.name() ) );
-                if ( setting instanceof AbstractAdapterSettingList list && !list.options.contains( entry.value() ) ) {
-                    throw new GenericRuntimeException( "Preset '%s' of adapter %s uses the value '%s' for setting '%s', which is not one of its options.", preset.name(), clazz.getSimpleName(), entry.value(), entry.name() );
-                }
-            }
+            Map<String, String> defaultSettings = Arrays.stream( preset.settings() ).collect( Collectors.toMap( Setting::name, Setting::value ) );
+            Adapter.validateSettings( clazz, preset.mode(), null, defaultSettings, true );
         }
         return presets;
     }
