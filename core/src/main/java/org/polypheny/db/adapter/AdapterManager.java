@@ -200,6 +200,9 @@ public class AdapterManager {
             adapterByName.put( adapter.getUniqueName(), adapter );
             adapterById.put( adapter.getAdapterId(), adapter );
             return adapter;
+        } catch ( GenericRuntimeException e ) {
+            catalog.dropAdapter( adapterId );
+            throw e;
         } catch ( Exception e ) {
             catalog.dropAdapter( adapterId );
             throw new GenericRuntimeException( "Something went wrong while adding a new adapter", e );

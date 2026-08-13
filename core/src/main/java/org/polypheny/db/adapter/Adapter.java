@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter;
 
-import com.mongodb.lang.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,6 +29,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
