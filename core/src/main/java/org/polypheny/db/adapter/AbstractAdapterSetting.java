@@ -19,9 +19,11 @@ package org.polypheny.db.adapter;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
@@ -52,7 +54,7 @@ public abstract class AbstractAdapterSetting {
     public AdapterSettingType type;
 
     @Getter
-    public List<DeploySetting> appliesTo;
+    public Set<DeployMode> appliesTo;
 
     public List<String> filenames = new ArrayList<>();
 
@@ -65,7 +67,7 @@ public abstract class AbstractAdapterSetting {
         this.required = required;
         this.modifiable = modifiable;
         this.position = position;
-        this.appliesTo = appliesTo;
+        this.appliesTo = DeployMode.getDeployModes( appliesTo );
         this.defaultValue = defaultValue;
         this.description = (description == null || description.isEmpty()) ? null : description;
         assert this.subOf == null || this.subOf.split( "_" ).length == 2

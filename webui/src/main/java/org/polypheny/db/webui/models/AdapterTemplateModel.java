@@ -57,7 +57,7 @@ public record AdapterTemplateModel( @JsonProperty String adapterName, @JsonPrope
                     .stream()
                     .map( m -> m.name.equals( "instanceId" ) ?
                             new BindableAbstractAdapterSettingsList<>( m.name, m.name, m.canBeNull, m.subOf, m.required, m.modifiable,
-                                    RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ), m.appliesTo, ConfigDocker::getAlias, ConfigDocker.class )
+                                    RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ), DeployMode.getDeploySettings( m.appliesTo ), ConfigDocker::getAlias, ConfigDocker.class )
                             : m )
                     .map( AdapterSettingsModel::from ).toList();
         }
@@ -113,7 +113,7 @@ public record AdapterTemplateModel( @JsonProperty String adapterName, @JsonPrope
                             : null,
                     List.of(),
                     null,
-                    setting.appliesTo
+                    DeployMode.getDeploySettings( setting.appliesTo )
             );
         }
 

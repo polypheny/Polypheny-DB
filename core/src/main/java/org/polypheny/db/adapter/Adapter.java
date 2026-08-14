@@ -84,6 +84,9 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
             throw new GenericRuntimeException( "The used adapter does not annotate its properties correctly." );
         }
 
+        if ( !Arrays.asList( this.properties.usedModes() ).contains( mode ) ) {
+            throw new GenericRuntimeException( "Invalid deploy mode %s for adapter %s", mode, properties.name() );
+        }
         this.deployMode = mode;
 
         this.adapterId = adapterId;
@@ -192,10 +195,7 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
     public static void validateSettings( Class<? extends Adapter> adapterClass, DeployMode deployMode, @Nullable Map<String, String> oldSettings, Map<String, String> newSettings, boolean initialSetup ) {
         for ( AbstractAdapterSetting s : getAvailableSettings( adapterClass ) ) {
             // we only need to check settings which apply to the used mode
-            if ( !s.appliesTo
-                    .stream()
-                    .flatMap( setting -> setting.getModes( List.of( adapterClass.getAnnotation( AdapterProperties.class ).usedModes() ) ).stream() )
-                    .toList().contains( deployMode ) ) {
+            if ( !s.appliesTo.contains( deployMode ) ) {
                 continue;
             }
 
@@ -216,6 +216,7 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
                 throw new GenericRuntimeException( "Setting \"" + s.name + "\" must be present." );
             }
         }
+
     }
 
 

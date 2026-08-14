@@ -16,8 +16,10 @@
 
 package org.polypheny.db.adapter;
 
-import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.Getter;
 
 @Getter
@@ -32,6 +34,24 @@ public enum DeployMode {
 
     DeployMode( String name ) {
         this.name = name;
+    }
+
+
+    public static Set<DeployMode> getDeployModes( List<DeploySetting> s ) {
+        if ( s.contains( DeploySetting.ALL ) ) {
+            return EnumSet.allOf( DeployMode.class );
+        } else {
+            return s.stream().map( setting -> setting.mode ).collect( Collectors.toSet() );
+        }
+    }
+
+
+    public static List<DeploySetting> getDeploySettings( Set<DeployMode> modes ) {
+        if ( modes.equals( EnumSet.allOf( DeployMode.class ) ) ) {
+            return List.of( DeploySetting.ALL );
+        } else {
+            return modes.stream().map( DeploySetting::fromDeployMode ).toList();
+        }
     }
 
 
@@ -57,24 +77,12 @@ public enum DeployMode {
         }
 
 
-        /**
-         * DeploySettings can wrap multiple underlying DeployModes
-         * this method returns them
-         *
-         * @param availableModes All available modes, to which this setting could belong
-         * @return The modes for which this setting is available
-         */
-        List<DeployMode> getModes( List<DeployMode> availableModes ) {
-            if ( usedByAll ) {
-                return availableModes;
-            } else {
-                return Collections.singletonList( mode );
-            }
-        }
-
-
-        boolean appliesTo( DeployMode mode ) {
-            return usedByAll || this.mode.equals( mode );
+        private static DeploySetting fromDeployMode( DeployMode mode ) {
+            return switch ( mode ) {
+                case REMOTE -> DeploySetting.REMOTE;
+                case DOCKER -> DeploySetting.DOCKER;
+                case EMBEDDED -> DeploySetting.EMBEDDED;
+            };
         }
 
     }

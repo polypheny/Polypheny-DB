@@ -189,7 +189,7 @@ public class AdapterManager {
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
 
         for ( AbstractAdapterSetting setting : adapterTemplate.settings ) {
-            if ( setting.appliesTo.stream().noneMatch( s -> s.appliesTo( mode ) ) ) {
+            if ( !setting.appliesTo.contains( mode ) ) {
                 settings.remove( setting.name );
             }
         }
