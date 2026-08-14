@@ -21,7 +21,7 @@ jobs:
                 uses: actions/setup-java@v4
                 with:
                     distribution: 'temurin'
-                    java-version: 21
+                    java-version: 25
             -   name: Set env variable
                 run: |
                     echo "POLYPHENY_HOME=$GITHUB_WORKSPACE" >> $GITHUB_ENV
