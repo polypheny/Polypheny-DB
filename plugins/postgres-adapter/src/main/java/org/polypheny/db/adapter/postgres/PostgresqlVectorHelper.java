@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDynamicParam;
 import org.polypheny.db.sql.language.SqlNode;
@@ -105,7 +104,7 @@ public class PostgresqlVectorHelper {
             }
             return list;
         }
-        throw new GenericRuntimeException( "Was not able to parse the vector object." );
+        return null;
     }
 
 

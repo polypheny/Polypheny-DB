@@ -46,8 +46,8 @@ public class PostgresqlVectorHelperTest {
         }
     }
 
-
     // ---- float vectors ----------------------------------------------------------------
+
 
     @Test
     void parsesVectorCorrectly() {
@@ -82,8 +82,8 @@ public class PostgresqlVectorHelperTest {
         assertEquals( 0, result.size() );
     }
 
-
     // ---- halfvec ----------------------------------------------------------------
+
 
     @Test
     void parsesHalfvecCorrectly() {
@@ -100,8 +100,8 @@ public class PostgresqlVectorHelperTest {
         assertFloatValues( result, -1f, -2.5f, -3f );
     }
 
-
     // ---- sparsevec ----------------------------------------------------------------
+
 
     @Test
     void parsesSparsevecCorrectly() {
@@ -111,8 +111,8 @@ public class PostgresqlVectorHelperTest {
         assertFloatValues( result, 1f, 0f, 2.5f );
     }
 
-
     // ---- bitvector ----------------------------------------------------------------
+
 
     @Test
     void parsesBitVectorCorrectly() {
@@ -167,6 +167,7 @@ public class PostgresqlVectorHelperTest {
     }
 
     // ---- helpers ----------------------------------------------------------------
+
 
     private static void assertFloatValues( List<PolyValue> result, float... expected ) {
         assertEquals( expected.length, result.size() );
