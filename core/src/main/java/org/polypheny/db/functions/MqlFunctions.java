@@ -16,6 +16,8 @@
 
 package org.polypheny.db.functions;
 
+import static org.polypheny.db.functions.spatial.GeoDistanceFunctions.EARTH_RADIUS_M;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -23,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -30,8 +33,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.document.DocumentUtil;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyNull;
@@ -39,7 +47,11 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
+import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.Pair;
 
 
@@ -57,8 +69,15 @@ public class MqlFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyValue docQueryValue( PolyValue input, List<PolyString> filters ) {
-        if ( input == null || !input.isDocument() ) {
+        if ( input == null ) {
             return null;
+        }
+        if ( !input.isDocument() ) {
+            if ( input.isString() ) {
+                input = PolyDocument.fromTypedJson( input.asString().value, PolyDocument.class );
+            } else {
+                return null;
+            }
         }
         PolyValue temp = input;
         for ( PolyString filter : filters ) {
@@ -425,10 +444,26 @@ public class MqlFunctions {
     public static PolyDocument mergeDocument( PolyValue value, List<PolyList<PolyString>> names, PolyValue... documents ) {
         assert names.size() == documents.length;
         Map<PolyString, PolyValue> doc = new HashMap<>();
+        addFieldsToDoc( doc, names, documents );
+        return PolyDocument.ofDocument( doc );
+    }
 
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyDocument mergeDocumentAdd( PolyValue value, List<PolyList<PolyString>> names, PolyValue... documents ) {
+        assert names.size() == documents.length;
+        Map<PolyString, PolyValue> doc = new HashMap<>();
+        if ( value.isDocument() ) {
+            doc.putAll( value.asDocument() );
+        }
+        addFieldsToDoc( doc, names, documents );
+        return PolyDocument.ofDocument( doc );
+    }
+
+
+    private static void addFieldsToDoc( Map<PolyString, PolyValue> doc, List<PolyList<PolyString>> names, PolyValue... documents ) {
         Iterator<PolyString> iter;
         Map<PolyString, PolyValue> temp;
-
         for ( int i = 0; i < documents.length; i++ ) {
             if ( documents[i].isDocument() && documents[i].asDocument().isUnset ) {
                 continue;
@@ -450,7 +485,6 @@ public class MqlFunctions {
             }
 
         }
-        return PolyDocument.ofDocument( doc );
     }
 
 
@@ -740,6 +774,165 @@ public class MqlFunctions {
             return Functions.minus( a.asNumber(), b.asNumber() );
         }
         throw new NotImplementedException();
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docGeoIntersects( PolyValue input, PolyValue geometry ) {
+        PolyGeometry geometryFilter = geometry.asGeometry();
+        PolyGeometry inputGeometry = convertInputToPolyGeometry( input, geometryFilter.getSRID() );
+        return inputGeometry.intersects( geometryFilter ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docGeoWithin( PolyValue input, PolyValue geometry, PolyValue distance ) {
+        try {
+            PolyGeometry geometryFilter;
+            if ( geometry.isString() ) {
+                geometryFilter = PolyGeometry.of( geometry.asString().getValue() );
+                if ( geometryFilter == null ) {
+                    throw new GenericRuntimeException( "Cannot parse geometry string %s to type Geometry", distance );
+                }
+            } else if ( geometry.isGeometry() ) {
+                geometryFilter = geometry.asGeometry();
+            } else {
+                throw new GenericRuntimeException( "Cannot parse geometry %s to type Geometry", distance );
+            }
+            PolyGeometry inputGeometry = convertInputToPolyGeometry( input, geometryFilter.getSRID() );
+            double distanceValue;
+            if ( distance.isBigDecimal() ) {
+                distanceValue = distance.asBigDecimal().doubleValue();
+            } else if ( distance.isDouble() ) {
+                distanceValue = distance.asDouble().doubleValue();
+            } else {
+                throw new GenericRuntimeException( "Cannot parse distance %s to type double", distance );
+            }
+
+            if ( distanceValue > 0 ) {
+                if ( geometryFilter.getSRID() != 0 ) {
+                    // In the case of $centerSphere, we first have to convert radians to meters.
+                    distanceValue = EARTH_RADIUS_M * distanceValue;
+                }
+                return inputGeometry.isWithinDistance( geometryFilter, distanceValue ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
+            }
+            // coveredBy also works if the input geometry lies along the edges of the filter geometry.
+            // For example: A point [0,0] is inside a box [0,0 to 1,1], because it lies on a corner / edge.
+            return inputGeometry.coveredBy( geometryFilter ) ? PolyBoolean.TRUE : PolyBoolean.FALSE;
+        } catch ( GeometryTopologicalException e ) {
+            throw new GenericRuntimeException( "$geometry could not be parsed as GeoJSON" );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyNumber docGeoDistance( PolyValue input, PolyValue geometry, PolyValue distanceMultiplier ) {
+        PolyGeometry geometryFilter = geometry.asGeometry();
+        PolyGeometry inputGeometry = convertInputToPolyGeometry( input, geometryFilter.getSRID() );
+        PolyNumber distance = GeoFunctions.stDistance( inputGeometry, geometryFilter );
+        float distanceFloat = distance.asFloat().floatValue();
+
+        if ( distanceMultiplier.isInteger() ) {
+            int distanceMultiplierInt = distanceMultiplier.asInteger().intValue();
+            return PolyFloat.of( distance.asFloat().floatValue() * distanceMultiplierInt );
+        } else if ( distanceMultiplier.isFloat() ) {
+            float distanceMultiplierFloat = distanceMultiplier.asFloat().floatValue();
+            return PolyFloat.of( distance.asFloat().floatValue() * distanceMultiplierFloat );
+        } else if ( distanceMultiplier.isDouble() ) {
+            double distanceMultiplierDouble = distanceMultiplier.asDouble().doubleValue();
+            return PolyFloat.of( distance.asFloat().floatValue() * distanceMultiplierDouble );
+        }
+        // TODO: Is this exhaustive? Is there a better way?
+        throw new GenericRuntimeException( "Probably forgot to implement conersion for distanceMultiplier in docGeoDistance." );
+    }
+
+//    @SuppressWarnings("UnusedDeclaration")
+//    public static PolyBoolean docNear( PolyValue input, PolyValue geometry, PolyValue minDistance, PolyValue maxDistance ) {
+//        throw new GenericRuntimeException( " Something went wrong in the DocumentNearUnwrap conversion rule. This method should not be called. " );
+//    }
+//
+//    @SuppressWarnings("UnusedDeclaration")
+//    public static PolyBoolean docNearSphere( PolyValue input, PolyValue geometry, PolyValue minDistance, PolyValue maxDistance ) {
+//        throw new GenericRuntimeException( " Something went wrong in the DocumentNearUnwrap conversion rule. This method should not be called. " );
+//    }
+
+
+    /**
+     * Converts a PolyValue into a PolyGeometry type. We support the following cases:
+     * 1. Legacy Coordinates:
+     * - Array: The input value is a list of 2 numbers (integer, double), which represent the
+     * x and y values.
+     * - Embedded Document: The input value is a document with two key-value pairs. The first
+     * will be the x and the second will be the y value.
+     * Points are created without an SRID, which means that calculations will be done in the cartesian coordinate system by default.
+     * 2. GeoJSON:
+     * - A document that adheres to the GeoJSON specification.
+     */
+    public static PolyGeometry convertInputToPolyGeometry( PolyValue input, Integer srid ) {
+        if ( input.isGeometry() ) {
+            return input.asGeometry();
+        }
+
+        GeometryFactory geoFactory = new GeometryFactory( new PrecisionModel(), srid );
+
+        // Legacy Coordinates
+        if ( input.isList() ) {
+            PolyList<PolyValue> inputList = input.asList();
+
+            Function<PolyValue, Double> getDouble = ( PolyValue polyValue ) -> {
+                Double result = null;
+                if ( polyValue.isDouble() ) {
+                    result = polyValue.asDouble().value;
+                }
+                if ( polyValue.isInteger() ) {
+                    Integer intValue = polyValue.asInteger().value;
+                    if ( intValue != null ) {
+                        result = (double) intValue;
+                    }
+                }
+                if ( result == null ) {
+                    throw new GenericRuntimeException( "Legacy Coordinates needs to be of type INTEGER or DOUBLE." );
+                }
+                return result;
+            };
+
+            if ( inputList.size() != 2 ) {
+                throw new GenericRuntimeException( "Legacy Coordinate Pairs stored as Array can only be of the form [x,y]" );
+            }
+
+            Double x = getDouble.apply( inputList.get( 0 ) );
+            Double y = getDouble.apply( inputList.get( 1 ) );
+            Coordinate coordinate = new Coordinate( x, y );
+            Point point = geoFactory.createPoint( coordinate );
+            return new PolyGeometry( point );
+        }
+
+        // Embedded Document
+        if ( input.isDocument() ) {
+            PolyDocument inputDocument = input.asDocument();
+
+            if ( inputDocument.keySet().isEmpty() ) {
+                // TODO: Should we detect this in each spatial function, and then just return false, if the document
+                //       does not contain the field / document?
+                throw new GenericRuntimeException( "Field selected in query is empty or does not exist." );
+            }
+
+            try {
+                // In GeoJSON, WGS84 is assumed by default. This is also the case for MongoDB.
+                return PolyGeometry.fromGeoJson( inputDocument.toJson() );
+            } catch ( InvalidGeometryException e ) {
+
+                // If the documents contain two fields that are of numeric type, then the user wanted to
+                // use legacy coordinates embedded inside a document. This is currently not supported, because
+                // document fields are by definition unordered, and supporting this would require a lot of changes.
+                if ( inputDocument.size() == 2 && inputDocument.values().stream().allMatch( value -> PolyType.NUMERIC_TYPES.contains( value.getType() ) ) ) {
+                    throw new GenericRuntimeException( "Legacy coordinates inside an embedded document is currently not supported, as document fields are not ordered.", e );
+                }
+                throw new GenericRuntimeException( "$geometry operand of $geoIntersects could not be parsed as GeoJSON.", e );
+            }
+        }
+
+        throw new GenericRuntimeException( "Geometry type could not be determined." );
     }
 
 

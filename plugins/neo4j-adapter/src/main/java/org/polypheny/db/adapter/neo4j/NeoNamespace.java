@@ -16,6 +16,8 @@
 
 package org.polypheny.db.adapter.neo4j;
 
+import static org.polypheny.db.adapter.neo4j.Neo4jPlugin.getMappingLabel;
+
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -65,6 +67,11 @@ public class NeoNamespace extends Namespace implements Expressible {
     public NeoEntity createEntity( PhysicalEntity entity, List<? extends PhysicalField> fields, NeoNamespace namespace ) {
 
         return new NeoEntity( entity, fields, namespace );
+    }
+
+
+    public NeoGraph createGraph( PhysicalEntity entity, List<? extends PhysicalField> fields, Driver db, Neo4jStore store ) {
+        return new NeoGraph( entity, fields, this.transactionProvider, db, getMappingLabel( entity.id ), store );
     }
 
 

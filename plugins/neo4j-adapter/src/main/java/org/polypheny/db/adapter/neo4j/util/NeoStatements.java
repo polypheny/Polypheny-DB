@@ -39,6 +39,7 @@ import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.spatial.PolyPoint;
 
 /**
  * Helper classes, which are used to create cypher queries with a object representation.
@@ -451,6 +452,23 @@ public interface NeoStatements {
             return string_( value );
         } else if ( value.isList() ) {
             return literal_( PolyString.of( String.format( "[%s]", value.asList().stream().map( value1 -> _literalOrString( (PolyValue) value1 ).build() ).collect( Collectors.joining( ", " ) ) ) ) );
+        } else if ( value.isGeometry() ) {
+            // Neo4j only supports PolyGeometry of type Point natively. We could choose to convert PolyGeometry
+            // to GeoJSON or WKT, but then the native Neo4j internal methods would no longer be able to work with
+            // the value.
+            assert value.asGeometry().isPoint() : "Neo4j only supports Point geometries natively";
+            PolyPoint point = value.asGeometry().asPoint();
+            int dimensions = Double.isNaN( point.getZ() ) ? 2 : 3;
+            String pointValues = switch ( point.getSRID() ) {
+                case 0 -> dimensions == 2
+                        ? "x: " + point.getX() + " , y: " + point.getY()
+                        : "x: " + point.getX() + " , y: " + point.getY() + ", z: " + point.getZ();
+                case 4326 -> "longitude: " + point.getX() + " , latitude: " + point.getY();
+                case 4979 -> "longitude: " + point.getX() + " , latitude: " + point.getY() + " , height: " + point.getZ();
+                default -> throw new IllegalArgumentException( "Unsupported SRID: " + point.getSRID() );
+            };
+            String pointString = "point({" + pointValues + "})";
+            return literal_( PolyString.of( pointString ) );
         } else {
             return literal_( value );
         }

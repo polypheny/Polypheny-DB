@@ -53,7 +53,6 @@ import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.Pair;
@@ -110,6 +109,17 @@ public interface MongoAlg extends AlgNode {
         @Getter
         @Setter
         private Operation operation;
+
+        /**
+         * This list will be used to create necessary indexes when performing $near,
+         * $nearSphere or a $geoNear query. It contains the index and index type,
+         * separated by a newline character (because that can't be part of a field name).
+         * The index type can be '2d' or '2dsphere' for now.
+         *
+         * List[String] instead of List[Pair[String,String]] because Pair is difficult
+         * to serialize.
+         */
+        public final List<String> indexAndIndexType = new ArrayList<>();
 
 
         public Implementor() {

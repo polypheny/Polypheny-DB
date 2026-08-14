@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -367,10 +367,10 @@ public class JdbcMetaTest {
 
             boolean trigger = false;
             while ( rs.next() ) {
-                Integer value = rs.getInt( "some_value" );
+                int value = rs.getInt( "some_value" );
                 if ( value == 0 ) {
                     trigger = true;
-                } else if ( trigger && value != null ) {
+                } else if ( trigger ) {
                     fail( "Values are not sorted correctly." );
                 }
             }
@@ -379,10 +379,10 @@ public class JdbcMetaTest {
 
             trigger = false;
             while ( rs2.next() ) {
-                Integer value = rs2.getInt( "some_value" );
+                int value = rs2.getInt( "some_value" );
                 if ( value == 0 ) {
                     trigger = true;
-                } else if ( trigger && value != null ) {
+                } else if ( trigger ) {
                     fail( "Values are not sorted correctly." );
                 }
             }

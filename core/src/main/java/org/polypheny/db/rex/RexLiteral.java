@@ -293,6 +293,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case PATH -> value.isPath();
             case MAP -> value.isMap();
             case DOCUMENT -> true;
+            case GEOMETRY -> value.isGeometry();
             default -> throw Util.unexpected( typeName );
         };
     }
@@ -514,6 +515,10 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 } else {
                     pw.println( value );
                 }
+                break;
+            case GEOMETRY:
+                assert value.isGeometry();
+                pw.print( value.asGeometry().toWKT() );
                 break;
             default:
                 assert valueMatchesType( value, typeName, true );
