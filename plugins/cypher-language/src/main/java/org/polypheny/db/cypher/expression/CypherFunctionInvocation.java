@@ -71,7 +71,7 @@ public class CypherFunctionInvocation extends CypherExpression {
     }
 
 
-    private Pair<PolyString, RexNode> getVectorDistanceRex( CypherContext context, RexType type ) {
+    private RexNode getVectorDistanceRex( CypherContext context, RexType type ) {
         if ( arguments.size() != 3 ) {
             throw new GenericRuntimeException( "vector_distance requires exactly 3 arguments" );
         }
@@ -99,10 +99,9 @@ public class CypherFunctionInvocation extends CypherExpression {
         Operator operator = OperatorRegistry.get( namedOp );
 
         if ( namedOp == OperatorName.DISTANCE ) {
-            return Pair.of( PolyString.of( namedOp.name() ), context.rexBuilder.makeCall( operator, List.of( v1, v2, metricRex ) ) );
+            return context.rexBuilder.makeCall( operator, List.of( v1, v2, metricRex ) );
         }
-
-        return Pair.of( PolyString.of( namedOp.name() ), context.rexBuilder.makeCall( operator, List.of( v1, v2 ) ) );
+        return context.rexBuilder.makeCall( operator, List.of( v1, v2 ) );
     }
 
 
@@ -118,16 +117,13 @@ public class CypherFunctionInvocation extends CypherExpression {
 
     @Override
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
-        if ( this.op == OperatorName.VECTOR_DISTANCE ) {
-            return getVectorDistanceRex( context, type );
-        }
         // At this point, we do not know what is on the left side of the Pair.
         // The caller has to discard the left side, and use a variable name or something else.
-        return Pair.of( PolyString.of( "???" ), getRexCall( context ) );
+        return Pair.of( PolyString.of( "???" ), getRexCall( context, type ) );
     }
 
 
-    public RexNode getRexCall( CypherContext context ) {
+    public RexNode getRexCall( CypherContext context, RexType type ) {
         switch ( getOperatorName() ) {
             case CYPHER_POINT: {
                 // VERY UGLY, but it works for now. This could be improved by using the function MAP_OF_ENTRIES,
@@ -197,6 +193,8 @@ public class CypherFunctionInvocation extends CypherExpression {
                                 // Because create function logic is implemented in
                                 arguments.get( 1 ).getRex( context, RexType.PROJECT ).getRight()
                         ) );
+            case VECTOR_DISTANCE:
+                return getVectorDistanceRex( context, type );
             default:
                 throw new NotImplementedException( "Cypher Function to alg conversion missing: " + getOperatorName() );
         }
