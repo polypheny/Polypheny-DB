@@ -139,7 +139,7 @@ public class DocSelectFieldsActivity implements Activity, Fusable, Pipeable {
         AlgDataType type = getDocType();
         FieldSelectValue setting = settings.get( "fields", FieldSelectValue.class );
         if ( setting.includeUnspecified() ) {
-            return LogicalDocumentProject.create( inputs.get( 0 ), Map.of(), setting.getExclude() );
+            return LogicalDocumentProject.create( inputs.get( 0 ), new HashMap<>(), setting.getExclude(), new HashMap<>() );
         }
 
         List<String> fields = setting.getInclude();
@@ -147,7 +147,7 @@ public class DocSelectFieldsActivity implements Activity, Fusable, Pipeable {
                 field -> field,
                 field -> RexNameRef.create( List.of( field.split( "\\." ) ), null, type )
         ) );
-        return LogicalDocumentProject.create( inputs.get( 0 ), nameRefs, setting.getExclude() );
+        return LogicalDocumentProject.create( inputs.get( 0 ), nameRefs, setting.getExclude(), new HashMap<>() );
     }
 
 

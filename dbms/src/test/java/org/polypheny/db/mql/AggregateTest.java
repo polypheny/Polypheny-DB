@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -340,11 +340,16 @@ public class AggregateTest extends MqlTestTemplate {
 
     @Test
     public void skipTest() {
-        List<String> expected = ImmutableList.of(
-                "{\"test\":1.3,\"key\":{\"key\":\"val\"}}",
+        List<String> data = Arrays.asList(
+                "{\"test\":1,\"key\":4}",
+                "{\"test\":1.3,\"key\":0}",
                 "{\"test\":\"test\",\"key\":13}" );
 
-        insertMany( DATA_0 );
+        List<String> expected = ImmutableList.of(
+                "{\"test\":1,\"key\":4}",
+                "{\"test\":\"test\",\"key\":13}" );
+
+        insertMany( data );
 
         // we sort to assure correct order
         DocResult result = aggregate( $sort( document( kv( string( "key" ), 1 ) ) ), $skip( 1 ) );

@@ -103,7 +103,7 @@ public class DocAggregateActivity implements Activity, Fusable {
         for ( LaxAggregateCall aggCall : aggCalls ) {
             includes.put( aggCall.name, ActivityUtils.getDocRexNameRef( aggCall.name, 0 ) );
         }
-        return LogicalDocumentProject.create( aggNode, includes, List.of() );
+        return LogicalDocumentProject.create( aggNode, includes, List.of(), Map.of() );
     }
 
 

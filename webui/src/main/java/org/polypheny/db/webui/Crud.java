@@ -2947,37 +2947,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     /**
-     * Loads the plugin in the supplied path.
-     */
-    public void loadPlugins( final Context ctx ) {
-        ctx.uploadedFiles( "plugins" ).forEach( file -> {
-            String[] splits = file.filename().split( "/" );
-            String normalizedFileName = splits[splits.length - 1];
-            splits = normalizedFileName.split( "\\\\" );
-            normalizedFileName = splits[splits.length - 1];
-            File f = new File( System.getProperty( "user.home" ), ".polypheny/plugins/" + normalizedFileName );
-            try {
-                FileUtils.copyInputStreamToFile( file.content(), f );
-            } catch ( IOException e ) {
-                throw new GenericRuntimeException( e );
-            }
-            PolyPluginManager.loadAdditionalPlugin( f );
-        } );
-
-    }
-
-
-    /**
-     * Unload the plugin with the supplied pluginId.
-     */
-    public void unloadPlugin( final Context ctx ) {
-        String pluginId = ctx.bodyAsClass( String.class );
-
-        ctx.json( PolyPluginManager.unloadAdditionalPlugin( pluginId ) );
-    }
-
-
-    /**
      * Helper method to zip a directory
      */
     private static void zipDirectory( String basePath, File dir, ZipOutputStream zipOut ) throws IOException {

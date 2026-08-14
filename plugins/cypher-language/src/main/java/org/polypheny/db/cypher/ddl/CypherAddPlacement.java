@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
                 .map( store -> adapterManager.getStore( store ).orElseThrow() )
                 .collect( Collectors.toList() );
 
-        if ( !adapterManager.getAdapters().containsKey( store ) ) {
+        if ( !adapterManager.getAdapters().containsKey( store.toLowerCase() ) ) {
             throw new GenericRuntimeException( "The targeted storeId does not exist." );
         }
 

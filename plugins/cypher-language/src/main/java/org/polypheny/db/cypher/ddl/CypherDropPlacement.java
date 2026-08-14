@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.polypheny.db.cypher.ddl;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -59,9 +58,7 @@ public class CypherDropPlacement extends CypherAdminCommand implements Executabl
 
         List<LogicalNamespace> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( this.databaseName ) );
 
-        DataStore<?> dataStore = Stream.of( storeName )
-                .map( store -> adapterManager.getStore( storeName ).orElseThrow() )
-                .toList().get( 0 );
+        DataStore<?> dataStore = adapterManager.getStore( storeName ).orElseThrow();
 
         if ( graphs.size() != 1 ) {
             throw new GenericRuntimeException( "Error while adding graph placement" );

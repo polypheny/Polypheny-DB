@@ -283,13 +283,13 @@ public class ConfigList extends Config {
 
 
     @Override
-    public void setList( List<ConfigScalar> values ) {
+    public void setList( List<? extends ConfigScalar> values ) {
         if ( requiresRestart() ) {
             if ( this.oldList == null ) {
                 this.oldList = this.list;
             }
         }
-        this.list = values;
+        this.list = values.stream().map( v -> (ConfigScalar) v ).toList();
         values.forEach( val -> val.addObserver( listener ) );
         if ( this.oldList != null && this.oldList.equals( this.list ) ) {
             this.oldList = null;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ public class DdlTest extends MqlTestTemplate {
     @Test
     public void addPlacementTest() throws SQLException {
 
-        String placement = "store1";
+        String placement = "storeMongoDdl";
         try {
             LogicalNamespace namespace = Catalog.snapshot().getNamespace( MqlTestTemplate.namespace ).orElseThrow();
 
@@ -117,7 +117,7 @@ public class DdlTest extends MqlTestTemplate {
     @Test
     public void deletePlacementTest() throws SQLException {
 
-        String placement = "store1";
+        String placement = "storeMongoDdl";
 
         execute( "db.createCollection(\"" + collectionName + "\")" );
 
@@ -154,7 +154,7 @@ public class DdlTest extends MqlTestTemplate {
     @Test
     public void deletePlacementDataTest() throws SQLException {
 
-        String placement = "store1";
+        String placement = "storeMongoDdl";
         final String DATA = "{ \"key\": \"value\", \"key1\": \"value1\"}";
 
         execute( "db.createCollection(\"" + collectionName + "\")" );
@@ -190,7 +190,6 @@ public class DdlTest extends MqlTestTemplate {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-
                 statement.executeUpdate( "ALTER ADAPTERS ADD \"" + name + "\" USING 'Hsqldb' AS 'Store'"
                         + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 

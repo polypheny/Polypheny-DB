@@ -198,6 +198,8 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.MQL_MERGE, new LangFunctionOperator( OperatorName.MQL_MERGE.name(), Kind.OTHER, PolyType.DOCUMENT ) );
 
+        register( OperatorName.MQL_MERGE_ADD, new LangFunctionOperator( OperatorName.MQL_MERGE_ADD.name(), Kind.OTHER, PolyType.DOCUMENT ) );
+
         register( OperatorName.MQL_REPLACE_ROOT, new LangFunctionOperator( OperatorName.MQL_REPLACE_ROOT.name(), Kind.OTHER, PolyType.DOCUMENT ) );
 
         register( OperatorName.MQL_PROJECT_INCLUDES, new LangFunctionOperator( OperatorName.MQL_PROJECT_INCLUDES.name(), Kind.OTHER, PolyType.DOCUMENT ) );
@@ -211,6 +213,20 @@ public class MongoLanguagePlugin extends PolyPlugin {
         register( OperatorName.PLUS, new LangFunctionOperator( OperatorName.PLUS.name(), Kind.PLUS, PolyType.DOCUMENT ) );
 
         register( OperatorName.MINUS, new LangFunctionOperator( OperatorName.MINUS.name(), Kind.MINUS, PolyType.DOCUMENT ) );
+
+        // Geospatial Functions
+
+        register( OperatorName.MQL_GEO_INTERSECTS, new LangFunctionOperator( "MQL_GEO_INTERSECTS", Kind.MQL_GEO_INTERSECTS, PolyType.BOOLEAN ) );
+
+        register( OperatorName.MQL_GEO_WITHIN, new LangFunctionOperator( "MQL_GEO_WITHIN", Kind.MQL_GEO_WITHIN, PolyType.BOOLEAN ) );
+
+        register( OperatorName.MQL_GEO_DISTANCE, new LangFunctionOperator( "MQL_GEO_DISTANCE", Kind.MQL_GEO_DISTANCE, PolyType.BOOLEAN ) );
+
+        register( OperatorName.MQL_NEAR, new LangFunctionOperator( "MQL_NEAR", Kind.MQL_NEAR, PolyType.OTHER ) );
+
+        register( OperatorName.MQL_NEAR_SPHERE, new LangFunctionOperator( "MQL_NEAR_SPHERE", Kind.MQL_NEAR_SPHERE, PolyType.OTHER ) );
+
+        register( OperatorName.MQL_GEO_NEAR, new LangFunctionOperator( "MQL_GEO_NEAR", Kind.MQL_GEO_NEAR, PolyType.OTHER ) );
 
         isInit = true;
     }

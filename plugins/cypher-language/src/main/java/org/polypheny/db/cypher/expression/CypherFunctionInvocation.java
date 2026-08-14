@@ -16,17 +16,24 @@
 
 package org.polypheny.db.cypher.expression;
 
+import static org.polypheny.db.algebra.operators.OperatorName.CYPHER_POINT;
+
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import lombok.Getter;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyString;
@@ -50,20 +57,17 @@ public class CypherFunctionInvocation extends CypherExpression {
         this.namespace = namespace;
         if ( operatorNames.contains( image.toUpperCase( Locale.ROOT ) ) ) {
             this.op = OperatorName.valueOf( image.toUpperCase( Locale.ROOT ) );
+        } else if ( operatorNames.contains( "CYPHER_" + image.toUpperCase( Locale.ROOT ) ) ) {
+            this.op = OperatorName.valueOf( "CYPHER_" + image.toUpperCase( Locale.ROOT ) );
+        } else if ( image.equals( "withinBBox" ) ) {
+            this.op = OperatorName.CYPHER_WITHIN_BBOX;
+        } else if ( image.equals( "withinGeometry" ) ) {
+            this.op = OperatorName.CYPHER_WITHIN_GEOMETRY;
         } else {
             throw new GenericRuntimeException( "Used function is not supported!" );
         }
         this.distinct = distinct;
         this.arguments = arguments;
-    }
-
-
-    @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
-        if ( this.op == OperatorName.VECTOR_DISTANCE ) {
-            return getVectorDistanceRex( context, type );
-        }
-        return super.getRex( context, type );
     }
 
 
@@ -82,9 +86,9 @@ public class CypherFunctionInvocation extends CypherExpression {
         String metric = metricLit.value.asString().value.toUpperCase( Locale.ROOT );
 
         OperatorName namedOp = switch ( metric ) {
-            case "L1"      -> OperatorName.L1_DISTANCE;
-            case "L2"      -> OperatorName.L2_DISTANCE;
-            case "COSINE"  -> OperatorName.COS_DISTANCE;
+            case "L1" -> OperatorName.L1_DISTANCE;
+            case "L2" -> OperatorName.L2_DISTANCE;
+            case "COSINE" -> OperatorName.COS_DISTANCE;
             case "HAMMING" -> OperatorName.HAMMING_DISTANCE;
             case "JACCARD" -> OperatorName.JACCARD_DISTANCE;
             case "INNER_PRODUCT" -> OperatorName.INNER_PRODUCT_DISTANCE;
@@ -102,5 +106,100 @@ public class CypherFunctionInvocation extends CypherExpression {
     }
 
 
+    public ImmutableList<CypherExpression> getArguments() {
+        return ImmutableList.copyOf( arguments );
+    }
+
+
+    public OperatorName getOperatorName() {
+        return op;
+    }
+
+
+    @Override
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+        if ( this.op == OperatorName.VECTOR_DISTANCE ) {
+            return getVectorDistanceRex( context, type );
+        }
+        // At this point, we do not know what is on the left side of the Pair.
+        // The caller has to discard the left side, and use a variable name or something else.
+        return Pair.of( PolyString.of( "???" ), getRexCall( context ) );
+    }
+
+
+    public RexNode getRexCall( CypherContext context ) {
+        switch ( getOperatorName() ) {
+            case CYPHER_POINT: {
+                // VERY UGLY, but it works for now. This could be improved by using the function MAP_OF_ENTRIES,
+                // but I am not sure how to call it.
+                CypherLiteral mapExpression = (CypherLiteral) getArguments().get( 0 );
+                List<RexNode> arguments = new ArrayList<>();
+                mapExpression.getMapValue().forEach( ( key, value ) -> {
+                    Pair<PolyString, RexNode> pair = value.getRex( context, RexType.PROJECT );
+                    arguments.add( context.rexBuilder.makeLiteral( key ) );
+                    arguments.add( pair.right );
+                } );
+                // Fill with NULL to make sure we have the correct amount of arguments.
+                // 3 coordinates + 3 names + srid + crs = up to 8 possible
+                while ( arguments.size() < 10 ) {
+                    arguments.add( context.rexBuilder.makeNullLiteral( context.typeFactory.createUnknownType() ) );
+                }
+                return new RexCall(
+                        context.geometryType,
+                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), CYPHER_POINT ),
+                        arguments );
+            }
+            case DISTANCE: {
+                return new RexCall(
+                        context.numberType,
+                        // If the third argument for the point.distance function is the string 'neo4j', then
+                        // use the spherical distance approximation of Neo4j. This uses a different earth radius.
+                        // Otherwise, the default behavior is to use the same distance measurement as the other
+                        // models.
+                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), arguments.size() == 3
+                                && arguments.get( 2 ) instanceof CypherLiteral neo4jFlag
+                                && neo4jFlag.getValue().toString().equals( "neo4j" )
+                                ? OperatorName.DISTANCE_NEO4J
+                                : OperatorName.DISTANCE
+                        ),
+                        List.of(
+                                arguments.get( 0 ).getRex( context, RexType.PROJECT ).getRight(),
+                                arguments.get( 1 ).getRex( context, RexType.PROJECT ).getRight()
+                        ) );
+            }
+            case DISTANCE_NEO4J: {
+                return new RexCall(
+                        context.numberType,
+                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.DISTANCE_NEO4J ),
+                        List.of(
+                                arguments.get( 0 ).getRex( context, RexType.PROJECT ).getRight(),
+                                arguments.get( 1 ).getRex( context, RexType.PROJECT ).getRight()
+                        ) );
+            }
+            case CYPHER_WITHIN_BBOX:
+                return new RexCall(
+                        context.booleanType,
+                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_WITHIN_BBOX ),
+                        List.of(
+                                arguments.get( 0 ).getRex( context, RexType.PROJECT ).getRight(),
+                                // CypherFunctionInvocation.getRex -> throw
+                                // Because create function logic is implemented in
+                                arguments.get( 1 ).getRex( context, RexType.PROJECT ).getRight(),
+                                arguments.get( 2 ).getRex( context, RexType.PROJECT ).getRight()
+                        ) );
+            case CYPHER_WITHIN_GEOMETRY:
+                return new RexCall(
+                        context.booleanType,
+                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_WITHIN_GEOMETRY ),
+                        List.of(
+                                arguments.get( 0 ).getRex( context, RexType.PROJECT ).getRight(),
+                                // CypherFunctionInvocation.getRex -> throw
+                                // Because create function logic is implemented in
+                                arguments.get( 1 ).getRex( context, RexType.PROJECT ).getRight()
+                        ) );
+            default:
+                throw new NotImplementedException( "Cypher Function to alg conversion missing: " + getOperatorName() );
+        }
+    }
 
 }
