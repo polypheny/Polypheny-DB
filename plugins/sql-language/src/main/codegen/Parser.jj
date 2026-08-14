@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1877,7 +1877,7 @@ SqlCreate SqlCreateNamespace(Span s, boolean replace) :
         |
         { dataModel = DataModel.RELATIONAL; }
     )
-    (<NAMESPACE> | <SCHEMA>) ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
+    (<NAMESPACE> | <SCHEMA> | <DATABASE>) ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     {
     return SqlDdlNodes.createNamespace(s.end(this), replace, ifNotExists, id, dataModel);
 }
@@ -2350,7 +2350,7 @@ SqlDrop SqlDropNamespace(Span s, boolean replace) :
     final SqlIdentifier id;
 }
 {
-    (<NAMESPACE>|<SCHEMA>) ifExists = IfExistsOpt() id = CompoundIdentifier() {
+    (<NAMESPACE> | <SCHEMA> | <DATABASE>) ifExists = IfExistsOpt() id = CompoundIdentifier() {
         return SqlDdlNodes.dropNamespace(s.end(this), ifExists, id);
     }
 }

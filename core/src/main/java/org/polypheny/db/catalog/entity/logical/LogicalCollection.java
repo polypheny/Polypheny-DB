@@ -26,7 +26,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.transaction.locking.Lockable;
 
 @EqualsAndHashCode(callSuper = true)
 @Value

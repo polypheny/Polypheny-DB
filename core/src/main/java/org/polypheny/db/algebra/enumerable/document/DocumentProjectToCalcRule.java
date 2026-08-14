@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,13 @@ import org.polypheny.db.algebra.enumerable.EnumerableCalc;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule.NameRefReplacer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexShuttle;
 
 public class DocumentProjectToCalcRule extends ConverterRule {
 
@@ -44,10 +47,42 @@ public class DocumentProjectToCalcRule extends ConverterRule {
     public AlgNode convert( AlgNode alg ) {
         final LogicalDocumentProject project = (LogicalDocumentProject) alg;
         final AlgNode input = project.getInput();
-        NameRefReplacer replacer = new NameRefReplacer( project.getCluster(), false );
+        NameRefReplacer replacer = new NameRefReplacer( project.getCluster(), false, alg.getInput( 0 ) );
+
+        NearDetector nearDetector = new NearDetector();
+        project.accept( nearDetector );
+        if ( nearDetector.containsNear ) {
+            return null;
+        }
+
         List<RexNode> adjustedProjects = List.of( project.asSingleProject().accept( replacer ) );
         final RexProgram program = RexProgram.create( input.getTupleType(), adjustedProjects, null, DocumentType.ofId(), project.getCluster().getRexBuilder() );
         return EnumerableCalc.create( convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) ), program );
+    }
+
+
+    /**
+     * See {@link DocumentNearUnwrap} to see why we need to do this.
+     */
+    public static class NearDetector extends RexShuttle {
+
+        public boolean containsNear;
+
+
+        NearDetector() {
+        }
+
+
+        @Override
+        public RexNode visitCall( RexCall call ) {
+            if ( call.getOperator().getOperatorName() == OperatorName.MQL_NEAR ||
+                    call.getOperator().getOperatorName() == OperatorName.MQL_NEAR_SPHERE ||
+                    call.getOperator().getOperatorName() == OperatorName.MQL_GEO_NEAR ) {
+                containsNear = true;
+            }
+            return super.visitCall( call );
+        }
+
     }
 
 }

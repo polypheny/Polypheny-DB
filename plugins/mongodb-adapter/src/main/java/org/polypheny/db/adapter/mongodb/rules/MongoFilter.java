@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
+import org.bson.BsonDouble;
 import org.bson.BsonInt32;
 import org.bson.BsonNull;
 import org.bson.BsonRegularExpression;
@@ -39,6 +42,7 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
+import org.locationtech.jts.geom.Coordinate;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
@@ -63,7 +67,13 @@ import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyLinearRing;
+import org.polypheny.db.type.entity.spatial.PolyPoint;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.JsonBuilder;
 
@@ -98,9 +108,18 @@ public class MongoFilter extends Filter implements MongoAlg {
         implementor.visitChild( 0, getInput() );
         // to not break the existing functionality for now we have to handle it this way
         Translator translator;
-
         translator = new Translator( MongoRules.mongoFieldNames( getTupleType() ), getTupleType(), implementor );
-        translator.translateMatch( condition, implementor );
+
+        if ( condition.getKind() == Kind.MQL_NEAR ) {
+            // $near, $nearSphere and $geoNear are not allowed in an aggregation pipeline, which is why we cannot translate them inside the match stage.
+            // Instead, we will translate them into a $geoNear stage.
+            translator.translateNearAsGeoNear( condition, implementor );
+        } else if ( condition.getKind() == Kind.MQL_GEO_NEAR ) {
+            // Translate $geoNear to $geoNear, without a match stage.
+            translator.translateGeoNear( condition, implementor );
+        } else {
+            translator.translateMatch( condition, implementor );
+        }
     }
 
 
@@ -307,6 +326,15 @@ public class MongoFilter extends Filter implements MongoAlg {
                     return;
                 case MQL_ELEM_MATCH:
                     translateElemMatch( (RexCall) node );
+                    return;
+                case MQL_GEO_INTERSECTS:
+                    translateGeoIntersects( (RexCall) node );
+                    return;
+                case MQL_GEO_WITHIN:
+                    translateGeoWithin( (RexCall) node );
+                    return;
+                case MQL_NEAR:
+                    translateNear( (RexCall) node );
                     return;
                 case IS_NOT_TRUE:
                     translateIsTrue( (RexCall) node, true );
@@ -640,6 +668,244 @@ public class MongoFilter extends Filter implements MongoAlg {
 
             attachCondition( null, left, new BsonRegularExpression( value, options ) );
 
+        }
+
+
+        private void translateGeoWithin( RexCall node ) {
+            String left = getParamAsKey( node.operands.get( 0 ) );
+            PolyGeometry filterGeometry = getLiteralAs( node, 1, PolyValue::asGeometry );
+            double distance = getLiteralAs( node, 2, p -> p.asDouble().doubleValue() );
+
+            // If we have an SRID we either have a GeoJSON object or a $centerSphere operand.
+            if ( filterGeometry.getSRID() != 0 ) {
+
+                // $centerSphere
+                if ( distance > 0 ) {
+                    BsonDocument centerSphere = new BsonDocument();
+                    BsonArray array = new BsonArray();
+                    PolyPoint point = filterGeometry.asPoint();
+                    BsonArray pointArray = new BsonArray();
+                    pointArray.add( new BsonDouble( point.getX() ) );
+                    pointArray.add( new BsonDouble( point.getY() ) );
+                    array.add( pointArray );
+                    array.add( new BsonDouble( distance ) );
+
+                    centerSphere.put( "$centerSphere", array );
+                    BsonDocument geoWithin = new BsonDocument();
+                    geoWithin.put( "$geoWithin", centerSphere );
+                    attachCondition( null, left, geoWithin );
+                    return;
+                }
+                // GeoJSON
+                else {
+                    BsonDocument geometry = new BsonDocument();
+                    geometry.put( "$geometry", BsonDocument.parse( filterGeometry.toJson() ) );
+                    BsonDocument geoWithin = new BsonDocument();
+                    geoWithin.put( "$geoWithin", geometry );
+                    attachCondition( null, left, geoWithin );
+                    return;
+                }
+
+            } else {
+                // $sphere
+                if ( distance > 0 ) {
+                    BsonDocument center = new BsonDocument();
+                    BsonArray array = new BsonArray();
+                    PolyPoint point = filterGeometry.asPoint();
+                    BsonArray pointArray = new BsonArray();
+                    pointArray.add( new BsonDouble( point.getX() ) );
+                    pointArray.add( new BsonDouble( point.getY() ) );
+                    array.add( pointArray );
+                    array.add( new BsonDouble( distance ) );
+
+                    center.put( "$center", array );
+                    BsonDocument geoWithin = new BsonDocument();
+                    geoWithin.put( "$geoWithin", center );
+                    attachCondition( null, left, geoWithin );
+                    return;
+                }
+
+                // $box, $polygon
+                if ( filterGeometry.isPolygon() ) {
+                    PolyLinearRing linearRing = filterGeometry.asPolygon().getExteriorRing();
+                    Coordinate[] coordinates = linearRing.getJtsGeometry().getCoordinates();
+
+                    BsonDocument polygon = new BsonDocument();
+                    BsonArray coordinateArray = new BsonArray();
+                    for ( Coordinate coordinate : coordinates ) {
+                        BsonArray coordinatePair = new BsonArray();
+                        coordinatePair.add( new BsonDouble( coordinate.getX() ) );
+                        coordinatePair.add( new BsonDouble( coordinate.getY() ) );
+                        coordinateArray.add( coordinatePair );
+                    }
+                    polygon.put( "$polygon", coordinateArray );
+
+                    BsonDocument geoWithin = new BsonDocument();
+                    geoWithin.put( "$geoWithin", polygon );
+                    attachCondition( null, left, geoWithin );
+                    return;
+                }
+            }
+
+            // Something went wrong. Either we did not handle all cases, or the input is not as expected,
+            // and should never have been parsed correctly in the first place.
+            throw new GenericRuntimeException( "Cannot translate $geoWithin to MongoDB query." );
+        }
+
+
+        private void translateNearAsGeoNear( RexNode condition, Implementor implementor ) {
+            BsonDocument value = translateFinalOr( condition );
+            if ( !value.isEmpty() ) {
+                if ( !preProjections.isEmpty() ) {
+                    implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$addFields", preProjections ) ) );
+                }
+
+                BsonValue near = value.getDocument( value.getFirstKey() ).get( "$near" );
+                String fieldName = value.getFirstKey();
+                if ( near.isDocument() ) {
+                    // Point is specified as GeoJSON -> Create a 2dsphere index
+                    implementor.indexAndIndexType.add( "%s\n2dsphere".formatted( fieldName ) );
+                } else if ( near.isArray() ) {
+                    // Point is specified as legacy coordiantes -> Create a 2d index
+                    implementor.indexAndIndexType.add( "%s\n2d".formatted( fieldName ) );
+                } else {
+                    throw new NotImplementedException( "Unexpected value for $near." );
+                }
+
+                final String distanceField = "__temp_%s".formatted( UUID.randomUUID().toString() );
+                BsonDocument geoNearOptions = new BsonDocument();
+                geoNearOptions.put( "distanceField", new BsonString( distanceField ) );
+                geoNearOptions.put( "key", new BsonString( fieldName ) );
+                geoNearOptions.put( "near", near );
+                implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$geoNear", geoNearOptions ) ) );
+                implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$unset", new BsonString( distanceField ) ) ) );
+            }
+
+        }
+
+
+        private void translateGeoNear( RexNode condition, Implementor implementor ) {
+            if ( !(condition instanceof RexCall node) ) {
+                throw new GenericRuntimeException( "Was expecting MQL_GEO_NEAR to be of type RexCall" );
+            }
+
+            assert node.operands.size() == 8;
+            PolyGeometry nearGeometry = getLiteralAs( node, 0, PolyValue::asGeometry );
+            RexNameRef distanceField = (RexNameRef) node.operands.get( 1 );
+            PolyDouble distanceMultiplier = getLiteralAs( node, 2, PolyValue::asDouble );
+            RexNameRef includeLocs = (RexNameRef) node.operands.get( 3 );
+            PolyString key = getLiteralAs( node, 4, PolyValue::asString );
+            PolyDouble maxDistance = getLiteralAs( node, 5, PolyValue::asDouble );
+            PolyDouble minDistance = getLiteralAs( node, 6, PolyValue::asDouble );
+            RexNode query = node.operands.get( 7 );
+
+            BsonDocument geoNearOptions = new BsonDocument();
+            // Required
+            geoNearOptions.put( "distanceField", new BsonString( distanceField.name ) );
+            if ( nearGeometry.getSRID() == 0 ) {
+                // We have no SRID -> Use legacy coordinates like this:
+                // $near: [ 0, 0 ]
+                BsonDocument leftBody = new BsonDocument();
+                BsonArray legacyCoordinates = new BsonArray();
+                legacyCoordinates.add( new BsonDouble( nearGeometry.asPoint().getX() ) );
+                legacyCoordinates.add( new BsonDouble( nearGeometry.asPoint().getY() ) );
+                geoNearOptions.put( "near", legacyCoordinates );
+            } else {
+                // We have an SRID. This could be because of two cases:
+                // We use $nearSphere with legacy coordinates OR We use $near or $nearSphere with a GeoJSON object
+                // In both cases can we convert the object to a GeoJSON object
+                geoNearOptions.put( "near", BsonDocument.parse( nearGeometry.toJson() ) );
+            }
+
+            // Optional
+            if ( distanceMultiplier.getValue() > 1.0 ) {
+                geoNearOptions.put( "distanceMultiplier", new BsonDouble( distanceMultiplier.getValue() ) );
+            }
+            if ( !includeLocs.name.isEmpty() ) {
+                geoNearOptions.put( "includeLocs", new BsonString( includeLocs.name ) );
+            }
+            if ( !key.getValue().isEmpty() ) {
+                geoNearOptions.put( "key", new BsonString( key.getValue() ) );
+                // If the user specified which field should be used for the query, then we can create the index
+                // if it does not exist. If there is no index, and key is not set, the operation will fail.
+                // Normally this field is used if there are multiple indexes, so that we can decide which to use.
+                implementor.indexAndIndexType.add(
+                        "%s\n%s".formatted( key.getValue(), nearGeometry.getSRID() == 0 ? "2d" : "2dsphere" )
+                );
+            }
+            if ( maxDistance.getValue() != -1.0 ) {
+                geoNearOptions.put( "maxDistance", new BsonDouble( maxDistance.getValue() ) );
+            }
+            if ( minDistance.getValue() != -1.0 ) {
+                geoNearOptions.put( "minDistance", new BsonDouble( minDistance.getValue() ) );
+            }
+
+            if ( query instanceof RexCall ) {
+                // TODO RB: Query is wrongly converted to JSON. Double gets converted to String.
+                //   MQL_GTE(RexNameRef(names=[num], index=Optional.empty), 2) => {"num": {"$gte": "2"}}
+                BsonDocument queryDocument = translateFinalOr( query );
+                geoNearOptions.put( "query", queryDocument );
+            }
+
+            implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$geoNear", geoNearOptions ) ) );
+        }
+
+
+        private void translateNear( RexCall node ) {
+            assert node.operands.size() == 4;
+            String left = getParamAsKey( node.operands.get( 0 ) );
+            PolyGeometry filterGeometry = getLiteralAs( node, 1, PolyValue::asGeometry );
+            PolyNumber minDistance = getLiteralAs( node, 2, p -> (PolyNumber) p );
+            PolyNumber maxDistance = getLiteralAs( node, 3, p -> (PolyNumber) p );
+
+            if ( filterGeometry.getSRID() == 0 ) {
+                // We have no SRID -> Use legacy coordinates like this:
+                // $near: [ 0, 0 ]
+                BsonDocument leftBody = new BsonDocument();
+                BsonArray legacyCoordinates = new BsonArray();
+                legacyCoordinates.add( new BsonDouble( filterGeometry.asPoint().getX() ) );
+                legacyCoordinates.add( new BsonDouble( filterGeometry.asPoint().getY() ) );
+                leftBody.put( "$near", legacyCoordinates );
+
+                // Only $minDistance is allowed when $near is used with legacy coordinates.
+                if ( !maxDistance.isInteger() || maxDistance.intValue() != -1 ) {
+                    leftBody.put( "$maxDistance", BsonUtil.getAsBson( maxDistance, maxDistance.type, bucket ) );
+                }
+
+                // Executing this query requires the 2d index to be created on the 'left' field.
+                attachCondition( null, left, leftBody );
+                return;
+            } else {
+                // We have an SRID. This could be because of two cases:
+                // We use $nearSphere with legacy coordinates OR We use $near or $nearSphere with a GeoJSON object
+                // In both cases can we convert the object to a GeoJSON object
+                BsonDocument leftBody = new BsonDocument();
+                BsonDocument near = new BsonDocument();
+                leftBody.put( "$near", near );
+                near.put( "$geometry", BsonDocument.parse( filterGeometry.toJson() ) );
+
+                if ( !minDistance.isInteger() || minDistance.intValue() != -1 ) {
+                    near.put( "$minDistance", BsonUtil.getAsBson( minDistance, minDistance.type, bucket ) );
+                }
+                if ( !maxDistance.isInteger() || maxDistance.intValue() != -1 ) {
+                    near.put( "$maxDistance", BsonUtil.getAsBson( maxDistance, maxDistance.type, bucket ) );
+                }
+
+                // Executing this query requires the 2dsphere index to be created on the 'left' field.
+                attachCondition( null, left, leftBody );
+                return;
+            }
+        }
+
+
+        private void translateGeoIntersects( RexCall node ) {
+            String left = getParamAsKey( node.operands.get( 0 ) );
+            PolyGeometry filterGeometry = getLiteralAs( node, 1, PolyValue::asGeometry );
+            BsonDocument geometry = new BsonDocument();
+            geometry.put( "$geometry", BsonDocument.parse( filterGeometry.toJson() ) );
+            BsonDocument geoWithin = new BsonDocument();
+            geoWithin.put( "$geoIntersects", geometry );
+            attachCondition( null, left, geoWithin );
         }
 
 

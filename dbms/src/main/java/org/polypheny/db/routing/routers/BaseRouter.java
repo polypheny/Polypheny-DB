@@ -36,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
@@ -43,6 +44,7 @@ import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -196,10 +198,26 @@ public abstract class BaseRouter implements Router {
                 break;
             case 2:
                 builders.forEach(
-                        builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) ), 2 )
+                        builder -> builder.replaceTop(
+                                node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) )
+                                , 2 )
                 );
                 break;
             default:
+                if ( node instanceof LogicalRelUnion l ) {
+                    builders.forEach(
+                            builder -> {
+                                List<AlgNode> inputs = new ArrayList<>();
+                                for ( int i = 0; i < node.getInputs().size(); i++ ) {
+                                    inputs.add( builder.peek( i ) );
+                                }
+                                builder.replaceTop(
+                                        node.copy( node.getTraitSet(), inputs )
+                                        , l.getInputs().size() );
+                            }
+                    );
+                    break;
+                }
                 throw new GenericRuntimeException( "Unexpected number of input elements: " + node.getInputs().size() );
         }
         return builders;
@@ -415,6 +433,25 @@ public abstract class BaseRouter implements Router {
             builder.push( handleDocScan( (DocumentScan<?>) alg, statement, null ) );
             return alg;
         } else if ( alg instanceof DocumentValues ) {
+            return alg;
+        } else if ( alg.getModel() != DataModel.DOCUMENT ) {
+            // cross model
+            if ( alg instanceof Scan<?> scan ) {
+                switch ( alg.getModel() ) {
+                    case RELATIONAL -> {
+                        handleRelScan( builder, statement, scan.entity );
+                    }
+                    case DOCUMENT -> {
+                        throw new GenericRuntimeException( "Error while routing graph query." );
+                    }
+                    case GRAPH -> {
+                        handleGraphScan( (LogicalLpgScan) alg, statement, (AllocationEntity) scan.entity, List.of() );
+                    }
+                }
+            } else {
+                this.handleGeneric( alg, builder );
+            }
+
             return alg;
         }
         throw new UnsupportedOperationException();

@@ -277,5 +277,4 @@ public abstract class Join extends BiAlg {
         return args;
     }
 
-
 }

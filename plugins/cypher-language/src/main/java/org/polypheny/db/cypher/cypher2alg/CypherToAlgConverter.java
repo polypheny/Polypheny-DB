@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -404,6 +405,7 @@ public class CypherToAlgConverter {
 
         public final AlgDataType graphType;
         public final AlgDataType booleanType;
+        public final AlgDataType geometryType;
         public final AlgDataType nodeType;
         public final AlgDataType edgeType;
         public final AlgDataType pathType;
@@ -430,6 +432,7 @@ public class CypherToAlgConverter {
             this.rexBuilder = rexBuilder;
             this.graphType = cluster.getTypeFactory().createPolyType( PolyType.GRAPH );
             this.booleanType = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
+            this.geometryType = cluster.getTypeFactory().createPolyType( PolyType.GEOMETRY );
             this.nodeType = cluster.getTypeFactory().createPolyType( PolyType.NODE );
             this.edgeType = cluster.getTypeFactory().createPolyType( PolyType.EDGE );
             this.pathType = cluster.getTypeFactory().createPolyType( PolyType.PATH );
@@ -652,6 +655,8 @@ public class CypherToAlgConverter {
                         List.of(),
                         ImmutableList.of( ImmutableList.copyOf( nameAndValues.stream().map( e -> (RexLiteral) e.getValue() ).toList() ) ),
                         new AlgRecordType( fields ) );
+            } else if ( nameAndValues.stream().allMatch( v -> v.right.isA( Kind.CYPHER_FUNCTION ) ) ) {
+                throw new NotImplementedException( "RETURN statement with function call without MATCH currently not supported" );
             } else {
                 throw new UnsupportedOperationException();
             }

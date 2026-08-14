@@ -19,6 +19,7 @@ package org.polypheny.db.algebra.logical.document;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentProject;
@@ -37,18 +38,18 @@ public class LogicalDocumentProject extends DocumentProject {
     /**
      * Subclass of {@link DocumentProject} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentProject( AlgCluster cluster, AlgTraitSet traits, AlgNode input, Map<String, ? extends RexNode> includes, List<String> excludes ) {
-        super( cluster, traits, input, includes, excludes );
+    public LogicalDocumentProject( AlgCluster cluster, AlgTraitSet traits, AlgNode input, Map<String, ? extends RexNode> includes, List<String> excludes, @NotNull Map<String, ? extends RexNode> adds ) {
+        super( cluster, traits, input, includes, excludes, adds );
     }
 
 
-    public static LogicalDocumentProject create( AlgNode node, Map<String, RexNode> includes, List<String> excludes ) {
-        return new LogicalDocumentProject( node.getCluster(), node.getTraitSet(), node, includes, excludes );
+    public static LogicalDocumentProject create( AlgNode node, Map<String, RexNode> includes, List<String> excludes, Map<String, RexNode> adds ) {
+        return new LogicalDocumentProject( node.getCluster(), node.getTraitSet(), node, includes, excludes, adds );
     }
 
 
     public static LogicalDocumentProject create( AlgNode node, List<RexNode> includes, List<String> includesName, List<String> excludes ) {
-        return create( node, Pair.zip( includesName, includes ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) ), excludes );
+        return create( node, Pair.zip( includesName, includes ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) ), excludes, Map.of() );
     }
 
 
@@ -69,7 +70,7 @@ public class LogicalDocumentProject extends DocumentProject {
 
     @Override
     public LogicalDocumentProject copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalDocumentProject( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), includes, excludes );
+        return new LogicalDocumentProject( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), includes, excludes, adds );
     }
 
 
