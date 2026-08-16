@@ -931,6 +931,7 @@ public class MqlFunctions {
                 throw new GenericRuntimeException( "$geometry operand of $geoIntersects could not be parsed as GeoJSON.", e );
             }
         }
+        
 
         throw new GenericRuntimeException( "Geometry type could not be determined." );
     }

@@ -1250,6 +1250,18 @@ public class Functions {
         return PolyDouble.of( Math.pow( base.doubleValue(), exp.doubleValue() ) );
     }
 
+    public static PolyNumber power( PolyValue base, PolyValue exp ) {
+        if ( base == null || exp == null ) {
+            return null;
+        }
+
+        if ( allAssignablePoly( PolyNumber.class, base, exp ) ) {
+            return PolyDouble.of( Math.pow( base.asNumber().doubleValue(), exp.asNumber().doubleValue() ) );
+        }
+
+        throw notArithmetic( "mod", base, exp );
+    }
+
     // LN
 
 

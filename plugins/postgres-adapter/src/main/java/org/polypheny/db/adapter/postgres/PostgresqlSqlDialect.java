@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import lombok.Setter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
@@ -54,6 +55,8 @@ import org.polypheny.db.type.inference.ReturnTypes;
  * A <code>SqlDialect</code> implementation for the PostgreSQL database.
  */
 public class PostgresqlSqlDialect extends SqlDialect {
+    @Setter
+    private boolean hasGisSupport = true;
 
     /**
      * PostgreSQL type system.
@@ -78,6 +81,15 @@ public class PostgresqlSqlDialect extends SqlDialect {
                     .withIdentifierQuoteString( "\"" )
                     .withDataTypeSystem( POSTGRESQL_TYPE_SYSTEM ) );
 
+    public static final SqlDialect NO_GIS = new PostgresqlSqlDialect( EMPTY_CONTEXT
+                    .withNullCollation( NullCollation.HIGH )
+                    .withIdentifierQuoteString( "\"" )
+                    .withDataTypeSystem( POSTGRESQL_TYPE_SYSTEM ) ).withoutGisSupport();
+
+    private PostgresqlSqlDialect withoutGisSupport() {
+        this.hasGisSupport = false;
+        return this;
+    }
 
     /**
      * Creates a PostgresqlSqlDialect.
@@ -107,6 +119,9 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
     @Override
     public List<OperatorName> supportedGeoFunctions() {
+        if ( !hasGisSupport ) {
+            return List.of();
+        }
         return ImmutableList.of( OperatorName.ST_GEOMFROMTEXT, OperatorName.ST_TRANSFORM, OperatorName.ST_EQUALS,
                 OperatorName.ST_ISSIMPLE, OperatorName.ST_ISCLOSED, OperatorName.ST_ISEMPTY, OperatorName.ST_ISRING,
                 OperatorName.ST_NUMPOINTS, OperatorName.ST_DIMENSION, OperatorName.ST_LENGTH, OperatorName.ST_AREA,
@@ -123,13 +138,13 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
     @Override
     public boolean supportsGeoJson() {
-        return true;
+        return hasGisSupport;
     }
 
 
     @Override
     public boolean supportsPostGIS() {
-        return true;
+        return hasGisSupport;
     }
 
 
@@ -169,7 +184,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 castSpec = "_double precision";
                 break;
             case GEOMETRY:
-                castSpec = "_GEOMETRY";
+                castSpec = hasGisSupport ? "_GEOMETRY" : "_TEXT";
                 break;
             case VARBINARY:
             case FILE:

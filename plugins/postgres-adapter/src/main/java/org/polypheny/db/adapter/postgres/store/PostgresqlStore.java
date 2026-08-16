@@ -30,6 +30,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
@@ -78,6 +79,7 @@ import org.polypheny.db.util.PasswordGenerator;
         description = "Password to be used for authenticating at the remote instance.", appliesTo = DeploySetting.REMOTE)
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25, position = 6,
         description = "Maximum number of concurrent JDBC connections.")
+@AdapterSettingBoolean( name = "supportsGIS", defaultValue = true, position =  7)
 public class PostgresqlStore extends AbstractJdbcStore {
 
 
@@ -89,7 +91,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     public PostgresqlStore( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
-        super( storeId, uniqueName, settings, mode, PostgresqlSqlDialect.DEFAULT, true );
+        super( storeId, uniqueName, settings, mode, Boolean.parseBoolean( settings.getOrDefault( "supportsGIS", "true" ) )? PostgresqlSqlDialect.DEFAULT : PostgresqlSqlDialect.NO_GIS, true );
     }
 
 
@@ -336,7 +338,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case DECIMAL -> "DECIMAL";
             case VARCHAR, CHAR -> "VARCHAR";
             case JSON, TEXT -> "TEXT";
-            case GEOMETRY -> "GEOMETRY";
+            case GEOMETRY -> dialect.supportsGeoJson() && dialect.supportsPostGIS() ? "GEOMETRY" : "TEXT";
             case DATE -> "DATE";
             case TIME -> "TIME";
             case TIMESTAMP -> "TIMESTAMP";

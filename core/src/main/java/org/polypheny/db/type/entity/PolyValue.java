@@ -306,11 +306,11 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         try {
             return BsonUtil.toPolyValue( BsonDocument.parse( "{\"key\":" + json + "}" ) ).asMap().get( PolyString.of( "key" ) );
         } catch ( Throwable e ) {
-            log.warn( "Error on deserializing JSON." );
 
             if ( e instanceof JsonParseException && e.getMessage().startsWith( "JSON reader was expecting a value but found '" ) ) {
                 return PolyString.of( json );
             }
+            log.warn( "Error on deserializing JSON." );
             throw new GenericRuntimeException( e );
         }
 
