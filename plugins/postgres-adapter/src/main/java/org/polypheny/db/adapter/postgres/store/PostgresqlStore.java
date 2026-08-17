@@ -32,10 +32,10 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
-import org.polypheny.db.adapter.annotations.AdapterSettingsPreset;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.adapter.annotations.AdapterSettingsPreset;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
@@ -90,24 +90,26 @@ import org.polypheny.db.util.PasswordGenerator;
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25, position = 6,
         description = "Maximum number of concurrent JDBC connections.")
 @AdapterSettingList(
-        name        = "imageVariant",
-        options     = { "Default", "pgvector", "PostGIS", "pgvector & PostGIS" },
+        name = "imageVariant",
+        options = { "Default", "pgvector", "PostGIS", "pgvector & PostGIS" },
         defaultValue = "pgvector & PostGIS",
-        position    = 7,
+        position = 7,
         description = "PostgreSQL Docker image variant to deploy.",
-        appliesTo   = DeploySetting.DOCKER
+        appliesTo = DeploySetting.DOCKER
 )
 @AdapterSettingsPreset(
         name = "Minimal PostgreSQL",
         description = "Plain Docker image, no extensions",
         mode = DeployMode.DOCKER,
-        settings = { @AdapterSettingsPreset.Setting(name = "imageVariant", value = "Default") }
+        settings = { @AdapterSettingsPreset.Setting(name = "imageVariant", value = "Default"),
+                @AdapterSettingsPreset.Setting(name = "maxConnections", value = "25") }
 )
 @AdapterSettingsPreset(
         name = "Full PostgreSQL",
         description = "Docker image with pgvector & PostGIS extensions installed",
         mode = DeployMode.DOCKER,
-        settings = { @AdapterSettingsPreset.Setting(name = "imageVariant", value = "pgvector & PostGIS") }
+        settings = { @AdapterSettingsPreset.Setting(name = "imageVariant", value = "pgvector & PostGIS"),
+                @AdapterSettingsPreset.Setting(name = "maxConnections", value = "25") }
 )
 public class PostgresqlStore extends AbstractJdbcStore {
 
@@ -192,9 +194,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 dialect.addSupportedFeatures( features );
             }
         } catch ( ConnectionHandlerException | SQLException e ) {
-                log.error( "Could not query feature information on remote PostgreSQL store.", e );
+            log.error( "Could not query feature information on remote PostgreSQL store.", e );
         }
-            return factory;
+        return factory;
     }
 
 
@@ -248,7 +250,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             }
             ch.commit();
         } catch ( ConnectionHandlerException | SQLException e ) {
-        log.error( "Error while registering features (CREATE EXTENSION) on Postgres", e );
+            log.error( "Error while registering features (CREATE EXTENSION) on Postgres", e );
         }
     }
 
@@ -281,7 +283,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 .append( "." )
                 .append( dialect.quoteIdentifier( physicalTable.name ) );
         builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( column.name ) );
-        
+
         AlgDataType algType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
         String typeString;
         if ( algType instanceof VectorType vectorType && dialect.vectorPushdownTypeIsPresent( vectorType.getVectorElementType() ) ) {
@@ -380,7 +382,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 case "INNER_PRODUCT" -> "vector_ip_ops";
                 case "HAMMING" -> "bit_hamming_ops";
                 case "JACCARD" -> "bit_jaccard_ops";
-                default -> throw new GenericRuntimeException( "Unsupported distance metric for pgvector HNSW indexes: " + metric);
+                default -> throw new GenericRuntimeException( "Unsupported distance metric for pgvector HNSW indexes: " + metric );
             };
             builder.append( " " ).append( operatorClass );
         } else if ( index.method.equals( "ivfflat" ) ) {
@@ -389,7 +391,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 case "COSINE" -> "vector_cosine_ops";
                 case "INNER_PRODUCT" -> "vector_ip_ops";
                 case "HAMMING" -> "bit_hamming_ops";
-                default -> throw new GenericRuntimeException( "Unsupported distance metric for pgvector IVFFlat indexes: " + metric);
+                default -> throw new GenericRuntimeException( "Unsupported distance metric for pgvector IVFFlat indexes: " + metric );
             };
             builder.append( " " ).append( operatorClass );
         }
@@ -430,10 +432,10 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public List<IndexMethodModel> getAvailableIndexMethods() {
         List<IndexMethodModel> methods = new ArrayList<>( List.of(
-                    new IndexMethodModel( "btree", "B-TREE" ),
-                    new IndexMethodModel( "hash", "HASH" ),
-                    new IndexMethodModel( "gin", "GIN (Generalized Inverted Index)" ),
-                    new IndexMethodModel( "brin", "BRIN (Block Range index)" ) )
+                new IndexMethodModel( "btree", "B-TREE" ),
+                new IndexMethodModel( "hash", "HASH" ),
+                new IndexMethodModel( "gin", "GIN (Generalized Inverted Index)" ),
+                new IndexMethodModel( "brin", "BRIN (Block Range index)" ) )
         );
 
         if ( dialect.supportsVector() ) {
@@ -464,7 +466,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                             "metric",
                             "Distance Metric",
                             "ENUM",
-                            List.of( "L2", "COSINE",  "INNER_PRODUCT", "HAMMING"),
+                            List.of( "L2", "COSINE", "INNER_PRODUCT", "HAMMING" ),
                             "L2"
                     ),
                     new IndexParameterModel(
@@ -527,7 +529,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case VARCHAR -> "VARCHAR";
             case JSON, TEXT -> "TEXT";
             case GEOMETRY -> {
-                if ( !dialect.supportsPostGIS() ) throw new GenericRuntimeException( "GEOMETRY type requires PostGIS" );
+                if ( !dialect.supportsPostGIS() ) {
+                    throw new GenericRuntimeException( "GEOMETRY type requires PostGIS" );
+                }
                 yield "GEOMETRY";
             }
             case DATE -> "DATE";
