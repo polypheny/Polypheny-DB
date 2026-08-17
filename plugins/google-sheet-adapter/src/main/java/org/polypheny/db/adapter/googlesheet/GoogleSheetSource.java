@@ -83,7 +83,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
 @AdapterSettingInteger(name = "querySize", defaultValue = 1000, position = 3,
         description = "How many rows should be queried per network call. Can be larger than number of rows.")
-@AdapterSettingBoolean(name = "resetRefreshToken", defaultValue = false, position = 4, description = "If you want to change the current email used to access the Google Sheet, input \"YES\".")
+@AdapterSettingBoolean(name = "resetRefreshToken", defaultValue = false, position = 4, description = "If you want to change the current email used to access the Google Sheet, input \"TRUE\".")
 @AdapterSettingString(name = "oAuth-Client-ID", description = "Authentication credentials used for GoogleSheets API. Not the account credentials.", defaultValue = "", position = 5)
 @AdapterSettingString(name = "oAuth-Client-Key", description = "Authentication credentials used for GoogleSheets API. Not the account credentials.", defaultValue = "")
 @AdapterSettingString(name = "sheetName", description = "Name of sheet to use.", defaultValue = "")
@@ -130,7 +130,7 @@ public class GoogleSheetSource extends DataSource<RelAdapterCatalog> implements 
 
         createInformationPage();
         enableInformationPage();
-        if ( settings.get( "resetRefreshToken" ).equalsIgnoreCase( "yes" ) ) {
+        if ( Boolean.parseBoolean( settings.get( "resetRefreshToken" ) ) ) {
             GoogleSheetReader r = new GoogleSheetReader( sheetsUrl, querySize, this );
             r.deleteToken();
         }

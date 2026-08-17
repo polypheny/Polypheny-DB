@@ -106,7 +106,7 @@ public class AdapterManager {
                     throw new GenericRuntimeException( adapterTemplate.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
                 }
                 // Merge annotated AdapterSettings into settings
-                List<AbstractAdapterSetting> settings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations(), adapterTemplate.getClazz().getAnnotation( AdapterProperties.class ) );
+                List<AbstractAdapterSetting> settings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations() );
 
                 result.add( new AdapterInformation( properties.name(), properties.description(), adapterType, settings, List.of( properties.usedModes() ) ) );
             }
@@ -189,7 +189,7 @@ public class AdapterManager {
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
 
         for ( AbstractAdapterSetting setting : adapterTemplate.settings ) {
-            if ( setting.appliesTo.stream().noneMatch( s -> s.appliesTo( mode ) ) ) {
+            if ( !setting.appliesTo.contains( mode ) ) {
                 settings.remove( setting.name );
             }
         }
@@ -200,6 +200,9 @@ public class AdapterManager {
             adapterByName.put( adapter.getUniqueName(), adapter );
             adapterById.put( adapter.getAdapterId(), adapter );
             return adapter;
+        } catch ( GenericRuntimeException e ) {
+            catalog.dropAdapter( adapterId );
+            throw e;
         } catch ( Exception e ) {
             catalog.dropAdapter( adapterId );
             throw new GenericRuntimeException( "Something went wrong while adding a new adapter", e );

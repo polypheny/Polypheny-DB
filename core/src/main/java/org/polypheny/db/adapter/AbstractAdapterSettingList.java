@@ -21,6 +21,7 @@ import java.util.List;
 import lombok.experimental.Accessors;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 @Accessors(chain = true)
 public class AbstractAdapterSettingList extends AbstractAdapterSetting {
@@ -54,6 +55,14 @@ public class AbstractAdapterSettingList extends AbstractAdapterSetting {
     @Override
     public String getValue() {
         return defaultValue;
+    }
+
+
+    @Override
+    public void validate( String s ) {
+        if ( !options.contains( s ) ) {
+            throw new GenericRuntimeException( "Setting %s is invalid: \"%s\" is not a valid option", name, s );
+        }
     }
 
 }

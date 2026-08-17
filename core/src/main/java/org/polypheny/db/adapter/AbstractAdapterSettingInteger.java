@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 public class AbstractAdapterSettingInteger extends AbstractAdapterSetting {
 
@@ -46,6 +47,16 @@ public class AbstractAdapterSettingInteger extends AbstractAdapterSetting {
     @Override
     public String getValue() {
         return defaultValue;
+    }
+
+
+    @Override
+    public void validate( String s ) {
+        try {
+            Integer.parseInt( s );
+        } catch ( NumberFormatException e ) {
+            throw new GenericRuntimeException( "Setting %s is invalid: \"%s\" is not an integer", name, s );
+        }
     }
 
 }
