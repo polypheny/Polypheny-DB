@@ -86,6 +86,22 @@ public class StringFunctionsTest {
 
     // --------------- Tests ---------------
 
+    @Test
+    public void stringReplaceTest() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{"Hello"}
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT replace('Hi', 'i', 'ello')" ),
+                        expectedResult,
+                        true );
+            }
+        }
+    }
+
 
     @Test
     public void concatenatesTwoString() throws SQLException {
