@@ -29,6 +29,7 @@ import org.polypheny.db.monitoring.events.metrics.DdlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.monitoring.repository.MonitoringRepository;
+import org.polypheny.db.util.RunMode;
 
 
 @Slf4j
@@ -41,6 +42,9 @@ public class StatisticRepository implements MonitoringRepository {
      */
     @Override
     public void dataPoint( MonitoringDataPoint dataPoint ) {
+        if ( Catalog.mode == RunMode.BENCHMARK ) {
+            return;
+        }
         StatisticsManager statisticsManager = StatisticsManager.getInstance();
         statisticsManager.updateCommitRollback( dataPoint.isCommitted() );
 

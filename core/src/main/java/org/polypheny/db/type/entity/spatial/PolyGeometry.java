@@ -48,8 +48,11 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateXY;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.geom.TopologyException;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
@@ -83,6 +86,8 @@ public class PolyGeometry extends PolyValue {
     public static final int WGS_84 = 4326;
     // WGS84 with 3 dimensions (+height)
     public static final int WGS_84_3D = 4979;
+
+    public static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
     /**
      * Wrap the JTS {@link Geometry} class.
@@ -141,7 +146,6 @@ public class PolyGeometry extends PolyValue {
         initFromWKT( wkt, srid );
     }
 
-
     /**
      * Constructor creates the {@link PolyGeometry} from the {@link GeometryInputFormat} using the provided SRID.
      *
@@ -196,6 +200,10 @@ public class PolyGeometry extends PolyValue {
         }
     }
 
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry makePoint(double x, double y) {
+        return new PolyGeometry( GEOMETRY_FACTORY.createPoint(new Coordinate(x, y)));
+    }
 
     public static PolyGeometry ofNullable( String wkt ) {
         return wkt == null ? null : of( wkt );

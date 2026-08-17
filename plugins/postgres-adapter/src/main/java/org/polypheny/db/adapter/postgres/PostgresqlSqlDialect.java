@@ -132,7 +132,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 OperatorName.ST_INTERSECTION, OperatorName.ST_UNION, OperatorName.ST_DIFFERENCE, OperatorName.ST_SYMDIFFERENCE,
                 OperatorName.ST_X, OperatorName.ST_Y, OperatorName.ST_Z, OperatorName.ST_STARTPOINT, OperatorName.ST_ENDPOINT,
                 OperatorName.ST_EXTERIORRING, OperatorName.ST_NUMINTERIORRING, OperatorName.ST_INTERIORRINGN,
-                OperatorName.ST_NUMGEOMETRIES, OperatorName.ST_GEOMETRYN );
+                OperatorName.ST_NUMGEOMETRIES, OperatorName.ST_GEOMETRYN , OperatorName.ST_MAKE_POINT);
     }
 
 

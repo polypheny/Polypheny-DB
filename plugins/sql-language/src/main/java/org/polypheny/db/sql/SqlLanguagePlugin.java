@@ -2902,6 +2902,16 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.GEOMETRY,
                         FunctionCategory.GEOMETRY ) );
 
+        register(
+                OperatorName.ST_MAKE_POINT,
+                new SqlFunction(
+                        "ST_MAKEPOINT",
+                        Kind.GEO,
+                        ReturnTypes.GEOMETRY,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
         // on LineStrings
         register(
                 OperatorName.ST_ISCLOSED,

@@ -1517,6 +1517,11 @@ public enum OperatorName {
      */
     ST_Z( Function.class ),
 
+    /**
+     * The <code>stZ</code> operator function: receive the <strong>Z</strong> coordinate of the {@link org.polypheny.db.type.entity.spatial.PolyPoint}
+     */
+    ST_MAKE_POINT( Function.class ),
+
     // Functions on LineStrings
 
     /**

@@ -433,6 +433,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( OperatorName.ST_X ), BuiltInMethod.ST_X.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_Y ), BuiltInMethod.ST_Y.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_Z ), BuiltInMethod.ST_Z.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_MAKE_POINT ), BuiltInMethod.ST_MAKEPOINT.method, NullPolicy.STRICT );
         // on LineStrings
         defineMethod( OperatorRegistry.get( OperatorName.ST_ISCLOSED ), BuiltInMethod.ST_ISCLOSED.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_ISRING ), BuiltInMethod.ST_ISRING.method, NullPolicy.STRICT );

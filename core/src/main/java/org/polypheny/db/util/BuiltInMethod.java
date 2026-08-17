@@ -472,6 +472,7 @@ public enum BuiltInMethod {
     ST_X( GeoFunctions.class, "stX", PolyGeometry.class ),
     ST_Y( GeoFunctions.class, "stY", PolyGeometry.class ),
     ST_Z( GeoFunctions.class, "stZ", PolyGeometry.class ),
+    ST_MAKEPOINT( GeoFunctions.class, "stMakePoint", PolyNumber.class, PolyNumber.class ),
     // on LineStrings
     ST_ISCLOSED( GeoFunctions.class, "stIsClosed", PolyGeometry.class ),
     ST_ISRING( GeoFunctions.class, "stIsRing", PolyGeometry.class ),

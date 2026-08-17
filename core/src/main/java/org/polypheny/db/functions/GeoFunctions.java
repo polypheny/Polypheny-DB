@@ -520,6 +520,11 @@ public class GeoFunctions {
         return PolyFloat.of( geometry.asPoint().getZ() );
     }
 
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stMakePoint( PolyNumber x, PolyNumber y ) {
+        return PolyGeometry.makePoint( x.doubleValue(), y.doubleValue() );
+    }
+
     /*
      * on LineStrings
      */
