@@ -135,9 +135,9 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
     public AlgDataType createVectorType( AlgDataType elementType, long dimension ) {
         ElementType kind = switch ( elementType.getPolyType() ) {
             case FLOAT, REAL -> ElementType.FLOAT;
-            case DOUBLE      -> ElementType.DOUBLE;
-            case INTEGER     -> ElementType.INTEGER;
-            case BOOLEAN     -> ElementType.BIT;
+            case DOUBLE -> ElementType.DOUBLE;
+            case INTEGER -> ElementType.INTEGER;
+            case BOOLEAN -> ElementType.BIT;
             default -> throw new IllegalArgumentException( "Unsupported vector element type: " + elementType.getPolyType() );
         };
         VectorType newType = new VectorType( elementType, false, dimension, kind );
@@ -233,7 +233,7 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
     @Override
     public AlgDataType createTypeWithNullability( final AlgDataType type, final boolean nullable ) {
         final AlgDataType newType;
-        if ( type instanceof BasicPolyType basicPolyType) {
+        if ( type instanceof BasicPolyType basicPolyType ) {
             newType = basicPolyType.createWithNullability( nullable );
         } else if ( type instanceof MapPolyType mapPolyType ) {
             newType = copyMapType( mapPolyType, nullable );

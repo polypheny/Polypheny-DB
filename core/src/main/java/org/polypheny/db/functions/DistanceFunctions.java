@@ -129,7 +129,7 @@ public class DistanceFunctions {
 
 
     protected static PolyDouble hammingMetric( List<PolyBoolean> value, List<PolyBoolean> target ) {
-        double result = 0;
+        long result = 0;
         for ( int i = 0; i < value.size(); i++ ) {
             if ( value.get( i ).asBoolean().getValue() != target.get( i ).asBoolean().getValue() ) {
                 result++;
