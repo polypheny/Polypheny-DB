@@ -537,7 +537,9 @@ public abstract class SqlImplementor {
                         case ARRAY:
                             if ( literal.getType() instanceof VectorType vectorType ) {
                                 SqlNode vectorNode = dialect.getVectorLiteral( vectorType, literal.getValue().asList(), POS );
-                                if ( vectorNode != null ) return vectorNode;
+                                if ( vectorNode != null ) {
+                                    return vectorNode;
+                                }
                             }
                             if ( dialect.supportsNestedArrays() ) {
                                 List<PolyValue> array = literal.getValue().asList();

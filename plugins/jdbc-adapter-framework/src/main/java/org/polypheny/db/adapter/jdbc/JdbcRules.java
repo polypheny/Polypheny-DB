@@ -1565,12 +1565,13 @@ public class JdbcRules {
 
 
     private static class CheckingKnnFunctionSupportVisitor extends RexVisitorImpl<Void> {
+
         private boolean supportsKnnFunction = false;
         private SqlDialect dialect;
 
 
         CheckingKnnFunctionSupportVisitor( SqlDialect dialect ) {
-            super(true);
+            super( true );
             this.dialect = dialect;
         }
 
@@ -1581,29 +1582,33 @@ public class JdbcRules {
 
 
         @Override
-        public Void visitCall(RexCall call) {
+        public Void visitCall( RexCall call ) {
             Operator operator = call.getOperator();
-            if (operator instanceof SqlFunction sqlFunction
+            if ( operator instanceof SqlFunction sqlFunction
                     && sqlFunction.getFunctionCategory().isKnn()
-                    && dialect.supportedKnnFunctions().contains(sqlFunction.getOperatorName())
-                    && call.operands.size() >= 2) {
-                AlgDataType t1 = call.operands.get(0).getType();
-                AlgDataType t2 = call.operands.get(1).getType();
-                if (t1 instanceof VectorType vectorType
+                    && dialect.supportedKnnFunctions().contains( sqlFunction.getOperatorName() )
+                    && call.operands.size() >= 2 ) {
+                AlgDataType t1 = call.operands.get( 0 ).getType();
+                AlgDataType t2 = call.operands.get( 1 ).getType();
+                if ( t1 instanceof VectorType vectorType
                         && isCompatibleQueryVector( t2 )
-                        && dialect.vectorPushdownTypeIsPresent( vectorType.getVectorElementType() )) {
+                        && dialect.vectorPushdownTypeIsPresent( vectorType.getVectorElementType() ) ) {
                     supportsKnnFunction = true;
                 }
             }
-            return super.visitCall(call);
+            return super.visitCall( call );
         }
 
 
         private static boolean isCompatibleQueryVector( AlgDataType t2 ) {
-            if ( t2 instanceof VectorType ) return true;
-            if ( t2.getPolyType() != PolyType.ARRAY ) return false;
+            if ( t2 instanceof VectorType ) {
+                return true;
+            }
+            if ( t2.getPolyType() != PolyType.ARRAY ) {
+                return false;
+            }
             AlgDataType comp = t2.getComponentType();
-            return comp != null && (PolyTypeUtil.isNumeric( comp ) || comp.getPolyType() == PolyType.BOOLEAN );
+            return comp != null && (PolyTypeUtil.isNumeric( comp ) || comp.getPolyType() == PolyType.BOOLEAN);
         }
 
     }
