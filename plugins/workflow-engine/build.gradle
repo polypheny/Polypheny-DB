@@ -8,6 +8,7 @@ configurations {
 
 dependencies {
     implementation group: 'com.cronutils', name: 'cron-utils', version: cron_utils_version  // Apache 2.0
+    implementation project(":plugins:parquet-adapter")
     compileOnly project(":core")
     compileOnly project(":dbms")
     compileOnly project(":webui")
@@ -19,6 +20,30 @@ dependencies {
     compileOnly group: "org.apache.commons", name: "commons-collections4", version: commons_collections_version
     compileOnly group: "com.opencsv", name: "opencsv", version: opencsv_version
     compileOnly group: "org.codehaus.janino", name: "commons-compiler", version: commons_compiler_version  // BSD
+    compileOnly(group: "org.apache.parquet", name: "parquet-hadoop", version: parquet_version) {
+//        transitive = false
+    }
+    compileOnly group: "org.apache.parquet", name: "parquet-column", version: parquet_version
+    compileOnly group: "org.apache.parquet", name: "parquet-common", version: parquet_version
+    compileOnly(group: "org.apache.hadoop", name: "hadoop-common", version: hadoop_version) {
+        exclude group: "com.google.re2j", module: "re2j"
+        exclude group: "com.jcraft", module: "jsch"
+        exclude group: "jakarta.activation", module: "jakarta.activation-api"
+        exclude group: "javax.activation", module: "activation"
+        exclude group: "javax.servlet", module: "javax.servlet-api"
+        exclude group: "javax.servlet.jsp", module: "jsp-api"
+        exclude group: "javax.ws.rs", module: "jsr311-api"
+        exclude group: "javax.xml.bind", module: "jaxb-api"
+        exclude group: "javax.xml.stream", module: "stax-api"
+        exclude group: "org.bouncycastle", module: "bcprov-jdk18on"
+    }
+    compileOnly(group: "org.apache.hadoop", name: "hadoop-mapreduce-client-core", version: hadoop_version) {
+        exclude group: "jakarta.activation", module: "jakarta.activation-api"
+        exclude group: "javax.servlet", module: "javax.servlet-api"
+        exclude group: "javax.ws.rs", module: "jsr311-api"
+        exclude group: "aopalliance", module: "aopalliance"
+        exclude group: "jakarta.xml.bind", module: "jakarta.xml.bind-api"
+    }
 
 
     // --- Test Compile ---
@@ -27,6 +52,7 @@ dependencies {
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
     testImplementation project(path: ":webui")
+    testImplementation project(":plugins:parquet-adapter")
     testImplementation project(path: ":plugins:sql-language")
     testImplementation project(":plugins:jdbc-adapter-framework")
 
@@ -68,6 +94,7 @@ compileJava {
     dependsOn(":core:processResources")
     dependsOn(":information:processResources")
     dependsOn(":webui:processResources")
+    dependsOn(":plugins:parquet-adapter:classes")
     dependsOn(":plugins:sql-language:processResources")
     dependsOn(":plugins:mql-language:processResources")
     dependsOn(":plugins:cypher-language:processResources")
@@ -75,6 +102,7 @@ compileJava {
 }
 
 delombok {
+    dependsOn(":plugins:parquet-adapter:classes")
     dependsOn(":plugins:sql-language:processResources")
     dependsOn(":webui:processResources")
     dependsOn(":plugins:sql-language:processResources")
@@ -102,4 +130,7 @@ java {
 licensee {
     allow('MIT')
     allow('Apache-2.0')
+    allow('BSD-2-Clause')
+    allow('BSD-3-Clause')
+    allow('CDDL-1.1')
 }

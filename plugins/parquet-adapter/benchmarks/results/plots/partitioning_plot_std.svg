@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="720" viewBox="0 0 1180 720">
+<rect width="100%" height="100%" fill="white"/>
+<text x="590.0" y="34" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="700">Partitioning by Year and Month</text>
+<text x="90" y="62" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Mean execution time (s, log scale)</text>
+<line x1="90" y1="590.00" x2="920" y2="590.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="594.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.001</text>
+<line x1="90" y1="551.62" x2="920" y2="551.62" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="555.62" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.002</text>
+<line x1="90" y1="500.88" x2="920" y2="500.88" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="504.88" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.005</text>
+<line x1="90" y1="462.50" x2="920" y2="462.50" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="466.50" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.01</text>
+<line x1="90" y1="424.12" x2="920" y2="424.12" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="428.12" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.02</text>
+<line x1="90" y1="373.38" x2="920" y2="373.38" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="377.38" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.05</text>
+<line x1="90" y1="335.00" x2="920" y2="335.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="339.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.1</text>
+<line x1="90" y1="296.62" x2="920" y2="296.62" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="300.62" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.2</text>
+<line x1="90" y1="245.88" x2="920" y2="245.88" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="249.88" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.5</text>
+<line x1="90" y1="207.50" x2="920" y2="207.50" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="211.50" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">1</text>
+<line x1="90" y1="169.12" x2="920" y2="169.12" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="173.12" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">2</text>
+<line x1="90" y1="118.38" x2="920" y2="118.38" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="122.38" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">5</text>
+<line x1="90" y1="80.00" x2="920" y2="80.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="84.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">10</text>
+<line x1="90" y1="80" x2="90" y2="590" stroke="#333" stroke-width="1.2"/>
+<line x1="90" y1="590" x2="920" y2="590" stroke="#333" stroke-width="1.2"/>
+<rect x="90.00" y="480.69" width="16.38" height="109.31" fill="#4f9d55"><title>Polypheny Relational Q1_P: mean 0.007 s; sample SD 0.001 s; n=5</title></rect>
+<rect x="109.38" y="348.19" width="16.38" height="241.81" fill="#f0a22e"><title>DuckDB Repartitioned Q1_P: mean 0.079 s; sample SD 0.011 s; n=5</title></rect>
+<rect x="128.77" y="178.71" width="16.38" height="411.29" fill="#2f6fbb"><title>Apache Spark Repartitioned Q1_P: mean 1.682 s; sample SD 0.205 s; n=5</title></rect>
+<rect x="161.53" y="464.76" width="16.38" height="125.24" fill="#4f9d55"><title>Polypheny Relational Q1_NP: mean 0.010 s; sample SD 0.001 s; n=5</title></rect>
+<rect x="180.91" y="363.66" width="16.38" height="226.34" fill="#f0a22e"><title>DuckDB Unpartitioned Q1_NP: mean 0.060 s; sample SD 0.002 s; n=5</title></rect>
+<rect x="200.30" y="197.89" width="16.38" height="392.11" fill="#2f6fbb"><title>Apache Spark Unpartitioned Q1_NP: mean 1.190 s; sample SD 0.190 s; n=5</title></rect>
+<rect x="265.83" y="485.51" width="16.38" height="104.49" fill="#4f9d55"><title>Polypheny Relational Q2_P: mean 0.007 s; sample SD 0.001 s; n=5</title></rect>
+<rect x="285.21" y="392.82" width="16.38" height="197.18" fill="#f0a22e"><title>DuckDB Repartitioned Q2_P: mean 0.035 s; sample SD 0.002 s; n=5</title></rect>
+<rect x="304.60" y="232.06" width="16.38" height="357.94" fill="#2f6fbb"><title>Apache Spark Repartitioned Q2_P: mean 0.642 s; sample SD 0.081 s; n=5</title></rect>
+<rect x="337.36" y="464.76" width="16.38" height="125.24" fill="#4f9d55"><title>Polypheny Relational Q2_NP: mean 0.010 s; sample SD 0.001 s; n=5</title></rect>
+<rect x="356.74" y="341.83" width="16.38" height="248.17" fill="#f0a22e"><title>DuckDB Unpartitioned Q2_NP: mean 0.088 s; sample SD 0.005 s; n=5</title></rect>
+<rect x="376.13" y="165.81" width="16.38" height="424.19" fill="#2f6fbb"><title>Apache Spark Unpartitioned Q2_NP: mean 2.123 s; sample SD 0.094 s; n=5</title></rect>
+<rect x="441.66" y="470.85" width="16.38" height="119.15" fill="#4f9d55"><title>Polypheny Relational Q3_P: mean 0.009 s; sample SD 0.001 s; n=5</title></rect>
+<rect x="461.04" y="433.12" width="16.38" height="156.88" fill="#f0a22e"><title>DuckDB Repartitioned Q3_P: mean 0.017 s; sample SD 0.002 s; n=5</title></rect>
+<rect x="480.43" y="251.64" width="16.38" height="338.36" fill="#2f6fbb"><title>Apache Spark Repartitioned Q3_P: mean 0.451 s; sample SD 0.080 s; n=5</title></rect>
+<rect x="513.19" y="463.62" width="16.38" height="126.38" fill="#4f9d55"><title>Polypheny Relational Q3_NP: mean 0.010 s; sample SD 0.002 s; n=5</title></rect>
+<rect x="532.57" y="353.04" width="16.38" height="236.96" fill="#f0a22e"><title>DuckDB Unpartitioned Q3_NP: mean 0.072 s; sample SD 0.006 s; n=5</title></rect>
+<rect x="551.96" y="191.87" width="16.38" height="398.13" fill="#2f6fbb"><title>Apache Spark Unpartitioned Q3_NP: mean 1.326 s; sample SD 0.101 s; n=5</title></rect>
+<rect x="617.49" y="312.55" width="16.38" height="277.45" fill="#4f9d55"><title>Polypheny Relational Q4_P: mean 0.150 s; sample SD 0.015 s; n=5</title></rect>
+<rect x="636.87" y="401.30" width="16.38" height="188.70" fill="#f0a22e"><title>DuckDB Repartitioned Q4_P: mean 0.030 s; sample SD 0.001 s; n=5</title></rect>
+<rect x="656.26" y="178.35" width="16.38" height="411.65" fill="#2f6fbb"><title>Apache Spark Repartitioned Q4_P: mean 1.693 s; sample SD 0.144 s; n=5</title></rect>
+<rect x="689.02" y="319.96" width="16.38" height="270.04" fill="#4f9d55"><title>Polypheny Relational Q4_NP: mean 0.131 s; sample SD 0.015 s; n=5</title></rect>
+<rect x="708.40" y="422.48" width="16.38" height="167.52" fill="#f0a22e"><title>DuckDB Unpartitioned Q4_NP: mean 0.021 s; sample SD 0.001 s; n=5</title></rect>
+<rect x="727.79" y="213.17" width="16.38" height="376.83" fill="#2f6fbb"><title>Apache Spark Unpartitioned Q4_NP: mean 0.903 s; sample SD 0.145 s; n=5</title></rect>
+<rect x="793.32" y="368.51" width="16.38" height="221.49" fill="#4f9d55"><title>Polypheny Relational Q5_P: mean 0.055 s; sample SD 0.003 s; n=5</title></rect>
+<rect x="812.70" y="431.83" width="16.38" height="158.17" fill="#f0a22e"><title>DuckDB Repartitioned Q5_P: mean 0.017 s; sample SD 0.001 s; n=5</title></rect>
+<rect x="832.09" y="232.40" width="16.38" height="357.60" fill="#2f6fbb"><title>Apache Spark Repartitioned Q5_P: mean 0.638 s; sample SD 0.102 s; n=5</title></rect>
+<rect x="864.85" y="361.83" width="16.38" height="228.17" fill="#4f9d55"><title>Polypheny Relational Q5_NP: mean 0.062 s; sample SD 0.006 s; n=5</title></rect>
+<rect x="884.23" y="445.47" width="16.38" height="144.53" fill="#f0a22e"><title>DuckDB Unpartitioned Q5_NP: mean 0.014 s; sample SD 0.001 s; n=5</title></rect>
+<rect x="903.62" y="205.57" width="16.38" height="384.43" fill="#2f6fbb"><title>Apache Spark Unpartitioned Q5_NP: mean 1.035 s; sample SD 0.102 s; n=5</title></rect>
+<line x1="98.19" y1="474.60" x2="98.19" y2="487.53" stroke="#222" stroke-width="1.5"/>
+<line x1="92.46" y1="474.60" x2="103.93" y2="474.60" stroke="#222" stroke-width="1.5"/>
+<line x1="92.46" y1="487.53" x2="103.93" y2="487.53" stroke="#222" stroke-width="1.5"/>
+<line x1="117.57" y1="340.79" x2="117.57" y2="356.75" stroke="#222" stroke-width="1.5"/>
+<line x1="111.84" y1="340.79" x2="123.31" y2="340.79" stroke="#222" stroke-width="1.5"/>
+<line x1="111.84" y1="356.75" x2="123.31" y2="356.75" stroke="#222" stroke-width="1.5"/>
+<line x1="136.96" y1="172.35" x2="136.96" y2="185.90" stroke="#222" stroke-width="1.5"/>
+<line x1="131.22" y1="172.35" x2="142.69" y2="172.35" stroke="#222" stroke-width="1.5"/>
+<line x1="131.22" y1="185.90" x2="142.69" y2="185.90" stroke="#222" stroke-width="1.5"/>
+<line x1="169.72" y1="458.55" x2="169.72" y2="471.76" stroke="#222" stroke-width="1.5"/>
+<line x1="163.99" y1="458.55" x2="175.46" y2="458.55" stroke="#222" stroke-width="1.5"/>
+<line x1="163.99" y1="471.76" x2="175.46" y2="471.76" stroke="#222" stroke-width="1.5"/>
+<line x1="189.11" y1="361.46" x2="189.11" y2="365.94" stroke="#222" stroke-width="1.5"/>
+<line x1="183.37" y1="361.46" x2="194.84" y2="361.46" stroke="#222" stroke-width="1.5"/>
+<line x1="183.37" y1="365.94" x2="194.84" y2="365.94" stroke="#222" stroke-width="1.5"/>
+<line x1="208.49" y1="189.67" x2="208.49" y2="207.54" stroke="#222" stroke-width="1.5"/>
+<line x1="202.76" y1="189.67" x2="214.22" y2="189.67" stroke="#222" stroke-width="1.5"/>
+<line x1="202.76" y1="207.54" x2="214.22" y2="207.54" stroke="#222" stroke-width="1.5"/>
+<line x1="274.02" y1="478.47" x2="274.02" y2="493.57" stroke="#222" stroke-width="1.5"/>
+<line x1="268.29" y1="478.47" x2="279.76" y2="478.47" stroke="#222" stroke-width="1.5"/>
+<line x1="268.29" y1="493.57" x2="279.76" y2="493.57" stroke="#222" stroke-width="1.5"/>
+<line x1="293.40" y1="390.07" x2="293.40" y2="395.70" stroke="#222" stroke-width="1.5"/>
+<line x1="287.67" y1="390.07" x2="299.14" y2="390.07" stroke="#222" stroke-width="1.5"/>
+<line x1="287.67" y1="395.70" x2="299.14" y2="395.70" stroke="#222" stroke-width="1.5"/>
+<line x1="312.79" y1="225.45" x2="312.79" y2="239.56" stroke="#222" stroke-width="1.5"/>
+<line x1="307.05" y1="225.45" x2="318.52" y2="225.45" stroke="#222" stroke-width="1.5"/>
+<line x1="307.05" y1="239.56" x2="318.52" y2="239.56" stroke="#222" stroke-width="1.5"/>
+<line x1="345.55" y1="457.52" x2="345.55" y2="473.10" stroke="#222" stroke-width="1.5"/>
+<line x1="339.82" y1="457.52" x2="351.29" y2="457.52" stroke="#222" stroke-width="1.5"/>
+<line x1="339.82" y1="473.10" x2="351.29" y2="473.10" stroke="#222" stroke-width="1.5"/>
+<line x1="364.94" y1="338.54" x2="364.94" y2="345.33" stroke="#222" stroke-width="1.5"/>
+<line x1="359.20" y1="338.54" x2="370.67" y2="338.54" stroke="#222" stroke-width="1.5"/>
+<line x1="359.20" y1="345.33" x2="370.67" y2="345.33" stroke="#222" stroke-width="1.5"/>
+<line x1="384.32" y1="163.41" x2="384.32" y2="168.32" stroke="#222" stroke-width="1.5"/>
+<line x1="378.59" y1="163.41" x2="390.05" y2="163.41" stroke="#222" stroke-width="1.5"/>
+<line x1="378.59" y1="168.32" x2="390.05" y2="168.32" stroke="#222" stroke-width="1.5"/>
+<line x1="449.85" y1="463.96" x2="449.85" y2="478.73" stroke="#222" stroke-width="1.5"/>
+<line x1="444.12" y1="463.96" x2="455.59" y2="463.96" stroke="#222" stroke-width="1.5"/>
+<line x1="444.12" y1="478.73" x2="455.59" y2="478.73" stroke="#222" stroke-width="1.5"/>
+<line x1="469.23" y1="426.96" x2="469.23" y2="440.05" stroke="#222" stroke-width="1.5"/>
+<line x1="463.50" y1="426.96" x2="474.97" y2="426.96" stroke="#222" stroke-width="1.5"/>
+<line x1="463.50" y1="440.05" x2="474.97" y2="440.05" stroke="#222" stroke-width="1.5"/>
+<line x1="488.62" y1="242.57" x2="488.62" y2="262.50" stroke="#222" stroke-width="1.5"/>
+<line x1="482.88" y1="242.57" x2="494.35" y2="242.57" stroke="#222" stroke-width="1.5"/>
+<line x1="482.88" y1="262.50" x2="494.35" y2="262.50" stroke="#222" stroke-width="1.5"/>
+<line x1="521.38" y1="453.70" x2="521.38" y2="475.72" stroke="#222" stroke-width="1.5"/>
+<line x1="515.65" y1="453.70" x2="527.12" y2="453.70" stroke="#222" stroke-width="1.5"/>
+<line x1="515.65" y1="475.72" x2="527.12" y2="475.72" stroke="#222" stroke-width="1.5"/>
+<line x1="540.77" y1="348.88" x2="540.77" y2="357.53" stroke="#222" stroke-width="1.5"/>
+<line x1="535.03" y1="348.88" x2="546.50" y2="348.88" stroke="#222" stroke-width="1.5"/>
+<line x1="535.03" y1="357.53" x2="546.50" y2="357.53" stroke="#222" stroke-width="1.5"/>
+<line x1="560.15" y1="187.79" x2="560.15" y2="196.27" stroke="#222" stroke-width="1.5"/>
+<line x1="554.41" y1="187.79" x2="565.88" y2="187.79" stroke="#222" stroke-width="1.5"/>
+<line x1="554.41" y1="196.27" x2="565.88" y2="196.27" stroke="#222" stroke-width="1.5"/>
+<line x1="625.68" y1="307.40" x2="625.68" y2="318.23" stroke="#222" stroke-width="1.5"/>
+<line x1="619.95" y1="307.40" x2="631.41" y2="307.40" stroke="#222" stroke-width="1.5"/>
+<line x1="619.95" y1="318.23" x2="631.41" y2="318.23" stroke="#222" stroke-width="1.5"/>
+<line x1="645.06" y1="398.96" x2="645.06" y2="403.74" stroke="#222" stroke-width="1.5"/>
+<line x1="639.33" y1="398.96" x2="650.80" y2="398.96" stroke="#222" stroke-width="1.5"/>
+<line x1="639.33" y1="403.74" x2="650.80" y2="403.74" stroke="#222" stroke-width="1.5"/>
+<line x1="664.45" y1="173.82" x2="664.45" y2="183.28" stroke="#222" stroke-width="1.5"/>
+<line x1="658.71" y1="173.82" x2="670.18" y2="173.82" stroke="#222" stroke-width="1.5"/>
+<line x1="658.71" y1="183.28" x2="670.18" y2="183.28" stroke="#222" stroke-width="1.5"/>
+<line x1="697.21" y1="314.01" x2="697.21" y2="326.63" stroke="#222" stroke-width="1.5"/>
+<line x1="691.48" y1="314.01" x2="702.95" y2="314.01" stroke="#222" stroke-width="1.5"/>
+<line x1="691.48" y1="326.63" x2="702.95" y2="326.63" stroke="#222" stroke-width="1.5"/>
+<line x1="716.60" y1="418.99" x2="716.60" y2="426.21" stroke="#222" stroke-width="1.5"/>
+<line x1="710.86" y1="418.99" x2="722.33" y2="418.99" stroke="#222" stroke-width="1.5"/>
+<line x1="710.86" y1="426.21" x2="722.33" y2="426.21" stroke="#222" stroke-width="1.5"/>
+<line x1="735.98" y1="204.92" x2="735.98" y2="222.88" stroke="#222" stroke-width="1.5"/>
+<line x1="730.24" y1="204.92" x2="741.71" y2="204.92" stroke="#222" stroke-width="1.5"/>
+<line x1="730.24" y1="222.88" x2="741.71" y2="222.88" stroke="#222" stroke-width="1.5"/>
+<line x1="801.51" y1="365.50" x2="801.51" y2="371.69" stroke="#222" stroke-width="1.5"/>
+<line x1="795.78" y1="365.50" x2="807.24" y2="365.50" stroke="#222" stroke-width="1.5"/>
+<line x1="795.78" y1="371.69" x2="807.24" y2="371.69" stroke="#222" stroke-width="1.5"/>
+<line x1="820.89" y1="428.32" x2="820.89" y2="435.58" stroke="#222" stroke-width="1.5"/>
+<line x1="815.16" y1="428.32" x2="826.63" y2="428.32" stroke="#222" stroke-width="1.5"/>
+<line x1="815.16" y1="435.58" x2="826.63" y2="435.58" stroke="#222" stroke-width="1.5"/>
+<line x1="840.28" y1="224.22" x2="840.28" y2="242.00" stroke="#222" stroke-width="1.5"/>
+<line x1="834.54" y1="224.22" x2="846.01" y2="224.22" stroke="#222" stroke-width="1.5"/>
+<line x1="834.54" y1="242.00" x2="846.01" y2="242.00" stroke="#222" stroke-width="1.5"/>
+<line x1="873.04" y1="356.66" x2="873.04" y2="367.53" stroke="#222" stroke-width="1.5"/>
+<line x1="867.31" y1="356.66" x2="878.78" y2="356.66" stroke="#222" stroke-width="1.5"/>
+<line x1="867.31" y1="367.53" x2="878.78" y2="367.53" stroke="#222" stroke-width="1.5"/>
+<line x1="892.43" y1="443.29" x2="892.43" y2="447.75" stroke="#222" stroke-width="1.5"/>
+<line x1="886.69" y1="443.29" x2="898.16" y2="443.29" stroke="#222" stroke-width="1.5"/>
+<line x1="886.69" y1="447.75" x2="898.16" y2="447.75" stroke="#222" stroke-width="1.5"/>
+<line x1="911.81" y1="200.39" x2="911.81" y2="211.30" stroke="#222" stroke-width="1.5"/>
+<line x1="906.07" y1="200.39" x2="917.54" y2="200.39" stroke="#222" stroke-width="1.5"/>
+<line x1="906.07" y1="211.30" x2="917.54" y2="211.30" stroke="#222" stroke-width="1.5"/>
+<text x="117.57" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q1_P</text>
+<text x="189.11" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q1_NP</text>
+<text x="293.40" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q2_P</text>
+<text x="364.94" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q2_NP</text>
+<text x="469.23" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q3_P</text>
+<text x="540.77" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q3_NP</text>
+<text x="645.06" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q4_P</text>
+<text x="716.60" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q4_NP</text>
+<text x="820.89" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q5_P</text>
+<text x="892.43" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q5_NP</text>
+<text x="153.34" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Full-count baseline</text>
+<text x="329.17" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Year-filtered count</text>
+<text x="505.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Year-and-month-filtered</text>
+<text x="505.00" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">count</text>
+<text x="680.83" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Data-column filtering, no</text>
+<text x="680.83" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">partition restriction</text>
+<text x="856.66" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Year and data-column</text>
+<text x="856.66" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">filtering</text>
+<text x="955" y="80" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700">System</text>
+<rect x="955" y="100" width="16" height="16" fill="#4f9d55"/>
+<text x="979" y="113" font-family="Helvetica, Arial, sans-serif" font-size="12">Polypheny Relational</text>
+<rect x="955" y="128" width="16" height="16" fill="#f0a22e"/>
+<text x="979" y="141" font-family="Helvetica, Arial, sans-serif" font-size="12">DuckDB</text>
+<rect x="955" y="156" width="16" height="16" fill="#2f6fbb"/>
+<text x="979" y="169" font-family="Helvetica, Arial, sans-serif" font-size="12">Apache Spark</text>
+<text x="955" y="214" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#333">P</text>
+<text x="963.004" y="214" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#333"> - partitioned</text>
+<text x="955" y="232" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#333">NP</text>
+<text x="971.668" y="232" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#333"> - not partitioned</text>
+<text x="955" y="250" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#333">Bars show mean;</text>
+<text x="1054.36" y="250" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#333"></text>
+<text x="955" y="268" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#333">whiskers show +/-1 sample SD.</text>
+<text x="1132.744" y="268" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#333"></text>
+</svg>

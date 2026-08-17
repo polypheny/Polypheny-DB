@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1646" height="720" viewBox="0 0 1646 720">
+<rect width="100%" height="100%" fill="white"/>
+<text x="823.0" y="34" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="700">Aggregation on Partitioned TLC Data</text>
+<text x="90" y="62" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Mean execution time (s, log scale)</text>
+<line x1="90" y1="590.00" x2="1386" y2="590.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="594.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.001</text>
+<line x1="90" y1="559.29" x2="1386" y2="559.29" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="563.29" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.002</text>
+<line x1="90" y1="518.71" x2="1386" y2="518.71" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="522.71" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.005</text>
+<line x1="90" y1="488.00" x2="1386" y2="488.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="492.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.01</text>
+<line x1="90" y1="457.29" x2="1386" y2="457.29" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="461.29" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.02</text>
+<line x1="90" y1="416.71" x2="1386" y2="416.71" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="420.71" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.05</text>
+<line x1="90" y1="386.00" x2="1386" y2="386.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="390.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.1</text>
+<line x1="90" y1="355.29" x2="1386" y2="355.29" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="359.29" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.2</text>
+<line x1="90" y1="314.71" x2="1386" y2="314.71" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="318.71" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">0.5</text>
+<line x1="90" y1="284.00" x2="1386" y2="284.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="288.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">1</text>
+<line x1="90" y1="253.29" x2="1386" y2="253.29" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="257.29" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">2</text>
+<line x1="90" y1="212.71" x2="1386" y2="212.71" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="216.71" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">5</text>
+<line x1="90" y1="182.00" x2="1386" y2="182.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="186.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">10</text>
+<line x1="90" y1="151.29" x2="1386" y2="151.29" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="155.29" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">20</text>
+<line x1="90" y1="110.71" x2="1386" y2="110.71" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="114.71" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">50</text>
+<line x1="90" y1="80.00" x2="1386" y2="80.00" stroke="#e2e2e2" stroke-width="1"/>
+<text x="78" y="84.00" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">100</text>
+<line x1="90" y1="80" x2="90" y2="590" stroke="#333" stroke-width="1.2"/>
+<line x1="90" y1="590" x2="1386" y2="590" stroke="#333" stroke-width="1.2"/>
+<rect x="102.30" y="479.19" width="24.00" height="110.81" fill="#4f9d55"><title>Polypheny Relational Q01: 0.012 s</title></rect>
+<rect x="129.30" y="426.15" width="24.00" height="163.85" fill="#7b61b9"><title>Polypheny Document MQL Q01: 0.040 s</title></rect>
+<rect x="156.30" y="451.88" width="24.00" height="138.12" fill="#f0a22e"><title>DuckDB Q01: 0.023 s</title></rect>
+<rect x="183.30" y="268.62" width="24.00" height="321.38" fill="#2f6fbb"><title>Apache Spark Q01: 1.415 s</title></rect>
+<rect x="231.90" y="486.26" width="24.00" height="103.74" fill="#4f9d55"><title>Polypheny Relational Q02: 0.010 s</title></rect>
+<rect x="258.90" y="424.64" width="24.00" height="165.36" fill="#7b61b9"><title>Polypheny Document MQL Q02: 0.042 s</title></rect>
+<rect x="285.90" y="491.69" width="24.00" height="98.31" fill="#f0a22e"><title>DuckDB Q02: 0.009 s</title></rect>
+<rect x="312.90" y="326.96" width="24.00" height="263.04" fill="#2f6fbb"><title>Apache Spark Q02: 0.379 s</title></rect>
+<rect x="361.50" y="272.21" width="24.00" height="317.79" fill="#4f9d55"><title>Polypheny Relational Q03: 1.305 s</title></rect>
+<rect x="388.50" y="312.66" width="24.00" height="277.34" fill="#7b61b9"><title>Polypheny Document MQL Q03: 0.524 s</title></rect>
+<rect x="415.50" y="360.21" width="24.00" height="229.79" fill="#f0a22e"><title>DuckDB Q03: 0.179 s</title></rect>
+<rect x="442.50" y="208.59" width="24.00" height="381.41" fill="#2f6fbb"><title>Apache Spark Q03: 5.486 s</title></rect>
+<rect x="491.10" y="243.97" width="24.00" height="346.03" fill="#4f9d55"><title>Polypheny Relational Q04: 2.469 s</title></rect>
+<rect x="518.10" y="248.09" width="24.00" height="341.91" fill="#7b61b9"><title>Polypheny Document MQL Q04: 2.249 s</title></rect>
+<rect x="545.10" y="295.84" width="24.00" height="294.16" fill="#f0a22e"><title>DuckDB Q04: 0.765 s</title></rect>
+<rect x="572.10" y="224.56" width="24.00" height="365.44" fill="#2f6fbb"><title>Apache Spark Q04: 3.826 s</title></rect>
+<rect x="620.70" y="256.96" width="24.00" height="333.04" fill="#4f9d55"><title>Polypheny Relational Q05: 1.841 s</title></rect>
+<rect x="647.70" y="266.97" width="24.00" height="323.03" fill="#7b61b9"><title>Polypheny Document MQL Q05: 1.469 s</title></rect>
+<rect x="674.70" y="276.18" width="24.00" height="313.82" fill="#f0a22e"><title>DuckDB Q05: 1.193 s</title></rect>
+<rect x="701.70" y="208.91" width="24.00" height="381.09" fill="#2f6fbb"><title>Apache Spark Q05: 5.447 s</title></rect>
+<rect x="750.30" y="478.47" width="24.00" height="111.53" fill="#4f9d55"><title>Polypheny Relational Q06: 0.012 s</title></rect>
+<rect x="777.30" y="420.98" width="24.00" height="169.02" fill="#7b61b9"><title>Polypheny Document MQL Q06: 0.045 s</title></rect>
+<rect x="804.30" y="369.42" width="24.00" height="220.58" fill="#f0a22e"><title>DuckDB Q06: 0.145 s</title></rect>
+<rect x="831.30" y="252.69" width="24.00" height="337.31" fill="#2f6fbb"><title>Apache Spark Q06: 2.027 s</title></rect>
+<rect x="879.90" y="472.47" width="24.00" height="117.53" fill="#4f9d55"><title>Polypheny Relational Q07: 0.014 s</title></rect>
+<rect x="906.90" y="410.44" width="24.00" height="179.56" fill="#7b61b9"><title>Polypheny Document MQL Q07: 0.058 s</title></rect>
+<rect x="933.90" y="433.79" width="24.00" height="156.21" fill="#f0a22e"><title>DuckDB Q07: 0.034 s</title></rect>
+<rect x="960.90" y="341.09" width="24.00" height="248.91" fill="#2f6fbb"><title>Apache Spark Q07: 0.276 s</title></rect>
+<rect x="1009.50" y="160.70" width="24.00" height="429.30" fill="#4f9d55"><title>Polypheny Relational Q08: 16.174 s</title></rect>
+<rect x="1036.50" y="171.48" width="24.00" height="418.52" fill="#7b61b9"><title>Polypheny Document MQL Q08: 12.681 s</title></rect>
+<rect x="1063.50" y="216.55" width="24.00" height="373.45" fill="#f0a22e"><title>DuckDB Q08: 4.585 s</title></rect>
+<rect x="1090.50" y="166.31" width="24.00" height="423.69" fill="#2f6fbb"><title>Apache Spark Q08: 14.251 s</title></rect>
+<rect x="1139.10" y="162.33" width="24.00" height="427.67" fill="#4f9d55"><title>Polypheny Relational Q09: 15.590 s</title></rect>
+<rect x="1166.10" y="169.64" width="24.00" height="420.36" fill="#7b61b9"><title>Polypheny Document MQL Q09: 13.218 s</title></rect>
+<rect x="1193.10" y="187.44" width="24.00" height="402.56" fill="#f0a22e"><title>DuckDB Q09: 8.844 s</title></rect>
+<rect x="1220.10" y="127.37" width="24.00" height="462.63" fill="#2f6fbb"><title>Apache Spark Q09: 34.325 s</title></rect>
+<rect x="1268.70" y="208.82" width="24.00" height="381.18" fill="#4f9d55"><title>Polypheny Relational Q10: 5.458 s</title></rect>
+<rect x="1295.70" y="219.56" width="24.00" height="370.44" fill="#7b61b9"><title>Polypheny Document MQL Q10: 4.283 s</title></rect>
+<rect x="1322.70" y="320.83" width="24.00" height="269.17" fill="#f0a22e"><title>DuckDB Q10: 0.435 s</title></rect>
+<rect x="1349.70" y="209.23" width="24.00" height="380.77" fill="#2f6fbb"><title>Apache Spark Q10: 5.408 s</title></rect>
+<text x="154.80" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q01</text>
+<text x="284.40" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q02</text>
+<text x="414.00" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q03</text>
+<text x="543.60" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q04</text>
+<text x="673.20" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q05</text>
+<text x="802.80" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q06</text>
+<text x="932.40" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q07</text>
+<text x="1062.00" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q08</text>
+<text x="1191.60" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q09</text>
+<text x="1321.20" y="620" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700">Q10</text>
+<text x="154.80" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Yellow total</text>
+<text x="154.80" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">row count</text>
+<text x="284.40" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Yellow</text>
+<text x="284.40" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">one-month</text>
+<text x="284.40" y="679" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">count</text>
+<text x="414.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Yellow one-day</text>
+<text x="414.00" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">count</text>
+<text x="543.60" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Yellow</text>
+<text x="543.60" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">filtered row</text>
+<text x="543.60" y="679" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">count</text>
+<text x="673.20" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">Yellow summary</text>
+<text x="673.20" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">by year</text>
+<text x="802.80" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">FHV total row</text>
+<text x="802.80" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">count</text>
+<text x="932.40" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">FHV one-month</text>
+<text x="932.40" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">count</text>
+<text x="1062.00" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">FHV filtered</text>
+<text x="1062.00" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">row count</text>
+<text x="1191.60" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">FHV summary by</text>
+<text x="1191.60" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">year</text>
+<text x="1321.20" y="645" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">FHV count by</text>
+<text x="1321.20" y="662" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">shared-request</text>
+<text x="1321.20" y="679" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333">flag</text>
+<text x="1421" y="80" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700">System</text>
+<rect x="1421" y="100" width="16" height="16" fill="#4f9d55"/>
+<text x="1445" y="113" font-family="Helvetica, Arial, sans-serif" font-size="12">Polypheny Relational</text>
+<rect x="1421" y="128" width="16" height="16" fill="#7b61b9"/>
+<text x="1445" y="141" font-family="Helvetica, Arial, sans-serif" font-size="12">Polypheny Document MQL</text>
+<rect x="1421" y="156" width="16" height="16" fill="#f0a22e"/>
+<text x="1445" y="169" font-family="Helvetica, Arial, sans-serif" font-size="12">DuckDB</text>
+<rect x="1421" y="184" width="16" height="16" fill="#2f6fbb"/>
+<text x="1445" y="197" font-family="Helvetica, Arial, sans-serif" font-size="12">Apache Spark</text>
+</svg>

@@ -82,6 +82,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.interpreter.BindableConvention;
@@ -104,6 +105,8 @@ import org.polypheny.db.processing.shuttles.ParameterValueValidator;
 import org.polypheny.db.processing.shuttles.QueryParameterizer;
 import org.polypheny.db.processing.util.Plan;
 import org.polypheny.db.processing.util.ProposedImplementations;
+import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
@@ -1204,7 +1207,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Get partitions of logical information
 
-        Map<Long, List<Long>> accessedPartitions = extractPartitions( logicalRoot.alg.getEntities() );
+        Map<Long, List<Long>> accessedPartitions = extractPartitions( logicalRoot.alg.getEntities(), analyzer.partitionValueFilterPerScan );
 
         // Build queryClass from query-name and partitions.
         String queryHash = analyzer.getQueryName() + accessedPartitions;
@@ -1227,11 +1230,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private Map<Long, List<Long>> extractPartitions( Set<Entity> entities ) {
+    private Map<Long, List<Long>> extractPartitions( Set<Entity> entities, Map<Long, Set<String>> partitionValueFilterPerScan ) {
         Map<Long, List<Long>> map = new HashMap<>();
         for ( Entity entity : entities ) {
             if ( entity.isLogical() ) {
-                map.computeIfAbsent( entity.getId(), k -> new ArrayList<>() ).addAll( Catalog.snapshot().alloc().getPartitionsFromLogical( entity.getId() ).stream().map( p -> p.id ).toList() );
+                map.computeIfAbsent( entity.getId(), k -> new ArrayList<>() ).addAll( extractPartitionsForLogicalEntity( entity, partitionValueFilterPerScan ) );
             } else if ( entity.isAllocation() ) {
                 map.computeIfAbsent( ((AllocationEntity) entity).getLogicalId(), k -> new ArrayList<>() ).add( ((AllocationEntity) entity).getPartitionId() );
             } else if ( entity.isPhysical() ) {
@@ -1239,6 +1242,32 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         }
         return map;
+    }
+
+
+    private List<Long> extractPartitionsForLogicalEntity( Entity entity, Map<Long, Set<String>> partitionValueFilterPerScan ) {
+        List<Long> allPartitions = Catalog.snapshot().alloc().getPartitionsFromLogical( entity.getId() ).stream().map( p -> p.id ).toList();
+        Set<String> partitionValues = partitionValueFilterPerScan.get( entity.getId() );
+        if ( partitionValues == null || partitionValues.isEmpty() ) {
+            return allPartitions;
+        }
+
+        PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( entity.getId() ).orElse( null );
+        if ( property == null || property.partitionType == PartitionType.NONE ) {
+            return allPartitions;
+        }
+
+        LogicalTable table = Catalog.snapshot().rel().getTable( entity.getId() ).orElse( null );
+        if ( table == null ) {
+            return allPartitions;
+        }
+
+        List<Long> selectedPartitions = partitionValues.stream()
+                .map( value -> PartitionManagerFactory.getInstance().getPartitionManager( property.partitionType ).getTargetPartitionId( table, property, value ) )
+                .filter( partitionId -> partitionId >= 0 )
+                .distinct()
+                .toList();
+        return selectedPartitions.isEmpty() ? allPartitions : selectedPartitions;
     }
 
 
