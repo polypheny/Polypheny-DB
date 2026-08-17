@@ -48,12 +48,12 @@ public class SqlPgvectorOperatorTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE pgvecrealtest( id INTEGER NOT NULL, myarray REAL NOT NULL ARRAY(1,2), PRIMARY KEY (id) )" );
+                statement.executeUpdate( "CREATE TABLE pgvecrealtest( id INTEGER NOT NULL, myarray REAL VECTOR(2), PRIMARY KEY (id) )" );
                 statement.executeUpdate( "INSERT INTO pgvecrealtest VALUES (1, ARRAY[1.0, 1.0])" );
                 statement.executeUpdate( "INSERT INTO pgvecrealtest VALUES (2, ARRAY[2.0, 2.0])" );
                 statement.executeUpdate( "INSERT INTO pgvecrealtest VALUES (3, ARRAY[0.0, 3.0])" );
 
-                statement.executeUpdate( "CREATE TABLE pgvecbooltest( id INTEGER NOT NULL, myarray BOOLEAN NOT NULL ARRAY(1,3), PRIMARY KEY (id) )" );
+                statement.executeUpdate( "CREATE TABLE pgvecbooltest( id INTEGER NOT NULL, myarray BOOLEAN VECTOR(3), PRIMARY KEY (id) )" );
                 statement.executeUpdate( "INSERT INTO pgvecbooltest VALUES (1, ARRAY[true, true, true])" );
                 statement.executeUpdate( "INSERT INTO pgvecbooltest VALUES (2, ARRAY[true, false, true])" );
                 statement.executeUpdate( "INSERT INTO pgvecbooltest VALUES (3, ARRAY[false, false, false])" );

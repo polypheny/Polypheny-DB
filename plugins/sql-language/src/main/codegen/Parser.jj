@@ -5925,21 +5925,24 @@ SqlDataTypeSpec DataType() :
         charSetName = Identifier()
     ]
     [
-        LOOKAHEAD( <NOT> <NULL> ( <ARRAY> | <MULTISET> ) )
-        <NOT> <NULL> { elementsNullable=false; }
-    ]
-    [
-        //e.g. ARRAY(dimension, cardinality)
-        collectionTypeName = CollectionsTypeName()
-        [
-            <LPAREN>
-            dimension = IntLiteral()
+        (
+            //e.g. ARRAY(dimension, cardinality)
+            collectionTypeName = CollectionsTypeName()
             [
-                <COMMA>
-                cardinality = IntLiteral()
+                <LPAREN>
+                dimension = IntLiteral()
+                [
+                    <COMMA>
+                    cardinality = IntLiteral()
+                ]
+                <RPAREN>
             ]
-            <RPAREN>
-        ]
+           |
+           <VECTOR>
+           { collectionTypeName = new SqlIdentifier(PolyType.ARRAY.name(), getPos()); }
+           <LPAREN> cardinality = IntLiteral() <RPAREN>
+           { dimension = 1; elementsNullable=false; }
+        )
     ]
     {
         if (null != collectionTypeName) {
@@ -8211,6 +8214,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < VARBINARY: "VARBINARY" >
 |   < VARCHAR: "VARCHAR" >
 |   < VARYING: "VARYING" >
+|   < VECTOR: "VECTOR" >
 |   < VERSION: "VERSION" >
 |   < VERSIONING: "VERSIONING" >
 |   < VIDEO: "VIDEO" >
@@ -8595,6 +8599,7 @@ void NonReservedKeyWord2of3() :
     |    <UTF8>
     |    <UTF16>
     |    <UTF32>
+    |    <VECTOR>
     |    <VERSION>
     |    <VIEW>
     |    <WEEK>

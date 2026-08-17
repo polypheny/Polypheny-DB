@@ -2833,7 +2833,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 // bare nulls are dangerous in the wrong hands
                 sourceExps.set( i, castNullLiteralIfNeeded( sourceExps.get( i ), field.getType() ) );
             } else if ( field.getType() instanceof VectorType ){
-                // Assume an insert ARRAY[1,2,3]: We do not know if the column type where the insert should go is a VectorType (i.e. REAL NOT NULL ARRAY(1,n) w/ n > 0 and all elements non-null) or an ArrayType.
+                // Assume an insert ARRAY[1,2,3]: We do not know if the column type where the insert should go is a VectorType (i.e. REAL VECTOR(n) w/ n > 0 and all elements non-null) or an ArrayType.
                 // We therefore cast to target column. Checks if types are compatible are already done therefore "instanceof" is enough.
                 sourceExps.set( i, rexBuilder.makeCast( field.getType(), sourceExps.get( i ) ) );
             }

@@ -31,7 +31,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
-* A column declared as {@code REAL NOT NULL ARRAY(1,n)} or {@code BOOLEAN NOT NULL ARRAY(1,n)}
+* A column declared as {@code REAL VECTOR(n)} or {@code BOOLEAN VECTOR(n)}
 * is internally mapped to a VectorType. Inserting an array that contains a null element
 * must be rejected; inserting a null for the column itself (i.e. a null array) is still
 * allowed because the column is not declared NOT NULL at the column level.
@@ -48,13 +48,13 @@ public class ArrayNotNullConstraintTest {
     }
 
 
-    //--------------------- REAL NOT NULL ARRAY(1,n) ---------------------
+    //--------------------- REAL VECTOR(n) ---------------------
     @Test
     void realVectorInsertWithAllNonNullElementsSucceeds() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE vnn_real( id INTEGER NOT NULL, vec REAL NOT NULL ARRAY(1,3), PRIMARY KEY (id) )" );
+                statement.executeUpdate( "CREATE TABLE vnn_real( id INTEGER NOT NULL, vec REAL VECTOR(3), PRIMARY KEY (id) )" );
                 try {
                     statement.executeUpdate( "INSERT INTO vnn_real VALUES (1, ARRAY[1.0, 2.0, 3.0])" );
                     connection.commit();
@@ -77,7 +77,7 @@ public class ArrayNotNullConstraintTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE vnn_real_colnull( id INTEGER NOT NULL, vec REAL NOT NULL ARRAY(1,3), PRIMARY KEY (id) )" );
+                statement.executeUpdate( "CREATE TABLE vnn_real_colnull( id INTEGER NOT NULL, vec REAL VECTOR(3), PRIMARY KEY (id) )" );
                 try {
                     statement.executeUpdate( "INSERT INTO vnn_real_colnull VALUES (1, NULL)" );
                     connection.commit();
@@ -99,7 +99,7 @@ public class ArrayNotNullConstraintTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE vnn_real_rej( id INTEGER NOT NULL, vec REAL NOT NULL ARRAY(1,3), PRIMARY KEY (id) )" );
+                statement.executeUpdate( "CREATE TABLE vnn_real_rej( id INTEGER NOT NULL, vec REAL VECTOR(3), PRIMARY KEY (id) )" );
                 try {
                     Assertions.assertThrows(
                             PrismInterfaceServiceException.class,
@@ -119,7 +119,7 @@ public class ArrayNotNullConstraintTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE vnn_real_ps( id INTEGER NOT NULL, vec REAL NOT NULL ARRAY(1,3), PRIMARY KEY (id) )" );
+                statement.executeUpdate( "CREATE TABLE vnn_real_ps( id INTEGER NOT NULL, vec REAL VECTOR(3), PRIMARY KEY (id) )" );
                 connection.commit();
             }
             try ( PreparedStatement ps = connection.prepareStatement( "INSERT INTO vnn_real_ps VALUES (?, ?)" ) ) {
@@ -142,14 +142,14 @@ public class ArrayNotNullConstraintTest {
     }
 
 
-    //--------------------- BOOLEAN NOT NULL ARRAY(1,n) ---------------------
+    //--------------------- BOOLEAN VECTOR(n) ---------------------
     @Test
     void booleanVectorInsertWithAllNonNullElementsSucceeds() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate(
-                        "CREATE TABLE vnn_bool( id INTEGER NOT NULL, vec BOOLEAN NOT NULL ARRAY(1,3), PRIMARY KEY (id) )" );
+                        "CREATE TABLE vnn_bool( id INTEGER NOT NULL, vec BOOLEAN VECTOR(3), PRIMARY KEY (id) )" );
                 try {
                     statement.executeUpdate( "INSERT INTO vnn_bool VALUES (1, ARRAY[TRUE, FALSE, TRUE])" );
                     connection.commit();
@@ -172,7 +172,7 @@ public class ArrayNotNullConstraintTest {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate(
-                        "CREATE TABLE vnn_bool_rej( id INTEGER NOT NULL, vec BOOLEAN NOT NULL ARRAY(1,3), PRIMARY KEY (id) )" );
+                        "CREATE TABLE vnn_bool_rej( id INTEGER NOT NULL, vec BOOLEAN VECTOR(3), PRIMARY KEY (id) )" );
                 try {
                     Assertions.assertThrows(
                             PrismInterfaceServiceException.class,
@@ -193,7 +193,7 @@ public class ArrayNotNullConstraintTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE vnn_bool_ps( id INTEGER NOT NULL, vec BOOLEAN NOT NULL ARRAY(1,3), PRIMARY KEY (id) )" );
+                statement.executeUpdate( "CREATE TABLE vnn_bool_ps( id INTEGER NOT NULL, vec BOOLEAN VECTOR(3), PRIMARY KEY (id) )" );
                 connection.commit();
             }
             try ( PreparedStatement ps = connection.prepareStatement( "INSERT INTO vnn_bool_ps VALUES (?, ?)" ) ) {
