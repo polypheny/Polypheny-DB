@@ -24,6 +24,7 @@ import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.sql.language.SqlBinaryOperator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
 
@@ -58,20 +59,23 @@ public class SqlMonotonicBinaryOperator extends SqlBinaryOperator {
                 return mono0;
             }
             assert getName().equals( "*" );
-            BigDecimal value = call.getOperandLiteralValue( 1, PolyType.DECIMAL ).asBigDecimal().bigDecimalValue();
-            switch ( value == null ? 1 : value.signum() ) {
-                case -1:
-                    // mono0 * negative constant --> reverse mono0
-                    return mono0.reverse();
 
-                case 0:
-                    // mono0 * 0 --> constant (zero)
-                    return Monotonicity.CONSTANT;
-
-                default:
-                    // mono0 * positive constant --> mono0
-                    return mono0;
+            PolyValue value = call.getOperandLiteralValue( 1, PolyType.DECIMAL );
+            BigDecimal num = new BigDecimal( 1 );
+            if ( value != null ) {
+                num = value.asNumber().bigDecimalValue();
             }
+            return switch ( value == null ? 1 : num.signum() ) {
+                case -1 ->
+                    // mono0 * negative constant --> reverse mono0
+                        mono0.reverse();
+                case 0 ->
+                    // mono0 * 0 --> constant (zero)
+                        Monotonicity.CONSTANT;
+                default ->
+                    // mono0 * positive constant --> mono0
+                        mono0;
+            };
         }
 
         // constant <op> mono
@@ -86,8 +90,13 @@ public class SqlMonotonicBinaryOperator extends SqlBinaryOperator {
             }
             assert getName().equals( "*" );
             if ( !call.isOperandNull( 0, true ) ) {
-                BigDecimal value = call.getOperandLiteralValue( 0, PolyType.DECIMAL ).asNumber().bigDecimalValue();
-                switch ( value == null ? 1 : value.signum() ) {
+                PolyValue value = call.getOperandLiteralValue( 0, PolyType.DECIMAL );
+                BigDecimal num = new BigDecimal( 1 );
+                if ( value != null ) {
+                    num = value.asNumber().bigDecimalValue();
+                }
+
+                switch ( value == null ? 1 : num.signum() ) {
                     case -1:
                         // negative constant * mono1 --> reverse mono1
                         return mono1.reverse();
@@ -112,26 +121,28 @@ public class SqlMonotonicBinaryOperator extends SqlBinaryOperator {
         // asc + desc --> not monotonic
         //   e.g. 2 * orderid + (-3 * orderid) is not monotonic
 
-        if ( getName().equals( "+" ) ) {
-            if ( mono0 == mono1 ) {
-                return mono0;
-            } else if ( mono0.unstrict() == mono1.unstrict() ) {
-                return mono0.unstrict();
-            } else {
+        switch ( getName() ) {
+            case "+" -> {
+                if ( mono0 == mono1 ) {
+                    return mono0;
+                } else if ( mono0.unstrict() == mono1.unstrict() ) {
+                    return mono0.unstrict();
+                } else {
+                    return Monotonicity.NOT_MONOTONIC;
+                }
+            }
+            case "-" -> {
+                if ( mono0 == mono1.reverse() ) {
+                    return mono0;
+                } else if ( mono0.unstrict() == mono1.reverse().unstrict() ) {
+                    return mono0.unstrict();
+                } else {
+                    return Monotonicity.NOT_MONOTONIC;
+                }
+            }
+            case "*" -> {
                 return Monotonicity.NOT_MONOTONIC;
             }
-        }
-        if ( getName().equals( "-" ) ) {
-            if ( mono0 == mono1.reverse() ) {
-                return mono0;
-            } else if ( mono0.unstrict() == mono1.reverse().unstrict() ) {
-                return mono0.unstrict();
-            } else {
-                return Monotonicity.NOT_MONOTONIC;
-            }
-        }
-        if ( getName().equals( "*" ) ) {
-            return Monotonicity.NOT_MONOTONIC;
         }
 
         return super.getMonotonicity( call );
