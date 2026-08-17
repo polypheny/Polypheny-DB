@@ -8,10 +8,15 @@ dependencies {
 
     implementation group: "net.postgis", name: "postgis-jdbc", version: postgis_version
     implementation group: "org.postgresql", name: "postgresql", version: postgresql_version  // BSD 2-clause
+    implementation group: "com.pgvector", name: "pgvector", version: pgvector_version // MIT License
 
     // --- Test Compile ---
+    testImplementation project(":core")
+    testImplementation project(":plugins:sql-language")
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":plugins:sql-language", configuration: "tests")
+    testImplementation project(":plugins:jdbc-adapter-framework")
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version
 
 }
 

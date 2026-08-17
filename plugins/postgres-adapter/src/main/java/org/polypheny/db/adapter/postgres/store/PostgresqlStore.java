@@ -22,15 +22,19 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingsPreset;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
@@ -38,6 +42,10 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
 import org.polypheny.db.adapter.postgres.PostgresqlSqlDialect;
+import org.polypheny.db.adapter.postgres.source.PostgresqlFeature;
+import org.polypheny.db.adapter.postgres.source.PostgresqlSource;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
@@ -46,17 +54,20 @@ import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.IndexCategory;
 import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.util.PasswordGenerator;
 
 
@@ -78,6 +89,26 @@ import org.polypheny.db.util.PasswordGenerator;
         description = "Password to be used for authenticating at the remote instance.", appliesTo = DeploySetting.REMOTE)
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25, position = 6,
         description = "Maximum number of concurrent JDBC connections.")
+@AdapterSettingList(
+        name        = "imageVariant",
+        options     = { "Default", "pgvector", "PostGIS", "pgvector & PostGIS" },
+        defaultValue = "pgvector & PostGIS",
+        position    = 7,
+        description = "PostgreSQL Docker image variant to deploy.",
+        appliesTo   = DeploySetting.DOCKER
+)
+@AdapterSettingsPreset(
+        name = "Minimal PostgreSQL",
+        description = "Plain Docker image, no extensions",
+        mode = DeployMode.DOCKER,
+        settings = { @AdapterSettingsPreset.Setting(name = "imageVariant", value = "Default") }
+)
+@AdapterSettingsPreset(
+        name = "Full PostgreSQL",
+        description = "Docker image with pgvector & PostGIS extensions installed",
+        mode = DeployMode.DOCKER,
+        settings = { @AdapterSettingsPreset.Setting(name = "imageVariant", value = "pgvector & PostGIS") }
+)
 public class PostgresqlStore extends AbstractJdbcStore {
 
 
@@ -89,7 +120,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     public PostgresqlStore( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
-        super( storeId, uniqueName, settings, mode, PostgresqlSqlDialect.DEFAULT, true );
+        super( storeId, uniqueName, settings, mode, new PostgresqlSqlDialect(), true );
     }
 
 
@@ -102,16 +133,17 @@ public class PostgresqlStore extends AbstractJdbcStore {
         database = "postgres";
         username = "postgres";
 
+        PostgresqlImageVariant variant = PostgresqlImageVariant.valueOf(
+                settings.getOrDefault( "imageVariant", PostgresqlImageVariant.PGVECTOR_POSTGIS.name() ).toUpperCase().replace( " & ", "_" ) );
         if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {
             if ( settings.getOrDefault( "password", "polypheny" ).equals( "polypheny" ) ) {
                 settings.put( "password", PasswordGenerator.generatePassword() );
                 updateSettings( settings );
             }
-
             DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
                     .orElseThrow( () -> new GenericRuntimeException( "No docker instance with id " + instanceId ) );
             try {
-                container = instance.newBuilder( "polypheny/postgres:latest", getUniqueName() )
+                container = instance.newBuilder( variant.imageName, getUniqueName() )
                         .withEnvironmentVariable( "POSTGRES_PASSWORD", settings.get( "password" ) )
                         .createAndStart();
             } catch ( IOException e ) {
@@ -135,6 +167,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 throw new GenericRuntimeException( "Could not connect to container" );
             }
         }
+        dialect.addSupportedFeatures( variant.features );
 
         return createConnectionFactory();
     }
@@ -149,7 +182,19 @@ public class PostgresqlStore extends AbstractJdbcStore {
         if ( !testConnection() ) {
             throw new GenericRuntimeException( "Unable to connect" );
         }
-        return createConnectionFactory();
+        ConnectionFactory factory = createConnectionFactory();
+        try {
+            PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.EMPTY_PUID, PUID.EMPTY_PUID );
+            ConnectionHandler handler = factory.getOrCreateConnectionHandler( xid );
+            try ( java.sql.Statement statement = handler.getStatement() ) {
+                Connection connection = statement.getConnection();
+                Set<SqlDbFeature> features = PostgresqlSource.detectFeatures( connection );
+                dialect.addSupportedFeatures( features );
+            }
+        } catch ( ConnectionHandlerException | SQLException e ) {
+                log.error( "Could not query feature information on remote PostgreSQL store.", e );
+        }
+            return factory;
     }
 
 
@@ -187,8 +232,45 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
+    /**
+     * <p>Generally the docker images already have the extension registered.
+     * This is merely used as a safeguard.</p>
+     */
+    @Override
+    public void registerFeatures() {
+        PolyXid xid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.CONNECTION ), PUID.randomPUID( Type.CONNECTION ) );
+        try {
+            ConnectionHandler ch = connectionFactory.getOrCreateConnectionHandler( xid );
+            for ( PostgresqlFeature f : PostgresqlFeature.values() ) {
+                if ( f.isSupported( dialect ) ) {
+                    ch.executeUpdate( f.getFeatureRegistrationQuery() );
+                }
+            }
+            ch.commit();
+        } catch ( ConnectionHandlerException | SQLException e ) {
+        log.error( "Error while registering features (CREATE EXTENSION) on Postgres", e );
+        }
+    }
+
+
     @Override
     public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
+        PhysicalColumn old = adapterCatalog.getColumn( newCol.id, allocId );
+        AlgDataType oldAlg = old.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+        AlgDataType newAlg = newCol.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+
+        if ( oldAlg instanceof VectorType oldVec
+                && newAlg instanceof VectorType newVec
+                && dialect.vectorPushdownTypeIsPresent( oldVec.getVectorElementType() )
+                && dialect.vectorPushdownTypeIsPresent( newVec.getVectorElementType() )
+                && oldVec.getVectorElementType() != VectorType.ElementType.BIT
+                && oldVec.getCardinality() != newVec.getCardinality() ) {
+            throw new GenericRuntimeException(
+                    "Cannot change dimension of vector(%d) to vector(%d) on PostgreSQL. "
+                            + "pgvector does not support resizing float vector dimensions. "
+                            + "Drop and recreate the column.",
+                    oldVec.getCardinality(), newVec.getCardinality() );
+        }
         PhysicalColumn column = adapterCatalog.updateColumnType( allocId, newCol );
 
         PhysicalTable physicalTable = adapterCatalog.fromAllocation( allocId );
@@ -199,26 +281,35 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 .append( "." )
                 .append( dialect.quoteIdentifier( physicalTable.name ) );
         builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( column.name ) );
-        builder.append( " TYPE " ).append( getTypeString( column.type ) );
-        if ( column.collectionsType != null ) {
-            builder.append( " " ).append( column.collectionsType );
-        }
-        if ( column.length != null && doesTypeUseLength( column.type ) ) {
-            builder.append( "(" );
-            builder.append( column.length );
-            if ( column.scale != null ) {
-                builder.append( "," ).append( column.scale );
+        
+        AlgDataType algType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+        String typeString;
+        if ( algType instanceof VectorType vectorType && dialect.vectorPushdownTypeIsPresent( vectorType.getVectorElementType() ) ) {
+            typeString = dialect.getTypeString( vectorType.getVectorElementType() ) +
+                    "(" + (column.cardinality != null && column.cardinality > 0 ? column.cardinality : "") + ")";
+        } else {
+            StringBuilder typeBuilder = new StringBuilder();
+            typeBuilder.append( getTypeString( column.type ) );
+            if ( column.collectionsType != null ) {
+                typeBuilder.append( " " ).append( column.collectionsType );
             }
-            builder.append( ")" );
+            if ( column.length != null && doesTypeUseLength( column.type ) ) {
+                typeBuilder.append( "(" );
+                typeBuilder.append( column.length );
+                if ( column.scale != null ) {
+                    typeBuilder.append( "," ).append( column.scale );
+                }
+                typeBuilder.append( ")" );
+            }
+            typeString = typeBuilder.toString();
         }
+
+        builder.append( " TYPE " ).append( typeString );
         builder.append( " USING " )
                 .append( dialect.quoteIdentifier( column.name ) )
                 .append( "::" )
-                .append( getTypeString( column.type ) );
+                .append( typeString );
 
-        if ( column.collectionsType != null ) {
-            builder.append( " " ).append( column.collectionsType );
-        }
         executeUpdate( builder, context );
 
         updateNativePhysical( allocId );
@@ -261,6 +352,14 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case "brin":
                 builder.append( "brin" );
                 break;
+            case "hnsw":
+                builder.append( "hnsw " );
+                break;
+            case "ivfflat":
+                builder.append( "ivfflat " );
+                break;
+            default:
+                throw new GenericRuntimeException( "Unknown index method: " + index.method );
         }
 
         builder.append( "(" );
@@ -272,7 +371,43 @@ public class PostgresqlStore extends AbstractJdbcStore {
             first = false;
             builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
         }
+        String metric = index.options.getOrDefault( "metric", "L2" ).toUpperCase();
+        if ( index.method.equals( "hnsw" ) ) {
+            String operatorClass = switch ( metric ) {
+                case "L1" -> "vector_l1_ops";
+                case "L2" -> "vector_l2_ops";
+                case "COSINE" -> "vector_cosine_ops";
+                case "INNER_PRODUCT" -> "vector_ip_ops";
+                case "HAMMING" -> "bit_hamming_ops";
+                case "JACCARD" -> "bit_jaccard_ops";
+                default -> throw new GenericRuntimeException( "Unsupported distance metric for pgvector HNSW indexes: " + metric);
+            };
+            builder.append( " " ).append( operatorClass );
+        } else if ( index.method.equals( "ivfflat" ) ) {
+            String operatorClass = switch ( metric ) {
+                case "L2" -> "vector_l2_ops";
+                case "COSINE" -> "vector_cosine_ops";
+                case "INNER_PRODUCT" -> "vector_ip_ops";
+                case "HAMMING" -> "bit_hamming_ops";
+                default -> throw new GenericRuntimeException( "Unsupported distance metric for pgvector IVFFlat indexes: " + metric);
+            };
+            builder.append( " " ).append( operatorClass );
+        }
         builder.append( ")" );
+        if ( index.method.equals( "hnsw" ) ) {
+            List<String> params = new ArrayList<>();
+            if ( index.options.containsKey( "m" ) ) {
+                params.add( "m = " + Integer.parseInt( index.options.get( "m" ) ) );
+            }
+            if ( index.options.containsKey( "ef_construction" ) ) {
+                params.add( "ef_construction = " + Integer.parseInt( index.options.get( "ef_construction" ) ) );
+            }
+            if ( !params.isEmpty() ) {
+                builder.append( " WITH (" ).append( String.join( ", ", params ) ).append( ")" );
+            }
+        } else if ( index.method.equals( "ivfflat" ) && index.options.containsKey( "lists" ) ) {
+            builder.append( " WITH (lists = " ).append( Integer.parseInt( index.options.get( "lists" ) ) ).append( ")" );
+        }
 
         executeUpdate( builder, context );
 
@@ -283,22 +418,77 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public void dropIndex( Context context, LogicalIndex index, long allocId ) {
         PhysicalTable table = adapterCatalog.fromAllocation( allocId );
+        String physicalIndexName = getPhysicalIndexName( table.id, index.id );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "DROP INDEX " );
-        builder.append( dialect.quoteIdentifier( index.physicalName + "_" + table.id ) );
+        builder.append( dialect.quoteIdentifier( physicalIndexName ) );
         executeUpdate( builder, context );
     }
 
 
     @Override
     public List<IndexMethodModel> getAvailableIndexMethods() {
-        return ImmutableList.of(
-                new IndexMethodModel( "btree", "B-TREE" ),
-                new IndexMethodModel( "hash", "HASH" ),
-                new IndexMethodModel( "gin", "GIN (Generalized Inverted Index)" ),
-                new IndexMethodModel( "brin", "BRIN (Block Range index)" )
+        List<IndexMethodModel> methods = new ArrayList<>( List.of(
+                    new IndexMethodModel( "btree", "B-TREE" ),
+                    new IndexMethodModel( "hash", "HASH" ),
+                    new IndexMethodModel( "gin", "GIN (Generalized Inverted Index)" ),
+                    new IndexMethodModel( "brin", "BRIN (Block Range index)" ) )
         );
+
+        if ( dialect.supportsVector() ) {
+            List<IndexParameterModel> hnswParams = List.of(
+                    new IndexParameterModel(
+                            "metric",
+                            "Distance Metric",
+                            "ENUM",
+                            List.of( "L1", "L2", "COSINE", "INNER_PRODUCT", "JACCARD", "HAMMING" ),
+                            "L2" ),
+                    new IndexParameterModel(
+                            "m",
+                            "Max number of connections per layer (m)",
+                            "INTEGER",
+                            null,
+                            "16"
+                    ),
+                    new IndexParameterModel(
+                            "ef_construction",
+                            "Size of the dynamic candidate list for constructing the graph (efConstruction)",
+                            "INTEGER",
+                            null,
+                            "64"
+                    )
+            );
+            List<IndexParameterModel> ivfflatParams = List.of(
+                    new IndexParameterModel(
+                            "metric",
+                            "Distance Metric",
+                            "ENUM",
+                            List.of( "L2", "COSINE",  "INNER_PRODUCT", "HAMMING"),
+                            "L2"
+                    ),
+                    new IndexParameterModel(
+                            "lists",
+                            "Number of lists the vectors are divided into",
+                            "INTEGER",
+                            null,
+                            "100"
+                    )
+            );
+            methods.add( new IndexMethodModel(
+                    "hnsw",
+                    "HNSW (Hierarchical Navigable Small World)",
+                    IndexCategory.VECTOR,
+                    hnswParams
+            ) );
+            methods.add( new IndexMethodModel(
+                    "ivfflat",
+                    "IVFFlat (Inverted File Flat)",
+                    IndexCategory.VECTOR,
+                    ivfflatParams
+            ) );
+        }
+        return ImmutableList.copyOf( methods );
     }
 
 
@@ -336,7 +526,10 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case DECIMAL -> "DECIMAL";
             case VARCHAR -> "VARCHAR";
             case JSON, TEXT -> "TEXT";
-            case GEOMETRY -> "GEOMETRY";
+            case GEOMETRY -> {
+                if ( !dialect.supportsPostGIS() ) throw new GenericRuntimeException( "GEOMETRY type requires PostGIS" );
+                yield "GEOMETRY";
+            }
             case DATE -> "DATE";
             case TIME -> "TIME";
             case TIMESTAMP -> "TIMESTAMP";

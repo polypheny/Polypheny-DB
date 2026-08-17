@@ -48,6 +48,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -322,6 +323,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .dataType( logicalColumn.type.getName() )
                             .collectionsType( collectionsType )
                             .nullable( logicalColumn.nullable )
+                            .elementsNullable( logicalColumn.elementsNullable )
                             .precision( logicalColumn.length )
                             .scale( logicalColumn.scale )
                             .dimension( logicalColumn.dimension )
@@ -974,6 +976,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .dataType( logicalColumn.type.getName() )
                             .collectionsType( collectionsType )
                             .nullable( logicalColumn.nullable )
+                            .elementsNullable( logicalColumn.elementsNullable )
                             .precision( logicalColumn.length )
                             .scale( logicalColumn.scale )
                             .dimension( logicalColumn.dimension )
@@ -1039,6 +1042,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .name( col.name )
                         .dataType( col.type.getName() )
                         .collectionsType( col.collectionsType == null ? "" : col.collectionsType.getName() ).nullable( col.nullable )
+                        .elementsNullable( col.elementsNullable )
                         .precision( col.length )
                         .scale( col.scale )
                         .dimension( col.dimension )
@@ -1167,6 +1171,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         UiColumnDefinition oldColumn = request.oldColumn;
         UiColumnDefinition newColumn = request.newColumn;
+        String elementsNullable = newColumn.elementsNullable ? "" : " NOT NULL";
         List<String> queries = new ArrayList<>();
         StringBuilder sBuilder = new StringBuilder();
 
@@ -1205,6 +1210,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 }
                 //collectionType
                 if ( newColumn.collectionsType != null && !newColumn.collectionsType.isEmpty() ) {
+                    query = query + elementsNullable;
                     query = query + " " + request.newColumn.collectionsType;
                     int dimension = newColumn.dimension == null ? -1 : newColumn.dimension;
                     int cardinality = newColumn.cardinality == null ? -1 : newColumn.cardinality;
@@ -1305,6 +1311,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 query = query + ")";
             }
             if ( request.newColumn.collectionsType != null && !request.newColumn.collectionsType.isEmpty() ) {
+                if ( !request.newColumn.elementsNullable ) {
+                    query = query + " NOT NULL";
+                }
                 query = query + " " + request.newColumn.collectionsType;
                 int dimension = request.newColumn.dimension == null ? -1 : request.newColumn.dimension;
                 int cardinality = request.newColumn.cardinality == null ? -1 : request.newColumn.cardinality;
@@ -1543,18 +1552,23 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         LogicalTable table = getLogicalTable( namespaceTable.left.name, namespaceTable.right.name );
         List<LogicalIndex> logicalIndices = Catalog.snapshot().rel().getIndexes( table.id, false );
 
-        UiColumnDefinition[] header = {
-                UiColumnDefinition.builder().name( "Name" ).build(),
-                UiColumnDefinition.builder().name( "Columns" ).build(),
-                UiColumnDefinition.builder().name( "Location" ).build(),
-                UiColumnDefinition.builder().name( "Method" ).build(),
-                UiColumnDefinition.builder().name( "Type" ).build() };
+        // Only show the parameters column if at least one index actually defines options (e.g. a vector index)
+        boolean showParameters = logicalIndices.stream().anyMatch( idx -> idx.options != null && !idx.options.isEmpty() );
+
+        List<UiColumnDefinition> header = new ArrayList<>();
+        header.add( UiColumnDefinition.builder().name( "Name" ).build() );
+        header.add( UiColumnDefinition.builder().name( "Columns" ).build() );
+        header.add( UiColumnDefinition.builder().name( "Location" ).build() );
+        header.add( UiColumnDefinition.builder().name( "Method" ).build() );
+        if ( showParameters ) {
+            header.add( UiColumnDefinition.builder().name( "Parameters" ).build() );
+        }
+        header.add( UiColumnDefinition.builder().name( "Type" ).build() );
 
         List<String[]> data = new ArrayList<>();
 
         // Get explicit indexes
         for ( LogicalIndex logicalIndex : logicalIndices ) {
-            String[] arr = new String[5];
             String storeUniqueName;
             if ( logicalIndex.location < 0 ) {
                 // a polystore index
@@ -1562,12 +1576,16 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             } else {
                 storeUniqueName = Catalog.snapshot().getAdapter( logicalIndex.location ).orElseThrow().uniqueName;
             }
-            arr[0] = logicalIndex.name;
-            arr[1] = String.join( ", ", logicalIndex.key.getFieldNames() );
-            arr[2] = storeUniqueName;
-            arr[3] = logicalIndex.methodDisplayName;
-            arr[4] = logicalIndex.type.name();
-            data.add( arr );
+            List<String> row = new ArrayList<>();
+            row.add( logicalIndex.name );
+            row.add( String.join( ", ", logicalIndex.key.getFieldNames() ) );
+            row.add( storeUniqueName );
+            row.add( logicalIndex.methodDisplayName );
+            if ( showParameters ) {
+                row.add( formatIndexOptions( logicalIndex.options ) );
+            }
+            row.add( logicalIndex.type.name() );
+            data.add( row.toArray( new String[0] ) );
         }
 
         // Get functional indexes
@@ -1581,17 +1599,41 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 break;
             }
             for ( FunctionalIndexInfo fif : store.getFunctionalIndexes( table ) ) {
-                String[] arr = new String[5];
-                arr[0] = "";
-                arr[1] = String.join( ", ", fif.getColumnNames() );
-                arr[2] = store.getUniqueName();
-                arr[3] = fif.methodDisplayName();
-                arr[4] = "FUNCTIONAL";
-                data.add( arr );
+                List<String> row = new ArrayList<>();
+                row.add( "" );
+                row.add( String.join( ", ", fif.getColumnNames() ) );
+                row.add( store.getUniqueName() );
+                row.add( fif.methodDisplayName() );
+                if ( showParameters ) {
+                    row.add( "" );
+                }
+                row.add( "FUNCTIONAL" );
+                data.add( row.toArray( new String[0] ) );
             }
         }
 
-        ctx.json( RelationalResult.builder().header( header ).data( data.toArray( new String[0][2] ) ).build() );
+        ctx.json( RelationalResult.builder().header( header.toArray( new UiColumnDefinition[0] ) ).data( data.toArray( new String[0][] ) ).build() );
+    }
+
+
+    /**
+     * Formats the options of an index for display, rendering well-known keys in a stable, readable order.
+     */
+    private static String formatIndexOptions( Map<String, String> options ) {
+        if ( options == null || options.isEmpty() ) {
+            return "";
+        }
+        StringJoiner joiner = new StringJoiner( ", " );
+        Map<String, String> remaining = new LinkedHashMap<>( options );
+        for ( String key : List.of( "metric", "m", "ef_construction", "lists" ) ) {
+            String value = remaining.remove( key );
+            if ( value != null ) {
+                joiner.add( key + "=" + value );
+            }
+        }
+        // Append any remaining, less common options
+        remaining.forEach( ( key, value ) -> joiner.add( key + "=" + value ) );
+        return joiner.toString();
     }
 
 
@@ -1635,11 +1677,18 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
         String onStore = String.format( "ON STORE \"%s\"", store );
 
-        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING \"%s\" %s", tableId, index.getName(), colJoiner, index.getMethod(), onStore );
+        StringBuilder query = new StringBuilder( String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING \"%s\" %s", tableId, index.getName(), colJoiner, index.getMethod(), onStore ) );
+        if ( index.options != null && !index.options.isEmpty() ) {
+            StringJoiner withJoiner = new StringJoiner( ", ", " WITH (", ")" );
+            for ( Map.Entry<String, String> e : index.options.entrySet() ) {
+                withJoiner.add( e.getKey() + "=" + e.getValue() );
+            }
+            query.append( withJoiner );
+        }
         QueryLanguage language = QueryLanguage.from( "sql" );
         Result<?, ?> res = LanguageCrud.anyQueryResult(
                 QueryContext.builder()
-                        .query( query )
+                        .query( query.toString() )
                         .language( language )
                         .origin( ORIGIN )
                         .transactionManager( transactionManager )

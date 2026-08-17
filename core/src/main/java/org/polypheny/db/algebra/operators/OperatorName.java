@@ -1577,6 +1577,40 @@ public enum OperatorName {
      */
     ST_GEOMETRYN( Function.class ),
 
+    //------------------------------------------------------------
+    //                  VECTOR DISTANCE FUNCTIONS
+    //------------------------------------------------------------
+
+    L2_DISTANCE( Function.class ),
+
+    L1_DISTANCE( Function.class ),
+
+    COS_DISTANCE( Function.class ),
+
+    HAMMING_DISTANCE( Function.class ),
+
+    JACCARD_DISTANCE( Function.class ),
+
+    INNER_PRODUCT_DISTANCE( Function.class ),
+
+    // Cypher specific operator
+    VECTOR_DISTANCE( Function.class),
+
+
+    // PostgreSQL pgvector Operators
+
+    PGVECTOR_L2( BinaryOperator.class ),
+
+    PGVECTOR_L1( BinaryOperator.class ),
+
+    PGVECTOR_COS( BinaryOperator.class ),
+
+    PGVECTOR_HAMMING( BinaryOperator.class ),
+
+    PGVECTOR_JACCARD( BinaryOperator.class ),
+
+    PGVECTOR_INNER_PRODUCT( BinaryOperator.class ),
+
     //-------------------------------------------------------------
     //                   SET OPERATORS
     //-------------------------------------------------------------

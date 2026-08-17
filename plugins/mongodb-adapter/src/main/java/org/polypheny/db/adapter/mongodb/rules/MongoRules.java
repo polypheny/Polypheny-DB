@@ -68,6 +68,7 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.schema.types.ModifiableTable;
@@ -443,13 +444,14 @@ public class MongoRules {
 
     private static boolean containsIncompatible( SingleAlg alg ) {
         MongoExcludeVisitor visitor = new MongoExcludeVisitor();
-        for ( RexNode node : alg.getChildExps() ) {
-            node.accept( visitor );
-            if ( visitor.isContainsIncompatible() ) {
-                return true;
+        alg.accept( new RexShuttle()  {
+            @Override
+            public RexNode visitCall( RexCall call ) {
+                call.accept( visitor );
+                return call;
             }
-        }
-        return false;
+        } );
+        return visitor.isContainsIncompatible();
     }
 
 
@@ -487,6 +489,12 @@ public class MongoRules {
                     || operator.getOperatorName() == OperatorName.SUBSTRING
                     || operator.getOperatorName() == OperatorName.FLOOR
                     || operator.getOperatorName() == OperatorName.DISTANCE
+                    || operator.getOperatorName() == OperatorName.L1_DISTANCE
+                    || operator.getOperatorName() == OperatorName.L2_DISTANCE
+                    || operator.getOperatorName() == OperatorName.INNER_PRODUCT_DISTANCE
+                    || operator.getOperatorName() == OperatorName.COS_DISTANCE
+                    || operator.getOperatorName() == OperatorName.HAMMING_DISTANCE
+                    || operator.getOperatorName() == OperatorName.JACCARD_DISTANCE
                     || (operator.getOperatorName() == OperatorName.CAST && call.operands.get( 0 ).getType().getPolyType() == PolyType.DATE)
                     || operator instanceof SqlDatetimeSubtractionOperator
                     || operator instanceof SqlDatetimePlusOperator ) {

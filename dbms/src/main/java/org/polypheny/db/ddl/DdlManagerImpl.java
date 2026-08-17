@@ -53,6 +53,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
@@ -89,6 +90,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
+import org.polypheny.db.catalog.logistic.IndexCategory;
 import org.polypheny.db.catalog.logistic.IndexType;
 import org.polypheny.db.catalog.logistic.NameGenerator;
 import org.polypheny.db.catalog.logistic.PartitionType;
@@ -115,6 +117,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
@@ -291,6 +294,7 @@ public class DdlManagerImpl extends DdlManager {
                         exportedColumn.dimension(),
                         exportedColumn.cardinality(),
                         exportedColumn.nullable(),
+                        exportedColumn.elementsNullable(),
                         Collation.getDefaultCollation() );
 
                 AllocationColumn allocationColumn = catalog.getAllocRel( namespace ).addColumn(
@@ -457,6 +461,7 @@ public class DdlManagerImpl extends DdlManager {
                 exportedColumn.dimension(),
                 exportedColumn.cardinality(),
                 exportedColumn.nullable(),
+                exportedColumn.elementsNullable(),
                 Collation.getDefaultCollation()
         );
 
@@ -533,6 +538,7 @@ public class DdlManagerImpl extends DdlManager {
                 type.dimension(),
                 type.cardinality(),
                 nullable,
+                type.elementsNullable(),
                 Collation.getDefaultCollation()
         );
 
@@ -595,10 +601,64 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement ) throws TransactionException {
+    public void createIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement, Map<String, String> options ) throws TransactionException {
         List<Long> columnIds = new ArrayList<>();
+        boolean hasVectorColumn = columnNames.stream()
+                .map( name -> catalog.getSnapshot().rel().getColumn( table.id, name ).orElseThrow() )
+                .anyMatch( col -> col.getAlgDataType( AlgDataTypeFactory.DEFAULT ) instanceof VectorType );
+
+        IndexCategory requestedCategory = IndexCategory.REGULAR;
+        if ( indexMethodName != null ) {
+            IndexMethodModel aim = IndexManager.getAvailableIndexMethods()
+                    .stream()
+                    .filter( m -> m.name().equals( indexMethodName ) )
+                    .findFirst()
+                    .orElse( null );
+            if ( aim == null && location != null ) {
+                aim = location.getAvailableIndexMethods().stream()
+                        .filter( m -> m.name().equals( indexMethodName ) )
+                        .findFirst()
+                        .orElse( null );
+            }
+            if ( aim != null ) {
+                requestedCategory = aim.category();
+            } else if ( hasVectorColumn ) {
+                requestedCategory = IndexCategory.VECTOR;
+            }
+        }
+        if ( requestedCategory == IndexCategory.VECTOR && location == null ) {
+            throw new GenericRuntimeException( "Vector indexes must be placed on a specific store. Use ON STORE <store_name>." );
+        }
+
         for ( String columnName : columnNames ) {
             LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
+            AlgDataType colType = logicalColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+            boolean isVectorColumn = colType instanceof VectorType;
+            if ( requestedCategory == IndexCategory.VECTOR && !isVectorColumn ) {
+                throw new GenericRuntimeException( "Index method '%s' can only be created on vector columns.", indexMethodName );
+            }
+            if ( requestedCategory != IndexCategory.VECTOR && isVectorColumn ) {
+                throw new GenericRuntimeException( "Standard index methods cannot be created on vector columns. Please use 'hnsw' or 'ivfflat'." );
+            }
+            if ( requestedCategory == IndexCategory.VECTOR && isVectorColumn && options != null ) {
+                String metric = options.get( "metric" );
+                if ( metric != null ) {
+                    VectorType.ElementType elemType = ((VectorType) colType).getVectorElementType();
+                    boolean isBitMetric = metric.equalsIgnoreCase( "HAMMING" ) ||
+                            metric.equalsIgnoreCase( "JACCARD" );
+                    boolean isBitVector = elemType == VectorType.ElementType.BIT;
+                    if ( isBitMetric && !isBitVector ) {
+                        throw new GenericRuntimeException(
+                                "Metric '%s' is only valid for BIT vector columns, but column '%s' has element type %s.",
+                                metric, columnName, elemType );
+                    }
+                    if ( !isBitMetric && isBitVector ) {
+                        throw new GenericRuntimeException(
+                                "Metric '%s' is not valid for BIT vector columns. Use HAMMING or JACCARD.",
+                                metric, columnName );
+                    }
+                }
+            }
             columnIds.add( logicalColumn.id );
         }
 
@@ -639,7 +699,7 @@ public class DdlManagerImpl extends DdlManager {
                 if ( location == null ) {
                     throw new GenericRuntimeException( "Unable to create an index on one of the underlying data stores since there is no data storeId that supports indexes and has all required columns!" );
                 }
-                addDataStoreIndex( table, indexMethodName, indexName, isUnique, location, statement, columnIds, type );
+                addDataStoreIndex( table, indexMethodName, indexName, isUnique, location, statement, columnIds, type, options );
             } else if ( RuntimeConfig.DEFAULT_INDEX_PLACEMENT_STRATEGY.getEnum() == DefaultIndexPlacementStrategy.ALL_DATA_STORES ) {
                 if ( indexMethodName != null ) {
                     throw new GenericRuntimeException( "It is not possible to specify a index method if no location has been specified." );
@@ -661,7 +721,7 @@ public class DdlManagerImpl extends DdlManager {
                             while ( catalog.getSnapshot().rel().getIndex( table.id, name + nameSuffix ).isPresent() ) {
                                 nameSuffix = String.valueOf( counter++ );
                             }
-                            addDataStoreIndex( table, indexMethodName, name + nameSuffix, isUnique, loc, statement, columnIds, type );
+                            addDataStoreIndex( table, indexMethodName, name + nameSuffix, isUnique, loc, statement, columnIds, type, options );
                             createdAtLeastOne = true;
                         }
                     }
@@ -671,12 +731,12 @@ public class DdlManagerImpl extends DdlManager {
                 }
             }
         } else { // Store Index
-            addDataStoreIndex( table, indexMethodName, indexName, isUnique, location, statement, columnIds, type );
+            addDataStoreIndex( table, indexMethodName, indexName, isUnique, location, statement, columnIds, type, options );
         }
     }
 
 
-    private void addDataStoreIndex( LogicalTable table, String indexMethodName, String indexName, boolean isUnique, @NotNull DataStore<?> location, Statement statement, List<Long> columnIds, IndexType type ) {
+    private void addDataStoreIndex( LogicalTable table, String indexMethodName, String indexName, boolean isUnique, @NotNull DataStore<?> location, Statement statement, List<Long> columnIds, IndexType type, Map<String, String> options ) {
 
         List<AllocationPartition> partitions = catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id );
         if ( partitions.size() != 1 ) {
@@ -717,7 +777,8 @@ public class DdlManagerImpl extends DdlManager {
                 methodDisplayName,
                 location.getAdapterId(),
                 type,
-                indexName );
+                indexName,
+                options );
 
         String physicalName = location.addIndex(
                 statement.getPrepareContext(),
@@ -775,7 +836,8 @@ public class DdlManagerImpl extends DdlManager {
                 methodDisplayName,
                 -1,
                 type,
-                indexName );
+                indexName,
+                null );
 
         IndexManager.getInstance().addIndex( index, statement );
     }
@@ -1179,7 +1241,8 @@ public class DdlManagerImpl extends DdlManager {
                 type.precision(),
                 type.scale(),
                 type.dimension(),
-                type.cardinality() );
+                type.cardinality(),
+                type.elementsNullable() );
         catalog.updateSnapshot();
         for ( AllocationColumn allocationColumn : catalog.getSnapshot().alloc().getColumnFromLogical( logicalColumn.id ).orElseThrow() ) {
             statement.getTransaction().attachCommitAction( () -> {
@@ -1754,6 +1817,7 @@ public class DdlManagerImpl extends DdlManager {
                     column.typeInformation().dimension(),
                     column.typeInformation().cardinality(),
                     column.typeInformation().nullable(),
+                    column.typeInformation().elementsNullable(),
                     column.collation() );
         }
 
@@ -2050,7 +2114,9 @@ public class DdlManagerImpl extends DdlManager {
                             type.getScale(),
                             alg.getType().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) alg.getType()).getDimension() : -1,
                             alg.getType().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) alg.getType()).getCardinality() : -1,
-                            alg.getType().isNullable() ),
+                            alg.getType().isNullable(),
+                            alg.getType().getComponentType() == null
+                                    || alg.getType().getComponentType().isNullable() ),
                     Collation.getDefaultCollation(),
                     null,
                     position ) );
@@ -2069,7 +2135,8 @@ public class DdlManagerImpl extends DdlManager {
                             -1,
                             -1,
                             -1,
-                            false ),
+                            false,
+                            true ),
                     Collation.getDefaultCollation(),
                     null,
                     position ) );
@@ -2492,7 +2559,8 @@ public class DdlManagerImpl extends DdlManager {
                     index.methodDisplayName,
                     index.location,
                     index.type,
-                    index.name );
+                    index.name,
+                    null );
             if ( index.location < 0 ) {
                 IndexManager.getInstance().addIndex( newIndex, statement );
             } else {
@@ -2794,7 +2862,8 @@ public class DdlManagerImpl extends DdlManager {
                     index.methodDisplayName,
                     index.location,
                     index.type,
-                    index.name );
+                    index.name,
+                    null );
             if ( index.location < 0 ) {
                 IndexManager.getInstance().addIndex( newIndex, statement );
             } else {
@@ -2842,6 +2911,7 @@ public class DdlManagerImpl extends DdlManager {
                 typeInformation.dimension(),
                 typeInformation.cardinality(),
                 typeInformation.nullable(),
+                typeInformation.elementsNullable() == null || typeInformation.elementsNullable(),
                 collation
         );
 

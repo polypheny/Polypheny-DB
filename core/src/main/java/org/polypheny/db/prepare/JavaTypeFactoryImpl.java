@@ -149,7 +149,11 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         }
         if ( type instanceof Types.ArrayType arrayType ) {
             final AlgDataType componentRelType = createType( arrayType.getComponentType() );
-            return createArrayType( createTypeWithNullability( componentRelType, arrayType.componentIsNullable() ), arrayType.maximumCardinality() );
+            if ( arrayType.componentIsNullable() ) {
+                return createArrayType( createTypeWithNullability( componentRelType, arrayType.componentIsNullable() ), arrayType.maximumCardinality() );
+            } else {
+                return createVectorType( createTypeWithNullability( componentRelType, arrayType.componentIsNullable() ), arrayType.maximumCardinality() );
+            }
         }
         if ( type instanceof Types.MapType mapType ) {
             final AlgDataType keyRelType = createType( mapType.getKeyType() );

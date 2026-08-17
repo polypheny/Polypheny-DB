@@ -35,6 +35,8 @@ import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
@@ -51,10 +53,12 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
 
 
 @Slf4j
@@ -94,10 +98,9 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
         // Register the JDBC Pool Size as information in the information manager and enable it
         registerJdbcInformation();
-
+        registerFeatures();
         // Create udfs
         createUdfs();
-
         this.delegate = new RelationalModifyDelegate( this, adapterCatalog );
     }
 
@@ -135,6 +138,11 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     public void createUdfs() {
+
+    }
+
+
+    public void registerFeatures() {
 
     }
 
@@ -252,9 +260,16 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     }
 
 
-    protected void createColumnDefinition( PhysicalColumn column, StringBuilder builder ) {
+    protected String getColumnDefinitionString( PhysicalColumn column ) {
+        StringBuilder builder = new StringBuilder();
         boolean supportsThisArray = column.collectionsType == PolyType.ARRAY && column.dimension != null && this.dialect.supportsArrays() && (this.dialect.supportsNestedArrays() || column.dimension == 1);
-        if ( supportsThisArray ) {
+        AlgDataType algType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+        if ( algType instanceof VectorType vectorType && dialect.vectorPushdownTypeIsPresent( vectorType.getVectorElementType() ) ) {
+            builder.append( dialect.getTypeString( vectorType.getVectorElementType() ) )
+                    .append( "(" )
+                    .append( column.cardinality != null && column.cardinality > 0 ? column.cardinality : "" )
+                    .append( ")" );
+        } else if ( supportsThisArray ) {
             // Returns e.g. TEXT if arrays are not supported
             builder.append( getTypeString( column.type ) ).append( " " ).append( getTypeString( PolyType.ARRAY ).repeat( column.dimension ) );
         } else if ( column.collectionsType == PolyType.MAP ) {
@@ -280,6 +295,12 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                 builder.append( " " ).append( getTypeString( column.collectionsType ) );
             }
         }
+        return builder.toString().trim();
+    }
+
+
+    protected void createColumnDefinition( PhysicalColumn column, StringBuilder builder ) {
+        builder.append( getColumnDefinitionString( column ) );
     }
 
 
@@ -323,15 +344,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                 .append( "." )
                 .append( dialect.quoteIdentifier( physicalTable.name ) );
         builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( column.name ) );
-        builder.append( " " ).append( getTypeString( column.type ) );
-        if ( column.length != null && doesTypeUseLength( column.type ) ) {
-            builder.append( "(" );
-            builder.append( column.length );
-            if ( column.scale != null ) {
-                builder.append( "," ).append( column.scale );
-            }
-            builder.append( ")" );
-        }
+        builder.append( " " ).append( getColumnDefinitionString( column ) );
         executeUpdate( builder, context );
 
         updateNativePhysical( allocId );
@@ -515,6 +528,14 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     public abstract String getDefaultPhysicalSchemaName();
+
+
+    @Override
+    public List<String> getActiveFeatureNames() {
+        return dialect.getSupportedFeatures().stream()
+                .map( SqlDbFeature::displayName )
+                .toList();
+    }
 
 
     @SuppressWarnings("unused")

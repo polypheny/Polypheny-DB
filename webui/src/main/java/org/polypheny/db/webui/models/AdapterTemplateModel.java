@@ -18,8 +18,10 @@ package org.polypheny.db.webui.models;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSetting.AdapterSettingType;
@@ -27,12 +29,13 @@ import org.polypheny.db.adapter.AbstractAdapterSettingList;
 import org.polypheny.db.adapter.BindableAbstractAdapterSettingsList;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
+import org.polypheny.db.adapter.annotations.AdapterSettingsPreset;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 
-public record AdapterTemplateModel( @JsonProperty String adapterName, @JsonProperty AdapterType adapterType, @JsonProperty List<AdapterSettingsModel> settings, @JsonProperty String description, @JsonProperty List<DeployMode> modes ) {
+public record AdapterTemplateModel( @JsonProperty String adapterName, @JsonProperty AdapterType adapterType, @JsonProperty List<AdapterSettingsModel> settings, @JsonProperty String description, @JsonProperty List<DeployMode> modes, @JsonProperty List<AdapterPresetModel> presets ) {
 
 
     public AdapterTemplateModel(
@@ -40,12 +43,14 @@ public record AdapterTemplateModel( @JsonProperty String adapterName, @JsonPrope
             @NotNull AdapterType adapterType,
             @NotNull List<AdapterSettingsModel> settings,
             @NotNull String description,
-            @NotNull List<DeployMode> modes ) {
+            @NotNull List<DeployMode> modes,
+            @NotNull List<AdapterPresetModel> presets ) {
         this.adapterName = adapterName;
         this.adapterType = adapterType;
         this.settings = settings;
         this.description = description;
         this.modes = modes;
+        this.presets = presets;
     }
 
 
@@ -67,7 +72,26 @@ public record AdapterTemplateModel( @JsonProperty String adapterName, @JsonPrope
                 template.adapterType,
                 settings,
                 template.description,
-                template.modes );
+                template.modes,
+                template.presets.stream().map( AdapterPresetModel::from ).toList() );
+    }
+
+
+    public record AdapterPresetModel(
+            @JsonProperty String name,
+            @JsonProperty String description,
+            @JsonProperty DeployMode mode,
+            @JsonProperty Map<String, String> settings
+    ) {
+
+        public static AdapterPresetModel from( AdapterSettingsPreset preset ) {
+            return new AdapterPresetModel(
+                    preset.name(),
+                    preset.description(),
+                    preset.mode(),
+                    Arrays.stream( preset.settings() ).collect( Collectors.toMap( AdapterSettingsPreset.Setting::name, AdapterSettingsPreset.Setting::value ) ) );
+        }
+
     }
 
 

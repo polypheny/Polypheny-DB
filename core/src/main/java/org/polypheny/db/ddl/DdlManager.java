@@ -195,7 +195,7 @@ public abstract class DdlManager {
      * @param location instance of the data store on which to create the index; if null, default strategy is being used
      * @param statement the initial query statement
      */
-    public abstract void createIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement ) throws TransactionException;
+    public abstract void createIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement, Map<String, String> options ) throws TransactionException;
 
     /**
      * Adds an index located in Polypheny to a table
@@ -618,7 +618,7 @@ public abstract class DdlManager {
      * decoupled from the used query language
      */
 
-    public record ColumnTypeInformation( PolyType type, @Nullable PolyType collectionType, Integer precision, Integer scale, Integer dimension, Integer cardinality, Boolean nullable ) {
+    public record ColumnTypeInformation( PolyType type, @Nullable PolyType collectionType, Integer precision, Integer scale, Integer dimension, Integer cardinality, Boolean nullable, Boolean elementsNullable ) {
 
         public ColumnTypeInformation(
                 PolyType type,
@@ -627,7 +627,8 @@ public abstract class DdlManager {
                 Integer scale,
                 Integer dimension,
                 Integer cardinality,
-                Boolean nullable ) {
+                Boolean nullable,
+                Boolean elementsNullable ) {
             this.type = type;
             this.collectionType = collectionType == type ? null : collectionType;
             this.precision = precision == null || precision == -1 ? null : precision;
@@ -635,10 +636,12 @@ public abstract class DdlManager {
             this.dimension = dimension == null || dimension == -1 ? null : dimension;
             this.cardinality = cardinality == null || cardinality == -1 ? null : cardinality;
             this.nullable = nullable;
+            this.elementsNullable = elementsNullable;
         }
 
 
         public static ColumnTypeInformation fromDataTypeSpec( DataTypeSpec sqlDataType ) {
+            Boolean en = sqlDataType.getElementsNullable();
             return new ColumnTypeInformation(
                     sqlDataType.getType(),
                     sqlDataType.getCollectionsType(),
@@ -646,7 +649,8 @@ public abstract class DdlManager {
                     sqlDataType.getScale(),
                     sqlDataType.getDimension(),
                     sqlDataType.getCardinality(),
-                    sqlDataType.getNullable() );
+                    sqlDataType.getNullable(),
+                    en == null || en );
         }
 
     }

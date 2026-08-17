@@ -43,6 +43,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.nodes.IntervalQualifier;
+import org.polypheny.db.type.VectorType.ElementType;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.Util;
 
@@ -126,6 +127,20 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
     @Override
     public AlgDataType createArrayType( AlgDataType elementType, long maxCardinality, long dimension ) {
         ArrayType newType = new ArrayType( elementType, false, maxCardinality, dimension );
+        return canonize( newType );
+    }
+
+
+    @Override
+    public AlgDataType createVectorType( AlgDataType elementType, long dimension ) {
+        ElementType kind = switch ( elementType.getPolyType() ) {
+            case FLOAT, REAL -> ElementType.FLOAT;
+            case DOUBLE -> ElementType.DOUBLE;
+            case INTEGER -> ElementType.INTEGER;
+            case BOOLEAN -> ElementType.BIT;
+            default -> throw new IllegalArgumentException( "Unsupported vector element type: " + elementType.getPolyType() );
+        };
+        VectorType newType = new VectorType( elementType, false, dimension, kind );
         return canonize( newType );
     }
 
@@ -218,10 +233,12 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
     @Override
     public AlgDataType createTypeWithNullability( final AlgDataType type, final boolean nullable ) {
         final AlgDataType newType;
-        if ( type instanceof BasicPolyType basicPolyType) {
+        if ( type instanceof BasicPolyType basicPolyType ) {
             newType = basicPolyType.createWithNullability( nullable );
         } else if ( type instanceof MapPolyType mapPolyType ) {
             newType = copyMapType( mapPolyType, nullable );
+        } else if ( type instanceof VectorType vectorType ) {
+            newType = copyVectorType( vectorType, nullable );
         } else if ( type instanceof ArrayType arrayType ) {
             newType = copyArrayType( arrayType, nullable );
         } else if ( type instanceof MultisetPolyType multisetPolyType ) {
@@ -505,6 +522,12 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
     private AlgDataType copyArrayType( ArrayType at, boolean nullable ) {
         AlgDataType elementType = copyType( at.getComponentType() );
         return new ArrayType( elementType, nullable, at.getCardinality(), at.getDimension() );
+    }
+
+
+    private AlgDataType copyVectorType( VectorType vt, boolean nullable ) {
+        AlgDataType elementType = copyType( vt.getComponentType() );
+        return new VectorType( elementType, nullable, vt.getVectorDimension(), vt.getVectorElementType() );
     }
 
 

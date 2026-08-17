@@ -121,7 +121,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param collation The collation of the field (if applicable, else null)
      * @return The id of the inserted column
      */
-    LogicalColumn addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation );
+    LogicalColumn addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, boolean elementsNullable, Collation collation );
 
 
     /**
@@ -146,7 +146,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param columnId The id of the column
      * @param type The new type of the column
      */
-    void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer precision, Integer dimension, Integer cardinality );
+    void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer precision, Integer dimension, Integer cardinality, Boolean elementsNullable );
 
     /**
      * Change nullability of the column (weather the column allows null values).
@@ -299,7 +299,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param indexName The name of the index
      * @return The id of the created index
      */
-    LogicalIndex addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName );
+    LogicalIndex addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName, Map<String, String> options );
 
     /**
      * Set physical index name.

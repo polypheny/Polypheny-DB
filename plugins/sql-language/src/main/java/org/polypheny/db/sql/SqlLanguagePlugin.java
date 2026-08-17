@@ -129,6 +129,7 @@ import org.polypheny.db.sql.language.fun.SqlMultisetMemberOfOperator;
 import org.polypheny.db.sql.language.fun.SqlMultisetQueryConstructor;
 import org.polypheny.db.sql.language.fun.SqlMultisetSetOperator;
 import org.polypheny.db.sql.language.fun.SqlMultisetValueConstructor;
+import org.polypheny.db.sql.language.fun.SqlNamedDistanceFunction;
 import org.polypheny.db.sql.language.fun.SqlNewOperator;
 import org.polypheny.db.sql.language.fun.SqlNthValueAggFunction;
 import org.polypheny.db.sql.language.fun.SqlNtileAggFunction;
@@ -1527,6 +1528,18 @@ public class SqlLanguagePlugin extends PolyPlugin {
         register( OperatorName.DISTANCE, new SqlDistanceFunction() );
 
         /*
+         * distance functions without additional parameters
+         */
+        register( OperatorName.L1_DISTANCE, new SqlNamedDistanceFunction( "L1_DISTANCE", Kind.L1_DISTANCE, FunctionCategory.L1_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
+        register( OperatorName.L2_DISTANCE, new SqlNamedDistanceFunction( "L2_DISTANCE", Kind.L2_DISTANCE, FunctionCategory.L2_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
+        register( OperatorName.COS_DISTANCE, new SqlNamedDistanceFunction( "COS_DISTANCE", Kind.COS_DISTANCE, FunctionCategory.COS_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
+        register( OperatorName.HAMMING_DISTANCE, new SqlNamedDistanceFunction( "HAMMING_DISTANCE", Kind.HAMMING_DISTANCE, FunctionCategory.HAMMING_DISTANCE, SqlNamedDistanceFunction.TWO_BOOLEAN_ARRAYS ) );
+        register( OperatorName.JACCARD_DISTANCE, new SqlNamedDistanceFunction( "JACCARD_DISTANCE", Kind.JACCARD_DISTANCE, FunctionCategory.JACCARD_DISTANCE, SqlNamedDistanceFunction.TWO_BOOLEAN_ARRAYS ) );
+        register( OperatorName.INNER_PRODUCT_DISTANCE, new SqlNamedDistanceFunction( "INNER_PRODUCT_DISTANCE", Kind.INNER_PRODUCT_DISTANCE, FunctionCategory.INNER_PRODUCT_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
+
+
+
+        /*
          * Get metadata of multimedia files
          */
         register( OperatorName.META, new SqlMetaFunction() );
@@ -2431,6 +2444,34 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         null,
                         null,
                         null ) );
+
+        //------------------------------------------------------------
+        //                  PostgreSQL pgvector OPERATORS
+        //------------------------------------------------------------
+        /*
+            Note on chosen precedence:
+            AND=24, comparisons =/</> = 30, + - = 40, * / = 60 are already existing values.
+            We therefore use precedence 36 with left-associativity.
+         */
+        register( OperatorName.PGVECTOR_L2, new SqlBinaryOperator(
+                "<->", Kind.L2_DISTANCE, 36, true,
+                ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
+        register( OperatorName.PGVECTOR_L1, new SqlBinaryOperator(
+                "<+>", Kind.L1_DISTANCE, 36, true,
+                ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
+        register( OperatorName.PGVECTOR_COS, new SqlBinaryOperator(
+                "<=>", Kind.COS_DISTANCE, 36, true,
+                ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
+        register( OperatorName.PGVECTOR_HAMMING, new SqlBinaryOperator(
+                "<~>", Kind.HAMMING_DISTANCE, 36, true,
+                ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_BOOLEAN_ARRAYS ) );
+        register( OperatorName.PGVECTOR_JACCARD, new SqlBinaryOperator(
+                "<%>", Kind.JACCARD_DISTANCE, 36, true,
+                ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_BOOLEAN_ARRAYS ) );
+        register( OperatorName.PGVECTOR_INNER_PRODUCT, new SqlBinaryOperator(
+                "<#>", Kind.INNER_PRODUCT_DISTANCE, 36, true,
+                ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
+
 
         /*
          * Operator to quantify patterns within {@code MATCH_RECOGNIZE}.

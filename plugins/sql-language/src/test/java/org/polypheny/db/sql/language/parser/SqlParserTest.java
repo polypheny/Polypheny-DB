@@ -4416,7 +4416,7 @@ public class SqlParserTest extends SqlLanguageDependent {
         // "CAST(2001-12-21)");
         checkExp( "CAST('2001-12-21' AS DATE)", "CAST('2001-12-21' AS DATE)" );
         checkExp( "CAST(12 AS DATE)", "CAST(12 AS DATE)" );
-        checkFails( "CAST('2000-12-21' AS DATE ^NOT^ NULL)", "(?s).*Encountered \"NOT\" at line 1, column 27.*" );
+        checkFails( "CAST('2000-12-21' AS DATE ^NOT^ NULL)", "(?s).*Encountered \"NOT NULL \\)\" at line 1, column 27.*" );
         checkFails( "CAST('foo' as ^1^)", "(?s).*Encountered \"1\" at line 1, column 15.*" );
         checkExp( "Cast(DATE '2004-12-21' AS VARCHAR(10))", "CAST(DATE '2004-12-21' AS VARCHAR(10))" );
     }
