@@ -168,7 +168,7 @@ public enum RuntimeConfig {
     ACTIVE_TRACKING(
             "statistics/activeTracking",
             "All transactions are tracked and statistics collected during execution.",
-            true,
+            false,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 

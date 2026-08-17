@@ -525,6 +525,11 @@ public class GeoFunctions {
         return PolyGeometry.makePoint( x.doubleValue(), y.doubleValue() );
     }
 
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stMakePoint( PolyNumber x, PolyNumber y, PolyNumber srid ) {
+        return PolyGeometry.makePoint( x.doubleValue(), y.doubleValue(), srid.intValue() );
+    }
+
     /*
      * on LineStrings
      */

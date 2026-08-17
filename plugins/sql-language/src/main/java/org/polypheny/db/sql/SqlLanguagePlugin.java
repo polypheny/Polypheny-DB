@@ -148,6 +148,7 @@ import org.polypheny.db.sql.language.fun.SqlStBuffer;
 import org.polypheny.db.sql.language.fun.SqlStGeomFromGeoJson;
 import org.polypheny.db.sql.language.fun.SqlStGeomFromTWKB;
 import org.polypheny.db.sql.language.fun.SqlStGeomFromText;
+import org.polypheny.db.sql.language.fun.SqlStPointFunction;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.fun.SqlStringContextVariable;
 import org.polypheny.db.sql.language.fun.SqlSubstringFunction;
@@ -2902,15 +2903,9 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.GEOMETRY,
                         FunctionCategory.GEOMETRY ) );
 
-        register(
-                OperatorName.ST_MAKE_POINT,
-                new SqlFunction(
-                        "ST_MAKEPOINT",
-                        Kind.GEO,
-                        ReturnTypes.GEOMETRY,
-                        InferTypes.GEOMETRY,
-                        OperandTypes.GEOMETRY,
-                        FunctionCategory.GEOMETRY ) );
+        register( OperatorName.ST_MAKEPOINT, new SqlStPointFunction("ST_MAKEPOINT",true) );
+
+        register( OperatorName.ST_POINT, new SqlStPointFunction("ST_POINT", false) );
 
         // on LineStrings
         register(

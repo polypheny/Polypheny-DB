@@ -54,6 +54,7 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.geom.TopologyException;
+import org.locationtech.jts.geom.impl.CoordinateArraySequenceFactory;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.io.geojson.GeoJsonReader;
@@ -89,12 +90,15 @@ public class PolyGeometry extends PolyValue {
 
     public static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
+    public static final GeometryFactory GEOMETRY_FACTORY_4326 = new GeometryFactory( new PrecisionModel(), WGS_84);
+
     /**
      * Wrap the JTS {@link Geometry} class.
      */
     @Serialize
     @SerializeNullable
     protected Geometry jtsGeometry;
+
     // Spatial Reference System ID
     @Serialize
     @SerializeNullable
@@ -203,6 +207,11 @@ public class PolyGeometry extends PolyValue {
     @SuppressWarnings("UnusedDeclaration")
     public static PolyGeometry makePoint(double x, double y) {
         return new PolyGeometry( GEOMETRY_FACTORY.createPoint(new Coordinate(x, y)));
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry makePoint(double x, double y, int srid) {
+        return new PolyGeometry( new GeometryFactory(new PrecisionModel(), srid).createPoint(new Coordinate(x, y)));
     }
 
     public static PolyGeometry ofNullable( String wkt ) {

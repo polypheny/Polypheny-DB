@@ -401,16 +401,22 @@ class PIService {
 
 
     private Response executeUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request, ResponseMaker<StatementResponse> responseObserver ) throws IOException {
-        PIClient client = getClient();
-        PIUnparameterizedStatement statement = client.getStatementManager().createUnparameterizedStatement( request );
-        Response mid = responseObserver.makeResponse( PrismUtils.createResult( statement ), false );
-        sendOneMessage( mid );
-        StatementResult result = statement.execute(
-                request.hasFetchSize()
-                        ? request.getFetchSize()
-                        : PropertyUtils.DEFAULT_FETCH_SIZE
-        );
-        return responseObserver.makeResponse( PrismUtils.createResult( statement, result ) );
+        try {
+            PIClient client = getClient();
+            PIUnparameterizedStatement statement = client.getStatementManager().createUnparameterizedStatement( request );
+            Response mid = responseObserver.makeResponse( PrismUtils.createResult( statement ), false );
+            sendOneMessage( mid );
+            StatementResult result = statement.execute(
+                    request.hasFetchSize()
+                            ? request.getFetchSize()
+                            : PropertyUtils.DEFAULT_FETCH_SIZE
+            );
+            return responseObserver.makeResponse( PrismUtils.createResult( statement, result ) );
+        }catch ( Exception e ){
+            log.warn( "error", e );
+            throw e;
+        }
+
     }
 
 

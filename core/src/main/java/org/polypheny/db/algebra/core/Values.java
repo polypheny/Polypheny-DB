@@ -189,9 +189,10 @@ public abstract class Values extends AbstractAlgNode {
 
     @Override
     public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
+        String alg = this.getClass().getSimpleName() + "$" +
                 rowType.toString() + "$" +
                 (tuples != null ? tuples.stream().map( t -> t.stream().map( RexLiteral::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) ).collect( Collectors.joining( "$" ) ) : "") + "&";
+        return alg;
     }
 
 

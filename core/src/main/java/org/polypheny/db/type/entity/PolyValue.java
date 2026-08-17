@@ -887,7 +887,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 if ( value.startsWith( "ST_GeomFromText" ) ) {
                     value = value.replace( "ST_GeomFromText", "" );
                     value = value.trim();
-                    value = value.substring( 1, value.length() - 2 );
+                    value = value.substring( 1, value.length() - 1 );
                     String[] splits = value.split( "," );
                     try {
                         if ( splits.length == 2 ) {
