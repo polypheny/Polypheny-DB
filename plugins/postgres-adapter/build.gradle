@@ -16,7 +16,7 @@ dependencies {
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":plugins:sql-language", configuration: "tests")
     testImplementation project(":plugins:jdbc-adapter-framework")
-    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version  // MIT
 
 }
 
