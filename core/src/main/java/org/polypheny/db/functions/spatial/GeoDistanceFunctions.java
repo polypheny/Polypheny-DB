@@ -57,6 +57,10 @@ public class GeoDistanceFunctions {
      * @return the distance between geometries
      */
     public static double sphericalDistance( @NotNull PolyGeometry g1, @NotNull PolyGeometry g2 ) {
+        if ( g1.isPoint() && g2.isPoint() ){
+            return calculateSphericalDistance( g1.asPoint().getCoordinates(), g2.asPoint().getCoordinates() );
+        }
+
         Coordinate[] closestPoints = new DistanceOp( g1.getJtsGeometry(), g2.getJtsGeometry() ).nearestPoints();
         return calculateSphericalDistance( closestPoints[0], closestPoints[1] );
     }

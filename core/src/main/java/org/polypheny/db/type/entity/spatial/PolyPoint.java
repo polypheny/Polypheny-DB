@@ -18,6 +18,7 @@ package org.polypheny.db.type.entity.spatial;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
 import org.polypheny.db.type.PolyType;
@@ -90,6 +91,10 @@ public class PolyPoint extends PolyGeometry {
 
     public double getY() {
         return jtsPoint.getY();
+    }
+
+    public Coordinate getCoordinates() {
+        return this.jtsPoint.getCoordinate();
     }
 
 
