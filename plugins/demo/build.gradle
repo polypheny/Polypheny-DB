@@ -6,10 +6,17 @@ dependencies {
     compileOnly project(":dbms")
     compileOnly project(":webui")
     compileOnly project(":plugins:sql-language")
-    compileOnly project(":plugins:mql-language")
-    compileOnly project(":plugins:cypher-language")
+    compileOnly project(":plugins:postgres-adapter")
 
-    compileOnly group: "io.javalin", name: "javalin", version: javalin_version
+    compileOnly project(":plugins:mql-language")
+    compileOnly project(":plugins:mongodb-adapter")
+
+    compileOnly project(":plugins:cypher-language")
+    compileOnly project(":plugins:neo4j-adapter")
+    compileOnly project(":plugins:notebooks")
+    compileOnly project(":plugins:prism-interface")
+
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: jackson_core_version
 
     // --- Test Compile ---
     testImplementation project(path: ":dbms", configuration: "test")
@@ -17,7 +24,25 @@ dependencies {
     testImplementation project(path: ":core")
     testImplementation project(path: ":webui")
     testImplementation project(path: ":plugins:sql-language")
+}
 
+delombok {
+    dependsOn(":config:processResources")
+    dependsOn(":core:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":webui:processResources")
+
+    dependsOn(":plugins:sql-language:processResources")
+    dependsOn(":plugins:postgres-adapter:processResources")
+
+    dependsOn(":plugins:mql-language:processResources")
+    dependsOn(":plugins:mongodb-adapter:processResources")
+
+    dependsOn(":plugins:cypher-language:processResources")
+    dependsOn(":plugins:neo4j-adapter:processResources")
+
+    dependsOn(":plugins:notebooks:processResources")
+    dependsOn(":plugins:prism-interface:processResources")
 }
 
 
@@ -48,17 +73,17 @@ compileJava {
     dependsOn(":core:processResources")
     dependsOn(":information:processResources")
     dependsOn(":webui:processResources")
-    dependsOn(":plugins:sql-language:processResources")
-    dependsOn(":plugins:mql-language:processResources")
-    dependsOn(":plugins:cypher-language:processResources")
-}
 
-delombok {
-    dependsOn(":core:processResources")
-    dependsOn(":webui:processResources")
     dependsOn(":plugins:sql-language:processResources")
+    dependsOn(":plugins:postgres-adapter:processResources")
+
     dependsOn(":plugins:mql-language:processResources")
+    dependsOn(":plugins:mongodb-adapter:processResources")
+
     dependsOn(":plugins:cypher-language:processResources")
+    dependsOn(":plugins:neo4j-adapter:processResources")
+
+    dependsOn(":plugins:notebooks:processResources")
 }
 
 test.dependsOn(":dbms:shadowJar")

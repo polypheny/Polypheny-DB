@@ -117,6 +117,10 @@ public class PolyPluginManager extends DefaultPluginManager {
         getPLUGINS().values().forEach( p -> ((PolyPlugin) p.getPlugin()).afterTransactionInit( manager ) );
     }
 
+    public static void initAfterRestore( ) {
+        getPLUGINS().values().forEach( p -> ((PolyPlugin) p.getPlugin()).afterRestoreInit() );
+    }
+
 
     @Override
     protected PluginFactory createPluginFactory() {

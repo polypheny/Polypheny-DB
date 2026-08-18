@@ -40,4 +40,7 @@ public abstract class PolyPlugin extends Plugin {
         // empty on purpose
     }
 
+    public void afterRestoreInit() {
+        // empty on purpose
+    }
 }
