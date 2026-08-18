@@ -35,6 +35,8 @@ public interface DataTypeSpec extends Visitable {
 
     Boolean getNullable();
 
+    Boolean getElementsNullable();
+
     Identifier getCollectionsTypeName();
 
     PolyType getCollectionsType();

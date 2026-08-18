@@ -296,6 +296,7 @@ public class GoogleSheetSource extends DataSource<RelAdapterCatalog> implements 
                         null,
                         null,
                         false,
+                        true,
                         "public",
                         tableName,
                         col.toString(),

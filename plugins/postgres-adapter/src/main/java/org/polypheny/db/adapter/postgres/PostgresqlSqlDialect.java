@@ -18,12 +18,16 @@ package org.polypheny.db.adapter.postgres;
 
 
 import com.google.common.collect.ImmutableList;
+import com.pgvector.PGbit;
+import com.pgvector.PGvector;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.polypheny.db.adapter.postgres.source.PostgresqlFeature;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
@@ -31,11 +35,13 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
+import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -46,13 +52,17 @@ import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.fun.SqlFloorFunction;
 import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
+import org.polypheny.db.type.VectorType.ElementType;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.inference.ReturnTypes;
-
 
 /**
  * A <code>SqlDialect</code> implementation for the PostgreSQL database.
  */
+@Slf4j
 public class PostgresqlSqlDialect extends SqlDialect {
 
     /**
@@ -77,6 +87,14 @@ public class PostgresqlSqlDialect extends SqlDialect {
                     .withNullCollation( NullCollation.HIGH )
                     .withIdentifierQuoteString( "\"" )
                     .withDataTypeSystem( POSTGRESQL_TYPE_SYSTEM ) );
+
+
+    public PostgresqlSqlDialect() {
+        this( EMPTY_CONTEXT
+                .withNullCollation( NullCollation.HIGH )
+                .withIdentifierQuoteString( "\"" )
+                .withDataTypeSystem( POSTGRESQL_TYPE_SYSTEM ) );
+    }
 
 
     /**
@@ -107,29 +125,53 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
     @Override
     public List<OperatorName> supportedGeoFunctions() {
-        return ImmutableList.of( OperatorName.ST_GEOMFROMTEXT, OperatorName.ST_TRANSFORM, OperatorName.ST_EQUALS,
-                OperatorName.ST_ISSIMPLE, OperatorName.ST_ISCLOSED, OperatorName.ST_ISEMPTY, OperatorName.ST_ISRING,
-                OperatorName.ST_NUMPOINTS, OperatorName.ST_DIMENSION, OperatorName.ST_LENGTH, OperatorName.ST_AREA,
-                OperatorName.ST_ENVELOPE, OperatorName.ST_BOUNDARY, OperatorName.ST_CONVEXHULL, OperatorName.ST_CENTROID,
-                OperatorName.ST_CENTROID, OperatorName.ST_DISJOINT, OperatorName.ST_TOUCHES, OperatorName.ST_INTERSECTS,
-                OperatorName.ST_CROSSES, OperatorName.ST_WITHIN, OperatorName.ST_CONTAINS, OperatorName.ST_OVERLAPS,
-                OperatorName.ST_COVERS, OperatorName.ST_COVEREDBY, OperatorName.ST_RELATE,
-                OperatorName.ST_INTERSECTION, OperatorName.ST_UNION, OperatorName.ST_DIFFERENCE, OperatorName.ST_SYMDIFFERENCE,
-                OperatorName.ST_X, OperatorName.ST_Y, OperatorName.ST_Z, OperatorName.ST_STARTPOINT, OperatorName.ST_ENDPOINT,
-                OperatorName.ST_EXTERIORRING, OperatorName.ST_NUMINTERIORRING, OperatorName.ST_INTERIORRINGN,
-                OperatorName.ST_NUMGEOMETRIES, OperatorName.ST_GEOMETRYN );
+        if ( supportsPostGIS() ) {
+            return ImmutableList.of( OperatorName.ST_GEOMFROMTEXT, OperatorName.ST_TRANSFORM, OperatorName.ST_EQUALS,
+                    OperatorName.ST_ISSIMPLE, OperatorName.ST_ISCLOSED, OperatorName.ST_ISEMPTY, OperatorName.ST_ISRING,
+                    OperatorName.ST_NUMPOINTS, OperatorName.ST_DIMENSION, OperatorName.ST_LENGTH, OperatorName.ST_AREA,
+                    OperatorName.ST_ENVELOPE, OperatorName.ST_BOUNDARY, OperatorName.ST_CONVEXHULL, OperatorName.ST_CENTROID,
+                    OperatorName.ST_CENTROID, OperatorName.ST_DISJOINT, OperatorName.ST_TOUCHES, OperatorName.ST_INTERSECTS,
+                    OperatorName.ST_CROSSES, OperatorName.ST_WITHIN, OperatorName.ST_CONTAINS, OperatorName.ST_OVERLAPS,
+                    OperatorName.ST_COVERS, OperatorName.ST_COVEREDBY, OperatorName.ST_RELATE,
+                    OperatorName.ST_INTERSECTION, OperatorName.ST_UNION, OperatorName.ST_DIFFERENCE, OperatorName.ST_SYMDIFFERENCE,
+                    OperatorName.ST_X, OperatorName.ST_Y, OperatorName.ST_Z, OperatorName.ST_STARTPOINT, OperatorName.ST_ENDPOINT,
+                    OperatorName.ST_EXTERIORRING, OperatorName.ST_NUMINTERIORRING, OperatorName.ST_INTERIORRINGN,
+                    OperatorName.ST_NUMGEOMETRIES, OperatorName.ST_GEOMETRYN );
+        } else {
+            return ImmutableList.of();
+        }
     }
 
 
     @Override
     public boolean supportsGeoJson() {
-        return true;
+        return supportsFeature( PostgresqlFeature.POSTGIS );
     }
 
 
     @Override
     public boolean supportsPostGIS() {
-        return true;
+        return supportsFeature( PostgresqlFeature.POSTGIS );
+    }
+
+
+    @Override
+    public List<OperatorName> supportedKnnFunctions() {
+        return supportsVector() ?
+                ImmutableList.of(
+                        OperatorName.L1_DISTANCE,
+                        OperatorName.L2_DISTANCE,
+                        OperatorName.COS_DISTANCE,
+                        OperatorName.INNER_PRODUCT_DISTANCE,
+                        OperatorName.HAMMING_DISTANCE,
+                        OperatorName.JACCARD_DISTANCE )
+                : ImmutableList.of();
+    }
+
+
+    @Override
+    public boolean supportsVector() {
+        return supportsFeature( PostgresqlFeature.PGVECTOR );
     }
 
 
@@ -158,6 +200,14 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
     @Override
     public SqlNode getCastSpec( AlgDataType type ) {
+        if ( type instanceof VectorType vectorType
+                && vectorPushdownTypeIsPresent( vectorType.getVectorElementType() ) ) {
+
+            String typeName = "_" + getTypeString( vectorType.getVectorElementType() );
+            return new SqlDataTypeSpec( new SqlIdentifier( typeName, ParserPos.ZERO ),
+                    (int) vectorType.getVectorDimension(), -1, null, null, ParserPos.ZERO );
+        }
+
         String castSpec;
         switch ( type.getPolyType() ) {
             case TINYINT:
@@ -279,10 +329,146 @@ public class PostgresqlSqlDialect extends SqlDialect {
                     super.unparseCall( writer, call, leftPrec, rightPrec );
                 }
                 break;
-
+            case L1_DISTANCE:
+                PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 0 ), leftPrec, rightPrec );
+                writer.print( " <+> " );
+                PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 1 ), leftPrec, rightPrec );
+                break;
+            case L2_DISTANCE:
+                PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 0 ), leftPrec, rightPrec );
+                writer.print( " <-> " );
+                PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 1 ), leftPrec, rightPrec );
+                break;
+            case COS_DISTANCE:
+                PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 0 ), leftPrec, rightPrec );
+                writer.print( " <=> " );
+                PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 1 ), leftPrec, rightPrec );
+                break;
+            case HAMMING_DISTANCE:
+                PostgresqlVectorHelper.unparse( writer, call.operand( 0 ), leftPrec, rightPrec );
+                writer.print( " <~> " );
+                PostgresqlVectorHelper.unparse( writer, call.operand( 1 ), leftPrec, rightPrec );
+                break;
+            case JACCARD_DISTANCE:
+                PostgresqlVectorHelper.unparse( writer, call.operand( 0 ), leftPrec, rightPrec );
+                writer.print( " <%> " );
+                PostgresqlVectorHelper.unparse( writer, call.operand( 1 ), leftPrec, rightPrec );
+                break;
+            case INNER_PRODUCT_DISTANCE:
+                PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 0 ), leftPrec, rightPrec );
+                writer.print( " <#> " );
+                PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 1 ), leftPrec, rightPrec );
+                break;
             default:
                 super.unparseCall( writer, call, leftPrec, rightPrec );
         }
+    }
+
+
+    /**
+     * Bypasses the default {@code getArray()} path because the PostgreSQL driver returns a PGobject
+     * instead of a standard java.sql.Array for pgvector columns.
+     */
+    @Override
+    public Optional<Expression> getCustomArrayRetrievalExpression( ParameterExpression resultSet, int i, AlgDataType fieldType ) {
+        if ( fieldType.getPolyType() != PolyType.ARRAY || !(fieldType instanceof VectorType vectorType) ) {
+            return Optional.empty();
+        }
+        if ( vectorType.getVectorElementType() == ElementType.BIT ) {
+            Expression object = Expressions.call( resultSet, "getString", Expressions.constant( i + 1 ) );
+            return Optional.of( Expressions.call( PostgresqlVectorHelper.class, "parseVector", object ) );
+        }
+        if ( !supportsVector() ) {
+            return Optional.empty();
+        }
+
+        Expression object = Expressions.call( resultSet, "getObject", Expressions.constant( i + 1 ) );
+        return Optional.of( Expressions.call( PostgresqlVectorHelper.class, "parseVector", object ) );
+    }
+
+
+    @Override
+    public boolean supportsFeature( SqlDbFeature feature ) {
+        return supportedFeatures.contains( feature );
+    }
+
+
+    @Override
+    public void initializeConnection( java.sql.Connection conn ) throws java.sql.SQLException {
+        PGbit.registerType( conn );
+        if ( supportsVector() ) {
+            PGvector.registerTypes( conn );
+        }
+        if ( supportsPostGIS() ) {
+            org.postgresql.PGConnection pgConn = conn.unwrap( org.postgresql.PGConnection.class );
+            pgConn.addDataType( "geometry", net.postgis.jdbc.PGgeometry.class );
+        }
+
+    }
+
+
+    @Override
+    public boolean vectorPushdownTypeIsPresent( VectorType.ElementType vectorType ) {
+        return switch ( vectorType ) {
+            case FLOAT -> supportsVector();
+            case BIT -> true;
+            default -> false;
+        };
+    }
+
+
+    @Override
+    public Object getVectorDbObject( VectorType.ElementType vectorType, PolyList<PolyValue> vectorAsList ) {
+        return switch ( vectorType ) {
+            case FLOAT -> {
+                float[] fa = new float[vectorAsList.size()];
+                for ( int i = 0; i < vectorAsList.size(); ++i ) {
+                    fa[i] = vectorAsList.get( i ).asNumber().floatValue();
+                }
+                yield new PGvector( fa );
+            }
+            case BIT -> {
+                boolean[] ba = new boolean[vectorAsList.size()];
+                for ( int i = 0; i < vectorAsList.size(); ++i ) {
+                    PolyValue val = vectorAsList.get( i );
+                    ba[i] = (val != null && !val.isNull() && val.asBoolean().getValue() != null
+                            && val.asBoolean().getValue());
+                }
+                yield new PGbit( ba );
+            }
+            case DOUBLE, INTEGER -> null;
+        };
+    }
+
+
+    @Override
+    public String getTypeString( VectorType.ElementType vectorType ) {
+        return switch ( vectorType ) {
+            case FLOAT -> "vector";
+            case BIT -> "bit";
+            case DOUBLE, INTEGER -> throw new UnsupportedOperationException( "Vectors of type " + vectorType
+                    + " are not supported by PG and do therefore not have a dedicated type string" );
+        };
+    }
+
+
+    @Override
+    public SqlNode getVectorLiteral( VectorType vectorType, PolyList<PolyValue> vectorAsList, ParserPos pos ) {
+        if ( vectorType.getVectorElementType() == ElementType.BIT ) {
+            StringBuilder sb = new StringBuilder();
+            for ( PolyValue val : vectorAsList ) {
+                if ( val == null || val.isNull() || val.asBoolean().getValue() == null ) {
+                    throw new RuntimeException( "Vector cannot contain null elements." );
+                }
+                sb.append( (val.asBoolean().getValue() ? "1" : "0") );
+            }
+            return (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall(
+                    pos,
+                    SqlLiteral.createCharString( sb.toString(), pos ),
+                    getCastSpec( vectorType )
+            );
+        }
+        return null;
     }
 
 }

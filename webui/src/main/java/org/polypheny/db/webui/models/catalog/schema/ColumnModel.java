@@ -59,6 +59,9 @@ public class ColumnModel extends FieldModel {
     public boolean nullable;
 
     @JsonProperty
+    public boolean elementsNullable;
+
+    @JsonProperty
     public int position;
 
 
@@ -74,10 +77,12 @@ public class ColumnModel extends FieldModel {
             @JsonProperty("dimension") Integer dimension,
             @JsonProperty("cardinality") Integer cardinality,
             @JsonProperty("nullable") boolean nullable,
+            @JsonProperty("elementsNullable") boolean elementsNullable,
             @JsonProperty("position") int position ) {
         super( id, name, tableId );
         this.type = type;
         this.nullable = nullable;
+        this.elementsNullable = elementsNullable;
         this.position = position;
         this.collectionsType = collectionsType;
         this.precision = precision;
@@ -101,6 +106,7 @@ public class ColumnModel extends FieldModel {
                 column.dimension,
                 column.cardinality,
                 column.nullable,
+                column.elementsNullable,
                 column.position );
     }
 

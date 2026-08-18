@@ -32,7 +32,9 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
@@ -69,6 +71,40 @@ public class CypherFunctionInvocation extends CypherExpression {
     }
 
 
+    private RexNode getVectorDistanceRex( CypherContext context, RexType type ) {
+        if ( arguments.size() != 3 ) {
+            throw new GenericRuntimeException( "vector_distance requires exactly 3 arguments" );
+        }
+
+        RexNode v1 = arguments.get( 0 ).getRex( context, type ).right;
+        RexNode v2 = arguments.get( 1 ).getRex( context, type ).right;
+
+        RexNode metricRex = arguments.get( 2 ).getRex( context, type ).right;
+        if ( !(metricRex instanceof RexLiteral metricLit) ) {
+            throw new GenericRuntimeException( "vector_distance metric must be a string literal" );
+        }
+        String metric = metricLit.value.asString().value.toUpperCase( Locale.ROOT );
+
+        OperatorName namedOp = switch ( metric ) {
+            case "L1" -> OperatorName.L1_DISTANCE;
+            case "L2" -> OperatorName.L2_DISTANCE;
+            case "COSINE" -> OperatorName.COS_DISTANCE;
+            case "HAMMING" -> OperatorName.HAMMING_DISTANCE;
+            case "JACCARD" -> OperatorName.JACCARD_DISTANCE;
+            case "INNER_PRODUCT" -> OperatorName.INNER_PRODUCT_DISTANCE;
+            // parameterized version
+            case "CHISQUARED", "L2SQUARED" -> OperatorName.DISTANCE;
+            default -> throw new GenericRuntimeException( "Unknown distance metric: ", metric );
+        };
+        Operator operator = OperatorRegistry.get( namedOp );
+
+        if ( namedOp == OperatorName.DISTANCE ) {
+            return context.rexBuilder.makeCall( operator, List.of( v1, v2, metricRex ) );
+        }
+        return context.rexBuilder.makeCall( operator, List.of( v1, v2 ) );
+    }
+
+
     public ImmutableList<CypherExpression> getArguments() {
         return ImmutableList.copyOf( arguments );
     }
@@ -83,11 +119,11 @@ public class CypherFunctionInvocation extends CypherExpression {
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         // At this point, we do not know what is on the left side of the Pair.
         // The caller has to discard the left side, and use a variable name or something else.
-        return Pair.of( PolyString.of( "???" ), getRexCall( context ) );
+        return Pair.of( PolyString.of( "???" ), getRexCall( context, type ) );
     }
 
 
-    public RexNode getRexCall( CypherContext context ) {
+    public RexNode getRexCall( CypherContext context, RexType type ) {
         switch ( getOperatorName() ) {
             case CYPHER_POINT: {
                 // VERY UGLY, but it works for now. This could be improved by using the function MAP_OF_ENTRIES,
@@ -157,6 +193,8 @@ public class CypherFunctionInvocation extends CypherExpression {
                                 // Because create function logic is implemented in
                                 arguments.get( 1 ).getRex( context, RexType.PROJECT ).getRight()
                         ) );
+            case VECTOR_DISTANCE:
+                return getVectorDistanceRex( context, type );
             default:
                 throw new NotImplementedException( "Cypher Function to alg conversion missing: " + getOperatorName() );
         }

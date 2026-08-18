@@ -93,7 +93,7 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
             if ( getNumActive() + getNumIdle() < maxConnections ) {
                 log.debug( "Creating a new transaction handler. Current freeInstances-Size: {}", freeInstances.size() );
                 try {
-                    handler = new TransactionalConnectionHandler( dataSource.getConnection(), dialect );
+                    handler = createNewHandler( dataSource.getConnection(), dialect );
                 } catch ( SQLException e ) {
                     throw new ConnectionHandlerException( "Caught exception while creating connection handler", e );
                 }
@@ -111,6 +111,16 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
             }
         }
         return handler;
+    }
+
+
+    private TransactionalConnectionHandler createNewHandler( Connection connection, SqlDialect dialect ) throws ConnectionHandlerException {
+        try {
+            dialect.initializeConnection( connection );
+        } catch ( SQLException e ) {
+            throw new ConnectionHandlerException( "Failed to initialize dialect connection", e );
+        }
+        return new TransactionalConnectionHandler( connection, dialect );
     }
 
 

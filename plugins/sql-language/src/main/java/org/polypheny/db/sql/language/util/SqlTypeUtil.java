@@ -186,6 +186,34 @@ public class SqlTypeUtil {
             boolean nullable,
             ParserPos zero ) {
 
+       return createDataTypeSpec(
+               typeIdentifier,
+               componentTypeIdentifier,
+               precision,
+               scale,
+               dimension,
+               cardinality,
+               charSetName,
+               o,
+               nullable,
+               true,
+               zero );
+    }
+
+
+    public static DataTypeSpec createDataTypeSpec(
+            Identifier typeIdentifier,
+            Identifier componentTypeIdentifier,
+            int precision,
+            int scale,
+            int dimension,
+            int cardinality,
+            String charSetName,
+            TimeZone o,
+            boolean nullable,
+            Boolean elementsNullable,
+            ParserPos zero ) {
+
         return new SqlDataTypeSpec(
                 (SqlIdentifier) typeIdentifier,
                 (SqlIdentifier) componentTypeIdentifier,
@@ -196,6 +224,7 @@ public class SqlTypeUtil {
                 charSetName,
                 o,
                 nullable,
+                elementsNullable,
                 zero );
     }
 

@@ -1162,7 +1162,9 @@ SqlAlterMaterializedView SqlAlterMaterializedView(Span s) :
     final SqlIdentifier indexMethod;
     final boolean unique;
     final SqlIdentifier storeName;
-
+    Map<String, String> indexOptions;
+    String optKey;
+    String optVal;
 }
 {
     <MATERIALIZED><VIEW>
@@ -1214,8 +1216,22 @@ SqlAlterMaterializedView SqlAlterMaterializedView(Span s) :
             |
             { storeName = null; }
             )
+            (
+            <WITH> <LPAREN>
+                { indexOptions = new HashMap<String, String>(); }
+                optKey = IndexOptionValue() <EQ> optVal = IndexOptionValue()
+                { indexOptions.put( optKey, optVal ); }
+                (
+                  <COMMA>
+                  optKey = IndexOptionValue() <EQ> optVal = IndexOptionValue()
+                  { indexOptions.put( optKey, optVal ); }
+                )*
+            <RPAREN>
+            |
+            { indexOptions = null; }
+            )
             {
-            return new SqlAlterMaterializedViewAddIndex(s.end(this), materializedview, columnList, unique, indexMethod, indexName, storeName);
+            return new SqlAlterMaterializedViewAddIndex(s.end(this), materializedview, columnList, unique, indexMethod, indexName, storeName, indexOptions);
             }
     |
         <DROP> <INDEX>
@@ -1250,6 +1266,9 @@ SqlAlterTable SqlAlterTable(Span s) :
     final SqlIdentifier store;
     final SqlIdentifier indexName;
     final SqlIdentifier indexMethod;
+    Map<String, String> indexOptions;
+    String optKey;
+    String optVal;
     final SqlIdentifier storeName;
     final String onUpdate;
     final String onDelete;
@@ -1597,8 +1616,22 @@ SqlAlterTable SqlAlterTable(Span s) :
         |
             { storeName = null; }
         )
+        (
+        <WITH> <LPAREN>
+            { indexOptions = new HashMap<String, String>(); }
+            optKey = IndexOptionValue() <EQ> optVal = IndexOptionValue()
+            { indexOptions.put( optKey, optVal ); }
+            (
+                <COMMA>
+                optKey = IndexOptionValue() <EQ> optVal = IndexOptionValue()
+                { indexOptions.put( optKey, optVal ); }
+            )*
+        <RPAREN>
+        |
+        { indexOptions = null; }
+        )
         {
-            return new SqlAlterTableAddIndex(s.end(this), entity, columnList, unique, indexMethod, indexName, storeName);
+            return new SqlAlterTableAddIndex(s.end(this), entity, columnList, unique, indexMethod, indexName, storeName, indexOptions);
         }
     |
         <DROP> <INDEX>
@@ -1714,6 +1747,26 @@ SqlAlterTable SqlAlterTable(Span s) :
         }
     )
 }
+
+
+/** Parses a string literal, identifier, or integer for use as a WITH option key or value. */
+String IndexOptionValue() :
+  {
+    SqlIdentifier id;
+    SqlLiteral lit;
+    SqlNode node;
+  }
+  {
+    id = SimpleIdentifier()
+    { return id.getSimple(); }
+  |
+    lit = NumericLiteral()
+    { return lit.toValue(); }
+  |
+    node = StringLiteral()
+    { return ((SqlLiteral) node).toValue(); }
+  }
+
 
 /**
 * Parses the MODIFY COLUMN part of an ALTER TABLE statement.
@@ -5851,6 +5904,7 @@ SqlDataTypeSpec DataType() :
     int dimension = -1;
     int cardinality = -1;
     String charSetName = null;
+    boolean elementsNullable = true;
     final Span s;
 }
 {
@@ -5871,17 +5925,24 @@ SqlDataTypeSpec DataType() :
         charSetName = Identifier()
     ]
     [
-        //e.g. ARRAY(dimension, cardinality)
-        collectionTypeName = CollectionsTypeName()
-        [
-            <LPAREN>
-            dimension = IntLiteral()
+        (
+            //e.g. ARRAY(dimension, cardinality)
+            collectionTypeName = CollectionsTypeName()
             [
-                <COMMA>
-                cardinality = IntLiteral()
+                <LPAREN>
+                dimension = IntLiteral()
+                [
+                    <COMMA>
+                    cardinality = IntLiteral()
+                ]
+                <RPAREN>
             ]
-            <RPAREN>
-        ]
+           |
+           <VECTOR>
+           { collectionTypeName = new SqlIdentifier(PolyType.ARRAY.name(), getPos()); }
+           <LPAREN> cardinality = IntLiteral() <RPAREN>
+           { dimension = 1; elementsNullable=false; }
+        )
     ]
     {
         if (null != collectionTypeName) {
@@ -5893,6 +5954,7 @@ SqlDataTypeSpec DataType() :
                 dimension,
                 cardinality,
                 charSetName,
+                elementsNullable,
                 s.end(collectionTypeName));
         }
         return new SqlDataTypeSpec(
@@ -5901,6 +5963,7 @@ SqlDataTypeSpec DataType() :
             scale,
             charSetName,
             null,
+            elementsNullable,
             s.end(this));
     }
 }
@@ -7415,6 +7478,12 @@ SqlBinaryOperator BinaryRowOperator() :
 |   <SUCCEEDS> { return OperatorRegistry.get( OperatorName.SUCCEEDS, SqlBinaryOperator.class ); }
 |   <IMMEDIATELY> <PRECEDES> { return OperatorRegistry.get( OperatorName.IMMEDIATELY_PRECEDES, SqlBinaryOperator.class ); }
 |   <IMMEDIATELY> <SUCCEEDS> { return OperatorRegistry.get( OperatorName.IMMEDIATELY_SUCCEEDS, SqlBinaryOperator.class ); }
+|   <L2_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_L2, SqlBinaryOperator.class ); }
+|   <L1_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_L1, SqlBinaryOperator.class ); }
+|   <COS_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_COS, SqlBinaryOperator.class ); }
+|   <HAMMING_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_HAMMING, SqlBinaryOperator.class ); }
+|   <JACCARD_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_JACCARD, SqlBinaryOperator.class ); }
+|   <INNER_PRODUCT_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_INNER_PRODUCT, SqlBinaryOperator.class ); }
 |   op = BinaryMultisetOperator() { return op; }
 }
 
@@ -8145,6 +8214,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < VARBINARY: "VARBINARY" >
 |   < VARCHAR: "VARCHAR" >
 |   < VARYING: "VARYING" >
+|   < VECTOR: "VECTOR" >
 |   < VERSION: "VERSION" >
 |   < VERSIONING: "VERSIONING" >
 |   < VIDEO: "VIDEO" >
@@ -8529,6 +8599,7 @@ void NonReservedKeyWord2of3() :
     |    <UTF8>
     |    <UTF16>
     |    <UTF32>
+    |    <VECTOR>
     |    <VERSION>
     |    <VIEW>
     |    <WEEK>
@@ -8624,6 +8695,12 @@ void NonReservedKeyWord2of3() :
 |   < SLASH: "/" >
 |   < PERCENT_REMAINDER: "%" >
 |   < CONCAT: "||" >
+|   < L2_DIST_OP: "<->" >
+|   < L1_DIST_OP: "<+>" >
+|   < COS_DIST_OP: "<=>" >
+|   < HAMMING_DIST_OP: "<~>" >
+|   < JACCARD_DIST_OP: "<%>" >
+|   < INNER_PRODUCT_DIST_OP: "<#>" >
 |   < NAMED_ARGUMENT_ASSIGNMENT: "=>" >
 |   < DOUBLE_PERIOD: ".." >
 |   < QUOTE: "'" >

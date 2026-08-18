@@ -324,6 +324,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
                                     dimension,
                                     cardinality,
                                     false,
+                                    true,
                                     fileName,
                                     physicalTableName,
                                     name,
