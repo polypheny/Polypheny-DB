@@ -14,7 +14,6 @@ dependencies {
     compileOnly project(":plugins:cypher-language")
     compileOnly project(":plugins:neo4j-adapter")
     compileOnly project(":plugins:notebooks")
-    compileOnly project(":plugins:prism-interface")
 
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: jackson_core_version
 
@@ -42,7 +41,6 @@ delombok {
     dependsOn(":plugins:neo4j-adapter:processResources")
 
     dependsOn(":plugins:notebooks:processResources")
-    dependsOn(":plugins:prism-interface:processResources")
 }
 
 
