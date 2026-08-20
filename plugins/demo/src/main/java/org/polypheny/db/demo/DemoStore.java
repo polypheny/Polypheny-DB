@@ -16,6 +16,9 @@
 
 package org.polypheny.db.demo;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
@@ -28,12 +31,20 @@ import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.jdbc.PolyConnection;
+import org.polypheny.jdbc.PolyphenyDriver;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -43,23 +54,46 @@ public abstract class DemoStore {
     protected final static String ORIGIN = "Demo";
     protected final DataModel dataModel;
     protected final String name;
+    protected final String language;
     protected final String adapterName;
 
     protected long namespaceId;
 
     protected Optional<DataStore<?>> dataStore = Optional.empty();
 
-    protected DemoStore(String name, DataModel dataModel, String adapterName ) {
+    protected Connection connection;
+
+    protected DemoStore(String name, String language, DataModel dataModel, String adapterName ) {
         this.name = name;
+        this.language = language;
         this.dataModel = dataModel;
         this.adapterName = adapterName;
+
+        try {
+            DriverManager.registerDriver( new PolyphenyDriver() );
+            this.connection = DriverManager.getConnection( "jdbc:polypheny://localhost:20590", "pa", "" );
+
+        }
+        catch ( SQLException e ) {
+            log.error( "Demo: {} {} {}", e.getMessage(), e.getSQLState(), e.getErrorCode() );
+        }
+    }
+
+    public Optional<PolyConnection> getPolyConnection() throws SQLException {
+        if ( connection.isWrapperFor( PolyConnection.class )) {
+            return Optional.of(connection.unwrap( PolyConnection.class ));
+        }
+        else {
+            log.error( "JDBC driver connection not a PolyConnection" );
+        }
+
+        return Optional.empty();
     }
 
 
     public void createNamespace( Statement statement ) {
         log.debug( "Creating {} namespace", this.name );
         this.namespaceId = DdlManager.getInstance().createNamespace( this.name, this.dataModel, true, true, false,  statement);
-        this.dataStore = AdapterManager.getInstance().getStore( this.name );
     }
 
     public void createAdapter( DockerInstance dockerInstance ) {
@@ -68,12 +102,24 @@ public abstract class DemoStore {
         Map<String, String> defaultSettings = adapterTemplate.getDefaultSettings();
         defaultSettings.put( "instanceId", String.valueOf(dockerInstance.getInfo().id()) );
         DdlManager.getInstance().createStore( this.name, adapterTemplate.getAdapterName(), AdapterType.STORE, defaultSettings, DeployMode.DOCKER);
+        this.dataStore = AdapterManager.getInstance().getStore( this.name );
 
     }
 
     public abstract void setupNamespace( Statement statement );
 
     public abstract void loadData();
+
+    public <T> T loadJson(String path, Class<T> type ) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue( this.getClass().getResource( path ), type );
+    }
+
+    public <T> List<T> loadJsonList( String path, Class<T> type ) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        CollectionType collectionType = objectMapper.getTypeFactory().constructCollectionType( List.class, type );
+        return objectMapper.readValue( this.getClass().getResource( path ), collectionType );
+    }
 
     public Stream<String> getJarFileAsStream(String path) {
         return this.getFileAsStream( path, true );

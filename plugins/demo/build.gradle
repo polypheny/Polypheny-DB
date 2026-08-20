@@ -16,6 +16,7 @@ dependencies {
     compileOnly project(":plugins:notebooks")
 
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: jackson_core_version
+    implementation 'org.polypheny:polypheny-jdbc-driver:2.3'
 
     // --- Test Compile ---
     testImplementation project(path: ":dbms", configuration: "test")

@@ -33,6 +33,11 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.Result;
+import org.polypheny.jdbc.PolyConnection;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
+import org.polypheny.jdbc.multimodel.PolyStatement;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -51,7 +56,7 @@ public class DocumentStore extends DemoStore {
 
 
     public DocumentStore( TransactionManager transactionManager, boolean local ) {
-        super( "demomongodb", DataModel.DOCUMENT, "mongodb" );
+        super( "demomongodb", "mongo", DataModel.DOCUMENT, "mongodb" );
         this.transactionManager = transactionManager;
 
         if (local) {
@@ -82,86 +87,37 @@ public class DocumentStore extends DemoStore {
 
     @Override
     public void loadData() {
-        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, this.namespaceId, new QueryAnalyzer(), ORIGIN );
+        try {
 
-        log.info( "Loading document data" );
-        for (String file_path: this.files) {
-            Stream<String> lines = fileLoader.apply( file_path );
+            Transaction transaction = this.transactionManager.startTransaction( Catalog.defaultUserId, this.namespaceId, new QueryAnalyzer(), ORIGIN );
 
-            MQLQuery( transaction, "db.artist.insert({\"test\": \"test\"})" );
-        }
-        //PIPreparedNamedStatement statement = new PIPreparedNamedStatement(  )
+            log.info( "Loading document data" );
+            PolyStatement polyStatement = this.getPolyConnection().get().createPolyStatement();
 
-
-
-        //lines.forEach( line -> System.out.printf("Line: %s\n", line ));
-        /*
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
-        lines.forEach( line -> {
-            try {
-                Artist artist = objectMapper.readValue( line, Artist.class );
-                System.out.println(artist.name);
-            } catch ( JsonProcessingException e ) {
-                throw new RuntimeException( e );
-            }
-            System.exit( 1 );
-        } );
-        */
-    }
-
-
-    public void MQLQuery( Transaction transaction, String query ) {
-        QueryContext queryContext = QueryContext.builder()
-                .query( query )
-                .language( QueryLanguage.from( "MQL" ) )
-                .namespaceId( this.namespaceId )
-                .origin( ORIGIN )
-                .isAnalysed( true )
-                .transactionManager( this.transactionManager )
-                .build();
-
-        queryContext.addTransaction( transaction );
-
-        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( queryContext );
-        for ( ExecutedContext executedContext : executedContexts ) {
-            log.info( executedContext.toString() );
-
-            if ( executedContext.getException().isPresent() ) {
-                log.warn( "Caught exception", executedContext.getException().get() );
-            }
-        }
-
-        Set<String> abortedXids = new HashSet<>();
-        List<Result<?, ?>> results = new ArrayList<>();
-        for ( Transaction executedTransaction : executedContexts.stream().flatMap( c -> c.getQuery().getTransactions().stream() ).toList() ) {
-            // this has a lot of unnecessary no-op commits atm
-            String commitStatus;
-            String xid = executedTransaction.getXid().toString();
-            if ( executedTransaction.isRolledBack() ) {
-                commitStatus = "Rolled back";
-            } else {
-                try {
-                    executedTransaction.commit();
-                    commitStatus = "Committed";
-                } catch ( TransactionException e ) {
-                    results.add( RelationalResult.builder().error( e.getMessage() ).xid( xid ).build() );
+            for (String file_path: this.files) {
+                Stream<String> lines = fileLoader.apply( file_path );
+                lines.forEach( line -> {
                     try {
-                        executedTransaction.rollback( e.getMessage() );
-                        commitStatus = "Rolled back";
-                    } catch ( TransactionException ex ) {
-                        log.error( "Caught exception while rollback", e );
-                        commitStatus = "Error while rolling back";
+                        line = line.replace( "'", "" );
+                        line = line.replace( "\n", "" );
+                        line = line.replace( "\t", "" );
+                        String query =  String.format( "db.artist.insertOne(%s)", line );
+                        System.out.println(query);
+                        try {
+                            new com.fasterxml.jackson.databind.ObjectMapper().readTree(line);
+                        } catch (Exception e) {
+                            System.out.println("Parse error: " + e.getMessage());
+                        }
+                        polyStatement.execute( this.name, "mongo", query );
+                    } catch ( PrismInterfaceServiceException e ) {
+                        log.error( e.getMessage() );
                     }
-                }
+                } );
+                return;
             }
-            if ( executedTransaction.isAnalyze() ) {
-                executedTransaction.getAnalyzer().registerFinished( commitStatus );
-            }
-
-            if ( executedTransaction.isRolledBack() ) {
-                abortedXids.add( xid );
-            }
+        }
+        catch ( SQLException e ) {
+            log.error( e.getMessage() );
         }
     }
 }

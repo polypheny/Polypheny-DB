@@ -26,7 +26,7 @@ public class GraphStore extends DemoStore {
     private final TransactionManager transactionManager;
 
     public GraphStore( TransactionManager transactionManager, boolean local ) {
-        super("demoneo4j", DataModel.GRAPH, "neo4j" );
+        super("demoneo4j", "cypher", DataModel.GRAPH, "neo4j" );
         this.transactionManager = transactionManager;
     }
 

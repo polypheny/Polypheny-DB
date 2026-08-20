@@ -18,6 +18,7 @@ package org.polypheny.db.demo;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.demo.relational.RelationalStore;
 import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
@@ -79,7 +80,8 @@ public class DemoPlugin extends PolyPlugin {
         log.info( "Setting up namespaces" );
         demoStores.forEach( store -> store.setupNamespace( statement ) );
 
-        demoStores.forEach( DemoStore::loadData );
+        log.info( "Loading data" );
+        demoStores.get( 2 ).loadData();
     }
 
     @Override
