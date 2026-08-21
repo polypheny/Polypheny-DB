@@ -14,38 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.demo;
+package org.polypheny.db.demo.relational;
 
+import org.checkerframework.checker.units.qual.A;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class Table {
-    private final String name;
-    private final List<DdlManager.FieldInformation> columns;
-    private final String file;
-
-    public Table( String name, List<FieldInformation> columns, String file) {
-        this.name = name;
-        this.columns = columns;
-        this.file = file;
-    }
-
-    public String getName() {
-        return this.name;
-    }
-
-    public List<FieldInformation> getColumns() {
-        return this.columns;
-    }
-
-    public String getFile() {
-        return this.file;
-    }
-
-    public List<ConstraintInformation> getConstraints() {
-        return new ArrayList<>();
+public record Table (String name, List<FieldInformation> columns, List<ConstraintInformation> constraints, String file ) {
+    public String getPreparedStatementInsertQuery() {
+        int length = this.columns.size();
+        String params = "?, ".repeat( length );
+        params = params.substring( 0, params.length() - 2 );
+        return String.format("INSERT INTO %s VALUES (%s)", this.name, params);
     }
 }

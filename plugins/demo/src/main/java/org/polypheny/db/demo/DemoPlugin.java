@@ -80,8 +80,10 @@ public class DemoPlugin extends PolyPlugin {
         log.info( "Setting up namespaces" );
         demoStores.forEach( store -> store.setupNamespace( statement ) );
 
-        log.info( "Loading data" );
-        demoStores.get( 2 ).loadData();
+        //log.info( "Loading data" );
+        //demoStores.get( 2 ).loadData();
+
+        transaction.commit();
     }
 
     @Override
