@@ -16,16 +16,28 @@
 
 package org.polypheny.db.demo.relational;
 
-import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
-import org.polypheny.db.ddl.DdlManager.FieldInformation;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.polypheny.db.demo.IPreperable;
-import java.util.List;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
-public record Table<T extends IPreperable>( String name, List<FieldInformation> columns, List<ConstraintInformation> constraints, String file, Class<T> type) {
-    public String getPreparedStatementInsertQuery() {
-        int length = this.columns.size();
-        String params = "?, ".repeat( length );
-        params = params.substring( 0, params.length() - 2 );
-        return String.format("INSERT INTO %s VALUES (%s)", this.name, params);
+public class Genre implements IPreperable {
+    @JsonProperty("GenreId")
+    public int genreId;
+
+    @JsonProperty("Name")
+    public String name;
+
+
+    @Override
+    public boolean filter() {
+        return this.name == null;
+    }
+
+
+    @Override
+    public void setValues( PreparedStatement statement ) throws SQLException {
+        statement.setInt( 1, this.genreId );
+        statement.setString( 2, this.name );
     }
 }

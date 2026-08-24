@@ -21,28 +21,52 @@ import org.polypheny.db.demo.IPreperable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class Album implements IPreperable {
+public class Track implements IPreperable {
+    @JsonProperty("TrackId")
+    public int trackId;
+
+    @JsonProperty("Name")
+    public String name;
+
     @JsonProperty("AlbumId")
     public int albumId;
 
-    @JsonProperty("Title")
-    public String title;
+    @JsonProperty("MediaTypeId")
+    public int mediaTypeId;
 
-    @JsonProperty("ArtistId")
-    public int artistId;
+    @JsonProperty("GenreId")
+    public int genreId;
+
+    @JsonProperty("Composer")
+    public String composer;
+
+    @JsonProperty("Milliseconds")
+    public long milliseconds;
+
+    @JsonProperty("Bytes")
+    public long bytes;
+
+    @JsonProperty("UnitPrice")
+    public float unitPrice;
 
 
     @Override
     public boolean filter() {
-        return this.title == null;
+        return this.name == null || this.composer == null;
     }
 
 
     @Override
     public void setValues( PreparedStatement statement ) throws SQLException {
-        statement.setInt( 1, this.albumId );
-        statement.setString( 2, this.title );
-        statement.setInt( 3, this.artistId );
+        statement.setInt( 1, this.trackId );
+        statement.setString( 2, this.name );
+        statement.setInt( 3, this.albumId );
+        statement.setInt( 4, this.mediaTypeId );
+        statement.setInt( 5, this.genreId );
+        statement.setString( 6, this.composer );
+        statement.setLong( 7, this.milliseconds );
+        statement.setLong( 8, this.bytes );
+        statement.setFloat( 9, this.unitPrice );
     }
 
 }

@@ -27,21 +27,17 @@ import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.polypheny.db.demo.DemoStore;
+import org.polypheny.db.demo.IPreperable;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.category.PolyNumber;
-import org.polypheny.jdbc.PolyConnection;
-import org.polypheny.jdbc.multimodel.PolyStatement;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
 public class RelationalStore extends DemoStore {
-    private final List<Table> tables;
+    private final List<Table<? extends IPreperable>> tables;
 
     private final TransactionManager transactionManager;
 
@@ -64,8 +60,8 @@ public class RelationalStore extends DemoStore {
     public void setupNamespace( Statement statement ) {
         DdlManager ddlManager = DdlManager.getInstance();
         if (this.dataStore.isPresent()) {
-            List<DataStore<?>> postgresql = List.of(this.dataStore.get());
-            System.out.println(this.dataStore);
+            List<DataStore<?>> postgresql = List.of( this.dataStore.get() );
+            log.info( "{}", this.namespaceId );
             this.tables.forEach( table -> {
                 ddlManager.createTable( this.namespaceId, table.name(), table.columns(), table.constraints(), true, postgresql, PlacementType.AUTOMATIC, statement );
             } );
@@ -75,99 +71,102 @@ public class RelationalStore extends DemoStore {
 
     @Override
     public void loadData() {
-        for (Table table: this.tables) {
+        for (Table<? extends IPreperable> table: this.tables) {
             try {
                 String query = table.getPreparedStatementInsertQuery();
                 java.sql.PreparedStatement preparedStatement = this.connection.prepareStatement( query );
-                List<Album> albums = this.loadJsonList( "/chinook/Album.json", Album.class );
-                albums.forEach( album -> {
+                List<? extends IPreperable> data = this.loadJsonList( table.file(), table.type() );
+                data.forEach( value -> {
                     try {
-                        preparedStatement.setInt( 1, album.albumId );
-                        preparedStatement.setString( 2, album.title );
-                        preparedStatement.setInt( 3, album.albumId );
-                        //preparedStatement.execute();
+                        if ( !value.filter() ) {
+                            value.setValues( preparedStatement );
+                            preparedStatement.addBatch();
+                        }
                     }
                     catch ( Exception e ) {
-                        log.error( "{} FOR QUERY {}", e.getMessage(), query );
+                        log.error( "Exception while adding SQL batch for query: {}. {}", query, e.getMessage() );
                     }
                 });
+
+                preparedStatement.executeBatch();
             }
             catch ( Exception e ) {
-                log.error( e.getMessage() );
+                log.error( "Exception while loading relational data. {}", e.getMessage() );
             }
         }
     }
 
-    public List<Table> createTables() {
-        List<Table> tables = new ArrayList<>();
-
+    public List<Table<? extends IPreperable>> createTables() {
         // Album Table
-
         List<FieldInformation> albumFieldInformations = new ArrayList<>();
-        albumFieldInformations.add( this.getBigIntField( "albumid", true, 0 ) );
-        albumFieldInformations.add( this.getStringField( "title", true, 1 ) );
-        albumFieldInformations.add( this.getBigIntField( "artistid", true, 2 ) );
+        albumFieldInformations.add( this.getBigIntField( "albumid", 1 ) );
+        albumFieldInformations.add( this.getStringField( "title", 2 ) );
+        albumFieldInformations.add( this.getBigIntField( "artistid", 3 ) );
 
         List<ConstraintInformation> albumConstraintInformations = new ArrayList<>();
         albumConstraintInformations.add( new ConstraintInformation( "album_primary_key", ConstraintType.PRIMARY, List.of("albumid") ) );
+        albumConstraintInformations.add( new ConstraintInformation( "artist_foreign_key", ConstraintType.FOREIGN, List.of("artistid"), "artist", "artistid" ) );
 
-        tables.add( new Table( "album", albumFieldInformations, albumConstraintInformations, "/chinook/Album.json" ) );
+        Table<Album> albumTable = new Table<>( "album", albumFieldInformations, albumConstraintInformations, "/relational/Album.json", Album.class );
 
         // Genre Table
 
         List<FieldInformation> genreFieldInformation = new ArrayList<>();
-        genreFieldInformation.add( this.getBigIntField( "genreid", true, 0 ) );
-        genreFieldInformation.add( this.getStringField( "name", true, 1 ) );
+        genreFieldInformation.add( this.getBigIntField( "genreid", 1 ) );
+        genreFieldInformation.add( this.getStringField( "name", 2 ) );
 
         List<ConstraintInformation> genreConstraintInformations = new ArrayList<>();
         genreConstraintInformations.add( new ConstraintInformation( "genre_primary_key", ConstraintType.PRIMARY, List.of("genreid") ) );
 
-        tables.add( new Table( "genre", genreFieldInformation, genreConstraintInformations, "/chinook/Genre.json" ) );
+        Table<Genre> genreTable = new Table<>( "genre", genreFieldInformation, genreConstraintInformations, "/relational/Genre.json", Genre.class );
 
         // MediaType Table
 
         List<FieldInformation> mediaTypeFieldInformation = new ArrayList<>();
-        mediaTypeFieldInformation.add( this.getBigIntField( "mediatypeid", true, 0 ) );
-        mediaTypeFieldInformation.add( this.getStringField( "name", true, 1 ) );
+        mediaTypeFieldInformation.add( this.getBigIntField( "mediatypeid", 1 ) );
+        mediaTypeFieldInformation.add( this.getStringField( "name", 2 ) );
 
         List<ConstraintInformation> mediatypeConstraintInformations = new ArrayList<>();
         mediatypeConstraintInformations.add( new ConstraintInformation( "mediatype_primary_key", ConstraintType.PRIMARY, List.of("mediatypeid") ) );
 
-        tables.add( new Table( "mediatype", mediaTypeFieldInformation,  mediatypeConstraintInformations, "/chinook/MediaType.json" ) );
+        Table<MediaType> mediaTypeTable = new Table<>( "mediatype", mediaTypeFieldInformation,  mediatypeConstraintInformations, "/relational/MediaType.json", MediaType.class );
 
         // Artist Table
 
         List<FieldInformation> artistFieldInformation = new ArrayList<>();
-        artistFieldInformation.add( this.getBigIntField( "artistid", true, 0 ) );
-        artistFieldInformation.add( this.getStringField( "name", true, 0 ) );
+        artistFieldInformation.add( this.getBigIntField( "artistid", 1 ) );
+        artistFieldInformation.add( this.getStringField( "name", 2 ) );
 
         List<ConstraintInformation> artistConstraintInformations = new ArrayList<>();
-        artistConstraintInformations.add( new ConstraintInformation( "artist_primary_key", ConstraintType.PRIMARY, List.of("artist") ) );
+        artistConstraintInformations.add( new ConstraintInformation( "artist_primary_key", ConstraintType.PRIMARY, List.of("artistid") ) );
 
-        tables.add( new Table( "artist", artistFieldInformation, artistConstraintInformations, "/chinook/Artist.json" ) );
+        Table<Artist> artistTable = new Table<>( "artist", artistFieldInformation, artistConstraintInformations, "/relational/Artist.json", Artist.class );
 
         // Track Table
 
         List<FieldInformation> trackFieldInformation = new ArrayList<>();
-        trackFieldInformation.add( this.getBigIntField( "trackid", true, 0 ) );
-        trackFieldInformation.add( this.getStringField( "name", true, 1 ) );
-        trackFieldInformation.add( this.getBigIntField( "albumid", true, 2 ) );
-        trackFieldInformation.add( this.getBigIntField( "mediatypeid", true, 3 ) );
-        trackFieldInformation.add( this.getBigIntField( "genreid", true, 4 ) );
-        trackFieldInformation.add( this.getStringField( "composer", true, 5 ) );
-        trackFieldInformation.add( this.getBigIntField( "milliseconds", true, 6 ) );
-        trackFieldInformation.add( this.getBigIntField( "bytes", true, 7 ) );
-        trackFieldInformation.add( this.getDecimalField( "unitprice", true, 8 ) );
+        trackFieldInformation.add( this.getBigIntField( "trackid", 1 ) );
+        trackFieldInformation.add( this.getStringField( "name", 2 ) );
+        trackFieldInformation.add( this.getBigIntField( "albumid", 3 ) );
+        trackFieldInformation.add( this.getBigIntField( "mediatypeid", 4 ) );
+        trackFieldInformation.add( this.getBigIntField( "genreid", 5 ) );
+        trackFieldInformation.add( this.getStringField( "composer", 6 ) );
+        trackFieldInformation.add( this.getBigIntField( "milliseconds", 7 ) );
+        trackFieldInformation.add( this.getBigIntField( "bytes", 8 ) );
+        trackFieldInformation.add( this.getDecimalField( "unitprice", 9 ) );
 
         List<ConstraintInformation> trackConstraintInformations = new ArrayList<>();
-        trackConstraintInformations.add( new ConstraintInformation( "artist_primary_key", ConstraintType.PRIMARY, List.of("artist") ) );
+        trackConstraintInformations.add( new ConstraintInformation( "track_primary_key", ConstraintType.PRIMARY, List.of("trackid") ) );
+        trackConstraintInformations.add( new ConstraintInformation( "album_foreign_key", ConstraintType.FOREIGN, List.of("albumid"), "album", "albumid" ) );
+        trackConstraintInformations.add( new ConstraintInformation( "mediatype_foreign_key", ConstraintType.FOREIGN, List.of("mediatypeid"), "mediatype", "mediatypeid" ) );
+        trackConstraintInformations.add( new ConstraintInformation( "genre_foreign_key", ConstraintType.FOREIGN, List.of("genreid"), "genre", "genreid" ) );
 
-        tables.add( new Table( "track", trackFieldInformation, trackConstraintInformations, "/chinook/Track.json" ) );
+        Table<Track> trackTable = new Table<>( "track", trackFieldInformation, trackConstraintInformations, "/relational/Track.json", Track.class );
 
-        return tables;
+        return List.of(mediaTypeTable, genreTable, artistTable, albumTable, trackTable);
     }
 
-    public FieldInformation getBigIntField(String name, boolean nullable, int position) {
+    public FieldInformation getBigIntField(String name, int position) {
         return new FieldInformation(
                 name,
                 new ColumnTypeInformation( PolyType.BIGINT, null, PolyType.BIGINT.getMinPrecision(), PolyType.BIGINT.getMinScale(), -1, -1, false ),
@@ -177,20 +176,20 @@ public class RelationalStore extends DemoStore {
         );
     }
 
-    public FieldInformation getDecimalField(String name, boolean nullable, int position) {
+    public FieldInformation getDecimalField(String name, int position) {
         return new FieldInformation(
                 name,
-                new ColumnTypeInformation( PolyType.DECIMAL, null, PolyType.DECIMAL.getMinPrecision(), PolyType.DECIMAL.getMinScale(), -1, -1, false ),
+                new ColumnTypeInformation( PolyType.DECIMAL, null, 5, PolyType.DECIMAL.getMinScale(), -1, -1, false ),
                 Collation.CASE_INSENSITIVE,
                 PolyValue.fromType( 0.0, PolyType.DECIMAL ),
                 position
         );
     }
 
-    public FieldInformation getStringField(String name, boolean nullable, int position) {
+    public FieldInformation getStringField(String name, int position) {
         return new FieldInformation(
                 name,
-                new ColumnTypeInformation( PolyType.VARCHAR, null, 255, PolyType.VARCHAR.getMinScale(), -1, -1, false ),
+                new ColumnTypeInformation( PolyType.VARCHAR, null, 10000, PolyType.VARCHAR.getMinScale(), -1, -1, false ),
                 Collation.CASE_INSENSITIVE,
                 PolyValue.fromType( "", PolyType.VARCHAR ),
                 position

@@ -14,35 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.demo.relational;
+package org.polypheny.db.demo;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.polypheny.db.demo.IPreperable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class Album implements IPreperable {
-    @JsonProperty("AlbumId")
-    public int albumId;
-
-    @JsonProperty("Title")
-    public String title;
-
-    @JsonProperty("ArtistId")
-    public int artistId;
-
-
-    @Override
-    public boolean filter() {
-        return this.title == null;
-    }
-
-
-    @Override
-    public void setValues( PreparedStatement statement ) throws SQLException {
-        statement.setInt( 1, this.albumId );
-        statement.setString( 2, this.title );
-        statement.setInt( 3, this.artistId );
-    }
-
+public interface IPreperable {
+    boolean filter();
+    void setValues( PreparedStatement statement ) throws SQLException;
 }

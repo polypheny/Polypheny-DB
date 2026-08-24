@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.demo;
+package org.polypheny.db.demo.document;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
@@ -22,26 +22,15 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
-import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.demo.DemoStore;
 import org.polypheny.db.transaction.QueryAnalyzer;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.webui.models.results.RelationalResult;
-import org.polypheny.db.webui.models.results.Result;
-import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.multimodel.PolyStatement;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 

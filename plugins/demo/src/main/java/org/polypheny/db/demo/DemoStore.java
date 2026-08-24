@@ -16,11 +16,9 @@
 
 package org.polypheny.db.demo;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
@@ -30,7 +28,6 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.PolyphenyDriver;
 import java.io.BufferedReader;
@@ -41,7 +38,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
-import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;

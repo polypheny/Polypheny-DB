@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.demo;
+package org.polypheny.db.demo.graph;
 
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.demo.DemoStore;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionManager;
 
@@ -41,5 +42,4 @@ public class GraphStore extends DemoStore {
     public void loadData() {
 
     }
-
 }
