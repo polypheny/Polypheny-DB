@@ -24,7 +24,7 @@ public interface RelationalDataSource {
 
     Map<String, List<ExportedColumn>> getExportedColumns();
 
-    record ExportedColumn( String name, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, String physicalSchemaName, String physicalTableName, String physicalColumnName, int physicalPosition, boolean primary ) {
+    record ExportedColumn( String name, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, boolean elementsNullable, String physicalSchemaName, String physicalTableName, String physicalColumnName, int physicalPosition, boolean primary ) {
 
         public String getDisplayType() {
             String typeStr = type.getName();

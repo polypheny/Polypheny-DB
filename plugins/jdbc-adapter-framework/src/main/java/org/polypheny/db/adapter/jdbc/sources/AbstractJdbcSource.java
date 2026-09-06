@@ -25,8 +25,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
@@ -53,6 +55,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PolyXid;
@@ -241,14 +244,19 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                         primaryKeyColumns.add( row.getString( "COLUMN_NAME" ) );
                     }
                 }
+                Map<String, CollectionMetadata> cardinalities = fetchColumnMetadata( connection, schemaPattern, tableName );
                 try ( ResultSet row = dbmd.getColumns( settings.get( "database" ), schemaPattern, tableName, "%" ) ) {
                     List<ExportedColumn> list = new ArrayList<>();
                     while ( row.next() ) {
-                        PolyType type = PolyType.getNameForJdbcType( row.getInt( "DATA_TYPE" ) );
-                        Integer length = null;
-                        Integer scale = null;
-                        Integer dimension = null;
-                        Integer cardinality = null;
+                        int jdbcDataType = row.getInt( "DATA_TYPE" );
+                        String typeName = row.getString( "TYPE_NAME" );
+                        PolyType type;
+                        PolyType collectionsType = null;
+                        Integer length = null, scale = null, dimension = null, cardinality = null;
+                        type = PolyType.getNameForJdbcType( jdbcDataType );
+                        if ( isNativeVectorType( typeName ) ) {
+                            type = PolyType.OTHER;
+                        }
                         switch ( type ) {
                             case BOOLEAN:
                             case TINYINT:
@@ -286,18 +294,34 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                                 type = PolyType.VARBINARY;
                                 length = row.getInt( "COLUMN_SIZE" );
                                 break;
+                            case ARRAY:
+                            case OTHER:
+                                Optional<ColumnTypeInfo> nativeType = resolveNativeColumnType( cardinalities, typeName, row );
+                                if ( nativeType.isPresent() ) {
+                                    ColumnTypeInfo info = nativeType.get();
+                                    type = info.type;
+                                    collectionsType = info.collectionType;
+                                    length = info.length;
+                                    scale = info.scale;
+                                    dimension = info.dimension;
+                                    cardinality = info.cardinality;
+                                }
+                                break;
+
                             default:
                                 throw new GenericRuntimeException( "Unsupported data type: " + type.getName() );
                         }
+                        String colName = row.getString( "COLUMN_NAME" ).toLowerCase();
                         list.add( new ExportedColumn(
-                                row.getString( "COLUMN_NAME" ).toLowerCase(),
+                                colName,
                                 type,
-                                null,
+                                collectionsType,
                                 length,
                                 scale,
                                 dimension,
                                 cardinality,
                                 row.getString( "IS_NULLABLE" ).equalsIgnoreCase( "YES" ),
+                                !isNativeVectorType( typeName ),
                                 requiresSchema() ? row.getString( "TABLE_SCHEM" ) : row.getString( "TABLE_CAT" ),
                                 row.getString( "TABLE_NAME" ),
                                 row.getString( "COLUMN_NAME" ),
@@ -365,6 +389,65 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
 
         void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
 
+    }
+
+
+    /**
+     * Resolve database-specific column type names that cannot be identified by JDBC.
+     *
+     * @param typeName {@code TYPE_NAME} from e.g. {@link DatabaseMetaData#getColumns}
+     * @param columnRow {@link ResultSet} as current row of {@link
+     * java.sql.DatabaseMetaData#getColumns}
+     * @return {@link ColumnTypeInfo}
+     * @throws SQLException
+     */
+    protected Optional<ColumnTypeInfo> resolveNativeColumnType( Map<String, CollectionMetadata> metadata, String typeName, ResultSet columnRow ) throws SQLException {
+        return Optional.empty();
+    }
+
+
+    protected boolean isNativeVectorType( String typeName ) {
+        return false;
+    }
+
+
+    /**
+     *
+     * @return Map of the form {attribute name -> ColumnMetadata(dims, typeMod)}
+     */
+    protected Map<String, CollectionMetadata> fetchColumnMetadata( Connection conn, String schema, String table ) throws SQLException {
+        return Map.of();
+    }
+
+
+    public record ColumnTypeInfo(
+            PolyType type,
+            @Nullable PolyType collectionType,
+            @Nullable Integer length,
+            @Nullable Integer scale,
+            @Nullable Integer dimension,
+            @Nullable Integer cardinality ) {
+
+    }
+
+
+    /**
+     * Raw PostgreSQL catalog metadata for a single column that is either
+     * a typed collection (array, vector) or carries a type modifier.
+     *
+     * @param arrayDimensions value of {@code pg_attribute.attndims}; 0 for non-arrays
+     * @param typeModifier value of {@code pg_attribute.atttypmod} if > 0, else null
+     */
+    public record CollectionMetadata( int arrayDimensions, @Nullable Integer typeModifier ) {
+
+    }
+
+
+    @Override
+    public List<String> getActiveFeatureNames() {
+        return dialect.getSupportedFeatures().stream()
+                .map( SqlDbFeature::displayName )
+                .toList();
     }
 
 }

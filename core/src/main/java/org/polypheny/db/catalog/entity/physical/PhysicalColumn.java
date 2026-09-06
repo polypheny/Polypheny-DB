@@ -72,6 +72,9 @@ public class PhysicalColumn extends PhysicalField {
     public boolean nullable;
 
     @Serialize
+    public boolean elementsNullable;
+
+    @Serialize
     @Nullable
     @SerializeNullable
     public Collation collation;
@@ -97,6 +100,7 @@ public class PhysicalColumn extends PhysicalField {
             @Deserialize("dimension") final @Nullable Integer dimension,
             @Deserialize("cardinality") final @Nullable Integer cardinality,
             @Deserialize("nullable") final boolean nullable,
+            @Deserialize( "elementsNullable" ) final boolean elementsNullable,
             @Deserialize("collation") final @Nullable Collation collation,
             @Deserialize("defaultValue") @Nullable LogicalDefaultValue defaultValue ) {
         super( id, name, logicalName, allocId, logicalEntityId, adapterId, DataModel.RELATIONAL, true );
@@ -108,6 +112,7 @@ public class PhysicalColumn extends PhysicalField {
         this.dimension = dimension;
         this.cardinality = cardinality;
         this.nullable = nullable;
+        this.elementsNullable = elementsNullable;
         this.collation = collation;
         this.defaultValue = defaultValue;
     }
@@ -135,13 +140,14 @@ public class PhysicalColumn extends PhysicalField {
                 column.dimension,
                 column.cardinality,
                 column.nullable,
+                column.elementsNullable,
                 column.collation,
                 column.defaultValue );
     }
 
 
     public AlgDataType getAlgDataType( final AlgDataTypeFactory typeFactory ) {
-        return LogicalColumn.getAlgDataType( typeFactory, this.length, this.scale, this.type, collectionsType, cardinality, dimension, nullable );
+        return LogicalColumn.getAlgDataType( typeFactory, this.length, this.scale, this.type, collectionsType, cardinality, dimension, nullable, elementsNullable );
     }
 
 }

@@ -533,7 +533,7 @@ public interface NeoUtil {
             }
         }
         if ( value.isList() ) {
-            if ( isNested ) {
+            if ( isNested || value.asList().stream().anyMatch( e -> e == null || e.isNull() )) {
                 return value.toTypedJson();
             }
             return value.asList().value.stream().map( e -> fixParameterValue( e, type.asList().types.get( 0 ), true ) ).toList();

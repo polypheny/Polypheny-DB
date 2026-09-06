@@ -169,7 +169,7 @@ public class Functions {
     }
 
 
-    public static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric, List<PolyNumber> weights ) {
+    private static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric, List<PolyNumber> weights ) {
         DistanceFunctions.verifyInputs( value, target, weights );
         return switch ( metric.value ) {
             case "L2" -> DistanceFunctions.l2MetricWeighted( value, target, weights );
@@ -177,12 +177,13 @@ public class Functions {
             case "L2SQUARED" -> DistanceFunctions.l2SquaredMetricWeighted( value, target, weights );
             case "CHISQUARED" -> DistanceFunctions.chiSquaredMetricWeighted( value, target, weights );
             case "COSINE" -> DistanceFunctions.cosineMetricWeighted( value, target, weights );
+            case "INNER_PRODUCT" -> DistanceFunctions.innerProductMetricWeighted( value, target, weights );
             default -> PolyDouble.of( 0.0 );
         };
     }
 
 
-    public static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric ) {
+    private static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric ) {
         DistanceFunctions.verifyInputs( value, target, null );
         return switch ( metric.value ) {
             case "L2" -> DistanceFunctions.l2Metric( value, target );
@@ -190,8 +191,80 @@ public class Functions {
             case "L2SQUARED" -> DistanceFunctions.l2SquaredMetric( value, target );
             case "CHISQUARED" -> DistanceFunctions.chiSquaredMetric( value, target );
             case "COSINE" -> DistanceFunctions.cosineMetric( value, target );
+            case "INNER_PRODUCT" -> DistanceFunctions.innerProductMetric( value, target );
             default -> PolyDouble.of( 0.0 );
         };
+    }
+
+
+    public static PolyDouble l1Distance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.l1Metric( toNumberList( value ), toNumberList( target )
+        );
+    }
+
+
+    public static PolyDouble l2Distance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.l2Metric( toNumberList( value ), toNumberList( target )
+        );
+    }
+
+
+    public static PolyDouble cosDistance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.cosineMetric( toNumberList( value ), toNumberList( target ) );
+    }
+
+
+    public static PolyDouble hammingDistance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.hammingMetric(
+                value.asList().stream().map( e -> (PolyBoolean) e ).toList(),
+                target.asList().stream().map( e -> (PolyBoolean) e ).toList() );
+    }
+
+
+    public static PolyDouble jaccardDistance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.jaccardMetric(
+                value.asList().stream().map( e -> (PolyBoolean) e ).toList(),
+                target.asList().stream().map( e -> (PolyBoolean) e ).toList() );
+    }
+
+
+    public static PolyDouble innerProductDistance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.innerProductMetric( toNumberList( value ), toNumberList( target ) );
+    }
+
+
+    public static PolyDouble distance( PolyValue value, PolyValue target, PolyValue metric ) {
+        return distance( toNumberList( value ), toNumberList( target ), metric.asString() );
+    }
+
+
+    public static PolyDouble distance( PolyValue value, PolyValue target, PolyValue metric, PolyValue weights ) {
+        return distance( toNumberList( value ), toNumberList( target ), metric.asString(),
+                toNumberList( weights ) );
+    }
+
+
+    private static List<PolyNumber> toNumberList( PolyValue v ) {
+        if ( v.isList() ) {
+            return v.asList().value.stream().map( e -> {
+                if ( e instanceof PolyNumber n ) {
+                    return n;
+                }
+                if ( e instanceof PolyString s ) {
+                    return (PolyNumber) PolyDouble.of( Double.parseDouble( s.value ) );
+                }
+                throw new GenericRuntimeException( "Cannot convert list element " + e + " to number" );
+            } ).toList();
+        }
+
+        if ( v.isString() ) {
+            String raw = v.asString().value.trim().replaceAll( "^\\[|\\]$", "" );
+            return Arrays.stream( raw.split( "," ) )
+                    .map( s -> (PolyNumber) PolyDouble.of( Double.parseDouble( s.trim() )
+                    ) )
+                    .toList();
+        }
+        throw new GenericRuntimeException( "Cannot convert " + v + " to number list" );
     }
 
 

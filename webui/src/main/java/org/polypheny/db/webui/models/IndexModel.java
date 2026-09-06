@@ -19,7 +19,9 @@ package org.polypheny.db.webui.models;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Value;
 
@@ -37,6 +39,7 @@ public class IndexModel {
     public String storeUniqueName;
     public String method;
     public List<Long> columnIds;
+    public Map<String, String> options;
 
 
     @JsonCreator
@@ -45,13 +48,15 @@ public class IndexModel {
             @JsonProperty("entityId") final Long entityId,
             @JsonProperty("name") final String name,
             @JsonProperty("method") final String method,
-            @JsonProperty("columnIds") final List<Long> columnIds ) {
+            @JsonProperty("columnIds") final List<Long> columnIds,
+            @JsonProperty("options") Map<String, String> options ) {
         this.namespaceId = namespaceId;
         this.entityId = entityId;
         this.name = name;
         this.method = method;
         this.columnIds = columnIds;
         this.storeUniqueName = null;
+        this.options = options == null ? new HashMap<>() : options;
     }
 
 

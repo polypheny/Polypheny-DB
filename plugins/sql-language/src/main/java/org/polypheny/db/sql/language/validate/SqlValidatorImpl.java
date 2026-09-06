@@ -4315,6 +4315,16 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     if ( !pair.right.getType().isNullable() && CoreUtil.isNullLiteral( pair.left, false ) ) {
                         throw newValidationError( node, RESOURCE.columnNotNullable( pair.right.getName() ) );
                     }
+                    if ( pair.right.getType().getPolyType() == PolyType.ARRAY
+                            && !pair.right.getType().getComponentType().isNullable()
+                            && pair.left instanceof SqlCall arrayCall
+                            && arrayCall.getKind() == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
+                        for ( Node element : arrayCall.getOperandList() ) {
+                            if ( CoreUtil.isNullLiteral( element, true ) ) {
+                                throw newValidationError( node, RESOURCE.columnNotNullable( pair.right.getName() ) );
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -28,6 +28,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.DataTypeSpec;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
+import org.polypheny.db.sql.language.SqlWriter.FrameTypeEnum;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorScope;
 import org.polypheny.db.type.PolyType;
@@ -76,6 +77,13 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
 
 
     /**
+     * <p>Whether element are allowed to have null values.</p>
+     * <p>This is only meaningful for collection types.</p>
+     */
+    private final Boolean elementsNullable;
+
+
+    /**
      * Creates a type specification representing a regular, non-collection type.
      */
     public SqlDataTypeSpec(
@@ -106,6 +114,57 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
 
 
     /**
+     * Creates a type specification representing a collection type. (Used by Parser.jj)
+     */
+    public SqlDataTypeSpec(
+            SqlIdentifier collectionsTypeName,
+            SqlIdentifier typeName,
+            int precision,
+            int scale,
+            int dimension,
+            int cardinality,
+            String charSetName,
+            boolean elementsNullable,
+            ParserPos pos ) {
+        this( collectionsTypeName, typeName, typeName, precision, scale, dimension, cardinality, charSetName, null, null, elementsNullable, pos );
+    }
+
+
+    /**
+     * Creates a type specification representing a regular, non-collection type. (Used by Parser.jj)
+     */
+    public SqlDataTypeSpec(
+            final SqlIdentifier typeName,
+            int precision,
+            int scale,
+            String charSetName,
+            TimeZone timeZone,
+            Boolean elementsNullable,
+            ParserPos pos ) {
+        this( null, typeName, typeName, precision, scale, -1, -1, charSetName, timeZone, null, elementsNullable, pos );
+    }
+
+
+    /**
+     * Creates a type specification representing a regular, non-collection type. (Used for collections with elementsNullable)
+     */
+    public SqlDataTypeSpec(
+            final SqlIdentifier collectionsTypeName,
+            final SqlIdentifier typeName,
+            int precision,
+            int scale,
+            int dimension,
+            int cardinality,
+            String charSetName,
+            TimeZone timeZone,
+            Boolean nullable,
+            Boolean elementsNullable,
+            ParserPos pos ) {
+        this( collectionsTypeName, typeName, null, precision, scale, dimension, cardinality, charSetName, timeZone, nullable, elementsNullable, pos );
+    }
+
+
+    /**
      * Creates a type specification that has no base type.
      */
     public SqlDataTypeSpec(
@@ -119,7 +178,7 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
             TimeZone timeZone,
             Boolean nullable,
             ParserPos pos ) {
-        this( collectionsTypeName, typeName, typeName, precision, scale, dimension, cardinality, charSetName, timeZone, nullable, pos );
+        this( collectionsTypeName, typeName, typeName, precision, scale, dimension, cardinality, charSetName, timeZone, nullable, true, pos );
     }
 
 
@@ -137,6 +196,7 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
             String charSetName,
             TimeZone timeZone,
             Boolean nullable,
+            Boolean elementsNullable,
             ParserPos pos ) {
         super( pos );
         this.collectionsTypeName = collectionsTypeName;
@@ -149,14 +209,15 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
         this.charSetName = charSetName;
         this.timeZone = timeZone;
         this.nullable = nullable;
+        this.elementsNullable = elementsNullable;
     }
 
 
     @Override
     public SqlNode clone( ParserPos pos ) {
         return (collectionsTypeName != null)
-                ? new SqlDataTypeSpec( collectionsTypeName, typeName, precision, scale, dimension, cardinality, charSetName, pos )
-                : new SqlDataTypeSpec( typeName, precision, scale, charSetName, timeZone, pos );
+                ? new SqlDataTypeSpec( collectionsTypeName, typeName, precision, scale, dimension, cardinality, charSetName, elementsNullable, pos )
+                : new SqlDataTypeSpec( typeName, precision, scale, charSetName, timeZone, elementsNullable, pos );
     }
 
 
@@ -195,7 +256,7 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
         if ( Objects.equals( nullable, this.nullable ) ) {
             return this;
         }
-        return new SqlDataTypeSpec( collectionsTypeName, typeName, precision, scale, dimension, cardinality, charSetName, timeZone, nullable, getPos() );
+        return new SqlDataTypeSpec( collectionsTypeName, typeName, precision, scale, dimension, cardinality, charSetName, timeZone, nullable, elementsNullable, getPos() );
     }
 
 
@@ -255,9 +316,25 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
             // We're generating a type for an alien system. For example, UNSIGNED is a built-in type in MySQL.
             // (Need a more elegant way than '_' of flagging this.)
             writer.keyword( name.substring( 1 ) );
+            unparsePrecision( writer );
         } else {
             // else we have a user defined type
             typeName.unparse( writer, leftPrec, rightPrec );
+            unparsePrecision( writer );
+        }
+    }
+
+
+    private void unparsePrecision( SqlWriter writer ) {
+        if ( precision >= 0 ) {
+            final SqlWriter.Frame frame = writer.startList(
+                    FrameTypeEnum.FUN_CALL, "(", ")" );
+            writer.print( precision );
+            if ( scale >= 0 ) {
+                writer.sep(",", true);
+                writer.print( scale );
+            }
+            writer.endList( frame );
         }
     }
 
@@ -377,6 +454,9 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
             }
             type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
         }
+        if ( elementsNullable != null ) {
+            type = typeFactory.createTypeWithNullability( type, elementsNullable );
+        }
 
         if ( null != collectionsTypeName ) {
             final String collectionName = collectionsTypeName.getSimple();
@@ -384,7 +464,16 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
 
             type = switch ( collectionsPolyType ) {
                 case MULTISET -> typeFactory.createMultisetType( type, cardinality );
-                case ARRAY -> typeFactory.createArrayType( type, cardinality, dimension );
+                case ARRAY -> {
+                    if ( !type.isNullable() && (type.getPolyType() == PolyType.FLOAT
+                            || type.getPolyType() == PolyType.REAL
+                            || type.getPolyType() == PolyType.BOOLEAN)
+                            && dimension == 1 && cardinality > 0 ) {
+                        yield typeFactory.createVectorType( type, cardinality );
+                    } else {
+                        yield typeFactory.createArrayType( type, cardinality, dimension );
+                    }
+                }
                 default -> throw Util.unexpected( collectionsPolyType );
             };
         }

@@ -200,7 +200,8 @@ public class CastValue implements SettingValue {
                         collectionsType,
                         cardinality,
                         dimension,
-                        nullable );
+                        nullable,
+                        true );
 
                 converter = PolyValue.getConverter( type );
                 nullValue = PolyValue.getNull( PolyValue.classFrom( type ) );

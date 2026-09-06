@@ -61,6 +61,9 @@ public class AdapterModel extends IdEntity {
     @JsonProperty
     public boolean dataReadOnly;
 
+    @JsonProperty
+    public List<String> features;
+
 
     public AdapterModel(
             @JsonProperty("id") @Nullable Long id,
@@ -71,7 +74,8 @@ public class AdapterModel extends IdEntity {
             @JsonProperty("mode") DeployMode mode,
             @JsonProperty("indexMethods") List<IndexMethodModel> indexMethods,
             @JsonProperty("persistent") boolean persistent,
-            @JsonProperty("dataReadOnly") boolean dataReadOnly ) {
+            @JsonProperty("dataReadOnly") boolean dataReadOnly,
+            @JsonProperty("features") List<String> features ) {
         super( id, name );
         this.adapterName = adapterName;
         this.type = type;
@@ -80,6 +84,7 @@ public class AdapterModel extends IdEntity {
         this.indexMethods = indexMethods;
         this.persistent = persistent;
         this.dataReadOnly = dataReadOnly;
+        this.features = features;
     }
 
 
@@ -97,7 +102,8 @@ public class AdapterModel extends IdEntity {
                 adapter.mode,
                 adapter.type == AdapterType.STORE ? ((DataStore<?>) dataStore).getAvailableIndexMethods() : List.of(),
                 adapter.type == AdapterType.STORE && ((DataStore<?>) dataStore).isPersistent(),
-                adapter.type == AdapterType.SOURCE && ((DataSource<?>) dataStore).isDataReadOnly()
+                adapter.type == AdapterType.SOURCE && ((DataSource<?>) dataStore).isDataReadOnly(),
+                dataStore.getActiveFeatureNames()
         ) ).orElse( null );
 
     }

@@ -21,9 +21,12 @@ import com.google.common.base.Preconditions;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import lombok.NonNull;
 import lombok.Value;
@@ -57,8 +60,12 @@ import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.VectorType;
+import org.polypheny.db.type.VectorType.ElementType;
 import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.temporal.DateTimeUtils;
@@ -93,13 +100,16 @@ public class SqlDialect {
     @NonNull
     AlgDataTypeSystem dataTypeSystem;
 
+    @NonNull
+    protected Set<SqlDbFeature> supportedFeatures = new HashSet<>();
+
 
     /**
      * Creates a SqlDialect.
      *
      * @param context All the information necessary to create a dialect
      */
-    public SqlDialect( Context context ) {
+    public SqlDialect( Context context) {
         this.name = context.name;
         this.nullCollation = context.nullCollation;
         this.dataTypeSystem = context.dataTypeSystem;
@@ -695,8 +705,37 @@ public class SqlDialect {
     }
 
 
+    public List<OperatorName> supportedKnnFunctions() {
+        return List.of();
+    }
+
+
+    public boolean supportsVector() {
+        return false;
+    }
+
+
     public boolean supportsComplexBinary() {
         return true;
+    }
+
+
+    /**
+     * Returns whether this dialect supports a specific database feature (e.g., pgvector for PostgreSQL).
+     * Override in dialect to use.
+     */
+    public boolean supportsFeature( SqlDbFeature feature ) {
+        return false;
+    }
+
+
+    public void addSupportedFeatures( Set<SqlDbFeature> features ) {
+        supportedFeatures.addAll( features );
+    }
+
+
+    public Set<SqlDbFeature> getSupportedFeatures() {
+        return Collections.unmodifiableSet( supportedFeatures );
     }
 
 
@@ -809,6 +848,19 @@ public class SqlDialect {
 
 
     /**
+     * Override this to provide a custom Linq4j Expression when the JDBC driver does not
+     * support standard {@code java.sql.Array} retrieval for a specific column type.
+     *
+     * <p>If {@link Optional#empty()} is returned, the caller falls back to the default
+     * {@code getArray()} path. Any returned expression must evaluate to a
+     * {@code Collection<? extends PolyValue>} suitable for {@link PolyList#of}.
+     */
+    public Optional<Expression> getCustomArrayRetrievalExpression(ParameterExpression resultSet, int i, AlgDataType fieldType) {
+        return Optional.empty();
+    }
+
+
+    /**
      * Whether this JDBC driver needs you to pass a Calendar object to methods such as {@link ResultSet#getTimestamp(int, java.util.Calendar)}.
      */
     public enum CalendarPolicy {
@@ -837,5 +889,54 @@ public class SqlDialect {
 
     }
 
+
+    /**
+     * Dialect specific setup on new connection, e.g. register certain non-standard types.
+     */
+    public void initializeConnection( java.sql.Connection conn ) throws java.sql.SQLException {
+
+    }
+
+
+    /**
+     * Returns whether the underlying database supports a vector with the given {@link ElementType}.
+     */
+    public boolean vectorPushdownTypeIsPresent( VectorType.ElementType vectorType ) {
+        return false;
+    }
+
+
+    /**
+     * <p>Takes a vector type, i.e. the {@link ElementType} of a vector and returns the database specific object for that vector type.</p>
+     * <p>Each dialect needs to overwrite this method, if providing dedicated vectors requiring non-standard vector database objects, in order to implement correct handling.</p>
+     * <p>It is strongly advised to first check {@link SqlDialect#vectorPushdownTypeIsPresent(ElementType)} since otherwise the object will be null.</p>
+     * @param vectorType The type of the vector elements.
+     * @param vectorAsList A {@link PolyList} representing the vector values.
+     * @return The database specific representation of the vector. Can be {@code null}.
+     */
+    public Object getVectorDbObject( VectorType.ElementType vectorType, PolyList<PolyValue> vectorAsList ) {
+        return null;
+    }
+
+
+    /**
+     * <p>Takes a vector type, i.e. the {@link ElementType} and returns the type string of the vector type.</p>
+     * <p>Each dialect needs to overwrite this method, if providing dedicated vectors with non-standard type definitions, in order to implement correct handling.</p>
+     * <p>It is strongly advised to first check {@link SqlDialect#vectorPushdownTypeIsPresent(ElementType)} since otherwise the string will be null.</p>
+     * @param vectorType the element type of the vector indicating the vector type
+     * @return type string of the vector type
+     */
+    public String getTypeString( VectorType.ElementType vectorType ) {
+        return null;
+    }
+
+
+    /**
+     * Returns a SqlNode that represents a vector literal for this dialect.
+     * Returns null if the dialect does not have a special syntax for vectors.
+     */
+    public SqlNode getVectorLiteral( VectorType vectorType, PolyList<PolyValue> vectorAsList, ParserPos pos) {
+        return null;
+    }
 
 }

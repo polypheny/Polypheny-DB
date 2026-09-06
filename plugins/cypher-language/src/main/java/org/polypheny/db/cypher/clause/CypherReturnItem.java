@@ -67,7 +67,7 @@ public class CypherReturnItem extends CypherReturn {
         if ( variable != null ) {
             String name = variable.getName();
             if ( this.expression instanceof CypherFunctionInvocation func ) {
-                return Pair.of( PolyString.of( name ), func.getRexCall( context ) );
+                return Pair.of( PolyString.of( name ), func.getRexCall( context, type) );
             }
 
             // name -> aggregate

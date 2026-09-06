@@ -93,6 +93,10 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
 
     @Serialize
     @JsonProperty
+    public boolean elementsNullable;
+
+    @Serialize
+    @JsonProperty
     public @SerializeNullable Collation collation;
 
     @Serialize
@@ -116,6 +120,7 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
             @Deserialize("dimension") final Integer dimension,
             @Deserialize("cardinality") final Integer cardinality,
             @Deserialize("nullable") final boolean nullable,
+            @Deserialize("elementsNullable") final boolean elementsNullable,
             @Deserialize("collation") final Collation collation,
             @Deserialize("defaultValue") final LogicalDefaultValue defaultValue ) {
         this.id = id;
@@ -130,17 +135,18 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
         this.dimension = dimension;
         this.cardinality = cardinality;
         this.nullable = nullable;
+        this.elementsNullable = elementsNullable;
         this.collation = collation;
         this.defaultValue = defaultValue;
     }
 
 
     public AlgDataType getAlgDataType( final AlgDataTypeFactory typeFactory ) {
-        return getAlgDataType( typeFactory, this.length, this.scale, this.type, collectionsType, cardinality, dimension, nullable );
+        return getAlgDataType( typeFactory, this.length, this.scale, this.type, collectionsType, cardinality, dimension, nullable, elementsNullable );
     }
 
 
-    public static AlgDataType getAlgDataType( AlgDataTypeFactory typeFactory, Integer length, Integer scale, PolyType type, PolyType collectionsType, Integer cardinality, Integer dimension, boolean nullable ) {
+    public static AlgDataType getAlgDataType( AlgDataTypeFactory typeFactory, Integer length, Integer scale, PolyType type, PolyType collectionsType, Integer cardinality, Integer dimension, boolean nullable, boolean elementsNullable ) {
         AlgDataType elementType;
         if ( length != null && scale != null && type.allowsPrecScale( true, true ) ) {
             elementType = typeFactory.createPolyType( type, length, scale );
@@ -150,9 +156,17 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
             assert type.allowsNoPrecNoScale();
             elementType = typeFactory.createPolyType( type );
         }
+        elementType = typeFactory.createTypeWithNullability( elementType, elementsNullable );
 
         if ( collectionsType == PolyType.ARRAY ) {
-            elementType = typeFactory.createArrayType( elementType, cardinality != null ? cardinality : -1, dimension != null ? dimension : -1 );
+            if ( !elementsNullable && (elementType.getPolyType() == PolyType.FLOAT
+                    || elementType.getPolyType() == PolyType.REAL
+                    || elementType.getPolyType() == PolyType.BOOLEAN)
+                    && dimension == 1 && cardinality != null && cardinality > 0 ) {
+                elementType = typeFactory.createVectorType( elementType, cardinality );
+            } else {
+                elementType = typeFactory.createArrayType( elementType, cardinality != null ? cardinality : -1, dimension != null ? dimension : -1 );
+            }
         } else if ( collectionsType == PolyType.MAP ) {
             elementType = typeFactory.createMapType( typeFactory.createPolyType( PolyType.ANY ), elementType );
         }

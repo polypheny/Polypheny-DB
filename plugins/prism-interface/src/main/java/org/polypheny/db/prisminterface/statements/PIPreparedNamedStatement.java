@@ -21,6 +21,7 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.NamedValueProcessor;
@@ -67,7 +68,10 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
         }
         List<PolyValue> valueList = namedValueProcessor.transformValueMap( values );
         for ( int i = 0; i < valueList.size(); i++ ) {
-            statement.getDataContext().addParameterValues( i, PolyValue.deriveType( valueList.get( i ), this.statement.getDataContext().getTypeFactory() ), List.of( valueList.get( i ) ) );
+            AlgDataType type = (parameterPolyTypes != null && i < parameterPolyTypes.size())
+                    ? deriveType( statement.getDataContext().getTypeFactory(), parameterPolyTypes.get( i ) )
+                    : PolyValue.deriveType( valueList.get( i ), this.statement.getDataContext().getTypeFactory() );
+            statement.getDataContext().addParameterValues( i, type, List.of( valueList.get( i ) ) );
         }
         StatementProcessor.implement( this );
         return StatementProcessor.executeAndGetResult( this, fetchSize );

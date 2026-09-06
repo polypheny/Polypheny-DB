@@ -31,6 +31,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingsPreset;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
@@ -65,8 +66,10 @@ public class AdapterManager {
     public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, DeployFn deployer ) {
         List<AbstractAdapterSetting> settings = AdapterTemplate.getAllSettings( clazz );
         AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
+        List<DeployMode> modes = List.of( properties.usedModes() );
+        List<AdapterSettingsPreset> presets = AdapterTemplate.getAllPresets( clazz, settings, modes );
         long id = AdapterManager.getInstance().idBuilder.getAndIncrement();
-        AdapterManager.getInstance().adapterTemplates.put( id, new AdapterTemplate( id, clazz, adapterName, settings, List.of( properties.usedModes() ), properties.description(), deployer ) );
+        AdapterManager.getInstance().adapterTemplates.put( id, new AdapterTemplate( id, clazz, adapterName, settings, modes, presets, properties.description(), deployer ) );
         return id;
     }
 

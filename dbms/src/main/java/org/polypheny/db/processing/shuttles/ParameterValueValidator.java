@@ -92,6 +92,16 @@ public class ParameterValueValidator extends AlgShuttleImpl {
                 switch ( polyType.getFamily() ) {
                     //case ANY:
                     //break;
+                    case ARRAY:
+                        valid = o.isList();
+                        if ( valid && !dynamicParam.getType().getComponentType().isNullable() ) {
+                            for ( PolyValue element : o.asList().value ) {
+                                if ( element == null || element.isNull() ) {
+                                    throw new InvalidParameterValueException( "Null element in non-nullable array column" );
+                                }
+                            }
+                        }
+                        break;
                     case CHARACTER:
                         valid = o.isString();
                         break;

@@ -76,6 +76,7 @@ import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInterval;
@@ -461,7 +462,7 @@ public class RexBuilder {
      */
     public RexNode makeCast( AlgDataType type, RexNode exp, boolean matchNullability ) {
         // MV: This might be a bad idea. It would be better to implement cast support for array columns
-        if ( exp.getType().getPolyType() == PolyType.ARRAY ) {
+        if ( exp.getType().getPolyType() == PolyType.ARRAY && !(type instanceof VectorType) ) {
             return exp;
         }
 
