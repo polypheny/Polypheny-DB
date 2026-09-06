@@ -161,7 +161,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 ImmutableList.of(
                         OperatorName.L1_DISTANCE,
                         OperatorName.L2_DISTANCE,
-                        OperatorName.COS_DISTANCE,
+                        OperatorName.COSINE_DISTANCE,
                         OperatorName.INNER_PRODUCT_DISTANCE,
                         OperatorName.HAMMING_DISTANCE,
                         OperatorName.JACCARD_DISTANCE )
@@ -339,7 +339,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 writer.print( " <-> " );
                 PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 1 ), leftPrec, rightPrec );
                 break;
-            case COS_DISTANCE:
+            case COSINE_DISTANCE:
                 PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 0 ), leftPrec, rightPrec );
                 writer.print( " <=> " );
                 PostgresqlVectorHelper.unparseAsPgVector( writer, call.operand( 1 ), leftPrec, rightPrec );

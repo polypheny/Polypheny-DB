@@ -1585,7 +1585,7 @@ public enum OperatorName {
 
     L1_DISTANCE( Function.class ),
 
-    COS_DISTANCE( Function.class ),
+    COSINE_DISTANCE( Function.class ),
 
     HAMMING_DISTANCE( Function.class ),
 

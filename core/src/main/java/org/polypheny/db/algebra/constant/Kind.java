@@ -121,7 +121,7 @@ public enum Kind {
 
     L2_DISTANCE,
 
-    COS_DISTANCE,
+    COSINE_DISTANCE,
 
     HAMMING_DISTANCE,
 

@@ -88,7 +88,7 @@ public class CypherFunctionInvocation extends CypherExpression {
         OperatorName namedOp = switch ( metric ) {
             case "L1" -> OperatorName.L1_DISTANCE;
             case "L2" -> OperatorName.L2_DISTANCE;
-            case "COSINE" -> OperatorName.COS_DISTANCE;
+            case "COSINE" -> OperatorName.COSINE_DISTANCE;
             case "HAMMING" -> OperatorName.HAMMING_DISTANCE;
             case "JACCARD" -> OperatorName.JACCARD_DISTANCE;
             case "INNER_PRODUCT" -> OperatorName.INNER_PRODUCT_DISTANCE;

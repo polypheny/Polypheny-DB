@@ -260,7 +260,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 OperatorName name = switch ( metric.toValue().toUpperCase( Locale.ROOT ) ) {
                     case "L1" -> OperatorName.L1_DISTANCE;
                     case "L2" -> OperatorName.L2_DISTANCE;
-                    case "COSINE" -> OperatorName.COS_DISTANCE;
+                    case "COSINE" -> OperatorName.COSINE_DISTANCE;
                     case "HAMMING" -> OperatorName.HAMMING_DISTANCE;
                     case "JACCARD" -> OperatorName.JACCARD_DISTANCE;
                     case "INNER_PRODUCT" -> OperatorName.INNER_PRODUCT_DISTANCE;
@@ -296,7 +296,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             RexNode arg0 = cx.convertExpression( call.operand( 0 ) );
             RexNode arg1 = cx.convertExpression( call.operand( 1 ) );
             AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
-            return cx.getRexBuilder().makeCall( returnType, OperatorRegistry.get( OperatorName.COS_DISTANCE ), ImmutableList.of( arg0, arg1 ) );
+            return cx.getRexBuilder().makeCall( returnType, OperatorRegistry.get( OperatorName.COSINE_DISTANCE ), ImmutableList.of( arg0, arg1 ) );
         } );
         registerOp( OperatorRegistry.get( OperatorName.PGVECTOR_HAMMING ), (cx, call) -> {
             RexBuilder rb = cx.getRexBuilder();

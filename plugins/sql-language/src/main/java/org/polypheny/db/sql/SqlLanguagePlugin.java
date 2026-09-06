@@ -1532,7 +1532,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
          */
         register( OperatorName.L1_DISTANCE, new SqlNamedDistanceFunction( "L1_DISTANCE", Kind.L1_DISTANCE, FunctionCategory.L1_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
         register( OperatorName.L2_DISTANCE, new SqlNamedDistanceFunction( "L2_DISTANCE", Kind.L2_DISTANCE, FunctionCategory.L2_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
-        register( OperatorName.COS_DISTANCE, new SqlNamedDistanceFunction( "COS_DISTANCE", Kind.COS_DISTANCE, FunctionCategory.COS_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
+        register( OperatorName.COSINE_DISTANCE, new SqlNamedDistanceFunction( "COSINE_DISTANCE", Kind.COSINE_DISTANCE, FunctionCategory.COSINE_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
         register( OperatorName.HAMMING_DISTANCE, new SqlNamedDistanceFunction( "HAMMING_DISTANCE", Kind.HAMMING_DISTANCE, FunctionCategory.HAMMING_DISTANCE, SqlNamedDistanceFunction.TWO_BOOLEAN_ARRAYS ) );
         register( OperatorName.JACCARD_DISTANCE, new SqlNamedDistanceFunction( "JACCARD_DISTANCE", Kind.JACCARD_DISTANCE, FunctionCategory.JACCARD_DISTANCE, SqlNamedDistanceFunction.TWO_BOOLEAN_ARRAYS ) );
         register( OperatorName.INNER_PRODUCT_DISTANCE, new SqlNamedDistanceFunction( "INNER_PRODUCT_DISTANCE", Kind.INNER_PRODUCT_DISTANCE, FunctionCategory.INNER_PRODUCT_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
@@ -2460,7 +2460,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                 "<+>", Kind.L1_DISTANCE, 36, true,
                 ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
         register( OperatorName.PGVECTOR_COS, new SqlBinaryOperator(
-                "<=>", Kind.COS_DISTANCE, 36, true,
+                "<=>", Kind.COSINE_DISTANCE, 36, true,
                 ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
         register( OperatorName.PGVECTOR_HAMMING, new SqlBinaryOperator(
                 "<~>", Kind.HAMMING_DISTANCE, 36, true,
