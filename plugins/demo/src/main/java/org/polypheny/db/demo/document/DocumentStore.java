@@ -16,29 +16,37 @@
 
 package org.polypheny.db.demo.document;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.MappingIterator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.demo.DemoStore;
-import org.polypheny.db.transaction.QueryAnalyzer;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.multimodel.PolyStatement;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
 public class DocumentStore extends DemoStore {
     private final String[] files;
-    private final static String[] localFiles = new String[]{ "/musicbrainz/artists.json" };
-    private final static String[] remoteFiles = new String[]{};
+    private final static String[] localFiles = new String[]{ "/document/artists.json" };
+    private final static String[] remoteFiles = new String[]{ "/home/mathieu/Documents/Unibas/Hiwi/Polypheny-DB/plugins/demo/artists.json" };
     private final Function<String, Stream<String>> fileLoader;
 
     private final TransactionManager transactionManager;
@@ -73,40 +81,72 @@ public class DocumentStore extends DemoStore {
         }
     }
 
+    // Helper method to build and execute the batched command
+    private void executeBatch( PolyStatement statement, List<String> jsonNodes) {
+        String jsonArrayContent = String.join(",", jsonNodes);
+        String query = String.format("db.artist.insertMany([%s])", jsonArrayContent);
+        query = query
+                .replace( "@", "" )
+                .replace( "#", "" )
+                .replace( "-", "" )
+                .replace( "*", "" )
+                .replace( "+", "" )
+                .replace( ";", "" );
+        try {
+            statement.execute(this.name, "mongo", query);
+        } catch (PrismInterfaceServiceException e) {
+            log.error( "Exception for batch query: {}. {}", query, e.getMessage() );
+            throw new RuntimeException( e );
+        } catch ( Exception e ) {
+            log.error( e.getMessage() );
+            throw new RuntimeException( e );
+        }
+    }
 
     @Override
     public void loadData() {
+        log.info( "Loading document data" );
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        int batchSize = 1000; // Adjust batch size based on memory/database payload limits
+
+        PolyStatement polyStatement;
         try {
-
-            Transaction transaction = this.transactionManager.startTransaction( Catalog.defaultUserId, this.namespaceId, new QueryAnalyzer(), ORIGIN );
-
-            log.info( "Loading document data" );
-            PolyStatement polyStatement = this.getPolyConnection().get().createPolyStatement();
-
-            for (String file_path: this.files) {
-                Stream<String> lines = fileLoader.apply( file_path );
-                lines.forEach( line -> {
-                    try {
-                        line = line.replace( "'", "" );
-                        line = line.replace( "\n", "" );
-                        line = line.replace( "\t", "" );
-                        String query =  String.format( "db.artist.insertOne(%s)", line );
-                        System.out.println(query);
-                        try {
-                            new com.fasterxml.jackson.databind.ObjectMapper().readTree(line);
-                        } catch (Exception e) {
-                            System.out.println("Parse error: " + e.getMessage());
-                        }
-                        polyStatement.execute( this.name, "mongo", query );
-                    } catch ( PrismInterfaceServiceException e ) {
-                        log.error( e.getMessage() );
-                    }
-                } );
-                return;
-            }
+            polyStatement = this.getPolyConnection().get().createPolyStatement();
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
         }
-        catch ( SQLException e ) {
-            log.error( e.getMessage() );
+        for (String file_path : this.files) {
+
+            try (InputStream is = Files.newInputStream(Path.of(file_path))) {
+
+                try (MappingIterator<JsonNode> it = objectMapper.readerFor(JsonNode.class).readValues(is)) {
+
+                    List<String> batchBuffer = new ArrayList<>(batchSize);
+
+                    while (it.hasNext()) {
+                        JsonNode node = it.next();
+                        // Clean newline characters from individual JSON objects
+                        batchBuffer.add(node.toString().replace("\n", "").replace("\r", ""));
+
+                        if (batchBuffer.size() >= batchSize) {
+                            executeBatch( polyStatement, batchBuffer);
+                            batchBuffer.clear();
+                        }
+                    }
+
+                    // Flush remaining documents in the batch buffer
+                    if (!batchBuffer.isEmpty()) {
+                        executeBatch( polyStatement, batchBuffer);
+                    }
+
+                } catch (Exception e) {
+                    throw new RuntimeException("Error processing file iterator: " + file_path, e);
+                }
+
+            } catch (Exception e) {
+                throw new RuntimeException("Error reading file: " + file_path, e);
+            }
         }
     }
 }

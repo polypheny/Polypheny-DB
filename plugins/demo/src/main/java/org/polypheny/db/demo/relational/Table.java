@@ -18,7 +18,6 @@ package org.polypheny.db.demo.relational;
 
 import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
-import org.polypheny.db.demo.IPreperable;
 import java.util.List;
 
 public record Table<T extends IPreperable>( String name, List<FieldInformation> columns, List<ConstraintInformation> constraints, String file, Class<T> type) {

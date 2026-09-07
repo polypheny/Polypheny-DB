@@ -27,7 +27,6 @@ import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.polypheny.db.demo.DemoStore;
-import org.polypheny.db.demo.IPreperable;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
@@ -44,15 +43,7 @@ public class RelationalStore extends DemoStore {
     public RelationalStore( TransactionManager transactionManager, boolean local ) {
         super("demoposgresql", "sql", DataModel.RELATIONAL, "postgresql" );
         this.transactionManager = transactionManager;
-
         this.tables = createTables();
-
-        /*
-        List<FieldInformation> artistFieldInformations = new ArrayList<>();
-        artistFieldInformations.add( new FieldInformation( "ArtistId", new ColumnTypeInformation( PolyType.BIGINT, null, PolyType.BIGINT.getMinPrecision(), PolyType.BIGINT.getMinScale(), -1, -1, true), Collation.CASE_INSENSITIVE, null, 1 ) );
-        artistFieldInformations.add( new FieldInformation( "Name", new ColumnTypeInformation( PolyType.TEXT, null, PolyType.TEXT.getMinPrecision(), PolyType.BIGINT.getMinScale(), -1, -1, true), Collation.CASE_INSENSITIVE, null, 1 ) );
-        this.tables.add( new Table( "Album", artistFieldInformations, "/chinook/Artist.json" ) );
-         */
     }
 
 
@@ -61,7 +52,6 @@ public class RelationalStore extends DemoStore {
         DdlManager ddlManager = DdlManager.getInstance();
         if (this.dataStore.isPresent()) {
             List<DataStore<?>> postgresql = List.of( this.dataStore.get() );
-            log.info( "{}", this.namespaceId );
             this.tables.forEach( table -> {
                 ddlManager.createTable( this.namespaceId, table.name(), table.columns(), table.constraints(), true, postgresql, PlacementType.AUTOMATIC, statement );
             } );

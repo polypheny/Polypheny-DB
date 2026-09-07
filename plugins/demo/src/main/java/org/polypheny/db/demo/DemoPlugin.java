@@ -66,7 +66,7 @@ public class DemoPlugin extends PolyPlugin {
 
         List<DemoStore> demoStores = new ArrayList<>();
 
-        demoStores.add(new DocumentStore( transactionManager, true ));
+        demoStores.add(new DocumentStore( transactionManager, false ));
         demoStores.add(new GraphStore( transactionManager, true ));
         demoStores.add(new RelationalStore( transactionManager, true ));
 

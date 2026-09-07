@@ -17,7 +17,6 @@
 package org.polypheny.db.demo.relational;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.polypheny.db.demo.IPreperable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 

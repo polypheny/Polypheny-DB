@@ -14,8 +14,11 @@ dependencies {
     compileOnly project(":plugins:cypher-language")
     compileOnly project(":plugins:neo4j-adapter")
     compileOnly project(":plugins:notebooks")
+    compileOnly project(":plugins:http-interface")
 
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: jackson_core_version
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: jackson_core_version
+
     implementation 'org.polypheny:polypheny-jdbc-driver:2.3'
 
     // --- Test Compile ---
@@ -42,6 +45,8 @@ delombok {
     dependsOn(":plugins:neo4j-adapter:processResources")
 
     dependsOn(":plugins:notebooks:processResources")
+
+    dependsOn(":plugins:http-interface:processResources")
 }
 
 
@@ -83,6 +88,8 @@ compileJava {
     dependsOn(":plugins:neo4j-adapter:processResources")
 
     dependsOn(":plugins:notebooks:processResources")
+
+    dependsOn(":plugins:http-interface:processResources")
 }
 
 test.dependsOn(":dbms:shadowJar")
