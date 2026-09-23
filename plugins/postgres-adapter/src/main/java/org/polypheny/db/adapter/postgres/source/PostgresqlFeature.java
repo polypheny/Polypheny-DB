@@ -16,9 +16,9 @@
 
 package org.polypheny.db.adapter.postgres.source;
 
+import java.util.function.Predicate;
 import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.sql.language.SqlDialect;
-import java.util.function.Predicate;
 
 public enum PostgresqlFeature implements SqlDbFeature {
 
@@ -32,6 +32,7 @@ public enum PostgresqlFeature implements SqlDbFeature {
     private final String name;
     private final String displayName;
     private final Predicate<SqlDialect> supportCheck;
+
 
     PostgresqlFeature( String name, String displayName, Predicate<SqlDialect> supportCheck ) {
         this.name = name;

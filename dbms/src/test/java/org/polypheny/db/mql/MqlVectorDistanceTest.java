@@ -16,13 +16,13 @@
 
 package org.polypheny.db.mql;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.webui.models.results.DocResult;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Tag("adapter")
 public class MqlVectorDistanceTest extends MqlTestTemplate {

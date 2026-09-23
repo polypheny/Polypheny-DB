@@ -56,4 +56,5 @@ public interface SqlDbFeature {
      * Preferably the query should be <i>idempotent</i>.
      */
     String getFeatureRegistrationQuery();
+
 }

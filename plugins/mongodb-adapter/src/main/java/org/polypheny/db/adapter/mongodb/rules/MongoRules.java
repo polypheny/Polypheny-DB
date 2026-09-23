@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -444,7 +444,7 @@ public class MongoRules {
 
     private static boolean containsIncompatible( SingleAlg alg ) {
         MongoExcludeVisitor visitor = new MongoExcludeVisitor();
-        alg.accept( new RexShuttle()  {
+        alg.accept( new RexShuttle() {
             @Override
             public RexNode visitCall( RexCall call ) {
                 call.accept( visitor );

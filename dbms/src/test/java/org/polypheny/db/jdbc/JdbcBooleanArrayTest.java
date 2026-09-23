@@ -17,6 +17,9 @@
 package org.polypheny.db.jdbc;
 
 import com.google.common.collect.ImmutableList;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -25,9 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })

@@ -22,20 +22,20 @@ package org.polypheny.db.adapter.postgres.source;
 public final class PostgresqlCatalogQueries {
 
     /**
-    SQL to query postgres system catalog attribute modifier count.
-    a.attnum > 0: filters out hidden system columns with attnum < 0
-    a.attisdropped: marked but not yet removed columns
-    a.atttypmod > 0: attribute type modifier was used i.e. vector(atttymod), otherwise atttypmod = -1
+     * SQL to query postgres system catalog attribute modifier count.
+     * a.attnum > 0: filters out hidden system columns with attnum < 0
+     * a.attisdropped: marked but not yet removed columns
+     * a.atttypmod > 0: attribute type modifier was used i.e. vector(atttymod), otherwise atttypmod = -1
      */
     public static final String SQL_COLUMN_TYPE_MODIFIERS_AND_ATTR_DIMENSIONS = """
-          SELECT a.attname, a.atttypmod, a.attndims
-          FROM pg_attribute a
-          JOIN pg_class     c ON a.attrelid     = c.oid
-          JOIN pg_namespace n ON c.relnamespace = n.oid
-          WHERE c.relname = ? AND n.nspname = ?
-            AND a.attnum > 0 AND NOT a.attisdropped
-            AND (a.attndims > 0 OR a.atttypmod > 0)
-          """;
+            SELECT a.attname, a.atttypmod, a.attndims
+            FROM pg_attribute a
+            JOIN pg_class     c ON a.attrelid     = c.oid
+            JOIN pg_namespace n ON c.relnamespace = n.oid
+            WHERE c.relname = ? AND n.nspname = ?
+              AND a.attnum > 0 AND NOT a.attisdropped
+              AND (a.attndims > 0 OR a.atttypmod > 0)
+            """;
 
 
     /**
@@ -46,4 +46,5 @@ public final class PostgresqlCatalogQueries {
             FROM pg_extension
             WHERE extname = ANY(?)
             """;
+
 }

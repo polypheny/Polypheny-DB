@@ -29,6 +29,7 @@ public class CypherVectorDistanceTest extends CypherTestTemplate {
     private static final String NODE_B = "CREATE (:Item {name: 'b', embedding: [2.0,2.0]})";
     private static final String NODE_C = "CREATE (:Item {name: 'c', embedding: [0.0,3.0]})";
 
+
     @BeforeEach
     public void reset() {
         tearDown();

@@ -28,15 +28,19 @@ public class VectorType extends ArrayType {
         FLOAT, DOUBLE, INTEGER, BIT
     }
 
+
     @Getter
     private final ElementType vectorElementType;
 
-    public VectorType( AlgDataType elementType, boolean isNullable, long
-            dimension, ElementType vectorElementType ) {
+
+    public VectorType(
+            AlgDataType elementType, boolean isNullable, long
+                    dimension, ElementType vectorElementType ) {
         super( elementType, isNullable, dimension, 1 );
         this.vectorElementType = vectorElementType;
         computeDigest();
     }
+
 
     public long getVectorDimension() {
         return getCardinality();

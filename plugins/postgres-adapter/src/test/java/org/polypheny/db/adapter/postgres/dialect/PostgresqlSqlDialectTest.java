@@ -57,8 +57,8 @@ public class PostgresqlSqlDialectTest {
         }
     }
 
-
     // ---- detectFeatures ----------------------------------------------------------------
+
 
     @Test
     void returnsEmptyWhenNoExtensionInstalled() throws SQLException {
@@ -109,8 +109,8 @@ public class PostgresqlSqlDialectTest {
         assertTrue( d.supportsVector() );
     }
 
-
     // ---- getCustomArrayRetrievalExpression ----------------------------------------------------------------
+
 
     @Test
     void bitVectorAlwaysUsesGetString() {
@@ -162,8 +162,8 @@ public class PostgresqlSqlDialectTest {
         assertTrue( dialect.getCustomArrayRetrievalExpression( rs, 0, intType ).isEmpty() );
     }
 
-
     // ---- vectorPushdownTypeIsPresent ----------------------------------------------------------------
+
 
     @Test
     void bitPushdownAlwaysPresent() {
@@ -182,8 +182,8 @@ public class PostgresqlSqlDialectTest {
         assertTrue( dialect.vectorPushdownTypeIsPresent( VectorType.ElementType.FLOAT ) );
     }
 
-
     // ---- helpers ----------------------------------------------------------------
+
 
     private static AlgDataType bitVectorType( int dim ) {
         return AlgDataTypeFactory.DEFAULT.createVectorType(
@@ -219,7 +219,9 @@ public class PostgresqlSqlDialectTest {
         when( conn.createArrayOf( eq( "text" ), any() ) ).thenReturn( arr );
         when( ps.executeQuery() ).thenReturn( rs );
         Boolean[] hasNext = new Boolean[extensions.length + 1];
-        for ( int i = 0; i < extensions.length; i++ ) hasNext[i] = true;
+        for ( int i = 0; i < extensions.length; i++ ) {
+            hasNext[i] = true;
+        }
         hasNext[extensions.length] = false;
         when( rs.next() ).thenReturn( hasNext[0], java.util.Arrays.copyOfRange( hasNext, 1, hasNext.length ) );
         String[] rest = java.util.Arrays.copyOfRange( extensions, 1, extensions.length );

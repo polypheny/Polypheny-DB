@@ -55,6 +55,7 @@ public @interface AdapterSettingsPreset {
 
     }
 
+
     @Target({})
     @Retention(RetentionPolicy.RUNTIME)
     @interface Setting {

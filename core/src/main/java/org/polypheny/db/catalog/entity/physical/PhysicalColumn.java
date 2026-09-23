@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ public class PhysicalColumn extends PhysicalField {
             @Deserialize("dimension") final @Nullable Integer dimension,
             @Deserialize("cardinality") final @Nullable Integer cardinality,
             @Deserialize("nullable") final boolean nullable,
-            @Deserialize( "elementsNullable" ) final boolean elementsNullable,
+            @Deserialize("elementsNullable") final boolean elementsNullable,
             @Deserialize("collation") final @Nullable Collation collation,
             @Deserialize("defaultValue") @Nullable LogicalDefaultValue defaultValue ) {
         super( id, name, logicalName, allocId, logicalEntityId, adapterId, DataModel.RELATIONAL, true );

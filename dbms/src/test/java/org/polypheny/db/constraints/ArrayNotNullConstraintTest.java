@@ -17,6 +17,10 @@
 package org.polypheny.db.constraints;
 
 import com.google.common.collect.ImmutableList;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -25,17 +29,13 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.jdbc.PrismInterfaceServiceException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
 
 /**
-* A column declared as {@code REAL VECTOR(n)} or {@code BOOLEAN VECTOR(n)}
-* is internally mapped to a VectorType. Inserting an array that contains a null element
-* must be rejected; inserting a null for the column itself (i.e. a null array) is still
-* allowed because the column is not declared NOT NULL at the column level.
-*/
+ * A column declared as {@code REAL VECTOR(n)} or {@code BOOLEAN VECTOR(n)}
+ * is internally mapped to a VectorType. Inserting an array that contains a null element
+ * must be rejected; inserting a null for the column itself (i.e. a null array) is still
+ * allowed because the column is not declared NOT NULL at the column level.
+ */
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @Tag("adapter")

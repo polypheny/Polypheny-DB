@@ -312,6 +312,7 @@ public class SqlPgvectorOperatorTest {
         }
     }
 
+
     @Test
     public void hammingEquivalenceTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -329,6 +330,7 @@ public class SqlPgvectorOperatorTest {
             }
         }
     }
+
 
     // --------------- INNER_PRODUCT operator (<#>) ---------------
     @Test

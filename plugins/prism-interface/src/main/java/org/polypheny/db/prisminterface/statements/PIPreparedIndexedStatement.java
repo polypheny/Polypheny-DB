@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,10 @@ package org.polypheny.db.prisminterface.statements;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.IntStream;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
@@ -31,8 +29,6 @@ import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.prism.ParameterMeta;
 import org.polypheny.prism.StatementResult;

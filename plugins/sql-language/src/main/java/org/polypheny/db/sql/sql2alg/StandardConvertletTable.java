@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -254,7 +254,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         registerOp( OperatorRegistry.get( OperatorName.TIMESTAMP_DIFF ), new TimestampDiffConvertlet() );
 
         /* Register special internal versions of distance functions */
-        registerOp( OperatorRegistry.get( OperatorName.DISTANCE ), (cx, call) -> {
+        registerOp( OperatorRegistry.get( OperatorName.DISTANCE ), ( cx, call ) -> {
             List<SqlNode> operands = call.getSqlOperandList();
             if ( operands.size() == 3 && operands.get( 2 ) instanceof SqlLiteral metric ) {
                 OperatorName name = switch ( metric.toValue().toUpperCase( Locale.ROOT ) ) {
@@ -277,9 +277,9 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 }
             }
             return convertCall( cx, call );
-        });
+        } );
 
-       registerOp( OperatorRegistry.get( OperatorName.HAMMING_DISTANCE ), (cx, call) -> {
+        registerOp( OperatorRegistry.get( OperatorName.HAMMING_DISTANCE ), ( cx, call ) -> {
             RexBuilder rb = cx.getRexBuilder();
             RexNode arg0 = cx.convertExpression( call.operand( 0 ) );
             RexNode arg1 = cx.convertExpression( call.operand( 1 ) );
@@ -288,7 +288,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             AlgDataType returnType = cx.getValidator().getValidatedNodeType( call );
             return rb.makeCall( returnType, OperatorRegistry.get( OperatorName.HAMMING_DISTANCE ), ImmutableList.of( c0, c1 ) );
         } );
-        registerOp( OperatorRegistry.get( OperatorName.JACCARD_DISTANCE ), (cx, call) -> {
+        registerOp( OperatorRegistry.get( OperatorName.JACCARD_DISTANCE ), ( cx, call ) -> {
             RexBuilder rb = cx.getRexBuilder();
             RexNode arg0 = cx.convertExpression( call.operand( 0 ) );
             RexNode arg1 = cx.convertExpression( call.operand( 1 ) );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,7 +109,7 @@ public class SqlDialect {
      *
      * @param context All the information necessary to create a dialect
      */
-    public SqlDialect( Context context) {
+    public SqlDialect( Context context ) {
         this.name = context.name;
         this.nullCollation = context.nullCollation;
         this.dataTypeSystem = context.dataTypeSystem;
@@ -855,7 +855,7 @@ public class SqlDialect {
      * {@code getArray()} path. Any returned expression must evaluate to a
      * {@code Collection<? extends PolyValue>} suitable for {@link PolyList#of}.
      */
-    public Optional<Expression> getCustomArrayRetrievalExpression(ParameterExpression resultSet, int i, AlgDataType fieldType) {
+    public Optional<Expression> getCustomArrayRetrievalExpression( ParameterExpression resultSet, int i, AlgDataType fieldType ) {
         return Optional.empty();
     }
 
@@ -910,6 +910,7 @@ public class SqlDialect {
      * <p>Takes a vector type, i.e. the {@link ElementType} of a vector and returns the database specific object for that vector type.</p>
      * <p>Each dialect needs to overwrite this method, if providing dedicated vectors requiring non-standard vector database objects, in order to implement correct handling.</p>
      * <p>It is strongly advised to first check {@link SqlDialect#vectorPushdownTypeIsPresent(ElementType)} since otherwise the object will be null.</p>
+     *
      * @param vectorType The type of the vector elements.
      * @param vectorAsList A {@link PolyList} representing the vector values.
      * @return The database specific representation of the vector. Can be {@code null}.
@@ -923,6 +924,7 @@ public class SqlDialect {
      * <p>Takes a vector type, i.e. the {@link ElementType} and returns the type string of the vector type.</p>
      * <p>Each dialect needs to overwrite this method, if providing dedicated vectors with non-standard type definitions, in order to implement correct handling.</p>
      * <p>It is strongly advised to first check {@link SqlDialect#vectorPushdownTypeIsPresent(ElementType)} since otherwise the string will be null.</p>
+     *
      * @param vectorType the element type of the vector indicating the vector type
      * @return type string of the vector type
      */
@@ -935,7 +937,7 @@ public class SqlDialect {
      * Returns a SqlNode that represents a vector literal for this dialect.
      * Returns null if the dialect does not have a special syntax for vectors.
      */
-    public SqlNode getVectorLiteral( VectorType vectorType, PolyList<PolyValue> vectorAsList, ParserPos pos) {
+    public SqlNode getVectorLiteral( VectorType vectorType, PolyList<PolyValue> vectorAsList, ParserPos pos ) {
         return null;
     }
 

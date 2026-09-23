@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -39,15 +38,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.docker.DockerContainer;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.VectorType;
 
 /**
@@ -67,7 +66,7 @@ import org.polypheny.db.type.VectorType;
 public class PostgresqlSourceDiscoveryTest {
 
     private static final String SOURCE_ADAPTER = "pg_discovery_source";
-    private static final String TABLE_NAME     = "public.discovery_test";
+    private static final String TABLE_NAME = "public.discovery_test";
     private static final String RAW_TABLE_NAME = "discovery_test";
 
     private static boolean setupSucceeded = false;
@@ -106,22 +105,21 @@ public class PostgresqlSourceDiscoveryTest {
 
         String jdbcUrl = String.format( "jdbc:postgresql://%s:%d/%s", host, port, database );
         try ( Connection conn = DriverManager.getConnection( jdbcUrl, username, password );
-              Statement st = conn.createStatement() ) {
+                Statement st = conn.createStatement() ) {
             st.executeUpdate( "DROP TABLE IF EXISTS " + TABLE_NAME );
             st.executeUpdate(
                     "CREATE TABLE " + TABLE_NAME + " (" +
-                    "  id         SERIAL PRIMARY KEY," +
-                    "  bool_array BOOLEAN[]," +
-                    "  bit_vector BIT(5)" +
-                    ")" );
+                            "  id         SERIAL PRIMARY KEY," +
+                            "  bool_array BOOLEAN[]," +
+                            "  bit_vector BIT(5)" +
+                            ")" );
         }
-
 
         String settings = String.format(
                 "'{ \"mode\": \"REMOTE\", \"host\": \"%s\", \"port\": \"%d\", \"database\": \"%s\", \"username\": \"%s\", \"password\": \"%s\", \"tables\": \"%s\", \"maxConnections\": \"25\", \"transactionIsolation\": \"SERIALIZABLE\" }'",
                 host, port, database, username, password, TABLE_NAME );
         try ( JdbcConnection jc = new JdbcConnection( true );
-              Statement st = jc.getConnection().createStatement() ) {
+                Statement st = jc.getConnection().createStatement() ) {
             st.executeUpdate( "ALTER ADAPTERS ADD \"" + SOURCE_ADAPTER + "\"" +
                     " USING 'PostgreSQL' AS 'Source' WITH " + settings );
         }
@@ -133,7 +131,7 @@ public class PostgresqlSourceDiscoveryTest {
     static void stop() {
         if ( setupSucceeded ) {
             try ( JdbcConnection jc = new JdbcConnection( true );
-                  Statement st = jc.getConnection().createStatement() ) {
+                    Statement st = jc.getConnection().createStatement() ) {
                 st.executeUpdate( "ALTER ADAPTERS DROP \"" + SOURCE_ADAPTER + "\"" );
             } catch ( Exception e ) {
                 log.warn( "Could not drop source adapter during teardown", e );

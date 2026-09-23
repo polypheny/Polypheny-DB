@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,9 +59,11 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
             @JsonProperty IndexCategory category,
             @JsonProperty List<IndexParameterModel> parameters
     ) {
+
         public IndexMethodModel( String name, String displayName ) {
             this( name, displayName, IndexCategory.REGULAR, List.of() );
         }
+
     }
 
 
@@ -71,7 +73,9 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
             @JsonProperty String type,          //INTEGER, BOOLEAN, ENUM
             @JsonProperty List<String> options,
             @JsonProperty String defaultValue
-    ){}
+    ) {
+
+    }
 
 
     public record FunctionalIndexInfo( List<Long> columnIds, String methodDisplayName ) {
