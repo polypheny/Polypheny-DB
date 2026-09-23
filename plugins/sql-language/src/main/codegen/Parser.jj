@@ -149,6 +149,7 @@ import org.polypheny.db.sql.language.fun.SqlJsonArrayAggAggFunction;
 import org.polypheny.db.sql.language.fun.SqlJsonObjectAggAggFunction;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.fun.SqlTrimFunction;
+import org.polypheny.db.sql.language.fun.SqlDistanceInfixOperator;
 import org.polypheny.db.sql.language.parser.Span;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl.ExprContext;
@@ -7478,12 +7479,12 @@ SqlBinaryOperator BinaryRowOperator() :
 |   <SUCCEEDS> { return OperatorRegistry.get( OperatorName.SUCCEEDS, SqlBinaryOperator.class ); }
 |   <IMMEDIATELY> <PRECEDES> { return OperatorRegistry.get( OperatorName.IMMEDIATELY_PRECEDES, SqlBinaryOperator.class ); }
 |   <IMMEDIATELY> <SUCCEEDS> { return OperatorRegistry.get( OperatorName.IMMEDIATELY_SUCCEEDS, SqlBinaryOperator.class ); }
-|   <L2_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_L2, SqlBinaryOperator.class ); }
-|   <L1_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_L1, SqlBinaryOperator.class ); }
-|   <COS_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_COS, SqlBinaryOperator.class ); }
-|   <HAMMING_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_HAMMING, SqlBinaryOperator.class ); }
-|   <JACCARD_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_JACCARD, SqlBinaryOperator.class ); }
-|   <INNER_PRODUCT_DIST_OP> { return OperatorRegistry.get( OperatorName.PGVECTOR_INNER_PRODUCT, SqlBinaryOperator.class ); }
+|   <L2_DIST_OP> { return SqlDistanceInfixOperator.L2; }
+|   <L1_DIST_OP> { return SqlDistanceInfixOperator.L1; }
+|   <COS_DIST_OP> { return SqlDistanceInfixOperator.COSINE; }
+|   <HAMMING_DIST_OP> { return SqlDistanceInfixOperator.HAMMING; }
+|   <JACCARD_DIST_OP> { return SqlDistanceInfixOperator.JACCARD; }
+|   <INNER_PRODUCT_DIST_OP> { return SqlDistanceInfixOperator.INNER_PRODUCT; }
 |   op = BinaryMultisetOperator() { return op; }
 }
 

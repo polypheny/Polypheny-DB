@@ -2445,33 +2445,6 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         null,
                         null ) );
 
-        //------------------------------------------------------------
-        //                  PostgreSQL pgvector OPERATORS
-        //------------------------------------------------------------
-        /*
-            Note on chosen precedence:
-            AND=24, comparisons =/</> = 30, + - = 40, * / = 60 are already existing values.
-            We therefore use precedence 36 with left-associativity.
-         */
-        register( OperatorName.PGVECTOR_L2, new SqlBinaryOperator(
-                "<->", Kind.L2_DISTANCE, 36, true,
-                ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
-        register( OperatorName.PGVECTOR_L1, new SqlBinaryOperator(
-                "<+>", Kind.L1_DISTANCE, 36, true,
-                ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
-        register( OperatorName.PGVECTOR_COS, new SqlBinaryOperator(
-                "<=>", Kind.COSINE_DISTANCE, 36, true,
-                ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
-        register( OperatorName.PGVECTOR_HAMMING, new SqlBinaryOperator(
-                "<~>", Kind.HAMMING_DISTANCE, 36, true,
-                ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_BOOLEAN_ARRAYS ) );
-        register( OperatorName.PGVECTOR_JACCARD, new SqlBinaryOperator(
-                "<%>", Kind.JACCARD_DISTANCE, 36, true,
-                ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_BOOLEAN_ARRAYS ) );
-        register( OperatorName.PGVECTOR_INNER_PRODUCT, new SqlBinaryOperator(
-                "<#>", Kind.INNER_PRODUCT_DISTANCE, 36, true,
-                ReturnTypes.DOUBLE, null, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
-
 
         /*
          * Operator to quantify patterns within {@code MATCH_RECOGNIZE}.

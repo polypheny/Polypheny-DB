@@ -1597,20 +1597,6 @@ public enum OperatorName {
     VECTOR_DISTANCE( Function.class),
 
 
-    // PostgreSQL pgvector Operators
-
-    PGVECTOR_L2( BinaryOperator.class ),
-
-    PGVECTOR_L1( BinaryOperator.class ),
-
-    PGVECTOR_COS( BinaryOperator.class ),
-
-    PGVECTOR_HAMMING( BinaryOperator.class ),
-
-    PGVECTOR_JACCARD( BinaryOperator.class ),
-
-    PGVECTOR_INNER_PRODUCT( BinaryOperator.class ),
-
     //-------------------------------------------------------------
     //                   SET OPERATORS
     //-------------------------------------------------------------
