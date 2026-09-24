@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -239,6 +239,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> implements RelationalData
                 null,
                 null,
                 false,
+                true,
                 physSchemaName,
                 physTableName,
                 "path",
@@ -255,6 +256,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> implements RelationalData
                 null,
                 null,
                 false,
+                true,
                 physSchemaName,
                 physTableName,
                 "name",
@@ -270,6 +272,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> implements RelationalData
                 null,
                 null,
                 null,
+                true,
                 true,
                 physSchemaName,
                 physTableName,
@@ -287,6 +290,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> implements RelationalData
                 null,
                 null,
                 false,
+                true,
                 physSchemaName,
                 physTableName,
                 "file",

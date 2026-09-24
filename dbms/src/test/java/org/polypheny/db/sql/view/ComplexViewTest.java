@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1767,7 +1767,7 @@ public class ComplexViewTest {
                                                 o_totalprice DESC,
                                                 o_orderdate
                                             LIMIT 100""" ),
-                            ImmutableList.of( new Object[]{ "CName", 1, 1, Date.valueOf( "2020-07-03" ) , 65.15, 20.15 } )
+                            ImmutableList.of( new Object[]{ "CName", 1, 1, Date.valueOf( "2020-07-03" ), 65.15, 20.15 } )
                     );
 
                     connection.commit();

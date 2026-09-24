@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ public class CypherExpression extends CypherNode {
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         if ( this instanceof CypherFunctionInvocation func ) {
             // var is null in case of function call
-            return Pair.of( PolyString.of( null ), func.getRexCall( context ) );
+            return Pair.of( PolyString.of( null ), func.getRexCall( context, type ) );
         }
 
         OperatorName operatorName = switch ( this.type ) {

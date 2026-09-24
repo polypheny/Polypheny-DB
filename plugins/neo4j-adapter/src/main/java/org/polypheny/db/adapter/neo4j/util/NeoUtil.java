@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -533,7 +533,7 @@ public interface NeoUtil {
             }
         }
         if ( value.isList() ) {
-            if ( isNested ) {
+            if ( isNested || value.asList().stream().anyMatch( e -> e == null || e.isNull() ) ) {
                 return value.toTypedJson();
             }
             return value.asList().value.stream().map( e -> fixParameterValue( e, type.asList().types.get( 0 ), true ) ).toList();

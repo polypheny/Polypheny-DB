@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,9 @@ public class ColumnModel extends FieldModel {
     public boolean nullable;
 
     @JsonProperty
+    public boolean elementsNullable;
+
+    @JsonProperty
     public int position;
 
 
@@ -74,10 +77,12 @@ public class ColumnModel extends FieldModel {
             @JsonProperty("dimension") Integer dimension,
             @JsonProperty("cardinality") Integer cardinality,
             @JsonProperty("nullable") boolean nullable,
+            @JsonProperty("elementsNullable") boolean elementsNullable,
             @JsonProperty("position") int position ) {
         super( id, name, tableId );
         this.type = type;
         this.nullable = nullable;
+        this.elementsNullable = elementsNullable;
         this.position = position;
         this.collectionsType = collectionsType;
         this.precision = precision;
@@ -101,6 +106,7 @@ public class ColumnModel extends FieldModel {
                 column.dimension,
                 column.cardinality,
                 column.nullable,
+                column.elementsNullable,
                 column.position );
     }
 

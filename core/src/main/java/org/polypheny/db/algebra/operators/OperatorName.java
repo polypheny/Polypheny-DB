@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1576,6 +1576,25 @@ public enum OperatorName {
      * The <code>stGeometryN</code> operator function: return the nth geometry in the {@link org.polypheny.db.type.entity.spatial.PolyGeometryCollection}
      */
     ST_GEOMETRYN( Function.class ),
+
+    //------------------------------------------------------------
+    //                  VECTOR DISTANCE FUNCTIONS
+    //------------------------------------------------------------
+
+    L2_DISTANCE( Function.class ),
+
+    L1_DISTANCE( Function.class ),
+
+    COSINE_DISTANCE( Function.class ),
+
+    HAMMING_DISTANCE( Function.class ),
+
+    JACCARD_DISTANCE( Function.class ),
+
+    INNER_PRODUCT_DISTANCE( Function.class ),
+
+    // Cypher specific operator
+    VECTOR_DISTANCE( Function.class ),
 
     //-------------------------------------------------------------
     //                   SET OPERATORS

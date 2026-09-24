@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,6 +134,16 @@ public interface AlgDataTypeFactory {
      * @return canonical array type descriptor
      */
     AlgDataType createArrayType( AlgDataType elementType, long maxCardinality, long dimension );
+
+    /**
+     * Creates a vector type. A vector is a fixed-length, single-dimension array
+     * of numeric values (i.e. dim=1, card=k).
+     *
+     * @param elementType the element type (typically {@code FLOAT/REAL} or {@code BOOLEAN (BIT)})
+     * @param dimension the fixed number of elements in the vector, corresponds to cardinality of an array.
+     * @return canonical vector type descriptor
+     */
+    AlgDataType createVectorType( AlgDataType elementType, long dimension );
 
     /**
      * Creates a map type. Maps are unordered collections of key/value pairs.

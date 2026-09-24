@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -395,6 +395,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
     public Result visit( Sort e ) {
         Result x = visitChild( 0, e.getInput() );
         Builder builder = x.builder( e, false, Clause.ORDER_BY );
+        boolean setExplicitSelect = false;
         if ( stack.size() != 1 && builder.select.getSqlSelectList() == null ) {
             // Generates explicit column names instead of start(*) for non-root ORDER BY to avoid ambiguity.
             final List<SqlNode> selectList = Expressions.list();
@@ -402,6 +403,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
                 addSelect( selectList, builder.context.field( field.getIndex() ), e.getTupleType() );
             }
             builder.select.setSelectList( new SqlNodeList( selectList, POS ) );
+            setExplicitSelect = true;
         }
         List<SqlNode> orderByList = Expressions.list();
         for ( AlgFieldCollation field : e.getCollation().getFieldCollations() ) {
@@ -409,6 +411,8 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
         }
         if ( !orderByList.isEmpty() ) {
             builder.setOrderBy( new SqlNodeList( orderByList, POS ) );
+            x = builder.result();
+        } else if ( setExplicitSelect ) {
             x = builder.result();
         }
         if ( e.fetch != null ) {

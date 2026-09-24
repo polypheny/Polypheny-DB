@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -574,7 +574,8 @@ public class StorageManagerImpl implements StorageManager {
                 type.getScale(),
                 isArray ? (int) ((ArrayType) field.getType()).getDimension() : -1,
                 isArray ? (int) ((ArrayType) field.getType()).getCardinality() : -1,
-                field.getType().isNullable() );
+                field.getType().isNullable(),
+                field.getType().getComponentType() == null || field.getType().getComponentType().isNullable() );
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,6 +92,16 @@ public class ParameterValueValidator extends AlgShuttleImpl {
                 switch ( polyType.getFamily() ) {
                     //case ANY:
                     //break;
+                    case ARRAY:
+                        valid = o.isList();
+                        if ( valid && !dynamicParam.getType().getComponentType().isNullable() ) {
+                            for ( PolyValue element : o.asList().value ) {
+                                if ( element == null || element.isNull() ) {
+                                    throw new InvalidParameterValueException( "Null element in non-nullable array column" );
+                                }
+                            }
+                        }
+                        break;
                     case CHARACTER:
                         valid = o.isString();
                         break;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -4314,6 +4314,16 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 for ( Pair<Node, AlgDataTypeField> pair : Pair.zip( rowConstructor.getOperandList(), targetRowType.getFields() ) ) {
                     if ( !pair.right.getType().isNullable() && CoreUtil.isNullLiteral( pair.left, false ) ) {
                         throw newValidationError( node, RESOURCE.columnNotNullable( pair.right.getName() ) );
+                    }
+                    if ( pair.right.getType().getPolyType() == PolyType.ARRAY
+                            && !pair.right.getType().getComponentType().isNullable()
+                            && pair.left instanceof SqlCall arrayCall
+                            && arrayCall.getKind() == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
+                        for ( Node element : arrayCall.getOperandList() ) {
+                            if ( CoreUtil.isNullLiteral( element, true ) ) {
+                                throw newValidationError( node, RESOURCE.columnNotNullable( pair.right.getName() ) );
+                            }
+                        }
                     }
                 }
             }
