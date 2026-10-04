@@ -1,0 +1,112 @@
+group "org.polypheny"
+
+
+dependencies {
+    compileOnly project(":core")
+    compileOnly project(":dbms")
+    compileOnly project(":plugins:sql-language")
+    implementation(group: "org.apache.parquet", name: "parquet-hadoop", version: parquet_version) {
+//        transitive = false
+    }
+    implementation group: "org.apache.parquet", name: "parquet-column", version: parquet_version
+    implementation group: "org.apache.parquet", name: "parquet-common", version: parquet_version
+    implementation(group: "org.apache.hadoop", name: "hadoop-common", version: hadoop_version) {
+        exclude group: "com.google.re2j", module: "re2j"
+        exclude group: "com.jcraft", module: "jsch"
+        exclude group: "jakarta.activation", module: "jakarta.activation-api"
+        exclude group: "javax.activation", module: "activation"
+        exclude group: "javax.servlet", module: "javax.servlet-api"
+        exclude group: "javax.servlet.jsp", module: "jsp-api"
+        exclude group: "javax.ws.rs", module: "jsr311-api"
+        exclude group: "javax.xml.bind", module: "jaxb-api"
+        exclude group: "javax.xml.stream", module: "stax-api"
+        exclude group: "org.bouncycastle", module: "bcprov-jdk18on"
+    }
+    implementation(group: "org.apache.hadoop", name: "hadoop-mapreduce-client-core", version: hadoop_version) {
+        exclude group: "jakarta.activation", module: "jakarta.activation-api"
+        exclude group: "javax.servlet", module: "javax.servlet-api"
+        exclude group: "javax.ws.rs", module: "jsr311-api"
+        exclude group: "aopalliance", module: "aopalliance"
+        exclude group: "jakarta.xml.bind", module: "jakarta.xml.bind-api"
+    }
+
+    // --- Test Compile ---
+    testImplementation project(":dbms")
+    testImplementation project(path: ":dbms", configuration: "test")
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
+    testImplementation project(path: ":plugins:sql-language")
+
+    testImplementation(group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version) {
+        exclude(group: "com.fasterxml.jackson.core")
+        exclude(group: "com.fasterxml.jackson.databind")
+    }
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "failed", "standard_out", "standard_error"
+        showStandardStreams = true
+    }
+}
+
+configurations.configureEach {
+    exclude group: "javax.annotation", module: "javax.annotation-api"
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+compileJava {
+    dependsOn(":config:processResources")
+    dependsOn(":core:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":plugins:sql-language:processResources")
+}
+
+delombok {
+    dependsOn(":plugins:sql-language:processResources")
+}
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+licensee {
+    allow('MIT')
+    allow('Apache-2.0')
+    allow('BSD-2-Clause')
+    allow('BSD-3-Clause')
+    allow('CDDL-1.1')
+}

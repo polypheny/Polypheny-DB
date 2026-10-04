@@ -306,6 +306,7 @@ class GlobalSchedulerTest {
         for ( int i = 0; i <= nBranches; i++ ) { // also checks initial activity
             assertTrue( sm.hasCheckpoint( ids.get( i ), 0 ) );
         }
+        scheduler.awaitResultProcessor( 5000 );
     }
 
 

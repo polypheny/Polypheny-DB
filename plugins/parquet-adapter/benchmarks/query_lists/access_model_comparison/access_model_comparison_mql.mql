@@ -1,0 +1,46 @@
+-- Q01: Full document access
+tlcpd_document.tlcpd__green_tripdata.find({});
+
+-- Q02: Projection
+tlcpd_document.tlcpd__green_tripdata.find(
+  {},
+  {
+    "lpep_pickup_datetime": 1,
+    "lpep_dropoff_datetime": 1,
+    "pulocationid": 1,
+    "dolocationid": 1,
+    "total_amount": 1
+  }
+);
+
+-- Q03: Filtered count
+tlcpd_document.tlcpd__green_tripdata.aggregate([
+  {
+    "$match": {
+      "trip_distance": { "$gte": 10.0 },
+      "total_amount": { "$gte": 40.0 }
+    }
+  },
+  { "$count": "row_count" }
+]);
+
+-- Q04: Filtered full document access
+tlcpd_document.tlcpd__green_tripdata.find({
+  "trip_distance": { "$gte": 10.0 },
+  "total_amount": { "$gte": 40.0 }
+});
+
+-- Q05: Filtered projection
+tlcpd_document.tlcpd__green_tripdata.find(
+  {
+    "trip_distance": { "$gte": 10.0 },
+    "total_amount": { "$gte": 40.0 }
+  },
+  {
+    "lpep_pickup_datetime": 1,
+    "pulocationid": 1,
+    "dolocationid": 1,
+    "trip_distance": 1,
+    "total_amount": 1
+  }
+);

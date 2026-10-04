@@ -103,6 +103,9 @@ public class PolyphenyHomeDirManager {
 
     public static PolyphenyHomeDirManager setModeAndGetInstance( RunMode mode ) {
         if ( PolyphenyHomeDirManager.mode != null ) {
+            if ( PolyphenyHomeDirManager.mode == mode ) {
+                return PolyphenyHomeDirManager.getInstance();
+            }
             throw new RuntimeException( "Could not set the mode." );
         }
         PolyphenyHomeDirManager.mode = mode;

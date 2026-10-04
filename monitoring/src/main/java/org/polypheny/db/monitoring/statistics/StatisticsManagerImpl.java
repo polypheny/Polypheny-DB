@@ -25,8 +25,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -39,6 +41,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatisticsManager;
+import org.polypheny.db.adapter.statistics.ProvidedColumnStatistics;
+import org.polypheny.db.adapter.statistics.ProvidedEntityStatistics;
+import org.polypheny.db.adapter.statistics.AdapterStatisticsProvider;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AggregateCall;
@@ -51,9 +56,12 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -232,8 +240,16 @@ public class StatisticsManagerImpl extends StatisticsManager {
         log.debug( "Reevaluate Row Count." );
 
         statisticQueryInterface.getAllRelEntites().forEach( table -> {
-            PolyInteger rowCount = getNumberColumnCount( this.prepareNode( new QueryResult( Catalog.snapshot().getLogicalEntity( table.id ).orElseThrow(), null ), NodeType.ROW_COUNT_TABLE ) );
-            updateRowCountPerEntity( table.id, rowCount.value, MonitoringType.SET_ROW_COUNT );
+            // try to get statistics from adapter first
+            Optional<ProvidedEntityStatistics> provided = getEntityStatistics( table.id );
+            if ( provided.isPresent() && provided.get().rowCount() != null ) {
+                updateRowCountPerEntity( table.id, provided.get().rowCount(), MonitoringType.SET_ROW_COUNT );
+            } else {
+                PolyInteger rowCount = getNumberColumnCount( this.prepareNode( new QueryResult( Catalog.snapshot().getLogicalEntity( table.id ).orElseThrow(), null ), NodeType.ROW_COUNT_TABLE ) );
+                if ( rowCount.value != null ) {
+                    updateRowCountPerEntity( table.id, rowCount.value, MonitoringType.SET_ROW_COUNT );
+                }
+            }
         } );
     }
 
@@ -275,6 +291,13 @@ public class StatisticsManagerImpl extends StatisticsManager {
             return null;
         }
 
+        // Adapter Statistics
+        // try to get statistics from adapter first
+        Optional<StatisticColumn> provided = getColumnStatistics( column );
+        if ( provided.isPresent() ) {
+            return provided.get();
+        }
+
         if ( column.getColumn().type.getFamily() == PolyTypeFamily.NUMERIC ) {
             return this.reevaluateNumericalColumn( column );
         } else if ( column.getColumn().type.getFamily() == PolyTypeFamily.CHARACTER ) {
@@ -283,6 +306,186 @@ public class StatisticsManagerImpl extends StatisticsManager {
             return this.reevaluateTemporalColumn( column );
         }
         return null;
+    }
+
+
+    /**
+     * Gets statistics for logical entity
+     * @param logicalEntityId - long
+     * @return
+     */
+    private Optional<ProvidedEntityStatistics> getEntityStatistics( long logicalEntityId ) {
+        return Catalog.snapshot().alloc().getFromLogical( logicalEntityId ).stream()
+                .map( this::getStatisticsProvider )
+                .filter( Optional::isPresent )
+                .map( provider -> provider.get().getEntityStatistics( logicalEntityId ) )
+                .filter( Optional::isPresent )
+                .filter( statistic -> statistic.get().rowCount() != null )
+                .map( Optional::get )
+                .findFirst();
+    }
+
+
+    /**
+     * Gets column statistics
+     * @param column - query result
+     * @return Statistic Column
+     */
+    private Optional<StatisticColumn> getColumnStatistics( QueryResult column ) {
+        List<ProvidedColumnStatistics> providedStatistics = Catalog.snapshot().alloc().getFromLogical( column.getEntity().id ).stream()
+                .map( this::getStatisticsProvider )
+                .filter( Optional::isPresent )
+                .map( provider -> provider.get().getColumnStatistics( column.getColumn(), buffer ) )
+                .filter( Optional::isPresent )
+                .map( Optional::get )
+                .toList();
+
+        return aggregateProvidedColumnStatistics( providedStatistics )
+                .flatMap( provided -> toStatisticColumn( column, provided ) );
+    }
+
+
+    /**
+     * Aggregate statistics from partitioned physical columns
+     *
+     * @param providedStatistics a list of column statistics
+     * @return aggregated statistics per logical column
+     */
+    private Optional<ProvidedColumnStatistics> aggregateProvidedColumnStatistics( List<ProvidedColumnStatistics> providedStatistics ) {
+        if ( providedStatistics.isEmpty() ) {
+            return Optional.empty();
+        }
+        if ( providedStatistics.size() == 1 ) {
+            return Optional.of( providedStatistics.get( 0 ) );
+        }
+
+        Long count = null;
+        PolyValue min = null;
+        PolyValue max = null;
+        boolean full = false;
+        Map<String, PolyValue> uniqueValues = new LinkedHashMap<>();
+
+        for ( ProvidedColumnStatistics provided : providedStatistics ) {
+            count = addCounts( count, provided.count() );
+            min = lower( min, provided.min() );
+            max = higher( max, provided.max() );
+            full |= provided.full();
+
+            for ( PolyValue value : provided.uniqueValues() ) {
+                uniqueValues.putIfAbsent( value.toTypedJson(), value );
+                if ( uniqueValues.size() > buffer ) {
+                    full = true;
+                    uniqueValues.clear();
+                    break;
+                }
+            }
+        }
+
+        return Optional.of( new ProvidedColumnStatistics( count, min, max, List.copyOf( uniqueValues.values() ), full ) );
+    }
+
+
+    private Long addCounts( Long left, Long right ) {
+        if ( left == null ) {
+            return right;
+        }
+        if ( right == null ) {
+            return left;
+        }
+        return left + right;
+    }
+
+
+    private PolyValue lower( PolyValue current, PolyValue candidate ) {
+        if ( candidate == null ) {
+            return current;
+        }
+        if ( current == null ) {
+            return candidate;
+        }
+        try {
+            return candidate.compareTo( current ) < 0 ? candidate : current;
+        } catch ( RuntimeException e ) {
+            return current;
+        }
+    }
+
+
+    private PolyValue higher( PolyValue current, PolyValue candidate ) {
+        if ( candidate == null ) {
+            return current;
+        }
+        if ( current == null ) {
+            return candidate;
+        }
+        try {
+            return candidate.compareTo( current ) > 0 ? candidate : current;
+        } catch ( RuntimeException e ) {
+            return current;
+        }
+    }
+
+
+    /**
+     * Converts provider column statistics to statistics column representation
+     * @param column QueryResult
+     * @param provided ProvidedColumnStatistics
+     * @return StatisticColumn
+     */
+    private Optional<StatisticColumn> toStatisticColumn( QueryResult column, ProvidedColumnStatistics provided ) {
+        StatisticColumn statisticColumn;
+        if ( column.getColumn().type.getFamily() == PolyTypeFamily.NUMERIC ) {
+            NumericalStatisticColumn numericalColumn = new NumericalStatisticColumn( column );
+            if ( provided.min() != null ) {
+                numericalColumn.setMin( provided.min().asNumber() );
+            }
+            if ( provided.max() != null ) {
+                numericalColumn.setMax( provided.max().asNumber() );
+            }
+            statisticColumn = numericalColumn;
+        } else if ( column.getColumn().type.getFamily() == PolyTypeFamily.CHARACTER ) {
+            statisticColumn = new AlphabeticStatisticColumn( column );
+        } else if ( PolyType.DATETIME_TYPES.contains( column.getColumn().type ) ) {
+            TemporalStatisticColumn temporalColumn = new TemporalStatisticColumn( column );
+            if ( provided.min() != null ) {
+                temporalColumn.setMin( provided.min().asTemporal() );
+            }
+            if ( provided.max() != null ) {
+                temporalColumn.setMax( provided.max().asTemporal() );
+            }
+            statisticColumn = temporalColumn;
+        } else {
+            return Optional.empty();
+        }
+
+        statisticColumn.setCount( provided.count() == null ? PolyInteger.of( 0 ) : PolyInteger.of( provided.count() ) );
+        statisticColumn.setUniqueValues( provided.uniqueValues() );
+        statisticColumn.setFull( provided.full() );
+        return Optional.of( statisticColumn );
+    }
+
+
+    /**
+     * Look for Adapter Statistic Provider via catalog
+     * @param allocation AllocationEntity
+     * @return AdapterStatisticsProvider
+     */
+    private Optional<AdapterStatisticsProvider> getStatisticsProvider( AllocationEntity allocation ) {
+        Optional<AdapterCatalog> adapterCatalog = Catalog.getInstance().getAdapterCatalog( allocation.adapterId );
+        if ( adapterCatalog.isEmpty() ) {
+            return Optional.empty();
+        }
+
+        List<PhysicalEntity> physicals = adapterCatalog.get().getPhysicalsFromAllocs( allocation.id );
+        if ( physicals == null ) {
+            return Optional.empty();
+        }
+
+        return physicals.stream()
+                .map( physical -> physical.unwrap( AdapterStatisticsProvider.class ) )
+                .filter( Optional::isPresent )
+                .map( Optional::get )
+                .findFirst();
     }
 
 
