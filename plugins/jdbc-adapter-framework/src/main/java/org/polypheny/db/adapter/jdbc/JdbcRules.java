@@ -126,11 +126,11 @@ import org.slf4j.Logger;
  */
 public class JdbcRules {
 
+    protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
+
+
     private JdbcRules() {
     }
-
-
-    protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
 
 
     public static List<AlgOptRule> rules( JdbcConvention out ) {
@@ -152,6 +152,14 @@ public class JdbcRules {
                 new JdbcMinusRule( out, algBuilderFactory ),
                 new JdbcTableModificationRule( out, algBuilderFactory ),
                 new JdbcValuesRule( out, algBuilderFactory ) );
+    }
+
+
+    /**
+     * Returns whether this JDBC data source can implement a given aggregate function.
+     */
+    private static boolean canImplement( SqlAggFunction aggregation, SqlDialect sqlDialect ) {
+        return sqlDialect.supportsAggregateFunction( aggregation.getKind() );
     }
 
 
@@ -942,14 +950,6 @@ public class JdbcRules {
 
 
     /**
-     * Returns whether this JDBC data source can implement a given aggregate function.
-     */
-    private static boolean canImplement( SqlAggFunction aggregation, SqlDialect sqlDialect ) {
-        return sqlDialect.supportsAggregateFunction( aggregation.getKind() );
-    }
-
-
-    /**
      * Aggregate operator implemented in JDBC convention.
      */
     public static class JdbcAggregate extends Aggregate implements JdbcAlg {
@@ -1576,6 +1576,18 @@ public class JdbcRules {
         }
 
 
+        private static boolean isCompatibleQueryVector( AlgDataType t2 ) {
+            if ( t2 instanceof VectorType ) {
+                return true;
+            }
+            if ( t2.getPolyType() != PolyType.ARRAY ) {
+                return false;
+            }
+            AlgDataType comp = t2.getComponentType();
+            return comp != null && (PolyTypeUtil.isNumeric( comp ) || comp.getPolyType() == PolyType.BOOLEAN);
+        }
+
+
         public boolean supportsKnnFunction() {
             return supportsKnnFunction;
         }
@@ -1597,18 +1609,6 @@ public class JdbcRules {
                 }
             }
             return super.visitCall( call );
-        }
-
-
-        private static boolean isCompatibleQueryVector( AlgDataType t2 ) {
-            if ( t2 instanceof VectorType ) {
-                return true;
-            }
-            if ( t2.getPolyType() != PolyType.ARRAY ) {
-                return false;
-            }
-            AlgDataType comp = t2.getComponentType();
-            return comp != null && (PolyTypeUtil.isNumeric( comp ) || comp.getPolyType() == PolyType.BOOLEAN);
         }
 
     }

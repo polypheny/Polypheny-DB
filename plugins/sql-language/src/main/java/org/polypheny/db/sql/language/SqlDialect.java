@@ -86,22 +86,20 @@ public class SqlDialect {
      * Empty context.
      */
     public static final Context EMPTY_CONTEXT = emptyContext();
-
+    private static final char[] HEXITS = {
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
+    };
+    @NonNull
+    protected NullCollation nullCollation;
+    @NonNull
+    protected Set<SqlDbFeature> supportedFeatures = new HashSet<>();
     @NonNull
     String name;
-
     String identifierQuoteString;
     String identifierEndQuoteString;
     String identifierEscapedQuote;
-
-    @NonNull
-    protected NullCollation nullCollation;
-
     @NonNull
     AlgDataTypeSystem dataTypeSystem;
-
-    @NonNull
-    protected Set<SqlDbFeature> supportedFeatures = new HashSet<>();
 
 
     /**
@@ -144,6 +142,23 @@ public class SqlDialect {
                 NullCollation.HIGH,
                 AlgDataTypeSystemImpl.DEFAULT,
                 JethroDataSqlDialect.JethroInfo.EMPTY );
+    }
+
+
+    /**
+     * Returns whether the string contains any characters outside the comfortable 7-bit ASCII range (32 through 127).
+     *
+     * @param s String
+     * @return Whether string contains any non-7-bit-ASCII characters
+     */
+    private static boolean containsNonAscii( String s ) {
+        for ( int i = 0; i < s.length(); i++ ) {
+            char c = s.charAt( i );
+            if ( c < 32 || c >= 128 ) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -333,23 +348,6 @@ public class SqlDialect {
 
 
     /**
-     * Returns whether the string contains any characters outside the comfortable 7-bit ASCII range (32 through 127).
-     *
-     * @param s String
-     * @return Whether string contains any non-7-bit-ASCII characters
-     */
-    private static boolean containsNonAscii( String s ) {
-        for ( int i = 0; i < s.length(); i++ ) {
-            char c = s.charAt( i );
-            if ( c < 32 || c >= 128 ) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-
-    /**
      * Converts a string into a unicode string literal. For example,
      * <code>can't{tab}run\</code> becomes <code>u'can''t\0009run\\'</code>.
      */
@@ -372,11 +370,6 @@ public class SqlDialect {
         }
         buf.append( "'" );
     }
-
-
-    private static final char[] HEXITS = {
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
-    };
 
 
     protected boolean allowsAs() {
@@ -802,48 +795,8 @@ public class SqlDialect {
     }
 
 
-    public enum IntervalParameterStrategy {CAST, MULTIPLICATION, NONE}
-
-
     public IntervalParameterStrategy getIntervalParameterStrategy() {
         return IntervalParameterStrategy.CAST;
-    }
-
-
-    /**
-     * A few utility functions copied from org.polypheny.db.util.Util. We have copied them because we wish to keep SqlDialect's dependencies to a minimum.
-     */
-    public static class FakeUtil {
-
-
-        /**
-         * Replaces every occurrence of <code>find</code> in <code>s</code> with <code>replace</code>.
-         */
-        public static String replace( String s, String find, String replace ) {
-            // let's be optimistic
-            int found = s.indexOf( find );
-            if ( found == -1 ) {
-                return s;
-            }
-            StringBuilder sb = new StringBuilder( s.length() );
-            int start = 0;
-            for ( ; ; ) {
-                for ( ; start < found; start++ ) {
-                    sb.append( s.charAt( start ) );
-                }
-                if ( found == s.length() ) {
-                    break;
-                }
-                sb.append( replace );
-                start += find.length();
-                found = s.indexOf( find, start );
-                if ( found == -1 ) {
-                    found = s.length();
-                }
-            }
-            return sb.toString();
-        }
-
     }
 
 
@@ -857,36 +810,6 @@ public class SqlDialect {
      */
     public Optional<Expression> getCustomArrayRetrievalExpression( ParameterExpression resultSet, int i, AlgDataType fieldType ) {
         return Optional.empty();
-    }
-
-
-    /**
-     * Whether this JDBC driver needs you to pass a Calendar object to methods such as {@link ResultSet#getTimestamp(int, java.util.Calendar)}.
-     */
-    public enum CalendarPolicy {
-        NONE,
-        NULL,
-        LOCAL,
-        DIRECT,
-        SHIFT
-    }
-
-
-    /**
-     * Information for creating a dialect.
-     * <p>
-     * It is immutable; to "set" a property, call one of the "with" methods, which returns a new context with the desired property value.
-     */
-
-    @With
-    public record Context(
-            @NonNull String name,
-            String identifierQuoteString,
-            @NonNull NullCollation nullCollation,
-            @NonNull AlgDataTypeSystem dataTypeSystem,
-            @NonNull JethroInfo jethroInfo
-    ) {
-
     }
 
 
@@ -939,6 +862,76 @@ public class SqlDialect {
      */
     public SqlNode getVectorLiteral( VectorType vectorType, PolyList<PolyValue> vectorAsList, ParserPos pos ) {
         return null;
+    }
+
+
+    public enum IntervalParameterStrategy {CAST, MULTIPLICATION, NONE}
+
+
+    /**
+     * Whether this JDBC driver needs you to pass a Calendar object to methods such as {@link ResultSet#getTimestamp(int, java.util.Calendar)}.
+     */
+    public enum CalendarPolicy {
+        NONE,
+        NULL,
+        LOCAL,
+        DIRECT,
+        SHIFT
+    }
+
+
+    /**
+     * A few utility functions copied from org.polypheny.db.util.Util. We have copied them because we wish to keep SqlDialect's dependencies to a minimum.
+     */
+    public static class FakeUtil {
+
+
+        /**
+         * Replaces every occurrence of <code>find</code> in <code>s</code> with <code>replace</code>.
+         */
+        public static String replace( String s, String find, String replace ) {
+            // let's be optimistic
+            int found = s.indexOf( find );
+            if ( found == -1 ) {
+                return s;
+            }
+            StringBuilder sb = new StringBuilder( s.length() );
+            int start = 0;
+            for ( ; ; ) {
+                for ( ; start < found; start++ ) {
+                    sb.append( s.charAt( start ) );
+                }
+                if ( found == s.length() ) {
+                    break;
+                }
+                sb.append( replace );
+                start += find.length();
+                found = s.indexOf( find, start );
+                if ( found == -1 ) {
+                    found = s.length();
+                }
+            }
+            return sb.toString();
+        }
+
+    }
+
+
+    /**
+     * Information for creating a dialect.
+     * <p>
+     * It is immutable; to "set" a property, call one of the "with" methods, which returns a new context with the desired property value.
+     */
+
+    @With
+    public record Context(
+            @NonNull String name,
+            String identifierQuoteString,
+            @NonNull NullCollation nullCollation,
+            @NonNull AlgDataTypeSystem dataTypeSystem,
+            @NonNull JethroInfo jethroInfo
+    ) {
+
     }
 
 }

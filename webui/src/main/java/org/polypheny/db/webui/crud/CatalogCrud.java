@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,40 @@ public class CatalogCrud {
 
     public CatalogCrud( Crud crud ) {
         CatalogCrud.crud = crud;
+    }
+
+
+    @NotNull
+    private static SidebarElement attachCollectionElement( LogicalNamespace namespace, SchemaTreeRequest request, LogicalCollection collection ) {
+        String icon = "cui-description";
+        if ( collection.entityType == EntityType.SOURCE ) {
+            icon = "fa fa-plug";
+        } else if ( collection.entityType == EntityType.VIEW ) {
+            icon = "icon-eye";
+        }
+
+        SidebarElement tableElement = new SidebarElement( namespace.name + "." + collection.name, collection.name, namespace.dataModel, request.routerLinkRoot, icon );
+
+        if ( request.views ) {
+            if ( collection.entityType == EntityType.ENTITY || collection.entityType == EntityType.SOURCE ) {
+                tableElement.setTableType( "TABLE" );
+            } else if ( collection.entityType == EntityType.VIEW ) {
+                tableElement.setTableType( "VIEW" );
+            } else if ( collection.entityType == EntityType.MATERIALIZED_VIEW ) {
+                tableElement.setTableType( "MATERIALIZED" );
+            }
+        }
+        return tableElement;
+    }
+
+
+    private static boolean isSynchronizedMaterializedSource( LogicalCollection collection, List<LogicalCollection> collections ) {
+        return collection.entityType == EntityType.SOURCE && collections.stream().anyMatch( candidate -> candidate.synchronizedSourceEntityId != null && collection.id == candidate.synchronizedSourceEntityId );
+    }
+
+
+    private static boolean isSynchronizedMaterializedSource( LogicalTable table, List<LogicalTable> tables ) {
+        return table.entityType == EntityType.SOURCE && tables.stream().anyMatch( candidate -> candidate.synchronizedSourceEntityId != null && table.id == candidate.synchronizedSourceEntityId );
     }
 
 
@@ -122,30 +156,6 @@ public class CatalogCrud {
     }
 
 
-    @NotNull
-    private static SidebarElement attachCollectionElement( LogicalNamespace namespace, SchemaTreeRequest request, LogicalCollection collection ) {
-        String icon = "cui-description";
-        if ( collection.entityType == EntityType.SOURCE ) {
-            icon = "fa fa-plug";
-        } else if ( collection.entityType == EntityType.VIEW ) {
-            icon = "icon-eye";
-        }
-
-        SidebarElement tableElement = new SidebarElement( namespace.name + "." + collection.name, collection.name, namespace.dataModel, request.routerLinkRoot, icon );
-
-        if ( request.views ) {
-            if ( collection.entityType == EntityType.ENTITY || collection.entityType == EntityType.SOURCE ) {
-                tableElement.setTableType( "TABLE" );
-            } else if ( collection.entityType == EntityType.VIEW ) {
-                tableElement.setTableType( "VIEW" );
-            } else if ( collection.entityType == EntityType.MATERIALIZED_VIEW ) {
-                tableElement.setTableType( "MATERIALIZED" );
-            }
-        }
-        return tableElement;
-    }
-
-
     private void attachTreeElements( LogicalNamespace namespace, SchemaTreeRequest request, SidebarElement schemaTree ) {
         List<SidebarElement> collectionTree = new ArrayList<>();
         List<LogicalTable> tables = Catalog.snapshot().rel().getTables( namespace.id, null );
@@ -189,16 +199,6 @@ public class CatalogCrud {
         } else {
             schemaTree.addChildren( collectionTree ).setRouterLink( "" );
         }
-    }
-
-
-    private static boolean isSynchronizedMaterializedSource( LogicalCollection collection, List<LogicalCollection> collections ) {
-        return collection.entityType == EntityType.SOURCE && collections.stream().anyMatch( candidate -> candidate.synchronizedSourceEntityId != null && collection.id == candidate.synchronizedSourceEntityId );
-    }
-
-
-    private static boolean isSynchronizedMaterializedSource( LogicalTable table, List<LogicalTable> tables ) {
-        return table.entityType == EntityType.SOURCE && tables.stream().anyMatch( candidate -> candidate.synchronizedSourceEntityId != null && table.id == candidate.synchronizedSourceEntityId );
     }
 
 

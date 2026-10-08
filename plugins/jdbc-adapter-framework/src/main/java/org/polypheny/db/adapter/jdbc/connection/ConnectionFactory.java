@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ public interface ConnectionFactory {
      * <p>
      * This connection isn't associated with any transaction and should be used for operations that require
      * fresh metadata.
+     *
      * @return a new JDBC connection
      * @throws SQLException if connection can't be created
      */

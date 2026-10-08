@@ -69,6 +69,17 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
     }
 
 
+    public static List<NeoStatement> buildReturnProject( LpgProject project, String mappingLabel ) {
+        // match -> project -> create
+        List<NeoStatement> statements = new ArrayList<>();
+        for ( RexNode projectProject : project.getProjects() ) {
+            Translator translator = new Translator( project.getTupleType(), project.getInput().getTupleType(), new HashMap<>(), null, mappingLabel, true );
+            statements.add( literal_( PolyString.of( projectProject.accept( translator ) ) ) );
+        }
+        return statements;
+    }
+
+
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new NeoLpgModify( inputs.get( 0 ).getCluster(), traitSet, entity, inputs.get( 0 ), operation, ids, operations );
@@ -117,17 +128,6 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
             }
         }
         throw new GenericRuntimeException( "No values before modify." );
-    }
-
-
-    public static List<NeoStatement> buildReturnProject( LpgProject project, String mappingLabel ) {
-        // match -> project -> create
-        List<NeoStatement> statements = new ArrayList<>();
-        for ( RexNode projectProject : project.getProjects() ) {
-            Translator translator = new Translator( project.getTupleType(), project.getInput().getTupleType(), new HashMap<>(), null, mappingLabel, true );
-            statements.add( literal_( PolyString.of( projectProject.accept( translator ) ) ) );
-        }
-        return statements;
     }
 
 

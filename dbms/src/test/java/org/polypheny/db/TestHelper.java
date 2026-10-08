@@ -72,11 +72,11 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.ddl.DdlManager.SourceRefreshDetails;
 import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.ddl.DdlManager.SourceRefreshDetails;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.processing.caching.ImplementationCache;
 import org.polypheny.db.processing.caching.QueryPlanCache;
@@ -97,10 +97,10 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.Crud.SourceMaterializationRefreshResult;
 import org.polypheny.db.webui.HttpServer;
+import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
 import org.polypheny.db.webui.models.results.RelationalResult;
-import org.polypheny.db.webui.models.requests.UIRequest;
 
 
 @Slf4j
@@ -113,11 +113,6 @@ public class TestHelper {
 
     @Getter
     private final TransactionManager transactionManager;
-
-
-    public static TestHelper getInstance() {
-        return INSTANCE;
-    }
 
 
     private TestHelper() {
@@ -166,6 +161,11 @@ public class TestHelper {
     }
 
 
+    public static TestHelper getInstance() {
+        return INSTANCE;
+    }
+
+
     public static PolyValue toPolyValue( Object value ) {
 
         if ( value instanceof Integer ) {
@@ -206,11 +206,6 @@ public class TestHelper {
         } catch ( InterruptedException interruptedException ) {
             log.error( "Interrupted exception", interruptedException );
         }
-    }
-
-
-    public Transaction getTransaction() {
-        return transactionManager.startTransaction( Catalog.defaultUserId, new QueryAnalyzer(), "Test Helper" );
     }
 
 
@@ -445,41 +440,6 @@ public class TestHelper {
     }
 
 
-    /**
-     * Surprisingly often when testing the used ids are in a similar range and quite low, which can result in unexpected behaviour,
-     * where tests seem to work but shouldn't.
-     */
-    public void randomizeCatalogIds() {
-        Random random = new Random();
-        int max = 200;
-        Supplier<Integer> offset = () -> random.nextInt( max );
-
-        try {
-            PolyCatalog catalog = (PolyCatalog) Catalog.getInstance();
-            Field field = catalog.getClass().getDeclaredField( "idBuilder" );
-            field.setAccessible( true );
-            field.set( catalog, new IdBuilder(
-                    new AtomicLong( catalog.idBuilder.getSnapshotId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getEntityId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getFieldId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getUserId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getAllocId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getPhysicalId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getIndexId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getKeyId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getAdapterId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getInterfaceId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getConstraintId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getGroupId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getPartitionId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getPlacementId().longValue() + offset.get() )
-            ) );
-        } catch ( NoSuchFieldException | IllegalAccessException e ) {
-            throw new RuntimeException( e );
-        }
-    }
-
-
     public static void checkResultSet( ResultSet resultSet, List<Object[]> expected ) throws SQLException {
         checkResultSet( resultSet, expected, false );
     }
@@ -645,283 +605,6 @@ public class TestHelper {
             return lhsStr.compareTo( rhsStr );
         } );
         return list;
-    }
-
-
-    public void resetCaches() {
-        ImplementationCache.INSTANCE.reset();
-        QueryPlanCache.INSTANCE.reset();
-        RoutingPlanCache.INSTANCE.reset();
-        RoutingManager.getInstance().getRouters().forEach( Router::resetCaches );
-    }
-
-
-    public void checkAllTrxClosed() {
-        checkTrxStatus( 0 );
-    }
-
-
-    public void checkTrxStatus( int expected ) {
-        long count = transactionManager.getNumberOfActiveTransactions();
-        if ( count != expected ) {
-            fail( "There are still " + count + " active transactions, while there should be " + expected );
-            throw new RuntimeException( "There are still " + count + " active transactions, while there should be " + expected );
-        }
-    }
-
-
-    public boolean storeSupportsIndex() {
-        return !AdapterManager.getInstance().getStore( "hsqldb" ).orElseThrow().getAvailableIndexMethods().isEmpty();
-    }
-
-
-    public static abstract class HttpConnection {
-
-
-        public static HttpRequest<?> buildQuery( String route, String query, String database ) {
-            JsonObject data = new JsonObject();
-            data.addProperty( "query", query );
-            data.addProperty( "namespace", database );
-
-            return Unirest.post( "{protocol}://{host}:{port}" + route )
-                    .header( "Content-ExpressionType", "application/json" )
-                    .body( data );
-
-        }
-
-
-        protected static HttpResponse<String> execute( String prefix, String query, String database ) {
-            HttpRequest<?> request = buildQuery( prefix, query, database );
-            request.basicAuth( "pa", "" );
-            request.routeParam( "protocol", "http" );
-            request.routeParam( "host", "127.0.0.1" );
-            request.routeParam( "port", "13137" );
-            return request.asString();
-        }
-
-    }
-
-
-    public static class MongoConnection extends HttpConnection {
-
-        public static final String MONGO_PREFIX = "/mongo";
-        public static final String MONGO_DB = "test";
-
-
-        private MongoConnection() {
-        }
-
-
-        public static DocResult executeGetResponse( String mongoQl ) {
-            return executeGetResponse( mongoQl, MONGO_DB );
-        }
-
-
-        public static DocResult executeGetResponse( String mongoQl, String database ) {
-            return getBody( execute( MONGO_PREFIX, mongoQl, database ) );
-        }
-
-
-        private static DocResult getBody( HttpResponse<String> res ) {
-            try {
-                DocResult[] result = HttpServer.mapper.readValue( res.getBody(), DocResult[].class );
-                if ( result.length == 1 ) {
-                    if ( result[0].error != null ) {
-                        throw new RuntimeException( result[0].error );
-                    }
-                    return result[0];
-                } else if ( result.length == 0 ) {
-                    return DocResult.builder().build();
-                }
-                return result[result.length - 1];
-
-            } catch ( JsonSyntaxException | JsonProcessingException e ) {
-                log.warn( "{}\nmessage: {}", res.getBody(), e.getMessage() );
-                fail();
-                throw new RuntimeException( "This cannot happen" );
-            }
-        }
-
-
-        public static boolean checkDocResultSet( DocResult result, List<String> expected, boolean excludeId, boolean unordered ) {
-            if ( result.getData() == null ) {
-                fail( result.error );
-            }
-            assertEquals( expected.size(), result.getData().length );
-
-            List<BsonValue> parsedResults = new ArrayList<>();
-
-            for ( String data : result.getData() ) {
-
-                BsonDocument doc = tryGetBson( data );
-                if ( doc != null ) {
-
-                    if ( excludeId && !doc.containsKey( DocumentType.DOCUMENT_ID ) ) {
-                        fail();
-                        throw new RuntimeException( "Should contain " + DocumentType.DOCUMENT_ID + " field." );
-                    }
-                    if ( excludeId ) {
-                        doc.remove( DocumentType.DOCUMENT_ID );
-                    }
-
-                }
-                parsedResults.add( doc );
-            }
-            List<BsonValue> parsedExpected = expected.stream().map( e -> e != null ? (BsonValue) BsonDocument.parse( e ) : null ).toList();
-
-            if ( unordered ) {
-                assertTrue( areDocumentEqual( parsedExpected, parsedResults ),
-                        "Expected result does not contain all actual results: \nexpected: \n" + new BsonArray( parsedExpected ) + "\nactual: \n" + new BsonArray( parsedResults ) );
-                assertTrue( areDocumentEqual( parsedResults, parsedExpected ),
-                        "Actual result does not contain all expected results: \nexpected: \n" + new BsonArray( parsedExpected ) + "\nactual: \n" + new BsonArray( parsedResults ) );
-            } else {
-                List<Pair<BsonValue, BsonValue>> wrong = new ArrayList<>();
-                for ( Pair<BsonValue, BsonValue> pair : Pair.zip( parsedExpected, parsedResults ) ) {
-                    if ( !Objects.equals( pair.left, pair.right ) ) {
-                        wrong.add( pair );
-                    }
-                }
-
-                assertTrue( wrong.isEmpty(), "Expected and actual result do not contain the same element or order: \n"
-                        + "expected: " + wrong.stream().map( p -> p.left.toString()
-                        + " != "
-                        + "actual: " + (p.right == null ? null : p.right.toString()) ).collect( Collectors.joining( ", \n" ) ) );
-            }
-
-            return true;
-        }
-
-
-        /**
-         * Checks if all elements of parsedExpected are in parsedResults
-         * This is needed because the order of the elements in the result is not guaranteed
-         * The document model does not guarantee specific types like 8.0 and 8 are treated as equal
-         *
-         * @param parsedExpected list of expected documents
-         * @param parsedResults list of actual documents
-         * @return true if all elements of parsedExpected are in parsedResults and vice versa
-         */
-        private static boolean areDocumentEqual( List<BsonValue> parsedExpected, List<BsonValue> parsedResults ) {
-            for ( BsonValue bsonValue : parsedExpected ) {
-                if ( parsedResults.contains( bsonValue ) ) {
-                    continue;
-                }
-                boolean found = false;
-                for ( BsonValue parsedResult : parsedResults ) {
-                    if ( areValueEqual( bsonValue, parsedResult ) ) {
-                        found = true;
-                        break;
-                    }
-                }
-                if ( !found ) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-
-        private static boolean areValueEqual( BsonValue bsonValue, BsonValue parsedResult ) {
-            if ( bsonValue.equals( parsedResult ) ) {
-                return true;
-            }
-            if ( bsonValue.isDocument() && parsedResult.isDocument() ) {
-                BsonDocument bsonDocument = bsonValue.asDocument();
-                BsonDocument parsedDocument = parsedResult.asDocument();
-                for ( String key : bsonDocument.keySet() ) {
-                    if ( !parsedDocument.containsKey( key ) ) {
-                        return false;
-                    }
-                    if ( !areValueEqual( bsonDocument.get( key ), parsedDocument.get( key ) ) ) {
-                        return false;
-                    }
-                }
-                return true;
-            } else if ( bsonValue.isArray() && parsedResult.isArray() ) {
-                BsonArray bsonArray = bsonValue.asArray();
-                BsonArray parsedArray = parsedResult.asArray();
-                for ( int i = 0; i < bsonArray.size(); i++ ) {
-                    if ( !areValueEqual( bsonArray.get( i ), parsedArray.get( i ) ) ) {
-                        return false;
-                    }
-                }
-                return true;
-            } else if ( bsonValue.isNumber() && parsedResult.isNumber() ) {
-                return bsonValue.asNumber().doubleValue() == parsedResult.asNumber().doubleValue();
-            }
-            return false;
-        }
-
-
-        private static BsonDocument tryGetBson( String entry ) {
-            BsonDocument doc = null;
-            try {
-                doc = BsonDocument.parse( entry );
-            } catch ( Exception e ) {
-                // empty on purpose
-            }
-
-            return doc;
-        }
-
-
-        public static String toDoc( String key, Object value ) {
-            return String.format( "{\"%s\": %s}", key, value );
-        }
-
-
-        public static List<String> arrayToDoc( List<Object[]> values, String... names ) {
-            List<String> docs = new ArrayList<>();
-            for ( Object[] doc : values ) {
-                docs.add( "{" +
-                        Pair.zip( Arrays.asList( names ), Arrays.asList( doc ) )
-                                .stream()
-                                .map( p -> "\"" + p.left + "\"" + ":" +
-                                        ((p.right != null
-                                                ? (p.right instanceof String && !((String) p.right).startsWith( "{" ) && !((String) p.right).endsWith( "}" ) // special handling for string and document
-                                                ? "\"" + p.right + "\""
-                                                : p.right.toString())
-                                                : null)) )
-                                .collect( Collectors.joining( "," ) )
-                        + "}" );
-            }
-            return docs;
-        }
-
-    }
-
-
-    public static class CypherConnection extends HttpConnection {
-
-
-        public static GraphResult executeGetResponse( String query ) {
-            return getBody( execute( "/cypher", query, "test" ) );
-        }
-
-
-        public static GraphResult executeGetResponse( String query, String database ) {
-            return getBody( execute( "/cypher", query, database ) );
-        }
-
-
-        private static GraphResult getBody( HttpResponse<String> res ) {
-            try {
-                GraphResult[] result = HttpServer.mapper.readValue( res.getBody(), GraphResult[].class );
-                if ( result.length == 1 ) {
-                    return HttpServer.mapper.readValue( res.getBody(), GraphResult[].class )[0];
-                } else if ( result.length == 0 ) {
-                    return GraphResult.builder().build();
-                }
-                fail( "There was more than one result in the response!" );
-                throw new RuntimeException( "This cannot happen" );
-
-            } catch ( JsonSyntaxException | JsonProcessingException e ) {
-                log.warn( "{}\nmessage: {}", res.getBody(), e.getMessage() );
-                fail();
-                throw new RuntimeException( "This cannot happen" );
-            }
-        }
-
     }
 
 
@@ -1187,6 +870,373 @@ public class TestHelper {
     }
 
 
+    @SafeVarargs
+    public static void executeSql( SqlBiConsumer<Connection, Statement>... queries ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                for ( BiConsumer<Connection, Statement> query : queries ) {
+                    query.accept( connection, statement );
+                }
+            }
+        } catch ( SQLException e ) {
+            fail( e.getMessage() );
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    public Transaction getTransaction() {
+        return transactionManager.startTransaction( Catalog.defaultUserId, new QueryAnalyzer(), "Test Helper" );
+    }
+
+
+    /**
+     * Surprisingly often when testing the used ids are in a similar range and quite low, which can result in unexpected behaviour,
+     * where tests seem to work but shouldn't.
+     */
+    public void randomizeCatalogIds() {
+        Random random = new Random();
+        int max = 200;
+        Supplier<Integer> offset = () -> random.nextInt( max );
+
+        try {
+            PolyCatalog catalog = (PolyCatalog) Catalog.getInstance();
+            Field field = catalog.getClass().getDeclaredField( "idBuilder" );
+            field.setAccessible( true );
+            field.set( catalog, new IdBuilder(
+                    new AtomicLong( catalog.idBuilder.getSnapshotId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getEntityId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getFieldId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getUserId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getAllocId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getPhysicalId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getIndexId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getKeyId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getAdapterId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getInterfaceId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getConstraintId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getGroupId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getPartitionId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getPlacementId().longValue() + offset.get() )
+            ) );
+        } catch ( NoSuchFieldException | IllegalAccessException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    public void resetCaches() {
+        ImplementationCache.INSTANCE.reset();
+        QueryPlanCache.INSTANCE.reset();
+        RoutingPlanCache.INSTANCE.reset();
+        RoutingManager.getInstance().getRouters().forEach( Router::resetCaches );
+    }
+
+
+    public void checkAllTrxClosed() {
+        checkTrxStatus( 0 );
+    }
+
+
+    public void checkTrxStatus( int expected ) {
+        long count = transactionManager.getNumberOfActiveTransactions();
+        if ( count != expected ) {
+            fail( "There are still " + count + " active transactions, while there should be " + expected );
+            throw new RuntimeException( "There are still " + count + " active transactions, while there should be " + expected );
+        }
+    }
+
+
+    public boolean storeSupportsIndex() {
+        return !AdapterManager.getInstance().getStore( "hsqldb" ).orElseThrow().getAvailableIndexMethods().isEmpty();
+    }
+
+
+    @FunctionalInterface
+    public interface SqlBiConsumer<C, T> extends BiConsumer<C, T> {
+
+        @Override
+        default void accept( final C elemC, final T elemT ) {
+            try {
+                acceptThrows( elemC, elemT );
+            } catch ( final SQLException e ) {
+                throw new RuntimeException( e );
+            }
+        }
+
+        void acceptThrows( C elemC, T elem ) throws SQLException;
+
+    }
+
+
+    @FunctionalInterface
+    public interface DelayedSupplier<T extends ResultSet> extends Supplier<T> {
+
+        @Override
+        default T get() {
+            try {
+                return getThrows();
+            } catch ( final SQLException e ) {
+                throw new RuntimeException( e );
+            }
+        }
+
+        T getThrows() throws SQLException;
+
+    }
+
+
+    public static abstract class HttpConnection {
+
+
+        public static HttpRequest<?> buildQuery( String route, String query, String database ) {
+            JsonObject data = new JsonObject();
+            data.addProperty( "query", query );
+            data.addProperty( "namespace", database );
+
+            return Unirest.post( "{protocol}://{host}:{port}" + route )
+                    .header( "Content-ExpressionType", "application/json" )
+                    .body( data );
+
+        }
+
+
+        protected static HttpResponse<String> execute( String prefix, String query, String database ) {
+            HttpRequest<?> request = buildQuery( prefix, query, database );
+            request.basicAuth( "pa", "" );
+            request.routeParam( "protocol", "http" );
+            request.routeParam( "host", "127.0.0.1" );
+            request.routeParam( "port", "13137" );
+            return request.asString();
+        }
+
+    }
+
+
+    public static class MongoConnection extends HttpConnection {
+
+        public static final String MONGO_PREFIX = "/mongo";
+        public static final String MONGO_DB = "test";
+
+
+        private MongoConnection() {
+        }
+
+
+        public static DocResult executeGetResponse( String mongoQl ) {
+            return executeGetResponse( mongoQl, MONGO_DB );
+        }
+
+
+        public static DocResult executeGetResponse( String mongoQl, String database ) {
+            return getBody( execute( MONGO_PREFIX, mongoQl, database ) );
+        }
+
+
+        private static DocResult getBody( HttpResponse<String> res ) {
+            try {
+                DocResult[] result = HttpServer.mapper.readValue( res.getBody(), DocResult[].class );
+                if ( result.length == 1 ) {
+                    if ( result[0].error != null ) {
+                        throw new RuntimeException( result[0].error );
+                    }
+                    return result[0];
+                } else if ( result.length == 0 ) {
+                    return DocResult.builder().build();
+                }
+                return result[result.length - 1];
+
+            } catch ( JsonSyntaxException | JsonProcessingException e ) {
+                log.warn( "{}\nmessage: {}", res.getBody(), e.getMessage() );
+                fail();
+                throw new RuntimeException( "This cannot happen" );
+            }
+        }
+
+
+        public static boolean checkDocResultSet( DocResult result, List<String> expected, boolean excludeId, boolean unordered ) {
+            if ( result.getData() == null ) {
+                fail( result.error );
+            }
+            assertEquals( expected.size(), result.getData().length );
+
+            List<BsonValue> parsedResults = new ArrayList<>();
+
+            for ( String data : result.getData() ) {
+
+                BsonDocument doc = tryGetBson( data );
+                if ( doc != null ) {
+
+                    if ( excludeId && !doc.containsKey( DocumentType.DOCUMENT_ID ) ) {
+                        fail();
+                        throw new RuntimeException( "Should contain " + DocumentType.DOCUMENT_ID + " field." );
+                    }
+                    if ( excludeId ) {
+                        doc.remove( DocumentType.DOCUMENT_ID );
+                    }
+
+                }
+                parsedResults.add( doc );
+            }
+            List<BsonValue> parsedExpected = expected.stream().map( e -> e != null ? (BsonValue) BsonDocument.parse( e ) : null ).toList();
+
+            if ( unordered ) {
+                assertTrue( areDocumentEqual( parsedExpected, parsedResults ),
+                        "Expected result does not contain all actual results: \nexpected: \n" + new BsonArray( parsedExpected ) + "\nactual: \n" + new BsonArray( parsedResults ) );
+                assertTrue( areDocumentEqual( parsedResults, parsedExpected ),
+                        "Actual result does not contain all expected results: \nexpected: \n" + new BsonArray( parsedExpected ) + "\nactual: \n" + new BsonArray( parsedResults ) );
+            } else {
+                List<Pair<BsonValue, BsonValue>> wrong = new ArrayList<>();
+                for ( Pair<BsonValue, BsonValue> pair : Pair.zip( parsedExpected, parsedResults ) ) {
+                    if ( !Objects.equals( pair.left, pair.right ) ) {
+                        wrong.add( pair );
+                    }
+                }
+
+                assertTrue( wrong.isEmpty(), "Expected and actual result do not contain the same element or order: \n"
+                        + "expected: " + wrong.stream().map( p -> p.left.toString()
+                        + " != "
+                        + "actual: " + (p.right == null ? null : p.right.toString()) ).collect( Collectors.joining( ", \n" ) ) );
+            }
+
+            return true;
+        }
+
+
+        /**
+         * Checks if all elements of parsedExpected are in parsedResults
+         * This is needed because the order of the elements in the result is not guaranteed
+         * The document model does not guarantee specific types like 8.0 and 8 are treated as equal
+         *
+         * @param parsedExpected list of expected documents
+         * @param parsedResults list of actual documents
+         * @return true if all elements of parsedExpected are in parsedResults and vice versa
+         */
+        private static boolean areDocumentEqual( List<BsonValue> parsedExpected, List<BsonValue> parsedResults ) {
+            for ( BsonValue bsonValue : parsedExpected ) {
+                if ( parsedResults.contains( bsonValue ) ) {
+                    continue;
+                }
+                boolean found = false;
+                for ( BsonValue parsedResult : parsedResults ) {
+                    if ( areValueEqual( bsonValue, parsedResult ) ) {
+                        found = true;
+                        break;
+                    }
+                }
+                if ( !found ) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+
+        private static boolean areValueEqual( BsonValue bsonValue, BsonValue parsedResult ) {
+            if ( bsonValue.equals( parsedResult ) ) {
+                return true;
+            }
+            if ( bsonValue.isDocument() && parsedResult.isDocument() ) {
+                BsonDocument bsonDocument = bsonValue.asDocument();
+                BsonDocument parsedDocument = parsedResult.asDocument();
+                for ( String key : bsonDocument.keySet() ) {
+                    if ( !parsedDocument.containsKey( key ) ) {
+                        return false;
+                    }
+                    if ( !areValueEqual( bsonDocument.get( key ), parsedDocument.get( key ) ) ) {
+                        return false;
+                    }
+                }
+                return true;
+            } else if ( bsonValue.isArray() && parsedResult.isArray() ) {
+                BsonArray bsonArray = bsonValue.asArray();
+                BsonArray parsedArray = parsedResult.asArray();
+                for ( int i = 0; i < bsonArray.size(); i++ ) {
+                    if ( !areValueEqual( bsonArray.get( i ), parsedArray.get( i ) ) ) {
+                        return false;
+                    }
+                }
+                return true;
+            } else if ( bsonValue.isNumber() && parsedResult.isNumber() ) {
+                return bsonValue.asNumber().doubleValue() == parsedResult.asNumber().doubleValue();
+            }
+            return false;
+        }
+
+
+        private static BsonDocument tryGetBson( String entry ) {
+            BsonDocument doc = null;
+            try {
+                doc = BsonDocument.parse( entry );
+            } catch ( Exception e ) {
+                // empty on purpose
+            }
+
+            return doc;
+        }
+
+
+        public static String toDoc( String key, Object value ) {
+            return String.format( "{\"%s\": %s}", key, value );
+        }
+
+
+        public static List<String> arrayToDoc( List<Object[]> values, String... names ) {
+            List<String> docs = new ArrayList<>();
+            for ( Object[] doc : values ) {
+                docs.add( "{" +
+                        Pair.zip( Arrays.asList( names ), Arrays.asList( doc ) )
+                                .stream()
+                                .map( p -> "\"" + p.left + "\"" + ":" +
+                                        ((p.right != null
+                                                ? (p.right instanceof String && !((String) p.right).startsWith( "{" ) && !((String) p.right).endsWith( "}" ) // special handling for string and document
+                                                ? "\"" + p.right + "\""
+                                                : p.right.toString())
+                                                : null)) )
+                                .collect( Collectors.joining( "," ) )
+                        + "}" );
+            }
+            return docs;
+        }
+
+    }
+
+
+    public static class CypherConnection extends HttpConnection {
+
+
+        public static GraphResult executeGetResponse( String query ) {
+            return getBody( execute( "/cypher", query, "test" ) );
+        }
+
+
+        public static GraphResult executeGetResponse( String query, String database ) {
+            return getBody( execute( "/cypher", query, database ) );
+        }
+
+
+        private static GraphResult getBody( HttpResponse<String> res ) {
+            try {
+                GraphResult[] result = HttpServer.mapper.readValue( res.getBody(), GraphResult[].class );
+                if ( result.length == 1 ) {
+                    return HttpServer.mapper.readValue( res.getBody(), GraphResult[].class )[0];
+                } else if ( result.length == 0 ) {
+                    return GraphResult.builder().build();
+                }
+                fail( "There was more than one result in the response!" );
+                throw new RuntimeException( "This cannot happen" );
+
+            } catch ( JsonSyntaxException | JsonProcessingException e ) {
+                log.warn( "{}\nmessage: {}", res.getBody(), e.getMessage() );
+                fail();
+                throw new RuntimeException( "This cannot happen" );
+            }
+        }
+
+    }
+
+
     @Getter
     public static class JdbcConnection implements AutoCloseable {
 
@@ -1239,56 +1289,6 @@ public class TestHelper {
             }
             conn.close();
         }
-
-    }
-
-
-    @SafeVarargs
-    public static void executeSql( SqlBiConsumer<Connection, Statement>... queries ) {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                for ( BiConsumer<Connection, Statement> query : queries ) {
-                    query.accept( connection, statement );
-                }
-            }
-        } catch ( SQLException e ) {
-            fail( e.getMessage() );
-            throw new RuntimeException( e );
-        }
-    }
-
-
-    @FunctionalInterface
-    public interface SqlBiConsumer<C, T> extends BiConsumer<C, T> {
-
-        @Override
-        default void accept( final C elemC, final T elemT ) {
-            try {
-                acceptThrows( elemC, elemT );
-            } catch ( final SQLException e ) {
-                throw new RuntimeException( e );
-            }
-        }
-
-        void acceptThrows( C elemC, T elem ) throws SQLException;
-
-    }
-
-
-    @FunctionalInterface
-    public interface DelayedSupplier<T extends ResultSet> extends Supplier<T> {
-
-        @Override
-        default T get() {
-            try {
-                return getThrows();
-            } catch ( final SQLException e ) {
-                throw new RuntimeException( e );
-            }
-        }
-
-        T getThrows() throws SQLException;
 
     }
 

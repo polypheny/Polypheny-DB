@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
                 hasMore,
                 language,
                 affectedTuples,
-                isRolledBack);
+                isRolledBack );
         this.table = table;
         this.tables = tables;
         this.request = request;
@@ -182,6 +182,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
             this.dataRefreshRowCount = dataRefreshRowCount;
             return self();
         }
+
 
         public B sourceEntityDeleted( boolean sourceEntityDeleted ) {
             this.sourceEntityDeleted = sourceEntityDeleted;

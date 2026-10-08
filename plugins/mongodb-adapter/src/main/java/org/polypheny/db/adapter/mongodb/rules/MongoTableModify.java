@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,9 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
-import org.polypheny.db.adapter.mongodb.store.MongoStore;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.rules.MongoRules.MongoDocuments;
+import org.polypheny.db.adapter.mongodb.store.MongoStore;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
@@ -74,6 +74,45 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
             boolean flattened ) {
         super( cluster, traitSet, entity, input, operation, updateColumns, sourceExpressions, flattened );
         this.bucket = entity.getMongoNamespace().getBucket();
+    }
+
+
+    public static BsonDocument getReplaceUpdate( List<String> keys, RexCall call, Implementor implementor, GridFSBucket bucket ) {
+        BsonDocument doc = new BsonDocument();
+        assert keys.size() == call.operands.size();
+
+        int pos = 0;
+        for ( RexNode operand : call.operands ) {
+            if ( !(operand instanceof RexCall op) ) {
+                doc.append( "$set", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) operand, bucket ) ) );
+            } else {
+                implementor.isDocumentUpdate = true;
+                switch ( op.getKind() ) {
+                    case PLUS:
+                        doc.append( "$inc", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), bucket ) ) );
+                        break;
+                    case TIMES:
+                        doc.append( "$mul", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), bucket ) ) );
+                        break;
+                    case MIN:
+                        doc.append( "$min", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), bucket ) ) );
+                        break;
+                    case MAX:
+                        doc.append( "$max", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), bucket ) ) );
+                        break;
+                }
+            }
+            pos++;
+        }
+
+        return doc;
+    }
+
+
+    private static void addPreparedInsert( Implementor implementor, RexDynamicParam rexNode, BsonDocument doc, String physicalName, int pos ) {
+        doc.append( physicalName == null
+                ? implementor.getEntity().fields.stream().sorted( Comparator.comparingInt( ( PhysicalField a ) -> a.unwrapOrThrow( PhysicalColumn.class ).position ) ).toList().get( pos ).name
+                : physicalName, new BsonDynamic( rexNode ) );
     }
 
 
@@ -285,38 +324,6 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
     }
 
 
-    public static BsonDocument getReplaceUpdate( List<String> keys, RexCall call, Implementor implementor, GridFSBucket bucket ) {
-        BsonDocument doc = new BsonDocument();
-        assert keys.size() == call.operands.size();
-
-        int pos = 0;
-        for ( RexNode operand : call.operands ) {
-            if ( !(operand instanceof RexCall op) ) {
-                doc.append( "$set", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) operand, bucket ) ) );
-            } else {
-                implementor.isDocumentUpdate = true;
-                switch ( op.getKind() ) {
-                    case PLUS:
-                        doc.append( "$inc", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), bucket ) ) );
-                        break;
-                    case TIMES:
-                        doc.append( "$mul", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), bucket ) ) );
-                        break;
-                    case MIN:
-                        doc.append( "$min", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), bucket ) ) );
-                        break;
-                    case MAX:
-                        doc.append( "$max", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), bucket ) ) );
-                        break;
-                }
-            }
-            pos++;
-        }
-
-        return doc;
-    }
-
-
     private List<String> getDocUpdateKey( RexIndexRef row, RexCall subfield, AlgDataType rowType ) {
         String name = rowType.getFieldNames().get( row.getIndex() );
         return subfield
@@ -423,13 +430,6 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
             pos++;
         }
         implementor.operations = List.of( doc );
-    }
-
-
-    private static void addPreparedInsert( Implementor implementor, RexDynamicParam rexNode, BsonDocument doc, String physicalName, int pos ) {
-        doc.append( physicalName == null
-                ? implementor.getEntity().fields.stream().sorted( Comparator.comparingInt( ( PhysicalField a ) -> a.unwrapOrThrow( PhysicalColumn.class ).position ) ).toList().get( pos ).name
-                : physicalName, new BsonDynamic( rexNode ) );
     }
 
 

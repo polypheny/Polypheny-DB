@@ -149,25 +149,23 @@ import org.polypheny.db.util.temporal.TimeUnit;
 @Value
 public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
 
+    private static final ImmutableList<TimeUnit> TIME_UNITS = ImmutableList.copyOf( TimeUnit.values() );
     /**
      * The value of this literal. Must be consistent with its type, as per {@link #valueMatchesType}. For example, you can't store an {@link Integer} value here just because you feel like it -- all numbers are
      * represented by a {@link BigDecimal}. But since this field is private, it doesn't really matter how the values are stored.
      */
     public PolyValue value;
 
+    // TODO jvs: Use SqlTypeFamily instead; it exists for exactly this purpose (to avoid the confusion which results from overloading PolyType).
     /**
      * The real type of this literal, as reported by {@link #getType}.
      */
     public AlgDataType type;
-
-    // TODO jvs: Use SqlTypeFamily instead; it exists for exactly this purpose (to avoid the confusion which results from overloading PolyType).
     /**
      * An indication of the broad type of this literal -- even if its type isn't a SQL type. Sometimes this will be different than the SQL type; for example, all exact numbers, including integers have typeName
      * {@link PolyType#DECIMAL}. See {@link #valueMatchesType} for the definitive story.
      */
     public PolyType polyType;
-
-    private static final ImmutableList<TimeUnit> TIME_UNITS = ImmutableList.copyOf( TimeUnit.values() );
 
 
     /**
@@ -195,58 +193,6 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         this.type = Objects.requireNonNull( type );
         this.polyType = Objects.requireNonNull( polyType );
         this.digest = computeDigest( RexDigestIncludeType.OPTIONAL );
-    }
-
-
-    /**
-     * Returns a string which concisely describes the definition of this rex literal. Two literals are equivalent if and only if their digests are the same.
-     * <p>
-     * The digest does not contain the expression's identity, but does include the identity of children.
-     * <p>
-     * Technically speaking 1:INT differs from 1:FLOAT, so we need data type in the literal's digest, however we want to avoid extra verbosity of the {@link AlgNode#getDigest()} for readability purposes, so we omit type info in certain cases.
-     * For instance, 1:INT becomes 1 (INT is implied by default), however 1:BIGINT always holds the type
-     * <p>
-     * Here's a non-exhaustive list of the "well known cases":
-     * <ul>
-     * <li>Hide "NOT NULL" for not null literals</li>
-     * <li>Hide INTEGER, BOOLEAN, SYMBOL, TIME(0), TIMESTAMP(0), DATE(0) types</li>
-     * <li>Hide collation when it matches IMPLICIT/COERCIBLE</li>
-     * <li>Hide charset when it matches default</li>
-     * <li>Hide CHAR(xx) when literal length is equal to the precision of the type. In other words, use 'Bob' instead of 'Bob':CHAR(3)</li>
-     * <li>Hide BOOL for AND/OR arguments. In other words, AND(true, null) means null is BOOL.</li>
-     * <li>Hide types for literals in simple binary operations (e.g. +, -, *, /, comparison) when type of the other argument is clear. See {@link RexCall#computeDigest(boolean)} For instance: =(true. null) means null is BOOL. =($0, null) means the type of null matches the type of $0.</li>
-     * </ul>
-     *
-     * @param includeType whether the digest should include type or not
-     * @return digest
-     */
-    public String computeDigest( RexDigestIncludeType includeType ) {
-        if ( includeType == RexDigestIncludeType.OPTIONAL ) {
-            if ( digest != null ) {
-                // digest is initialized with OPTIONAL, so cached value matches for includeType=OPTIONAL as well
-                return digest;
-            }
-            // Compute we should include the type or not
-            includeType = digestIncludesType();
-        } else if ( digest != null && includeType == digestIncludesType() ) {
-            // The digest is always computed with includeType=OPTIONAL
-            // If it happened to omit the type, we want to optimize computeDigest(NO_TYPE) as well
-            // If the digest includes the type, we want to optimize computeDigest(ALWAYS)
-            return digest;
-        }
-
-        return toJavaString( value, polyType, type, includeType );
-    }
-
-
-    /**
-     * Returns true if {@link RexDigestIncludeType#OPTIONAL} digest would include data type.
-     *
-     * @return true if {@link RexDigestIncludeType#OPTIONAL} digest would include data type
-     * @see RexCall#computeDigest(boolean)
-     */
-    public RexDigestIncludeType digestIncludesType() {
-        return shouldIncludeType( value, type );
     }
 
 
@@ -527,58 +473,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     }
 
 
-    @Override
-    public Kind getKind() {
-        return Kind.LITERAL;
-    }
-
-
-    /**
-     * Returns whether this literal's value is null.
-     */
-    public boolean isNull() {
-        return value == null;
-    }
-
-
-    @Override
-    public String toString() {
-        return super.toString();
-    }
-
-
     public static boolean booleanValue( RexNode node ) {
         return ((RexLiteral) node).value.isBoolean() ? ((RexLiteral) node).value.asBoolean().value : false;
-    }
-
-
-    @Override
-    public boolean isAlwaysTrue() {
-        if ( polyType != PolyType.BOOLEAN ) {
-            return false;
-        }
-        return booleanValue( this );
-    }
-
-
-    @Override
-    public boolean isAlwaysFalse() {
-        if ( polyType != PolyType.BOOLEAN ) {
-            return false;
-        }
-        return !booleanValue( this );
-    }
-
-
-    public boolean equals( Object obj ) {
-        return (obj instanceof RexLiteral)
-                && equals( ((RexLiteral) obj).value, value )
-                && equals( ((RexLiteral) obj).type, type );
-    }
-
-
-    public int hashCode() {
-        return Objects.hash( value, type );
     }
 
 
@@ -624,6 +520,108 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
 
     private static boolean equals( Object o1, Object o2 ) {
         return Objects.equals( o1, o2 );
+    }
+
+
+    /**
+     * Returns a string which concisely describes the definition of this rex literal. Two literals are equivalent if and only if their digests are the same.
+     * <p>
+     * The digest does not contain the expression's identity, but does include the identity of children.
+     * <p>
+     * Technically speaking 1:INT differs from 1:FLOAT, so we need data type in the literal's digest, however we want to avoid extra verbosity of the {@link AlgNode#getDigest()} for readability purposes, so we omit type info in certain cases.
+     * For instance, 1:INT becomes 1 (INT is implied by default), however 1:BIGINT always holds the type
+     * <p>
+     * Here's a non-exhaustive list of the "well known cases":
+     * <ul>
+     * <li>Hide "NOT NULL" for not null literals</li>
+     * <li>Hide INTEGER, BOOLEAN, SYMBOL, TIME(0), TIMESTAMP(0), DATE(0) types</li>
+     * <li>Hide collation when it matches IMPLICIT/COERCIBLE</li>
+     * <li>Hide charset when it matches default</li>
+     * <li>Hide CHAR(xx) when literal length is equal to the precision of the type. In other words, use 'Bob' instead of 'Bob':CHAR(3)</li>
+     * <li>Hide BOOL for AND/OR arguments. In other words, AND(true, null) means null is BOOL.</li>
+     * <li>Hide types for literals in simple binary operations (e.g. +, -, *, /, comparison) when type of the other argument is clear. See {@link RexCall#computeDigest(boolean)} For instance: =(true. null) means null is BOOL. =($0, null) means the type of null matches the type of $0.</li>
+     * </ul>
+     *
+     * @param includeType whether the digest should include type or not
+     * @return digest
+     */
+    public String computeDigest( RexDigestIncludeType includeType ) {
+        if ( includeType == RexDigestIncludeType.OPTIONAL ) {
+            if ( digest != null ) {
+                // digest is initialized with OPTIONAL, so cached value matches for includeType=OPTIONAL as well
+                return digest;
+            }
+            // Compute we should include the type or not
+            includeType = digestIncludesType();
+        } else if ( digest != null && includeType == digestIncludesType() ) {
+            // The digest is always computed with includeType=OPTIONAL
+            // If it happened to omit the type, we want to optimize computeDigest(NO_TYPE) as well
+            // If the digest includes the type, we want to optimize computeDigest(ALWAYS)
+            return digest;
+        }
+
+        return toJavaString( value, polyType, type, includeType );
+    }
+
+
+    /**
+     * Returns true if {@link RexDigestIncludeType#OPTIONAL} digest would include data type.
+     *
+     * @return true if {@link RexDigestIncludeType#OPTIONAL} digest would include data type
+     * @see RexCall#computeDigest(boolean)
+     */
+    public RexDigestIncludeType digestIncludesType() {
+        return shouldIncludeType( value, type );
+    }
+
+
+    @Override
+    public Kind getKind() {
+        return Kind.LITERAL;
+    }
+
+
+    /**
+     * Returns whether this literal's value is null.
+     */
+    public boolean isNull() {
+        return value == null;
+    }
+
+
+    @Override
+    public String toString() {
+        return super.toString();
+    }
+
+
+    @Override
+    public boolean isAlwaysTrue() {
+        if ( polyType != PolyType.BOOLEAN ) {
+            return false;
+        }
+        return booleanValue( this );
+    }
+
+
+    @Override
+    public boolean isAlwaysFalse() {
+        if ( polyType != PolyType.BOOLEAN ) {
+            return false;
+        }
+        return !booleanValue( this );
+    }
+
+
+    public boolean equals( Object obj ) {
+        return (obj instanceof RexLiteral)
+                && equals( ((RexLiteral) obj).value, value )
+                && equals( ((RexLiteral) obj).type, type );
+    }
+
+
+    public int hashCode() {
+        return Objects.hash( value, type );
     }
 
 

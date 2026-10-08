@@ -44,12 +44,12 @@ public class AdapterTemplate {
     public Class<?> clazz;
     public String adapterName;
     public AdapterType adapterType;
-    DeployFn deployer;
     public List<AbstractAdapterSetting> settings;
     public List<DeployMode> modes;
     public List<AdapterSettingsPreset> presets;
     public long id;
     public String description;
+    DeployFn deployer;
 
 
     public AdapterTemplate( long id, Class<?> clazz, String adapterName, List<AbstractAdapterSetting> settings, List<DeployMode> modes, List<AdapterSettingsPreset> presets, String description, DeployFn deployer ) {

@@ -40,20 +40,20 @@ public abstract class PIPreparedStatement extends PIStatement implements Signatu
     protected List<AlgDataType> parameterPolyTypes;
 
 
-    public List<ParameterMeta> getParameterMetas() {
-        if ( parameterMetas == null ) {
-            StatementProcessor.prepare( this );
-        }
-        return parameterMetas;
-    }
-
-
     protected PIPreparedStatement(
             int id,
             @NotNull PIClient client,
             @NotNull QueryLanguage language,
             @NotNull LogicalNamespace namespace ) {
         super( id, client, language, namespace );
+    }
+
+
+    public List<ParameterMeta> getParameterMetas() {
+        if ( parameterMetas == null ) {
+            StatementProcessor.prepare( this );
+        }
+        return parameterMetas;
     }
 
 

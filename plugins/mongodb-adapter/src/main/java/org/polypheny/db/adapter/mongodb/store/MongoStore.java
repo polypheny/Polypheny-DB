@@ -99,17 +99,15 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
 
     @Delegate(excludes = Exclude.class)
     private final DocumentModifyDelegate delegate;
-
+    private final transient TransactionProvider transactionProvider;
+    @Getter
+    private final List<PolyType> unsupportedTypes = ImmutableList.of();
     private String host;
     private int port;
     private DockerContainer container;
     private transient MongoClient client;
-    private final transient TransactionProvider transactionProvider;
     @Getter
     private transient MongoNamespace currentNamespace;
-
-    @Getter
-    private final List<PolyType> unsupportedTypes = ImmutableList.of();
 
 
     public MongoStore( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
@@ -185,6 +183,20 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
         db.runCommand( configs );
 
         this.delegate = new DocumentModifyDelegate( this, adapterCatalog );
+    }
+
+
+    public static String getPhysicalColumnName( long id ) {
+            /*if ( name.startsWith( "_" ) ) {
+                return name;
+            }*/
+        // we can simply use ids as our physical column names as MongoDB allows this
+        return "col" + id;
+    }
+
+
+    public static String getPhysicalEntityName( long tableId ) {
+        return "e-" + tableId;
     }
 
 
@@ -523,20 +535,6 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
     @Override
     public List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable table ) {
         return ImmutableList.of();
-    }
-
-
-    public static String getPhysicalColumnName( long id ) {
-            /*if ( name.startsWith( "_" ) ) {
-                return name;
-            }*/
-        // we can simply use ids as our physical column names as MongoDB allows this
-        return "col" + id;
-    }
-
-
-    public static String getPhysicalEntityName( long tableId ) {
-        return "e-" + tableId;
     }
 
 

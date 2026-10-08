@@ -129,9 +129,6 @@ import org.polypheny.db.util.TimestampString;
  */
 public class MqlToAlgConverter {
 
-    private final Snapshot snapshot;
-    private final AlgCluster cluster;
-    private RexBuilder builder;
     public static final String MONGO = "mongo";
     private final static Map<String, Operator> mappings = new HashMap<>() {{
         put( "$lt", OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_LT ) );
@@ -175,12 +172,6 @@ public class MqlToAlgConverter {
         put( "$stdDevSamp", OperatorRegistry.getAgg( OperatorName.STDDEV_SAMP ) );
         put( "$sum", OperatorRegistry.getAgg( OperatorName.SUM ) );
     }};
-    private final AlgDataType any;
-    private final AlgDataType nullableAny;
-
-    private final AlgDataType jsonType;
-
-
     private static final Map<String, Operator> singleMathOperators = new HashMap<>() {{
         put( "$abs", OperatorRegistry.get( OperatorName.ABS ) );
         put( "$acos", OperatorRegistry.get( OperatorName.ACOS ) );
@@ -221,6 +212,12 @@ public class MqlToAlgConverter {
     }
 
 
+    private final Snapshot snapshot;
+    private final AlgCluster cluster;
+    private final AlgDataType any;
+    private final AlgDataType nullableAny;
+    private final AlgDataType jsonType;
+    private RexBuilder builder;
     private Optional<RexNode> subElement = Optional.empty();
     private long namespaceId;
     private boolean notActive = false;
@@ -237,6 +234,91 @@ public class MqlToAlgConverter {
         this.jsonType = this.cluster.getTypeFactory().createPolyType( PolyType.JSON );
 
         resetDefaults();
+    }
+
+
+    /**
+     * <p>The returned {@link Tuple2} consists of an OperatorName and a boolean flag.</p>
+     * <p>The flag {@code parameterizedDistance} indicates if the standard {@code DISTANCE(<target array>, <array to compare with>, <metric> [, <weights>])} operator is used or a special unparameterized version.</p>
+     * <p>e.g. {@code L1_DISTANCE(<target array>, <array to compare with>)} is the unparameterized version for the standard {@code DISTANCE} with metric='L1'.</p>
+     */
+    private static @NotNull Tuple2<OperatorName, Boolean> getOperatorName( String metric ) {
+        OperatorName distanceOpName;
+        boolean parameterizedDistance = false;
+        switch ( metric ) {
+            case "L1" -> distanceOpName = OperatorName.L1_DISTANCE;
+            case "L2" -> distanceOpName = OperatorName.L2_DISTANCE;
+            case "INNER_PRODUCT" -> distanceOpName = OperatorName.INNER_PRODUCT_DISTANCE;
+            case "COSINE" -> distanceOpName = OperatorName.COSINE_DISTANCE;
+            case "HAMMING" -> distanceOpName = OperatorName.HAMMING_DISTANCE;
+            case "JACCARD" -> distanceOpName = OperatorName.JACCARD_DISTANCE;
+            case "L2SQUARED", "CHISQUARED" -> {
+                distanceOpName = OperatorName.DISTANCE;
+                parameterizedDistance = true;
+            }
+            default -> throw new GenericRuntimeException( String.format(
+                    "Unsupported metric '%s' in $vectorSearch. Supported metrics are: L1, L2, INNER_PRODUCT, L2SQUARED, CHISQUARED, COSINE, HAMMING, JACCARD.",
+                    metric ) );
+        }
+        return new Tuple2<>( distanceOpName, parameterizedDistance );
+    }
+
+
+    private static PolyValue getPolyValue( BsonValue value ) {
+        switch ( value.getBsonType() ) {
+            case DOUBLE:
+                return PolyDouble.of( value.asDouble().getValue() );
+            case STRING:
+                return PolyString.of( value.asString().getValue() );
+            case DOCUMENT:
+                Map<PolyString, PolyValue> map = new HashMap<>();
+                for ( Entry<String, BsonValue> entry : value.asDocument().entrySet() ) {
+                    map.put( PolyString.of( entry.getKey() ), getPolyValue( entry.getValue() ) );
+                }
+
+                return PolyDocument.ofDocument( map );
+            case ARRAY:
+                List<PolyValue> list = new ArrayList<>();
+                for ( BsonValue bson : value.asArray() ) {
+                    list.add( getPolyValue( bson ) );
+                }
+                return PolyList.of( list );
+            case BOOLEAN:
+                return new PolyBoolean( value.asBoolean().getValue() );
+            case INT32:
+                return new PolyInteger( value.asInt32().getValue() );
+        }
+        throw new GenericRuntimeException( "Not implemented Comparable transform: " + value );
+    }
+
+
+    private static Coordinate convertArrayToCoordinate( BsonArray array ) {
+        if ( array.size() != 2 ) {
+            throw new GenericRuntimeException( "Coordinates need to be of the form [x,y]" );
+        }
+        double x = convertBsonValueToDouble( array.get( 0 ) );
+        double y = convertBsonValueToDouble( array.get( 1 ) );
+        return new Coordinate( x, y );
+    }
+
+
+    private static double convertBsonValueToDouble( BsonValue bsonValue ) {
+        Double result = null;
+        if ( bsonValue.isDouble() ) {
+            result = bsonValue.asDouble().getValue();
+        }
+        if ( bsonValue.isInt32() ) {
+            int intValue = bsonValue.asInt32().getValue();
+            result = (double) intValue;
+        }
+        if ( bsonValue.isInt64() ) {
+            long intValue = bsonValue.asInt64().getValue();
+            result = (double) intValue;
+        }
+        if ( result == null ) {
+            throw new GenericRuntimeException( "Legacy Coordinates needs to be of type INTEGER or DOUBLE." );
+        }
+        return result;
     }
 
 
@@ -966,33 +1048,6 @@ public class MqlToAlgConverter {
 
 
     /**
-     * <p>The returned {@link Tuple2} consists of an OperatorName and a boolean flag.</p>
-     * <p>The flag {@code parameterizedDistance} indicates if the standard {@code DISTANCE(<target array>, <array to compare with>, <metric> [, <weights>])} operator is used or a special unparameterized version.</p>
-     * <p>e.g. {@code L1_DISTANCE(<target array>, <array to compare with>)} is the unparameterized version for the standard {@code DISTANCE} with metric='L1'.</p>
-     */
-    private static @NotNull Tuple2<OperatorName, Boolean> getOperatorName( String metric ) {
-        OperatorName distanceOpName;
-        boolean parameterizedDistance = false;
-        switch ( metric ) {
-            case "L1" -> distanceOpName = OperatorName.L1_DISTANCE;
-            case "L2" -> distanceOpName = OperatorName.L2_DISTANCE;
-            case "INNER_PRODUCT" -> distanceOpName = OperatorName.INNER_PRODUCT_DISTANCE;
-            case "COSINE" -> distanceOpName = OperatorName.COSINE_DISTANCE;
-            case "HAMMING" -> distanceOpName = OperatorName.HAMMING_DISTANCE;
-            case "JACCARD" -> distanceOpName = OperatorName.JACCARD_DISTANCE;
-            case "L2SQUARED", "CHISQUARED" -> {
-                distanceOpName = OperatorName.DISTANCE;
-                parameterizedDistance = true;
-            }
-            default -> throw new GenericRuntimeException( String.format(
-                    "Unsupported metric '%s' in $vectorSearch. Supported metrics are: L1, L2, INNER_PRODUCT, L2SQUARED, CHISQUARED, COSINE, HAMMING, JACCARD.",
-                    metric ) );
-        }
-        return new Tuple2<>( distanceOpName, parameterizedDistance );
-    }
-
-
-    /**
      * Translates the $replaceRoot or $replaceWith stage of the aggregation pipeline
      *
      * @param value the untranslated operation as BSON format
@@ -1500,34 +1555,6 @@ public class MqlToAlgConverter {
         }
 
         return node;
-    }
-
-
-    private static PolyValue getPolyValue( BsonValue value ) {
-        switch ( value.getBsonType() ) {
-            case DOUBLE:
-                return PolyDouble.of( value.asDouble().getValue() );
-            case STRING:
-                return PolyString.of( value.asString().getValue() );
-            case DOCUMENT:
-                Map<PolyString, PolyValue> map = new HashMap<>();
-                for ( Entry<String, BsonValue> entry : value.asDocument().entrySet() ) {
-                    map.put( PolyString.of( entry.getKey() ), getPolyValue( entry.getValue() ) );
-                }
-
-                return PolyDocument.ofDocument( map );
-            case ARRAY:
-                List<PolyValue> list = new ArrayList<>();
-                for ( BsonValue bson : value.asArray() ) {
-                    list.add( getPolyValue( bson ) );
-                }
-                return PolyList.of( list );
-            case BOOLEAN:
-                return new PolyBoolean( value.asBoolean().getValue() );
-            case INT32:
-                return new PolyInteger( value.asInt32().getValue() );
-        }
-        throw new GenericRuntimeException( "Not implemented Comparable transform: " + value );
     }
 
 
@@ -2306,36 +2333,6 @@ public class MqlToAlgConverter {
                         convertLiteral( minDistance ),
                         convertLiteral( maxDistance )
                 ) );
-    }
-
-
-    private static Coordinate convertArrayToCoordinate( BsonArray array ) {
-        if ( array.size() != 2 ) {
-            throw new GenericRuntimeException( "Coordinates need to be of the form [x,y]" );
-        }
-        double x = convertBsonValueToDouble( array.get( 0 ) );
-        double y = convertBsonValueToDouble( array.get( 1 ) );
-        return new Coordinate( x, y );
-    }
-
-
-    private static double convertBsonValueToDouble( BsonValue bsonValue ) {
-        Double result = null;
-        if ( bsonValue.isDouble() ) {
-            result = bsonValue.asDouble().getValue();
-        }
-        if ( bsonValue.isInt32() ) {
-            int intValue = bsonValue.asInt32().getValue();
-            result = (double) intValue;
-        }
-        if ( bsonValue.isInt64() ) {
-            long intValue = bsonValue.asInt64().getValue();
-            result = (double) intValue;
-        }
-        if ( result == null ) {
-            throw new GenericRuntimeException( "Legacy Coordinates needs to be of type INTEGER or DOUBLE." );
-        }
-        return result;
     }
 
 

@@ -24,8 +24,8 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import lombok.experimental.Delegate;
 import org.bson.Document;
@@ -265,19 +265,6 @@ public class MongoSource extends DataSource<DocAdapterCatalog> implements Docume
     }
 
 
-    private interface Excludes {
-
-        void refreshCollection( long allocId );
-
-        void createCollection( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
-
-        void dropCollection( Context context, AllocationCollection allocation );
-
-        void restoreCollection( AllocationTable alloc, List<PhysicalEntity> entities );
-
-    }
-
-
     private void testConnection() {
         try {
             client.getDatabase( database ).runCommand( new Document( "ping", 1 ) );
@@ -291,6 +278,19 @@ public class MongoSource extends DataSource<DocAdapterCatalog> implements Docume
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Unable to connect to MongoDB source", e );
         }
+    }
+
+
+    private interface Excludes {
+
+        void refreshCollection( long allocId );
+
+        void createCollection( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
+
+        void dropCollection( Context context, AllocationCollection allocation );
+
+        void restoreCollection( AllocationTable alloc, List<PhysicalEntity> entities );
+
     }
 
 }

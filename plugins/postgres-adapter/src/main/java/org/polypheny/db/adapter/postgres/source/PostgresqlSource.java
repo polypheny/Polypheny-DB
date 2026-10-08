@@ -17,6 +17,19 @@
 package org.polypheny.db.adapter.postgres.source;
 
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalDataSource;
@@ -32,8 +45,6 @@ import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
-import java.sql.*;
-import java.util.*;
 
 
 @Slf4j
@@ -83,6 +94,25 @@ public class PostgresqlSource extends AbstractJdbcSource {
     }
 
 
+    public static Set<SqlDbFeature> detectFeatures( Connection conn ) throws SQLException {
+        Set<PostgresqlFeature> found = EnumSet.noneOf( PostgresqlFeature.class );
+        PreparedStatement ps = conn.prepareStatement( PostgresqlCatalogQueries.SQL_INSTALLED_EXTENSIONS );
+        String[] featureNames = Arrays.stream( PostgresqlFeature.values() )
+                .map( PostgresqlFeature::featureName )
+                .toArray( String[]::new );
+        ps.setArray( 1, conn.createArrayOf( "text", featureNames ) );
+        ResultSet rs = ps.executeQuery();
+        while ( rs.next() ) {
+            String name = rs.getString( 1 );
+            Arrays.stream( PostgresqlFeature.values() )
+                    .filter( f -> f.featureName().equals( name ) )
+                    .findFirst()
+                    .ifPresent( found::add );
+        }
+        return Collections.unmodifiableSet( found );
+    }
+
+
     @Override
     public void shutdown() {
         try {
@@ -110,6 +140,7 @@ public class PostgresqlSource extends AbstractJdbcSource {
     protected boolean requiresSchema() {
         return true;
     }
+
 
     @Override
     public boolean supportsDynamicTableDiscovery() {
@@ -199,25 +230,6 @@ public class PostgresqlSource extends AbstractJdbcSource {
             }
         }
         return result;
-    }
-
-
-    public static Set<SqlDbFeature> detectFeatures( Connection conn ) throws SQLException {
-        Set<PostgresqlFeature> found = EnumSet.noneOf( PostgresqlFeature.class );
-        PreparedStatement ps = conn.prepareStatement( PostgresqlCatalogQueries.SQL_INSTALLED_EXTENSIONS );
-        String[] featureNames = Arrays.stream( PostgresqlFeature.values() )
-                .map( PostgresqlFeature::featureName )
-                .toArray( String[]::new );
-        ps.setArray( 1, conn.createArrayOf( "text", featureNames ) );
-        ResultSet rs = ps.executeQuery();
-        while ( rs.next() ) {
-            String name = rs.getString( 1 );
-            Arrays.stream( PostgresqlFeature.values() )
-                    .filter( f -> f.featureName().equals( name ) )
-                    .findFirst()
-                    .ifPresent( found::add );
-        }
-        return Collections.unmodifiableSet( found );
     }
 
 }

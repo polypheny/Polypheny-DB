@@ -73,38 +73,28 @@ import org.polypheny.db.type.entity.PolyValue;
 public class RelationalCatalog implements PolySerializable, LogicalRelationalCatalog {
 
     public BinarySerializer<RelationalCatalog> serializer = PolySerializable.buildSerializer( RelationalCatalog.class );
-
-    IdBuilder idBuilder = IdBuilder.getInstance();
-
     @Serialize
     @JsonProperty
     public LogicalNamespace logicalNamespace;
-
     @Serialize
     @JsonProperty
     public Map<Long, @SerializeClass(subclasses = { LogicalView.class, LogicalTable.class, LogicalMaterializedView.class }) LogicalTable> tables;
-
     @Serialize
     @JsonProperty
     public Map<Long, LogicalColumn> columns;
-
     public Map<Long, AlgNode> nodes;
     public Map<Long, AlgCollation> collations;
-
-
     @Serialize
     @JsonProperty
     public Map<Long, LogicalIndex> indexes;
-
     // while keys "belong" to a specific table, they can reference other namespaces, atm they are place here, might change later
     @Serialize
     @JsonProperty
     public Map<Long, LogicalKey> keys;
-
     @Serialize
     @JsonProperty
     public Map<Long, LogicalConstraint> constraints;
-
+    IdBuilder idBuilder = IdBuilder.getInstance();
     Set<Long> tablesFlaggedForDeletion = new HashSet<>();
 
     PropertyChangeSupport listeners = new PropertyChangeSupport( this );
@@ -620,6 +610,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         return addConstraint( tableId, constraintName, keyId, type, statement );
     }
+
 
     @Override
     public long addConstraint( long tableId, String constraintName, long keyId, ConstraintType type, Statement statement ) {

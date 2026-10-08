@@ -68,6 +68,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.websocket.api.Session;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSettingDirectory;
 import org.polypheny.db.adapter.AbstractAdapterSettingString;
@@ -162,7 +163,6 @@ import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.category.PolyNumber;
-import org.polypheny.db.ResultIterator;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.Pair;
@@ -210,9 +210,9 @@ import org.polypheny.db.webui.models.requests.SourceMaterializationRequest;
 import org.polypheny.db.webui.models.requests.SourceRefreshRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.requests.UpdateAdapterRequest;
+import org.polypheny.db.webui.models.results.QueryType;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.RelationalResult.RelationalResultBuilder;
-import org.polypheny.db.webui.models.results.QueryType;
 import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.webui.models.results.Result.ResultBuilder;
 import org.polypheny.db.webui.models.results.ResultType;
@@ -222,18 +222,16 @@ import org.polypheny.db.webui.models.results.ResultType;
 @Slf4j
 public class Crud implements InformationObserver, PropertyChangeListener {
 
-    private static final Gson gson = new Gson();
     public static final String ORIGIN = "Polypheny-UI";
+    private static final Gson gson = new Gson();
     private static final int POSTGRES_MAX_VARCHAR_LENGTH = 10_485_760;
     private static final int DOCUMENT_MATERIALIZATION_COPY_BATCH_SIZE = 5_000;
     private static final int RELATIONAL_MATERIALIZATION_COPY_BATCH_SIZE = 10_000;
-    private final TransactionManager transactionManager;
-
     public final LanguageCrud languageCrud;
     public final StatisticCrud statisticCrud;
-
     public final CatalogCrud catalogCrud;
     public final AuthCrud authCrud;
+    private final TransactionManager transactionManager;
 
 
     /**
@@ -263,6 +261,341 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         for ( String xId : xIds ) {
             InformationManager.close( xId );
             TemporalFileManager.deleteFilesOfTransaction( xId );
+        }
+    }
+
+
+    private static String toPhysicalTableKey( String schemaName, String tableName ) {
+        return normalizePhysicalName( schemaName ) + "." + normalizePhysicalName( tableName );
+    }
+
+
+    private static String normalizePhysicalName( String name ) {
+        return name == null ? "" : name.toLowerCase();
+    }
+
+
+    private static void setSynchronizedCollectionMetadata( long namespaceId, String collectionName, long sourceCollectionId ) {
+        LogicalCollection collection = Catalog.snapshot().doc().getCollection( namespaceId, collectionName ).orElseThrow();
+        Catalog.getInstance().getLogicalDoc( namespaceId ).setCollectionModifiable( collection.id, false );
+        Catalog.getInstance().getLogicalDoc( namespaceId ).setSynchronizedSourceEntity( collection.id, sourceCollectionId );
+        Catalog.getInstance().updateSnapshot();
+    }
+
+
+    private static String buildBatchedCopyQueryDescription( String sourceCollectionName, String targetCollectionName ) {
+        return String.format( "db.%s.find({}) -> db.%s.insertMany(...) in batches", sourceCollectionName, targetCollectionName );
+    }
+
+
+    private static String buildMaterializationCopyOrderBy( LogicalTable sourceTable, List<LogicalColumn> columns ) {
+        if ( sourceTable.primaryKey == null ) {
+            return "";
+        }
+        LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( sourceTable.primaryKey ).orElse( null );
+        if ( primaryKey == null || primaryKey.fieldIds.isEmpty() ) {
+            return "";
+        }
+        Map<Long, String> columnNames = columns.stream()
+                .collect( Collectors.toMap( column -> column.id, column -> column.name ) );
+        String orderBy = primaryKey.fieldIds.stream()
+                .map( columnNames::get )
+                .filter( Objects::nonNull )
+                .map( Crud::quoteIdentifier )
+                .collect( Collectors.joining( ", " ) );
+        return orderBy.isEmpty() ? "" : " ORDER BY " + orderBy;
+    }
+
+
+    private static String buildBatchedRelationalCopyQueryDescription( String targetTable, String sourceTableName ) {
+        return String.format( "INSERT INTO %s SELECT ... FROM %s in batches", targetTable, sourceTableName );
+    }
+
+
+    private static String buildMaterializationColumnDefinition( LogicalColumn column ) {
+        StringBuilder builder = new StringBuilder();
+        builder.append( quoteIdentifier( column.name ) ).append( " " ).append( buildMaterializationColumnType( column ) );
+        if ( !column.nullable ) {
+            builder.append( " NOT NULL" );
+        }
+        return builder.toString();
+    }
+
+
+    private static String buildMaterializationColumnType( LogicalColumn column ) {
+        StringBuilder builder = new StringBuilder( column.type.getName() );
+        if ( column.length != null && column.scale != null && column.type.allowsPrecScale( true, true ) ) {
+            builder.append( "(" ).append( column.length ).append( ", " ).append( column.scale ).append( ")" );
+        } else if ( column.length != null && column.type.allowsPrecNoScale() ) {
+            builder.append( "(" ).append( getMaterializationColumnLength( column ) ).append( ")" );
+        }
+
+        if ( isMaterializationCollectionType( column.collectionsType ) ) {
+            builder.append( " " ).append( column.collectionsType.getName() );
+            if ( column.dimension != null ) {
+                builder.append( "(" ).append( column.dimension );
+                if ( column.cardinality != null ) {
+                    builder.append( ", " ).append( column.cardinality );
+                }
+                builder.append( ")" );
+            }
+        }
+        return builder.toString();
+    }
+
+
+    private static int getMaterializationColumnLength( LogicalColumn column ) {
+        if ( column.type == PolyType.VARCHAR && column.length > POSTGRES_MAX_VARCHAR_LENGTH ) {
+            return POSTGRES_MAX_VARCHAR_LENGTH;
+        }
+        return column.length;
+    }
+
+
+    private static boolean isMaterializationCollectionType( PolyType collectionsType ) {
+        return collectionsType == PolyType.ARRAY || collectionsType == PolyType.MAP;
+    }
+
+
+    private static String resolveMaterializationTableName( String requestedName, long namespaceId, String generatedName, String materializationType ) {
+        String targetName = normalizeRequestedMaterializationName( requestedName );
+        if ( targetName == null ) {
+            return generatedName;
+        }
+        if ( Catalog.snapshot().rel().getTable( namespaceId, targetName ).isPresent() ) {
+            throw new GenericRuntimeException( materializationType + " target table '" + targetName + "' already exists." );
+        }
+        return targetName;
+    }
+
+
+    private static String resolveMaterializationCollectionName( String requestedName, long namespaceId, String generatedName, String materializationType ) {
+        String targetName = normalizeRequestedMaterializationName( requestedName );
+        if ( targetName == null ) {
+            return generatedName;
+        }
+        if ( Catalog.snapshot().doc().getCollection( namespaceId, targetName ).isPresent() ) {
+            throw new GenericRuntimeException( materializationType + " target collection '" + targetName + "' already exists." );
+        }
+        return targetName;
+    }
+
+
+    private static String normalizeRequestedMaterializationName( String requestedName ) {
+        if ( requestedName == null || requestedName.trim().isEmpty() ) {
+            return null;
+        }
+        return requestedName.trim();
+    }
+
+
+    private static String getNextIndependentMaterializationTableName( long namespaceId, String sourceTableName ) {
+        String baseName = sourceTableName + "_independent";
+        String candidate = baseName;
+        int suffix = 2;
+        while ( Catalog.snapshot().rel().getTable( namespaceId, candidate ).isPresent() ) {
+            candidate = baseName + suffix;
+            suffix++;
+        }
+        return candidate;
+    }
+
+
+    private static String getNextSynchronizedMaterializationTableName( long namespaceId, String sourceTableName ) {
+        String baseName = sourceTableName + "_synchronized";
+        String candidate = baseName;
+        int suffix = 2;
+        while ( Catalog.snapshot().rel().getTable( namespaceId, candidate ).isPresent() ) {
+            candidate = baseName + suffix;
+            suffix++;
+        }
+        return candidate;
+    }
+
+
+    private static String getNextIndependentMaterializationCollectionName( long namespaceId, String sourceCollectionName ) {
+        String baseName = sourceCollectionName + "_independent";
+        String candidate = baseName;
+        int suffix = 2;
+        while ( Catalog.snapshot().doc().getCollection( namespaceId, candidate ).isPresent() ) {
+            candidate = baseName + suffix;
+            suffix++;
+        }
+        return candidate;
+    }
+
+
+    private static String getNextSynchronizedMaterializationCollectionName( long namespaceId, String sourceCollectionName ) {
+        String baseName = sourceCollectionName + "_synchronized";
+        String candidate = baseName;
+        int suffix = 2;
+        while ( Catalog.snapshot().doc().getCollection( namespaceId, candidate ).isPresent() ) {
+            candidate = baseName + suffix;
+            suffix++;
+        }
+        return candidate;
+    }
+
+
+    private static String buildCreateMaterializationCollectionQuery( String targetCollectionName, String targetStoreName ) {
+        return String.format( "db.createCollection(\"%s\").store(\"%s\")", targetCollectionName, targetStoreName );
+    }
+
+
+    private static String buildInsertManyQuery( String targetCollectionName, String[] documents ) {
+        return String.format( "db.%s.insertMany([%s])", targetCollectionName, String.join( ",", documents ) );
+    }
+
+
+    private static String quoteQualified( String namespaceName, String entityName ) {
+        return quoteIdentifier( namespaceName ) + "." + quoteIdentifier( entityName );
+    }
+
+
+    private static String quoteIdentifier( String identifier ) {
+        return "\"" + identifier.replace( "\"", "\"\"" ) + "\"";
+    }
+
+
+    /**
+     * Converts a String, such as "'12:00:00'" into a valid SQL statement, such as "TIME '12:00:00'"
+     */
+    public static String uiValueToSql( final String value, final PolyType type, final PolyType collectionsType ) {
+        if ( value == null ) {
+            return "NULL";
+        }
+        if ( collectionsType == PolyType.ARRAY ) {
+            return "ARRAY " + value;
+        }
+        switch ( type ) {
+            case TIME:
+                return String.format( "TIME '%s'", value );
+            case DATE:
+                return String.format( "DATE '%s'", value );
+            case TIMESTAMP:
+                return String.format( "TIMESTAMP '%s'", value );
+        }
+        if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
+            return String.format( "'%s'", value );
+        }
+        return value;
+    }
+
+
+    private static String getDropConstraintQuery( ConstraintRequest request, String fullEntityName ) {
+        String query;
+        if ( request.constraint.type.equals( ConstraintType.PRIMARY.name() ) ) {
+            query = String.format( "ALTER TABLE %s DROP PRIMARY KEY", fullEntityName );
+        } else if ( request.constraint.type.equals( ConstraintType.FOREIGN.name() ) ) {
+            query = String.format( "ALTER TABLE %s DROP FOREIGN KEY \"%s\"", fullEntityName, request.constraint.name );
+        } else {
+            query = String.format( "ALTER TABLE %s DROP CONSTRAINT \"%s\"", fullEntityName, request.constraint.name );
+        }
+        return query;
+    }
+
+
+    /**
+     * Formats the options of an index for display, rendering well-known keys in a stable, readable order.
+     */
+    private static String formatIndexOptions( Map<String, String> options ) {
+        if ( options == null || options.isEmpty() ) {
+            return "";
+        }
+        StringJoiner joiner = new StringJoiner( ", " );
+        Map<String, String> remaining = new LinkedHashMap<>( options );
+        for ( String key : List.of( "metric", "m", "ef_construction", "lists" ) ) {
+            String value = remaining.remove( key );
+            if ( value != null ) {
+                joiner.add( key + "=" + value );
+            }
+        }
+        // Append any remaining, less common options
+        remaining.forEach( ( key, value ) -> joiner.add( key + "=" + value ) );
+        return joiner.toString();
+    }
+
+
+    private static String getDefaultValue( PartitioningRequest request, PartitionFunctionInfoColumn currentColumn, FieldType type ) {
+        String defaultValue = currentColumn.getDefaultValue();
+
+        // Used specifically for Temp-Partitioning since number of selected partitions remains 2 but chunks change
+        // enables user to use selected "number of partitions" being used as default value for "number of internal data chunks"
+        if ( request.method.equals( PartitionType.TEMPERATURE ) ) {
+
+            if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ) ) {
+                defaultValue = String.valueOf( request.numPartitions );
+            }
+        }
+        return defaultValue;
+    }
+
+
+    private static String handleUploadFiles( Map<String, InputStream> inputStreams, List<String> fileNames, AbstractAdapterSettingDirectory setting, AdapterModel a ) {
+        if ( fileNames.isEmpty() ) {
+            throw new GenericRuntimeException( "No file or directory specified for upload!" );
+        }
+        for ( String fileName : fileNames ) {
+            setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
+        }
+        File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + a.name );
+        for ( Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
+            try {
+                File file = new File( path, is.getKey() );
+                FileUtils.copyInputStreamToFile( is.getValue(), file );
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( e );
+            }
+        }
+        return path.getAbsolutePath();
+    }
+
+
+    public static Transaction getTransaction( boolean useCache, TransactionManager transactionManager, long userId, long databaseId ) {
+        return getTransaction( useCache, transactionManager, userId, databaseId, ORIGIN );
+    }
+
+
+    public static Transaction getTransaction( boolean useCache, TransactionManager transactionManager, long userId, long namespaceId, String origin ) {
+        Transaction transaction = transactionManager.startTransaction(
+                userId,
+                namespaceId,
+                null,
+                origin,
+                MultimediaFlavor.FILE );
+        transaction.setUseCache( useCache );
+        return transaction;
+    }
+
+
+    public static Transaction getTransaction( boolean useCache, Crud crud ) {
+        return getTransaction( useCache, crud.transactionManager, Catalog.defaultUserId, Catalog.defaultNamespaceId );
+    }
+
+
+    /**
+     * Helper method to zip a directory
+     */
+    private static void zipDirectory( String basePath, File dir, ZipOutputStream zipOut ) throws IOException {
+        byte[] buffer = new byte[4096];
+        File[] files = dir.listFiles();
+        assert files != null;
+        for ( File file : files ) {
+            if ( file.isDirectory() ) {
+                String path = basePath + file.getName() + "/";
+                zipOut.putNextEntry( new ZipEntry( path ) );
+                zipDirectory( path, file, zipOut );
+                zipOut.closeEntry();
+            } else {
+                FileInputStream fin = new FileInputStream( file );
+                zipOut.putNextEntry( new ZipEntry( basePath + file.getName() ) );
+                int length;
+                while ( (length = fin.read( buffer )) > 0 ) {
+                    zipOut.write( buffer, 0, length );
+                }
+                zipOut.closeEntry();
+                fin.close();
+            }
         }
     }
 
@@ -327,11 +660,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             throw new GenericRuntimeException(
                     "Could not refresh source catalog for entity " + request.entityId, e );
         }
-    }
-
-
-    public record SourceMaterializationRefreshResult( List<String> changeDescriptions, Long dataRefreshRowCount, boolean sourceEntityDeleted ) {
-
     }
 
 
@@ -1054,16 +1382,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static String toPhysicalTableKey( String schemaName, String tableName ) {
-        return normalizePhysicalName( schemaName ) + "." + normalizePhysicalName( tableName );
-    }
-
-
-    private static String normalizePhysicalName( String name ) {
-        return name == null ? "" : name.toLowerCase();
-    }
-
-
     void createIndependentSourceCollectionMaterialization( final Context ctx ) {
         SourceMaterializationRequest request = ctx.bodyAsClass( SourceMaterializationRequest.class );
         Snapshot snapshot = Catalog.snapshot();
@@ -1202,14 +1520,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static void setSynchronizedCollectionMetadata( long namespaceId, String collectionName, long sourceCollectionId ) {
-        LogicalCollection collection = Catalog.snapshot().doc().getCollection( namespaceId, collectionName ).orElseThrow();
-        Catalog.getInstance().getLogicalDoc( namespaceId ).setCollectionModifiable( collection.id, false );
-        Catalog.getInstance().getLogicalDoc( namespaceId ).setSynchronizedSourceEntity( collection.id, sourceCollectionId );
-        Catalog.getInstance().updateSnapshot();
-    }
-
-
     public SourceMaterializationRefreshResult refreshSynchronizedSourceCollectionMaterializationData( UIRequest request ) {
         LogicalCollection materializedCollection = Catalog.snapshot().doc().getCollection( request.entityId ).orElseThrow();
         if ( materializedCollection.synchronizedSourceEntityId == null ) {
@@ -1276,414 +1586,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             Catalog.getInstance().getLogicalDoc( materializedNamespace.id ).setCollectionModifiable( materializedCollection.id, false );
             Catalog.getInstance().updateSnapshot();
         }
-    }
-
-
-    private long copyCollectionDocuments( LogicalCollection sourceCollection, String sourceNamespace, String targetCollectionName, String targetNamespace ) {
-        Transaction transaction = getTransaction();
-        ImplementationContext implementationContext = null;
-        ResultIterator iterator = null;
-        boolean committed = false;
-        try {
-            implementationContext = LanguageManager.getINSTANCE().anyPrepareQuery(
-                    QueryContext.builder()
-                            .query( String.format( "db.%s.find({})", sourceCollection.name ) )
-                            .language( QueryLanguage.from( "mql" ) )
-                            .origin( ORIGIN )
-                            .namespaceId( LanguageCrud.getNamespaceIdOrDefault( sourceNamespace ) )
-                            .batch( DOCUMENT_MATERIALIZATION_COPY_BATCH_SIZE )
-                            .transactions( List.of( transaction ) )
-                            .transactionManager( transactionManager )
-                            .build(), transaction ).get( 0 );
-            ExecutedContext executedContext = implementationContext.execute( implementationContext.getStatement() );
-            if ( executedContext.getException().isPresent() ) {
-                throw new GenericRuntimeException( executedContext.getException().get().getMessage() );
-            }
-
-            iterator = executedContext.getIterator();
-            long copiedDocuments = 0;
-            while ( true ) {
-                List<List<PolyValue>> batch = iterator.getNextBatch( DOCUMENT_MATERIALIZATION_COPY_BATCH_SIZE );
-                if ( batch.isEmpty() ) {
-                    transaction.commit();
-                    committed = true;
-                    return copiedDocuments;
-                }
-
-                String[] documents = batch.stream()
-                        .map( row -> row.get( 0 ).toJson() )
-                        .toArray( String[]::new );
-                Result<?, ?> insertResult = executeMql( buildInsertManyQuery( targetCollectionName, documents ), targetNamespace, false );
-                if ( insertResult.error != null ) {
-                    throw new GenericRuntimeException( insertResult.error );
-                }
-                copiedDocuments += documents.length;
-            }
-        } catch ( Exception e ) {
-            if ( !committed ) {
-                transaction.rollback( "Error while copying source collection documents: " + e.getMessage() );
-            }
-            if ( e instanceof GenericRuntimeException ) {
-                throw (GenericRuntimeException) e;
-            }
-            throw new GenericRuntimeException( e );
-        } finally {
-            if ( iterator != null ) {
-                iterator.close();
-            }
-        }
-    }
-
-
-    private static String buildBatchedCopyQueryDescription( String sourceCollectionName, String targetCollectionName ) {
-        return String.format( "db.%s.find({}) -> db.%s.insertMany(...) in batches", sourceCollectionName, targetCollectionName );
-    }
-
-
-    private Result<?, ?> copyRelationalTableRows( LogicalTable sourceTable, String sourceTableName, String targetTable, List<LogicalColumn> columns ) {
-        String columnList = columns.stream()
-                .map( column -> quoteIdentifier( column.name ) )
-                .collect( Collectors.joining( ", " ) );
-        String orderBy = buildMaterializationCopyOrderBy( sourceTable, columns );
-        long rowCount = countRelationalTableRows( sourceTableName );
-        long copiedRows = 0;
-        for ( long offset = 0; offset < rowCount; offset += RELATIONAL_MATERIALIZATION_COPY_BATCH_SIZE ) {
-            String insertQuery = String.format(
-                    "INSERT INTO %s (%s) SELECT %s FROM %s%s LIMIT %d OFFSET %d",
-                    targetTable,
-                    columnList,
-                    columnList,
-                    sourceTableName,
-                    orderBy,
-                    RELATIONAL_MATERIALIZATION_COPY_BATCH_SIZE,
-                    offset );
-            Result<?, ?> insertResult = executeSql( insertQuery );
-            if ( insertResult.error != null ) {
-                return insertResult;
-            }
-            copiedRows += insertResult.affectedTuples;
-        }
-        return RelationalResult.builder()
-                .query( buildBatchedRelationalCopyQueryDescription( targetTable, sourceTableName ) )
-                .queryType( QueryType.DML )
-                .affectedTuples( copiedRows )
-                .build();
-    }
-
-
-    private long countRelationalTableRows( String tableName ) {
-        RelationalResult countResult = (RelationalResult) executeSql( "SELECT COUNT(*) FROM " + tableName );
-        if ( countResult.error != null ) {
-            throw new GenericRuntimeException( countResult.error );
-        }
-        if ( countResult.data == null || countResult.data.length == 0 || countResult.data[0].length == 0 ) {
-            return 0;
-        }
-        return Long.parseLong( countResult.data[0][0] );
-    }
-
-
-    private static String buildMaterializationCopyOrderBy( LogicalTable sourceTable, List<LogicalColumn> columns ) {
-        if ( sourceTable.primaryKey == null ) {
-            return "";
-        }
-        LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( sourceTable.primaryKey ).orElse( null );
-        if ( primaryKey == null || primaryKey.fieldIds.isEmpty() ) {
-            return "";
-        }
-        Map<Long, String> columnNames = columns.stream()
-                .collect( Collectors.toMap( column -> column.id, column -> column.name ) );
-        String orderBy = primaryKey.fieldIds.stream()
-                .map( columnNames::get )
-                .filter( Objects::nonNull )
-                .map( Crud::quoteIdentifier )
-                .collect( Collectors.joining( ", " ) );
-        return orderBy.isEmpty() ? "" : " ORDER BY " + orderBy;
-    }
-
-
-    private static String buildBatchedRelationalCopyQueryDescription( String targetTable, String sourceTableName ) {
-        return String.format( "INSERT INTO %s SELECT ... FROM %s in batches", targetTable, sourceTableName );
-    }
-
-
-    private Result<?, ?> executeSql( String query ) {
-        return LanguageCrud.anyQueryResult(
-                QueryContext.builder()
-                        .query( query )
-                        .language( QueryLanguage.from( "sql" ) )
-                        .origin( ORIGIN )
-                        .transactionManager( transactionManager )
-                        .build(), UIRequest.builder().build() ).get( 0 );
-    }
-
-
-    private Result<?, ?> executeMql( String query, String namespace, boolean noLimit ) {
-        return LanguageCrud.anyQueryResult(
-                QueryContext.builder()
-                        .query( query )
-                        .language( QueryLanguage.from( "mql" ) )
-                        .origin( ORIGIN )
-                        .namespaceId( LanguageCrud.getNamespaceIdOrDefault( namespace ) )
-                        .batch( noLimit ? -1 : getPageSize() )
-                        .transactionManager( transactionManager )
-                        .build(), UIRequest.builder()
-                        .namespace( namespace )
-                        .noLimit( noLimit )
-                        .build() ).get( 0 );
-    }
-
-
-    private String buildCreateMaterializationTableQuery( String targetTable, String targetStoreName, LogicalTable sourceTable, List<LogicalColumn> columns ) {
-        StringJoiner columnJoiner = new StringJoiner( ", " );
-        for ( LogicalColumn column : columns ) {
-            columnJoiner.add( buildMaterializationColumnDefinition( column ) );
-        }
-
-        if ( sourceTable.primaryKey != null ) {
-            LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( sourceTable.primaryKey ).orElse( null );
-            if ( primaryKey != null ) {
-                String primaryKeyColumns = primaryKey.getFieldNames().stream()
-                        .map( Crud::quoteIdentifier )
-                        .collect( Collectors.joining( ", " ) );
-                columnJoiner.add( "PRIMARY KEY (" + primaryKeyColumns + ")" );
-            }
-        }
-
-        return String.format( "CREATE TABLE %s (%s) ON STORE %s", targetTable, columnJoiner, quoteIdentifier( targetStoreName ) );
-    }
-
-
-    private static String buildMaterializationColumnDefinition( LogicalColumn column ) {
-        StringBuilder builder = new StringBuilder();
-        builder.append( quoteIdentifier( column.name ) ).append( " " ).append( buildMaterializationColumnType( column ) );
-        if ( !column.nullable ) {
-            builder.append( " NOT NULL" );
-        }
-        return builder.toString();
-    }
-
-
-    private static String buildMaterializationColumnType( LogicalColumn column ) {
-        StringBuilder builder = new StringBuilder( column.type.getName() );
-        if ( column.length != null && column.scale != null && column.type.allowsPrecScale( true, true ) ) {
-            builder.append( "(" ).append( column.length ).append( ", " ).append( column.scale ).append( ")" );
-        } else if ( column.length != null && column.type.allowsPrecNoScale() ) {
-            builder.append( "(" ).append( getMaterializationColumnLength( column ) ).append( ")" );
-        }
-
-        if ( isMaterializationCollectionType( column.collectionsType ) ) {
-            builder.append( " " ).append( column.collectionsType.getName() );
-            if ( column.dimension != null ) {
-                builder.append( "(" ).append( column.dimension );
-                if ( column.cardinality != null ) {
-                    builder.append( ", " ).append( column.cardinality );
-                }
-                builder.append( ")" );
-            }
-        }
-        return builder.toString();
-    }
-
-
-    private static int getMaterializationColumnLength( LogicalColumn column ) {
-        if ( column.type == PolyType.VARCHAR && column.length > POSTGRES_MAX_VARCHAR_LENGTH ) {
-            return POSTGRES_MAX_VARCHAR_LENGTH;
-        }
-        return column.length;
-    }
-
-
-    private static boolean isMaterializationCollectionType( PolyType collectionsType ) {
-        return collectionsType == PolyType.ARRAY || collectionsType == PolyType.MAP;
-    }
-
-
-    private static String resolveMaterializationTableName( String requestedName, long namespaceId, String generatedName, String materializationType ) {
-        String targetName = normalizeRequestedMaterializationName( requestedName );
-        if ( targetName == null ) {
-            return generatedName;
-        }
-        if ( Catalog.snapshot().rel().getTable( namespaceId, targetName ).isPresent() ) {
-            throw new GenericRuntimeException( materializationType + " target table '" + targetName + "' already exists." );
-        }
-        return targetName;
-    }
-
-
-    private static String resolveMaterializationCollectionName( String requestedName, long namespaceId, String generatedName, String materializationType ) {
-        String targetName = normalizeRequestedMaterializationName( requestedName );
-        if ( targetName == null ) {
-            return generatedName;
-        }
-        if ( Catalog.snapshot().doc().getCollection( namespaceId, targetName ).isPresent() ) {
-            throw new GenericRuntimeException( materializationType + " target collection '" + targetName + "' already exists." );
-        }
-        return targetName;
-    }
-
-
-    private static String normalizeRequestedMaterializationName( String requestedName ) {
-        if ( requestedName == null || requestedName.trim().isEmpty() ) {
-            return null;
-        }
-        return requestedName.trim();
-    }
-
-
-    private static String getNextIndependentMaterializationTableName( long namespaceId, String sourceTableName ) {
-        String baseName = sourceTableName + "_independent";
-        String candidate = baseName;
-        int suffix = 2;
-        while ( Catalog.snapshot().rel().getTable( namespaceId, candidate ).isPresent() ) {
-            candidate = baseName + suffix;
-            suffix++;
-        }
-        return candidate;
-    }
-
-
-    private static String getNextSynchronizedMaterializationTableName( long namespaceId, String sourceTableName ) {
-        String baseName = sourceTableName + "_synchronized";
-        String candidate = baseName;
-        int suffix = 2;
-        while ( Catalog.snapshot().rel().getTable( namespaceId, candidate ).isPresent() ) {
-            candidate = baseName + suffix;
-            suffix++;
-        }
-        return candidate;
-    }
-
-
-    private static String getNextIndependentMaterializationCollectionName( long namespaceId, String sourceCollectionName ) {
-        String baseName = sourceCollectionName + "_independent";
-        String candidate = baseName;
-        int suffix = 2;
-        while ( Catalog.snapshot().doc().getCollection( namespaceId, candidate ).isPresent() ) {
-            candidate = baseName + suffix;
-            suffix++;
-        }
-        return candidate;
-    }
-
-
-    private static String getNextSynchronizedMaterializationCollectionName( long namespaceId, String sourceCollectionName ) {
-        String baseName = sourceCollectionName + "_synchronized";
-        String candidate = baseName;
-        int suffix = 2;
-        while ( Catalog.snapshot().doc().getCollection( namespaceId, candidate ).isPresent() ) {
-            candidate = baseName + suffix;
-            suffix++;
-        }
-        return candidate;
-    }
-
-
-    private static String buildCreateMaterializationCollectionQuery( String targetCollectionName, String targetStoreName ) {
-        return String.format( "db.createCollection(\"%s\").store(\"%s\")", targetCollectionName, targetStoreName );
-    }
-
-
-    private static String buildInsertManyQuery( String targetCollectionName, String[] documents ) {
-        return String.format( "db.%s.insertMany([%s])", targetCollectionName, String.join( ",", documents ) );
-    }
-
-
-    private static String quoteQualified( String namespaceName, String entityName ) {
-        return quoteIdentifier( namespaceName ) + "." + quoteIdentifier( entityName );
-    }
-
-
-    private static String quoteIdentifier( String identifier ) {
-        return "\"" + identifier.replace( "\"", "\"\"" ) + "\"";
-    }
-
-
-    /**
-     * Initialize a multipart request, so that the values can be fetched with request.raw().getPart( name )
-     */
-    private void initMultipart( final Context ctx ) {
-        //see https://stackoverflow.com/questions/34746900/sparkjava-upload-file-didt-work-in-spark-java-framework
-        String location = System.getProperty( "java.io.tmpdir" + File.separator + "Polypheny-DB" );
-        long maxSizeMB = RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger();
-        long maxFileSize = 1_000_000L * maxSizeMB;
-        long maxRequestSize = 1_000_000L * maxSizeMB;
-        int fileSizeThreshold = 1024;
-        MultipartConfigElement multipartConfigElement = new MultipartConfigElement( location, maxFileSize, maxRequestSize, fileSizeThreshold );
-        ctx.attribute( "org.eclipse.jetty.multipartConfig", multipartConfigElement );
-    }
-
-
-    /**
-     * Insert data into a table
-     */
-    void insertTuple( final Context ctx ) throws IOException {
-        ctx.contentType( "multipart/form-data" );
-        initMultipart( ctx );
-        String unparsed = ctx.formParam( "entityId" );
-        if ( unparsed == null ) {
-            throw new GenericRuntimeException( "Error on tuple insert" );
-        }
-
-        long entityId = Long.parseLong( unparsed );
-
-        LogicalTable table = Catalog.snapshot().rel().getTable( entityId ).orElseThrow();
-        LogicalNamespace namespace = Catalog.snapshot().getNamespace( table.namespaceId ).orElseThrow();
-        String entityName = String.format( "\"%s\".\"%s\"", namespace.name, table.name );
-
-        Transaction transaction = getTransaction();
-        Statement statement = transaction.createStatement();
-        StringJoiner columns = new StringJoiner( ",", "(", ")" );
-        StringJoiner values = new StringJoiner( ",", "(", ")" );
-
-        List<LogicalColumn> logicalColumns = Catalog.snapshot().rel().getColumns( table.id );
-        try {
-            int i = 0;
-            for ( LogicalColumn logicalColumn : logicalColumns ) {
-                //part is null if it does not exist
-                Part part = ctx.req().getPart( logicalColumn.name );
-                if ( part == null ) {
-                    //don't add if default value is set
-                    if ( logicalColumn.defaultValue == null ) {
-                        values.add( "NULL" );
-                        columns.add( "\"" + logicalColumn.name + "\"" );
-                    }
-                } else {
-                    columns.add( "\"" + logicalColumn.name + "\"" );
-                    if ( part.getSubmittedFileName() == null ) {
-                        String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
-                        if ( logicalColumn.name.equals( "_id" ) ) {
-                            if ( value.isEmpty() ) {
-                                value = BsonUtil.getObjectId();
-                            }
-                        }
-                        values.add( uiValueToSql( value, logicalColumn.type, logicalColumn.collectionsType ) );
-                    } else {
-                        values.add( "?" );
-                        FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
-                        statement.getDataContext().addParameterValues( i++, logicalColumn.getAlgDataType( transaction.getTypeFactory() ), ImmutableList.of( PolyBlob.of( fih.getData() ) ) );
-                    }
-                }
-            }
-        } catch ( ServletException e ) {
-            throw new GenericRuntimeException( e );
-        }
-
-        String query = String.format( "INSERT INTO %s %s VALUES %s", entityName, columns, values );
-        QueryLanguage language = QueryLanguage.from( "sql" );
-        QueryContext context = QueryContext.builder()
-                .query( query )
-                .language( language )
-                .origin( ORIGIN )
-                .statement( statement )
-                .transactions( new ArrayList<>( List.of( transaction ) ) )
-                .transactionManager( transactionManager )
-                .build();
-
-        UIRequest request = UIRequest.builder().build();
-        Result<?, ?> result = LanguageCrud.anyQueryResult( context, request ).get( 0 );
-        ctx.json( result );
-
     }
 
     /**
@@ -1834,28 +1736,237 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }*/
 
 
+    private long copyCollectionDocuments( LogicalCollection sourceCollection, String sourceNamespace, String targetCollectionName, String targetNamespace ) {
+        Transaction transaction = getTransaction();
+        ImplementationContext implementationContext = null;
+        ResultIterator iterator = null;
+        boolean committed = false;
+        try {
+            implementationContext = LanguageManager.getINSTANCE().anyPrepareQuery(
+                    QueryContext.builder()
+                            .query( String.format( "db.%s.find({})", sourceCollection.name ) )
+                            .language( QueryLanguage.from( "mql" ) )
+                            .origin( ORIGIN )
+                            .namespaceId( LanguageCrud.getNamespaceIdOrDefault( sourceNamespace ) )
+                            .batch( DOCUMENT_MATERIALIZATION_COPY_BATCH_SIZE )
+                            .transactions( List.of( transaction ) )
+                            .transactionManager( transactionManager )
+                            .build(), transaction ).get( 0 );
+            ExecutedContext executedContext = implementationContext.execute( implementationContext.getStatement() );
+            if ( executedContext.getException().isPresent() ) {
+                throw new GenericRuntimeException( executedContext.getException().get().getMessage() );
+            }
+
+            iterator = executedContext.getIterator();
+            long copiedDocuments = 0;
+            while ( true ) {
+                List<List<PolyValue>> batch = iterator.getNextBatch( DOCUMENT_MATERIALIZATION_COPY_BATCH_SIZE );
+                if ( batch.isEmpty() ) {
+                    transaction.commit();
+                    committed = true;
+                    return copiedDocuments;
+                }
+
+                String[] documents = batch.stream()
+                        .map( row -> row.get( 0 ).toJson() )
+                        .toArray( String[]::new );
+                Result<?, ?> insertResult = executeMql( buildInsertManyQuery( targetCollectionName, documents ), targetNamespace, false );
+                if ( insertResult.error != null ) {
+                    throw new GenericRuntimeException( insertResult.error );
+                }
+                copiedDocuments += documents.length;
+            }
+        } catch ( Exception e ) {
+            if ( !committed ) {
+                transaction.rollback( "Error while copying source collection documents: " + e.getMessage() );
+            }
+            if ( e instanceof GenericRuntimeException ) {
+                throw (GenericRuntimeException) e;
+            }
+            throw new GenericRuntimeException( e );
+        } finally {
+            if ( iterator != null ) {
+                iterator.close();
+            }
+        }
+    }
+
+
+    private Result<?, ?> copyRelationalTableRows( LogicalTable sourceTable, String sourceTableName, String targetTable, List<LogicalColumn> columns ) {
+        String columnList = columns.stream()
+                .map( column -> quoteIdentifier( column.name ) )
+                .collect( Collectors.joining( ", " ) );
+        String orderBy = buildMaterializationCopyOrderBy( sourceTable, columns );
+        long rowCount = countRelationalTableRows( sourceTableName );
+        long copiedRows = 0;
+        for ( long offset = 0; offset < rowCount; offset += RELATIONAL_MATERIALIZATION_COPY_BATCH_SIZE ) {
+            String insertQuery = String.format(
+                    "INSERT INTO %s (%s) SELECT %s FROM %s%s LIMIT %d OFFSET %d",
+                    targetTable,
+                    columnList,
+                    columnList,
+                    sourceTableName,
+                    orderBy,
+                    RELATIONAL_MATERIALIZATION_COPY_BATCH_SIZE,
+                    offset );
+            Result<?, ?> insertResult = executeSql( insertQuery );
+            if ( insertResult.error != null ) {
+                return insertResult;
+            }
+            copiedRows += insertResult.affectedTuples;
+        }
+        return RelationalResult.builder()
+                .query( buildBatchedRelationalCopyQueryDescription( targetTable, sourceTableName ) )
+                .queryType( QueryType.DML )
+                .affectedTuples( copiedRows )
+                .build();
+    }
+
+
+    private long countRelationalTableRows( String tableName ) {
+        RelationalResult countResult = (RelationalResult) executeSql( "SELECT COUNT(*) FROM " + tableName );
+        if ( countResult.error != null ) {
+            throw new GenericRuntimeException( countResult.error );
+        }
+        if ( countResult.data == null || countResult.data.length == 0 || countResult.data[0].length == 0 ) {
+            return 0;
+        }
+        return Long.parseLong( countResult.data[0][0] );
+    }
+
+
+    private Result<?, ?> executeSql( String query ) {
+        return LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( QueryLanguage.from( "sql" ) )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), UIRequest.builder().build() ).get( 0 );
+    }
+
+
+    private Result<?, ?> executeMql( String query, String namespace, boolean noLimit ) {
+        return LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( QueryLanguage.from( "mql" ) )
+                        .origin( ORIGIN )
+                        .namespaceId( LanguageCrud.getNamespaceIdOrDefault( namespace ) )
+                        .batch( noLimit ? -1 : getPageSize() )
+                        .transactionManager( transactionManager )
+                        .build(), UIRequest.builder()
+                        .namespace( namespace )
+                        .noLimit( noLimit )
+                        .build() ).get( 0 );
+    }
+
+
+    private String buildCreateMaterializationTableQuery( String targetTable, String targetStoreName, LogicalTable sourceTable, List<LogicalColumn> columns ) {
+        StringJoiner columnJoiner = new StringJoiner( ", " );
+        for ( LogicalColumn column : columns ) {
+            columnJoiner.add( buildMaterializationColumnDefinition( column ) );
+        }
+
+        if ( sourceTable.primaryKey != null ) {
+            LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( sourceTable.primaryKey ).orElse( null );
+            if ( primaryKey != null ) {
+                String primaryKeyColumns = primaryKey.getFieldNames().stream()
+                        .map( Crud::quoteIdentifier )
+                        .collect( Collectors.joining( ", " ) );
+                columnJoiner.add( "PRIMARY KEY (" + primaryKeyColumns + ")" );
+            }
+        }
+
+        return String.format( "CREATE TABLE %s (%s) ON STORE %s", targetTable, columnJoiner, quoteIdentifier( targetStoreName ) );
+    }
+
+
     /**
-     * Converts a String, such as "'12:00:00'" into a valid SQL statement, such as "TIME '12:00:00'"
+     * Initialize a multipart request, so that the values can be fetched with request.raw().getPart( name )
      */
-    public static String uiValueToSql( final String value, final PolyType type, final PolyType collectionsType ) {
-        if ( value == null ) {
-            return "NULL";
+    private void initMultipart( final Context ctx ) {
+        //see https://stackoverflow.com/questions/34746900/sparkjava-upload-file-didt-work-in-spark-java-framework
+        String location = System.getProperty( "java.io.tmpdir" + File.separator + "Polypheny-DB" );
+        long maxSizeMB = RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger();
+        long maxFileSize = 1_000_000L * maxSizeMB;
+        long maxRequestSize = 1_000_000L * maxSizeMB;
+        int fileSizeThreshold = 1024;
+        MultipartConfigElement multipartConfigElement = new MultipartConfigElement( location, maxFileSize, maxRequestSize, fileSizeThreshold );
+        ctx.attribute( "org.eclipse.jetty.multipartConfig", multipartConfigElement );
+    }
+
+
+    /**
+     * Insert data into a table
+     */
+    void insertTuple( final Context ctx ) throws IOException {
+        ctx.contentType( "multipart/form-data" );
+        initMultipart( ctx );
+        String unparsed = ctx.formParam( "entityId" );
+        if ( unparsed == null ) {
+            throw new GenericRuntimeException( "Error on tuple insert" );
         }
-        if ( collectionsType == PolyType.ARRAY ) {
-            return "ARRAY " + value;
+
+        long entityId = Long.parseLong( unparsed );
+
+        LogicalTable table = Catalog.snapshot().rel().getTable( entityId ).orElseThrow();
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( table.namespaceId ).orElseThrow();
+        String entityName = String.format( "\"%s\".\"%s\"", namespace.name, table.name );
+
+        Transaction transaction = getTransaction();
+        Statement statement = transaction.createStatement();
+        StringJoiner columns = new StringJoiner( ",", "(", ")" );
+        StringJoiner values = new StringJoiner( ",", "(", ")" );
+
+        List<LogicalColumn> logicalColumns = Catalog.snapshot().rel().getColumns( table.id );
+        try {
+            int i = 0;
+            for ( LogicalColumn logicalColumn : logicalColumns ) {
+                //part is null if it does not exist
+                Part part = ctx.req().getPart( logicalColumn.name );
+                if ( part == null ) {
+                    //don't add if default value is set
+                    if ( logicalColumn.defaultValue == null ) {
+                        values.add( "NULL" );
+                        columns.add( "\"" + logicalColumn.name + "\"" );
+                    }
+                } else {
+                    columns.add( "\"" + logicalColumn.name + "\"" );
+                    if ( part.getSubmittedFileName() == null ) {
+                        String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+                        if ( logicalColumn.name.equals( "_id" ) ) {
+                            if ( value.isEmpty() ) {
+                                value = BsonUtil.getObjectId();
+                            }
+                        }
+                        values.add( uiValueToSql( value, logicalColumn.type, logicalColumn.collectionsType ) );
+                    } else {
+                        values.add( "?" );
+                        FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
+                        statement.getDataContext().addParameterValues( i++, logicalColumn.getAlgDataType( transaction.getTypeFactory() ), ImmutableList.of( PolyBlob.of( fih.getData() ) ) );
+                    }
+                }
+            }
+        } catch ( ServletException e ) {
+            throw new GenericRuntimeException( e );
         }
-        switch ( type ) {
-            case TIME:
-                return String.format( "TIME '%s'", value );
-            case DATE:
-                return String.format( "DATE '%s'", value );
-            case TIMESTAMP:
-                return String.format( "TIMESTAMP '%s'", value );
-        }
-        if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
-            return String.format( "'%s'", value );
-        }
-        return value;
+
+        String query = String.format( "INSERT INTO %s %s VALUES %s", entityName, columns, values );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        QueryContext context = QueryContext.builder()
+                .query( query )
+                .language( language )
+                .origin( ORIGIN )
+                .statement( statement )
+                .transactions( new ArrayList<>( List.of( transaction ) ) )
+                .transactionManager( transactionManager )
+                .build();
+
+        UIRequest request = UIRequest.builder().build();
+        Result<?, ?> result = LanguageCrud.anyQueryResult( context, request ).get( 0 );
+        ctx.json( result );
+
     }
 
 
@@ -2530,19 +2641,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static String getDropConstraintQuery( ConstraintRequest request, String fullEntityName ) {
-        String query;
-        if ( request.constraint.type.equals( ConstraintType.PRIMARY.name() ) ) {
-            query = String.format( "ALTER TABLE %s DROP PRIMARY KEY", fullEntityName );
-        } else if ( request.constraint.type.equals( ConstraintType.FOREIGN.name() ) ) {
-            query = String.format( "ALTER TABLE %s DROP FOREIGN KEY \"%s\"", fullEntityName, request.constraint.name );
-        } else {
-            query = String.format( "ALTER TABLE %s DROP CONSTRAINT \"%s\"", fullEntityName, request.constraint.name );
-        }
-        return query;
-    }
-
-
     /**
      * Add a primary key to a table
      */
@@ -2684,27 +2782,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         ctx.json( RelationalResult.builder().header( header.toArray( new UiColumnDefinition[0] ) ).data( data.toArray( new String[0][] ) ).build() );
-    }
-
-
-    /**
-     * Formats the options of an index for display, rendering well-known keys in a stable, readable order.
-     */
-    private static String formatIndexOptions( Map<String, String> options ) {
-        if ( options == null || options.isEmpty() ) {
-            return "";
-        }
-        StringJoiner joiner = new StringJoiner( ", " );
-        Map<String, String> remaining = new LinkedHashMap<>( options );
-        for ( String key : List.of( "metric", "m", "ef_construction", "lists" ) ) {
-            String value = remaining.remove( key );
-            if ( value != null ) {
-                joiner.add( key + "=" + value );
-            }
-        }
-        // Append any remaining, less common options
-        remaining.forEach( ( key, value ) -> joiner.add( key + "=" + value ) );
-        return joiner.toString();
     }
 
 
@@ -2908,21 +2985,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         return constructedRow;
-    }
-
-
-    private static String getDefaultValue( PartitioningRequest request, PartitionFunctionInfoColumn currentColumn, FieldType type ) {
-        String defaultValue = currentColumn.getDefaultValue();
-
-        // Used specifically for Temp-Partitioning since number of selected partitions remains 2 but chunks change
-        // enables user to use selected "number of partitions" being used as default value for "number of internal data chunks"
-        if ( request.method.equals( PartitionType.TEMPERATURE ) ) {
-
-            if ( type.equals( FieldType.STRING ) && currentColumn.getDefaultValue().equals( "-04071993" ) ) {
-                defaultValue = String.valueOf( request.numPartitions );
-            }
-        }
-        return defaultValue;
     }
 
 
@@ -3279,26 +3341,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static String handleUploadFiles( Map<String, InputStream> inputStreams, List<String> fileNames, AbstractAdapterSettingDirectory setting, AdapterModel a ) {
-        if ( fileNames.isEmpty() ) {
-            throw new GenericRuntimeException( "No file or directory specified for upload!" );
-        }
-        for ( String fileName : fileNames ) {
-            setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
-        }
-        File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + a.name );
-        for ( Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
-            try {
-                File file = new File( path, is.getKey() );
-                FileUtils.copyInputStreamToFile( is.getValue(), file );
-            } catch ( IOException e ) {
-                throw new GenericRuntimeException( e );
-            }
-        }
-        return path.getAbsolutePath();
-    }
-
-
     /**
      * Remove an existing storeId or source
      */
@@ -3608,6 +3650,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         getFile( ctx, "tmp", true );
     }
 
+    // -----------------------------------------------------------------------
+    //                                Helper
+    // -----------------------------------------------------------------------
+
 
     private File getFile( Context ctx, String location, boolean sendBack ) {
         String fileName = ctx.pathParam( "file" );
@@ -3733,10 +3779,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         };
     }
 
-    // -----------------------------------------------------------------------
-    //                                Helper
-    // -----------------------------------------------------------------------
-
 
     /**
      * Get the Number of rows in a table
@@ -3823,28 +3865,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     public Transaction getTransaction() {
         return getTransaction( true, this );
-    }
-
-
-    public static Transaction getTransaction( boolean useCache, TransactionManager transactionManager, long userId, long databaseId ) {
-        return getTransaction( useCache, transactionManager, userId, databaseId, ORIGIN );
-    }
-
-
-    public static Transaction getTransaction( boolean useCache, TransactionManager transactionManager, long userId, long namespaceId, String origin ) {
-        Transaction transaction = transactionManager.startTransaction(
-                userId,
-                namespaceId,
-                null,
-                origin,
-                MultimediaFlavor.FILE );
-        transaction.setUseCache( useCache );
-        return transaction;
-    }
-
-
-    public static Transaction getTransaction( boolean useCache, Crud crud ) {
-        return getTransaction( useCache, crud.transactionManager, Catalog.defaultUserId, Catalog.defaultNamespaceId );
     }
 
 
@@ -4034,33 +4054,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    /**
-     * Helper method to zip a directory
-     */
-    private static void zipDirectory( String basePath, File dir, ZipOutputStream zipOut ) throws IOException {
-        byte[] buffer = new byte[4096];
-        File[] files = dir.listFiles();
-        assert files != null;
-        for ( File file : files ) {
-            if ( file.isDirectory() ) {
-                String path = basePath + file.getName() + "/";
-                zipOut.putNextEntry( new ZipEntry( path ) );
-                zipDirectory( path, file, zipOut );
-                zipOut.closeEntry();
-            } else {
-                FileInputStream fin = new FileInputStream( file );
-                zipOut.putNextEntry( new ZipEntry( basePath + file.getName() ) );
-                int length;
-                while ( (length = fin.read( buffer )) > 0 ) {
-                    zipOut.write( buffer, 0, length );
-                }
-                zipOut.closeEntry();
-                fin.close();
-            }
-        }
-    }
-
-
     public void getAvailablePlugins( Context ctx ) {
         ctx.json( PolyPluginManager
                 .getPLUGINS()
@@ -4074,6 +4067,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     @Override
     public void propertyChange( PropertyChangeEvent evt ) {
         authCrud.broadcast( SnapshotModel.from( Catalog.snapshot() ) );
+    }
+
+
+    public record SourceMaterializationRefreshResult( List<String> changeDescriptions, Long dataRefreshRowCount, boolean sourceEntityDeleted ) {
+
     }
 
 

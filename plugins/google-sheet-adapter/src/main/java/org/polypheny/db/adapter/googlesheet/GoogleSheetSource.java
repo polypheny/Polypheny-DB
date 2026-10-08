@@ -89,27 +89,23 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @AdapterSettingString(name = "sheetName", description = "Name of sheet to use.", defaultValue = "")
 public class GoogleSheetSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
-    @Delegate(excludes = Excludes.class)
-    private final RelationalScanDelegate delegate;
-
+    public static final File TOKENS_PATH = PolyphenyHomeDirManager.getInstance().registerNewFolder( "tokens" );
     static final String APPLICATION_NAME = "POLYPHENY GOOGLE SHEET";
     static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     static final List<String> SCOPES = Collections.singletonList( SheetsScopes.SPREADSHEETS_READONLY );
     public final String clientId;
     public final String clientKey;
-
-    public static final File TOKENS_PATH = PolyphenyHomeDirManager.getInstance().registerNewFolder( "tokens" );
     public final String sheet;
-    private URL sheetsUrl;
+    @Delegate(excludes = Excludes.class)
+    private final RelationalScanDelegate delegate;
     private final int querySize;
-
-    @Getter
-    private GoogleSheetNamespace currentNamespace;
     private final int maxStringLength;
-
     @Getter
     @Setter
     Credential credentials;
+    private URL sheetsUrl;
+    @Getter
+    private GoogleSheetNamespace currentNamespace;
 
 
     public GoogleSheetSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {

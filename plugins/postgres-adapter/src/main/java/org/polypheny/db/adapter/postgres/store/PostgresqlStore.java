@@ -114,7 +114,8 @@ import org.polypheny.db.util.PasswordGenerator;
 public class PostgresqlStore extends AbstractJdbcStore {
 
     private static final int POSTGRESQL_TEXT_VARCHAR_PRECISION = 10 * 1024 * 1024;
-
+    @Getter
+    private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
     private String host;
     private int port;
     private String database;
@@ -127,8 +128,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
-    @Getter
-    private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
+    private static String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
+        return String.format( "jdbc:postgresql://%s:%d/%s", dbHostname, dbPort, dbName );
+    }
 
 
     @Override
@@ -579,11 +581,6 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public String getDefaultPhysicalSchemaName() {
         return "public";
-    }
-
-
-    private static String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
-        return String.format( "jdbc:postgresql://%s:%d/%s", dbHostname, dbPort, dbName );
     }
 
 

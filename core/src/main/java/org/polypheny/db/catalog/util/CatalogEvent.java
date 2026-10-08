@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package org.polypheny.db.catalog.util;
 public enum CatalogEvent {
     ///////////////////////////////////////////
     // relational /////////////////////////////
-    ///////////////////////////////////////////
+    /// ////////////////////////////////////////
 
     //- logical -----------------------------//
     LOGICAL_REL_ENTITY_CREATED(),
@@ -45,7 +45,7 @@ public enum CatalogEvent {
 
     ///////////////////////////////////////////
     // document ///////////////////////////////
-    ///////////////////////////////////////////
+    /// ////////////////////////////////////////
     LOGICAL_DOC_ENTITY_CREATED(),
     LOGICAL_DOC_ENTITY_DROPPED(),
     LOGICAL_DOC_ENTITY_RENAMED(),
@@ -54,7 +54,7 @@ public enum CatalogEvent {
 
     //////////////////////////////////////////
     // graph /////////////////////////////////
-    //////////////////////////////////////////
+    /// ///////////////////////////////////////
 
     LOGICAL_GRAPH_ENTITY_CREATED(),
     LOGICAL_GRAPH_ENTITY_DROPPED(),

@@ -247,6 +247,7 @@ public final class SourceQueryReferenceDetector {
         return referencedName != null && referencedName.equalsIgnoreCase( entityName );
     }
 
+
     private record EntityReference( String namespaceName, String entityName ) {
 
         private static EntityReference fromIdentifier( List<String> names ) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,27 +65,14 @@ import org.polypheny.db.webui.models.results.Result;
 @Slf4j
 public class WebSocket implements Consumer<WsConfig> {
 
-    private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     public static final String POLYPHENY_UI = "Polypheny-UI";
+    private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final Crud crud;
     private final ConcurrentHashMap<String, Set<String>> queryAnalyzers = new ConcurrentHashMap<>();
 
 
     WebSocket( Crud crud ) {
         this.crud = crud;
-    }
-
-
-    public void connected( final WsConnectContext ctx ) {
-        log.debug( "UI connected to WebSocket" );
-        sessions.add( ctx.session );
-    }
-
-
-    public void closed( WsCloseContext ctx ) {
-        log.debug( "UI disconnected from WebSocket" );
-        sessions.remove( ctx.session );
-        Crud.cleanupOldSession( queryAnalyzers, ctx.sessionId() );
     }
 
 
@@ -105,6 +92,19 @@ public class WebSocket implements Consumer<WsConfig> {
         } catch ( IOException e ) {
             log.error( "Could not send WebSocket message to UI", e );
         }
+    }
+
+
+    public void connected( final WsConnectContext ctx ) {
+        log.debug( "UI connected to WebSocket" );
+        sessions.add( ctx.session );
+    }
+
+
+    public void closed( WsCloseContext ctx ) {
+        log.debug( "UI disconnected from WebSocket" );
+        sessions.remove( ctx.session );
+        Crud.cleanupOldSession( queryAnalyzers, ctx.sessionId() );
     }
 
 
@@ -302,7 +302,6 @@ public class WebSocket implements Consumer<WsConfig> {
                 }
                 ctx.send( refreshResult );
                 break;
-
 
             case "EntityRequest":
                 Result<?, ?> result;

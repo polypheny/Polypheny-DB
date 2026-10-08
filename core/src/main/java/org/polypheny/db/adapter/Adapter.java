@@ -57,24 +57,19 @@ import org.polypheny.db.transaction.PolyXid;
 @Slf4j
 public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scannable, Expressible {
 
-    private final AdapterProperties properties;
-    protected final DeployMode deployMode;
-    protected String deploymentId;
     public final String adapterName;
     public final ACatalog adapterCatalog;
-
-
     public final long adapterId;
-    private final String uniqueName;
-
+    protected final DeployMode deployMode;
     protected final Map<String, String> settings;
-
     protected final InformationPage informationPage;
     protected final List<InformationGroup> informationGroups;
     protected final List<Information> informationElements;
-    private ConfigListener listener;
-
+    private final AdapterProperties properties;
+    private final String uniqueName;
     private final Map<Long, Namespace> namespaces = new ConcurrentHashMap<>();
+    protected String deploymentId;
+    private ConfigListener listener;
 
 
     public Adapter( long adapterId, String uniqueName, Map<String, String> settings, DeployMode mode, ACatalog catalog ) {
@@ -108,6 +103,39 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
     }
 
 
+    public static List<AbstractAdapterSetting> getAvailableSettings( Class<?> clazz ) {
+        return AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations() );
+    }
+
+
+    public static void validateSettings( Class<? extends Adapter> adapterClass, DeployMode deployMode, @Nullable Map<String, String> oldSettings, Map<String, String> newSettings, boolean initialSetup ) {
+        for ( AbstractAdapterSetting s : getAvailableSettings( adapterClass ) ) {
+            // we only need to check settings which apply to the used mode
+            if ( !s.appliesTo.contains( deployMode ) ) {
+                continue;
+            }
+
+            if ( newSettings.containsKey( s.name ) ) {
+                String newValue = newSettings.get( s.name );
+                s.validate( newValue );
+                if ( s.modifiable || initialSetup ) {
+                    if ( !s.canBeNull && newValue == null ) {
+                        throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be null." );
+                    }
+                } else {
+                    assert oldSettings != null;
+                    if ( !newValue.equals( oldSettings.get( s.name ) ) ) {
+                        throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
+                    }
+                }
+            } else if ( s.required && initialSetup ) {
+                throw new GenericRuntimeException( "Setting \"" + s.name + "\" must be present." );
+            }
+        }
+
+    }
+
+
     @Override
     public Expression asExpression() {
         return Expressions.convert_( Expressions.call( Expressions.call( AdapterManager.ADAPTER_MANAGER_EXPRESSION, "getAdapter", Expressions.constant( adapterId ) ), "orElseThrow" ), Adapter.class );
@@ -136,20 +164,20 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
 
     public abstract void updateNamespace( String name, long id );
 
+
     public abstract Namespace getCurrentNamespace();
+
 
     public abstract void truncate( Context context, long allocId );
 
+
     public abstract boolean prepare( PolyXid xid );
+
 
     public abstract void commit( PolyXid xid );
 
+
     public abstract void rollback( PolyXid xid );
-
-
-    public static List<AbstractAdapterSetting> getAvailableSettings( Class<?> clazz ) {
-        return AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations() );
-    }
 
 
     public void shutdownAndRemoveListeners() {
@@ -189,34 +217,6 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
         List<String> updatedSettings = this.applySettings( newSettings );
         this.reloadSettings( updatedSettings );
         Catalog.getInstance().updateAdapterSettings( getAdapterId(), newSettings );
-    }
-
-
-    public static void validateSettings( Class<? extends Adapter> adapterClass, DeployMode deployMode, @Nullable Map<String, String> oldSettings, Map<String, String> newSettings, boolean initialSetup ) {
-        for ( AbstractAdapterSetting s : getAvailableSettings( adapterClass ) ) {
-            // we only need to check settings which apply to the used mode
-            if ( !s.appliesTo.contains( deployMode ) ) {
-                continue;
-            }
-
-            if ( newSettings.containsKey( s.name ) ) {
-                String newValue = newSettings.get( s.name );
-                s.validate( newValue );
-                if ( s.modifiable || initialSetup ) {
-                    if ( !s.canBeNull && newValue == null ) {
-                        throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be null." );
-                    }
-                } else {
-                    assert oldSettings != null;
-                    if ( !newValue.equals( oldSettings.get( s.name ) ) ) {
-                        throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
-                    }
-                }
-            } else if ( s.required && initialSetup ) {
-                throw new GenericRuntimeException( "Setting \"" + s.name + "\" must be present." );
-            }
-        }
-
     }
 
 

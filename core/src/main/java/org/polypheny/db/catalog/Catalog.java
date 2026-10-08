@@ -48,29 +48,24 @@ import org.polypheny.db.util.RunMode;
 
 public abstract class Catalog implements ExtensionPoint {
 
+    public static final Expression CATALOG_EXPRESSION = Expressions.call( Catalog.class, "getInstance" );
+    public static final Expression SNAPSHOT_EXPRESSION = Expressions.call( Catalog.class, "snapshot" );
+    public static final Function<Long, Expression> PHYSICAL_EXPRESSION = id -> Expressions.call( CATALOG_EXPRESSION, "getAdapterCatalog", Expressions.constant( id ) );
     public static String DATABASE_NAME = "APP";
     public static String USER_NAME = "pa"; // change with user management
-
     public static AdapterTemplate defaultStore;
     public static AdapterTemplate defaultSource;
     public static long defaultUserId = 0;
     public static String DEFAULT_NAMESPACE_NAME = "public";
     public static long defaultNamespaceId = 0;
     public static boolean resetDocker;
-
-    protected static List<Runnable> afterInit = new ArrayList<>();
-
-    protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
-    public boolean isPersistent = false;
-    private static Catalog INSTANCE = null;
     public static boolean resetCatalog;
     public static boolean memoryCatalog;
     public static RunMode mode;
-
-    public static final Expression CATALOG_EXPRESSION = Expressions.call( Catalog.class, "getInstance" );
-
-    public static final Expression SNAPSHOT_EXPRESSION = Expressions.call( Catalog.class, "snapshot" );
-    public static final Function<Long, Expression> PHYSICAL_EXPRESSION = id -> Expressions.call( CATALOG_EXPRESSION, "getAdapterCatalog", Expressions.constant( id ) );
+    protected static List<Runnable> afterInit = new ArrayList<>();
+    private static Catalog INSTANCE = null;
+    protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+    public boolean isPersistent = false;
 
 
     public static Catalog setAndGetInstance( Catalog catalog ) {
@@ -95,32 +90,49 @@ public abstract class Catalog implements ExtensionPoint {
     }
 
 
+    public static Snapshot snapshot() {
+        return INSTANCE.getSnapshot();
+    }
+
+
     public abstract void init();
+
 
     public abstract void updateSnapshot();
 
+
     public abstract void change();
+
 
     public abstract String getJson();
 
+
     public abstract void commit();
+
 
     public abstract void rollback();
 
+
     public abstract LogicalRelationalCatalog getLogicalRel( long namespaceId );
 
+
     public abstract LogicalDocumentCatalog getLogicalDoc( long namespaceId );
+
 
     public abstract LogicalGraphCatalog getLogicalGraph( long namespaceId );
 
 
     public abstract AllocationRelationalCatalog getAllocRel( long namespaceId );
 
+
     public abstract AllocationDocumentCatalog getAllocDoc( long namespaceId );
+
 
     public abstract AllocationGraphCatalog getAllocGraph( long namespaceId );
 
+
     public abstract Optional<AdapterCatalog> getAdapterCatalog( long id );
+
 
     public abstract void addStoreSnapshot( AdapterCatalog snapshot );
 
@@ -183,6 +195,7 @@ public abstract class Catalog implements ExtensionPoint {
      */
     public abstract long createNamespace( String name, DataModel dataModel, boolean caseSensitive, boolean hidden );
 
+
     /**
      * Add an adapter
      *
@@ -195,6 +208,7 @@ public abstract class Catalog implements ExtensionPoint {
      */
     public abstract long createAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode );
 
+
     /**
      * Update settings of an adapter
      *
@@ -202,6 +216,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param newSettings The new settings for the adapter
      */
     public abstract void updateAdapterSettings( long adapterId, Map<String, String> newSettings );
+
 
     /**
      * Delete an adapter
@@ -221,6 +236,7 @@ public abstract class Catalog implements ExtensionPoint {
      */
     public abstract long createQueryInterface( String uniqueName, String interfaceName, Map<String, String> settings );
 
+
     /**
      * Delete a query interface
      *
@@ -228,17 +244,14 @@ public abstract class Catalog implements ExtensionPoint {
      */
     public abstract void dropQueryInterface( long id );
 
+
     public abstract void close();
+
 
     public abstract void clear();
 
 
     public abstract Snapshot getSnapshot();
-
-
-    public static Snapshot snapshot() {
-        return INSTANCE.getSnapshot();
-    }
 
 
     public abstract Map<Long, LogicalUser> getUsers();

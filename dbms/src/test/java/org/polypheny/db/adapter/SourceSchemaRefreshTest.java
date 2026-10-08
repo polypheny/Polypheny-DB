@@ -46,6 +46,24 @@ class SourceSchemaRefreshTest {
     private static final String PASSWORD = "polypheny";
 
 
+    private static List<String> getPrimaryKeyColumnNames( long entityId ) {
+        Long primaryKey = Catalog.snapshot().rel().getTable( entityId ).orElseThrow().primaryKey;
+        if ( primaryKey == null ) {
+            return List.of();
+        }
+        return Catalog.snapshot().rel().getPrimaryKey( primaryKey ).orElseThrow().fieldIds.stream()
+                .map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow().name )
+                .toList();
+    }
+
+
+    private static List<String> getForeignKeyNames( long entityId ) {
+        return Catalog.snapshot().rel().getForeignKeys( entityId ).stream()
+                .map( LogicalForeignKey::getName )
+                .toList();
+    }
+
+
     @Test
     void refreshRequestUpdatesPolyphenyColumnsAfterExternalColumnsWereAdded() throws Exception {
         Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
@@ -362,7 +380,7 @@ class SourceSchemaRefreshTest {
 
 
     @Test
-    void refreshRequestTracksForeignKeyAcrossColumnAdditionAndRemoval()throws Exception {
+    void refreshRequestTracksForeignKeyAcrossColumnAdditionAndRemoval() throws Exception {
         Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
         TestHelper.getInstance();
 
@@ -656,7 +674,7 @@ class SourceSchemaRefreshTest {
         String sourceTwoAddedTable = SOURCE_TABLE + "_source_two_added";
 
         try ( TestHelper.DockerPostgres postgresOne = TestHelper.startPostgresDocker( DATABASE, USERNAME, PASSWORD );
-              TestHelper.DockerPostgres postgresTwo = TestHelper.startPostgresDocker( DATABASE + "_two", USERNAME, PASSWORD ) ) {
+                TestHelper.DockerPostgres postgresTwo = TestHelper.startPostgresDocker( DATABASE + "_two", USERNAME, PASSWORD ) ) {
             postgresOne.execute( "CREATE TABLE public." + sourceOneTable + " (id INTEGER PRIMARY KEY, name VARCHAR(255))" );
             postgresTwo.execute( "CREATE TABLE public." + sourceTwoTable + " (id INTEGER PRIMARY KEY, city VARCHAR(255))" );
 
@@ -696,21 +714,4 @@ class SourceSchemaRefreshTest {
         }
     }
 
-
-    private static List<String> getPrimaryKeyColumnNames( long entityId ) {
-        Long primaryKey = Catalog.snapshot().rel().getTable( entityId ).orElseThrow().primaryKey;
-        if ( primaryKey == null ) {
-            return List.of();
-        }
-        return Catalog.snapshot().rel().getPrimaryKey( primaryKey ).orElseThrow().fieldIds.stream()
-                .map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow().name )
-                .toList();
-    }
-
-
-    private static List<String> getForeignKeyNames( long entityId ) {
-        return Catalog.snapshot().rel().getForeignKeys( entityId ).stream()
-                .map( LogicalForeignKey::getName )
-                .toList();
-    }
 }

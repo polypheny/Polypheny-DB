@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,6 +102,7 @@ public class XaConnectionFactory implements ConnectionFactory {
         return connection;
     }
 
+
     @Override
     public void close() throws SQLException {
         log.warn( "Not implemented!" );
@@ -155,11 +156,10 @@ public class XaConnectionFactory implements ConnectionFactory {
 
     public class XaConnectionHandler extends ConnectionHandler {
 
-        private final XAResource xaResource;
-        private Xid xid;
-
         @Getter
         protected final SqlDialect dialect;
+        private final XAResource xaResource;
+        private Xid xid;
 
 
         XaConnectionHandler( XAConnection xaConnection, SqlDialect dialect ) throws ConnectionHandlerException {

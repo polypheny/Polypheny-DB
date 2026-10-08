@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,8 +85,6 @@ public class SqlProcessor extends Processor {
 
     private static final ParserConfig parserConfig;
 
-    private PolyphenyDbSqlValidator validator;
-
 
     static {
         SqlParser.ConfigBuilder configConfigBuilder = Parser.configBuilder();
@@ -94,6 +92,9 @@ public class SqlProcessor extends Processor {
         configConfigBuilder.setQuotedCasing( Casing.UNCHANGED );
         parserConfig = configConfigBuilder.build();
     }
+
+
+    private PolyphenyDbSqlValidator validator;
 
 
     public SqlProcessor() {

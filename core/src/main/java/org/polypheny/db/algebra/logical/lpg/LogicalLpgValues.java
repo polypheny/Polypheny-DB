@@ -125,6 +125,11 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
     }
 
 
+    private static RexLiteral getStringLiteral( String value, BasicPolyType type ) {
+        return new RexLiteral( PolyString.of( value ), type, PolyType.VARCHAR );
+    }
+
+
     @Override
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<Entity> entities, Snapshot snapshot ) {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
@@ -185,11 +190,6 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
             }
         }
         return rows.build();
-    }
-
-
-    private static RexLiteral getStringLiteral( String value, BasicPolyType type ) {
-        return new RexLiteral( PolyString.of( value ), type, PolyType.VARCHAR );
     }
 
 

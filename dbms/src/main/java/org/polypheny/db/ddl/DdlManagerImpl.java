@@ -81,7 +81,6 @@ import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -146,6 +145,40 @@ public class DdlManagerImpl extends DdlManager {
 
     public DdlManagerImpl( Catalog catalog ) {
         this.catalog = catalog;
+    }
+
+
+    private static String toPhysicalTableKey( String schemaName, String tableName ) {
+        return (schemaName == null ? "" : normalizeIdentifier( schemaName )) + "." + normalizeIdentifier( tableName );
+    }
+
+
+    private static String normalizeIdentifier( String name ) {
+        return name.toLowerCase( Locale.ROOT );
+    }
+
+
+    private static void checkValidType( ColumnTypeInformation type ) {
+        // check arrays to be correctly typed
+        if ( type.type() == PolyType.ARRAY && type.collectionType() == null ) {
+            throw new GenericRuntimeException( "Array type must specify a collection type" );
+        }
+    }
+
+
+    private static void checkIndexDependent( LogicalTable table, DataStore<?> store, LogicalRelSnapshot snapshot, AllocationColumn allocationColumn ) {
+        // Check whether there are any indexes located on the storeId requiring this column
+        for ( LogicalIndex index : snapshot.getIndexes( table.id, false ) ) {
+            if ( index.location == store.getAdapterId() && index.key.fieldIds.contains( allocationColumn.columnId ) ) {
+                throw new GenericRuntimeException( "The index with name %s depends on the columns %s", index.name, snapshot.getColumn( allocationColumn.columnId ).map( c -> c.name ).orElse( "null" ) );
+            }
+        }
+    }
+
+
+    @NotNull
+    private static List<LogicalColumn> sortByPosition( List<LogicalColumn> columns ) {
+        return columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList();
     }
 
 
@@ -280,6 +313,7 @@ public class DdlManagerImpl extends DdlManager {
         }
     }
 
+
     private void createDocumentSourceCollection( DataSource<?> adapter, long namespace, ExportedDocument exportedDocument ) {
         String documentName = getUniqueEntityName( namespace, exportedDocument.name(), ( ns, en ) -> catalog.getSnapshot().doc().getCollection( ns, en ) );
         LogicalCollection logicalCollection = catalog.getLogicalDoc( namespace ).addCollection( documentName, exportedDocument.type(), exportedDocument.isModifiable() );
@@ -313,6 +347,7 @@ public class DdlManagerImpl extends DdlManager {
         importInitialSourceForeignKeys( transaction.createStatement(), adapter, exportedColumns, createdTablesByPhysicalName );
     }
 
+
     private LogicalTable createRelationalSourceTable( Transaction transaction, DataSource<?> adapter, long namespace, String exportedTableName, List<ExportedColumn> exportedColumns ) {
         String tableName = getUniqueEntityName( namespace, normalizeIdentifier( exportedTableName ), ( ns, en ) -> catalog.getSnapshot().rel().getTable( ns, en ) );
 
@@ -344,7 +379,7 @@ public class DdlManagerImpl extends DdlManager {
                     exportedColumn.cardinality(),
                     exportedColumn.nullable(),
                     exportedColumn.elementsNullable(),
-                        Collation.getDefaultCollation() );
+                    Collation.getDefaultCollation() );
 
             AllocationColumn allocationColumn = catalog.getAllocRel( namespace ).addColumn(
                     placement.id,
@@ -369,8 +404,8 @@ public class DdlManagerImpl extends DdlManager {
         buildRelationalNamespace( namespace, logical, adapter );
 
         transaction.attachCommitAction( () -> {
-                // we can execute with initial logical and allocation data as this is a source and this will not change
-                adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns, physicalSchema, physicalTable, sourcePhysicalColumnNames ) );
+            // we can execute with initial logical and allocation data as this is a source and this will not change
+            adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns, physicalSchema, physicalTable, sourcePhysicalColumnNames ) );
         } );
         catalog.updateSnapshot();
         return logical;
@@ -605,6 +640,7 @@ public class DdlManagerImpl extends DdlManager {
         statement.getQueryProcessor().resetCaches();
     }
 
+
     @Override
     public SourceRefreshDetails refreshSelectedSourcesWithDetails( List<Long> sourceIds, Statement statement ) {
         Snapshot snapshot = catalog.getSnapshot();
@@ -751,14 +787,14 @@ public class DdlManagerImpl extends DdlManager {
     private boolean isSynchronizedMaterializedSource( LogicalTable table, Snapshot snapshot ) {
         return table.entityType == EntityType.SOURCE
                 && snapshot.rel().getTables( (Pattern) null, (Pattern) null ).stream()
-                        .anyMatch( candidate -> Objects.equals( candidate.synchronizedSourceEntityId, table.id ) );
+                .anyMatch( candidate -> Objects.equals( candidate.synchronizedSourceEntityId, table.id ) );
     }
 
 
     private boolean isSynchronizedMaterializedSource( LogicalCollection collection, Snapshot snapshot ) {
         return collection.entityType == EntityType.SOURCE
                 && snapshot.doc().getCollections( (Pattern) null, (Pattern) null ).stream()
-                        .anyMatch( candidate -> Objects.equals( candidate.synchronizedSourceEntityId, collection.id ) );
+                .anyMatch( candidate -> Objects.equals( candidate.synchronizedSourceEntityId, collection.id ) );
     }
 
 
@@ -912,22 +948,6 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private record SourceTableDiscovery(
-            DataSource<?> sourceAdapter,
-            Map<String, LogicalTable> knownTablesByIdentifier,
-            Map<String, Map.Entry<String, List<ExportedColumn>>> exportedTablesByIdentifier ) {
-
-    }
-
-
-    private record SourceCollectionDiscovery(
-            DataSource<?> sourceAdapter,
-            Map<String, LogicalCollection> knownCollectionsByIdentifier,
-            Map<String, ExportedDocument> exportedCollectionsByIdentifier ) {
-
-    }
-
-
     private long getSourceNamespaceId( Long sourceId, DataSource<?> sourceAdapter, Snapshot snapshot ) {
         Optional<Long> namespaceId = snapshot.rel().getTables( (Pattern) null, (Pattern) null ).stream()
                 .filter( table -> table.entityType == EntityType.SOURCE )
@@ -988,6 +1008,7 @@ public class DdlManagerImpl extends DdlManager {
 
         return normalizeIdentifier( schemaName ) + "." + normalizedTable;
     }
+
 
     private String formatSourceCollectionIdentifier( String collectionName ) {
         if ( collectionName == null || collectionName.isBlank() ) {
@@ -1267,6 +1288,7 @@ public class DdlManagerImpl extends DdlManager {
                 .build();
     }
 
+
     @Override
     public List<String> previewSynchronizedSourceMaterializationRefresh( long entityId ) {
         return buildSynchronizedSourceMaterializationRefreshPlan( entityId ).changeDescriptions();
@@ -1506,68 +1528,6 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    @Value
-    @Builder
-    @Accessors(fluent = true)
-    private static class SynchronizedSourceMaterializationRefreshPlan {
-
-        LogicalTable connectedTable;
-        AllocationEntity connectedAllocation;
-        List<LogicalColumn> connectedColumns;
-        List<ExportedColumn> missingColumns;
-        List<LogicalColumn> droppedColumns;
-        List<LogicalColumn> changedTypeColumns;
-        Map<String, ExportedColumn> sourceColumnsByPhysicalName;
-        List<ExportedColumn> orderedSourceColumns;
-        List<ForeignKeySignature> sourceForeignKeySignatures;
-        boolean hasReorderedColumns;
-        String primaryKeyChangeDescription;
-        List<String> applicableForeignKeyChangeDescriptions;
-        List<String> changeDescriptions;
-        boolean sourceEntityDeleted;
-
-        static SynchronizedSourceMaterializationRefreshPlan empty( LogicalTable connectedTable ) {
-            return SynchronizedSourceMaterializationRefreshPlan.builder()
-                    .connectedTable( connectedTable )
-                    .connectedAllocation( null )
-                    .connectedColumns( List.of() )
-                    .missingColumns( List.of() )
-                    .droppedColumns( List.of() )
-                    .changedTypeColumns( List.of() )
-                    .sourceColumnsByPhysicalName( Map.of() )
-                    .orderedSourceColumns( List.of() )
-                    .sourceForeignKeySignatures( List.of() )
-                    .hasReorderedColumns( false )
-                    .primaryKeyChangeDescription( null )
-                    .applicableForeignKeyChangeDescriptions( List.of() )
-                    .changeDescriptions( List.of() )
-                    .sourceEntityDeleted( false )
-                    .build();
-        }
-
-
-        static SynchronizedSourceMaterializationRefreshPlan sourceDeleted( LogicalTable connectedTable, String message ) {
-            return SynchronizedSourceMaterializationRefreshPlan.builder()
-                    .connectedTable( connectedTable )
-                    .connectedAllocation( null )
-                    .connectedColumns( List.of() )
-                    .missingColumns( List.of() )
-                    .droppedColumns( List.of() )
-                    .changedTypeColumns( List.of() )
-                    .sourceColumnsByPhysicalName( Map.of() )
-                    .orderedSourceColumns( List.of() )
-                    .sourceForeignKeySignatures( List.of() )
-                    .hasReorderedColumns( false )
-                    .primaryKeyChangeDescription( null )
-                    .applicableForeignKeyChangeDescriptions( List.of() )
-                    .changeDescriptions( List.of( message ) )
-                    .sourceEntityDeleted( true )
-                    .build();
-        }
-
-    }
-
-
     private void applySourceSchemaRefreshPlan( SourceSchemaRefreshPlan refreshPlan, Statement statement ) {
         LogicalTable logicalTable = refreshPlan.logicalTable();
         AllocationEntity sourceAllocation = refreshPlan.sourceAllocation();
@@ -1637,118 +1597,6 @@ public class DdlManagerImpl extends DdlManager {
                 refreshedPkIds,
                 refreshPlan.orderedSourceColumns()
         );
-    }
-
-
-    @Value
-    @Builder
-    @Accessors(fluent = true)
-    private static class SourceSchemaRefreshPlan {
-
-        LogicalTable logicalTable;
-        AllocationEntity sourceAllocation;
-        String sourceSchemaName;
-        String sourceTableName;
-        AdapterCatalog sourceAdapterCatalog;
-        long sourceAdapterId;
-        List<LogicalColumn> currentLogicalColumns;
-        List<ExportedColumn> orderedSourceColumns;
-        List<ExportedForeignKey> sourceForeignKeys;
-        Map<String, ExportedColumn> sourceColumnsByPhysicalName;
-        List<ExportedColumn> missingColumns;
-        List<LogicalColumn> droppedColumns;
-        List<PhysicalColumn> changedTypeColumns;
-        boolean hasReorderedColumns;
-        boolean hasChangedPrimaryKey;
-        boolean hasChangedForeignKeys;
-        List<String> changeDescriptions;
-        boolean unsupported;
-        boolean sourceEntityDeleted;
-
-        static SourceSchemaRefreshPlan empty( LogicalTable table, String sourceSchemaName, String sourceTableName ) {
-            return SourceSchemaRefreshPlan.builder()
-                    .logicalTable( table )
-                    .sourceAllocation( null )
-                    .sourceSchemaName( sourceSchemaName )
-                    .sourceTableName( sourceTableName )
-                    .sourceAdapterCatalog( null )
-                    .sourceAdapterId( -1 )
-                    .currentLogicalColumns( List.of() )
-                    .orderedSourceColumns( List.of() )
-                    .sourceForeignKeys( List.of() )
-                    .sourceColumnsByPhysicalName( Map.of() )
-                    .missingColumns( List.of() )
-                    .droppedColumns( List.of() )
-                    .changedTypeColumns( List.of() )
-                    .hasReorderedColumns( false )
-                    .hasChangedPrimaryKey( false )
-                    .hasChangedForeignKeys( false )
-                    .changeDescriptions( List.of() )
-                    .unsupported( false )
-                    .sourceEntityDeleted( false )
-                    .build();
-        }
-
-
-        static SourceSchemaRefreshPlan deleted( LogicalTable table, String sourceSchemaName, String sourceTableName ) {
-            return SourceSchemaRefreshPlan.builder()
-                    .logicalTable( table )
-                    .sourceAllocation( null )
-                    .sourceSchemaName( sourceSchemaName )
-                    .sourceTableName( sourceTableName )
-                    .sourceAdapterCatalog( null )
-                    .sourceAdapterId( -1 )
-                    .currentLogicalColumns( List.of() )
-                    .orderedSourceColumns( List.of() )
-                    .sourceForeignKeys( List.of() )
-                    .sourceColumnsByPhysicalName( Map.of() )
-                    .missingColumns( List.of() )
-                    .droppedColumns( List.of() )
-                    .changedTypeColumns( List.of() )
-                    .hasReorderedColumns( false )
-                    .hasChangedPrimaryKey( false )
-                    .hasChangedForeignKeys( false )
-                    .changeDescriptions( List.of() )
-                    .unsupported( false )
-                    .sourceEntityDeleted( true )
-                    .build();
-        }
-
-
-        static SourceSchemaRefreshPlan unsupported( LogicalTable table ) {
-            return SourceSchemaRefreshPlan.builder()
-                    .logicalTable( table )
-                    .sourceAllocation( null )
-                    .sourceSchemaName( null )
-                    .sourceTableName( null )
-                    .sourceAdapterCatalog( null )
-                    .sourceAdapterId( -1 )
-                    .currentLogicalColumns( List.of() )
-                    .orderedSourceColumns( List.of() )
-                    .sourceForeignKeys( List.of() )
-                    .sourceColumnsByPhysicalName( Map.of() )
-                    .missingColumns( List.of() )
-                    .droppedColumns( List.of() )
-                    .changedTypeColumns( List.of() )
-                    .hasReorderedColumns( false )
-                    .hasChangedPrimaryKey( false )
-                    .hasChangedForeignKeys( false )
-                    .changeDescriptions( List.of() )
-                    .unsupported( true )
-                    .sourceEntityDeleted( false )
-                    .build();
-        }
-
-
-        boolean hasChanges() {
-            return !missingColumns.isEmpty()
-                    || !droppedColumns.isEmpty()
-                    || !changedTypeColumns.isEmpty()
-                    || hasReorderedColumns
-                    || hasChangedPrimaryKey
-                    || hasChangedForeignKeys;
-        }
-
     }
 
 
@@ -1895,11 +1743,6 @@ public class DdlManagerImpl extends DdlManager {
         );
 
         return new AddedSourceColumn( addedColumn, addedAllocationColumn );
-    }
-
-
-    private record AddedSourceColumn( LogicalColumn logicalColumn, AllocationColumn allocationColumn ) {
-
     }
 
 
@@ -2561,32 +2404,6 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private record ForeignKeySignature(
-            String name,
-            List<Long> columnIds,
-            long referencedTableId,
-            List<Long> referencedColumnIds,
-            ForeignKeyOption updateRule,
-            ForeignKeyOption deleteRule ) {
-
-    }
-
-    private record ForeignKeyIdentity(
-            List<Long> columnIds,
-            long referencedTableId,
-            List<Long> referencedColumnIds,
-            ForeignKeyOption updateRule,
-            ForeignKeyOption deleteRule ) {
-
-    }
-
-    private record SynchronizedForeignKeyRefreshInfo(
-            List<ForeignKeySignature> signatures,
-            List<String> blockedDescriptions ) {
-
-    }
-
-
     private String formatBlockedSynchronizedForeignKey( ExportedForeignKey foreignKey, LogicalTable referencedSourceTable ) {
         return "Foreign key " + normalizeIdentifier( foreignKey.name() )
                 + " requires synchronized materialization for source table "
@@ -2635,11 +2452,6 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private static String toPhysicalTableKey( String schemaName, String tableName ) {
-        return (schemaName == null ? "" : normalizeIdentifier( schemaName )) + "." + normalizeIdentifier( tableName );
-    }
-
-
     private LogicalTable findSourceTableByPhysicalName( Map<String, LogicalTable> sourceTablesByPhysicalName, String schemaName, String tableName ) {
         LogicalTable exactMatch = sourceTablesByPhysicalName.get( toPhysicalTableKey( schemaName, tableName ) );
         if ( exactMatch != null ) {
@@ -2653,11 +2465,6 @@ public class DdlManagerImpl extends DdlManager {
                 .distinct()
                 .toList();
         return tableMatches.size() == 1 ? tableMatches.get( 0 ) : null;
-    }
-
-
-    private static String normalizeIdentifier( String name ) {
-        return name.toLowerCase( Locale.ROOT );
     }
 
 
@@ -3329,6 +3136,7 @@ public class DdlManagerImpl extends DdlManager {
         statement.getQueryProcessor().resetCaches();
     }
 
+
     private void deleteAllocationColumn( LogicalTable table, Statement statement, AllocationColumn allocationColumn ) {
         if ( table.entityType == EntityType.ENTITY ) {
             // we use closure to cache the physical we have to delete later
@@ -3570,14 +3378,6 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private static void checkValidType( ColumnTypeInformation type ) {
-        // check arrays to be correctly typed
-        if ( type.type() == PolyType.ARRAY && type.collectionType() == null ) {
-            throw new GenericRuntimeException( "Array type must specify a collection type" );
-        }
-    }
-
-
     @Override
     public void setColumnNullable( LogicalTable table, String columnName, boolean nullable, Statement statement ) {
         LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
@@ -3777,16 +3577,6 @@ public class DdlManagerImpl extends DdlManager {
 
         // Remove columns physically
         columnsToRemove.forEach( column -> deleteAllocationColumn( table, statement, column ) );
-    }
-
-
-    private static void checkIndexDependent( LogicalTable table, DataStore<?> store, LogicalRelSnapshot snapshot, AllocationColumn allocationColumn ) {
-        // Check whether there are any indexes located on the storeId requiring this column
-        for ( LogicalIndex index : snapshot.getIndexes( table.id, false ) ) {
-            if ( index.location == store.getAdapterId() && index.key.fieldIds.contains( allocationColumn.columnId ) ) {
-                throw new GenericRuntimeException( "The index with name %s depends on the columns %s", index.name, snapshot.getColumn( allocationColumn.columnId ).map( c -> c.name ).orElse( "null" ) );
-            }
-        }
     }
 
 
@@ -4629,12 +4419,6 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         return alloc;
-    }
-
-
-    @NotNull
-    private static List<LogicalColumn> sortByPosition( List<LogicalColumn> columns ) {
-        return columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).toList();
     }
 
 
@@ -5560,6 +5344,231 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropType() {
         throw new GenericRuntimeException( "Not supported yet" );
+    }
+
+
+    private record SourceTableDiscovery(
+            DataSource<?> sourceAdapter,
+            Map<String, LogicalTable> knownTablesByIdentifier,
+            Map<String, Map.Entry<String, List<ExportedColumn>>> exportedTablesByIdentifier ) {
+
+    }
+
+
+    private record SourceCollectionDiscovery(
+            DataSource<?> sourceAdapter,
+            Map<String, LogicalCollection> knownCollectionsByIdentifier,
+            Map<String, ExportedDocument> exportedCollectionsByIdentifier ) {
+
+    }
+
+
+    @Value
+    @Builder
+    @Accessors(fluent = true)
+    private static class SynchronizedSourceMaterializationRefreshPlan {
+
+        LogicalTable connectedTable;
+        AllocationEntity connectedAllocation;
+        List<LogicalColumn> connectedColumns;
+        List<ExportedColumn> missingColumns;
+        List<LogicalColumn> droppedColumns;
+        List<LogicalColumn> changedTypeColumns;
+        Map<String, ExportedColumn> sourceColumnsByPhysicalName;
+        List<ExportedColumn> orderedSourceColumns;
+        List<ForeignKeySignature> sourceForeignKeySignatures;
+        boolean hasReorderedColumns;
+        String primaryKeyChangeDescription;
+        List<String> applicableForeignKeyChangeDescriptions;
+        List<String> changeDescriptions;
+        boolean sourceEntityDeleted;
+
+
+        static SynchronizedSourceMaterializationRefreshPlan empty( LogicalTable connectedTable ) {
+            return SynchronizedSourceMaterializationRefreshPlan.builder()
+                    .connectedTable( connectedTable )
+                    .connectedAllocation( null )
+                    .connectedColumns( List.of() )
+                    .missingColumns( List.of() )
+                    .droppedColumns( List.of() )
+                    .changedTypeColumns( List.of() )
+                    .sourceColumnsByPhysicalName( Map.of() )
+                    .orderedSourceColumns( List.of() )
+                    .sourceForeignKeySignatures( List.of() )
+                    .hasReorderedColumns( false )
+                    .primaryKeyChangeDescription( null )
+                    .applicableForeignKeyChangeDescriptions( List.of() )
+                    .changeDescriptions( List.of() )
+                    .sourceEntityDeleted( false )
+                    .build();
+        }
+
+
+        static SynchronizedSourceMaterializationRefreshPlan sourceDeleted( LogicalTable connectedTable, String message ) {
+            return SynchronizedSourceMaterializationRefreshPlan.builder()
+                    .connectedTable( connectedTable )
+                    .connectedAllocation( null )
+                    .connectedColumns( List.of() )
+                    .missingColumns( List.of() )
+                    .droppedColumns( List.of() )
+                    .changedTypeColumns( List.of() )
+                    .sourceColumnsByPhysicalName( Map.of() )
+                    .orderedSourceColumns( List.of() )
+                    .sourceForeignKeySignatures( List.of() )
+                    .hasReorderedColumns( false )
+                    .primaryKeyChangeDescription( null )
+                    .applicableForeignKeyChangeDescriptions( List.of() )
+                    .changeDescriptions( List.of( message ) )
+                    .sourceEntityDeleted( true )
+                    .build();
+        }
+
+    }
+
+
+    @Value
+    @Builder
+    @Accessors(fluent = true)
+    private static class SourceSchemaRefreshPlan {
+
+        LogicalTable logicalTable;
+        AllocationEntity sourceAllocation;
+        String sourceSchemaName;
+        String sourceTableName;
+        AdapterCatalog sourceAdapterCatalog;
+        long sourceAdapterId;
+        List<LogicalColumn> currentLogicalColumns;
+        List<ExportedColumn> orderedSourceColumns;
+        List<ExportedForeignKey> sourceForeignKeys;
+        Map<String, ExportedColumn> sourceColumnsByPhysicalName;
+        List<ExportedColumn> missingColumns;
+        List<LogicalColumn> droppedColumns;
+        List<PhysicalColumn> changedTypeColumns;
+        boolean hasReorderedColumns;
+        boolean hasChangedPrimaryKey;
+        boolean hasChangedForeignKeys;
+        List<String> changeDescriptions;
+        boolean unsupported;
+        boolean sourceEntityDeleted;
+
+
+        static SourceSchemaRefreshPlan empty( LogicalTable table, String sourceSchemaName, String sourceTableName ) {
+            return SourceSchemaRefreshPlan.builder()
+                    .logicalTable( table )
+                    .sourceAllocation( null )
+                    .sourceSchemaName( sourceSchemaName )
+                    .sourceTableName( sourceTableName )
+                    .sourceAdapterCatalog( null )
+                    .sourceAdapterId( -1 )
+                    .currentLogicalColumns( List.of() )
+                    .orderedSourceColumns( List.of() )
+                    .sourceForeignKeys( List.of() )
+                    .sourceColumnsByPhysicalName( Map.of() )
+                    .missingColumns( List.of() )
+                    .droppedColumns( List.of() )
+                    .changedTypeColumns( List.of() )
+                    .hasReorderedColumns( false )
+                    .hasChangedPrimaryKey( false )
+                    .hasChangedForeignKeys( false )
+                    .changeDescriptions( List.of() )
+                    .unsupported( false )
+                    .sourceEntityDeleted( false )
+                    .build();
+        }
+
+
+        static SourceSchemaRefreshPlan deleted( LogicalTable table, String sourceSchemaName, String sourceTableName ) {
+            return SourceSchemaRefreshPlan.builder()
+                    .logicalTable( table )
+                    .sourceAllocation( null )
+                    .sourceSchemaName( sourceSchemaName )
+                    .sourceTableName( sourceTableName )
+                    .sourceAdapterCatalog( null )
+                    .sourceAdapterId( -1 )
+                    .currentLogicalColumns( List.of() )
+                    .orderedSourceColumns( List.of() )
+                    .sourceForeignKeys( List.of() )
+                    .sourceColumnsByPhysicalName( Map.of() )
+                    .missingColumns( List.of() )
+                    .droppedColumns( List.of() )
+                    .changedTypeColumns( List.of() )
+                    .hasReorderedColumns( false )
+                    .hasChangedPrimaryKey( false )
+                    .hasChangedForeignKeys( false )
+                    .changeDescriptions( List.of() )
+                    .unsupported( false )
+                    .sourceEntityDeleted( true )
+                    .build();
+        }
+
+
+        static SourceSchemaRefreshPlan unsupported( LogicalTable table ) {
+            return SourceSchemaRefreshPlan.builder()
+                    .logicalTable( table )
+                    .sourceAllocation( null )
+                    .sourceSchemaName( null )
+                    .sourceTableName( null )
+                    .sourceAdapterCatalog( null )
+                    .sourceAdapterId( -1 )
+                    .currentLogicalColumns( List.of() )
+                    .orderedSourceColumns( List.of() )
+                    .sourceForeignKeys( List.of() )
+                    .sourceColumnsByPhysicalName( Map.of() )
+                    .missingColumns( List.of() )
+                    .droppedColumns( List.of() )
+                    .changedTypeColumns( List.of() )
+                    .hasReorderedColumns( false )
+                    .hasChangedPrimaryKey( false )
+                    .hasChangedForeignKeys( false )
+                    .changeDescriptions( List.of() )
+                    .unsupported( true )
+                    .sourceEntityDeleted( false )
+                    .build();
+        }
+
+
+        boolean hasChanges() {
+            return !missingColumns.isEmpty()
+                    || !droppedColumns.isEmpty()
+                    || !changedTypeColumns.isEmpty()
+                    || hasReorderedColumns
+                    || hasChangedPrimaryKey
+                    || hasChangedForeignKeys;
+        }
+
+    }
+
+
+    private record AddedSourceColumn( LogicalColumn logicalColumn, AllocationColumn allocationColumn ) {
+
+    }
+
+
+    private record ForeignKeySignature(
+            String name,
+            List<Long> columnIds,
+            long referencedTableId,
+            List<Long> referencedColumnIds,
+            ForeignKeyOption updateRule,
+            ForeignKeyOption deleteRule ) {
+
+    }
+
+
+    private record ForeignKeyIdentity(
+            List<Long> columnIds,
+            long referencedTableId,
+            List<Long> referencedColumnIds,
+            ForeignKeyOption updateRule,
+            ForeignKeyOption deleteRule ) {
+
+    }
+
+
+    private record SynchronizedForeignKeyRefreshInfo(
+            List<ForeignKeySignature> signatures,
+            List<String> blockedDescriptions ) {
+
     }
 
 }

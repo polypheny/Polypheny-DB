@@ -241,14 +241,6 @@ public class AlgBuilder {
     }
 
 
-    /**
-     * @return the stack size of the current builder.
-     */
-    public int stackSize() {
-        return this.stack.size();
-    }
-
-
     public static AlgBuilder create( Statement statement ) {
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
         final AlgCluster cluster = AlgCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getTransaction().getSnapshot() );
@@ -258,6 +250,129 @@ public class AlgBuilder {
 
     public static AlgBuilder create( Statement statement, AlgCluster cluster ) {
         return new AlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getSnapshot() );
+    }
+
+
+    /**
+     * Creates a {@link AlgBuilderFactory}, a partially-created AlgBuilder.
+     * Just add a {@link AlgCluster}
+     */
+    public static AlgBuilderFactory proto( final Context context ) {
+        return ( cluster, snapshot ) -> new AlgBuilder( context, cluster, snapshot );
+    }
+
+
+    /**
+     * Creates a {@link AlgBuilderFactory} that uses a given set of factories.
+     */
+    public static AlgBuilderFactory proto( Object... factories ) {
+        return proto( Contexts.of( factories ) );
+    }
+
+
+    private static ImmutableList<RelField> toFields( AlgNode node ) {
+        return ImmutableList.copyOf( node.getTupleType().getFields().stream().map( f -> new RelField( ImmutableSet.of(), f ) ).collect( Collectors.toList() ) );
+    }
+
+
+    public static RexNode literal( Object value, RexBuilder rexBuilder ) {
+        if ( value == null ) {
+            return rexBuilder.constantNull();
+        } else if ( value instanceof Boolean ) {
+            return rexBuilder.makeLiteral( (Boolean) value );
+        } else if ( value instanceof BigDecimal ) {
+            return rexBuilder.makeExactLiteral( (BigDecimal) value );
+        } else if ( value instanceof Float || value instanceof Double ) {
+            return rexBuilder.makeApproxLiteral( BigDecimal.valueOf( ((Number) value).doubleValue() ) );
+        } else if ( value instanceof Number ) {
+            return rexBuilder.makeExactLiteral( BigDecimal.valueOf( ((Number) value).longValue() ) );
+        } else if ( value instanceof String ) {
+            return rexBuilder.makeLiteral( (String) value );
+        } else if ( value instanceof byte[] ) {
+            // multimedia stream
+            return rexBuilder.makeFileLiteral( (byte[]) value );
+        } else if ( value instanceof DateString ) {
+            return rexBuilder.makeDateLiteral( (DateString) value );
+        } else if ( value instanceof TimeString ) {
+            return rexBuilder.makeTimeLiteral( (TimeString) value, value.toString().length() );
+        } else if ( value instanceof TimestampString ) {
+            return rexBuilder.makeTimestampLiteral( (TimestampString) value, value.toString().length() );
+        } else {
+            throw new IllegalArgumentException( "cannot convert " + value + " (" + value.getClass() + ") to a constant" );
+        }
+    }
+
+
+    /**
+     * Converts an iterable of lists into an immutable list of immutable lists with the same contents. Returns the same
+     * object if possible.
+     */
+    private static <E> ImmutableList<ImmutableList<E>> copy( Iterable<? extends List<E>> tupleList ) {
+        final ImmutableList.Builder<ImmutableList<E>> builder = ImmutableList.builder();
+        int changeCount = 0;
+        for ( List<E> literals : tupleList ) {
+            final ImmutableList<E> literals2 = ImmutableList.copyOf( literals );
+            builder.add( literals2 );
+            if ( literals != literals2 ) {
+                ++changeCount;
+            }
+        }
+        if ( changeCount == 0 ) {
+            // don't make a copy if we don't have to
+            //noinspection unchecked
+            return (ImmutableList<ImmutableList<E>>) tupleList;
+        }
+        return builder.build();
+    }
+
+
+    private static AlgFieldCollation collation(
+            RexNode node,
+            AlgFieldCollation.Direction direction,
+            AlgFieldCollation.NullDirection nullDirection,
+            List<RexNode> extraNodes ) {
+        switch ( node.getKind() ) {
+            case INPUT_REF:
+                return new AlgFieldCollation(
+                        ((RexIndexRef) node).getIndex(),
+                        direction,
+                        Util.first( nullDirection, direction.defaultNullDirection() ) );
+            case DESCENDING:
+                return collation(
+                        ((RexCall) node).getOperands().get( 0 ),
+                        AlgFieldCollation.Direction.DESCENDING,
+                        nullDirection,
+                        extraNodes );
+            case NULLS_FIRST:
+                return collation(
+                        ((RexCall) node).getOperands().get( 0 ),
+                        direction,
+                        AlgFieldCollation.NullDirection.FIRST,
+                        extraNodes );
+            case NULLS_LAST:
+                return collation(
+                        ((RexCall) node).getOperands().get( 0 ),
+                        direction,
+                        AlgFieldCollation.NullDirection.LAST,
+                        extraNodes );
+            default:
+                final int fieldIndex = extraNodes.size();
+                extraNodes.add( node );
+                return new AlgFieldCollation(
+                        fieldIndex,
+                        direction,
+                        Util.first( nullDirection, direction.defaultNullDirection() ) );
+        }
+    }
+
+    // Methods for manipulating the stack
+
+
+    /**
+     * @return the stack size of the current builder.
+     */
+    public int stackSize() {
+        return this.stack.size();
     }
 
 
@@ -286,25 +401,6 @@ public class AlgBuilder {
     public RexBuilder getRexBuilder() {
         return cluster.getRexBuilder();
     }
-
-
-    /**
-     * Creates a {@link AlgBuilderFactory}, a partially-created AlgBuilder.
-     * Just add a {@link AlgCluster}
-     */
-    public static AlgBuilderFactory proto( final Context context ) {
-        return ( cluster, snapshot ) -> new AlgBuilder( context, cluster, snapshot );
-    }
-
-
-    /**
-     * Creates a {@link AlgBuilderFactory} that uses a given set of factories.
-     */
-    public static AlgBuilderFactory proto( Object... factories ) {
-        return proto( Contexts.of( factories ) );
-    }
-
-    // Methods for manipulating the stack
 
 
     /**
@@ -339,11 +435,6 @@ public class AlgBuilder {
         }
 
         stack.push( new Frame( node, toFields( node ), null ) );
-    }
-
-
-    private static ImmutableList<RelField> toFields( AlgNode node ) {
-        return ImmutableList.copyOf( node.getTupleType().getFields().stream().map( f -> new RelField( ImmutableSet.of(), f ) ).collect( Collectors.toList() ) );
     }
 
 
@@ -393,6 +484,8 @@ public class AlgBuilder {
         return Iterables.get( stack, n );
     }
 
+    // Methods that return scalar expressions
+
 
     /**
      * Returns the relational expression {@code n} positions from the top of the stack, but does not remove it.
@@ -421,8 +514,6 @@ public class AlgBuilder {
         return offset;
     }
 
-    // Methods that return scalar expressions
-
 
     /**
      * Creates a literal (constant expression).
@@ -430,34 +521,6 @@ public class AlgBuilder {
     public RexNode literal( Object value ) {
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         return literal( value, rexBuilder );
-    }
-
-
-    public static RexNode literal( Object value, RexBuilder rexBuilder ) {
-        if ( value == null ) {
-            return rexBuilder.constantNull();
-        } else if ( value instanceof Boolean ) {
-            return rexBuilder.makeLiteral( (Boolean) value );
-        } else if ( value instanceof BigDecimal ) {
-            return rexBuilder.makeExactLiteral( (BigDecimal) value );
-        } else if ( value instanceof Float || value instanceof Double ) {
-            return rexBuilder.makeApproxLiteral( BigDecimal.valueOf( ((Number) value).doubleValue() ) );
-        } else if ( value instanceof Number ) {
-            return rexBuilder.makeExactLiteral( BigDecimal.valueOf( ((Number) value).longValue() ) );
-        } else if ( value instanceof String ) {
-            return rexBuilder.makeLiteral( (String) value );
-        } else if ( value instanceof byte[] ) {
-            // multimedia stream
-            return rexBuilder.makeFileLiteral( (byte[]) value );
-        } else if ( value instanceof DateString ) {
-            return rexBuilder.makeDateLiteral( (DateString) value );
-        } else if ( value instanceof TimeString ) {
-            return rexBuilder.makeTimeLiteral( (TimeString) value, value.toString().length() );
-        } else if ( value instanceof TimestampString ) {
-            return rexBuilder.makeTimestampLiteral( (TimestampString) value, value.toString().length() );
-        } else {
-            throw new IllegalArgumentException( "cannot convert " + value + " (" + value.getClass() + ") to a constant" );
-        }
     }
 
 
@@ -851,6 +914,8 @@ public class AlgBuilder {
         return call( OperatorRegistry.get( OperatorName.DESC ), node );
     }
 
+    // Methods that create group keys and aggregate calls
+
 
     /**
      * Converts a sort expression to nulls last.
@@ -866,8 +931,6 @@ public class AlgBuilder {
     public RexNode nullsFirst( RexNode node ) {
         return call( OperatorRegistry.get( OperatorName.NULLS_FIRST ), node );
     }
-
-    // Methods that create group keys and aggregate calls
 
 
     /**
@@ -1186,6 +1249,8 @@ public class AlgBuilder {
                 ImmutableList.of( operand ) );
     }
 
+    // Methods for patterns
+
 
     /**
      * Creates a call to the {@code MAX} aggregate function, optionally with an alias.
@@ -1208,8 +1273,6 @@ public class AlgBuilder {
                 alias,
                 ImmutableList.of( operand ) );
     }
-
-    // Methods for patterns
 
 
     /**
@@ -1289,6 +1352,8 @@ public class AlgBuilder {
         return getRexBuilder().makeCall( t, OperatorRegistry.get( OperatorName.PATTERN_PERMUTE ), ImmutableList.copyOf( nodes ) );
     }
 
+    // Methods that create relational expressions
+
 
     /**
      * Creates a call that creates permute patterns; for use in {@link #match}.
@@ -1305,8 +1370,6 @@ public class AlgBuilder {
         final AlgDataType t = getTypeFactory().createPolyType( PolyType.NULL );
         return getRexBuilder().makeCall( t, OperatorRegistry.get( OperatorName.PATTERN_EXCLUDE ), ImmutableList.of( node ) );
     }
-
-    // Methods that create relational expressions
 
 
     /**
@@ -2282,29 +2345,6 @@ public class AlgBuilder {
 
 
     /**
-     * Converts an iterable of lists into an immutable list of immutable lists with the same contents. Returns the same
-     * object if possible.
-     */
-    private static <E> ImmutableList<ImmutableList<E>> copy( Iterable<? extends List<E>> tupleList ) {
-        final ImmutableList.Builder<ImmutableList<E>> builder = ImmutableList.builder();
-        int changeCount = 0;
-        for ( List<E> literals : tupleList ) {
-            final ImmutableList<E> literals2 = ImmutableList.copyOf( literals );
-            builder.add( literals2 );
-            if ( literals != literals2 ) {
-                ++changeCount;
-            }
-        }
-        if ( changeCount == 0 ) {
-            // don't make a copy if we don't have to
-            //noinspection unchecked
-            return (ImmutableList<ImmutableList<E>>) tupleList;
-        }
-        return builder.build();
-    }
-
-
-    /**
      * Creates a limit without a sort.
      */
     public AlgBuilder limit( int offset, int fetch ) {
@@ -2430,46 +2470,6 @@ public class AlgBuilder {
             project( originalExtraNodes );
         }
         return this;
-    }
-
-
-    private static AlgFieldCollation collation(
-            RexNode node,
-            AlgFieldCollation.Direction direction,
-            AlgFieldCollation.NullDirection nullDirection,
-            List<RexNode> extraNodes ) {
-        switch ( node.getKind() ) {
-            case INPUT_REF:
-                return new AlgFieldCollation(
-                        ((RexIndexRef) node).getIndex(),
-                        direction,
-                        Util.first( nullDirection, direction.defaultNullDirection() ) );
-            case DESCENDING:
-                return collation(
-                        ((RexCall) node).getOperands().get( 0 ),
-                        AlgFieldCollation.Direction.DESCENDING,
-                        nullDirection,
-                        extraNodes );
-            case NULLS_FIRST:
-                return collation(
-                        ((RexCall) node).getOperands().get( 0 ),
-                        direction,
-                        AlgFieldCollation.NullDirection.FIRST,
-                        extraNodes );
-            case NULLS_LAST:
-                return collation(
-                        ((RexCall) node).getOperands().get( 0 ),
-                        direction,
-                        AlgFieldCollation.NullDirection.LAST,
-                        extraNodes );
-            default:
-                final int fieldIndex = extraNodes.size();
-                extraNodes.add( node );
-                return new AlgFieldCollation(
-                        fieldIndex,
-                        direction,
-                        Util.first( nullDirection, direction.defaultNullDirection() ) );
-        }
     }
 
 
@@ -2720,6 +2720,13 @@ public class AlgBuilder {
     }
 
 
+    private interface Field {
+
+        boolean isStructured();
+
+    }
+
+
     /**
      * Implementation of {@link GroupKey}.
      */
@@ -2751,101 +2758,6 @@ public class AlgBuilder {
             return Objects.equals( this.alias, alias )
                     ? this
                     : new GroupKeyImpl( nodes, indicator, nodeLists, alias );
-        }
-
-    }
-
-
-    /**
-     * Implementation of {@link AggCall}.
-     */
-    private class AggCallImpl implements AggCall {
-
-        private final AggFunction aggFunction;
-        private final boolean distinct;
-        private final boolean approximate;
-        private final @Nullable RexNode filter;
-        private final @Nullable String alias;
-        private final @Nonnull ImmutableList<RexNode> operands;
-        private final @Nonnull ImmutableList<RexNode> orderKeys;
-
-
-        AggCallImpl(
-                AggFunction aggFunction,
-                boolean distinct,
-                boolean approximate,
-                RexNode filter,
-                String alias,
-                ImmutableList<RexNode> operands,
-                ImmutableList<RexNode> orderKeys ) {
-            this.aggFunction = Objects.requireNonNull( aggFunction );
-            this.distinct = distinct;
-            this.approximate = approximate;
-            this.alias = alias;
-            this.operands = Objects.requireNonNull( operands );
-            this.orderKeys = Objects.requireNonNull( orderKeys );
-            if ( filter != null ) {
-                if ( filter.getType().getPolyType() != PolyType.BOOLEAN ) {
-                    throw RESOURCE.filterMustBeBoolean().ex();
-                }
-                if ( filter.getType().isNullable() ) {
-                    filter = call( OperatorRegistry.get( OperatorName.IS_TRUE ), filter );
-                }
-            }
-            this.filter = filter;
-        }
-
-
-        @Override
-        public AggCall sort( Iterable<RexNode> orderKeys ) {
-            final ImmutableList<RexNode> orderKeyList = ImmutableList.copyOf( orderKeys );
-            return orderKeyList.equals( this.orderKeys )
-                    ? this
-                    : new AggCallImpl( aggFunction, distinct, approximate, filter, alias, operands, orderKeyList );
-        }
-
-
-        @Override
-        public AggCall sort( RexNode... orderKeys ) {
-            return sort( ImmutableList.copyOf( orderKeys ) );
-        }
-
-
-        @Override
-        public AggCall approximate( boolean approximate ) {
-            return approximate == this.approximate
-                    ? this
-                    : new AggCallImpl( aggFunction, distinct, approximate, filter, alias, operands, orderKeys );
-        }
-
-
-        @Override
-        public AggCall filter( RexNode condition ) {
-            return Objects.equals( condition, this.filter )
-                    ? this
-                    : new AggCallImpl( aggFunction, distinct, approximate, condition, alias, operands, orderKeys );
-        }
-
-
-        @Override
-        public AggCall as( String alias ) {
-            return Objects.equals( alias, this.alias )
-                    ? this
-                    : new AggCallImpl( aggFunction, distinct, approximate, filter, alias, operands, orderKeys );
-        }
-
-
-        @Override
-        public AggCall distinct( boolean distinct ) {
-            return distinct == this.distinct
-                    ? this
-                    : new AggCallImpl( aggFunction, distinct, approximate, filter, alias, operands, orderKeys );
-        }
-
-
-        @Override
-        public AggCall distinct() {
-            return distinct( true );
         }
 
     }
@@ -3026,13 +2938,6 @@ public class AlgBuilder {
     }
 
 
-    private interface Field {
-
-        boolean isStructured();
-
-    }
-
-
     /**
      * A field that belongs to a stack {@link Frame}.
      */
@@ -3073,6 +2978,101 @@ public class AlgBuilder {
         @Override
         public boolean isStructured() {
             return false;
+        }
+
+    }
+
+
+    /**
+     * Implementation of {@link AggCall}.
+     */
+    private class AggCallImpl implements AggCall {
+
+        private final AggFunction aggFunction;
+        private final boolean distinct;
+        private final boolean approximate;
+        private final @Nullable RexNode filter;
+        private final @Nullable String alias;
+        private final @Nonnull ImmutableList<RexNode> operands;
+        private final @Nonnull ImmutableList<RexNode> orderKeys;
+
+
+        AggCallImpl(
+                AggFunction aggFunction,
+                boolean distinct,
+                boolean approximate,
+                RexNode filter,
+                String alias,
+                ImmutableList<RexNode> operands,
+                ImmutableList<RexNode> orderKeys ) {
+            this.aggFunction = Objects.requireNonNull( aggFunction );
+            this.distinct = distinct;
+            this.approximate = approximate;
+            this.alias = alias;
+            this.operands = Objects.requireNonNull( operands );
+            this.orderKeys = Objects.requireNonNull( orderKeys );
+            if ( filter != null ) {
+                if ( filter.getType().getPolyType() != PolyType.BOOLEAN ) {
+                    throw RESOURCE.filterMustBeBoolean().ex();
+                }
+                if ( filter.getType().isNullable() ) {
+                    filter = call( OperatorRegistry.get( OperatorName.IS_TRUE ), filter );
+                }
+            }
+            this.filter = filter;
+        }
+
+
+        @Override
+        public AggCall sort( Iterable<RexNode> orderKeys ) {
+            final ImmutableList<RexNode> orderKeyList = ImmutableList.copyOf( orderKeys );
+            return orderKeyList.equals( this.orderKeys )
+                    ? this
+                    : new AggCallImpl( aggFunction, distinct, approximate, filter, alias, operands, orderKeyList );
+        }
+
+
+        @Override
+        public AggCall sort( RexNode... orderKeys ) {
+            return sort( ImmutableList.copyOf( orderKeys ) );
+        }
+
+
+        @Override
+        public AggCall approximate( boolean approximate ) {
+            return approximate == this.approximate
+                    ? this
+                    : new AggCallImpl( aggFunction, distinct, approximate, filter, alias, operands, orderKeys );
+        }
+
+
+        @Override
+        public AggCall filter( RexNode condition ) {
+            return Objects.equals( condition, this.filter )
+                    ? this
+                    : new AggCallImpl( aggFunction, distinct, approximate, condition, alias, operands, orderKeys );
+        }
+
+
+        @Override
+        public AggCall as( String alias ) {
+            return Objects.equals( alias, this.alias )
+                    ? this
+                    : new AggCallImpl( aggFunction, distinct, approximate, filter, alias, operands, orderKeys );
+        }
+
+
+        @Override
+        public AggCall distinct( boolean distinct ) {
+            return distinct == this.distinct
+                    ? this
+                    : new AggCallImpl( aggFunction, distinct, approximate, filter, alias, operands, orderKeys );
+        }
+
+
+        @Override
+        public AggCall distinct() {
+            return distinct( true );
         }
 
     }

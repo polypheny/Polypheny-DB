@@ -321,6 +321,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
         return map;
     }
 
+
     /**
      * Resolves the set of source tables whose metadata should be read.
      * <p>
@@ -412,17 +413,19 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
         }
 
         List<ExportedColumn> list = new ArrayList<>();
-        Map<String, CollectionMetadata> cardinalities = fetchColumnMetadata( connection, schemaPattern, tableName );try ( ResultSet row = dbmd.getColumns( settings.get( "database" ), schemaPattern, tableName, "%" ) ) {
+        Map<String, CollectionMetadata> cardinalities = fetchColumnMetadata( connection, schemaPattern, tableName );
+        try ( ResultSet row = dbmd.getColumns( settings.get( "database" ), schemaPattern, tableName, "%" ) ) {
             while ( row.next() ) {
                 int jdbcDataType = row.getInt( "DATA_TYPE" );
-                        String typeName = row.getString( "TYPE_NAME" );
-                        PolyType type;
-                        PolyType collectionsType = null;
+                String typeName = row.getString( "TYPE_NAME" );
+                PolyType type;
+                PolyType collectionsType = null;
                 Integer length = null, scale = null, dimension = null, cardinality = null;
                 type = PolyType.getNameForJdbcType( jdbcDataType );
-                        if ( isNativeVectorType( typeName ) ) {
-                            type = PolyType.OTHER;
-                        }switch ( type ) {
+                if ( isNativeVectorType( typeName ) ) {
+                    type = PolyType.OTHER;
+                }
+                switch ( type ) {
                     case BOOLEAN:
                     case TINYINT:
                     case SMALLINT:
@@ -460,20 +463,22 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                         length = row.getInt( "COLUMN_SIZE" );
                         break;
                     case ARRAY:
-                            case OTHER:
-                                Optional<ColumnTypeInfo> nativeType = resolveNativeColumnType( cardinalities, typeName, row );
-                                if ( nativeType.isPresent() ) {
-                                    ColumnTypeInfo info = nativeType.get();
-                                    type = info.type;
-                                    collectionsType = info.collectionType;
-                                    length = info.length;
-                                    scale = info.scale;
-                                    dimension = info.dimension;
-                                    cardinality = info.cardinality;
-                                }
-                                break;default:
+                    case OTHER:
+                        Optional<ColumnTypeInfo> nativeType = resolveNativeColumnType( cardinalities, typeName, row );
+                        if ( nativeType.isPresent() ) {
+                            ColumnTypeInfo info = nativeType.get();
+                            type = info.type;
+                            collectionsType = info.collectionType;
+                            length = info.length;
+                            scale = info.scale;
+                            dimension = info.dimension;
+                            cardinality = info.cardinality;
+                        }
+                        break;
+                    default:
                         throw new GenericRuntimeException( "Unsupported data type: " + type.getName() );
-                }String colName = row.getString( "COLUMN_NAME" ).toLowerCase();
+                }
+                String colName = row.getString( "COLUMN_NAME" ).toLowerCase();
                 list.add( new ExportedColumn(
                         colName,
                         type,
@@ -482,7 +487,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                         scale,
                         dimension,
                         cardinality,
-                        row.getString( "IS_NULLABLE" ).equalsIgnoreCase( "YES" ),!isNativeVectorType( typeName ),
+                        row.getString( "IS_NULLABLE" ).equalsIgnoreCase( "YES" ), !isNativeVectorType( typeName ),
                         requiresSchema() ? row.getString( "TABLE_SCHEM" ) : row.getString( "TABLE_CAT" ),
                         row.getString( "TABLE_NAME" ),
                         row.getString( "COLUMN_NAME" ),
@@ -508,7 +513,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
                 String groupKey = name == null || name.isBlank()
                         ? row.getString( "FKTABLE_NAME" ) + "_" + row.getString( "PKTABLE_NAME" ) + "_" + row.getString( "PK_NAME" )
                         : name;
-                    foreignKeyColumns.computeIfAbsent( groupKey, k -> new ArrayList<>() ).add( new ImportedForeignKeyColumn(
+                foreignKeyColumns.computeIfAbsent( groupKey, k -> new ArrayList<>() ).add( new ImportedForeignKeyColumn(
                         name,
                         requiresSchema() ? row.getString( "FKTABLE_SCHEM" ) : row.getString( "FKTABLE_CAT" ),
                         row.getString( "FKTABLE_NAME" ),
@@ -553,21 +558,6 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     }
 
 
-    private record ImportedForeignKeyColumn(
-            String name,
-            String physicalSchemaName,
-            String physicalTableName,
-            String physicalColumnName,
-            String referencedPhysicalSchemaName,
-            String referencedPhysicalTableName,
-            String referencedPhysicalColumnName,
-            short keySeq,
-            ForeignKeyOption updateRule,
-            ForeignKeyOption deleteRule ) {
-
-    }
-
-
     protected void updateNativePhysical( long allocId ) {
         PhysicalTable table = adapterCatalog.fromAllocation( allocId );
         adapterCatalog.replacePhysical( this.currentJdbcSchema.createJdbcTable( table ) );
@@ -608,19 +598,6 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     }
 
 
-    @SuppressWarnings("unused")
-    public interface Exclude {
-
-        void renameLogicalColumn( long id, String newColumnName );
-
-        void updateTable( long allocId );
-
-
-        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
-
-    }
-
-
     /**
      * Resolve database-specific column type names that cannot be identified by JDBC.
      *
@@ -649,6 +626,42 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
     }
 
 
+    @Override
+    public List<String> getActiveFeatureNames() {
+        return dialect.getSupportedFeatures().stream()
+                .map( SqlDbFeature::displayName )
+                .toList();
+    }
+
+
+    @SuppressWarnings("unused")
+    public interface Exclude {
+
+        void renameLogicalColumn( long id, String newColumnName );
+
+        void updateTable( long allocId );
+
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
+
+    }
+
+
+    private record ImportedForeignKeyColumn(
+            String name,
+            String physicalSchemaName,
+            String physicalTableName,
+            String physicalColumnName,
+            String referencedPhysicalSchemaName,
+            String referencedPhysicalTableName,
+            String referencedPhysicalColumnName,
+            short keySeq,
+            ForeignKeyOption updateRule,
+            ForeignKeyOption deleteRule ) {
+
+    }
+
+
     public record ColumnTypeInfo(
             PolyType type,
             @Nullable PolyType collectionType,
@@ -669,14 +682,6 @@ public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> i
      */
     public record CollectionMetadata( int arrayDimensions, @Nullable Integer typeModifier ) {
 
-    }
-
-
-    @Override
-    public List<String> getActiveFeatureNames() {
-        return dialect.getSupportedFeatures().stream()
-                .map( SqlDbFeature::displayName )
-                .toList();
     }
 
 }

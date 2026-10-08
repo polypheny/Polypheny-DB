@@ -60,6 +60,26 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
     }
 
 
+    /**
+     * E.g. {@code constantArrayList("x", "y")} returns "Arrays.asList('x', 'y')".
+     *
+     * @param values List of values
+     * @param clazz Type of values
+     * @return expression
+     */
+    protected static <T> MethodCallExpression constantArrayList( List<T> values, Class clazz ) {
+        return Expressions.call( BuiltInMethod.ARRAYS_AS_LIST.method, Expressions.newArrayInit( clazz, constantList( values ) ) );
+    }
+
+
+    /**
+     * E.g. {@code constantList("x", "y")} returns {@code {ConstantExpression("x"), ConstantExpression("y")}}.
+     */
+    protected static <T> List<Expression> constantList( List<T> values ) {
+        return Lists.transform( values, Expressions::constant );
+    }
+
+
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new MongoToEnumerableConverter( getCluster(), traitSet, AbstractAlgNode.sole( inputs ) );
@@ -121,26 +141,6 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
         Hook.QUERY_PLAN.run( opList );
         list.add( Expressions.return_( null, enumerable ) );
         return implementor.result( physType, list.toBlock() );
-    }
-
-
-    /**
-     * E.g. {@code constantArrayList("x", "y")} returns "Arrays.asList('x', 'y')".
-     *
-     * @param values List of values
-     * @param clazz Type of values
-     * @return expression
-     */
-    protected static <T> MethodCallExpression constantArrayList( List<T> values, Class clazz ) {
-        return Expressions.call( BuiltInMethod.ARRAYS_AS_LIST.method, Expressions.newArrayInit( clazz, constantList( values ) ) );
-    }
-
-
-    /**
-     * E.g. {@code constantList("x", "y")} returns {@code {ConstantExpression("x"), ConstantExpression("y")}}.
-     */
-    protected static <T> List<Expression> constantList( List<T> values ) {
-        return Lists.transform( values, Expressions::constant );
     }
 
 }

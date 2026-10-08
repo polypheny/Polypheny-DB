@@ -121,62 +121,6 @@ public class CypherTestTemplate {
     }
 
 
-    protected boolean containsNodes( GraphResult res, boolean exclusive, TestNode... nodes ) {
-        if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "node" ) ) {
-            return contains( res.getData(), exclusive, 0, PolyNode.class, nodes );
-        }
-        throw new UnsupportedOperationException();
-    }
-
-
-    protected boolean containsEdges( GraphResult res, boolean exclusive, TestEdge... edges ) {
-        if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "edge" ) ) {
-            return contains( res.getData(), exclusive, 0, PolyEdge.class, edges );
-        }
-        throw new UnsupportedOperationException();
-    }
-
-
-    public boolean containsIn( GraphResult res, boolean exclusive, int index, TestGraphObject... expected ) {
-        boolean successful = true;
-        Class<? extends GraphPropertyHolder> clazz = null;
-        if ( expected.length > 0 ) {
-            Type type = Type.from( expected[0] );
-            successful = is( res, type, index );
-            clazz = (Class<? extends GraphPropertyHolder>) type.polyClass;
-        }
-        if ( !successful ) {
-            return false;
-        }
-
-        return contains( res.data, exclusive, index, clazz, expected );
-    }
-
-
-    public boolean containsIn( GraphResult actual, boolean exclusive, int index, @Nullable String name, TestLiteral... expected ) {
-        // simple object match
-        List<PolyValue> cols = new ArrayList<>();
-
-        for ( String[] entry : actual.getData() ) {
-            cols.add( PolyValue.fromTypedJson( entry[index], PolyValue.class ) );
-        }
-        assert !exclusive || cols.size() == expected.length;
-
-        boolean correct = true;
-        if ( name != null ) {
-            correct = actual.getHeader()[index].name.equals( name );
-        }
-
-        boolean contains = correct;
-        for ( TestObject object : expected ) {
-            contains &= cols.stream().anyMatch( n -> object.matches( n, exclusive ) );
-        }
-
-        return contains;
-
-    }
-
-
     public static boolean containsRows( GraphResult actual, boolean exclusive, boolean ordered, Row... rows ) {
         try {
             List<List<PolyValue>> parsed = new ArrayList<>();
@@ -236,6 +180,62 @@ public class CypherTestTemplate {
             j++;
         }
         return matches;
+    }
+
+
+    protected boolean containsNodes( GraphResult res, boolean exclusive, TestNode... nodes ) {
+        if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "node" ) ) {
+            return contains( res.getData(), exclusive, 0, PolyNode.class, nodes );
+        }
+        throw new UnsupportedOperationException();
+    }
+
+
+    protected boolean containsEdges( GraphResult res, boolean exclusive, TestEdge... edges ) {
+        if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "edge" ) ) {
+            return contains( res.getData(), exclusive, 0, PolyEdge.class, edges );
+        }
+        throw new UnsupportedOperationException();
+    }
+
+
+    public boolean containsIn( GraphResult res, boolean exclusive, int index, TestGraphObject... expected ) {
+        boolean successful = true;
+        Class<? extends GraphPropertyHolder> clazz = null;
+        if ( expected.length > 0 ) {
+            Type type = Type.from( expected[0] );
+            successful = is( res, type, index );
+            clazz = (Class<? extends GraphPropertyHolder>) type.polyClass;
+        }
+        if ( !successful ) {
+            return false;
+        }
+
+        return contains( res.data, exclusive, index, clazz, expected );
+    }
+
+
+    public boolean containsIn( GraphResult actual, boolean exclusive, int index, @Nullable String name, TestLiteral... expected ) {
+        // simple object match
+        List<PolyValue> cols = new ArrayList<>();
+
+        for ( String[] entry : actual.getData() ) {
+            cols.add( PolyValue.fromTypedJson( entry[index], PolyValue.class ) );
+        }
+        assert !exclusive || cols.size() == expected.length;
+
+        boolean correct = true;
+        if ( name != null ) {
+            correct = actual.getHeader()[index].name.equals( name );
+        }
+
+        boolean contains = correct;
+        for ( TestObject object : expected ) {
+            contains &= cols.stream().anyMatch( n -> object.matches( n, exclusive ) );
+        }
+
+        return contains;
+
     }
 
 

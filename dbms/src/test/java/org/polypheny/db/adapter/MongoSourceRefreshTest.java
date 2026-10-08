@@ -114,7 +114,7 @@ class MongoSourceRefreshTest {
         String sourceTwoAddedCollection = "courses_" + SUFFIX + "_two";
 
         try ( TestHelper.DockerMongo mongoOne = TestHelper.startMongoDocker( databaseOne );
-              TestHelper.DockerMongo mongoTwo = TestHelper.startMongoDocker( databaseTwo ) ) {
+                TestHelper.DockerMongo mongoTwo = TestHelper.startMongoDocker( databaseTwo ) ) {
             mongoOne.execute( "db." + sourceOneCollection + ".insertOne({ name: 'Alice' })" );
             mongoTwo.execute( "db." + sourceTwoCollection + ".insertOne({ name: 'Bob' })" );
 
@@ -166,8 +166,8 @@ class MongoSourceRefreshTest {
         String sourceThreeUnselectedAddedCollection = "courses_" + SUFFIX + "_mixed_three";
 
         try ( TestHelper.DockerMongo mongoOne = TestHelper.startMongoDocker( databaseOne );
-              TestHelper.DockerMongo mongoTwo = TestHelper.startMongoDocker( databaseTwo );
-              TestHelper.DockerMongo mongoThree = TestHelper.startMongoDocker( databaseThree ) ) {
+                TestHelper.DockerMongo mongoTwo = TestHelper.startMongoDocker( databaseTwo );
+                TestHelper.DockerMongo mongoThree = TestHelper.startMongoDocker( databaseThree ) ) {
             mongoOne.execute( "db." + sourceOneInitialCollection + ".insertOne({ name: 'Alice' })" );
             mongoTwo.execute( "db." + sourceTwoKeptCollection + ".insertOne({ name: 'Bob' })" );
             mongoTwo.execute( "db." + sourceTwoRemovedCollection + ".insertOne({ name: 'CS' })" );

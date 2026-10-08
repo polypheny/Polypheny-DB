@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.type.PolyType;
 
@@ -42,6 +42,68 @@ class SourceMaterializationTest {
     private static final String POSTGRES_DATABASE = "polypheny_mat_refresh_" + SUFFIX;
     private static final String POSTGRES_USERNAME = "polypheny";
     private static final String POSTGRES_PASSWORD = "polypheny";
+
+
+    private static void runRelationalSchemaRefreshCase(
+            String scenario,
+            String tableDefinition,
+            String insertColumns,
+            String insertValues,
+            ThrowingConsumer<SourceContext> mutateSource,
+            ThrowingConsumer<LogicalTable> assertMaterialization ) throws Exception {
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
+        TestHelper.getInstance();
+
+        String sourceTable = "mat_" + scenario + "_source_" + SUFFIX;
+        String materializedTable = "mat_" + scenario + "_target_" + SUFFIX;
+        String sourceAdapter = "pg_mat_" + scenario + "_source_" + SUFFIX;
+        String storeAdapter = "pg_mat_" + scenario + "_store_" + SUFFIX;
+
+        try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( POSTGRES_DATABASE + "_" + scenario, POSTGRES_USERNAME, POSTGRES_PASSWORD ) ) {
+            postgres.execute( "CREATE TABLE public." + sourceTable + " (" + tableDefinition + ")" );
+            postgres.execute( "INSERT INTO public." + sourceTable + " (" + insertColumns + ") VALUES (" + insertValues + ")" );
+            TestHelper.addPostgresSource( sourceAdapter, postgres.getHost(), postgres.getPort(), POSTGRES_DATABASE + "_" + scenario, POSTGRES_USERNAME, POSTGRES_PASSWORD, "public." + sourceTable );
+            TestHelper.addPostgresStore( storeAdapter, postgres.getHost(), postgres.getPort(), POSTGRES_DATABASE + "_" + scenario, POSTGRES_USERNAME, POSTGRES_PASSWORD );
+
+            try {
+                LogicalTable source = TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, sourceTable, 30 );
+                LogicalTable materialization = TestHelper.createSynchronizedSourceMaterialization( source, materializedTable, storeAdapter );
+                assertEquals( TestHelper.getCatalogColumnNames( source.id ), TestHelper.getCatalogColumnNames( materialization.id ) );
+
+                mutateSource.accept( new SourceContext( postgres, sourceTable ) );
+                assertMaterialization.accept( materialization );
+            } finally {
+                dropRelationalTableIfPresent( materializedTable );
+                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + sourceAdapter + "\"" );
+                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + storeAdapter + "\"" );
+            }
+        }
+    }
+
+
+    private static List<String> getPrimaryKeyColumnNames( long entityId ) {
+        Long primaryKey = Catalog.snapshot().rel().getTable( entityId ).orElseThrow().primaryKey;
+        if ( primaryKey == null ) {
+            return List.of();
+        }
+        return Catalog.snapshot().rel().getPrimaryKey( primaryKey ).orElseThrow().fieldIds.stream()
+                .map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow().name )
+                .toList();
+    }
+
+
+    private static List<String> getForeignKeyNames( long entityId ) {
+        return Catalog.snapshot().rel().getForeignKeys( entityId ).stream()
+                .map( LogicalForeignKey::getName )
+                .toList();
+    }
+
+
+    private static void dropRelationalTableIfPresent( String tableName ) throws Exception {
+        if ( Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, tableName ).isPresent() ) {
+            TestHelper.executeSQL( "DROP TABLE \"" + Catalog.DEFAULT_NAMESPACE_NAME + "\".\"" + tableName + "\"" );
+        }
+    }
 
 
     @Test
@@ -308,65 +370,11 @@ class SourceMaterializationTest {
     }
 
 
-    private static void runRelationalSchemaRefreshCase(
-            String scenario,
-            String tableDefinition,
-            String insertColumns,
-            String insertValues,
-            ThrowingConsumer<SourceContext> mutateSource,
-            ThrowingConsumer<LogicalTable> assertMaterialization ) throws Exception {
-        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
-        TestHelper.getInstance();
+    @FunctionalInterface
+    private interface ThrowingConsumer<T> {
 
-        String sourceTable = "mat_" + scenario + "_source_" + SUFFIX;
-        String materializedTable = "mat_" + scenario + "_target_" + SUFFIX;
-        String sourceAdapter = "pg_mat_" + scenario + "_source_" + SUFFIX;
-        String storeAdapter = "pg_mat_" + scenario + "_store_" + SUFFIX;
+        void accept( T value ) throws Exception;
 
-        try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( POSTGRES_DATABASE + "_" + scenario, POSTGRES_USERNAME, POSTGRES_PASSWORD ) ) {
-            postgres.execute( "CREATE TABLE public." + sourceTable + " (" + tableDefinition + ")" );
-            postgres.execute( "INSERT INTO public." + sourceTable + " (" + insertColumns + ") VALUES (" + insertValues + ")" );
-            TestHelper.addPostgresSource( sourceAdapter, postgres.getHost(), postgres.getPort(), POSTGRES_DATABASE + "_" + scenario, POSTGRES_USERNAME, POSTGRES_PASSWORD, "public." + sourceTable );
-            TestHelper.addPostgresStore( storeAdapter, postgres.getHost(), postgres.getPort(), POSTGRES_DATABASE + "_" + scenario, POSTGRES_USERNAME, POSTGRES_PASSWORD );
-
-            try {
-                LogicalTable source = TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, sourceTable, 30 );
-                LogicalTable materialization = TestHelper.createSynchronizedSourceMaterialization( source, materializedTable, storeAdapter );
-                assertEquals( TestHelper.getCatalogColumnNames( source.id ), TestHelper.getCatalogColumnNames( materialization.id ) );
-
-                mutateSource.accept( new SourceContext( postgres, sourceTable ) );
-                assertMaterialization.accept( materialization );
-            } finally {
-                dropRelationalTableIfPresent( materializedTable );
-                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + sourceAdapter + "\"" );
-                TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + storeAdapter + "\"" );
-            }
-        }
-    }
-
-
-    private static List<String> getPrimaryKeyColumnNames( long entityId ) {
-        Long primaryKey = Catalog.snapshot().rel().getTable( entityId ).orElseThrow().primaryKey;
-        if ( primaryKey == null ) {
-            return List.of();
-        }
-        return Catalog.snapshot().rel().getPrimaryKey( primaryKey ).orElseThrow().fieldIds.stream()
-                .map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow().name )
-                .toList();
-    }
-
-
-    private static List<String> getForeignKeyNames( long entityId ) {
-        return Catalog.snapshot().rel().getForeignKeys( entityId ).stream()
-                .map( LogicalForeignKey::getName )
-                .toList();
-    }
-
-
-    private static void dropRelationalTableIfPresent( String tableName ) throws Exception {
-        if ( Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, tableName ).isPresent() ) {
-            TestHelper.executeSQL( "DROP TABLE \"" + Catalog.DEFAULT_NAMESPACE_NAME + "\".\"" + tableName + "\"" );
-        }
     }
 
 
@@ -375,14 +383,6 @@ class SourceMaterializationTest {
         void execute( String statement ) throws Exception {
             postgres.execute( statement );
         }
-
-    }
-
-
-    @FunctionalInterface
-    private interface ThrowingConsumer<T> {
-
-        void accept( T value ) throws Exception;
 
     }
 

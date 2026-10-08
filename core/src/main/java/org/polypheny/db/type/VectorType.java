@@ -24,11 +24,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
  */
 public class VectorType extends ArrayType {
 
-    public enum ElementType {
-        FLOAT, DOUBLE, INTEGER, BIT
-    }
-
-
     @Getter
     private final ElementType vectorElementType;
 
@@ -58,6 +53,11 @@ public class VectorType extends ArrayType {
         if ( withDetail ) {
             sb.append( String.format( "(%d)", getVectorDimension() ) );
         }
+    }
+
+
+    public enum ElementType {
+        FLOAT, DOUBLE, INTEGER, BIT
     }
 
 }

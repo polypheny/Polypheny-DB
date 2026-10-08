@@ -189,18 +189,6 @@ public class SqlLanguagePlugin extends PolyPlugin {
     }
 
 
-    @Override
-    public void start() {
-        startup();
-    }
-
-
-    @Override
-    public void stop() {
-        throw new GenericRuntimeException( "Cannot remove language SQL." );
-    }
-
-
     public static void startup() {
         // add language to general processing
         QueryLanguage language = new QueryLanguage(
@@ -3036,6 +3024,18 @@ public class SqlLanguagePlugin extends PolyPlugin {
     private static void register( OperatorName key, Operator operator ) {
         OperatorRegistry.register( key, operator );
         OperatorRegistry.register( QueryLanguage.from( "sql" ), key, operator );
+    }
+
+
+    @Override
+    public void start() {
+        startup();
+    }
+
+
+    @Override
+    public void stop() {
+        throw new GenericRuntimeException( "Cannot remove language SQL." );
     }
 
 }

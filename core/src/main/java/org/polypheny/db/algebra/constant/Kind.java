@@ -1618,6 +1618,16 @@ public enum Kind {
     }
 
 
+    @SafeVarargs
+    private static <E extends Enum<E>> EnumSet<E> concat( EnumSet<E> set0, EnumSet<E>... sets ) {
+        EnumSet<E> set = set0.clone();
+        for ( EnumSet<E> s : sets ) {
+            set.addAll( s );
+        }
+        return set;
+    }
+
+
     /**
      * Returns the kind that corresponds to this operator but in the opposite direction. Or returns this,
      * if this kind is not reversible.
@@ -1736,15 +1746,5 @@ public enum Kind {
      */
     public final boolean belongsTo( Collection<Kind> category ) {
         return category.contains( this );
-    }
-
-
-    @SafeVarargs
-    private static <E extends Enum<E>> EnumSet<E> concat( EnumSet<E> set0, EnumSet<E>... sets ) {
-        EnumSet<E> set = set0.clone();
-        for ( EnumSet<E> s : sets ) {
-            set.addAll( s );
-        }
-        return set;
     }
 }

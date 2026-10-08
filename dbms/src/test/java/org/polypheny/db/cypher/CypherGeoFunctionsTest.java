@@ -97,13 +97,6 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
     }
 
 
-    @BeforeEach
-    public void reset() {
-        tearDown();
-        createGraph();
-    }
-
-
     /**
      * Measures percentages change, relative to the larger number.
      */
@@ -111,6 +104,13 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         double diff = Math.abs( a - b );
         double maxAllowedDiff = (percentage / 100) * Math.max( a, b );
         return diff <= maxAllowedDiff;
+    }
+
+
+    @BeforeEach
+    public void reset() {
+        tearDown();
+        createGraph();
     }
 
 

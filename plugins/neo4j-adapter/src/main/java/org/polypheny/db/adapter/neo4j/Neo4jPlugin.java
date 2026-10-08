@@ -95,18 +95,6 @@ public class Neo4jPlugin extends PolyPlugin {
     }
 
 
-    @Override
-    public void afterCatalogInit() {
-        this.id = AdapterManager.addAdapterTemplate( Neo4jStore.class, ADAPTER_NAME, Neo4jStore::new );
-    }
-
-
-    @Override
-    public void stop() {
-        AdapterManager.removeAdapterTemplate( id );
-    }
-
-
     public static String getPhysicalEntityName( long namespaceId, long allocId ) {
         return String.format( "n_%d_entity_%d_", namespaceId, allocId );
     }
@@ -132,6 +120,65 @@ public class Neo4jPlugin extends PolyPlugin {
     }
 
 
+    @Override
+    public void afterCatalogInit() {
+        this.id = AdapterManager.addAdapterTemplate( Neo4jStore.class, ADAPTER_NAME, Neo4jStore::new );
+    }
+
+
+    @Override
+    public void stop() {
+        AdapterManager.removeAdapterTemplate( id );
+    }
+
+
+    public enum IndexTypes {
+        DEFAULT,
+        COMPOSITE;
+
+
+        public IndexMethodModel asMethod() {
+            return new IndexMethodModel( name().toLowerCase( Locale.ROOT ), name() + " INDEX" );
+        }
+    }
+
+
+    @SuppressWarnings("unused")
+    public interface Exclude {
+
+        void refreshGraph( long allocId );
+
+        void dropGraph( Context context, AllocationGraph allocation );
+
+        void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation );
+
+        void dropColumn( Context context, long allocId, long columnId );
+
+        void dropTable( Context context, long allocId );
+
+        void updateColumnType( Context context, long allocId, LogicalColumn newCol );
+
+        void addColumn( Context context, long allocId, LogicalColumn logicalColumn );
+
+        void refreshTable( long allocId );
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
+
+        String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation );
+
+        void dropIndex( Context context, LogicalIndex index, long allocId );
+
+        void renameLogicalColumn( long id, String newColumnName );
+
+        void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context );
+
+        void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context );
+
+        void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context );
+
+    }
+
+
     @Slf4j
     @Extension
     @AdapterProperties(
@@ -148,18 +195,16 @@ public class Neo4jPlugin extends PolyPlugin {
         private final String DEFAULT_DATABASE = "public";
         @Delegate(excludes = Exclude.class)
         private final GraphModifyDelegate delegate;
-
-        private int port;
         private final String user;
         private final Session session;
         private final DockerContainer container;
-        private Driver db;
         private final String pass;
         private final AuthToken auth;
+        private final TransactionProvider transactionProvider;
+        private int port;
+        private Driver db;
         @Getter
         private NeoNamespace currentNamespace;
-
-        private final TransactionProvider transactionProvider;
         private String host;
 
 
@@ -576,53 +621,6 @@ public class Neo4jPlugin extends PolyPlugin {
 
         }
 
-
-    }
-
-
-    public enum IndexTypes {
-        DEFAULT,
-        COMPOSITE;
-
-
-        public IndexMethodModel asMethod() {
-            return new IndexMethodModel( name().toLowerCase( Locale.ROOT ), name() + " INDEX" );
-        }
-    }
-
-
-    @SuppressWarnings("unused")
-    public interface Exclude {
-
-        void refreshGraph( long allocId );
-
-        void dropGraph( Context context, AllocationGraph allocation );
-
-        void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation );
-
-        void dropColumn( Context context, long allocId, long columnId );
-
-        void dropTable( Context context, long allocId );
-
-        void updateColumnType( Context context, long allocId, LogicalColumn newCol );
-
-        void addColumn( Context context, long allocId, LogicalColumn logicalColumn );
-
-        void refreshTable( long allocId );
-
-        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
-
-        String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation );
-
-        void dropIndex( Context context, LogicalIndex index, long allocId );
-
-        void renameLogicalColumn( long id, String newColumnName );
-
-        void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context );
-
-        void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context );
-
-        void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context );
 
     }
 

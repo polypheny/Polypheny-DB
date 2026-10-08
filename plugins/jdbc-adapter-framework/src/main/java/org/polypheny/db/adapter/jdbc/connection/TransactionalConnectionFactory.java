@@ -99,6 +99,7 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
         return connection;
     }
 
+
     @Override
     public void close() throws SQLException {
         dataSource.close();
@@ -162,10 +163,9 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
 
     public class TransactionalConnectionHandler extends ConnectionHandler {
 
-        private Xid xid;
-
         @Getter
         private final SqlDialect dialect;
+        private Xid xid;
 
 
         TransactionalConnectionHandler( Connection connection, SqlDialect dialect ) throws ConnectionHandlerException {

@@ -17,16 +17,6 @@
 package org.polypheny.db.adapter;
 
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -38,6 +28,13 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.ddl.DdlManager.SourceRefreshDetails;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.webui.Crud.SourceMaterializationRefreshResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.List;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 
 @Tag("performance")
@@ -57,6 +54,263 @@ class SourceRefreshPerformanceTest {
     private static final int SOURCE_DOCUMENTS_PER_COLLECTION = 10_000;
     private static final Path REPORT = Path.of( "build", "reports", "source-refresh-performance.csv" );
     private static final String BENCHMARK_INSERT_COLUMNS = "id, customer_id, order_id, product_id, category_id, first_name, last_name, email, phone_number, street, city, country, postal_code, birth_date, created_at, updated_at, status, amount, is_active, notes";
+
+
+    private static void runSynchronizedRelationalMaterializationRefresh( String id, String changeType, boolean includeData ) throws Exception {
+        for ( int rows : RELATIONAL_ENTITY_SIZES ) {
+            for ( int run = 1; run <= TOTAL_RUNS; run++ ) {
+                String database = databaseName( id.toLowerCase(), rows, run );
+                String table = name( id.toLowerCase() + "_table", rows, run );
+                String materializedTable = name( id.toLowerCase() + "_materialized", rows, run );
+                String sourceAdapter = name( "pg_" + id.toLowerCase() + "_source", rows, run );
+                String storeAdapter = name( "pg_" + id.toLowerCase() + "_store", rows, run );
+
+                try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( database, USERNAME, PASSWORD ) ) {
+                    postgres.execute( "CREATE TABLE public." + table + " (" + benchmarkTableDefinition( id.toLowerCase() + "_pk" ) + ")" );
+                    insertRelationalRows( postgres, table, rows );
+                    TestHelper.addPostgresSource( sourceAdapter, postgres.getHost(), postgres.getPort(), database, USERNAME, PASSWORD, "public." + table );
+                    TestHelper.addPostgresStore( storeAdapter, postgres.getHost(), postgres.getPort(), database, USERNAME, PASSWORD );
+                    try {
+                        LogicalTable source = TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, table, 30 );
+                        LogicalTable materialization = TestHelper.createSynchronizedSourceMaterialization( source, materializedTable, storeAdapter );
+                        postgres.execute( "ALTER TABLE public." + table + " RENAME COLUMN first_name TO given_name" );
+                        postgres.execute( "ALTER TABLE public." + table + " ALTER COLUMN city SET NOT NULL" );
+                        postgres.execute( "ALTER TABLE public." + table + " DROP CONSTRAINT " + id.toLowerCase() + "_pk" );
+                        postgres.execute( "ALTER TABLE public." + table + " ADD CONSTRAINT " + id.toLowerCase() + "_pk PRIMARY KEY (customer_id)" );
+                        postgres.execute( "ALTER TABLE public." + table + " ALTER COLUMN category_id TYPE BIGINT" );
+                        if ( includeData ) {
+                            postgres.execute( "UPDATE public." + table + " SET category_id = category_id + 1" );
+                        }
+
+                        long durationMs = includeData
+                                ? measure( () -> TestHelper.refreshSynchronizedMaterializationData( materialization.id ) )
+                                : measure( () -> TestHelper.applySynchronizedMaterializationSchemaRefresh( materialization.id ) );
+                        assertComplexRelationalSchema( materialization.id );
+                        writeTiming( id, id.equals( "Q8" ) ? "Synchronized materialization refresh relational schema only" : "Synchronized materialization refresh relational schema and data", "RELATIONAL", "materializationRefresh", changeType, rows, 1, 0, rows, run, durationMs );
+                    } finally {
+                        dropRelationalTableIfPresent( materializedTable );
+                        TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + sourceAdapter + "\"" );
+                        TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + storeAdapter + "\"" );
+                    }
+                }
+            }
+        }
+    }
+
+
+    private static void assumePerformanceRun() {
+        Assumptions.assumeTrue(
+                Boolean.getBoolean( "polypheny.refresh.performance" ) || Boolean.parseBoolean( System.getenv( "POLYPHENY_REFRESH_PERFORMANCE" ) ),
+                "Enable with -Dpolypheny.refresh.performance=true or POLYPHENY_REFRESH_PERFORMANCE=true" );
+        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for source refresh performance tests" );
+        TestHelper.getInstance();
+    }
+
+
+    private static long measure( ThrowingRunnable runnable ) throws Exception {
+        long start = System.nanoTime();
+        runnable.run();
+        return (System.nanoTime() - start) / 1_000_000;
+    }
+
+
+    private static void assertSourceRefreshSummary( SourceRefreshDetails refresh, String entityName, String changeDescription ) {
+        assertNotNull( refresh );
+        assertTrue(
+                refresh.summaries().stream().anyMatch( summary ->
+                        summary.dataModel() == DataModel.DOCUMENT
+                                && summary.entityName().equals( entityName )
+                                && summary.changeDescriptions().contains( changeDescription ) ),
+                "Expected source refresh summary for " + entityName + " containing '" + changeDescription + "'" );
+    }
+
+
+    private static void assertComplexRelationalSchema( long entityId ) {
+        assertHasColumn( entityId, "given_name" );
+        assertNoColumn( entityId, "first_name" );
+        assertEquals( List.of( "customer_id" ), getPrimaryKeyColumnNames( entityId ) );
+        assertColumnType( entityId, "category_id", PolyType.BIGINT );
+        assertColumnNullable( entityId, "city", false );
+    }
+
+
+    private static void assertHasColumn( long entityId, String columnName ) {
+        assertTrue( Catalog.snapshot().rel().getColumn( entityId, columnName ).isPresent(), "Expected column '" + columnName + "'" );
+    }
+
+
+    private static void assertNoColumn( long entityId, String columnName ) {
+        assertFalse( Catalog.snapshot().rel().getColumn( entityId, columnName ).isPresent(), "Did not expect column '" + columnName + "'" );
+    }
+
+
+    private static void assertColumnNullable( long entityId, String columnName, boolean nullable ) {
+        assertEquals( nullable, Catalog.snapshot().rel().getColumn( entityId, columnName ).orElseThrow().nullable, "Unexpected nullability for column '" + columnName + "'" );
+    }
+
+
+    private static void assertColumnType( long entityId, String columnName, PolyType type ) {
+        assertEquals( type, Catalog.snapshot().rel().getColumn( entityId, columnName ).orElseThrow().type, "Unexpected type for column '" + columnName + "'" );
+    }
+
+
+    private static List<String> getPrimaryKeyColumnNames( long entityId ) {
+        Long primaryKey = Catalog.snapshot().rel().getTable( entityId ).orElseThrow().primaryKey;
+        if ( primaryKey == null ) {
+            return List.of();
+        }
+        return Catalog.snapshot().rel().getPrimaryKey( primaryKey ).orElseThrow().fieldIds.stream()
+                .map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow().name )
+                .toList();
+    }
+
+
+    private static String benchmarkTableDefinition( String primaryKeyName ) {
+        return String.join( ", ",
+                "id INTEGER NOT NULL",
+                "customer_id INTEGER NOT NULL",
+                "order_id INTEGER",
+                "product_id INTEGER",
+                "category_id INTEGER",
+                "first_name VARCHAR(100)",
+                "last_name VARCHAR(100)",
+                "email VARCHAR(255)",
+                "phone_number VARCHAR(30)",
+                "street VARCHAR(255)",
+                "city VARCHAR(100)",
+                "country VARCHAR(100)",
+                "postal_code VARCHAR(20)",
+                "birth_date DATE",
+                "created_at TIMESTAMP(3)",
+                "updated_at TIMESTAMP(3)",
+                "status VARCHAR(30)",
+                "amount DECIMAL(10,2)",
+                "is_active BOOLEAN",
+                "notes TEXT",
+                "CONSTRAINT " + primaryKeyName + " PRIMARY KEY (id)" );
+    }
+
+
+    private static void insertRelationalRows( TestHelper.DockerPostgres postgres, String table, int rows ) throws Exception {
+        postgres.execute( "INSERT INTO public." + table + " (" + BENCHMARK_INSERT_COLUMNS + ") "
+                + "SELECT gs, gs, gs, gs, gs, "
+                + "'first_name_' || gs, "
+                + "'last_name_' || gs, "
+                + "'email_' || gs || '@example.com', "
+                + "'phone_number_' || gs, "
+                + "'street_' || gs, "
+                + "'city_' || gs, "
+                + "'country_' || gs, "
+                + "'postal_code_' || gs, "
+                + "DATE '1990-01-01', "
+                + "TIMESTAMP '2024-01-01 12:00:00.123', "
+                + "TIMESTAMP '2024-01-01 12:00:00.123', "
+                + "'status_' || gs, "
+                + "(gs + 0.10)::DECIMAL(10,2), "
+                + "TRUE, "
+                + "'notes_' || gs "
+                + "FROM generate_series(1, " + rows + ") AS gs" );
+    }
+
+
+    private static void insertDocuments( TestHelper.DockerMongo mongo, String collection, int documents ) throws Exception {
+        insertDocumentRange( mongo, collection, 1, documents );
+    }
+
+
+    private static void insertDocumentRange( TestHelper.DockerMongo mongo, String collection, int firstDocumentId, int lastDocumentId ) throws Exception {
+        if ( lastDocumentId < firstDocumentId ) {
+            return;
+        }
+        mongo.execute( """
+                let bulk = db.%s.initializeUnorderedBulkOp();
+                let pending = 0;
+                for (let id = %d; id <= %d; id++) {
+                  bulk.insert({
+                    _id: id,
+                    customer_id: id,
+                    order_id: id,
+                    product_id: id,
+                    category_id: id,
+                    first_name: 'first_name_' + id,
+                    last_name: 'last_name_' + id,
+                    email: 'email_' + id + '@example.com',
+                    phone_number: 'phone_number_' + id,
+                    street: 'street_' + id,
+                    city: 'city_' + id,
+                    country: 'country_' + id,
+                    postal_code: 'postal_code_' + id,
+                    birth_date: '1990-01-01',
+                    created_at: '2024-01-01T12:00:00.123',
+                    updated_at: '2024-01-01T12:00:00.123',
+                    status: 'status_' + id,
+                    amount: id + 0.10,
+                    is_active: true,
+                    notes: 'notes_' + id
+                  });
+                  pending++;
+                  if (pending === 1000) {
+                    bulk.execute();
+                    bulk = db.%s.initializeUnorderedBulkOp();
+                    pending = 0;
+                  }
+                }
+                if (pending > 0) {
+                  bulk.execute();
+                }
+                """.formatted( collection, firstDocumentId, lastDocumentId, collection ) );
+    }
+
+
+    private static void writeTiming(
+            String id,
+            String scenario,
+            String dataModel,
+            String operation,
+            String changeType,
+            int size,
+            int tables,
+            int collections,
+            int records,
+            int run,
+            long durationMs ) throws Exception {
+        if ( run <= WARMUP_RUNS ) {
+            return;
+        }
+
+        int measuredRun = run - WARMUP_RUNS;
+        Files.createDirectories( REPORT.getParent() );
+        if ( Files.notExists( REPORT ) || Files.size( REPORT ) == 0 ) {
+            Files.writeString( REPORT, "id,scenario,dataModel,operation,changeType,size,tables,collections,records,run,durationMs%n".formatted(), StandardOpenOption.CREATE, StandardOpenOption.APPEND );
+        }
+        Files.writeString(
+                REPORT,
+                "%s,%s,%s,%s,%s,%d,%d,%d,%d,%d,%d%n".formatted( id, scenario, dataModel, operation, changeType, size, tables, collections, records, measuredRun, durationMs ),
+                StandardOpenOption.CREATE,
+                StandardOpenOption.APPEND );
+    }
+
+
+    private static String databaseName( String scenario, int size, int run ) {
+        return "perf_" + scenario + "_" + size + "_" + run + "_" + SUFFIX;
+    }
+
+
+    private static String name( String prefix, int size, int run ) {
+        return prefix + "_" + size + "_" + run + "_" + SUFFIX;
+    }
+
+
+    private static String sourceTableName( String prefix, int size, int run, int index ) {
+        return prefix + "_" + size + "_" + run + "_" + index + "_" + SUFFIX;
+    }
+
+
+    private static void dropRelationalTableIfPresent( String tableName ) throws Exception {
+        if ( Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, tableName ).isPresent() ) {
+            TestHelper.executeSQL( "DROP TABLE \"" + Catalog.DEFAULT_NAMESPACE_NAME + "\".\"" + tableName + "\"" );
+        }
+    }
 
 
     @Test
@@ -352,263 +606,6 @@ class SourceRefreshPerformanceTest {
                     }
                 }
             }
-        }
-    }
-
-
-    private static void runSynchronizedRelationalMaterializationRefresh( String id, String changeType, boolean includeData ) throws Exception {
-        for ( int rows : RELATIONAL_ENTITY_SIZES ) {
-            for ( int run = 1; run <= TOTAL_RUNS; run++ ) {
-                String database = databaseName( id.toLowerCase(), rows, run );
-                String table = name( id.toLowerCase() + "_table", rows, run );
-                String materializedTable = name( id.toLowerCase() + "_materialized", rows, run );
-                String sourceAdapter = name( "pg_" + id.toLowerCase() + "_source", rows, run );
-                String storeAdapter = name( "pg_" + id.toLowerCase() + "_store", rows, run );
-
-                try ( TestHelper.DockerPostgres postgres = TestHelper.startPostgresDocker( database, USERNAME, PASSWORD ) ) {
-                    postgres.execute( "CREATE TABLE public." + table + " (" + benchmarkTableDefinition( id.toLowerCase() + "_pk" ) + ")" );
-                    insertRelationalRows( postgres, table, rows );
-                    TestHelper.addPostgresSource( sourceAdapter, postgres.getHost(), postgres.getPort(), database, USERNAME, PASSWORD, "public." + table );
-                    TestHelper.addPostgresStore( storeAdapter, postgres.getHost(), postgres.getPort(), database, USERNAME, PASSWORD );
-                    try {
-                        LogicalTable source = TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, table, 30 );
-                        LogicalTable materialization = TestHelper.createSynchronizedSourceMaterialization( source, materializedTable, storeAdapter );
-                        postgres.execute( "ALTER TABLE public." + table + " RENAME COLUMN first_name TO given_name" );
-                        postgres.execute( "ALTER TABLE public." + table + " ALTER COLUMN city SET NOT NULL" );
-                        postgres.execute( "ALTER TABLE public." + table + " DROP CONSTRAINT " + id.toLowerCase() + "_pk" );
-                        postgres.execute( "ALTER TABLE public." + table + " ADD CONSTRAINT " + id.toLowerCase() + "_pk PRIMARY KEY (customer_id)" );
-                        postgres.execute( "ALTER TABLE public." + table + " ALTER COLUMN category_id TYPE BIGINT" );
-                        if ( includeData ) {
-                            postgres.execute( "UPDATE public." + table + " SET category_id = category_id + 1" );
-                        }
-
-                        long durationMs = includeData
-                                ? measure( () -> TestHelper.refreshSynchronizedMaterializationData( materialization.id ) )
-                                : measure( () -> TestHelper.applySynchronizedMaterializationSchemaRefresh( materialization.id ) );
-                        assertComplexRelationalSchema( materialization.id );
-                        writeTiming( id, id.equals( "Q8" ) ? "Synchronized materialization refresh relational schema only" : "Synchronized materialization refresh relational schema and data", "RELATIONAL", "materializationRefresh", changeType, rows, 1, 0, rows, run, durationMs );
-                    } finally {
-                        dropRelationalTableIfPresent( materializedTable );
-                        TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + sourceAdapter + "\"" );
-                        TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + storeAdapter + "\"" );
-                    }
-                }
-            }
-        }
-    }
-
-
-    private static void assumePerformanceRun() {
-        Assumptions.assumeTrue(
-                Boolean.getBoolean( "polypheny.refresh.performance" ) || Boolean.parseBoolean( System.getenv( "POLYPHENY_REFRESH_PERFORMANCE" ) ),
-                "Enable with -Dpolypheny.refresh.performance=true or POLYPHENY_REFRESH_PERFORMANCE=true" );
-        Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for source refresh performance tests" );
-        TestHelper.getInstance();
-    }
-
-
-    private static long measure( ThrowingRunnable runnable ) throws Exception {
-        long start = System.nanoTime();
-        runnable.run();
-        return (System.nanoTime() - start) / 1_000_000;
-    }
-
-
-    private static void assertSourceRefreshSummary( SourceRefreshDetails refresh, String entityName, String changeDescription ) {
-        assertNotNull( refresh );
-        assertTrue(
-                refresh.summaries().stream().anyMatch( summary ->
-                        summary.dataModel() == DataModel.DOCUMENT
-                                && summary.entityName().equals( entityName )
-                                && summary.changeDescriptions().contains( changeDescription ) ),
-                "Expected source refresh summary for " + entityName + " containing '" + changeDescription + "'" );
-    }
-
-
-    private static void assertComplexRelationalSchema( long entityId ) {
-        assertHasColumn( entityId, "given_name" );
-        assertNoColumn( entityId, "first_name" );
-        assertEquals( List.of( "customer_id" ), getPrimaryKeyColumnNames( entityId ) );
-        assertColumnType( entityId, "category_id", PolyType.BIGINT );
-        assertColumnNullable( entityId, "city", false );
-    }
-
-
-    private static void assertHasColumn( long entityId, String columnName ) {
-        assertTrue( Catalog.snapshot().rel().getColumn( entityId, columnName ).isPresent(), "Expected column '" + columnName + "'" );
-    }
-
-
-    private static void assertNoColumn( long entityId, String columnName ) {
-        assertFalse( Catalog.snapshot().rel().getColumn( entityId, columnName ).isPresent(), "Did not expect column '" + columnName + "'" );
-    }
-
-
-    private static void assertColumnNullable( long entityId, String columnName, boolean nullable ) {
-        assertEquals( nullable, Catalog.snapshot().rel().getColumn( entityId, columnName ).orElseThrow().nullable, "Unexpected nullability for column '" + columnName + "'" );
-    }
-
-
-    private static void assertColumnType( long entityId, String columnName, PolyType type ) {
-        assertEquals( type, Catalog.snapshot().rel().getColumn( entityId, columnName ).orElseThrow().type, "Unexpected type for column '" + columnName + "'" );
-    }
-
-
-    private static List<String> getPrimaryKeyColumnNames( long entityId ) {
-        Long primaryKey = Catalog.snapshot().rel().getTable( entityId ).orElseThrow().primaryKey;
-        if ( primaryKey == null ) {
-            return List.of();
-        }
-        return Catalog.snapshot().rel().getPrimaryKey( primaryKey ).orElseThrow().fieldIds.stream()
-                .map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow().name )
-                .toList();
-    }
-
-
-    private static String benchmarkTableDefinition( String primaryKeyName ) {
-        return String.join( ", ",
-                "id INTEGER NOT NULL",
-                "customer_id INTEGER NOT NULL",
-                "order_id INTEGER",
-                "product_id INTEGER",
-                "category_id INTEGER",
-                "first_name VARCHAR(100)",
-                "last_name VARCHAR(100)",
-                "email VARCHAR(255)",
-                "phone_number VARCHAR(30)",
-                "street VARCHAR(255)",
-                "city VARCHAR(100)",
-                "country VARCHAR(100)",
-                "postal_code VARCHAR(20)",
-                "birth_date DATE",
-                "created_at TIMESTAMP(3)",
-                "updated_at TIMESTAMP(3)",
-                "status VARCHAR(30)",
-                "amount DECIMAL(10,2)",
-                "is_active BOOLEAN",
-                "notes TEXT",
-                "CONSTRAINT " + primaryKeyName + " PRIMARY KEY (id)" );
-    }
-
-
-    private static void insertRelationalRows( TestHelper.DockerPostgres postgres, String table, int rows ) throws Exception {
-        postgres.execute( "INSERT INTO public." + table + " (" + BENCHMARK_INSERT_COLUMNS + ") "
-                + "SELECT gs, gs, gs, gs, gs, "
-                + "'first_name_' || gs, "
-                + "'last_name_' || gs, "
-                + "'email_' || gs || '@example.com', "
-                + "'phone_number_' || gs, "
-                + "'street_' || gs, "
-                + "'city_' || gs, "
-                + "'country_' || gs, "
-                + "'postal_code_' || gs, "
-                + "DATE '1990-01-01', "
-                + "TIMESTAMP '2024-01-01 12:00:00.123', "
-                + "TIMESTAMP '2024-01-01 12:00:00.123', "
-                + "'status_' || gs, "
-                + "(gs + 0.10)::DECIMAL(10,2), "
-                + "TRUE, "
-                + "'notes_' || gs "
-                + "FROM generate_series(1, " + rows + ") AS gs" );
-    }
-
-
-    private static void insertDocuments( TestHelper.DockerMongo mongo, String collection, int documents ) throws Exception {
-        insertDocumentRange( mongo, collection, 1, documents );
-    }
-
-
-    private static void insertDocumentRange( TestHelper.DockerMongo mongo, String collection, int firstDocumentId, int lastDocumentId ) throws Exception {
-        if ( lastDocumentId < firstDocumentId ) {
-            return;
-        }
-        mongo.execute( """
-                let bulk = db.%s.initializeUnorderedBulkOp();
-                let pending = 0;
-                for (let id = %d; id <= %d; id++) {
-                  bulk.insert({
-                    _id: id,
-                    customer_id: id,
-                    order_id: id,
-                    product_id: id,
-                    category_id: id,
-                    first_name: 'first_name_' + id,
-                    last_name: 'last_name_' + id,
-                    email: 'email_' + id + '@example.com',
-                    phone_number: 'phone_number_' + id,
-                    street: 'street_' + id,
-                    city: 'city_' + id,
-                    country: 'country_' + id,
-                    postal_code: 'postal_code_' + id,
-                    birth_date: '1990-01-01',
-                    created_at: '2024-01-01T12:00:00.123',
-                    updated_at: '2024-01-01T12:00:00.123',
-                    status: 'status_' + id,
-                    amount: id + 0.10,
-                    is_active: true,
-                    notes: 'notes_' + id
-                  });
-                  pending++;
-                  if (pending === 1000) {
-                    bulk.execute();
-                    bulk = db.%s.initializeUnorderedBulkOp();
-                    pending = 0;
-                  }
-                }
-                if (pending > 0) {
-                  bulk.execute();
-                }
-                """.formatted( collection, firstDocumentId, lastDocumentId, collection ) );
-    }
-
-
-    private static void writeTiming(
-            String id,
-            String scenario,
-            String dataModel,
-            String operation,
-            String changeType,
-            int size,
-            int tables,
-            int collections,
-            int records,
-            int run,
-            long durationMs ) throws Exception {
-        if ( run <= WARMUP_RUNS ) {
-            return;
-        }
-
-        int measuredRun = run - WARMUP_RUNS;
-        Files.createDirectories( REPORT.getParent() );
-        if ( Files.notExists( REPORT ) || Files.size( REPORT ) == 0 ) {
-            Files.writeString( REPORT, "id,scenario,dataModel,operation,changeType,size,tables,collections,records,run,durationMs%n".formatted(), StandardOpenOption.CREATE, StandardOpenOption.APPEND );
-        }
-        Files.writeString(
-                REPORT,
-                "%s,%s,%s,%s,%s,%d,%d,%d,%d,%d,%d%n".formatted( id, scenario, dataModel, operation, changeType, size, tables, collections, records, measuredRun, durationMs ),
-                StandardOpenOption.CREATE,
-                StandardOpenOption.APPEND );
-    }
-
-
-    private static String databaseName( String scenario, int size, int run ) {
-        return "perf_" + scenario + "_" + size + "_" + run + "_" + SUFFIX;
-    }
-
-
-    private static String name( String prefix, int size, int run ) {
-        return prefix + "_" + size + "_" + run + "_" + SUFFIX;
-    }
-
-
-    private static String sourceTableName( String prefix, int size, int run, int index ) {
-        return prefix + "_" + size + "_" + run + "_" + index + "_" + SUFFIX;
-    }
-
-
-    private static void dropRelationalTableIfPresent( String tableName ) throws Exception {
-        if ( Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, tableName ).isPresent() ) {
-            TestHelper.executeSQL( "DROP TABLE \"" + Catalog.DEFAULT_NAMESPACE_NAME + "\".\"" + tableName + "\"" );
         }
     }
 

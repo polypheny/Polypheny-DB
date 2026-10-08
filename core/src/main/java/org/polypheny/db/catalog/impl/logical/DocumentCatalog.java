@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,17 +40,13 @@ import org.polypheny.db.type.PolySerializable;
 public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog {
 
     public BinarySerializer<DocumentCatalog> serializer = PolySerializable.buildSerializer( DocumentCatalog.class );
-
-    IdBuilder idBuilder = IdBuilder.getInstance();
-
     @Serialize
     @JsonProperty
     public LogicalNamespace logicalNamespace;
-
     @Serialize
     @JsonProperty
     public Map<Long, LogicalCollection> collections;
-
+    IdBuilder idBuilder = IdBuilder.getInstance();
     PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
 

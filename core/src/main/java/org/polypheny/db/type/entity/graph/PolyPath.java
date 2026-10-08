@@ -100,17 +100,6 @@ public class PolyPath extends GraphObject {
     }
 
 
-    @Override
-    public String toJson() {
-        return "{\"nodes\":" + nodes.toJson() + ", \"edges\":" + edges.toJson() + "}";
-    }
-
-
-    public int getVariants() {
-        return edges.stream().map( PolyEdge::getVariants ).reduce( 1, Math::multiplyExact );
-    }
-
-
     public static PolyPath create( List<Pair<PolyString, PolyNode>> polyNodes, List<Pair<PolyString, PolyEdge>> polyEdges ) {
         List<PolyString> names = new ArrayList<>();
         List<GraphPropertyHolder> path = new ArrayList<>();
@@ -131,6 +120,17 @@ public class PolyPath extends GraphObject {
 
         return new PolyPath( new ArrayList<>( Pair.right( polyNodes ) ), new ArrayList<>( Pair.right( polyEdges ) ), names, path, null );
 
+    }
+
+
+    @Override
+    public String toJson() {
+        return "{\"nodes\":" + nodes.toJson() + ", \"edges\":" + edges.toJson() + "}";
+    }
+
+
+    public int getVariants() {
+        return edges.stream().map( PolyEdge::getVariants ).reduce( 1, Math::multiplyExact );
     }
 
 

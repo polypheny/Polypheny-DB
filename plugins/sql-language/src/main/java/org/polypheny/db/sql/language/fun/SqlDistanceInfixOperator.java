@@ -29,20 +29,13 @@ import org.polypheny.db.type.inference.ReturnTypes;
 
 public class SqlDistanceInfixOperator extends SqlBinaryOperator {
 
-    private static final int PRECEDENCE = 36;
-
     public static final SqlDistanceInfixOperator L2 = new SqlDistanceInfixOperator( "<->", Kind.L2_DISTANCE, OperatorName.L2_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS );
-
     public static final SqlDistanceInfixOperator L1 = new SqlDistanceInfixOperator( "<+>", Kind.L1_DISTANCE, OperatorName.L1_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS );
-
     public static final SqlDistanceInfixOperator COSINE = new SqlDistanceInfixOperator( "<=>", Kind.COSINE_DISTANCE, OperatorName.COSINE_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS );
-
     public static final SqlDistanceInfixOperator INNER_PRODUCT = new SqlDistanceInfixOperator( "<#>", Kind.INNER_PRODUCT_DISTANCE, OperatorName.INNER_PRODUCT_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS );
-
     public static final SqlDistanceInfixOperator HAMMING = new SqlDistanceInfixOperator( "<~>", Kind.HAMMING_DISTANCE, OperatorName.HAMMING_DISTANCE, SqlNamedDistanceFunction.TWO_BOOLEAN_ARRAYS );
-
     public static final SqlDistanceInfixOperator JACCARD = new SqlDistanceInfixOperator( "<%>", Kind.JACCARD_DISTANCE, OperatorName.JACCARD_DISTANCE, SqlNamedDistanceFunction.TWO_BOOLEAN_ARRAYS );
-
+    private static final int PRECEDENCE = 36;
     private final OperatorName target;
 
 

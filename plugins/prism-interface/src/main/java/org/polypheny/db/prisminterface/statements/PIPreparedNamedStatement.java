@@ -36,13 +36,13 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
 
     @Getter
     private final String query;
+    private final NamedValueProcessor namedValueProcessor;
     @Getter
     @Setter
     private PolyImplementation implementation;
     @Getter
     @Setter
     private Statement statement;
-    private final NamedValueProcessor namedValueProcessor;
 
 
     public PIPreparedNamedStatement(

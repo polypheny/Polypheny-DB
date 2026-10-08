@@ -82,11 +82,10 @@ public abstract class Sort extends SingleAlg {
      */
     @Getter
     public final AlgCollation collation;
-
-    @Getter
-    protected final ImmutableList<RexNode> fieldExps;
     public final RexNode offset;
     public final RexNode fetch;
+    @Getter
+    protected final ImmutableList<RexNode> fieldExps;
 
 
     /**
@@ -132,6 +131,14 @@ public abstract class Sort extends SingleAlg {
             builder.add( cluster.getRexBuilder().makeInputRef( child, index ) );
         }
         fieldExps = builder.build();
+    }
+
+
+    protected static Triple<AlgCollation, RexNode, RexNode> extractArgs( PolyAlgArgs args ) {
+        ListArg<CollationArg> collations = args.getListArg( "order", CollationArg.class );
+        RexArg limit = args.getArg( "limit", RexArg.class );
+        RexArg offset = args.getArg( "offset", RexArg.class );
+        return Triple.of( AlgCollations.of( collations.map( CollationArg::getColl ) ), offset.getNode(), limit.getNode() );
     }
 
 
@@ -204,14 +211,6 @@ public abstract class Sort extends SingleAlg {
                 (collation != null ? collation.getFieldCollations().stream().map( AlgFieldCollation::getDirection ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
                 (offset != null ? offset.toString() : "") + "$" +
                 (fetch != null ? fetch.toString() : "") + "&";
-    }
-
-
-    protected static Triple<AlgCollation, RexNode, RexNode> extractArgs( PolyAlgArgs args ) {
-        ListArg<CollationArg> collations = args.getListArg( "order", CollationArg.class );
-        RexArg limit = args.getArg( "limit", RexArg.class );
-        RexArg offset = args.getArg( "offset", RexArg.class );
-        return Triple.of( AlgCollations.of( collations.map( CollationArg::getColl ) ), offset.getNode(), limit.getNode() );
     }
 
 

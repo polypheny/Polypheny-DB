@@ -103,9 +103,8 @@ import org.polypheny.db.webui.models.results.Result.ResultBuilder;
 public class LanguageCrud {
 
 
-    public static Crud crud;
-
     protected final static Map<QueryLanguage, TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>>> REGISTER = new HashMap<>();
+    public static Crud crud;
 
 
     public LanguageCrud( Crud crud ) {
