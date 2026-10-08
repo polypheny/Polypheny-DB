@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
 import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
@@ -454,6 +455,12 @@ public class PolyAlgUtils {
                     RexNode otherArg = call.operands.get( 1 - i );
                     if ( (!(otherArg instanceof RexLiteral) || ((RexLiteral) otherArg).digestIncludesType() == RexDigestIncludeType.NO_TYPE) && RexCall.equalSansNullability( operand.getType(), otherArg.getType() ) ) {
                         includeType = RexDigestIncludeType.NO_TYPE;
+                    }
+                }
+                // Argument of CYPHER_POINT not used (=unknown). We can safely skip it.
+                if ( call.getOperator().getOperatorName() == OperatorName.CYPHER_POINT ) {
+                    if ( ((RexLiteral) operand).value == null ) {
+                        continue;
                     }
                 }
                 sb.append( visitLiteral( (RexLiteral) operand, includeType ) );

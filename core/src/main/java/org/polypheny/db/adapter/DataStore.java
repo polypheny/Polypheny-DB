@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.IndexCategory;
 
 @Slf4j
 public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> implements Modifiable, ExtensionPoint {
@@ -52,7 +53,27 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable );
 
 
-    public record IndexMethodModel( @JsonProperty String name, @JsonProperty String displayName ) {
+    public record IndexMethodModel(
+            @JsonProperty String name,
+            @JsonProperty String displayName,
+            @JsonProperty IndexCategory category,
+            @JsonProperty List<IndexParameterModel> parameters
+    ) {
+
+        public IndexMethodModel( String name, String displayName ) {
+            this( name, displayName, IndexCategory.REGULAR, List.of() );
+        }
+
+    }
+
+
+    public record IndexParameterModel(
+            @JsonProperty String name,
+            @JsonProperty String displayName,
+            @JsonProperty String type,          //INTEGER, BOOLEAN, ENUM
+            @JsonProperty List<String> options,
+            @JsonProperty String defaultValue
+    ) {
 
     }
 

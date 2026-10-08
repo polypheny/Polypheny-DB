@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,6 +225,12 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( OperatorName.TAN ), "tan", NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.TRUNCATE ), "struncate", NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.DISTANCE ), "distance", NullPolicy.ANY );
+        defineMethod( OperatorRegistry.get( OperatorName.L1_DISTANCE ), "l1Distance", NullPolicy.ANY );
+        defineMethod( OperatorRegistry.get( OperatorName.L2_DISTANCE ), "l2Distance", NullPolicy.ANY );
+        defineMethod( OperatorRegistry.get( OperatorName.COSINE_DISTANCE ), "cosDistance", NullPolicy.ANY );
+        defineMethod( OperatorRegistry.get( OperatorName.HAMMING_DISTANCE ), "hammingDistance", NullPolicy.ANY );
+        defineMethod( OperatorRegistry.get( OperatorName.JACCARD_DISTANCE ), "jaccardDistance", NullPolicy.ANY );
+        defineMethod( OperatorRegistry.get( OperatorName.INNER_PRODUCT_DISTANCE ), "innerProductDistance", NullPolicy.ANY );
         defineMethod( OperatorRegistry.get( OperatorName.META ), "meta", NullPolicy.ANY );
 
         map.put( OperatorRegistry.get( OperatorName.PI ), ( translator, call, nullAs ) -> PolyDouble.of( Math.PI ).asExpression() );
@@ -476,6 +482,11 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SET_LABELS ), BuiltInMethod.CYPHER_SET_LABELS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_REMOVE_LABELS ), BuiltInMethod.CYPHER_REMOVE_LABELS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_REMOVE_PROPERTY ), BuiltInMethod.CYPHER_REMOVE_PROPERTY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_POINT ), BuiltInMethod.CYPHER_POINT.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.DISTANCE ), BuiltInMethod.CYPHER_DISTANCE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.DISTANCE_NEO4J ), BuiltInMethod.CYPHER_DISTANCE_NEO4J.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_WITHIN_BBOX ), BuiltInMethod.CYPHER_WITHIN_BBOX.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_WITHIN_GEOMETRY ), BuiltInMethod.CYPHER_WITHIN_GEOMETRY.method, NullPolicy.NONE );
     }
 
 
@@ -503,10 +514,13 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_REMOVE ), BuiltInMethod.MQL_REMOVE.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_EXISTS ), BuiltInMethod.MQL_EXISTS.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_MERGE ), BuiltInMethod.MQL_MERGE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_MERGE_ADD ), BuiltInMethod.MQL_MERGE_ADD.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_PROJECT_INCLUDES ), BuiltInMethod.MQL_PROJECT_INCLUDES.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_REPLACE_ROOT ), BuiltInMethod.MQL_REPLACE_ROOT.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_NOT_UNSET ), BuiltInMethod.MQL_NOT_UNSET.method, NullPolicy.STRICT );
-
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_INTERSECTS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_INTERSECTS.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_WITHIN ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_WITHIN.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_DISTANCE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_DISTANCE.method ), false );
         defineMqlMethod( OperatorName.PLUS, "plus", NullPolicy.STRICT );
         defineMqlMethod( OperatorName.MINUS, "minus", NullPolicy.STRICT );
         defineMqlMethod( OperatorName.MULTIPLY, "multiply", NullPolicy.STRICT );

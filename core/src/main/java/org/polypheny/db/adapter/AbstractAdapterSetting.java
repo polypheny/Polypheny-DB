@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
-import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
@@ -53,7 +53,7 @@ public abstract class AbstractAdapterSetting {
     public AdapterSettingType type;
 
     @Getter
-    public List<DeploySetting> appliesTo;
+    public Set<DeployMode> appliesTo;
 
     public List<String> filenames = new ArrayList<>();
 
@@ -66,7 +66,7 @@ public abstract class AbstractAdapterSetting {
         this.required = required;
         this.modifiable = modifiable;
         this.position = position;
-        this.appliesTo = appliesTo;
+        this.appliesTo = DeployMode.getDeployModes( appliesTo );
         this.defaultValue = defaultValue;
         this.description = (description == null || description.isEmpty()) ? null : description;
         assert this.subOf == null || this.subOf.split( "_" ).length == 2
@@ -81,10 +81,9 @@ public abstract class AbstractAdapterSetting {
      * unpack DeploySettings.ALL to the available modes correctly
      *
      * @param annotations collection of annotations
-     * @param properties which are defined by the corresponding Adapter
      * @return a collection containing the available modes and the corresponding collections of AdapterSettings
      */
-    public static List<AbstractAdapterSetting> fromAnnotations( Annotation[] annotations, AdapterProperties properties ) {
+    public static List<AbstractAdapterSetting> fromAnnotations( Annotation[] annotations ) {
         List<AbstractAdapterSetting> settings = new ArrayList<>();
 
         for ( Annotation annotation : annotations ) {
@@ -119,6 +118,8 @@ public abstract class AbstractAdapterSetting {
      * In most subclasses, this method returns the defaultValue, because the UI overrides the defaultValue when a new value is set.
      */
     public abstract String getValue();
+
+    public abstract void validate( String s );
 
 
     public static List<AbstractAdapterSetting> serializeSettings( List<AbstractAdapterSetting> availableSettings, Map<String, String> currentSettings ) {

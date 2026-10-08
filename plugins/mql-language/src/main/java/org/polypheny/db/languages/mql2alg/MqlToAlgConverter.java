@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package org.polypheny.db.languages.mql2alg;
 
+import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
+
+import io.activej.common.tuple.Tuple2;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,17 +30,23 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
+import org.bson.BsonDouble;
 import org.bson.BsonInt32;
 import org.bson.BsonNumber;
 import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
@@ -96,6 +105,8 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.schema.document.DocumentUtil.UpdateOperation;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
+import org.polypheny.db.type.VectorType.ElementType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
@@ -103,7 +114,10 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
@@ -779,6 +793,12 @@ public class MqlToAlgConverter {
                 case "$replaceWith":
                     node = combineReplaceRoot( value.asDocument().get( "$replaceWith" ), node, true );
                     break;
+                case "$vectorSearch":
+                    node = convertVectorSearch( value.asDocument().get( "$vectorSearch" ), rowType, node );
+                    break;
+                case "$geoNear":
+                    node = convertGeoNear( value.asDocument().getDocument( "$geoNear" ), node, rowType );
+                    break;
                 // todo dl add more pipeline statements
                 default:
                     throw new IllegalStateException( "Unexpected value: " + ((BsonDocument) value).getFirstKey() );
@@ -789,6 +809,186 @@ public class MqlToAlgConverter {
         }
 
         return node;
+    }
+
+
+    private AlgNode convertVectorSearch( BsonValue vectorSearchVal, AlgDataType rowType, AlgNode node ) {
+        BsonDocument vectorSearch = vectorSearchVal.asDocument();
+        if ( !vectorSearch.containsKey( "path" ) ) {
+            throw new GenericRuntimeException( "$vectorSearch requires a 'path' field specifying the vector column." );
+        }
+        if ( !vectorSearch.containsKey( "queryVector" ) || !vectorSearch.get( "queryVector" ).isArray() ) {
+            throw new GenericRuntimeException( "$vectorSearch requires a 'queryVector' field of type Array." );
+        }
+        if ( !vectorSearch.containsKey( "limit" ) || !vectorSearch.get( "limit" ).isNumber() ) {
+            throw new GenericRuntimeException( "$vectorSearch requires a 'limit' field of type number." );
+        }
+        if ( !vectorSearch.containsKey( "metric" ) ) {
+            throw new GenericRuntimeException( "$vectorSearch requires a 'metric' field." );
+        }
+
+        String path = vectorSearch.getString( "path" ).getValue();
+        BsonArray queryVector = vectorSearch.getArray( "queryVector" );
+        int limit = vectorSearch.getNumber( "limit" ).intValue();
+        String metric = vectorSearch.getString( "metric" ).getValue();
+
+        Tuple2<OperatorName, Boolean> distanceOpName = getOperatorName( metric );
+        Operator distanceOperator = OperatorRegistry.get( distanceOpName.value1() );
+
+        if ( vectorSearch.containsKey( "filter" ) ) {
+            RexNode filterNode = translateDocument( vectorSearch.getDocument( "filter" ), rowType, null );
+            node = LogicalDocumentFilter.create( node, filterNode );
+        }
+
+        RexNode pathRef;
+        AlgDataType pathType = null;
+        for ( AlgDataTypeField field : rowType.getFields() ) {
+            if ( field.getName().equals( path ) ) {
+                pathType = field.getType();
+                break;
+            }
+        }
+
+        if ( pathType != null ) {
+            pathRef = RexNameRef.create( Collections.singletonList( path ), null, pathType );
+        } else {
+            pathRef = getIdentifier( path, rowType );
+            pathType = pathRef.getType();
+        }
+
+        AlgDataType queryLiteralType;
+        RexNode queryVectorRef;
+        if ( pathType instanceof VectorType vectorType ) {
+            queryLiteralType = cluster.getTypeFactory().createVectorType( vectorType.getComponentType(), vectorType.getVectorDimension() );
+            if ( queryVector.size() != vectorType.getVectorDimension() ) {
+                throw new GenericRuntimeException( String.format(
+                        "$vectorSearch 'queryVector' has %d elements but column '%s' has dimension %d.",
+                        queryVector.size(), path, vectorType.getVectorDimension() ) );
+            }
+            List<PolyValue> polyValues = new ArrayList<>();
+            ElementType elementType = vectorType.getVectorElementType();
+
+            boolean isBinaryMetric = metric.equals( "HAMMING" ) || metric.equals( "JACCARD" );
+            boolean isBinaryVector = elementType == ElementType.BIT;
+            if ( isBinaryMetric && !isBinaryVector ) {
+                throw new GenericRuntimeException( String.format(
+                        "Metric '%s' requires a BIT vector column, but column '%s' has element type %s.",
+                        metric, path, elementType ) );
+            }
+            if ( !isBinaryMetric && isBinaryVector ) {
+                throw new GenericRuntimeException( String.format(
+                        "Metric '%s' requires a numeric vector column, but column '%s' has element type BIT.",
+                        metric, path ) );
+            }
+
+            for ( BsonValue value : queryVector ) {
+                switch ( elementType ) {
+                    case BIT -> {
+                        if ( !value.isBoolean() && !value.isNumber() ) {
+                            throw new GenericRuntimeException( String.format(
+                                    "$vectorSearch 'queryVector' element '%s' cannot be interpreted as a bit (expected boolean or 0/1 integer) for column '%s'.",
+                                    value, path ) );
+                        }
+                        boolean b = value.isBoolean() ? value.asBoolean().getValue() : (value.isNumber() && value.asNumber().intValue() != 0);
+                        polyValues.add( new PolyBoolean( b ) );
+                    }
+                    case INTEGER -> {
+                        if ( !value.isNumber() ) {
+                            throw new GenericRuntimeException( String.format(
+                                    "$vectorSearch 'queryVector' element '%s' is not numeric, but column '%s' has element type INTEGER.",
+                                    value, path ) );
+                        }
+                        int i = value.isNumber() ? value.asNumber().intValue() : 0;
+                        polyValues.add( PolyInteger.of( i ) );
+                    }
+                    case FLOAT -> {
+                        if ( !value.isNumber() ) {
+                            throw new GenericRuntimeException( String.format(
+                                    "$vectorSearch 'queryVector' element '%s' is not numeric, but column '%s' has element type FLOAT.",
+                                    value, path ) );
+                        }
+                        float f = value.isNumber() ? (float) value.asNumber().doubleValue() : 0.0f;
+                        polyValues.add( PolyFloat.of( f ) );
+                    }
+                }
+            }
+            queryVectorRef = builder.makeArray( queryLiteralType, polyValues );
+            pathRef = builder.makeCast( queryLiteralType, pathRef );
+
+        } else {
+            AlgDataType nullableAny = cluster.getTypeFactory().createTypeWithNullability(
+                    cluster.getTypeFactory().createPolyType( PolyType.ANY ),
+                    true );
+            List<RexNode> arr = convertArray( path, queryVector, true, rowType, "queryVector must be an array" );
+            queryLiteralType = cluster.getTypeFactory().createArrayType( nullableAny, arr.size() );
+            queryVectorRef = DocumentUtil.getArray( arr, queryLiteralType );
+
+            AlgDataType dynamicArrayType = cluster.getTypeFactory().createArrayType( nullableAny, -1 );
+            pathRef = builder.makeCast( dynamicArrayType, pathRef );
+        }
+
+        AlgDataType distanceType = cluster.getTypeFactory().createPolyType( PolyType.DOUBLE );
+        RexNode distanceCall;
+        if ( distanceOpName.value2() ) {
+            // value2 of the tuple == true -> parameterized Distance Operator
+            // e.g. (e.g. DISTANCE(path, queryVector, 'L2SQUARED'))
+            RexNode metricLiteral = convertLiteral( new BsonString( metric ) );
+            distanceCall = builder.makeCall( distanceType, distanceOperator, Arrays.asList( pathRef, queryVectorRef, metricLiteral ) );
+        } else {
+            // unparameterized version
+            distanceCall = builder.makeCall( distanceType, distanceOperator, Arrays.asList( pathRef, queryVectorRef ) );
+        }
+
+        List<RexNode> projects = new ArrayList<>();
+        List<String> projectNames = new ArrayList<>();
+        for ( AlgDataTypeField field : node.getTupleType().getFields() ) {
+            projects.add( builder.makeInputRef( node, field.getIndex() ) );
+            projectNames.add( field.getName() );
+        }
+        projects.add( distanceCall );
+        String scoreName = "$vectorSearchScore";
+        projectNames.add( scoreName );
+
+        node = LogicalDocumentProject.create( node, projects, projectNames );
+
+        List<String> names = Collections.singletonList( scoreName );
+        List<AlgFieldCollation.Direction> dirs = Collections.singletonList( Direction.ASCENDING );
+        List<RexNode> projectionNodes = Collections.singletonList( builder.makeInputRef( node, projects.size() - 1 ) );
+        RexNode fetchLimit = convertLiteral( new BsonInt32( limit ) );
+
+        return LogicalDocumentSort.create(
+                node,
+                AlgCollations.of( generateCollation( dirs, names, projectNames ) ),
+                projectionNodes,
+                null,
+                fetchLimit );
+    }
+
+
+    /**
+     * <p>The returned {@link Tuple2} consists of an OperatorName and a boolean flag.</p>
+     * <p>The flag {@code parameterizedDistance} indicates if the standard {@code DISTANCE(<target array>, <array to compare with>, <metric> [, <weights>])} operator is used or a special unparameterized version.</p>
+     * <p>e.g. {@code L1_DISTANCE(<target array>, <array to compare with>)} is the unparameterized version for the standard {@code DISTANCE} with metric='L1'.</p>
+     */
+    private static @NotNull Tuple2<OperatorName, Boolean> getOperatorName( String metric ) {
+        OperatorName distanceOpName;
+        boolean parameterizedDistance = false;
+        switch ( metric ) {
+            case "L1" -> distanceOpName = OperatorName.L1_DISTANCE;
+            case "L2" -> distanceOpName = OperatorName.L2_DISTANCE;
+            case "INNER_PRODUCT" -> distanceOpName = OperatorName.INNER_PRODUCT_DISTANCE;
+            case "COSINE" -> distanceOpName = OperatorName.COSINE_DISTANCE;
+            case "HAMMING" -> distanceOpName = OperatorName.HAMMING_DISTANCE;
+            case "JACCARD" -> distanceOpName = OperatorName.JACCARD_DISTANCE;
+            case "L2SQUARED", "CHISQUARED" -> {
+                distanceOpName = OperatorName.DISTANCE;
+                parameterizedDistance = true;
+            }
+            default -> throw new GenericRuntimeException( String.format(
+                    "Unsupported metric '%s' in $vectorSearch. Supported metrics are: L1, L2, INNER_PRODUCT, L2SQUARED, CHISQUARED, COSINE, HAMMING, JACCARD.",
+                    metric ) );
+        }
+        return new Tuple2<>( distanceOpName, parameterizedDistance );
     }
 
 
@@ -837,7 +1037,8 @@ public class MqlToAlgConverter {
             project = LogicalDocumentProject.create(
                     node,
                     nodes,
-                    List.of()
+                    List.of(),
+                    Map.of()
             );
         }
         return project;
@@ -1131,10 +1332,174 @@ public class MqlToAlgConverter {
     }
 
 
+    private AlgNode combineGeoNear( BsonDocument options, AlgNode node, AlgDataType rowType ) {
+        // 1. (optional) query
+        if ( options.containsKey( "query" ) ) {
+            node = combineFilter( options.getDocument( "query" ), node, rowType );
+        }
+
+        // 2. Handle conversion from near to $near/$nearSphere, minDistance, maxDistance, spherical
+        boolean isSpehrical = options.containsKey( "spherical" ) && options.get( "spherical" ).asBoolean().getValue();
+        String nearKey = isSpehrical
+                ? "$nearSphere"
+                : "$near";
+        BsonDocument nearDocument = new BsonDocument();
+        BsonValue nearValue = options.get( "near" );
+
+        if ( nearValue.isArray() ) {
+            nearDocument.put( nearKey, nearValue );
+
+            // m for GeoJSON, radians for legacy coordinates
+            if ( options.containsKey( "minDistance" ) ) {
+                nearDocument.put( "$minDistance", options.get( "minDistance" ) );
+            }
+            if ( options.containsKey( "maxDistance" ) ) {
+                nearDocument.put( "$maxDistance", options.get( "maxDistance" ) );
+            }
+        } else if ( nearValue.isDocument() ) {
+            nearDocument.put( nearKey, new BsonDocument( "$geometry", nearValue ) );
+            if ( options.containsKey( "minDistance" ) ) {
+                nearDocument.getDocument( nearKey ).put( "$minDistance", options.get( "minDistance" ) );
+            }
+            if ( options.containsKey( "maxDistance" ) ) {
+                nearDocument.getDocument( nearKey ).put( "$maxDistance", options.get( "maxDistance" ) );
+            }
+        } else {
+            throw new GenericRuntimeException( " Value of near can only be a GeoJSON object or a pair of legacy coordinates. " );
+        }
+
+        String inputDistanceField;
+        if ( options.containsKey( "key" ) ) {
+            inputDistanceField = options.getString( "key" ).getValue();
+        } else {
+            throw new GenericRuntimeException( "The key option must be set to the field that contains the location. This is necessary, as we currently do not support geospatial indexes." );
+        }
+
+        String distanceField = options.getString( "distanceField" ).getValue();
+        BsonNumber distanceMultiplier = options.containsKey( "distanceMultiplier" ) ? options.getNumber( "distanceMultiplier" ) : null;
+
+        // TODO: includeLocs
+        // This option really only makes sense, if we have geospatial indexes, because then, we would not always know
+        // which index exists on which field. All fields from the input are anyway included in the output, if we manually
+        // add them here or not (unless they were projected away by the user).
+        node = combineNear( nearDocument, nearKey, inputDistanceField, distanceField, distanceMultiplier, node, rowType );
+        return node;
+    }
+
+
     private AlgNode combineFilter( BsonDocument filter, AlgNode node, AlgDataType rowType ) {
         RexNode condition = translateDocument( filter, rowType, null );
-
         return LogicalDocumentFilter.create( node, condition );
+    }
+
+
+    /**
+     * This function is used to create the $near or $nearSphere operator in a normal query, as well as the
+     * $geoNear aggregation stage.
+     *
+     * @param options Document that contains the $near or $nearSphere key.
+     * @param nearOrNearSphere Whether we use spherical ($nearSphere) or flat geometry ($near).
+     * Attention: We use spherical geometry when the filter geometry is specified as GeoJSON,
+     * even when using $near. This is because the default for GeoJSON is SRID=4326.
+     * @param key Which field from the input is used to calculate the distance
+     * @param distanceField (optional) Which field in the output should store the calculated distance
+     * @param distanceMultiplier (optional) Factor to multiply the calculated distance. Can be used to convert
+     * radians to kilometers in a spherical query, by multiplying by the radius of the
+     * Earth.
+     */
+    private AlgNode combineNear( BsonDocument options, String nearOrNearSphere, String key, String distanceField, BsonNumber distanceMultiplier, AlgNode node, AlgDataType rowType ) {
+        boolean isSpherical = Objects.equals( nearOrNearSphere, "$nearSphere" );
+        boolean keepDistanceField = distanceField != null;
+        if ( distanceField == null ) {
+            distanceField = "__temp_%s".formatted( UUID.randomUUID().toString() );
+        }
+
+        if ( distanceMultiplier == null ) {
+            distanceMultiplier = new BsonInt32( 1 );
+        }
+
+        //
+        // Step 1:
+        // Projection that adds dynamically computed distance field.
+        Map<String, RexNode> adds = new HashMap<>();
+        List<String> excludes = List.of();
+
+        BsonValue innerNear = options.get( nearOrNearSphere );
+        BsonDocument distanceProjection = new BsonDocument();
+        BsonNumber minDistance = null;
+        BsonNumber maxDistance = null;
+
+        if ( innerNear.isArray() ) {
+            BsonArray legacyCoordinates = innerNear.asArray();
+            if ( options.containsKey( "$maxDistance" ) ) {
+                maxDistance = options.getNumber( "$maxDistance" );
+            }
+            // Technically not allowed for a $near query, but we need this to support minDistance from the $geoNear stage.
+            if ( options.containsKey( "$minDistance" ) ) {
+                minDistance = options.getNumber( "$minDistance" );
+            }
+            distanceProjection.put( "$distance", new BsonArray( List.of(
+                    new BsonString( "$" + key ),
+                    legacyCoordinates,
+                    distanceMultiplier
+            ) ) );
+        } else if ( innerNear.isDocument() ) {
+            // If the user specifies the geometry using GeoJSON, we use the spherical
+            // geometry by default, even if we use $near.
+            isSpherical = true;
+
+            BsonDocument near = innerNear.asDocument();
+            BsonDocument geometry = near.getDocument( "$geometry" );
+            distanceProjection.put( "$distance", new BsonArray( List.of(
+                    new BsonString( "$" + key ),
+                    geometry
+            ) ) );
+            if ( near.containsKey( "$minDistance" ) ) {
+                minDistance = near.get( "$minDistance" ).asNumber();
+            }
+            if ( near.containsKey( "$maxDistance" ) ) {
+                maxDistance = near.get( "$maxDistance" ).asNumber();
+            }
+        }
+
+        adds.put( distanceField, convertDistance( distanceProjection.get( "$distance" ), isSpherical, rowType ) );
+        node = LogicalDocumentProject.create( node, Map.of(), excludes, adds );
+        node.getTupleType();
+
+        //
+        // Step 2:
+        // (Optional) Filter out by using fields $minDistance and $maxDistance
+        BsonDocument filterConditions = new BsonDocument();
+        if ( minDistance != null ) {
+            filterConditions.put( "$gte", minDistance );
+        }
+        if ( maxDistance != null ) {
+            filterConditions.put( "$lte", maxDistance );
+        }
+        if ( !filterConditions.isEmpty() ) {
+            BsonDocument filterDistance = new BsonDocument( distanceField, filterConditions );
+            RexNode distanceCondition = translateDocument( filterDistance, rowType, null );
+            node = LogicalDocumentFilter.create( node, distanceCondition );
+            node.getTupleType();
+        }
+
+        //
+        // Step 3:
+        // Sort by distanceField ascending
+        BsonDocument sortDocument = new BsonDocument( distanceField, new BsonInt32( 1 ) );
+        node = combineSort( sortDocument, node, rowType );
+
+        //
+        // Step 4:
+        // Projection to remove field distanceField
+        if ( !keepDistanceField ) {
+            BsonDocument removeDistanceProjection = new BsonDocument( distanceField, new BsonInt32( 0 ) );
+            List<String> unsetExcludes = new ArrayList<>();
+            translateProjection( rowType, false, true, Map.of(), unsetExcludes, removeDistanceProjection );
+            node = LogicalDocumentProject.create( node, Map.of(), unsetExcludes, Map.of() );
+        }
+
+        return node;
     }
 
 
@@ -1334,6 +1699,43 @@ public class MqlToAlgConverter {
     }
 
 
+    private RexNode convertDistance( BsonValue bsonValue, boolean isSpherical, AlgDataType rowType ) {
+        BsonArray bsonArray = bsonValue.asArray();
+        List<RexNode> operands = new ArrayList<>();
+        assert bsonArray.size() == 3;
+        BsonValue distanceField = bsonArray.get( 0 );
+        BsonValue coordinates = bsonArray.get( 1 );
+        BsonValue distanceMultiplier = bsonArray.get( 2 );
+
+        // Reference to field from document
+        operands.add( getIdentifier( distanceField.asString().getValue().substring( 1 ), rowType ) );
+
+        PolyGeometry polyGeometry;
+        if ( coordinates.isDocument() ) {
+            BsonDocument geometry = coordinates.asDocument();
+            try {
+                polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
+            } catch ( InvalidGeometryException e ) {
+                throw new RuntimeException( e );
+            }
+        } else if ( coordinates.isArray() ) {
+            GeometryFactory geoFactory = isSpherical
+                    ? new GeometryFactory( new PrecisionModel(), WGS_84 )
+                    : new GeometryFactory();
+            Coordinate point = convertArrayToCoordinate( coordinates.asArray() );
+            polyGeometry = new PolyGeometry( geoFactory.createPoint( point ) );
+        } else {
+            throw new GenericRuntimeException( "$near supports either a legacy coordinate pair of the form [x, y] or a $geometry object." );
+        }
+        // Geometry from filter
+        operands.add( convertGeometry( polyGeometry ) );
+
+        operands.add( convertLiteral( distanceMultiplier ) );
+
+        return getFixedCall( operands, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_GEO_DISTANCE ), PolyType.ANY );
+    }
+
+
     private RexNode convertSingleMath( String key, BsonValue value, AlgDataType rowType ) {
         Operator op = singleMathOperators.get( key );
         if ( value.isArray() ) {
@@ -1514,11 +1916,32 @@ public class MqlToAlgConverter {
         List<RexNode> operands = new ArrayList<>();
 
         for ( Entry<String, BsonValue> entry : bsonDocument.entrySet() ) {
-            if ( entry.getKey().equals( "$regex" ) ) {
-                operands.add( convertRegex( bsonDocument, parentKey, rowType ) );
-            } else if ( !entry.getKey().equals( "$options" ) ) {
-                // normal handling
-                operands.add( convertEntry( entry.getKey(), parentKey, entry.getValue(), rowType ) );
+            switch ( entry.getKey() ) {
+                case "$regex":
+                    operands.add( convertRegex( bsonDocument, parentKey, rowType ) );
+                    break;
+                case "$options":
+                    // Already handled by $regex
+                    break;
+                case "$geoIntersects":
+                    operands.add( convertGeoIntersects( bsonDocument, parentKey, rowType ) );
+                    break;
+                case "$geoWithin":
+                    operands.add( convertGeoWithin( bsonDocument, parentKey, rowType ) );
+                    break;
+                case "$near":
+                    operands.add( convertNear( bsonDocument, parentKey, false, rowType ) );
+                    break;
+                case "$nearSphere":
+                    operands.add( convertNear( bsonDocument, parentKey, true, rowType ) );
+                    break;
+                case "$minDistance", "$maxDistance":
+                    // Already handled by $near or $nearSphere
+                    break;
+                default:
+                    // normal handling
+                    operands.add( convertEntry( entry.getKey(), parentKey, entry.getValue(), rowType ) );
+                    break;
             }
         }
         return getFixedCall( operands, OperatorRegistry.get( OperatorName.AND ), PolyType.BOOLEAN );
@@ -1600,6 +2023,319 @@ public class MqlToAlgConverter {
                         convertLiteral( new BsonBoolean( options.contains( "x" ) ) ),
                         convertLiteral( new BsonBoolean( options.contains( "s" ) ) )
                 ) );
+    }
+
+
+    private RexNode convertGeoIntersects( BsonValue bson, String parentKey, AlgDataType rowType ) {
+        // We convert the $geometry object to a PolyGeometry String.
+        BsonDocument geometry = bson.asDocument().get( "$geoIntersects" ).asDocument().get( "$geometry" ).asDocument();
+        PolyGeometry polyGeometry;
+        try {
+            polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
+        } catch ( InvalidGeometryException e ) {
+            throw new GenericRuntimeException( "$geometry operand of $geoIntersects could not be parsed as GeoJSON.", e );
+        }
+
+        return new RexCall(
+                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GEO_INTERSECTS ),
+                Arrays.asList(
+                        getIdentifier( parentKey, rowType ),
+                        convertGeometry( polyGeometry )
+                ) );
+    }
+
+
+    private RexNode convertGeoWithin( BsonValue bson, String parentKey, AlgDataType rowType ) {
+        // We convert the $geometry object to a PolyGeometry String.
+        BsonDocument geometry = bson.asDocument().get( "$geoWithin" ).asDocument();
+        PolyGeometry polyGeometry = null;
+        PolyDouble distance = new PolyDouble( -1d );
+
+        if ( geometry.containsKey( "$geometry" ) ) {
+            geometry = geometry.get( "$geometry" ).asDocument();
+            try {
+                polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
+            } catch ( InvalidGeometryException e ) {
+                throw new GenericRuntimeException( "$geometry operand of $geoWithin could not be parsed as GeoJSON.", e );
+            }
+        }
+
+        if ( geometry.containsKey( "$box" ) ) {
+            BsonArray box = geometry.get( "$box" ).asArray();
+            Coordinate bottomLeft = convertArrayToCoordinate( box.get( 0 ).asArray() );
+            Coordinate topRight = convertArrayToCoordinate( box.get( 1 ).asArray() );
+            Coordinate topLeft = new Coordinate( bottomLeft.x, topRight.y );
+            Coordinate bottomRight = new Coordinate( topRight.x, bottomLeft.y );
+            // Form a closed Ring, starting on the bottom left and going clockwise.
+            Coordinate[] linearRing = new Coordinate[]{
+                    bottomLeft,
+                    topLeft,
+                    topRight,
+                    bottomRight,
+                    bottomLeft
+            };
+            GeometryFactory geoFactory = new GeometryFactory();
+            polyGeometry = new PolyGeometry( geoFactory.createPolygon( linearRing ) );
+        } else if ( geometry.containsKey( "$polygon" ) ) {
+            BsonArray polygon = geometry.get( "$polygon" ).asArray();
+            ArrayList<Coordinate> linearRing = new ArrayList<>();
+            for ( BsonValue coordinate : polygon ) {
+                linearRing.add( convertArrayToCoordinate( coordinate.asArray() ) );
+            }
+            GeometryFactory geoFactory = new GeometryFactory();
+            polyGeometry = new PolyGeometry( geoFactory.createPolygon( linearRing.toArray( new Coordinate[0] ) ) );
+        } else if ( geometry.containsKey( "$center" ) ) {
+            BsonArray circle = geometry.get( "$center" ).asArray();
+            Coordinate center = convertArrayToCoordinate( circle.get( 0 ).asArray() );
+            double radius = convertBsonValueToDouble( circle.get( 1 ) );
+            distance = new PolyDouble( radius );
+
+            // As GeoJSON does not define a circle shape, we will create a Point instead. Then we can
+            // check if the distance between the shape and the point is inside the radius.
+            GeometryFactory geoFactory = new GeometryFactory();
+            polyGeometry = new PolyGeometry( geoFactory.createPoint( center ) );
+        } else if ( geometry.containsKey( "$centerSphere" ) ) {
+            BsonArray circle = geometry.get( "$centerSphere" ).asArray();
+            Coordinate center = convertArrayToCoordinate( circle.get( 0 ).asArray() );
+            double radius = convertBsonValueToDouble( circle.get( 1 ) );
+            distance = new PolyDouble( radius );
+
+            // As $centerSphere works in the spherical instead of the planar coordinate system, we need
+            // to use the default WGS84 CRS when creating the shape.
+            GeometryFactory geoFactory = new GeometryFactory( new PrecisionModel(), WGS_84 );
+            // As GeoJSON does not define a circle shape, we will create a Point instead. Then we can
+            // check if the distance between the shape and the point is inside the radius.
+            polyGeometry = new PolyGeometry( geoFactory.createPoint( center ) );
+        }
+
+        if ( polyGeometry == null ) {
+            throw new GenericRuntimeException( "$geoWithin arguments needs to be one of the following: $geometry, $box, $polygon, $center, $centerSphere" );
+        }
+
+        return new RexCall(
+                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GEO_WITHIN ),
+                Arrays.asList(
+                        getIdentifier( parentKey, rowType ),
+                        convertGeometry( polyGeometry ),
+                        // TODO: Possible to have null?
+                        convertLiteral( new BsonDouble( distance.doubleValue() ) )
+                ) );
+    }
+
+
+    private AlgNode convertGeoNear( BsonValue bson, AlgNode node, AlgDataType rowType ) {
+        if ( !bson.isDocument() ) {
+            throw new GenericRuntimeException( "$geoNear called without any options" );
+        }
+        BsonDocument options = bson.asDocument();
+
+        // Required
+        // The output field that contains the calculated distsance.
+        BsonString distanceField = null;
+        PolyGeometry near = null;
+
+        if ( !options.containsKey( "distanceField" ) || !options.containsKey( "near" ) ) {
+            throw new GenericRuntimeException( "distanceField and near for $geoNear are required." );
+        }
+
+        // Optional
+        // Factor to multiply all computed distances by
+        BsonDouble distanceMultiplier = new BsonDouble( 1 );
+        // Includes a field in the output document with the geometry from the near field.
+        BsonString includeLocs = new BsonString( "" );
+        // Specify which spatial index should be used when calculating distances
+        BsonString key = new BsonString( "" );
+        // Filter: The maximum distance the result can be from the point specified in near
+        BsonDouble maxDistance = new BsonDouble( -1 );
+        // Filter: The minimum distance the result can be from the point specified in near
+        BsonDouble minDistance = new BsonDouble( -1 );
+        // Determines if $nearSphere or $near semantics should be used. Default: $near.
+        boolean spherical = false;
+
+        distanceField = options.getString( "distanceField" );
+        BsonValue bsonNear = options.get( "near" );
+
+        if ( options.containsKey( "spherical" ) ) {
+            spherical = options.getBoolean( "spherical" ).getValue();
+        }
+
+        if ( bsonNear.isArray() ) {
+            // When using legacy coordinates, only $minDistance is valid.
+            GeometryFactory geoFactory = spherical
+                    ? new GeometryFactory( new PrecisionModel(), WGS_84 )
+                    : new GeometryFactory();
+            Coordinate point = convertArrayToCoordinate( bsonNear.asArray() );
+            near = new PolyGeometry( geoFactory.createPoint( point ) );
+        } else if ( bsonNear.isDocument() ) {
+            if ( !spherical ) {
+                throw new GenericRuntimeException( "Cannot use spherical=false when using a GeoJSON object for the near key." );
+            }
+            BsonDocument nearGeoJson = bsonNear.asDocument();
+            BsonDocument geometry = nearGeoJson.getDocument( "$geometry" );
+            try {
+                near = PolyGeometry.fromGeoJson( geometry.toJson() );
+            } catch ( InvalidGeometryException e ) {
+                throw new RuntimeException( e );
+            }
+        } else {
+            throw new GenericRuntimeException( " Value of %s must be either an array or a Document ", key );
+        }
+
+        if ( options.containsKey( "includeLocs" ) ) {
+            includeLocs = options.getString( "includeLocs" );
+        }
+
+        if ( options.containsKey( "key" ) ) {
+            key = options.getString( "key" );
+        }
+
+        if ( options.containsKey( "distanceMultiplier" ) ) {
+            BsonNumber multiplier = options.getNumber( "distanceMultiplier" );
+            if ( multiplier.isInt32() ) {
+                distanceMultiplier = new BsonDouble( multiplier.asInt32().intValue() );
+            } else if ( multiplier.isInt64() ) {
+                distanceMultiplier = new BsonDouble( (double) multiplier.asInt64().longValue() );
+            } else if ( multiplier.isDouble() ) {
+                distanceMultiplier = multiplier.asDouble();
+            } else {
+                throw new GenericRuntimeException( "distanceField must be a number type" );
+            }
+        }
+
+        if ( options.containsKey( "maxDistance" ) ) {
+            BsonNumber maxDist = options.getNumber( "maxDistance" );
+            if ( maxDist.isInt32() ) {
+                maxDistance = new BsonDouble( maxDist.asInt32().intValue() );
+            } else if ( maxDist.isInt64() ) {
+                maxDistance = new BsonDouble( (double) maxDist.asInt64().longValue() );
+            } else if ( maxDist.isDouble() ) {
+                maxDistance = maxDist.asDouble();
+            } else {
+                throw new GenericRuntimeException( "distanceField must be a number type" );
+            }
+        }
+
+        if ( options.containsKey( "minDistance" ) ) {
+            BsonNumber minDist = options.getNumber( "minDistance" );
+            if ( minDist.isInt32() ) {
+                minDistance = new BsonDouble( minDist.asInt32().intValue() );
+            } else if ( minDist.isInt64() ) {
+                minDistance = new BsonDouble( (double) minDist.asInt64().longValue() );
+            } else if ( minDist.isDouble() ) {
+                minDistance = minDist.asDouble();
+            } else {
+                throw new GenericRuntimeException( "distanceField must be a number type" );
+            }
+        }
+
+        RexNode query;
+        if ( options.containsKey( "query" ) ) {
+            query = translateDocument( options.getDocument( "query" ), rowType, null );
+        } else {
+            // TODO RB: Is there a better way to represent an empty a non-existant RexCall? null is not allowed.
+            query = convertLiteral( new BsonBoolean( false ) );
+        }
+
+        return LogicalDocumentFilter.create(
+                node,
+                new RexCall(
+                        cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                        OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GEO_NEAR ),
+                        Arrays.asList(
+                                // Required
+                                convertGeometry( near ),
+                                getIdentifier( distanceField.getValue(), rowType ),
+                                // Optional
+                                convertLiteral( distanceMultiplier ),
+                                getIdentifier( includeLocs.getValue(), rowType ),
+                                convertLiteral( key ),
+                                convertLiteral( maxDistance ),
+                                convertLiteral( minDistance ),
+                                query
+                                // Spherical is encoded in PolyGeometry as CRS.
+                        ) )
+        );
+    }
+
+
+    private RexNode convertNear( BsonValue bson, String parentKey, boolean isSpherical, AlgDataType rowType ) {
+        String key = isSpherical ? "$nearSphere" : "$near";
+        BsonDocument bsonDocument = bson.asDocument();
+        BsonValue innerNear = bsonDocument.get( key );
+
+        BsonNumber minDistance = new BsonInt32( -1 );
+        BsonNumber maxDistance = new BsonInt32( -1 );
+        PolyGeometry polyGeometry;
+
+        if ( innerNear.isArray() ) {
+            // When using legacy coordinates, only $minDistance is valid.
+            if ( bsonDocument.containsKey( "$maxDistance" ) ) {
+                maxDistance = bsonDocument.getNumber( "$maxDistance" );
+            }
+            GeometryFactory geoFactory = isSpherical
+                    ? new GeometryFactory( new PrecisionModel(), WGS_84 )
+                    : new GeometryFactory();
+            Coordinate point = convertArrayToCoordinate( innerNear.asArray() );
+            polyGeometry = new PolyGeometry( geoFactory.createPoint( point ) );
+        } else if ( innerNear.isDocument() ) {
+            BsonDocument near = innerNear.asDocument();
+            BsonDocument geometry = near.getDocument( "$geometry" );
+            try {
+                polyGeometry = PolyGeometry.fromGeoJson( geometry.toJson() );
+            } catch ( InvalidGeometryException e ) {
+                throw new RuntimeException( e );
+            }
+            if ( near.containsKey( "$minDistance" ) ) {
+                minDistance = near.get( "$minDistance" ).asNumber();
+            }
+            if ( near.containsKey( "$maxDistance" ) ) {
+                maxDistance = near.get( "$maxDistance" ).asNumber();
+            }
+        } else {
+            throw new GenericRuntimeException( " Value of %s must be either an array or a Document ", key );
+        }
+
+        return new RexCall(
+                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), isSpherical ? OperatorName.MQL_NEAR_SPHERE : OperatorName.MQL_NEAR ),
+                Arrays.asList(
+                        getIdentifier( parentKey, rowType ),
+                        convertGeometry( polyGeometry ),
+                        convertLiteral( minDistance ),
+                        convertLiteral( maxDistance )
+                ) );
+    }
+
+
+    private static Coordinate convertArrayToCoordinate( BsonArray array ) {
+        if ( array.size() != 2 ) {
+            throw new GenericRuntimeException( "Coordinates need to be of the form [x,y]" );
+        }
+        double x = convertBsonValueToDouble( array.get( 0 ) );
+        double y = convertBsonValueToDouble( array.get( 1 ) );
+        return new Coordinate( x, y );
+    }
+
+
+    private static double convertBsonValueToDouble( BsonValue bsonValue ) {
+        Double result = null;
+        if ( bsonValue.isDouble() ) {
+            result = bsonValue.asDouble().getValue();
+        }
+        if ( bsonValue.isInt32() ) {
+            int intValue = bsonValue.asInt32().getValue();
+            result = (double) intValue;
+        }
+        if ( bsonValue.isInt64() ) {
+            long intValue = bsonValue.asInt64().getValue();
+            result = (double) intValue;
+        }
+        if ( result == null ) {
+            throw new GenericRuntimeException( "Legacy Coordinates needs to be of type INTEGER or DOUBLE." );
+        }
+        return result;
     }
 
 
@@ -1861,7 +2597,12 @@ public class MqlToAlgConverter {
     private RexNode convertLiteral( BsonValue bsonValue ) {
         Pair<PolyValue, PolyType> valuePair = RexLiteral.convertType( getPolyValue( bsonValue ), new DocumentType() );
         return new RexLiteral( valuePair.left, new DocumentType(), valuePair.right );
+    }
 
+
+    private RexNode convertGeometry( PolyGeometry geometry ) {
+        Pair<PolyValue, PolyType> valuePair = RexLiteral.convertType( geometry, new DocumentType() );
+        return new RexLiteral( valuePair.left, new DocumentType(), valuePair.right );
     }
 
 
@@ -1947,7 +2688,7 @@ public class MqlToAlgConverter {
         }
 
         if ( !excludes.isEmpty() ) {
-            return LogicalDocumentProject.create( node, new HashMap<>(), excludes );
+            return LogicalDocumentProject.create( node, new HashMap<>(), excludes, Map.of() );
 
         } else if ( isAddFields ) {
             List<String> names = new ArrayList<>();

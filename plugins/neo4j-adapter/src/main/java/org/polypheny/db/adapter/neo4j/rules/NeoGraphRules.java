@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,6 +112,13 @@ public interface NeoGraphRules {
     }
 
 
+    static boolean supports( LpgFilter r ) {
+        NeoSupportVisitor visitor = new NeoSupportVisitor();
+        r.getCondition().accept( visitor );
+        return visitor.isSupports();
+    }
+
+
     class NeoGraphProjectRule extends NeoConverterRule {
 
         public static NeoGraphProjectRule INSTANCE = new NeoGraphProjectRule( LpgProject.class, NeoGraphRules::supports, "NeoGraphProjectRule" );
@@ -138,7 +145,7 @@ public interface NeoGraphRules {
 
     class NeoGraphFilterRule extends NeoConverterRule {
 
-        public static NeoGraphFilterRule INSTANCE = new NeoGraphFilterRule( LpgFilter.class, r -> true, "NeoGraphFilterRule" );
+        public static NeoGraphFilterRule INSTANCE = new NeoGraphFilterRule( LpgFilter.class, NeoGraphRules::supports, "NeoGraphFilterRule" );
 
 
         private <R extends AlgNode> NeoGraphFilterRule( Class<R> clazz, Predicate<? super R> supports, String description ) {

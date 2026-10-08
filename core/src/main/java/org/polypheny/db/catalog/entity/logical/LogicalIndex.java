@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.Map;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
@@ -67,6 +68,9 @@ public class LogicalIndex implements Serializable {
     @Serialize
     @JsonProperty
     public long keyId;
+    @Serialize
+    @JsonProperty
+    public Map<String, String> options;
 
 
     public LogicalIndex(
@@ -79,7 +83,8 @@ public class LogicalIndex implements Serializable {
             @Deserialize("location") final Long location,
             @Deserialize("keyId") final long keyId,
             @Deserialize("key") final LogicalKey key,
-            @Deserialize("physicalName") final String physicalName ) {
+            @Deserialize("physicalName") final String physicalName,
+            @Deserialize("options") final Map<String, String> options ) {
         this.id = id;
         this.name = name;
         this.unique = unique;
@@ -90,6 +95,7 @@ public class LogicalIndex implements Serializable {
         this.keyId = keyId;
         this.key = key;
         this.physicalName = physicalName;
+        this.options = options == null ? Map.of() : options;
     }
 
 }

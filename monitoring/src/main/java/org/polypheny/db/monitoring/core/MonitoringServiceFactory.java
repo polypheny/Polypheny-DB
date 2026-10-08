@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ public class MonitoringServiceFactory {
 
     public static MonitoringService createMonitoringService( boolean resetRepository ) {
         // Create repository
-        PersistentMonitoringRepository persistentRepo = PolyPluginManager.getPERSISTENT_MONITORING();
+        PersistentMonitoringRepository persistentRepo = PolyPluginManager.getPERSISTENT_MONITORING().get();
         StatisticRepository statisticRepo = new StatisticRepository();
 
         // Initialize the repo and open connection

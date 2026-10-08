@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TimeZone;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -87,6 +88,7 @@ import org.polypheny.db.sql.language.SqlDialect.CalendarPolicy;
 import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDefaults;
@@ -352,6 +354,14 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     @NonNull
     private static Expression getPreprocessArrayExpression( ParameterExpression resultSet_, int i, SqlDialect dialect, AlgDataType fieldType ) {
+        Optional<Expression> arrayRetrieval = dialect.getCustomArrayRetrievalExpression( resultSet_, i, fieldType );
+        if ( fieldType instanceof VectorType && arrayRetrieval.isPresent() ) {
+            Expression parsed = arrayRetrieval.get();
+            return Expressions.condition(
+                    Expressions.call( resultSet_, "wasNull" ),
+                    Expressions.constant( null ),
+                    parsed );
+        }
         if ( (dialect.supportsArrays() && (fieldType.unwrapOrThrow( ArrayType.class ).getDimension() == 1 || dialect.supportsNestedArrays())) ) {
             ParameterExpression argument = Expressions.parameter( Object.class );
 

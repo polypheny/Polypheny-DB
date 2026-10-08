@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,10 @@ public class ScanRule extends AlgOptRule {
         if ( oldAlg.getEntity().unwrap( TranslatableEntity.class ).isEmpty() ) {
             return;
         }
-        AlgNode newAlg = oldAlg.getEntity().unwrap( TranslatableEntity.class ).get().toAlg( oldAlg.getCluster(), oldAlg.getTraitSet() );
+        TranslatableEntity one = oldAlg.getEntity().unwrap( TranslatableEntity.class ).orElseThrow();
+        AlgCluster oldCluster = oldAlg.getCluster();
+        AlgTraitSet newTraitSet = oldAlg.getTraitSet();
+        AlgNode newAlg = one.toAlg( oldCluster, newTraitSet );
         call.transformTo( newAlg );
     }
 

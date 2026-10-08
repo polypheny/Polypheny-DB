@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -187,6 +187,14 @@ public class PolyPath extends GraphObject {
             if ( name.equals( holder.getVariableName() ) ) {
                 return holder;
             }
+        }
+
+        int i = 0;
+        for ( PolyString n : this.names ) {
+            if ( name.equals( n ) ) {
+                return path.get( i );
+            }
+            i++;
         }
 
         return null;

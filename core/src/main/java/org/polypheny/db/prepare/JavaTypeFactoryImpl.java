@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -149,7 +149,11 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         }
         if ( type instanceof Types.ArrayType arrayType ) {
             final AlgDataType componentRelType = createType( arrayType.getComponentType() );
-            return createArrayType( createTypeWithNullability( componentRelType, arrayType.componentIsNullable() ), arrayType.maximumCardinality() );
+            if ( arrayType.componentIsNullable() ) {
+                return createArrayType( createTypeWithNullability( componentRelType, arrayType.componentIsNullable() ), arrayType.maximumCardinality() );
+            } else {
+                return createVectorType( createTypeWithNullability( componentRelType, arrayType.componentIsNullable() ), arrayType.maximumCardinality() );
+            }
         }
         if ( type instanceof Types.MapType mapType ) {
             final AlgDataType keyRelType = createType( mapType.getKeyType() );

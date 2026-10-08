@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -327,7 +327,7 @@ public class LanguageCrud {
 
         boolean lastRolledBack = false;
         for ( Result<?, ?> result : results ) {
-            if (result.xid != null ) {
+            if ( result.xid != null ) {
                 lastRolledBack = abortedXids.contains( result.xid );
             }
             result.isRolledBack = lastRolledBack;
@@ -577,9 +577,11 @@ public class LanguageCrud {
 
             boolean hasMoreRows = context.getIterator().hasMoreRows();
 
+            String[] normalizedData = data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new );
+
             return DocResult.builder()
                     .header( new FieldDefinition[]{ FieldDefinition.builder().name( "Document" ).dataType( DataModel.DOCUMENT.name() ).build() } )
-                    .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
+                    .data( normalizedData )
                     .query( context.getQuery().getQuery() )
                     .language( context.getQuery().getLanguage() )
                     .queryType( QueryType.from( context.getImplementation().getKind() ) )

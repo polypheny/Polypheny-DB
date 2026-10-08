@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -230,7 +230,7 @@ public class HttpServer implements Runnable {
 
         attachStatisticRoutes( webuiServer, crud );
 
-        attachPluginRoutes( webuiServer, crud );
+        webuiServer.get( "/getAvailablePlugins", crud::getAvailablePlugins );
 
         attachDockerRoutes( webuiServer, crud );
 
@@ -411,15 +411,6 @@ public class HttpServer implements Runnable {
         webuiServer.get( "/docker/settings", crud::getDockerSettings );
 
         webuiServer.patch( "/docker/settings", crud::updateDockerSettings );
-    }
-
-
-    private static void attachPluginRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.post( "/loadPlugins", crud::loadPlugins );
-
-        webuiServer.post( "/unloadPlugin", crud::unloadPlugin );
-
-        webuiServer.get( "/getAvailablePlugins", crud::getAvailablePlugins );
     }
 
 

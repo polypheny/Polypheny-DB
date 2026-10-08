@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 public class AbstractAdapterSettingBoolean extends AbstractAdapterSetting {
 
@@ -47,6 +48,14 @@ public class AbstractAdapterSettingBoolean extends AbstractAdapterSetting {
     @Override
     public String getValue() {
         return defaultValue;
+    }
+
+
+    @Override
+    public void validate( String s ) {
+        if ( !s.equalsIgnoreCase( "true" ) && !s.equalsIgnoreCase( "false" ) ) {
+            throw new GenericRuntimeException( "Setting %s is invalid: \"%s\" is not a boolean", name, s );
+        }
     }
 
 }

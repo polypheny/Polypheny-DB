@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherAggregate;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
+import org.polypheny.db.cypher.expression.CypherFunctionInvocation;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
@@ -64,12 +65,17 @@ public class CypherReturnItem extends CypherReturn {
     @Nullable
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         if ( variable != null ) {
+            String name = variable.getName();
+            if ( this.expression instanceof CypherFunctionInvocation func ) {
+                return Pair.of( PolyString.of( name ), func.getRexCall( context, type ) );
+            }
+
             // name -> aggregate
             // renaming of the field
-            String name = variable.getName();
             if ( expression.getType() == ExpressionType.AGGREGATE ) {
                 return ((CypherAggregate) expression).getAggregate( context, name );
             }
+
             return Pair.of( PolyString.of( name ), expression.getRex( context, type ).right );
         } else {
             if ( expression.getType() == ExpressionType.AGGREGATE ) {

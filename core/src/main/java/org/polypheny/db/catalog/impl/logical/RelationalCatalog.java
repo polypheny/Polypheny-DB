@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -242,7 +242,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
-    public LogicalIndex addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName ) {
+    public LogicalIndex addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, long adapterId, IndexType type, String indexName, Map<String, String> options ) {
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         if ( unique ) {
             // TODO: Check if the current values are unique
@@ -258,7 +258,8 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
                 adapterId,
                 keyId,
                 Objects.requireNonNull( keys.get( keyId ) ),
-                null );
+                null,
+                options );
         synchronized ( this ) {
             indexes.put( id, index );
         }
@@ -269,10 +270,11 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     private long getOrAddKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) {
-        return getKey(tableId, columnIds, enforcementTime)
+        return getKey( tableId, columnIds, enforcementTime )
                 .orElse( addKey( tableId, columnIds, enforcementTime ) );
     }
-    
+
+
     private Optional<Long> getKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) {
         return Catalog.snapshot()
                 .rel()
@@ -335,9 +337,9 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
-    public LogicalColumn addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation ) {
+    public LogicalColumn addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, boolean elementsNullable, Collation collation ) {
         long id = idBuilder.getNewFieldId();
-        LogicalColumn column = new LogicalColumn( id, name, tableId, logicalNamespace.id, position, type, collectionsType, length, scale, dimension, cardinality, nullable, collation, null );
+        LogicalColumn column = new LogicalColumn( id, name, tableId, logicalNamespace.id, position, type, collectionsType, length, scale, dimension, cardinality, nullable, elementsNullable, collation, null );
         columns.put( id, column );
         change( CatalogEvent.LOGICAL_REL_FIELD_CREATED, null, id );
         return column;
@@ -359,12 +361,12 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
-    public void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality ) {
+    public void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, Boolean elementsNullable ) {
         if ( scale != null && scale > length ) {
             throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
         }
 
-        columns.put( columnId, columns.get( columnId ).toBuilder().type( type ).collectionsType( collectionsType ).length( length ).scale( scale ).dimension( dimension ).cardinality( cardinality ).build() );
+        columns.put( columnId, columns.get( columnId ).toBuilder().type( type ).collectionsType( collectionsType ).length( length ).scale( scale ).dimension( dimension ).cardinality( cardinality ).elementsNullable( elementsNullable ).build() );
         change( CatalogEvent.LOGICAL_REL_FIELD_TYPE_CHANGED, columnId, type );
     }
 
@@ -599,11 +601,11 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     @Override
     public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds, Statement statement ) {
         Optional<Long> keyId = getKey( tableId, columnIds, EnforcementTime.ON_QUERY );
-        if (keyId.isPresent()) {
+        if ( keyId.isPresent() ) {
             // Check if there is already a unique constraint
             List<LogicalConstraint> logicalConstraints = constraints.values().stream()
-                .filter( c -> c.keyId == keyId.get() && c.type == ConstraintType.UNIQUE )
-                .toList();
+                    .filter( c -> c.keyId == keyId.get() && c.type == ConstraintType.UNIQUE )
+                    .toList();
             if ( !logicalConstraints.isEmpty() ) {
                 throw new GenericRuntimeException( "There is already a unique constraint!" );
             }

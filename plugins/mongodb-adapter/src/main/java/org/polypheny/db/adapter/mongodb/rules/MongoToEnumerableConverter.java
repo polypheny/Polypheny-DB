@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,6 +96,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 
         Expression enumerable;
         if ( !mongoImplementor.isDML() ) {
+            final Expression ddls = list.append( list.newName( "ddls" ), constantArrayList( mongoImplementor.indexAndIndexType, String.class ) );
             final Expression logicalCols = list.append(
                     "logical",
                     constantArrayList(
@@ -103,7 +104,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
             final Expression preProjects = list.append( "prePro", constantArrayList( mongoImplementor.getPreProjects(), String.class ) );
             enumerable = list.append(
                     list.newName( "enumerable" ),
-                    Expressions.call( table, MongoMethod.MONGO_QUERYABLE_AGGREGATE.method, tupleTypes, ops, preProjects, logicalCols ) );
+                    Expressions.call( table, MongoMethod.MONGO_QUERYABLE_AGGREGATE.method, tupleTypes, ops, preProjects, logicalCols, ddls ) );
         } else {
             final Expression operations = list.append( list.newName( "operations" ), constantArrayList( mongoImplementor.getOperations(), String.class ) );
             final Expression operation = list.append( list.newName( "operation" ), Expressions.constant( mongoImplementor.getOperation(), Operation.class ) );

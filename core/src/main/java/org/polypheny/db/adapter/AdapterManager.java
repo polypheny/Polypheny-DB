@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingsPreset;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
@@ -65,8 +66,10 @@ public class AdapterManager {
     public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, DeployFn deployer ) {
         List<AbstractAdapterSetting> settings = AdapterTemplate.getAllSettings( clazz );
         AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
+        List<DeployMode> modes = List.of( properties.usedModes() );
+        List<AdapterSettingsPreset> presets = AdapterTemplate.getAllPresets( clazz, settings, modes );
         long id = AdapterManager.getInstance().idBuilder.getAndIncrement();
-        AdapterManager.getInstance().adapterTemplates.put( id, new AdapterTemplate( id, clazz, adapterName, settings, List.of( properties.usedModes() ), properties.description(), deployer ) );
+        AdapterManager.getInstance().adapterTemplates.put( id, new AdapterTemplate( id, clazz, adapterName, settings, modes, presets, properties.description(), deployer ) );
         return id;
     }
 
@@ -106,7 +109,7 @@ public class AdapterManager {
                     throw new GenericRuntimeException( adapterTemplate.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
                 }
                 // Merge annotated AdapterSettings into settings
-                List<AbstractAdapterSetting> settings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations(), adapterTemplate.getClazz().getAnnotation( AdapterProperties.class ) );
+                List<AbstractAdapterSetting> settings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations() );
 
                 result.add( new AdapterInformation( properties.name(), properties.description(), adapterType, settings, List.of( properties.usedModes() ) ) );
             }
@@ -189,7 +192,7 @@ public class AdapterManager {
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
 
         for ( AbstractAdapterSetting setting : adapterTemplate.settings ) {
-            if ( setting.appliesTo.stream().noneMatch( s -> s.appliesTo( mode ) ) ) {
+            if ( !setting.appliesTo.contains( mode ) ) {
                 settings.remove( setting.name );
             }
         }
@@ -200,6 +203,9 @@ public class AdapterManager {
             adapterByName.put( adapter.getUniqueName(), adapter );
             adapterById.put( adapter.getAdapterId(), adapter );
             return adapter;
+        } catch ( GenericRuntimeException e ) {
+            catalog.dropAdapter( adapterId );
+            throw e;
         } catch ( Exception e ) {
             catalog.dropAdapter( adapterId );
             String message = e.getMessage() == null || e.getMessage().isBlank()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ public class DocAggregateActivity implements Activity, Fusable {
         for ( LaxAggregateCall aggCall : aggCalls ) {
             includes.put( aggCall.name, ActivityUtils.getDocRexNameRef( aggCall.name, 0 ) );
         }
-        return LogicalDocumentProject.create( aggNode, includes, List.of() );
+        return LogicalDocumentProject.create( aggNode, includes, List.of(), Map.of() );
     }
 
 

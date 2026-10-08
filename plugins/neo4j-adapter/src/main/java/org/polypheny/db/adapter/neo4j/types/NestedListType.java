@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,24 @@ public class NestedListType extends NestedPolyType {
     @Getter
     public PolyType type;
 
+    public List<String> names;
+
+
     public List<NestedPolyType> types;
+
+
+    public NestedListType( PolyType type, List<String> names, List<NestedPolyType> types ) {
+        this.type = type;
+        this.names = names;
+        this.types = types;
+    }
+
+
+    public NestedListType( PolyType type, List<NestedPolyType> types ) {
+        this.type = type;
+        this.types = types;
+        this.names = types.stream().map( t -> (String) null ).toList();
+    }
 
 
     @Override
@@ -50,7 +67,9 @@ public class NestedListType extends NestedPolyType {
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( NestedListType.class, Expressions.constant( type ), EnumUtils.constantArrayList( types.stream().map( Expressible::asExpression ).toList(), NestedPolyType.class ) );
+        Expression tExpression = EnumUtils.constantArrayList( types.stream().map( Expressible::asExpression ).toList(), NestedPolyType.class );
+        Expression nExpression = EnumUtils.constantArrayList( names.stream().map( Expressions::constant ).toList(), String.class );
+        return Expressions.new_( NestedListType.class, Expressions.constant( type ), nExpression, tExpression );
     }
 
 }
