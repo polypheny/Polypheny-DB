@@ -1922,7 +1922,8 @@ public class DdlManagerImpl extends DdlManager {
                 sourceColumn.length(),
                 sourceColumn.scale(),
                 sourceColumn.dimension(),
-                sourceColumn.cardinality() );
+                sourceColumn.cardinality(),
+                sourceColumn.elementsNullable() );
         logicalCatalog.setNullable( logicalColumn.id, sourceColumn.nullable() );
 
         LogicalColumn refreshedColumn = logicalColumn.toBuilder()
