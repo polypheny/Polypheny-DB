@@ -85,6 +85,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -268,7 +269,9 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                 final Iterator<PolyValue[]> resultIterator;
                 try {
                     if ( !list.isEmpty() ) {
-                        resultIterator = mongoDb.getCollection( physical.name ).aggregate( session, list ).map( getter::apply ).iterator();
+                        resultIterator = session != null
+                                ? mongoDb.getCollection( physical.name ).aggregate( session, list ).map( getter::apply ).iterator()
+                                : mongoDb.getCollection( physical.name ).aggregate( list ).map( getter::apply ).iterator();
                     } else {
                         resultIterator = Collections.emptyIterator();
                     }
@@ -396,8 +399,11 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
          */
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<PolyValue[]> aggregate( MongoTupleType tupleType, List<String> operations, List<String> preProjections, List<String> logicalCols, List<String> ddls ) {
-            ClientSession session = getEntity().getTransactionProvider().getSession( dataContext.getStatement().getTransaction().getXid() );
-            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( (int) this.getEntity().getStoreId() ).orElseThrow() );
+            boolean sourceBacked = Catalog.snapshot().getAdapter( getEntity().getStoreId() )
+                    .map( adapter -> adapter.type == AdapterType.SOURCE )
+                    .orElse( false );
+            ClientSession session = sourceBacked ? null : getEntity().getTransactionProvider().getSession( dataContext.getStatement().getTransaction().getXid() );
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( this.getEntity().getStoreId() ).orElseThrow() );
 
             Map<Long, PolyValue> values = new HashMap<>();
             if ( dataContext.getParameterValues().size() == 1 ) {
@@ -453,7 +459,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<Object> handleDirectDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument ) {
             PolyXid xid = dataContext.getStatement().getTransaction().getXid();
-            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( entity.getAdapterId() ).orElseThrow() );
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( entity.getAdapterId() ).orElseThrow() );
             GridFSBucket bucket = entity.getMongoNamespace().getBucket();
 
             try {

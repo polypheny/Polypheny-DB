@@ -43,18 +43,6 @@ public class MqlTestTemplate {
     }
 
 
-    @BeforeEach
-    public void initCollection() {
-        initCollection( namespace );
-    }
-
-
-    @AfterEach
-    public void dropCollection() {
-        dropCollection( namespace );
-    }
-
-
     public static void dropCollection( String collection ) {
         MongoConnection.executeGetResponse( "db." + collection + ".drop()" );
     }
@@ -73,12 +61,6 @@ public class MqlTestTemplate {
 
     public static void createCollection( String collection, String database ) {
         MongoConnection.executeGetResponse( String.format( "db.createCollection( %s )", collection ), database );
-    }
-
-
-    @AfterEach
-    public void cleanDocuments() {
-        deleteMany( "{}" );
     }
 
 
@@ -119,6 +101,74 @@ public class MqlTestTemplate {
 
     public static String kv( String key, Object value ) {
         return String.format( "%s : %s", key, value );
+    }
+
+
+    public static void insert( String json ) {
+        insert( json, namespace );
+    }
+
+
+    public static void insert( String json, String collection ) {
+        insert( json, collection, namespace );
+    }
+
+
+    public static void insert( String json, String collection, String database ) {
+        MongoConnection.executeGetResponse( "db." + collection + ".insert(" + json + ")", database );
+    }
+
+
+    public static void insertMany( List<String> jsons ) {
+        insertMany( jsons, namespace );
+    }
+
+
+    public static void insertMany( List<String> jsons, String db ) {
+        MongoConnection.executeGetResponse( "db." + db + ".insertMany([" + String.join( ",", jsons ) + "])" );
+    }
+
+
+    public static void update( String query, String update ) {
+        update( query, update, namespace );
+    }
+
+
+    public static void update( String query, String update, String db ) {
+        MongoConnection.executeGetResponse( "db." + db + ".update(" + query + ", " + update + ")" );
+    }
+
+
+    protected static void deleteMany( String query ) {
+        deleteMany( query, namespace );
+    }
+
+
+    protected static void deleteMany( String query, String database ) {
+        MongoConnection.executeGetResponse( "db." + database + ".deleteMany(" + query + ")" );
+    }
+
+
+    public static void dropDatabase( String database ) {
+        MongoConnection.executeGetResponse( "db.dropDatabase()", database );
+    }
+
+
+    @BeforeEach
+    public void initCollection() {
+        initCollection( namespace );
+    }
+
+
+    @AfterEach
+    public void dropCollection() {
+        dropCollection( namespace );
+    }
+
+
+    @AfterEach
+    public void cleanDocuments() {
+        deleteMany( "{}" );
     }
 
 
@@ -192,41 +242,6 @@ public class MqlTestTemplate {
     }
 
 
-    public static void insert( String json ) {
-        insert( json, namespace );
-    }
-
-
-    public static void insert( String json, String collection ) {
-        insert( json, collection, namespace );
-    }
-
-
-    public static void insert( String json, String collection, String database ) {
-        MongoConnection.executeGetResponse( "db." + collection + ".insert(" + json + ")", database );
-    }
-
-
-    public static void insertMany( List<String> jsons ) {
-        insertMany( jsons, namespace );
-    }
-
-
-    public static void insertMany( List<String> jsons, String db ) {
-        MongoConnection.executeGetResponse( "db." + db + ".insertMany([" + String.join( ",", jsons ) + "])" );
-    }
-
-
-    public static void update( String query, String update ) {
-        update( query, update, namespace );
-    }
-
-
-    public static void update( String query, String update, String db ) {
-        MongoConnection.executeGetResponse( "db." + db + ".update(" + query + ", " + update + ")" );
-    }
-
-
     protected DocResult find( String query, String project ) {
         return find( query, project, namespace );
     }
@@ -244,21 +259,6 @@ public class MqlTestTemplate {
 
     protected DocResult aggregate( String db, List<String> stages ) {
         return MongoConnection.executeGetResponse( "db." + db + ".aggregate([" + String.join( ",", stages ) + "])" );
-    }
-
-
-    protected static void deleteMany( String query ) {
-        deleteMany( query, namespace );
-    }
-
-
-    protected static void deleteMany( String query, String database ) {
-        MongoConnection.executeGetResponse( "db." + database + ".deleteMany(" + query + ")" );
-    }
-
-
-    public static void dropDatabase( String database ) {
-        MongoConnection.executeGetResponse( "db.dropDatabase()", database );
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.jdbc.connection;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import javax.transaction.xa.Xid;
 
@@ -28,6 +29,17 @@ public interface ConnectionFactory {
     boolean hasConnectionHandler( Xid xid );
 
     ConnectionHandler getConnectionHandler( Xid xid );
+
+    /**
+     * Creates and returns a new independent JDBC connection.
+     * <p>
+     * This connection isn't associated with any transaction and should be used for operations that require
+     * fresh metadata.
+     *
+     * @return a new JDBC connection
+     * @throws SQLException if connection can't be created
+     */
+    Connection getFreshConnection() throws SQLException;
 
     void close() throws SQLException;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
             description = "Maximum number of concurrent JDBC connections.")
     @AdapterSettingList(name = "transactionIsolation", options = { "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" }, defaultValue = "SERIALIZABLE",
             description = "Which level of transaction isolation should be used.")
-    @AdapterSettingString(name = "tables", defaultValue = "foo,bar",
+    @AdapterSettingString(name = "tables", defaultValue = "",
             description = "List of tables which should be imported. The names must to be separated by a comma.")
     public static class MysqlSource extends AbstractJdbcSource {
 
@@ -117,6 +117,12 @@ public class MysqlSourcePlugin extends PolyPlugin {
         @Override
         protected boolean requiresSchema() {
             return false;
+        }
+
+
+        @Override
+        public boolean supportsDynamicTableDiscovery() {
+            return true;
         }
 
 

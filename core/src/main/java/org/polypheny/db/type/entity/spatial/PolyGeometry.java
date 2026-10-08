@@ -278,6 +278,17 @@ public class PolyGeometry extends PolyValue {
     }
 
 
+    /**
+     * Remove comma with trailing numbers if they are 0. This is how
+     * doubles are formatted when converted to WKT by JTS Geometry.
+     */
+    private static String formatDouble( double value ) {
+        return value % 1 == 0
+                ? String.format( "%.0f", value )
+                : String.format( "%s", value );
+    }
+
+
     private void initFromWKT( String wkt, int srid ) throws InvalidGeometryException {
         WKTReader reader = new WKTReader();
         readGeometry( srid, () -> reader.read( wkt ) );
@@ -318,6 +329,11 @@ public class PolyGeometry extends PolyValue {
     }
 
 
+    /*
+     * Casting methods
+     */
+
+
     protected PolyGeometryType getPolyGeometryType() {
         return switch ( jtsGeometry.getGeometryType() ) {
             case Geometry.TYPENAME_POINT -> PolyGeometryType.POINT;
@@ -331,11 +347,6 @@ public class PolyGeometry extends PolyValue {
             default -> throw new NotImplementedException( "value" );
         };
     }
-
-
-    /*
-     * Casting methods
-     */
 
 
     public boolean isPoint() {
@@ -407,6 +418,10 @@ public class PolyGeometry extends PolyValue {
         throw cannotParse( this, PolyGeometryCollection.class );
     }
 
+    /*
+     * Query Geometry properties
+     */
+
 
     /**
      * Tests whether this {@link PolyGeometry} is a simple geometry: does not intersect itself.
@@ -417,10 +432,6 @@ public class PolyGeometry extends PolyValue {
     public boolean isSimple() {
         return jtsGeometry.isSimple();
     }
-
-    /*
-     * Query Geometry properties
-     */
 
 
     /**
@@ -583,6 +594,14 @@ public class PolyGeometry extends PolyValue {
         return PolyGeometry.of( jtsGeometry.reverse(), getSRID() );
     }
 
+    /*
+     * Topological relationships
+     */
+
+    /*
+     * Binary predicates
+     */
+
 
     /**
      * Check that another {@link PolyGeometry} is withing the given distance.
@@ -598,14 +617,6 @@ public class PolyGeometry extends PolyValue {
         }
         return GeoDistanceFunctions.isWithinSphericalDistance( this, g, distance );
     }
-
-    /*
-     * Topological relationships
-     */
-
-    /*
-     * Binary predicates
-     */
 
 
     /**
@@ -722,6 +733,10 @@ public class PolyGeometry extends PolyValue {
         return jtsGeometry.coveredBy( g.getJtsGeometry() );
     }
 
+    /*
+     * Yield metric values
+     */
+
 
     /**
      * Check that this {@link PolyGeometry} is spatially related to another {@link PolyGeometry}
@@ -756,10 +771,6 @@ public class PolyGeometry extends PolyValue {
         return jtsGeometry.relate( g.getJtsGeometry(), intersectionPattern );
     }
 
-    /*
-     * Yield metric values
-     */
-
 
     /**
      * Calculate the distance between two {@link PolyGeometry} taking the <strong>SRID</strong> into account.
@@ -777,6 +788,11 @@ public class PolyGeometry extends PolyValue {
         }
         return GeoDistanceFunctions.sphericalDistance( this, g );
     }
+
+
+    /*
+     * Set operations
+     */
 
 
     /**
@@ -798,11 +814,6 @@ public class PolyGeometry extends PolyValue {
             throw new GeometryTopologicalException( e.getMessage() );
         }
     }
-
-
-    /*
-     * Set operations
-     */
 
 
     /**
@@ -846,6 +857,11 @@ public class PolyGeometry extends PolyValue {
     }
 
 
+    /*
+     * PolyType methods
+     */
+
+
     /**
      * Compute the symmetric difference set of both {@link PolyGeometry}s.
      * Produced symmetric difference set consists of the union
@@ -866,11 +882,6 @@ public class PolyGeometry extends PolyValue {
             throw new GeometryTopologicalException( e.getMessage() );
         }
     }
-
-
-    /*
-     * PolyType methods
-     */
 
 
     /**
@@ -955,17 +966,6 @@ public class PolyGeometry extends PolyValue {
         }
 
         return String.format( "SRID=%d;%s", SRID, jtsGeometry.toString() );
-    }
-
-
-    /**
-     * Remove comma with trailing numbers if they are 0. This is how
-     * doubles are formatted when converted to WKT by JTS Geometry.
-     */
-    private static String formatDouble( double value ) {
-        return value % 1 == 0
-                ? String.format( "%.0f", value )
-                : String.format( "%s", value );
     }
 
 

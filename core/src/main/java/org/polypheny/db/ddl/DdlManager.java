@@ -57,10 +57,8 @@ import org.polypheny.db.type.entity.PolyValue;
  */
 public abstract class DdlManager {
 
-    public static DdlManager INSTANCE = null;
-
-
     public static final List<String> blockedNamespaceNames = List.of( "namespace", "db", "schema", "graph", "database" );
+    public static DdlManager INSTANCE = null;
 
 
     /**
@@ -158,6 +156,83 @@ public abstract class DdlManager {
     public abstract void addColumnToSourceTable( LogicalTable table, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, PolyValue defaultValue, Statement statement );
 
     /**
+     * Refreshes the catalog schema of a source table if it differs from the underlying source.
+     *
+     * @param entityId the id of the logical source table to refresh
+     * @param statement the statement used to execute the DDL operations
+     */
+    public abstract List<String> refreshSourceSchemaIfNeeded( long entityId, Statement statement );
+
+
+    /**
+     * Refreshes one logical source collection against its underlying document source.
+     * <p>
+     * Since document collections do not have a column schema, this catalog refresh only checks whether the collection still
+     * exists in the source.
+     *
+     * @param entityId the id of the logical source collection to refresh
+     * @param statement the statement used to execute catalog changes
+     * @return user-facing descriptions of detected changes
+     */
+    public abstract List<String> refreshSourceCollectionIfNeeded( long entityId, Statement statement );
+
+
+    /**
+     * Checks the source collection before refreshing a synchronized materialized collection without modifying the catalog.
+     * <p>
+     * Since document collections do not maintain a schema, this currently only checks whether the source collection still
+     * exists.
+     *
+     * @param entityId the id of the logical source collection backing the materialization
+     * @return user-facing descriptions of detected changes
+     */
+    public abstract List<String> previewSynchronizedSourceCollectionRefresh( long entityId );
+
+
+    /**
+     * Computes the schema changes needed to bring a synchronized relational materialization back in sync with its source.
+     *
+     * @param entityId the id of the synchronized materialized table
+     * @return user-facing descriptions of pending schema changes
+     */
+    public abstract List<String> previewSynchronizedSourceMaterializationRefresh( long entityId );
+
+
+    /**
+     * Computes and applies source-driven schema changes to a synchronized materialized table.
+     * <p>
+     * This refresh updates columns, primary keys, and foreign keys of the materialized table, but does not reload its data.
+     *
+     * @param entityId the id of the synchronized materialized table
+     * @param statement the statement used to execute catalog changes
+     * @return user-facing descriptions of applied changes
+     */
+    public abstract List<String> refreshSynchronizedSourceMaterializationColumns( long entityId, Statement statement );
+
+
+    /**
+     * Refreshes all selected source adapters and returns the names of source entities that were checked.
+     *
+     * @param sourceIds ids of the selected source adapters
+     * @param statement the statement used to execute catalog changes
+     * @return names of source tables and collections checked during refresh
+     */
+    public List<String> refreshSelectedSources( List<Long> sourceIds, Statement statement ) {
+        return refreshSelectedSourcesWithDetails( sourceIds, statement ).refreshedSources();
+    }
+
+
+    /**
+     * Refreshes all selected source adapters and returns both checked entities and detailed change summaries.
+     *
+     * @param sourceIds ids of the selected source adapters
+     * @param statement the statement used to execute catalog changes
+     * @return checked source entities and user-facing descriptions of detected changes
+     */
+    public abstract SourceRefreshDetails refreshSelectedSourcesWithDetails( List<Long> sourceIds, Statement statement );
+
+
+    /**
      * Add a column to an existing table
      *
      * @param columnName the name of the new column
@@ -170,6 +245,7 @@ public abstract class DdlManager {
      * @param statement the query statement
      */
     public abstract void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement );
+
 
     /**
      * Add a foreign key to a table
@@ -184,6 +260,7 @@ public abstract class DdlManager {
      */
     public abstract void createForeignKey( LogicalTable table, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete, Statement statement );
 
+
     /**
      * Adds an index to a table
      *
@@ -197,6 +274,7 @@ public abstract class DdlManager {
      */
     public abstract void createIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement, Map<String, String> options ) throws TransactionException;
 
+
     /**
      * Adds an index located in Polypheny to a table
      *
@@ -208,6 +286,7 @@ public abstract class DdlManager {
      * @param statement the initial query statement
      */
     public abstract void createPolyphenyIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws TransactionException;
+
 
     /**
      * Adds new column placements to a table
@@ -221,6 +300,7 @@ public abstract class DdlManager {
      */
     public abstract void createAllocationPlacement( LogicalTable table, List<LogicalColumn> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> dataStore, Statement statement );
 
+
     /**
      * Adds a new primary key to a table
      *
@@ -229,6 +309,7 @@ public abstract class DdlManager {
      * @param statement the query statement
      */
     public abstract void createPrimaryKey( LogicalTable table, List<String> columnNames, Statement statement );
+
 
     /**
      * Adds a unique constraint to a table
@@ -239,6 +320,7 @@ public abstract class DdlManager {
      */
     public abstract void createUniqueConstraint( LogicalTable table, List<String> columnNames, String constraintName, Statement statement );
 
+
     /**
      * Drop a specific column in a table
      *
@@ -247,6 +329,7 @@ public abstract class DdlManager {
      * @param statement the query statement
      */
     public abstract void dropColumn( LogicalTable table, String columnName, Statement statement );
+
 
     /**
      * Drop a specific constraint from a table
@@ -257,6 +340,7 @@ public abstract class DdlManager {
      */
     public abstract void dropConstraint( Transaction transaction, LogicalTable table, String constraintName );
 
+
     /**
      * Drop a specific constraint from a table
      *
@@ -266,6 +350,7 @@ public abstract class DdlManager {
      */
     public abstract void dropConstraint( Transaction transaction, LogicalTable table, long constraintId );
 
+
     /**
      * Drop a foreign key of a table
      *
@@ -273,6 +358,7 @@ public abstract class DdlManager {
      * @param foreignKeyName the name of the foreign key to drop
      */
     public abstract void dropForeignKey( LogicalTable table, String foreignKeyName );
+
 
     /**
      * Drop an indexes
@@ -283,6 +369,7 @@ public abstract class DdlManager {
      */
     public abstract void dropIndex( LogicalTable table, String indexName, Statement statement );
 
+
     /**
      * Drop the data placement of a table on a specified data store
      *
@@ -292,12 +379,14 @@ public abstract class DdlManager {
      */
     public abstract void dropPlacement( LogicalTable table, DataStore<?> store, Statement statement );
 
+
     /**
      * Drop the primary key of a table
      *
      * @param table the table
      */
     public abstract void dropPrimaryKey( LogicalTable table );
+
 
     /**
      * Set the type of the column
@@ -309,6 +398,7 @@ public abstract class DdlManager {
      */
     public abstract void setColumnType( LogicalTable table, String columnName, ColumnTypeInformation typeInformation, Statement statement );
 
+
     /**
      * Set if the column can hold the value NULL or not
      *
@@ -318,6 +408,7 @@ public abstract class DdlManager {
      * @param statement the used statement
      */
     public abstract void setColumnNullable( LogicalTable table, String columnName, boolean nullable, Statement statement );
+
 
     /**
      * Changes the position of the column and places it before or after the provided columns
@@ -330,6 +421,7 @@ public abstract class DdlManager {
      */
     public abstract void setColumnPosition( LogicalTable table, String columnName, String beforeColumnName, String afterColumnName, Statement statement );
 
+
     /**
      * Set the collation to the column
      *
@@ -339,6 +431,7 @@ public abstract class DdlManager {
      * @param statement the used statement
      */
     public abstract void setColumnCollation( LogicalTable table, String columnName, Collation collation, Statement statement );
+
 
     /**
      * Set the default value of the column
@@ -350,6 +443,7 @@ public abstract class DdlManager {
      */
     public abstract void setDefaultValue( LogicalTable table, String columnName, PolyValue defaultValue, Statement statement );
 
+
     /**
      * Drop the default value of the column
      *
@@ -358,6 +452,7 @@ public abstract class DdlManager {
      * @param statement the used statement
      */
     public abstract void dropDefaultValue( LogicalTable table, String columnName, Statement statement );
+
 
     /**
      * Modify the placement of a table on a specified data store. This method compares the specified list of column ids with
@@ -376,6 +471,7 @@ public abstract class DdlManager {
      */
     public abstract void modifyPlacement( LogicalTable table, List<Long> columns, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> storeInstance, Statement statement );
 
+
     /**
      * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.
      * Which consequently alters the Partition Placements.
@@ -386,6 +482,7 @@ public abstract class DdlManager {
      * @param statement the used statement
      */
     public abstract void modifyPartitionPlacement( LogicalTable table, List<Long> partitionGroupIds, DataStore<?> store, Statement statement );
+
 
     /**
      * Add a column placement for a specified column on a specified data store. If the store already contains a placement of
@@ -398,6 +495,7 @@ public abstract class DdlManager {
      */
     public abstract void createColumnPlacement( LogicalTable table, LogicalColumn column, DataStore<?> store, Statement statement );
 
+
     /**
      * Drop a specified column from a specified data store. If the column is part of the primary key, the column placement typ
      * is changed to automatic.
@@ -409,6 +507,7 @@ public abstract class DdlManager {
      */
     public abstract void dropColumnPlacement( LogicalTable table, LogicalColumn column, DataStore<?> store, Statement statement );
 
+
     /**
      * Rename a table (changing the logical name of the table)
      *
@@ -418,7 +517,9 @@ public abstract class DdlManager {
      */
     public abstract void renameTable( LogicalTable table, String newTableName, Statement statement );
 
+
     public abstract void renameCollection( LogicalCollection collection, String newName, Statement statement );
+
 
     /**
      * Rename a column of a table (changing the logical name of the column)
@@ -430,7 +531,9 @@ public abstract class DdlManager {
      */
     public abstract void renameColumn( LogicalTable table, String columnName, String newColumnName, Statement statement );
 
+
     public abstract void dropGraph( long graphId, boolean ifExists, Statement statement );
+
 
     /**
      * Create a new table
@@ -445,6 +548,7 @@ public abstract class DdlManager {
      * @param statement the used statement
      */
     public abstract void createTable( long namespaceId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, @Nullable List<DataStore<?>> stores, PlacementType placementType, Statement statement );
+
 
     /**
      * Create a new view
@@ -467,9 +571,12 @@ public abstract class DdlManager {
      */
     public abstract void createMaterializedView( String viewName, long namespaceId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore<?>> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered );
 
+
     public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement );
 
+
     public abstract void createCollectionPlacement( long namespaceId, String name, List<DataStore<?>> stores, Statement statement );
+
 
     /**
      * Add new partitions for the column
@@ -477,6 +584,7 @@ public abstract class DdlManager {
      * @param partitionInfo the information concerning the partition
      */
     public abstract void createTablePartition( PartitionInformation partitionInfo, List<DataStore<?>> stores, Statement statement ) throws TransactionException;
+
 
     /**
      * Removes partitioning from Table
@@ -486,10 +594,12 @@ public abstract class DdlManager {
      */
     public abstract void dropTablePartition( LogicalTable table, Statement statement ) throws TransactionException;
 
+
     /**
      * Adds a new constraint to a table
      */
     public abstract void createConstraint( ConstraintInformation information, long namespaceId, List<Long> columnIds, long tableId, Statement statement );
+
 
     /**
      * Drop a NAMESPACE
@@ -500,6 +610,7 @@ public abstract class DdlManager {
      */
     public abstract void dropNamespace( String namespaceName, boolean ifExists, Statement statement );
 
+
     /**
      * Drop a table
      *
@@ -507,6 +618,7 @@ public abstract class DdlManager {
      * @param statement the used statement
      */
     public abstract void dropTable( LogicalTable table, Statement statement );
+
 
     /**
      * Drop View
@@ -520,6 +632,7 @@ public abstract class DdlManager {
      */
     public abstract void dropMaterializedView( LogicalTable materializedView, Statement statement );
 
+
     /**
      * Truncate a table
      *
@@ -528,34 +641,42 @@ public abstract class DdlManager {
      */
     public abstract void truncate( LogicalTable table, Statement statement );
 
+
     /**
      * Create a new type
      */
     public abstract void createType();
+
 
     /**
      * Drop a type
      */
     public abstract void dropType();
 
+
     /**
      * Drop a function
      */
     public abstract void dropFunction();
+
 
     /**
      * Set an option
      */
     public abstract void setOption();
 
+
     /**
      * Refresh data in a Materialized View
      */
     public abstract void refreshView( Statement statement, Long materializedId );
 
+
     public abstract long createGraph( String namespaceName, boolean modifiable, @Nullable List<DataStore<?>> stores, boolean ifNotExists, boolean replace, boolean caseSensitive, boolean hidden, Statement statement );
 
+
     public abstract void createGraphAlias( long graphId, String alias, boolean ifNotExists );
+
 
     public abstract void dropGraphAlias( long graphId, String alias, boolean ifNotExists );
 
@@ -565,12 +686,43 @@ public abstract class DdlManager {
 
     public abstract long createGraphPlacement( long graphId, List<DataStore<?>> stores, Statement statement );
 
+
     public abstract void dropGraphPlacement( long graphId, DataStore<?> dataStores, Statement statement );
 
 
     public abstract void dropCollection( LogicalCollection catalogCollection, Statement statement );
 
+
     public abstract void dropCollectionPlacement( long namespaceId, LogicalCollection collection, List<DataStore<?>> dataStores, Statement statement );
+
+
+    public enum DefaultIndexPlacementStrategy {
+        POLYPHENY, ONE_DATA_STORE, ALL_DATA_STORES
+    }
+
+
+    /**
+     * Result of a source refresh operation.
+     *
+     * @param refreshedSources source entity names that were checked
+     * @param summaries entities with actual detected changes
+     */
+    public record SourceRefreshDetails( List<String> refreshedSources, List<SourceRefreshSummary> summaries ) {
+
+    }
+
+
+    /**
+     * User-facing summary for changes detected on one source entity.
+     *
+     * @param sourceName adapter name of the source
+     * @param entityName table or collection name
+     * @param dataModel entity data model
+     * @param changeDescriptions descriptions of detected or applied changes
+     */
+    public record SourceRefreshSummary( String sourceName, String entityName, DataModel dataModel, List<String> changeDescriptions ) {
+
+    }
 
 
     /**
@@ -726,11 +878,6 @@ public abstract class DdlManager {
             return node.toString();
         }
 
-    }
-
-
-    public enum DefaultIndexPlacementStrategy {
-        POLYPHENY, ONE_DATA_STORE, ALL_DATA_STORES
     }
 
 }

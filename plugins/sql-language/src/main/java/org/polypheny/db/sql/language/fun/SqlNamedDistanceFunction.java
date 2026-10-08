@@ -36,25 +36,6 @@ import org.polypheny.db.util.Static;
 public class SqlNamedDistanceFunction extends SqlFunction {
 
 
-    public SqlNamedDistanceFunction( String name, Kind kind, FunctionCategory functionCategory, PolyOperandTypeChecker opreandTypeChecker ) {
-        super( name,
-                kind,
-                ReturnTypes.DOUBLE,
-                null,
-                opreandTypeChecker,
-                functionCategory );
-    }
-
-
-    @Override
-    public String getSignatureTemplate( int operandsCount ) {
-        if ( operandsCount == 3 ) {
-            return "{0}({1}, {2})";
-        }
-        throw new AssertionError();
-    }
-
-
     public static final PolyOperandTypeChecker TWO_NUMERIC_ARRAYS = new PolyOperandTypeChecker() {
 
         /**
@@ -124,8 +105,6 @@ public class SqlNamedDistanceFunction extends SqlFunction {
             return false;
         }
     };
-
-
     public static final PolyOperandTypeChecker TWO_BOOLEAN_ARRAYS = new PolyOperandTypeChecker() {
 
         @Override
@@ -192,5 +171,24 @@ public class SqlNamedDistanceFunction extends SqlFunction {
             return false;
         }
     };
+
+
+    public SqlNamedDistanceFunction( String name, Kind kind, FunctionCategory functionCategory, PolyOperandTypeChecker opreandTypeChecker ) {
+        super( name,
+                kind,
+                ReturnTypes.DOUBLE,
+                null,
+                opreandTypeChecker,
+                functionCategory );
+    }
+
+
+    @Override
+    public String getSignatureTemplate( int operandsCount ) {
+        if ( operandsCount == 3 ) {
+            return "{0}({1}, {2})";
+        }
+        throw new AssertionError();
+    }
 
 }

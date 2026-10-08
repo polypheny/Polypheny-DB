@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.jdbc.connection;
 
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
@@ -83,6 +84,25 @@ public class XaConnectionFactory implements ConnectionFactory {
     }
 
 
+    /**
+     * Creates and returns a new, independent JDBC Connection.
+     *
+     * This method bypasses the connection pool and always obtains a fresh connection
+     * from the underlying XA data source. The returned connection is configured
+     * with auto-commit enabled and is intended for short-lived operations such as
+     * metadata access.
+     *
+     * @return a new JDBC connection
+     * @throws SQLException if connection can't be established
+     */
+    @Override
+    public Connection getFreshConnection() throws SQLException {
+        Connection connection = dataSource.getXAConnection().getConnection();
+        connection.setAutoCommit( true );
+        return connection;
+    }
+
+
     @Override
     public void close() throws SQLException {
         log.warn( "Not implemented!" );
@@ -136,11 +156,10 @@ public class XaConnectionFactory implements ConnectionFactory {
 
     public class XaConnectionHandler extends ConnectionHandler {
 
-        private final XAResource xaResource;
-        private Xid xid;
-
         @Getter
         protected final SqlDialect dialect;
+        private final XAResource xaResource;
+        private Xid xid;
 
 
         XaConnectionHandler( XAConnection xaConnection, SqlDialect dialect ) throws ConnectionHandlerException {

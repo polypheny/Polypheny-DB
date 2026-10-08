@@ -47,15 +47,13 @@ public abstract class AbstractAdapterSetting {
     public boolean modifiable;
     public String defaultValue;
     public int position;
+    public AdapterSettingType type;
+    @Getter
+    public Set<DeployMode> appliesTo;
+    public List<String> filenames = new ArrayList<>();
     @Setter
     @NonFinal
     public String description;
-    public AdapterSettingType type;
-
-    @Getter
-    public Set<DeployMode> appliesTo;
-
-    public List<String> filenames = new ArrayList<>();
 
 
     public AbstractAdapterSetting( final AdapterSettingType type, final String name, final boolean canBeNull, final String subOf, final boolean required, final boolean modifiable, List<DeploySetting> appliesTo, String defaultValue, int position, String description ) {
@@ -114,14 +112,6 @@ public abstract class AbstractAdapterSetting {
     }
 
 
-    /**
-     * In most subclasses, this method returns the defaultValue, because the UI overrides the defaultValue when a new value is set.
-     */
-    public abstract String getValue();
-
-    public abstract void validate( String s );
-
-
     public static List<AbstractAdapterSetting> serializeSettings( List<AbstractAdapterSetting> availableSettings, Map<String, String> currentSettings ) {
         List<AbstractAdapterSetting> abstractAdapterSettings = new ArrayList<>();
         for ( AbstractAdapterSetting s : availableSettings ) {
@@ -133,6 +123,15 @@ public abstract class AbstractAdapterSetting {
         }
         return abstractAdapterSettings;
     }
+
+
+    /**
+     * In most subclasses, this method returns the defaultValue, because the UI overrides the defaultValue when a new value is set.
+     */
+    public abstract String getValue();
+
+
+    public abstract void validate( String s );
 
 
     public enum AdapterSettingType {

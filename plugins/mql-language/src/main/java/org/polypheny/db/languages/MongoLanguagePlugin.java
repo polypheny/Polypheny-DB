@@ -64,18 +64,6 @@ public class MongoLanguagePlugin extends PolyPlugin {
     }
 
 
-    @Override
-    public void start() {
-        startup();
-    }
-
-
-    @Override
-    public void stop() {
-        super.stop();
-    }
-
-
     public static void startup() {
         QueryLanguage language = new QueryLanguage(
                 DataModel.DOCUMENT,
@@ -136,11 +124,6 @@ public class MongoLanguagePlugin extends PolyPlugin {
         }
 
         return queries;
-    }
-
-
-    public String preprocessing( String query, QueryContext context ) {
-        return query;
     }
 
 
@@ -234,6 +217,23 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
     private static void register( OperatorName name, Operator operator ) {
         OperatorRegistry.register( QueryLanguage.from( "mongo" ), name, operator );
+    }
+
+
+    @Override
+    public void start() {
+        startup();
+    }
+
+
+    @Override
+    public void stop() {
+        super.stop();
+    }
+
+
+    public String preprocessing( String query, QueryContext context ) {
+        return query;
     }
 
 

@@ -415,8 +415,8 @@ public interface AlgDataTypeFactory {
         private final List<String> physicalNames = new ArrayList<>();
         private final List<AlgDataType> types = new ArrayList<>();
         private final List<Long> ids = new ArrayList<>();
-        private StructKind kind = StructKind.FULLY_QUALIFIED;
         private final AlgDataTypeFactory typeFactory;
+        private StructKind kind = StructKind.FULLY_QUALIFIED;
 
 
         /**

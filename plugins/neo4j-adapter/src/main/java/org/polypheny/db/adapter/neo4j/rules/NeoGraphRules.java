@@ -58,6 +58,20 @@ public interface NeoGraphRules {
             NeoGraphMatchRule.INSTANCE
     };
 
+    static boolean supports( LpgProject r ) {
+        NeoSupportVisitor visitor = new NeoSupportVisitor();
+        for ( RexNode project : r.getProjects() ) {
+            project.accept( visitor );
+        }
+        return visitor.isSupports();
+    }
+
+    static boolean supports( LpgFilter r ) {
+        NeoSupportVisitor visitor = new NeoSupportVisitor();
+        r.getCondition().accept( visitor );
+        return visitor.isSupports();
+    }
+
 
     abstract class NeoConverterRule extends ConverterRule {
 
@@ -101,21 +115,6 @@ public interface NeoGraphRules {
                     modify.operations );
         }
 
-    }
-
-    static boolean supports( LpgProject r ) {
-        NeoSupportVisitor visitor = new NeoSupportVisitor();
-        for ( RexNode project : r.getProjects() ) {
-            project.accept( visitor );
-        }
-        return visitor.isSupports();
-    }
-
-
-    static boolean supports( LpgFilter r ) {
-        NeoSupportVisitor visitor = new NeoSupportVisitor();
-        r.getCondition().accept( visitor );
-        return visitor.isSupports();
     }
 
 

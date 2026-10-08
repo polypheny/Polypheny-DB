@@ -72,6 +72,42 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     }
 
 
+    private static void addMongoDbAdapter() {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                TestHelper.addMongodb( mongoAdapterName, statement );
+                initDatabase( "test_mongo" );
+            }
+        } catch ( SQLException e ) {
+            // If there is an error while adding the adapter, the most likely reason it does not work
+            // is that docker is not running!
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    private static void compareValues( Object mongoValue, Object value ) {
+        if ( mongoValue instanceof Map<?, ?> val1 && value instanceof Map<?, ?> val2 ) {
+            assertEquals( val1.size(), val2.size() );
+            assertEquals( val1.keySet(), val2.keySet() );
+            for ( Object key : val1.keySet() ) {
+                Object subVal1 = val1.get( key );
+                Object subVal2 = val2.get( key );
+                compareValues( subVal1, subVal2 );
+            }
+            return;
+
+        } else if ( mongoValue instanceof Number val && value instanceof Number val2 ) {
+            if ( val.doubleValue() - val2.doubleValue() > 0.000001 ) {
+                throw new RuntimeException( "Floating point numbers are not withing accepted delta" );
+            }
+            return;
+        }
+        assertEquals( mongoValue, value );
+    }
+
+
     @BeforeEach
     public void beforeEach() {
         // Make sure collections are emptied before each test.
@@ -476,21 +512,6 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
     }
 
 
-    private static void addMongoDbAdapter() {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                TestHelper.addMongodb( mongoAdapterName, statement );
-                initDatabase( "test_mongo" );
-            }
-        } catch ( SQLException e ) {
-            // If there is an error while adding the adapter, the most likely reason it does not work
-            // is that docker is not running!
-            throw new RuntimeException( e );
-        }
-    }
-
-
     /**
      * Runs the queries for each collection, and saves the result of the
      * final query to a list. Afterward, we assert if the result of
@@ -554,27 +575,6 @@ public class MqlGeoFunctionsTest extends MqlTestTemplate {
                 compareValues( mongoValue, value );
             }
         }
-    }
-
-
-    private static void compareValues( Object mongoValue, Object value ) {
-        if ( mongoValue instanceof Map<?, ?> val1 && value instanceof Map<?, ?> val2 ) {
-            assertEquals( val1.size(), val2.size() );
-            assertEquals( val1.keySet(), val2.keySet() );
-            for ( Object key : val1.keySet() ) {
-                Object subVal1 = val1.get( key );
-                Object subVal2 = val2.get( key );
-                compareValues( subVal1, subVal2 );
-            }
-            return;
-
-        } else if ( mongoValue instanceof Number val && value instanceof Number val2 ) {
-            if ( val.doubleValue() - val2.doubleValue() > 0.000001 ) {
-                throw new RuntimeException( "Floating point numbers are not withing accepted delta" );
-            }
-            return;
-        }
-        assertEquals( mongoValue, value );
     }
 
 }

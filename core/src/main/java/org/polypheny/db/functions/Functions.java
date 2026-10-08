@@ -268,32 +268,6 @@ public class Functions {
     }
 
 
-    private static class MetadataModel {
-
-        String name;
-        String value;
-        List<MetadataModel> tags = new ArrayList<>();
-
-
-        MetadataModel( final Directory dir ) {
-            this.name = dir.getName();
-        }
-
-
-        MetadataModel( final Tag tag ) {
-            this.name = tag.getTagName();
-            this.value = tag.getDescription();
-        }
-
-
-        MetadataModel addTag( Tag tag ) {
-            tags.add( new MetadataModel( tag ) );
-            return this;
-        }
-
-    }
-
-
     /**
      * @param mm Multimedia object
      * @param dirName Name of the metadata directory
@@ -940,8 +914,6 @@ public class Functions {
         return PolyBoolean.of( Pattern.matches( regex, s.value ) );
     }
 
-    // =
-
 
     /**
      * SQL <code>=</code> operator applied to number values.
@@ -954,6 +926,8 @@ public class Functions {
         }
         return PolyBoolean.of( b0.bigDecimalValue().stripTrailingZeros().equals( b1.bigDecimalValue().stripTrailingZeros() ) );
     }
+
+    // =
 
 
     /**
@@ -984,8 +958,6 @@ public class Functions {
         return clazz.isInstance( o0 ) && clazz.isInstance( o1 );
     }
 
-    // <>
-
 
     /**
      * SQL <code>&lt;gt;</code> operator applied to Object values (including String; neither side may be null).
@@ -997,7 +969,7 @@ public class Functions {
         return PolyBoolean.of( b0.compareTo( b1 ) != 0 );
     }
 
-    // <
+    // <>
 
 
     /**
@@ -1018,6 +990,8 @@ public class Functions {
 
         throw notComparable( "<", b0, b1 );
     }
+
+    // <
 
 
     public static PolyBoolean lt( PolyNumber b0, PolyNumber b1 ) {
@@ -1041,7 +1015,6 @@ public class Functions {
     public static PolyBoolean lt( PolyNumber b0, PolyTemporal b1 ) {
         return lt( b0, PolyLong.of( b1.getMillisSinceEpoch() ) );
     }
-    // <=
 
 
     /**
@@ -1062,6 +1035,7 @@ public class Functions {
 
         throw notComparable( "<=", b0, b1 );
     }
+    // <=
 
 
     public static PolyBoolean le( PolyNumber b0, PolyNumber b1 ) {
@@ -1070,8 +1044,6 @@ public class Functions {
         }
         return PolyBoolean.of( b0.compareTo( b1 ) <= 0 );
     }
-
-    // >
 
 
     /**
@@ -1083,6 +1055,8 @@ public class Functions {
         }
         return PolyBoolean.of( b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) > 0 );
     }
+
+    // >
 
 
     /**
@@ -1105,8 +1079,6 @@ public class Functions {
         throw notComparable( ">", b0, b1 );
     }
 
-    // >=
-
 
     /**
      * SQL <code>&ge;</code> operator applied to BigDecimal values.
@@ -1117,6 +1089,8 @@ public class Functions {
         }
         return PolyBoolean.of( b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) >= 0 );
     }
+
+    // >=
 
 
     public static PolyBoolean ge( PolyTemporal b0, PolyTemporal b1 ) {
@@ -1149,8 +1123,6 @@ public class Functions {
 
     }
 
-    // +
-
 
     /**
      * SQL <code>+</code> operator applied to BigDecimal values.
@@ -1158,6 +1130,8 @@ public class Functions {
     public static PolyNumber plus( PolyNumber b0, PolyNumber b1 ) {
         return (b0 == null || b1 == null) ? null : b0.plus( b1 );
     }
+
+    // +
 
 
     /**
@@ -1175,8 +1149,6 @@ public class Functions {
         throw notArithmetic( "+", b0, b1 );
     }
 
-    // -
-
 
     /**
      * SQL <code>-</code> operator applied to BigDecimal values.
@@ -1184,6 +1156,8 @@ public class Functions {
     public static PolyNumber minus( PolyNumber b0, PolyNumber b1 ) {
         return (b0 == null || b1 == null) ? null : b0.subtract( b1 );
     }
+
+    // -
 
 
     public static PolyValue minus( PolyValue b0, PolyValue b1 ) {
@@ -1206,8 +1180,6 @@ public class Functions {
         throw notArithmetic( "-", b0, b1 );
     }
 
-    // /
-
 
     /**
      * SQL <code>/</code> operator applied to Object values (at least one operand has ANY type; either may be null).
@@ -1223,6 +1195,8 @@ public class Functions {
 
         throw notArithmetic( "/", b0, b1 );
     }
+
+    // /
 
 
     public static PolyNumber divide( PolyNumber b0, PolyNumber b1 ) {
@@ -1281,8 +1255,6 @@ public class Functions {
                 op, b1.getClass().toString() ).ex();
     }
 
-    // &
-
 
     /**
      * Helper function for implementing <code>BIT_AND</code>
@@ -1292,7 +1264,7 @@ public class Functions {
         return b0 & b1;
     }
 
-    // |
+    // &
 
 
     /**
@@ -1303,7 +1275,7 @@ public class Functions {
         return b0 | b1;
     }
 
-    // EXP
+    // |
 
 
     /**
@@ -1313,7 +1285,7 @@ public class Functions {
         return PolyBigDecimal.of( Math.exp( number.doubleValue() ) );
     }
 
-    // POWER
+    // EXP
 
 
     /**
@@ -1323,7 +1295,7 @@ public class Functions {
         return PolyDouble.of( Math.pow( base.doubleValue(), exp.doubleValue() ) );
     }
 
-    // LN
+    // POWER
 
 
     /**
@@ -1333,7 +1305,7 @@ public class Functions {
         return PolyBigDecimal.of( Math.log( number.doubleValue() ) );
     }
 
-    // LOG10
+    // LN
 
 
     /**
@@ -1343,7 +1315,7 @@ public class Functions {
         return PolyBigDecimal.of( Math.log10( number.doubleValue() ) );
     }
 
-    // MOD
+    // LOG10
 
 
     /**
@@ -1353,6 +1325,8 @@ public class Functions {
         final BigDecimal[] bigDecimals = b0.bigDecimalValue().divideAndRemainder( b1.bigDecimalValue() );
         return PolyBigDecimal.of( bigDecimals[1] );
     }
+
+    // MOD
 
 
     public static PolyNumber mod( PolyValue b0, PolyValue b1 ) {
@@ -1367,12 +1341,12 @@ public class Functions {
         throw notArithmetic( "mod", b0, b1 );
     }
 
-    // FLOOR
-
 
     public static PolyNumber floor( PolyNumber b0 ) {
         return PolyBigDecimal.of( b0.bigDecimalValue().setScale( 0, RoundingMode.FLOOR ) );
     }
+
+    // FLOOR
 
 
     /**
@@ -1382,12 +1356,12 @@ public class Functions {
         return b0.floor( b1 );
     }
 
-    // CEIL
-
 
     public static PolyNumber ceil( PolyNumber b0 ) {
         return PolyBigDecimal.of( b0.bigDecimalValue().setScale( 0, RoundingMode.CEILING ) );
     }
+
+    // CEIL
 
 
     /**
@@ -1397,8 +1371,6 @@ public class Functions {
         return b0.ceil( b1 );
     }
 
-    // ABS
-
 
     /**
      * SQL <code>ABS</code> operator applied to byte values.
@@ -1406,6 +1378,8 @@ public class Functions {
     public static PolyNumber abs( PolyNumber number ) {
         return PolyBigDecimal.of( number.bigDecimalValue().abs() );
     }
+
+    // ABS
 
 
     /**
@@ -1418,8 +1392,6 @@ public class Functions {
         throw new GenericRuntimeException( "ABS can only be applied to numbers" );
     }
 
-    // ACOS
-
 
     /**
      * SQL <code>ACOS</code> operator applied to BigDecimal values.
@@ -1427,6 +1399,8 @@ public class Functions {
     public static PolyNumber acos( PolyNumber b0 ) {
         return PolyDouble.of( Math.acos( b0.doubleValue() ) );
     }
+
+    // ACOS
 
 
     /**
@@ -1712,8 +1686,6 @@ public class Functions {
                                 : (Boolean) cannotConvert( o, boolean.class );
     }
 
-    // Don't need parseByte etc. - Byte.parseByte is sufficient.
-
 
     @SuppressWarnings("unused")
     public static byte toByte( Object o ) {
@@ -1721,6 +1693,8 @@ public class Functions {
                 : o instanceof Number ? toByte( (Number) o )
                         : Byte.parseByte( o.toString() );
     }
+
+    // Don't need parseByte etc. - Byte.parseByte is sufficient.
 
 
     public static byte toByte( Number number ) {
@@ -2912,6 +2886,32 @@ public class Functions {
      */
     public enum FlatProductInputType {
         SCALAR, LIST, MAP
+    }
+
+
+    private static class MetadataModel {
+
+        String name;
+        String value;
+        List<MetadataModel> tags = new ArrayList<>();
+
+
+        MetadataModel( final Directory dir ) {
+            this.name = dir.getName();
+        }
+
+
+        MetadataModel( final Tag tag ) {
+            this.name = tag.getTagName();
+            this.value = tag.getDescription();
+        }
+
+
+        MetadataModel addTag( Tag tag ) {
+            tags.add( new MetadataModel( tag ) );
+            return this;
+        }
+
     }
 
 }

@@ -81,6 +81,25 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
     }
 
 
+    /**
+     * Creates and returns a new, independent JDBC Connection.
+     *
+     * This method bypasses the connection pool and always obtains a fresh connection
+     * directly from the underlying data source. The returned connection is configured
+     * with auto-commit enabled and is intended for short-lived operations such as
+     * metadata access.
+     *
+     * @return a new JDBC connection
+     * @throws SQLException if the connection can't be established
+     */
+    @Override
+    public Connection getFreshConnection() throws SQLException {
+        Connection connection = dataSource.getConnection();
+        connection.setAutoCommit( true );
+        return connection;
+    }
+
+
     @Override
     public void close() throws SQLException {
         dataSource.close();
@@ -144,10 +163,9 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
 
     public class TransactionalConnectionHandler extends ConnectionHandler {
 
-        private Xid xid;
-
         @Getter
         private final SqlDialect dialect;
+        private Xid xid;
 
 
         TransactionalConnectionHandler( Connection connection, SqlDialect dialect ) throws ConnectionHandlerException {

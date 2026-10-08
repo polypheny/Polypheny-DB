@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,9 @@ import org.polypheny.db.catalog.logistic.EntityType;
 @Value
 public class TableModel extends EntityModel {
 
+    @JsonProperty
+    public Long synchronizedSourceEntityId;
+
 
     public TableModel(
             @JsonProperty("id") @Nullable Long id,
@@ -35,13 +38,15 @@ public class TableModel extends EntityModel {
             @JsonProperty("namespaceId") Long namespaceId,
             @JsonProperty("modifiable") boolean modifiable,
             @JsonProperty("dataModel") DataModel dataModel,
-            @JsonProperty("entityType") EntityType entityType ) {
+            @JsonProperty("entityType") EntityType entityType,
+            @JsonProperty("synchronizedSourceEntityId") @Nullable Long synchronizedSourceEntityId ) {
         super( id, name, namespaceId, modifiable, dataModel, entityType );
+        this.synchronizedSourceEntityId = synchronizedSourceEntityId;
     }
 
 
     public static TableModel from( LogicalTable table ) {
-        return new TableModel( table.id, table.name, table.namespaceId, table.modifiable, table.dataModel, table.entityType );
+        return new TableModel( table.id, table.name, table.namespaceId, table.modifiable, table.dataModel, table.entityType, table.synchronizedSourceEntityId );
     }
 
 }

@@ -1762,14 +1762,6 @@ public enum OperatorName {
     EXTRACT_NAME( LangFunctionOperator.class );
 
 
-    private final Class<? extends Operator> clazz;
-
-
-    OperatorName( Class<? extends Operator> clazz ) {
-        this.clazz = clazz;
-    }
-
-
     final public static List<OperatorName> MQL_OPERATORS = Arrays.asList(
             MQL_EQUALS,
             MQL_GT,
@@ -1777,4 +1769,10 @@ public enum OperatorName {
             MQL_LT,
             MQL_LTE
     );
+    private final Class<? extends Operator> clazz;
+
+
+    OperatorName( Class<? extends Operator> clazz ) {
+        this.clazz = clazz;
+    }
 }

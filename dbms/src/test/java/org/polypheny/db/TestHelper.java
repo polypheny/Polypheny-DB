@@ -23,9 +23,12 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Array;
 import java.sql.Connection;
@@ -41,10 +44,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import kong.unirest.HttpRequest;
 import kong.unirest.HttpResponse;
@@ -60,7 +66,17 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.impl.PolyCatalog;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.ddl.DdlManager.SourceRefreshDetails;
+import org.polypheny.db.docker.DockerContainer;
+import org.polypheny.db.docker.DockerContainer.HostAndPort;
+import org.polypheny.db.docker.DockerInstance;
+import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.processing.caching.ImplementationCache;
 import org.polypheny.db.processing.caching.QueryPlanCache;
@@ -79,9 +95,12 @@ import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.RunMode;
+import org.polypheny.db.webui.Crud.SourceMaterializationRefreshResult;
 import org.polypheny.db.webui.HttpServer;
+import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
+import org.polypheny.db.webui.models.results.RelationalResult;
 
 
 @Slf4j
@@ -94,11 +113,6 @@ public class TestHelper {
 
     @Getter
     private final TransactionManager transactionManager;
-
-
-    public static TestHelper getInstance() {
-        return INSTANCE;
-    }
 
 
     private TestHelper() {
@@ -147,6 +161,11 @@ public class TestHelper {
     }
 
 
+    public static TestHelper getInstance() {
+        return INSTANCE;
+    }
+
+
     public static PolyValue toPolyValue( Object value ) {
 
         if ( value instanceof Integer ) {
@@ -190,11 +209,6 @@ public class TestHelper {
     }
 
 
-    public Transaction getTransaction() {
-        return transactionManager.startTransaction( Catalog.defaultUserId, new QueryAnalyzer(), "Test Helper" );
-    }
-
-
     @AfterAll
     public static void tearDown() {
         //LOG.info( "shutdown - closing DB connection" );
@@ -213,6 +227,32 @@ public class TestHelper {
     }
 
 
+    public static void addPostgresStore( String name, String host, int port, String database, String username, String password ) throws SQLException {
+        executeSQL(
+                "ALTER ADAPTERS ADD \"" + name + "\" USING 'PostgreSQL' AS 'Store' WITH "
+                        + "'{"
+                        + "\"mode\":\"remote\","
+                        + "\"host\":\"" + host + "\","
+                        + "\"port\":\"" + port + "\","
+                        + "\"database\":\"" + database + "\","
+                        + "\"username\":\"" + username + "\","
+                        + "\"password\":\"" + password + "\","
+                        + "\"maxConnections\":\"25\""
+                        + "}'" );
+    }
+
+
+    public static void addMongoStore( String name ) throws SQLException {
+        executeSQL(
+                "ALTER ADAPTERS ADD \"" + name + "\" USING 'MongoDB' AS 'Store' WITH "
+                        + "'{"
+                        + "\"mode\":\"docker\","
+                        + "\"instanceId\":\"0\","
+                        + "\"trxLifetimeLimit\":\"1209600\""
+                        + "}'" );
+    }
+
+
     public static void addCsv( String name, Statement statement ) throws SQLException {
         executeSQL( statement, "ALTER ADAPTERS ADD \"" + name + "\" USING 'Csv' AS 'Store'"
                 + " WITH '{}'" );
@@ -221,6 +261,60 @@ public class TestHelper {
 
     public static void dropAdapter( String name, Statement statement ) throws SQLException {
         executeSQL( statement, "ALTER ADAPTERS DROP \"" + name + "\"" );
+    }
+
+
+    public static void addPostgresSource( String name, String host, int port, String database, String username, String password, String table ) throws SQLException {
+        executeSQL(
+                "ALTER ADAPTERS ADD \"" + name + "\" USING 'PostgreSQL' AS 'Source' WITH "
+                        + "'{"
+                        + "\"mode\":\"remote\","
+                        + "\"host\":\"" + host + "\","
+                        + "\"port\":\"" + port + "\","
+                        + "\"database\":\"" + database + "\","
+                        + "\"username\":\"" + username + "\","
+                        + "\"password\":\"" + password + "\","
+                        + "\"maxConnections\":\"25\","
+                        + "\"transactionIsolation\":\"SERIALIZABLE\","
+                        + "\"tables\":\"" + table + "\""
+                        + "}'" );
+    }
+
+
+    public static void addPostgresSource( String name, String host, int port, String database, String username, String password ) throws SQLException {
+        addPostgresSource( name, host, port, database, username, password, "" );
+    }
+
+
+    public static void addMysqlSource( String name, String host, int port, String database, String username, String password, String table ) throws SQLException {
+        executeSQL(
+                "ALTER ADAPTERS ADD \"" + name + "\" USING 'MySQL' AS 'Source' WITH "
+                        + "'{"
+                        + "\"mode\":\"remote\","
+                        + "\"host\":\"" + host + "\","
+                        + "\"port\":\"" + port + "\","
+                        + "\"database\":\"" + database + "\","
+                        + "\"username\":\"" + username + "\","
+                        + "\"password\":\"" + password + "\","
+                        + "\"maxConnections\":\"25\","
+                        + "\"transactionIsolation\":\"SERIALIZABLE\","
+                        + "\"tables\":\"" + table + "\""
+                        + "}'" );
+    }
+
+
+    public static void addMongoSource( String name, String host, int port, String database ) throws SQLException {
+        executeSQL(
+                "ALTER ADAPTERS ADD \"" + name + "\" USING 'MongoDB' AS 'Source' WITH "
+                        + "'{"
+                        + "\"mode\":\"remote\","
+                        + "\"host\":\"" + host + "\","
+                        + "\"port\":\"" + port + "\","
+                        + "\"database\":\"" + database + "\","
+                        + "\"username\":\"\","
+                        + "\"password\":\"\","
+                        + "\"authSource\":\"\""
+                        + "}'" );
     }
 
 
@@ -238,38 +332,111 @@ public class TestHelper {
     }
 
 
-    /**
-     * Surprisingly often when testing the used ids are in a similar range and quite low, which can result in unexpected behaviour,
-     * where tests seem to work but shouldn't.
-     */
-    public void randomizeCatalogIds() {
-        Random random = new Random();
-        int max = 200;
-        Supplier<Integer> offset = () -> random.nextInt( max );
-
-        try {
-            PolyCatalog catalog = (PolyCatalog) Catalog.getInstance();
-            Field field = catalog.getClass().getDeclaredField( "idBuilder" );
-            field.setAccessible( true );
-            field.set( catalog, new IdBuilder(
-                    new AtomicLong( catalog.idBuilder.getSnapshotId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getEntityId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getFieldId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getUserId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getAllocId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getPhysicalId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getIndexId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getKeyId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getAdapterId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getInterfaceId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getConstraintId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getGroupId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getPartitionId().longValue() + offset.get() ),
-                    new AtomicLong( catalog.idBuilder.getPlacementId().longValue() + offset.get() )
-            ) );
-        } catch ( NoSuchFieldException | IllegalAccessException e ) {
-            throw new RuntimeException( e );
+    public static LogicalTable awaitLogicalTable( long namespaceId, String tableName, int timeoutSeconds ) {
+        for ( int i = 0; i < timeoutSeconds; i++ ) {
+            var table = Catalog.snapshot().rel().getTable( namespaceId, tableName );
+            if ( table.isPresent() ) {
+                return table.orElseThrow();
+            }
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch ( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( "Interrupted while waiting for table " + tableName, e );
+            }
         }
+        throw new IllegalStateException( "Table was not created in time: " + tableName );
+    }
+
+
+    public static void awaitLogicalTableAbsent( long namespaceId, String tableName, int timeoutSeconds ) {
+        for ( int i = 0; i < timeoutSeconds; i++ ) {
+            if ( Catalog.snapshot().rel().getTable( namespaceId, tableName ).isEmpty() ) {
+                return;
+            }
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch ( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( "Interrupted while waiting for table removal " + tableName, e );
+            }
+        }
+        throw new IllegalStateException( "Table still exists after refresh: " + tableName );
+    }
+
+
+    public static LogicalCollection awaitLogicalCollection( long namespaceId, String collectionName, int timeoutSeconds ) {
+        for ( int i = 0; i < timeoutSeconds; i++ ) {
+            var collection = Catalog.snapshot().doc().getCollection( namespaceId, collectionName );
+            if ( collection.isPresent() ) {
+                return collection.orElseThrow();
+            }
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch ( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( "Interrupted while waiting for collection " + collectionName, e );
+            }
+        }
+        throw new IllegalStateException( "Collection was not created in time: " + collectionName );
+    }
+
+
+    public static void awaitLogicalCollectionAbsent( long namespaceId, String collectionName, int timeoutSeconds ) {
+        for ( int i = 0; i < timeoutSeconds; i++ ) {
+            if ( Catalog.snapshot().doc().getCollection( namespaceId, collectionName ).isEmpty() ) {
+                return;
+            }
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch ( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( "Interrupted while waiting for collection removal " + collectionName, e );
+            }
+        }
+        throw new IllegalStateException( "Collection still exists after refresh: " + collectionName );
+    }
+
+
+    public static long awaitDocumentNamespaceId( String namespaceName, int timeoutSeconds ) {
+        String normalizedName = namespaceName.toLowerCase();
+        for ( int i = 0; i < timeoutSeconds; i++ ) {
+            var namespace = Catalog.snapshot().getNamespace( normalizedName )
+                    .filter( ns -> ns.dataModel == DataModel.DOCUMENT );
+            if ( namespace.isPresent() ) {
+                return namespace.orElseThrow().id;
+            }
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch ( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( "Interrupted while waiting for document namespace " + normalizedName, e );
+            }
+        }
+        throw new IllegalStateException( "Document namespace was not created in time: " + normalizedName );
+    }
+
+
+    public static long awaitSourceAdapterId( String adapterName, int timeoutSeconds ) {
+        for ( int i = 0; i < timeoutSeconds; i++ ) {
+            LogicalAdapter adapter = Catalog.snapshot().getAdapter( adapterName ).orElse( null );
+            if ( adapter != null ) {
+                return adapter.id;
+            }
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch ( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( "Interrupted while waiting for source adapter " + adapterName, e );
+            }
+        }
+        throw new IllegalStateException( "Source adapter was not created in time: " + adapterName );
+    }
+
+
+    public static List<String> getCatalogColumnNames( long entityId ) {
+
+        return Catalog.snapshot().rel().getColumns( entityId ).stream().map( c -> c.name ).toList();
     }
 
 
@@ -441,6 +608,324 @@ public class TestHelper {
     }
 
 
+    public static RelationalResult sendRefreshRequest( long entityId ) throws Exception {
+        Object httpServer = HttpServer.getInstance();
+        Field crudField = httpServer.getClass().getDeclaredField( "crud" );
+        crudField.setAccessible( true );
+        Object crud = crudField.get( httpServer );
+
+        UIRequest request = UIRequest.builder()
+                .type( "RefreshRequest" )
+                .entityId( entityId )
+                .namespace( Catalog.DEFAULT_NAMESPACE_NAME )
+                .currentPage( 1 )
+                .noLimit( false )
+                .build();
+
+        Method refreshMethod = crud.getClass().getMethod( "refreshSourceSchemaIfNeeded", UIRequest.class );
+        refreshMethod.invoke( crud, request );
+
+        Method getTableMethod = crud.getClass().getDeclaredMethod( "getTable", UIRequest.class );
+        getTableMethod.setAccessible( true );
+        return (RelationalResult) getTableMethod.invoke( crud, request );
+    }
+
+
+    public static SourceMaterializationRefreshResult refreshRelationalSourceSchema( long entityId ) throws Exception {
+        Object httpServer = HttpServer.getInstance();
+        Field crudField = httpServer.getClass().getDeclaredField( "crud" );
+        crudField.setAccessible( true );
+        Object crud = crudField.get( httpServer );
+
+        UIRequest request = UIRequest.builder()
+                .type( "RefreshRequest" )
+                .entityId( entityId )
+                .namespace( Catalog.DEFAULT_NAMESPACE_NAME )
+                .currentPage( 1 )
+                .noLimit( false )
+                .build();
+
+        Method refreshMethod = crud.getClass().getMethod( "refreshSourceSchemaIfNeeded", UIRequest.class );
+        return (SourceMaterializationRefreshResult) refreshMethod.invoke( crud, request );
+    }
+
+
+    public static LogicalTable createSynchronizedSourceMaterialization( LogicalTable source, String materializedTableName, String storeName ) throws Exception {
+        RelationalResult result = postSourceMaterializationRequest(
+                "/createSynchronizedSourceMaterialization",
+                source.id,
+                Catalog.snapshot().getAdapter( storeName ).orElseThrow().id,
+                materializedTableName );
+        assertNull( result.error, result.error );
+        return Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, materializedTableName ).orElseThrow();
+    }
+
+
+    public static LogicalTable createIndependentSourceMaterialization( LogicalTable source, String materializedTableName, String storeName ) throws Exception {
+        RelationalResult result = postSourceMaterializationRequest(
+                "/createIndependentSourceMaterialization",
+                source.id,
+                Catalog.snapshot().getAdapter( storeName ).orElseThrow().id,
+                materializedTableName );
+        assertNull( result.error, result.error );
+        return Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, materializedTableName ).orElseThrow();
+    }
+
+
+    public static LogicalCollection createSynchronizedSourceCollectionMaterialization( LogicalCollection sourceCollection, String materializedCollectionName, String storeName ) throws Exception {
+        RelationalResult result = postSourceMaterializationRequest(
+                "/createSynchronizedSourceCollectionMaterialization",
+                sourceCollection.id,
+                Catalog.snapshot().getAdapter( storeName ).orElseThrow().id,
+                materializedCollectionName );
+        assertNull( result.error, result.error );
+        return Catalog.snapshot().doc().getCollection( sourceCollection.namespaceId, materializedCollectionName ).orElseThrow();
+    }
+
+
+    public static List<String> previewSynchronizedMaterializationSchemaRefresh( long materializationId ) throws Exception {
+        return refreshSynchronizedMaterializationSchema( materializationId, null ).changeDescriptions();
+    }
+
+
+    public static List<String> applySynchronizedMaterializationSchemaRefresh( long materializationId ) throws Exception {
+        return refreshSynchronizedMaterializationSchema( materializationId, "synchronizedApply" ).changeDescriptions();
+    }
+
+
+    public static void refreshSynchronizedMaterializationData( long materializationId ) throws Exception {
+        Object crud = getCrud();
+
+        UIRequest request = UIRequest.builder()
+                .type( "RefreshRequest" )
+                .entityId( materializationId )
+                .namespace( Catalog.DEFAULT_NAMESPACE_NAME )
+                .currentPage( 1 )
+                .noLimit( false )
+                .refreshTrigger( "synchronizedApplyWithData" )
+                .confirmedDataRefresh( true )
+                .build();
+
+        Method refreshMethod = crud.getClass().getMethod( "refreshSourceSchemaIfNeeded", UIRequest.class );
+        refreshMethod.invoke( crud, request );
+    }
+
+
+    private static SourceMaterializationRefreshResult refreshSynchronizedMaterializationSchema( long materializationId, String refreshTrigger ) throws Exception {
+        Object crud = getCrud();
+
+        UIRequest request = UIRequest.builder()
+                .type( "RefreshRequest" )
+                .entityId( materializationId )
+                .namespace( Catalog.DEFAULT_NAMESPACE_NAME )
+                .currentPage( 1 )
+                .noLimit( false )
+                .refreshTrigger( refreshTrigger )
+                .build();
+
+        Method refreshMethod = crud.getClass().getMethod( "refreshSourceSchemaIfNeeded", UIRequest.class );
+        return (SourceMaterializationRefreshResult) refreshMethod.invoke( crud, request );
+    }
+
+
+    public static void refreshSynchronizedCollectionMaterializationData( long materializationId ) throws Exception {
+        Object crud = getCrud();
+
+        UIRequest request = UIRequest.builder()
+                .type( "RefreshRequest" )
+                .entityId( materializationId )
+                .currentPage( 1 )
+                .noLimit( false )
+                .confirmedDataRefresh( true )
+                .build();
+
+        Method refreshMethod = crud.getClass().getMethod( "refreshSynchronizedSourceCollectionMaterializationData", UIRequest.class );
+        refreshMethod.invoke( crud, request );
+    }
+
+
+    public static int countRows( String tableName ) throws Exception {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                Statement statement = jdbcConnection.getConnection().createStatement();
+                ResultSet resultSet = statement.executeQuery( "SELECT COUNT(*) FROM " + quoteQualified( Catalog.DEFAULT_NAMESPACE_NAME, tableName ) ) ) {
+            assertTrue( resultSet.next() );
+            return resultSet.getInt( 1 );
+        }
+    }
+
+
+    public static int countDocuments( String namespaceName, String collectionName ) {
+        DocResult result = MongoConnection.executeGetResponse( "db." + collectionName + ".countDocuments({})", namespaceName );
+        if ( result.getData() == null || result.getData().length == 0 ) {
+            return 0;
+        }
+        Matcher matcher = Pattern.compile( "-?\\d+" ).matcher( String.valueOf( result.getData()[0] ) );
+        if ( !matcher.find() ) {
+            throw new IllegalStateException( "Could not determine document count for collection " + collectionName );
+        }
+        return Integer.parseInt( matcher.group() );
+    }
+
+
+    private static Object getCrud() throws Exception {
+        Object httpServer = HttpServer.getInstance();
+        Field crudField = httpServer.getClass().getDeclaredField( "crud" );
+        crudField.setAccessible( true );
+        return crudField.get( httpServer );
+    }
+
+
+    private static String quoteQualified( String namespaceName, String entityName ) {
+        return quoteIdentifier( namespaceName ) + "." + quoteIdentifier( entityName );
+    }
+
+
+    private static String quoteIdentifier( String identifier ) {
+        return "\"" + identifier.replace( "\"", "\"\"" ) + "\"";
+    }
+
+
+    private static RelationalResult postSourceMaterializationRequest( String route, long sourceEntityId, long targetStoreId, String targetEntityName ) throws Exception {
+        JsonObject data = new JsonObject();
+        data.addProperty( "sourceEntityId", sourceEntityId );
+        data.addProperty( "targetStoreId", targetStoreId );
+        data.add( "targetNamespaceId", JsonNull.INSTANCE );
+        data.addProperty( "targetEntityName", targetEntityName );
+
+        HttpResponse<String> response = Unirest.post( "{protocol}://{host}:{port}" + route )
+                .header( "Content-Type", "application/json" )
+                .connectTimeout( 1_800_000 )
+                .socketTimeout( 1_800_000 )
+                .basicAuth( "pa", "" )
+                .routeParam( "protocol", "http" )
+                .routeParam( "host", "127.0.0.1" )
+                .routeParam( "port", String.valueOf( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() ) )
+                .body( data )
+                .asString();
+        if ( response.getStatus() >= 400 ) {
+            fail( "Source materialization request failed with HTTP " + response.getStatus() + ": " + response.getBody() );
+        }
+        return HttpServer.mapper.readValue( response.getBody(), RelationalResult.class );
+    }
+
+
+    @SuppressWarnings("unchecked")
+    public static List<String> refreshSelectedSources( List<Long> sourceIds ) throws Exception {
+        return refreshSelectedSourcesWithDetails( sourceIds ).refreshedSources();
+    }
+
+
+    public static SourceRefreshDetails refreshSelectedSourcesWithDetails( List<Long> sourceIds ) throws Exception {
+        Object httpServer = HttpServer.getInstance();
+        Field crudField = httpServer.getClass().getDeclaredField( "crud" );
+        crudField.setAccessible( true );
+        Object crud = crudField.get( httpServer );
+
+        Method refreshMethod = crud.getClass().getMethod( "refreshSelectedSourcesWithDetails", List.class );
+        return (SourceRefreshDetails) refreshMethod.invoke( crud, sourceIds );
+    }
+
+
+    public static boolean isDockerDaemonAvailable() {
+        try {
+            Process process = new ProcessBuilder( "docker", "info" ).redirectErrorStream( true ).start();
+            boolean finished = process.waitFor( 15, TimeUnit.SECONDS );
+            return finished && process.exitValue() == 0;
+        } catch ( Exception e ) {
+            return false;
+        }
+    }
+
+
+    public static boolean isLinuxDockerDaemonAvailable() {
+        if ( !isDockerDaemonAvailable() ) {
+            return false;
+        }
+        try {
+            Process process = new ProcessBuilder( "docker", "info", "--format", "{{.OSType}}" ).redirectErrorStream( true ).start();
+            boolean finished = process.waitFor( 15, TimeUnit.SECONDS );
+            if ( !finished || process.exitValue() != 0 ) {
+                return false;
+            }
+            String output = new String( process.getInputStream().readAllBytes() ).trim();
+            return "linux".equalsIgnoreCase( output );
+        } catch ( Exception e ) {
+            return false;
+        }
+    }
+
+
+    public static DockerPostgres startPostgresDocker( String database, String username, String password ) throws Exception {
+        return DockerPostgres.start( database, username, password );
+    }
+
+
+    public static DockerMysql startMysqlDocker( String database, String username, String password ) throws Exception {
+        return DockerMysql.start( database, username, password );
+    }
+
+
+    public static DockerMongo startMongoDocker( String database ) throws Exception {
+        return DockerMongo.start( database );
+    }
+
+
+    @SafeVarargs
+    public static void executeSql( SqlBiConsumer<Connection, Statement>... queries ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                for ( BiConsumer<Connection, Statement> query : queries ) {
+                    query.accept( connection, statement );
+                }
+            }
+        } catch ( SQLException e ) {
+            fail( e.getMessage() );
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    public Transaction getTransaction() {
+        return transactionManager.startTransaction( Catalog.defaultUserId, new QueryAnalyzer(), "Test Helper" );
+    }
+
+
+    /**
+     * Surprisingly often when testing the used ids are in a similar range and quite low, which can result in unexpected behaviour,
+     * where tests seem to work but shouldn't.
+     */
+    public void randomizeCatalogIds() {
+        Random random = new Random();
+        int max = 200;
+        Supplier<Integer> offset = () -> random.nextInt( max );
+
+        try {
+            PolyCatalog catalog = (PolyCatalog) Catalog.getInstance();
+            Field field = catalog.getClass().getDeclaredField( "idBuilder" );
+            field.setAccessible( true );
+            field.set( catalog, new IdBuilder(
+                    new AtomicLong( catalog.idBuilder.getSnapshotId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getEntityId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getFieldId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getUserId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getAllocId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getPhysicalId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getIndexId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getKeyId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getAdapterId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getInterfaceId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getConstraintId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getGroupId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getPartitionId().longValue() + offset.get() ),
+                    new AtomicLong( catalog.idBuilder.getPlacementId().longValue() + offset.get() )
+            ) );
+        } catch ( NoSuchFieldException | IllegalAccessException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
     public void resetCaches() {
         ImplementationCache.INSTANCE.reset();
         QueryPlanCache.INSTANCE.reset();
@@ -468,14 +953,41 @@ public class TestHelper {
     }
 
 
-    public static abstract class HttpConnection {
+    @FunctionalInterface
+    public interface SqlBiConsumer<C, T> extends BiConsumer<C, T> {
 
-        static {
-            // TODO: remove this (is there a way to only disable the timeout, when I am actually debugging?)
-            Unirest.config()
-                    .socketTimeout( 0 )
-                    .connectTimeout( 0 );
+        @Override
+        default void accept( final C elemC, final T elemT ) {
+            try {
+                acceptThrows( elemC, elemT );
+            } catch ( final SQLException e ) {
+                throw new RuntimeException( e );
+            }
         }
+
+        void acceptThrows( C elemC, T elem ) throws SQLException;
+
+    }
+
+
+    @FunctionalInterface
+    public interface DelayedSupplier<T extends ResultSet> extends Supplier<T> {
+
+        @Override
+        default T get() {
+            try {
+                return getThrows();
+            } catch ( final SQLException e ) {
+                throw new RuntimeException( e );
+            }
+        }
+
+        T getThrows() throws SQLException;
+
+    }
+
+
+    public static abstract class HttpConnection {
 
 
         public static HttpRequest<?> buildQuery( String route, String query, String database ) {
@@ -781,52 +1293,279 @@ public class TestHelper {
     }
 
 
-    @SafeVarargs
-    public static void executeSql( SqlBiConsumer<Connection, Statement>... queries ) {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                for ( BiConsumer<Connection, Statement> query : queries ) {
-                    query.accept( connection, statement );
+    public static final class DockerPostgres implements AutoCloseable {
+
+        private static final int POSTGRES_PORT = 5432;
+        private static final long STARTUP_TIMEOUT_MS = TimeUnit.SECONDS.toMillis( 120 );
+
+        private final DockerContainer container;
+        @Getter
+        private final String host;
+        @Getter
+        private final int port;
+        private final String database;
+        private final String username;
+        private final String password;
+
+
+        private DockerPostgres( DockerContainer container, String host, int port, String database, String username, String password ) {
+            this.container = container;
+            this.host = host;
+            this.port = port;
+            this.database = database;
+            this.username = username;
+            this.password = password;
+        }
+
+
+        public static DockerPostgres start( String database, String username, String password ) throws Exception {
+            String containerName = "polypheny-refresh-test-" + UUID.randomUUID().toString().replace( "-", "" ).substring( 0, 8 );
+            DockerInstance instance = DockerManager.getInstance()
+                    .getInstanceById( 0 )
+                    .orElseThrow( () -> new IllegalStateException( "No docker instance with id 0" ) );
+
+            DockerContainer container = instance.newBuilder( "postgres:16-alpine", containerName )
+                    .withEnvironmentVariable( "POSTGRES_DB", database )
+                    .withEnvironmentVariable( "POSTGRES_USER", username )
+                    .withEnvironmentVariable( "POSTGRES_PASSWORD", password )
+                    .createAndStart();
+
+            try {
+                HostAndPort connection = container.connectToContainer( POSTGRES_PORT );
+                String host = connection.host();
+                int port = connection.port();
+                DockerPostgres postgres = new DockerPostgres( container, host, port, database, username, password );
+                if ( !container.waitTillStarted( postgres::testConnection, STARTUP_TIMEOUT_MS ) ) {
+                    throw new IllegalStateException( "PostgreSQL container did not become ready in time" );
                 }
+                return postgres;
+            } catch ( Exception e ) {
+                container.destroy();
+                throw e;
             }
-        } catch ( SQLException e ) {
-            fail( e.getMessage() );
-            throw new RuntimeException( e );
         }
+
+
+        public void execute( String sql ) throws Exception {
+            int exitCode = container.execute( List.of( "psql", "-U", username, "-d", database, "-c", sql ) );
+            if ( exitCode != 0 ) {
+                throw new IllegalStateException( "PostgreSQL command failed with exit code " + exitCode + ": " + sql );
+            }
+        }
+
+
+        @Override
+        public void close() {
+            try {
+                container.destroy();
+            } catch ( Exception ignored ) {
+                // Ignore cleanup failures to avoid masking test failures.
+            }
+        }
+
+
+        private boolean testConnection() {
+            try {
+                int readyExitCode = container.execute( List.of( "pg_isready", "-U", username, "-d", database ) );
+                if ( readyExitCode != 0 ) {
+                    return false;
+                }
+                return container.execute( List.of( "psql", "-U", username, "-d", database, "-c", "SELECT 1" ) ) == 0;
+            } catch ( IOException e ) {
+                // Ignore during startup polling.
+            }
+            return false;
+        }
+
     }
 
 
-    @FunctionalInterface
-    public interface SqlBiConsumer<C, T> extends BiConsumer<C, T> {
+    public static final class DockerMysql implements AutoCloseable {
 
-        @Override
-        default void accept( final C elemC, final T elemT ) {
+        private static final int MYSQL_PORT = 3306;
+        private static final long STARTUP_TIMEOUT_MS = TimeUnit.SECONDS.toMillis( 120 );
+        private static final String ROOT_PASSWORD = "polypheny-root";
+
+        private final DockerContainer container;
+        @Getter
+        private final String host;
+        @Getter
+        private final int port;
+        private final String database;
+        private final String username;
+        private final String password;
+
+
+        private DockerMysql( DockerContainer container, String host, int port, String database, String username, String password ) {
+            this.container = container;
+            this.host = host;
+            this.port = port;
+            this.database = database;
+            this.username = username;
+            this.password = password;
+        }
+
+
+        public static DockerMysql start( String database, String username, String password ) throws Exception {
+            String containerName = "polypheny-refresh-mysql-test-" + UUID.randomUUID().toString().replace( "-", "" ).substring( 0, 8 );
+            DockerInstance instance = DockerManager.getInstance()
+                    .getInstanceById( 0 )
+                    .orElseThrow( () -> new IllegalStateException( "No docker instance with id 0" ) );
+
+            DockerContainer container = instance.newBuilder( "mysql:8.4", containerName )
+                    .withEnvironmentVariable( "MYSQL_DATABASE", database )
+                    .withEnvironmentVariable( "MYSQL_USER", username )
+                    .withEnvironmentVariable( "MYSQL_PASSWORD", password )
+                    .withEnvironmentVariable( "MYSQL_ROOT_PASSWORD", ROOT_PASSWORD )
+                    .createAndStart();
+
             try {
-                acceptThrows( elemC, elemT );
-            } catch ( final SQLException e ) {
-                throw new RuntimeException( e );
+                HostAndPort connection = container.connectToContainer( MYSQL_PORT );
+                String host = connection.host();
+                int port = connection.port();
+                DockerMysql mysql = new DockerMysql( container, host, port, database, username, password );
+                if ( !container.waitTillStarted( mysql::testConnection, STARTUP_TIMEOUT_MS ) ) {
+                    throw new IllegalStateException( "MySQL container did not become ready in time" );
+                }
+                return mysql;
+            } catch ( Exception e ) {
+                container.destroy();
+                throw e;
             }
         }
 
-        void acceptThrows( C elemC, T elem ) throws SQLException;
+
+        public void execute( String sql ) throws Exception {
+            int exitCode = container.execute( List.of( "mysql", "-u", username, "-p" + password, database, "-e", sql ) );
+            if ( exitCode != 0 ) {
+                throw new IllegalStateException( "MySQL command failed with exit code " + exitCode + ": " + sql );
+            }
+        }
+
+
+        @Override
+        public void close() {
+            try {
+                container.destroy();
+            } catch ( Exception ignored ) {
+                // Ignore cleanup failures to avoid masking test failures.
+            }
+        }
+
+
+        private boolean testConnection() {
+            try {
+                int pingExitCode = container.execute( List.of(
+                        "mysqladmin",
+                        "ping",
+                        "-h",
+                        "127.0.0.1",
+                        "-u",
+                        "root",
+                        "-p" + ROOT_PASSWORD,
+                        "--silent" ) );
+                if ( pingExitCode != 0 ) {
+                    return false;
+                }
+                return container.execute( List.of(
+                        "mysql",
+                        "-u",
+                        username,
+                        "-p" + password,
+                        database,
+                        "-e",
+                        "SELECT 1" ) ) == 0;
+            } catch ( IOException e ) {
+                // Ignore during startup polling.
+            }
+            return false;
+        }
 
     }
 
 
-    @FunctionalInterface
-    public interface DelayedSupplier<T extends ResultSet> extends Supplier<T> {
+    public static final class DockerMongo implements AutoCloseable {
 
-        @Override
-        default T get() {
+        private static final int MONGO_PORT = 27017;
+        private static final long STARTUP_TIMEOUT_MS = TimeUnit.SECONDS.toMillis( 60 );
+
+        private final DockerContainer container;
+        @Getter
+        private final String host;
+        @Getter
+        private final int port;
+        private final String database;
+
+
+        private DockerMongo( DockerContainer container, String host, int port, String database ) {
+            this.container = container;
+            this.host = host;
+            this.port = port;
+            this.database = database;
+        }
+
+
+        public static DockerMongo start( String database ) throws Exception {
+            String containerName = "polypheny-refresh-mongo-test-" + UUID.randomUUID().toString().replace( "-", "" ).substring( 0, 8 );
+            DockerInstance instance = DockerManager.getInstance()
+                    .getInstanceById( 0 )
+                    .orElseThrow( () -> new IllegalStateException( "No docker instance with id 0" ) );
+
+            DockerContainer container = instance.newBuilder( "mongo:8.0", containerName )
+                    .createAndStart();
+
             try {
-                return getThrows();
-            } catch ( final SQLException e ) {
-                throw new RuntimeException( e );
+                HostAndPort connection = container.connectToContainer( MONGO_PORT );
+                String host = connection.host();
+                int port = connection.port();
+                DockerMongo mongo = new DockerMongo( container, host, port, database );
+                if ( !container.waitTillStarted( mongo::testConnection, STARTUP_TIMEOUT_MS ) ) {
+                    throw new IllegalStateException( "MongoDB container did not become ready in time" );
+                }
+                return mongo;
+            } catch ( Exception e ) {
+                container.destroy();
+                throw e;
             }
         }
 
-        T getThrows() throws SQLException;
+
+        public void execute( String javascript ) throws Exception {
+            int exitCode = container.execute( List.of(
+                    "mongosh",
+                    "--quiet",
+                    "mongodb://127.0.0.1:" + MONGO_PORT + "/" + database,
+                    "--eval",
+                    javascript ) );
+            if ( exitCode != 0 ) {
+                throw new IllegalStateException( "MongoDB command failed with exit code " + exitCode + ": " + javascript );
+            }
+        }
+
+
+        @Override
+        public void close() {
+            try {
+                container.destroy();
+            } catch ( Exception ignored ) {
+                // Ignore cleanup failures to avoid masking test failures.
+            }
+        }
+
+
+        private boolean testConnection() {
+            try {
+                return container.execute( List.of(
+                        "mongosh",
+                        "--quiet",
+                        "mongodb://127.0.0.1:" + MONGO_PORT + "/" + database,
+                        "--eval",
+                        "db.runCommand({ ping: 1 })" ) ) == 0;
+            } catch ( IOException e ) {
+                // Ignore during startup polling.
+            }
+            return false;
+        }
 
     }
 

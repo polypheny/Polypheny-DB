@@ -79,8 +79,8 @@ import org.polypheny.db.util.ValidatorUtil;
 @Slf4j
 public class PolyAlgUtils {
 
-    private static final Pattern CAST_PATTERN;
     public static final String ELEMENT_REF_PREFIX = "$elem";
+    private static final Pattern CAST_PATTERN;
 
 
     static {

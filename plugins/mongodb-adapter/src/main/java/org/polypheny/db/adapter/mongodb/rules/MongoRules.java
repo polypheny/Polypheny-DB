@@ -88,13 +88,7 @@ import org.slf4j.Logger;
  */
 public class MongoRules {
 
-    private MongoRules() {
-    }
-
-
-    protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
     public static final MongoConvention convention = MongoConvention.INSTANCE;
-
     @Getter
     public static final AlgOptRule[] RULES = {
             MongoToEnumerableConverterRule.INSTANCE,
@@ -111,6 +105,10 @@ public class MongoRules {
             MongoDocumentsRule.INSTANCE,
             MongoDocumentModificationRule.INSTANCE
     };
+    protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
+
+    private MongoRules() {
+    }
 
 
     /**
@@ -213,6 +211,19 @@ public class MongoRules {
         return new BsonString( ref.getIndex()
                 .map( i -> rowType.getFieldNames().get( i ) + "." + ref.getName() )
                 .orElse( ref.getName() ) );
+    }
+
+
+    private static boolean containsIncompatible( SingleAlg alg ) {
+        MongoExcludeVisitor visitor = new MongoExcludeVisitor();
+        alg.accept( new RexShuttle() {
+            @Override
+            public RexNode visitCall( RexCall call ) {
+                call.accept( visitor );
+                return call;
+            }
+        } );
+        return visitor.isContainsIncompatible();
     }
 
 
@@ -442,19 +453,6 @@ public class MongoRules {
     }
 
 
-    private static boolean containsIncompatible( SingleAlg alg ) {
-        MongoExcludeVisitor visitor = new MongoExcludeVisitor();
-        alg.accept( new RexShuttle() {
-            @Override
-            public RexNode visitCall( RexCall call ) {
-                call.accept( visitor );
-                return call;
-            }
-        } );
-        return visitor.isContainsIncompatible();
-    }
-
-
     /**
      * This visitor is used to exclude different function for MongoProject and MongoFilters,
      * some of them are not supported or would need to use the Javascript engine extensively,
@@ -599,6 +597,31 @@ public class MongoRules {
         }
 
 
+        @Override
+        public AlgNode convert( AlgNode alg ) {
+            final RelModify<?> modify = (RelModify<?>) alg;
+            Optional<ModifiableTable> oModifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
+            if ( oModifiableTable.isEmpty() ) {
+                return null;
+            }
+            Optional<MongoEntity> oMongo = modify.getEntity().unwrap( MongoEntity.class );
+            if ( oMongo.isEmpty() ) {
+                return null;
+            }
+
+            final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
+            return new MongoTableModify(
+                    modify.getCluster(),
+                    traitSet,
+                    oMongo.get(),
+                    AlgOptRule.convert( modify.getInput(), traitSet ),
+                    modify.getOperation(),
+                    modify.getUpdateColumns(),
+                    modify.getSourceExpressions(),
+                    modify.isFlattened() );
+        }
+
+
         @Getter
         private static class ScanChecker extends AlgShuttleImpl {
 
@@ -638,31 +661,6 @@ public class MongoRules {
                 return super.visit( other );
             }
 
-        }
-
-
-        @Override
-        public AlgNode convert( AlgNode alg ) {
-            final RelModify<?> modify = (RelModify<?>) alg;
-            Optional<ModifiableTable> oModifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
-            if ( oModifiableTable.isEmpty() ) {
-                return null;
-            }
-            Optional<MongoEntity> oMongo = modify.getEntity().unwrap( MongoEntity.class );
-            if ( oMongo.isEmpty() ) {
-                return null;
-            }
-
-            final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
-            return new MongoTableModify(
-                    modify.getCluster(),
-                    traitSet,
-                    oMongo.get(),
-                    AlgOptRule.convert( modify.getInput(), traitSet ),
-                    modify.getOperation(),
-                    modify.getUpdateColumns(),
-                    modify.getSourceExpressions(),
-                    modify.isFlattened() );
         }
 
     }

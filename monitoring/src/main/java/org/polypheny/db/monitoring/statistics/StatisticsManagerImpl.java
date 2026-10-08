@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,27 +95,18 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 public class StatisticsManagerImpl extends StatisticsManager {
 
     private static StatisticQueryProcessor statisticQueryInterface;
-
-    private final ExecutorService threadPool = Executors.newSingleThreadExecutor();
-
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
-
+    private final ExecutorService threadPool = Executors.newSingleThreadExecutor();
+    @Getter
+    private final Map<Long, StatisticTable> entityStatistic;
+    private final Queue<Long> tablesToUpdate = new ConcurrentLinkedQueue<>();
     private int buffer = RuntimeConfig.STATISTIC_BUFFER.getInteger();
-
     @Setter
     @Getter
     private String revalId = null;
-
     private DashboardInformation dashboardInformation;
-
-    @Getter
-    private final Map<Long, StatisticTable> entityStatistic;
-
     @Getter
     private volatile Map<Long, StatisticColumn> statisticFields;
-
-    private final Queue<Long> tablesToUpdate = new ConcurrentLinkedQueue<>();
-
     private Transaction transaction;
     private Statement statement;
 
@@ -427,6 +418,9 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     private StatisticQueryResult prepareNode( QueryResult queryResult, NodeType nodeType ) {
         StatisticQueryResult statisticQueryColumn = null;
+        if ( queryResult.getEntity().entityType == EntityType.SOURCE ) {
+            return null;
+        }
         if ( Catalog.snapshot().getLogicalEntity( queryResult.getEntity().id ).isPresent() ) {
             AlgNode queryNode = getQueryNode( queryResult, nodeType );
             statisticQueryColumn = statisticQueryInterface.selectOneColumnStat( queryNode, transaction, statement, queryResult );
@@ -1094,6 +1088,44 @@ public class StatisticsManagerImpl extends StatisticsManager {
     }
 
 
+    /**
+     * This method returns the number of rows for a given table, which is used in
+     * {@link AbstractEntity#getStatistic()} to update the statistics.
+     *
+     * @param entityId of the table
+     * @return the number of rows of a given table
+     */
+    @Override
+    public synchronized Long tupleCountPerEntity( long entityId ) {
+        if ( entityStatistic.containsKey( entityId ) ) {
+            return entityStatistic.get( entityId ).getNumberOfRows();
+        } else {
+            return null;
+        }
+    }
+
+
+    @Override
+    public Map<String, StatisticColumn> getQualifiedStatisticMap() {
+        Map<String, StatisticColumn> map = new HashMap<>();
+
+        for ( StatisticColumn val : statisticFields.values() ) {
+            map.put( String.valueOf( val.columnId ), val );
+        }
+
+        return map;
+    }
+
+
+    private enum NodeType {
+        ROW_COUNT_TABLE,
+        ROW_COUNT_COLUMN,
+        MIN,
+        MAX,
+        UNIQUE_VALUE
+    }
+
+
     @Data
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
     static class TableStatistics {
@@ -1114,23 +1146,6 @@ public class StatisticsManagerImpl extends StatisticsManager {
             this.calls = calls;
         }
 
-    }
-
-
-    /**
-     * This method returns the number of rows for a given table, which is used in
-     * {@link AbstractEntity#getStatistic()} to update the statistics.
-     *
-     * @param entityId of the table
-     * @return the number of rows of a given table
-     */
-    @Override
-    public synchronized Long tupleCountPerEntity( long entityId ) {
-        if ( entityStatistic.containsKey( entityId ) ) {
-            return entityStatistic.get( entityId ).getNumberOfRows();
-        } else {
-            return null;
-        }
     }
 
 
@@ -1167,27 +1182,6 @@ public class StatisticsManagerImpl extends StatisticsManager {
             }
         }
 
-    }
-
-
-    private enum NodeType {
-        ROW_COUNT_TABLE,
-        ROW_COUNT_COLUMN,
-        MIN,
-        MAX,
-        UNIQUE_VALUE
-    }
-
-
-    @Override
-    public Map<String, StatisticColumn> getQualifiedStatisticMap() {
-        Map<String, StatisticColumn> map = new HashMap<>();
-
-        for ( StatisticColumn val : statisticFields.values() ) {
-            map.put( String.valueOf( val.columnId ), val );
-        }
-
-        return map;
     }
 
 }

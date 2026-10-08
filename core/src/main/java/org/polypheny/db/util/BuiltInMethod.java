@@ -559,12 +559,8 @@ public enum BuiltInMethod {
     SINGLE_TO_ARRAY_ENUMERABLE( Functions.class, "singleToArray", Enumerable.class ),
     TO_JSON( PolyValue.class, "toPolyJson" );
 
-    private static final String toIntOptional = "toIntOptional";
-    public final Method method;
-    public final Constructor<?> constructor;
-    public final Field field;
-
     public static final ImmutableMap<Method, BuiltInMethod> MAP;
+    private static final String toIntOptional = "toIntOptional";
 
 
     static {
@@ -576,6 +572,11 @@ public enum BuiltInMethod {
         }
         MAP = builder.build();
     }
+
+
+    public final Method method;
+    public final Constructor<?> constructor;
+    public final Field field;
 
 
     BuiltInMethod( Method method, Constructor<?> constructor, Field field ) {

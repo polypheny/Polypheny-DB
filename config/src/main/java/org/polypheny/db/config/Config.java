@@ -39,12 +39,24 @@ public abstract class Config {
      * Unique key of this config.
      */
     private final String key;
-
+    /**
+     * Type of configuration element. Required for GSON.
+     */
+    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
+    private final String configType;
+    /**
+     * List of observers.
+     * Field is transient, so it will not be (de)serialized by Gson and produce an "Unable to invoke no-args constructor" error.
+     */
+    private transient final Map<Integer, ConfigListener> listeners = new HashMap<>();
+    /**
+     * Form type to use in the web ui for this config element.
+     */
+    WebUiFormType webUiFormType;
     /**
      * Description of this configuration element.
      */
     private String description;
-
     /**
      * Indicated whether applying changes to this configuration element requires a restart of Polypheny-DB.
      */
@@ -52,53 +64,31 @@ public abstract class Config {
     @Getter
     @Accessors(fluent = true)
     private boolean requiresRestart = false;
-
     /**
      * When you change a Config with a method like setInt() and the field validationMethod is set, new value will only be set
      * if the validation (ConfigValidator.validate()) returns true.
      */
     private ConfigValidator validationMethod;
-
     /**
      * Name of the validation method to use in the web ui this field is parsed to Json by Gson.
      */
     @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private WebUiValidator[] webUiValidators;
-
-    /**
-     * Form type to use in the web ui for this config element.
-     */
-    WebUiFormType webUiFormType;
-
     /**
      * ID of the WebUiGroup it should be displayed in.
      */
     private String webUiGroup;
-
     /**
      * Required by GSON.
      * Configs with a lower order will be rendered first.
      */
     @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private int webUiOrder;
-
-    /**
-     * Type of configuration element. Required for GSON.
-     */
-    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
-    private final String configType;
-
     /**
      * If isObservable is false, listeners will not be notified when this Config changes.
      * Needed for ConfigArray and ConfigTable: You get only one notification and not one for every element in them.
      */
     private boolean isObservable = true;
-
-    /**
-     * List of observers.
-     * Field is transient, so it will not be (de)serialized by Gson and produce an "Unable to invoke no-args constructor" error.
-     */
-    private transient final Map<Integer, ConfigListener> listeners = new HashMap<>();
 
 
     /**

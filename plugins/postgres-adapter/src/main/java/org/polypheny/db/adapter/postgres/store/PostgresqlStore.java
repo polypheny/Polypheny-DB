@@ -113,7 +113,9 @@ import org.polypheny.db.util.PasswordGenerator;
 )
 public class PostgresqlStore extends AbstractJdbcStore {
 
-
+    private static final int POSTGRESQL_TEXT_VARCHAR_PRECISION = 10 * 1024 * 1024;
+    @Getter
+    private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
     private String host;
     private int port;
     private String database;
@@ -126,8 +128,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
-    @Getter
-    private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
+    private static String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
+        return String.format( "jdbc:postgresql://%s:%d/%s", dbHostname, dbPort, dbName );
+    }
 
 
     @Override
@@ -306,12 +309,27 @@ public class PostgresqlStore extends AbstractJdbcStore {
             typeString = typeBuilder.toString();
         }
 
-        builder.append( " TYPE " ).append( typeString );
+        PolyType targetType = getPostgresDdlType( column );
+        builder.append( " TYPE " ).append( getTypeString( targetType ) );
+        if ( column.collectionsType != null && targetType == column.type ) {
+            builder.append( " " ).append( column.collectionsType );
+        }
+        if ( column.length != null && doesTypeUseLength( targetType ) ) {
+            builder.append( "(" );
+            builder.append( column.length );
+            if ( column.scale != null ) {
+                builder.append( "," ).append( column.scale );
+            }
+            builder.append( ")" );
+        }
         builder.append( " USING " )
                 .append( dialect.quoteIdentifier( column.name ) )
                 .append( "::" )
-                .append( typeString );
+                .append( getTypeString( targetType ) );
 
+        if ( column.collectionsType != null && targetType == column.type ) {
+            builder.append( " " ).append( column.collectionsType );
+        }
         executeUpdate( builder, context );
 
         updateNativePhysical( allocId );
@@ -512,6 +530,14 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
+    private PolyType getPostgresDdlType( PhysicalColumn column ) {
+        if ( column.type == PolyType.VARCHAR && column.length != null && column.length >= POSTGRESQL_TEXT_VARCHAR_PRECISION ) {
+            return PolyType.TEXT;
+        }
+        return column.type;
+    }
+
+
     @Override
     protected String getTypeString( PolyType type ) {
         if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
@@ -555,11 +581,6 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public String getDefaultPhysicalSchemaName() {
         return "public";
-    }
-
-
-    private static String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
-        return String.format( "jdbc:postgresql://%s:%d/%s", dbHostname, dbPort, dbName );
     }
 
 
