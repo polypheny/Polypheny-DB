@@ -355,8 +355,6 @@ public class PolyphenyDb {
 
         restore( authenticator, catalog );
 
-        PolyPluginManager.initAfterRestore();
-
         // Add tracker, which rechecks constraints after enabling
         ConstraintTracker tracker = new ConstraintTracker( transactionManager );
         RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.addObserver( tracker );
@@ -377,6 +375,8 @@ public class PolyphenyDb {
         if ( showSplashScreen ) {
             splashScreen.setComplete();
         }
+
+        PolyPluginManager.initAfterRestore();
 
         try {
             log.trace( "Waiting for the Shutdown-Hook to finish ..." );

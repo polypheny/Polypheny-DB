@@ -7,9 +7,12 @@ import tarfile
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from gzip import GzipFile
+from telnetlib import DO
 from typing import Any
 
 import xmltodict
+
+
 
 """
 To rebuild the dataset follow the steps described below:
@@ -43,10 +46,12 @@ class Dataset(ABC):
     src_dir: str
     dst_dir: str
     artists: set[str]
+    name: str
 
-    def __init__(self, src_dir: str, dst_dir: str):
+    def __init__(self, src_dir: str, dst_dir: str, name: str):
         self.src_dir = src_dir
         self.dst_dir = dst_dir
+        self.name = name
 
         if not os.path.exists(self.dst_dir):
             os.mkdir(self.dst_dir)
@@ -86,9 +91,10 @@ class Dataset(ABC):
 
     def mv_files(self, files: tuple[str, str] | list[tuple[str, str]]):
         if type(files) is tuple:
-            files = [files]
-        for file in files:
-            shutil.copy(file[0], file[1])
+            shutil.copy(files[0], files[1])
+        else:
+            for file in files:
+                shutil.copy(file[0], file[1])
 
     @abstractmethod
     def create_metafile(self):
@@ -108,7 +114,7 @@ class Chinook(Dataset):
         src_dir = f"{src_dir}/relational"
         dst_dir = f"{dst_dir}/relational"
 
-        super().__init__(src_dir, dst_dir)
+        super().__init__(src_dir, dst_dir, "CHINOOK")
 
     def load_artists(self) -> set[str]:
         def handle(j: dict):
@@ -131,7 +137,7 @@ class Musicbrainz(Dataset):
         src_dir = f"{src_dir}/graph"
         dst_dir = f"{dst_dir}/graph"
         self.top_artists = set()
-        super().__init__(src_dir, dst_dir)
+        super().__init__(src_dir, dst_dir, "MUSICBRAINZ")
 
     def load_artists(self) -> set[str]:
         def handle(j: dict):
@@ -169,7 +175,7 @@ class Discogs(Dataset):
     def __init__(self, src_dir: str, dst_dir: str):
         src_dir = f"{src_dir}/document"
         dst_dir = f"{dst_dir}/document"
-        super().__init__(src_dir, dst_dir)
+        super().__init__(src_dir, dst_dir, "DISCOGS")
 
     def load_artists(self) -> set[str]:
         def handle(j: dict):
@@ -220,22 +226,51 @@ def parse_musicbrainz(src: str, dst: str):
         with open("relations.json", "w") as json_file:
             json_file.writelines(relations)
 
+
+def create_checkpoint(name: str, *datasets: Dataset):
+    data = {}
+    for dataset in datasets:
+        data[dataset.name] = list(dataset.artists)
+    with open(name, "w") as checkpoint_file:
+        json.dump(data, checkpoint_file)
+
+def load_checkpoint(name: str, src_dir: str, dst_dir: str) -> tuple[Chinook, Musicbrainz, Discogs] | None:
+    datasets = (Chinook(src_dir, dst_dir), Musicbrainz(src_dir, dst_dir), Discogs(src_dir, dst_dir))
+
+    if not os.path.exists(name):
+        return None
+
+    with open(name, "r") as checkpoint_file:
+        data = json.load(checkpoint_file)
+        datasets[0].artists = set(data["CHINOOK"])
+        datasets[1].artists = set(data["MUSICBRAINZ"])
+        datasets[2].artists = set(data["DISCOGS"])
+
+    return datasets
+
+
+
 def parse_datasets(src_dir: str, dst_dir: str):
-    RELATIONAL = Chinook(src_dir, dst_dir)
-    GRAPH = Musicbrainz(src_dir, dst_dir)
-    DOCUMENT = Discogs(src_dir, dst_dir)
+    checkpoint = load_checkpoint("checkpoint_artists", src_dir, dst_dir)
+    if checkpoint is not None:
+        RELATIONAL, GRAPH, DOCUMENT = checkpoint
+    else:
+        RELATIONAL = Chinook(src_dir, dst_dir)
+        GRAPH = Musicbrainz(src_dir, dst_dir)
+        DOCUMENT = Discogs(src_dir, dst_dir)
 
-    relational_artists = RELATIONAL.load_artists()
-    graph_artists = GRAPH.load_artists()
-    document_artists = DOCUMENT.load_artists()
+        relational_artists = RELATIONAL.load_artists()
+        graph_artists = GRAPH.load_artists()
+        document_artists = DOCUMENT.load_artists()
 
-    common_artists: set[str] = relational_artists.intersection(graph_artists, document_artists)
+        common_artists: set[str] = relational_artists.intersection(graph_artists, document_artists)
 
-    relational_artists = RELATIONAL.expand_artists(common_artists)
-    graph_artists = GRAPH.expand_artists(common_artists)
-    document_artists = DOCUMENT.expand_artists(common_artists)
+        relational_artists = RELATIONAL.expand_artists(common_artists)
+        graph_artists = GRAPH.expand_artists(common_artists)
+        document_artists = DOCUMENT.expand_artists(common_artists)
 
-    print(f"Total artists (Relational: {len(relational_artists)}, Graph: {graph_artists}, Document: {document_artists})")
+        print(f"Total artists (Relational: {len(relational_artists)}, Graph: {len(graph_artists)}, Document: {len(document_artists)})")
+        create_checkpoint("checkpoint_artists", RELATIONAL, GRAPH, DOCUMENT)
 
     RELATIONAL.create_reduced_files()
     GRAPH.create_reduced_files()
