@@ -68,14 +68,12 @@ import org.polypheny.db.util.Pair;
 public class DocumentNearUnwrap extends ConverterRule {
 
     public static final DocumentNearUnwrap INSTANCE = new DocumentNearUnwrap();
+    private AlgCluster cluster;
 
 
     public DocumentNearUnwrap() {
         super( DocumentFilter.class, DocumentNearUnwrap::supports, Convention.NONE, Convention.NONE, AlgFactories.LOGICAL_BUILDER, DocumentNearUnwrap.class.getSimpleName() );
     }
-
-
-    private AlgCluster cluster;
 
 
     public static boolean supports( DocumentFilter filter ) {

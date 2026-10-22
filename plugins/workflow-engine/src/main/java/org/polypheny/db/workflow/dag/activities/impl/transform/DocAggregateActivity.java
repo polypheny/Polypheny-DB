@@ -63,6 +63,11 @@ import org.polypheny.db.workflow.engine.execution.context.FuseExecutionContext;
 public class DocAggregateActivity implements Activity, Fusable {
 
 
+    private static String deriveGroupName( String group ) {
+        return group.replace( ".", "_" );
+    }
+
+
     @Override
     public List<TypePreview> previewOutTypes( List<TypePreview> inTypes, SettingsPreview settings ) throws ActivityException {
         Set<String> fields = new HashSet<>();
@@ -104,11 +109,6 @@ public class DocAggregateActivity implements Activity, Fusable {
             includes.put( aggCall.name, ActivityUtils.getDocRexNameRef( aggCall.name, 0 ) );
         }
         return LogicalDocumentProject.create( aggNode, includes, List.of(), Map.of() );
-    }
-
-
-    private static String deriveGroupName( String group ) {
-        return group.replace( ".", "_" );
     }
 
 }

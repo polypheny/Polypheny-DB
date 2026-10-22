@@ -71,12 +71,12 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 
 public class BsonUtil {
 
-    private final static List<Pair<String, String>> mappings = new ArrayList<>();
-    private final static List<String> stops = new ArrayList<>();
     public static final String DOC_MONTH_KEY = "m";
     public static final String DOC_MILLIS_KEY = "ms";
     public static final String DOC_MEDIA_TYPE_KEY = "_type";
     public static final String DOC_MEDIA_ID_KEY = "_id";
+    private final static List<Pair<String, String>> mappings = new ArrayList<>();
+    private final static List<String> stops = new ArrayList<>();
 
 
     static {

@@ -336,12 +336,6 @@ public enum PolyType {
     public static final int MAX_INTERVAL_START_PRECISION = 10;
     public static final int MAX_INTERVAL_FRACTIONAL_SECOND_PRECISION = 9;
     public static final int MAX_DECIMAL_PRECISION = 64;
-
-    // Cached map of enum values
-    private static final Map<String, PolyType> VALUES_MAP = Util.enumConstants( PolyType.class );
-
-    // categorizations used by SqlTypeFamily definitions
-
     // you probably want to use JDK 1.5 support for treating enumeration as collection instead; this is only here to support
     // SqlTypeFamily.ANY
     public static final List<PolyType> ALL_TYPES =
@@ -349,38 +343,25 @@ public enum PolyType {
                     BOOLEAN, INTEGER, VARCHAR, JSON, DATE, TIME, TIMESTAMP, NULL, DECIMAL, ANY, CHAR, BINARY, VARBINARY, FILE, IMAGE, VIDEO, AUDIO,
                     TINYINT, SMALLINT, BIGINT, REAL, DOUBLE, SYMBOL, INTERVAL, FLOAT, MULTISET, DISTINCT, STRUCTURED, ROW, CURSOR, COLUMN_LIST );
 
+    // categorizations used by SqlTypeFamily definitions
     public static final List<PolyType> BOOLEAN_TYPES = ImmutableList.of( BOOLEAN );
-
     public static final List<PolyType> BINARY_TYPES = ImmutableList.of( BINARY, VARBINARY );
-
     public static final List<PolyType> INT_TYPES = ImmutableList.of( TINYINT, SMALLINT, INTEGER, BIGINT );
-
     public static final List<PolyType> EXACT_TYPES = combine( INT_TYPES, ImmutableList.of( DECIMAL ) );
-
     public static final List<PolyType> APPROX_TYPES = ImmutableList.of( FLOAT, REAL, DOUBLE );
-
     public static final List<PolyType> NUMERIC_TYPES = combine( EXACT_TYPES, APPROX_TYPES );
-
     public static final List<PolyType> FRACTIONAL_TYPES = combine( APPROX_TYPES, ImmutableList.of( DECIMAL ) );
-
     public static final List<PolyType> CHAR_TYPES = ImmutableList.of( CHAR, VARCHAR, JSON, TEXT );
-
     public static final List<PolyType> STRING_TYPES = combine( CHAR_TYPES, BINARY_TYPES );
-
     public static final List<PolyType> DATETIME_TYPES = ImmutableList.of( DATE, TIME, TIMESTAMP );
-
     public static final List<PolyType> DOCUMENT_TYPES = ImmutableList.of( MAP, ARRAY, DOCUMENT );
-
     public static final List<PolyType> JSON_TYPES = combine( DOCUMENT_TYPES, STRING_TYPES );
-
     public static final List<PolyType> GRAPH_TYPES = ImmutableList.of( GRAPH, ARRAY, NODE, EDGE, PATH );
-
     public static final List<PolyType> COLLECTION_TYPES = ImmutableList.of( ARRAY );
-
     public static final List<PolyType> BLOB_TYPES = ImmutableList.of( FILE, AUDIO, IMAGE, VIDEO );
-
     public static final List<PolyType> INTERVAL_TYPES = List.of( INTERVAL );
-
+    // Cached map of enum values
+    private static final Map<String, PolyType> VALUES_MAP = Util.enumConstants( PolyType.class );
     private static final Map<Integer, PolyType> JDBC_TYPE_TO_NAME =
             ImmutableMap.<Integer, PolyType>builder()
                     .put( Types.TINYINT, TINYINT )
@@ -452,6 +433,35 @@ public enum PolyType {
     }
 
 
+    private static List<PolyType> combine( List<PolyType> list0, List<PolyType> list1 ) {
+        return ImmutableList.<PolyType>builder()
+                .addAll( list0 )
+                .addAll( list1 )
+                .build();
+    }
+
+
+    /**
+     * Gets the PolyType corresponding to a JDBC type.
+     *
+     * @param jdbcType the JDBC type of interest
+     * @return corresponding PolyType, or null if the type is not known
+     */
+    public static PolyType getNameForJdbcType( int jdbcType ) {
+        return JDBC_TYPE_TO_NAME.get( jdbcType );
+    }
+
+
+    /**
+     * The set of types that are allowed for field in an entity (e.g. columns in a table).
+     *
+     * @return allowed field types
+     */
+    public static Set<PolyType> allowedFieldTypes() {
+        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, JSON, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR, TEXT, FILE, IMAGE, VIDEO, AUDIO );
+    }
+
+
     public boolean allowsNoPrecNoScale() {
         return (signatures & PrecScale.NO_NO) != 0;
     }
@@ -493,14 +503,6 @@ public enum PolyType {
     }
 
 
-    private static List<PolyType> combine( List<PolyType> list0, List<PolyType> list1 ) {
-        return ImmutableList.<PolyType>builder()
-                .addAll( list0 )
-                .addAll( list1 )
-                .build();
-    }
-
-
     /**
      * @return default scale for this type if supported, otherwise -1 if scale is either unsupported or must be specified explicitly
      */
@@ -510,17 +512,6 @@ public enum PolyType {
             case INTERVAL -> DEFAULT_INTERVAL_FRACTIONAL_SECOND_PRECISION;
             default -> -1;
         };
-    }
-
-
-    /**
-     * Gets the PolyType corresponding to a JDBC type.
-     *
-     * @param jdbcType the JDBC type of interest
-     * @return corresponding PolyType, or null if the type is not known
-     */
-    public static PolyType getNameForJdbcType( int jdbcType ) {
-        return JDBC_TYPE_TO_NAME.get( jdbcType );
     }
 
 
@@ -881,14 +872,6 @@ public enum PolyType {
     }
 
 
-    /**
-     * Limit.
-     */
-    private enum Limit {
-        ZERO, UNDERFLOW, OVERFLOW
-    }
-
-
     private BigDecimal getNumericLimit( int radix, int exponent, boolean sign, Limit limit, boolean beyond ) {
         return switch ( limit ) {
             case OVERFLOW -> {
@@ -925,21 +908,19 @@ public enum PolyType {
 
 
     /**
-     * The set of types that are allowed for field in an entity (e.g. columns in a table).
-     *
-     * @return allowed field types
-     */
-    public static Set<PolyType> allowedFieldTypes() {
-        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, JSON, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR, TEXT, FILE, IMAGE, VIDEO, AUDIO );
-    }
-
-
-    /**
      * Returns the type name in string form. Does not include precision, scale or whether nulls are allowed.
      * Example: "DECIMAL" not "DECIMAL(7, 2)"; "INTEGER" not "JavaType(int)".
      */
     public String getTypeName() {
         return this.toString();
+    }
+
+
+    /**
+     * Limit.
+     */
+    private enum Limit {
+        ZERO, UNDERFLOW, OVERFLOW
     }
 
 

@@ -114,6 +114,14 @@ public abstract class Join extends BiAlg {
     }
 
 
+    protected static Triple<RexNode, Set<CorrelationId>, JoinAlgType> extractArgs( PolyAlgArgs args ) {
+        RexArg condition = args.getArg( "condition", RexArg.class );
+        EnumArg<JoinAlgType> type = args.getEnumArg( "type", JoinAlgType.class );
+        List<CorrelationId> variables = args.getListArg( "variables", CorrelationArg.class ).map( CorrelationArg::getCorrId );
+        return Triple.of( condition.getNode(), new HashSet<>( variables ), type.getArg() );
+    }
+
+
     @Override
     public List<RexNode> getChildExps() {
         return ImmutableList.of( condition );
@@ -256,14 +264,6 @@ public abstract class Join extends BiAlg {
                 right.algCompareString() + "$" +
                 (condition != null ? condition.hashCode() : "") + "$" +
                 (joinType != null ? joinType.name() : "") + "&";
-    }
-
-
-    protected static Triple<RexNode, Set<CorrelationId>, JoinAlgType> extractArgs( PolyAlgArgs args ) {
-        RexArg condition = args.getArg( "condition", RexArg.class );
-        EnumArg<JoinAlgType> type = args.getEnumArg( "type", JoinAlgType.class );
-        List<CorrelationId> variables = args.getListArg( "variables", CorrelationArg.class ).map( CorrelationArg::getCorrId );
-        return Triple.of( condition.getNode(), new HashSet<>( variables ), type.getArg() );
     }
 
 

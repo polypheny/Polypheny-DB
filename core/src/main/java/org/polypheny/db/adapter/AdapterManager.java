@@ -42,24 +42,22 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 public class AdapterManager {
 
+    private static final AdapterManager INSTANCE = new AdapterManager();
     public static Expression ADAPTER_MANAGER_EXPRESSION = Expressions.call( AdapterManager.class, "getInstance" );
-
     private final Map<Long, Adapter<?>> adapterById = new HashMap<>();
     private final Map<String, Adapter<?>> adapterByName = new HashMap<>();
     @Getter
     private final Map<Long, AdapterTemplate> adapterTemplates = new ConcurrentHashMap<>();
     private final AtomicLong idBuilder = new AtomicLong();
 
-    private static final AdapterManager INSTANCE = new AdapterManager();
+
+    private AdapterManager() {
+        // intentionally empty
+    }
 
 
     public static AdapterManager getInstance() {
         return INSTANCE;
-    }
-
-
-    private AdapterManager() {
-        // intentionally empty
     }
 
 
@@ -208,7 +206,10 @@ public class AdapterManager {
             throw e;
         } catch ( Exception e ) {
             catalog.dropAdapter( adapterId );
-            throw new GenericRuntimeException( "Something went wrong while adding a new adapter", e );
+            String message = e.getMessage() == null || e.getMessage().isBlank()
+                    ? "Something went wrong while adding a new adapter"
+                    : e.getMessage();
+            throw new GenericRuntimeException( message, e );
         }
     }
 
@@ -254,15 +255,15 @@ public class AdapterManager {
     }
 
 
-    public record AdapterInformation( String name, String description, AdapterType type, List<AbstractAdapterSetting> settings, List<DeployMode> modes ) {
-
-    }
-
-
     @FunctionalInterface
     public interface DeployFn {
 
         Adapter<?> get( Long adapterId, String uniqueName, Map<String, String> settings, DeployMode deployMode );
+
+    }
+
+
+    public record AdapterInformation( String name, String description, AdapterType type, List<AbstractAdapterSetting> settings, List<DeployMode> modes ) {
 
     }
 

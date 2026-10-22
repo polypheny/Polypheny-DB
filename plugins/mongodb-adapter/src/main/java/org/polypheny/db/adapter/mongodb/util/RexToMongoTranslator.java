@@ -50,8 +50,6 @@ import org.polypheny.db.type.PolyType;
  */
 public class RexToMongoTranslator extends RexVisitorImpl<String> {
 
-    private final List<String> inFields;
-
     static final Map<Operator, String> MONGO_OPERATORS = new HashMap<>();
 
 
@@ -96,6 +94,7 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
     }
 
 
+    private final List<String> inFields;
     private final Implementor implementor;
     private final DataModel model;
 

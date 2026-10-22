@@ -53,12 +53,6 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    @Override
-    public CypherKind getCypherKind() {
-        return CypherKind.EXPRESSION;
-    }
-
-
     public CypherExpression( ParserPos pos, ExpressionType type, CypherVariable variable, CypherExpression expression, CypherExpression where ) {
         super( pos );
         this.type = type;
@@ -72,6 +66,12 @@ public class CypherExpression extends CypherNode {
         super( pos );
         this.type = type;
         this.pattern = pattern;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.EXPRESSION;
     }
 
 
@@ -130,13 +130,13 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    public enum ExpressionType {
-        ALL, NONE, SINGLE, PATTERN, ANY, VARIABLE, AGGREGATE, DEFAULT, LITERAL
+    public PolyValue getComparable() {
+        throw new UnsupportedOperationException();
     }
 
 
-    public PolyValue getComparable() {
-        throw new UnsupportedOperationException();
+    public enum ExpressionType {
+        ALL, NONE, SINGLE, PATTERN, ANY, VARIABLE, AGGREGATE, DEFAULT, LITERAL
     }
 
 }

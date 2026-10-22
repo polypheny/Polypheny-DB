@@ -576,18 +576,61 @@ public class SqlParserTest extends SqlLanguageDependent {
     private static final String ANY = "(?s).*";
 
     private static final ThreadLocal<boolean[]> LINUXIFY = ThreadLocal.withInitial( () -> new boolean[]{ true } );
-
-    private Quoting quoting = Quoting.DOUBLE_QUOTE;
     private final Casing unquotedCasing = Casing.TO_UPPER;
     private final Casing quotedCasing = Casing.UNCHANGED;
-    private Conformance conformance = ConformanceEnum.DEFAULT;
     /**
      * Similar to the null dialect in SqlNode.toSqlString(), but it claims to be able to parse nested arrays, which is needed for some of the tests
      */
     private final SqlDialect nullDialect = AnsiSqlDialect.NULL_DIALECT;
+    private Quoting quoting = Quoting.DOUBLE_QUOTE;
+    private Conformance conformance = ConformanceEnum.DEFAULT;
 
 
     public SqlParserTest() {
+    }
+
+
+    /**
+     * Returns a {@link Matcher} that succeeds if the given {@link SqlNode} is a DDL statement.
+     */
+    public static Matcher<Node> isDdl() {
+        return new BaseMatcher<>() {
+            @Override
+            public boolean matches( Object item ) {
+                return item instanceof SqlNode && Kind.DDL.contains( ((SqlNode) item).getKind() );
+            }
+
+
+            @Override
+            public void describeTo( Description description ) {
+                description.appendText( "isDdl" );
+            }
+        };
+    }
+
+
+    protected static SortedSet<String> keywords( String dialect ) {
+        final ImmutableSortedSet.Builder<String> builder = ImmutableSortedSet.naturalOrder();
+        String r = null;
+        for ( String w : RESERVED_KEYWORDS ) {
+            switch ( w ) {
+                case "92":
+                case "99":
+                case "2003":
+                case "2011":
+                case "2014":
+                case "c":
+                    assert r != null;
+                    if ( dialect == null || dialect.equals( w ) ) {
+                        builder.add( r );
+                    }
+                    break;
+                default:
+                    assert r == null || r.compareTo( w ) < 0 : "table should be sorted: " + w;
+                    r = w;
+            }
+        }
+        return builder.build();
     }
 
 
@@ -656,25 +699,6 @@ public class SqlParserTest extends SqlLanguageDependent {
     }
 
 
-    /**
-     * Returns a {@link Matcher} that succeeds if the given {@link SqlNode} is a DDL statement.
-     */
-    public static Matcher<Node> isDdl() {
-        return new BaseMatcher<>() {
-            @Override
-            public boolean matches( Object item ) {
-                return item instanceof SqlNode && Kind.DDL.contains( ((SqlNode) item).getKind() );
-            }
-
-
-            @Override
-            public void describeTo( Description description ) {
-                description.appendText( "isDdl" );
-            }
-        };
-    }
-
-
     protected SortedSet<String> getReservedKeywords() {
         return keywords( "c" );
     }
@@ -686,31 +710,6 @@ public class SqlParserTest extends SqlLanguageDependent {
     protected boolean isReserved( String word ) {
         Metadata metadata = getSqlParser( "" ).getMetadata();
         return metadata.isReservedWord( word.toUpperCase( Locale.ROOT ) );
-    }
-
-
-    protected static SortedSet<String> keywords( String dialect ) {
-        final ImmutableSortedSet.Builder<String> builder = ImmutableSortedSet.naturalOrder();
-        String r = null;
-        for ( String w : RESERVED_KEYWORDS ) {
-            switch ( w ) {
-                case "92":
-                case "99":
-                case "2003":
-                case "2011":
-                case "2014":
-                case "c":
-                    assert r != null;
-                    if ( dialect == null || dialect.equals( w ) ) {
-                        builder.add( r );
-                    }
-                    break;
-                default:
-                    assert r == null || r.compareTo( w ) < 0 : "table should be sorted: " + w;
-                    r = w;
-            }
-        }
-        return builder.build();
     }
 
 
@@ -7696,6 +7695,19 @@ public class SqlParserTest extends SqlLanguageDependent {
     }
 
 
+    private boolean isNotSubclass() {
+        return this.getClass().equals( SqlParserTest.class );
+    }
+
+
+    private String linux( String s ) {
+        if ( LINUXIFY.get()[0] ) {
+            s = Util.toLinux( s );
+        }
+        return s;
+    }
+
+
     /**
      * Callback to control how test actions are performed.
      */
@@ -7813,11 +7825,6 @@ public class SqlParserTest extends SqlLanguageDependent {
     }
 
 
-    private boolean isNotSubclass() {
-        return this.getClass().equals( SqlParserTest.class );
-    }
-
-
     /**
      * Implementation of {@link Tester} which makes sure that the results of unparsing a query are consistent with the original query.
      */
@@ -7896,14 +7903,6 @@ public class SqlParserTest extends SqlLanguageDependent {
             // Do nothing. We're not interested in unparsing invalid SQL
         }
 
-    }
-
-
-    private String linux( String s ) {
-        if ( LINUXIFY.get()[0] ) {
-            s = Util.toLinux( s );
-        }
-        return s;
     }
 
 

@@ -99,15 +99,6 @@ public class SqlTypeUtil {
     }
 
 
-    public Identifier getSqlIdentifier( AlgDataType type ) {
-        PolyType typeName = type.getPolyType();
-        if ( typeName == null ) {
-            return null;
-        }
-        return SqlTypeUtil.createIdentifier( typeName.name(), ParserPos.ZERO );
-    }
-
-
     /**
      * Converts an instance of AlgDataType to an instance of SqlDataTypeSpec.
      *
@@ -252,6 +243,89 @@ public class SqlTypeUtil {
      */
     public static boolean inCharFamily( AlgDataType type ) {
         return type.getFamily() == PolyTypeFamily.CHARACTER;
+    }
+
+
+    /**
+     * Converts a function to a {@link OperatorImpl}.
+     *
+     * The {@code typeFactory} argument is technical debt; see [POLYPHENYDB-2082] Remove RelDataTypeFactory argument from SqlUserDefinedAggFunction constructor.
+     */
+    private static Operator toOp( AlgDataTypeFactory typeFactory, Identifier name, final Function function ) {
+        List<AlgDataType> argTypes = new ArrayList<>();
+        List<PolyTypeFamily> typeFamilies = new ArrayList<>();
+        for ( FunctionParameter o : function.getParameters() ) {
+            final AlgDataType type = o.getType( typeFactory );
+            argTypes.add( type );
+            typeFamilies.add( Util.first( type.getPolyType().getFamily(), PolyTypeFamily.ANY ) );
+        }
+        final FamilyOperandTypeChecker typeChecker = OperandTypes.family( typeFamilies, i -> function.getParameters().get( i ).isOptional() );
+        final List<AlgDataType> paramTypes = toSql( typeFactory, argTypes );
+        if ( function instanceof ScalarFunction ) {
+            return new SqlUserDefinedFunction( (SqlIdentifier) name, infer( (ScalarFunction) function ), InferTypes.explicit( argTypes ), typeChecker, paramTypes, function );
+        } else if ( function instanceof AggregateFunction ) {
+            return new SqlUserDefinedAggFunction(
+                    (SqlIdentifier) name,
+                    infer( (AggregateFunction) function ),
+                    InferTypes.explicit( argTypes ),
+                    typeChecker,
+                    (AggregateFunction) function,
+                    false,
+                    false,
+                    Optionality.FORBIDDEN,
+                    typeFactory );
+        } else if ( function instanceof TableMacro ) {
+            return new SqlUserDefinedTableMacro( (SqlIdentifier) name, ReturnTypes.CURSOR, InferTypes.explicit( argTypes ), typeChecker, paramTypes, (TableMacro) function );
+        } else if ( function instanceof TableFunction ) {
+            return new SqlUserDefinedTableFunction( (SqlIdentifier) name, ReturnTypes.CURSOR, InferTypes.explicit( argTypes ), typeChecker, paramTypes, (TableFunction) function );
+        } else {
+            throw new AssertionError( "unknown function type " + function );
+        }
+    }
+
+
+    private static PolyReturnTypeInference infer( final AggregateFunction function ) {
+        return opBinding -> {
+            final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+            final AlgDataType type = function.getReturnType( typeFactory );
+            return toSql( typeFactory, type );
+        };
+    }
+
+
+    private static List<AlgDataType> toSql( final AlgDataTypeFactory typeFactory, List<AlgDataType> types ) {
+        return types.stream().map( type -> toSql( typeFactory, type ) ).toList();
+    }
+
+
+    private static AlgDataType toSql( AlgDataTypeFactory typeFactory, AlgDataType type ) {
+        if ( type instanceof AlgDataTypeFactoryImpl.JavaType && ((AlgDataTypeFactoryImpl.JavaType) type).getJavaClass() == Object.class ) {
+            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
+        }
+        return JavaTypeFactoryImpl.toSql( typeFactory, type );
+    }
+
+
+    private static PolyReturnTypeInference infer( final ScalarFunction function ) {
+        return opBinding -> {
+            final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+            final AlgDataType type;
+            if ( function instanceof ScalarFunctionImpl ) {
+                type = ((ScalarFunctionImpl) function).getReturnType( typeFactory, opBinding );
+            } else {
+                type = function.getReturnType( typeFactory );
+            }
+            return toSql( typeFactory, type );
+        };
+    }
+
+
+    public Identifier getSqlIdentifier( AlgDataType type ) {
+        PolyType typeName = type.getPolyType();
+        if ( typeName == null ) {
+            return null;
+        }
+        return SqlTypeUtil.createIdentifier( typeName.name(), ParserPos.ZERO );
     }
 
 
@@ -480,80 +554,6 @@ public class SqlTypeUtil {
         }
 
         throw new UnsupportedLanguageOperation( language );
-    }
-
-
-    /**
-     * Converts a function to a {@link OperatorImpl}.
-     *
-     * The {@code typeFactory} argument is technical debt; see [POLYPHENYDB-2082] Remove RelDataTypeFactory argument from SqlUserDefinedAggFunction constructor.
-     */
-    private static Operator toOp( AlgDataTypeFactory typeFactory, Identifier name, final Function function ) {
-        List<AlgDataType> argTypes = new ArrayList<>();
-        List<PolyTypeFamily> typeFamilies = new ArrayList<>();
-        for ( FunctionParameter o : function.getParameters() ) {
-            final AlgDataType type = o.getType( typeFactory );
-            argTypes.add( type );
-            typeFamilies.add( Util.first( type.getPolyType().getFamily(), PolyTypeFamily.ANY ) );
-        }
-        final FamilyOperandTypeChecker typeChecker = OperandTypes.family( typeFamilies, i -> function.getParameters().get( i ).isOptional() );
-        final List<AlgDataType> paramTypes = toSql( typeFactory, argTypes );
-        if ( function instanceof ScalarFunction ) {
-            return new SqlUserDefinedFunction( (SqlIdentifier) name, infer( (ScalarFunction) function ), InferTypes.explicit( argTypes ), typeChecker, paramTypes, function );
-        } else if ( function instanceof AggregateFunction ) {
-            return new SqlUserDefinedAggFunction(
-                    (SqlIdentifier) name,
-                    infer( (AggregateFunction) function ),
-                    InferTypes.explicit( argTypes ),
-                    typeChecker,
-                    (AggregateFunction) function,
-                    false,
-                    false,
-                    Optionality.FORBIDDEN,
-                    typeFactory );
-        } else if ( function instanceof TableMacro ) {
-            return new SqlUserDefinedTableMacro( (SqlIdentifier) name, ReturnTypes.CURSOR, InferTypes.explicit( argTypes ), typeChecker, paramTypes, (TableMacro) function );
-        } else if ( function instanceof TableFunction ) {
-            return new SqlUserDefinedTableFunction( (SqlIdentifier) name, ReturnTypes.CURSOR, InferTypes.explicit( argTypes ), typeChecker, paramTypes, (TableFunction) function );
-        } else {
-            throw new AssertionError( "unknown function type " + function );
-        }
-    }
-
-
-    private static PolyReturnTypeInference infer( final AggregateFunction function ) {
-        return opBinding -> {
-            final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
-            final AlgDataType type = function.getReturnType( typeFactory );
-            return toSql( typeFactory, type );
-        };
-    }
-
-
-    private static List<AlgDataType> toSql( final AlgDataTypeFactory typeFactory, List<AlgDataType> types ) {
-        return types.stream().map( type -> toSql( typeFactory, type ) ).toList();
-    }
-
-
-    private static AlgDataType toSql( AlgDataTypeFactory typeFactory, AlgDataType type ) {
-        if ( type instanceof AlgDataTypeFactoryImpl.JavaType && ((AlgDataTypeFactoryImpl.JavaType) type).getJavaClass() == Object.class ) {
-            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
-        }
-        return JavaTypeFactoryImpl.toSql( typeFactory, type );
-    }
-
-
-    private static PolyReturnTypeInference infer( final ScalarFunction function ) {
-        return opBinding -> {
-            final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
-            final AlgDataType type;
-            if ( function instanceof ScalarFunctionImpl ) {
-                type = ((ScalarFunctionImpl) function).getReturnType( typeFactory, opBinding );
-            } else {
-                type = function.getReturnType( typeFactory );
-            }
-            return toSql( typeFactory, type );
-        };
     }
 
 }

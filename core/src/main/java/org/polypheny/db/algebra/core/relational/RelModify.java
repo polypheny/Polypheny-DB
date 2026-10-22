@@ -75,9 +75,9 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
     private final List<String> updateColumns;
     @Getter
     private final List<? extends RexNode> sourceExpressions;
-    private AlgDataType inputRowType;
     @Getter
     private final boolean flattened;
+    private AlgDataType inputRowType;
 
 
     /**
@@ -119,6 +119,18 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
             Preconditions.checkArgument( sourceExpressions == null );
         }
         this.flattened = flattened;
+    }
+
+
+    protected static Quadruple<Operation, List<String>, List<? extends RexNode>, Boolean> extractArgs( PolyAlgArgs args ) {
+        EnumArg<Operation> op = args.getEnumArg( "operation", Operation.class );
+        List<String> updateColumns = args.getListArg( "targets", StringArg.class ).map( StringArg::getArg );
+        List<? extends RexNode> sourceExpressions = args.getListArg( "sources", RexArg.class ).map( RexArg::getNode );
+        BooleanArg flattened = args.getArg( "flattened", BooleanArg.class );
+
+        updateColumns = updateColumns.isEmpty() ? null : updateColumns;
+        sourceExpressions = sourceExpressions.isEmpty() ? null : sourceExpressions;
+        return Quadruple.of( op.getArg(), updateColumns, sourceExpressions, flattened.toBool() );
     }
 
 
@@ -200,18 +212,6 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
                 (getUpdateColumns() != null ? getUpdateColumns().stream().map( c -> "c" ).collect( Collectors.joining( "$" ) ) + "$" : "") +
                 (getSourceExpressions() != null ? getSourceExpressions().stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
                 isFlattened() + "&";
-    }
-
-
-    protected static Quadruple<Operation, List<String>, List<? extends RexNode>, Boolean> extractArgs( PolyAlgArgs args ) {
-        EnumArg<Operation> op = args.getEnumArg( "operation", Operation.class );
-        List<String> updateColumns = args.getListArg( "targets", StringArg.class ).map( StringArg::getArg );
-        List<? extends RexNode> sourceExpressions = args.getListArg( "sources", RexArg.class ).map( RexArg::getNode );
-        BooleanArg flattened = args.getArg( "flattened", BooleanArg.class );
-
-        updateColumns = updateColumns.isEmpty() ? null : updateColumns;
-        sourceExpressions = sourceExpressions.isEmpty() ? null : sourceExpressions;
-        return Quadruple.of( op.getArg(), updateColumns, sourceExpressions, flattened.toBool() );
     }
 
 

@@ -60,131 +60,6 @@ public class PostgresqlSqlDialectTest {
     // ---- detectFeatures ----------------------------------------------------------------
 
 
-    @Test
-    void returnsEmptyWhenNoExtensionInstalled() throws SQLException {
-        Connection conn = mockConnection( false );
-        assertTrue( PostgresqlSource.detectFeatures( conn ).isEmpty() );
-    }
-
-
-    @Test
-    void detectsPgVectorExtensionWhenPresent() throws SQLException {
-        Connection conn = mockConnectionWithExtensions( "vector" );
-        Set<SqlDbFeature> features = PostgresqlSource.detectFeatures( conn );
-        assertTrue( features.contains( PGVECTOR ) );
-        assertFalse( features.contains( PostgresqlFeature.POSTGIS ) );
-    }
-
-
-    @Test
-    void detectsPostgisExtensionWhenPresent() throws SQLException {
-        Connection conn = mockConnectionWithExtensions( "postgis" );
-        Set<SqlDbFeature> features = PostgresqlSource.detectFeatures( conn );
-        assertTrue( features.contains( PostgresqlFeature.POSTGIS ) );
-        assertFalse( features.contains( PGVECTOR ) );
-    }
-
-
-    @Test
-    void detectsAllFeaturesWhenBothPresent() throws SQLException {
-        Connection conn = mockConnectionWithExtensions( "postgis", "vector" );
-        Set<SqlDbFeature> features = PostgresqlSource.detectFeatures( conn );
-        assertTrue( features.contains( PostgresqlFeature.POSTGIS ) );
-        assertTrue( features.contains( PGVECTOR ) );
-    }
-
-
-    @Test
-    void detectedFeaturesSetIsImmutable() throws SQLException {
-        Set<SqlDbFeature> features = PostgresqlSource.detectFeatures( mockConnection( false ) );
-        assertThrows( UnsupportedOperationException.class, () -> features.add( PGVECTOR ) );
-    }
-
-
-    @Test
-    void dialectReflectsDetectedFeatures() throws SQLException {
-        Connection conn = mockConnectionWithExtensions( "vector" );
-        PostgresqlSqlDialect d = new PostgresqlSqlDialect();
-        d.addSupportedFeatures( PostgresqlSource.detectFeatures( conn ) );
-        assertTrue( d.supportsVector() );
-    }
-
-    // ---- getCustomArrayRetrievalExpression ----------------------------------------------------------------
-
-
-    @Test
-    void bitVectorAlwaysUsesGetString() {
-        // bit(n) is a native PostgreSQL type - no pgvector required
-        PostgresqlSqlDialect dialect = new PostgresqlSqlDialect();
-        AlgDataType bitVec = bitVectorType( 3 );
-        ParameterExpression rs = Expressions.parameter( ResultSet.class, "rs" );
-
-        Optional<Expression> expr = dialect.getCustomArrayRetrievalExpression( rs, 0, bitVec );
-
-        assertTrue( expr.isPresent() );
-        assertTrue( expr.get().toString().contains( "getString" ) );
-        assertFalse( expr.get().toString().contains( "getObject" ) );
-    }
-
-
-    @Test
-    void floatVectorReturnsEmptyWithoutPgvector() {
-        PostgresqlSqlDialect dialect = new PostgresqlSqlDialect();
-        ParameterExpression rs = Expressions.parameter( ResultSet.class, "rs" );
-
-        Optional<Expression> expr = dialect.getCustomArrayRetrievalExpression( rs, 0, floatVectorType( 3 ) );
-
-        assertTrue( expr.isEmpty() );
-    }
-
-
-    @Test
-    void floatVectorUsesGetObjectWithPgvector() {
-        PostgresqlSqlDialect dialect = new PostgresqlSqlDialect();
-        dialect.addSupportedFeatures( Set.of( PGVECTOR ) );
-        ParameterExpression rs = Expressions.parameter( ResultSet.class, "rs" );
-
-        Optional<Expression> expr = dialect.getCustomArrayRetrievalExpression( rs, 0, floatVectorType( 3 ) );
-
-        assertTrue( expr.isPresent() );
-        assertTrue( expr.get().toString().contains( "getObject" ) );
-        assertFalse( expr.get().toString().contains( "getString" ) );
-    }
-
-
-    @Test
-    void nonArrayTypeReturnsEmpty() {
-        PostgresqlSqlDialect dialect = new PostgresqlSqlDialect();
-        dialect.addSupportedFeatures( Set.of( PGVECTOR ) );
-        AlgDataType intType = AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.INTEGER );
-        ParameterExpression rs = Expressions.parameter( ResultSet.class, "rs" );
-
-        assertTrue( dialect.getCustomArrayRetrievalExpression( rs, 0, intType ).isEmpty() );
-    }
-
-    // ---- vectorPushdownTypeIsPresent ----------------------------------------------------------------
-
-
-    @Test
-    void bitPushdownAlwaysPresent() {
-        // bit(n) is native PostgreSQL - pushdown does not depend on pgvector
-        PostgresqlSqlDialect dialect = new PostgresqlSqlDialect();
-        assertTrue( dialect.vectorPushdownTypeIsPresent( VectorType.ElementType.BIT ) );
-    }
-
-
-    @Test
-    void floatPushdownRequiresPgvector() {
-        PostgresqlSqlDialect dialect = new PostgresqlSqlDialect();
-        assertFalse( dialect.vectorPushdownTypeIsPresent( VectorType.ElementType.FLOAT ) );
-
-        dialect.addSupportedFeatures( Set.of( PGVECTOR ) );
-        assertTrue( dialect.vectorPushdownTypeIsPresent( VectorType.ElementType.FLOAT ) );
-    }
-
-    // ---- helpers ----------------------------------------------------------------
-
-
     private static AlgDataType bitVectorType( int dim ) {
         return AlgDataTypeFactory.DEFAULT.createVectorType(
                 AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.BOOLEAN ), dim );
@@ -227,6 +102,131 @@ public class PostgresqlSqlDialectTest {
         String[] rest = java.util.Arrays.copyOfRange( extensions, 1, extensions.length );
         when( rs.getString( 1 ) ).thenReturn( extensions[0], rest );
         return conn;
+    }
+
+
+    @Test
+    void returnsEmptyWhenNoExtensionInstalled() throws SQLException {
+        Connection conn = mockConnection( false );
+        assertTrue( PostgresqlSource.detectFeatures( conn ).isEmpty() );
+    }
+
+
+    @Test
+    void detectsPgVectorExtensionWhenPresent() throws SQLException {
+        Connection conn = mockConnectionWithExtensions( "vector" );
+        Set<SqlDbFeature> features = PostgresqlSource.detectFeatures( conn );
+        assertTrue( features.contains( PGVECTOR ) );
+        assertFalse( features.contains( PostgresqlFeature.POSTGIS ) );
+    }
+
+    // ---- getCustomArrayRetrievalExpression ----------------------------------------------------------------
+
+
+    @Test
+    void detectsPostgisExtensionWhenPresent() throws SQLException {
+        Connection conn = mockConnectionWithExtensions( "postgis" );
+        Set<SqlDbFeature> features = PostgresqlSource.detectFeatures( conn );
+        assertTrue( features.contains( PostgresqlFeature.POSTGIS ) );
+        assertFalse( features.contains( PGVECTOR ) );
+    }
+
+
+    @Test
+    void detectsAllFeaturesWhenBothPresent() throws SQLException {
+        Connection conn = mockConnectionWithExtensions( "postgis", "vector" );
+        Set<SqlDbFeature> features = PostgresqlSource.detectFeatures( conn );
+        assertTrue( features.contains( PostgresqlFeature.POSTGIS ) );
+        assertTrue( features.contains( PGVECTOR ) );
+    }
+
+
+    @Test
+    void detectedFeaturesSetIsImmutable() throws SQLException {
+        Set<SqlDbFeature> features = PostgresqlSource.detectFeatures( mockConnection( false ) );
+        assertThrows( UnsupportedOperationException.class, () -> features.add( PGVECTOR ) );
+    }
+
+
+    @Test
+    void dialectReflectsDetectedFeatures() throws SQLException {
+        Connection conn = mockConnectionWithExtensions( "vector" );
+        PostgresqlSqlDialect d = new PostgresqlSqlDialect();
+        d.addSupportedFeatures( PostgresqlSource.detectFeatures( conn ) );
+        assertTrue( d.supportsVector() );
+    }
+
+    // ---- vectorPushdownTypeIsPresent ----------------------------------------------------------------
+
+
+    @Test
+    void bitVectorAlwaysUsesGetString() {
+        // bit(n) is a native PostgreSQL type - no pgvector required
+        PostgresqlSqlDialect dialect = new PostgresqlSqlDialect();
+        AlgDataType bitVec = bitVectorType( 3 );
+        ParameterExpression rs = Expressions.parameter( ResultSet.class, "rs" );
+
+        Optional<Expression> expr = dialect.getCustomArrayRetrievalExpression( rs, 0, bitVec );
+
+        assertTrue( expr.isPresent() );
+        assertTrue( expr.get().toString().contains( "getString" ) );
+        assertFalse( expr.get().toString().contains( "getObject" ) );
+    }
+
+
+    @Test
+    void floatVectorReturnsEmptyWithoutPgvector() {
+        PostgresqlSqlDialect dialect = new PostgresqlSqlDialect();
+        ParameterExpression rs = Expressions.parameter( ResultSet.class, "rs" );
+
+        Optional<Expression> expr = dialect.getCustomArrayRetrievalExpression( rs, 0, floatVectorType( 3 ) );
+
+        assertTrue( expr.isEmpty() );
+    }
+
+    // ---- helpers ----------------------------------------------------------------
+
+
+    @Test
+    void floatVectorUsesGetObjectWithPgvector() {
+        PostgresqlSqlDialect dialect = new PostgresqlSqlDialect();
+        dialect.addSupportedFeatures( Set.of( PGVECTOR ) );
+        ParameterExpression rs = Expressions.parameter( ResultSet.class, "rs" );
+
+        Optional<Expression> expr = dialect.getCustomArrayRetrievalExpression( rs, 0, floatVectorType( 3 ) );
+
+        assertTrue( expr.isPresent() );
+        assertTrue( expr.get().toString().contains( "getObject" ) );
+        assertFalse( expr.get().toString().contains( "getString" ) );
+    }
+
+
+    @Test
+    void nonArrayTypeReturnsEmpty() {
+        PostgresqlSqlDialect dialect = new PostgresqlSqlDialect();
+        dialect.addSupportedFeatures( Set.of( PGVECTOR ) );
+        AlgDataType intType = AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.INTEGER );
+        ParameterExpression rs = Expressions.parameter( ResultSet.class, "rs" );
+
+        assertTrue( dialect.getCustomArrayRetrievalExpression( rs, 0, intType ).isEmpty() );
+    }
+
+
+    @Test
+    void bitPushdownAlwaysPresent() {
+        // bit(n) is native PostgreSQL - pushdown does not depend on pgvector
+        PostgresqlSqlDialect dialect = new PostgresqlSqlDialect();
+        assertTrue( dialect.vectorPushdownTypeIsPresent( VectorType.ElementType.BIT ) );
+    }
+
+
+    @Test
+    void floatPushdownRequiresPgvector() {
+        PostgresqlSqlDialect dialect = new PostgresqlSqlDialect();
+        assertFalse( dialect.vectorPushdownTypeIsPresent( VectorType.ElementType.FLOAT ) );
+
+        dialect.addSupportedFeatures( Set.of( PGVECTOR ) );
+        assertTrue( dialect.vectorPushdownTypeIsPresent( VectorType.ElementType.FLOAT ) );
     }
 
 }

@@ -47,16 +47,15 @@ import org.polypheny.db.util.Pair;
 public class Translator extends RexVisitorImpl<String> {
 
 
+    private static final List<OperatorName> binaries = Arrays.stream( OperatorName.values() )
+            .filter( o -> o.getClazz() == BinaryOperator.class )
+            .toList();
     private final List<AlgDataTypeField> afterFields;
     private final Map<String, String> mapping;
     private final NeoRelationalImplementor implementor;
     private final List<AlgDataTypeField> beforeFields;
     private final String mappingLabel;
     private final boolean useBrackets;
-
-    private static final List<OperatorName> binaries = Arrays.stream( OperatorName.values() )
-            .filter( o -> o.getClazz() == BinaryOperator.class )
-            .toList();
 
 
     public Translator(

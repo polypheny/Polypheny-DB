@@ -48,8 +48,8 @@ import org.polypheny.db.util.Util;
 @Slf4j
 class PIServer {
 
-    private final ServerSocketChannel server;
     private final static AtomicLong ID_COUNTER = new AtomicLong();
+    private final ServerSocketChannel server;
     private final ServerAndLock fileLock; // Needed for unix servers to keep a lock on the socket
     private final PIRequestReader reader;
     private AtomicBoolean shutdown = new AtomicBoolean( false );

@@ -66,6 +66,20 @@ public class ParameterValueValidator extends AlgShuttleImpl {
     }
 
 
+    static class InvalidParameterValueException extends GenericRuntimeException {
+
+        public InvalidParameterValueException( String message ) {
+            super( message );
+        }
+
+
+        public InvalidParameterValueException( String message, Throwable cause ) {
+            super( message, cause );
+        }
+
+    }
+
+
     class ParameterValueValidator2 extends RexShuttle {
 
         @Override
@@ -131,20 +145,6 @@ public class ParameterValueValidator extends AlgShuttleImpl {
                 throw new InvalidParameterValueException( String.format( "Parameter value '%s' of type %s does not match the PolyType %s", o.toString(), o.getClass().getSimpleName(), polyType ) );
             }
             return super.visitDynamicParam( dynamicParam );
-        }
-
-    }
-
-
-    static class InvalidParameterValueException extends GenericRuntimeException {
-
-        public InvalidParameterValueException( String message ) {
-            super( message );
-        }
-
-
-        public InvalidParameterValueException( String message, Throwable cause ) {
-            super( message, cause );
         }
 
     }

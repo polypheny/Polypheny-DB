@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.impl.Expressible;
@@ -69,7 +69,7 @@ public class MongoNamespace extends Namespace implements Expressible {
 
     GridFSBucket bucket;
 
-    MongoStore store;
+    Adapter<?> store;
 
 
     /**
@@ -77,7 +77,7 @@ public class MongoNamespace extends Namespace implements Expressible {
      *
      * @param database Mongo database name, e.g. "foodmart"
      */
-    public MongoNamespace( long id, String database, MongoClient connection, TransactionProvider transactionProvider, MongoStore mongoStore ) {
+    public MongoNamespace( long id, String database, MongoClient connection, TransactionProvider transactionProvider, Adapter<?> mongoStore ) {
         super( id, mongoStore.getAdapterId() );
         this.transactionProvider = transactionProvider;
         this.connection = connection;

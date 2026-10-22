@@ -102,11 +102,6 @@ public class CypherLiteral extends CypherExpression {
     }
 
 
-    public enum Literal {
-        TRUE, FALSE, NULL, LIST, MAP, STRING, DOUBLE, DECIMAL, HEX, OCTAL, STAR, POINT
-    }
-
-
     @Override
     public PolyValue getComparable() {
         return switch ( literalType ) {
@@ -228,6 +223,11 @@ public class CypherLiteral extends CypherExpression {
     @Override
     public ExpressionType getType() {
         return ExpressionType.LITERAL;
+    }
+
+
+    public enum Literal {
+        TRUE, FALSE, NULL, LIST, MAP, STRING, DOUBLE, DECIMAL, HEX, OCTAL, STAR, POINT
     }
 
 }

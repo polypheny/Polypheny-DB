@@ -40,197 +40,6 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @Tag("adapter")
 public class ComplexViewTest {
 
-    private final static String DROP_TABLES_NATION = "DROP TABLE IF EXISTS nation";
-    private final static String DROP_TABLES_REGION = "DROP TABLE IF EXISTS region";
-    private final static String DROP_TABLES_PART = "DROP TABLE IF EXISTS part";
-    private final static String DROP_TABLES_SUPPLIER = "DROP TABLE IF EXISTS supplier";
-    private final static String DROP_TABLES_PARTSUPP = "DROP TABLE IF EXISTS partsupp";
-    private final static String DROP_TABLES_ORDERS = "DROP TABLE IF EXISTS orders";
-    private final static String DROP_TABLES_CUSTOMER = "DROP TABLE IF EXISTS customer";
-    private final static String DROP_TABLES_LINEITEM = "DROP TABLE IF EXISTS lineitem";
-
-    private final static String NATION_TABLE = "CREATE TABLE nation ( "
-            + "n_nationkey  INTEGER NOT NULL,"
-            + "n_name VARCHAR(25) NOT NULL,"
-            + "n_regionkey INTEGER NOT NULL,"
-            + "n_comment VARCHAR(152),"
-            + "PRIMARY KEY (n_nationkey) )";
-
-    private final static String NATION_TABLE_DATA = "INSERT INTO nation VALUES ("
-            + "1,"
-            + "'Switzerland',"
-            + "1,"
-            + "'nice'"
-            + ")";
-
-    private final static Object[] NATION_TEST_DATA = new Object[]{
-            1,
-            "Switzerland",
-            1,
-            "nice" };
-
-    private final static String REGION_TABLE = "CREATE TABLE region  ( "
-            + "r_regionkey INTEGER NOT NULL,"
-            + "r_name VARCHAR(25) NOT NULL,"
-            + "r_comment VARCHAR(152),"
-            + "PRIMARY KEY (r_regionkey) )";
-
-    private final static String REGION_TABLE_DATA = "INSERT INTO region VALUES ("
-            + "1,"
-            + "'Basel',"
-            + "'nice'"
-            + ")";
-
-    private final static Object[] REGION_TEST_DATA = new Object[]{
-            1,
-            "Basel",
-            "nice" };
-
-    private final static String PART_TABLE = "CREATE TABLE part ( "
-            + "p_partkey INTEGER NOT NULL,"
-            + "p_name VARCHAR(55) NOT NULL,"
-            + "p_mfgr VARCHAR(25) NOT NULL,"
-            + "p_brand VARCHAR(10) NOT NULL,"
-            + "p_type VARCHAR(25) NOT NULL,"
-            + "p_size INTEGER NOT NULL,"
-            + "p_container VARCHAR(10) NOT NULL,"
-            + "p_retailprice DECIMAL(15,2) NOT NULL,"
-            + "p_comment VARCHAR(23) NOT NULL,"
-            + "PRIMARY KEY (p_partkey) )";
-
-    private final static String PART_TABLE_DATA = "INSERT INTO part VALUES ("
-            + "1,"
-            + "'Mouse',"
-            + "'mfgr',"
-            + "'Logitec',"
-            + "'Wireless',"
-            + "5,"
-            + "'container',"
-            + "65.00,"
-            + "'black'"
-            + ")";
-
-    private final static Object[] PART_TEST_DATA = new Object[]{
-            1,
-            "Mouse",
-            "mfgr",
-            "Logitec",
-            "Wireless",
-            5,
-            "container",
-            new BigDecimal( "65.00" ),
-            "black" };
-
-    private final static String SUPPLIER_TABLE = "CREATE TABLE supplier ( "
-            + "s_suppkey INTEGER NOT NULL,"
-            + "s_name VARCHAR(25) NOT NULL,"
-            + "s_address VARCHAR(40) NOT NULL,"
-            + "s_nationkey INTEGER NOT NULL,"
-            + "s_phone VARCHAR(15) NOT NULL,"
-            + "s_acctbal DECIMAL(15,2) NOT NULL,"
-            + "s_comment VARCHAR(101) NOT NULL,"
-            + "PRIMARY KEY (s_suppkey) )";
-
-    private final static String SUPPLIER_TABLE_DATA = "INSERT INTO supplier VALUES ("
-            + "1,"
-            + "'SupplierName',"
-            + "'SupplierAddress',"
-            + "1,"
-            + "'phone',"
-            + "5.15,"
-            + "'SupplierComment'"
-            + ")";
-
-    private final static Object[] SUPPLIER_TEST_DATA = new Object[]{
-            1,
-            "SupplierName",
-            "SupplierAddress",
-            1,
-            "phone",
-            new BigDecimal( "5.15" ),
-            "SupplierComment" };
-
-    private final static String PARTSUPP_TABLE = "CREATE TABLE partsupp ( "
-            + "ps_partkey INTEGER NOT NULL,"
-            + "ps_suppkey INTEGER NOT NULL,"
-            + "ps_availqty INTEGER NOT NULL,"
-            + "ps_supplycost DECIMAL(15,2)  NOT NULL,"
-            + "ps_comment VARCHAR(199) NOT NULL,"
-            + "PRIMARY KEY (ps_partkey, ps_suppkey) )";
-
-    private final static String PARTSUPP_TABLE_DATA = "INSERT INTO partsupp VALUES ("
-            + "1,"
-            + "1,"
-            + "7,"
-            + "25.15,"
-            + "'black'"
-            + ")";
-
-    private final static Object[] PARTSUPP_TEST_DATA = new Object[]{
-            1,
-            1,
-            7,
-            new BigDecimal( "25.15" ),
-            "black" };
-
-    private final static String CUSTOMER_TABLE = "CREATE TABLE customer ("
-            + "c_custkey INTEGER NOT NULL,"
-            + "c_name VARCHAR(25) NOT NULL,"
-            + "c_address VARCHAR(40) NOT NULL,"
-            + "c_nationkey INTEGER NOT NULL,"
-            + "c_phone VARCHAR(15) NOT NULL,"
-            + "c_acctbal DECIMAL(15,2) NOT NULL,"
-            + "c_mktsegment VARCHAR(10) NOT NULL,"
-            + "c_comment  VARCHAR(117) NOT NULL,"
-            + " PRIMARY KEY (c_custkey) )";
-
-    private final static String CUSTOMER_TABLE_DATA = "INSERT INTO customer VALUES ( "
-            + "1,"
-            + "'CName',"
-            + "'CAddress',"
-            + "1,"
-            + "'CPhone',"
-            + "5.15,"
-            + "'CSegment',"
-            + "'nice'"
-            + ")";
-
-    private final static Object[] CUSTOMER_TEST_DATA = new Object[]{
-            1,
-            "CName",
-            "CAddress",
-            1,
-            "CPhone",
-            new BigDecimal( "5.15" ),
-            "CSegment",
-            "nice" };
-
-    private final static String ORDERS_TABLE = "CREATE TABLE orders ( "
-            + "o_orderkey INTEGER NOT NULL,"
-            + "o_custkey INTEGER NOT NULL,"
-            + "o_orderstatus VARCHAR(1) NOT NULL,"
-            + "o_totalprice DECIMAL(15,2) NOT NULL,"
-            + "o_orderdate DATE NOT NULL,"
-            + "o_orderpriority VARCHAR(15) NOT NULL,"
-            + "o_clerk VARCHAR(15) NOT NULL,"
-            + "o_shippriority INTEGER NOT NULL,"
-            + "o_comment VARCHAR(79) NOT NULL,"
-            + "PRIMARY KEY (o_orderkey) )";
-
-    private final static String ORDERS_TABLE_DATA = "INSERT INTO orders VALUES ("
-            + "1,"
-            + "1,"
-            + "'A',"
-            + "65.15,"
-            + "date '2020-07-03',"
-            + "'orderPriority',"
-            + "'clerk',"
-            + "1,"
-            + "'fast'"
-            + ")";
-
-    private static Object[] ORDERS_TEST_DATA;
-
     public final static String LINEITEM_TABLE = "CREATE TABLE lineitem ( "
             + "l_orderkey INTEGER NOT NULL,"
             + "l_partkey INTEGER NOT NULL,"
@@ -249,7 +58,174 @@ public class ComplexViewTest {
             + "l_shipmode VARCHAR(10) NOT NULL,"
             + "l_comment VARCHAR(44) NOT NULL,"
             + "PRIMARY KEY (l_orderkey, l_linenumber) )";
-
+    private final static String DROP_TABLES_NATION = "DROP TABLE IF EXISTS nation";
+    private final static String DROP_TABLES_REGION = "DROP TABLE IF EXISTS region";
+    private final static String DROP_TABLES_PART = "DROP TABLE IF EXISTS part";
+    private final static String DROP_TABLES_SUPPLIER = "DROP TABLE IF EXISTS supplier";
+    private final static String DROP_TABLES_PARTSUPP = "DROP TABLE IF EXISTS partsupp";
+    private final static String DROP_TABLES_ORDERS = "DROP TABLE IF EXISTS orders";
+    private final static String DROP_TABLES_CUSTOMER = "DROP TABLE IF EXISTS customer";
+    private final static String DROP_TABLES_LINEITEM = "DROP TABLE IF EXISTS lineitem";
+    private final static String NATION_TABLE = "CREATE TABLE nation ( "
+            + "n_nationkey  INTEGER NOT NULL,"
+            + "n_name VARCHAR(25) NOT NULL,"
+            + "n_regionkey INTEGER NOT NULL,"
+            + "n_comment VARCHAR(152),"
+            + "PRIMARY KEY (n_nationkey) )";
+    private final static String NATION_TABLE_DATA = "INSERT INTO nation VALUES ("
+            + "1,"
+            + "'Switzerland',"
+            + "1,"
+            + "'nice'"
+            + ")";
+    private final static Object[] NATION_TEST_DATA = new Object[]{
+            1,
+            "Switzerland",
+            1,
+            "nice" };
+    private final static String REGION_TABLE = "CREATE TABLE region  ( "
+            + "r_regionkey INTEGER NOT NULL,"
+            + "r_name VARCHAR(25) NOT NULL,"
+            + "r_comment VARCHAR(152),"
+            + "PRIMARY KEY (r_regionkey) )";
+    private final static String REGION_TABLE_DATA = "INSERT INTO region VALUES ("
+            + "1,"
+            + "'Basel',"
+            + "'nice'"
+            + ")";
+    private final static Object[] REGION_TEST_DATA = new Object[]{
+            1,
+            "Basel",
+            "nice" };
+    private final static String PART_TABLE = "CREATE TABLE part ( "
+            + "p_partkey INTEGER NOT NULL,"
+            + "p_name VARCHAR(55) NOT NULL,"
+            + "p_mfgr VARCHAR(25) NOT NULL,"
+            + "p_brand VARCHAR(10) NOT NULL,"
+            + "p_type VARCHAR(25) NOT NULL,"
+            + "p_size INTEGER NOT NULL,"
+            + "p_container VARCHAR(10) NOT NULL,"
+            + "p_retailprice DECIMAL(15,2) NOT NULL,"
+            + "p_comment VARCHAR(23) NOT NULL,"
+            + "PRIMARY KEY (p_partkey) )";
+    private final static String PART_TABLE_DATA = "INSERT INTO part VALUES ("
+            + "1,"
+            + "'Mouse',"
+            + "'mfgr',"
+            + "'Logitec',"
+            + "'Wireless',"
+            + "5,"
+            + "'container',"
+            + "65.00,"
+            + "'black'"
+            + ")";
+    private final static Object[] PART_TEST_DATA = new Object[]{
+            1,
+            "Mouse",
+            "mfgr",
+            "Logitec",
+            "Wireless",
+            5,
+            "container",
+            new BigDecimal( "65.00" ),
+            "black" };
+    private final static String SUPPLIER_TABLE = "CREATE TABLE supplier ( "
+            + "s_suppkey INTEGER NOT NULL,"
+            + "s_name VARCHAR(25) NOT NULL,"
+            + "s_address VARCHAR(40) NOT NULL,"
+            + "s_nationkey INTEGER NOT NULL,"
+            + "s_phone VARCHAR(15) NOT NULL,"
+            + "s_acctbal DECIMAL(15,2) NOT NULL,"
+            + "s_comment VARCHAR(101) NOT NULL,"
+            + "PRIMARY KEY (s_suppkey) )";
+    private final static String SUPPLIER_TABLE_DATA = "INSERT INTO supplier VALUES ("
+            + "1,"
+            + "'SupplierName',"
+            + "'SupplierAddress',"
+            + "1,"
+            + "'phone',"
+            + "5.15,"
+            + "'SupplierComment'"
+            + ")";
+    private final static Object[] SUPPLIER_TEST_DATA = new Object[]{
+            1,
+            "SupplierName",
+            "SupplierAddress",
+            1,
+            "phone",
+            new BigDecimal( "5.15" ),
+            "SupplierComment" };
+    private final static String PARTSUPP_TABLE = "CREATE TABLE partsupp ( "
+            + "ps_partkey INTEGER NOT NULL,"
+            + "ps_suppkey INTEGER NOT NULL,"
+            + "ps_availqty INTEGER NOT NULL,"
+            + "ps_supplycost DECIMAL(15,2)  NOT NULL,"
+            + "ps_comment VARCHAR(199) NOT NULL,"
+            + "PRIMARY KEY (ps_partkey, ps_suppkey) )";
+    private final static String PARTSUPP_TABLE_DATA = "INSERT INTO partsupp VALUES ("
+            + "1,"
+            + "1,"
+            + "7,"
+            + "25.15,"
+            + "'black'"
+            + ")";
+    private final static Object[] PARTSUPP_TEST_DATA = new Object[]{
+            1,
+            1,
+            7,
+            new BigDecimal( "25.15" ),
+            "black" };
+    private final static String CUSTOMER_TABLE = "CREATE TABLE customer ("
+            + "c_custkey INTEGER NOT NULL,"
+            + "c_name VARCHAR(25) NOT NULL,"
+            + "c_address VARCHAR(40) NOT NULL,"
+            + "c_nationkey INTEGER NOT NULL,"
+            + "c_phone VARCHAR(15) NOT NULL,"
+            + "c_acctbal DECIMAL(15,2) NOT NULL,"
+            + "c_mktsegment VARCHAR(10) NOT NULL,"
+            + "c_comment  VARCHAR(117) NOT NULL,"
+            + " PRIMARY KEY (c_custkey) )";
+    private final static String CUSTOMER_TABLE_DATA = "INSERT INTO customer VALUES ( "
+            + "1,"
+            + "'CName',"
+            + "'CAddress',"
+            + "1,"
+            + "'CPhone',"
+            + "5.15,"
+            + "'CSegment',"
+            + "'nice'"
+            + ")";
+    private final static Object[] CUSTOMER_TEST_DATA = new Object[]{
+            1,
+            "CName",
+            "CAddress",
+            1,
+            "CPhone",
+            new BigDecimal( "5.15" ),
+            "CSegment",
+            "nice" };
+    private final static String ORDERS_TABLE = "CREATE TABLE orders ( "
+            + "o_orderkey INTEGER NOT NULL,"
+            + "o_custkey INTEGER NOT NULL,"
+            + "o_orderstatus VARCHAR(1) NOT NULL,"
+            + "o_totalprice DECIMAL(15,2) NOT NULL,"
+            + "o_orderdate DATE NOT NULL,"
+            + "o_orderpriority VARCHAR(15) NOT NULL,"
+            + "o_clerk VARCHAR(15) NOT NULL,"
+            + "o_shippriority INTEGER NOT NULL,"
+            + "o_comment VARCHAR(79) NOT NULL,"
+            + "PRIMARY KEY (o_orderkey) )";
+    private final static String ORDERS_TABLE_DATA = "INSERT INTO orders VALUES ("
+            + "1,"
+            + "1,"
+            + "'A',"
+            + "65.15,"
+            + "date '2020-07-03',"
+            + "'orderPriority',"
+            + "'clerk',"
+            + "1,"
+            + "'fast'"
+            + ")";
     private final static String LINEITEM_TABLE_DATA = "INSERT INTO lineitem VALUES ("
             + "1,"
             + "1,"
@@ -268,18 +244,8 @@ public class ComplexViewTest {
             + "'mode',"
             + "'shipingComment'"
             + ")";
-
-    private static Object[] LINEITEM_TEST_DATA;
-
-    private static Object[] date_TEST_DATA;
-
     private final static Object[] decimal_TEST_DATA = new Object[]{
             new BigDecimal( "65.15" ) };
-
-    private static Object[] decimalDate_TEST_DATA;
-
-    private static Object[] decimalDateInt_TEST_DATA;
-
     private final static Object[] q1_TEST_DATA = new Object[]{
             "R",
             "L",
@@ -291,7 +257,6 @@ public class ComplexViewTest {
             new BigDecimal( "50.15" ),
             new BigDecimal( "20.15" ),
             1L };
-
     private final static Object[] q1_TEST_DATA_MAT = new Object[]{
             "R",
             "L",
@@ -304,35 +269,26 @@ public class ComplexViewTest {
             new BigDecimal( "20.15" ),
             1L,
             0 };
-
-    private static Object[] q3_TEST_DATA;
-
     private final static Object[] q4_TEST_DATA = new Object[]{
             "orderPriority",
             1L };
-
     private final static Object[] q6_TEST_DATA = new Object[]{
             new BigDecimal( "1010.5225" ) };
-
     private final static Object[] q7_TEST_DATA = new Object[]{
             "Switzerland",
             "Switzerland",
             2020L,
             new BigDecimal( "-960.3725" ) };
-
     private final static Object[] q8_TEST_DATA = new Object[]{
             2020L,
             new BigDecimal( "1.0000" ) };
-
     private final static Object[] q8_TEST_DATA_VIEW = new Object[]{
             2020L,
             new BigDecimal( "1" ) };
-
     private final static Object[] q9_TEST_DATA = new Object[]{
             "Switzerland",
             2020L,
             new BigDecimal( "-1467.1450" ) };
-
     private final static Object[] q10_TEST_DATA = new Object[]{
             1,
             "CName",
@@ -342,30 +298,31 @@ public class ComplexViewTest {
             "CAddress",
             "CPhone",
             "nice" };
-
     private final static Object[] q13_TEST_DATA = new Object[]{
             0L,
             1L
     };
-
     private final static Object[] q14_TEST_DATA = new Object[]{
             new BigDecimal( "100.00000000" )
     };
-
     private final static Object[] q15_TEST_DATA = new Object[]{
             1,
             "SupplierName",
             "SupplierAddress",
             "phone",
             new BigDecimal( "-960.3725" ) };
-
     private final static Object[] q17_TEST_DATA = new Object[]{
             new BigDecimal( "7.164285714285714" )
     };
-
     private final static Object[] q19_TEST_DATA = new Object[]{
             new BigDecimal( "-960.3725" )
     };
+    private static Object[] ORDERS_TEST_DATA;
+    private static Object[] LINEITEM_TEST_DATA;
+    private static Object[] date_TEST_DATA;
+    private static Object[] decimalDate_TEST_DATA;
+    private static Object[] decimalDateInt_TEST_DATA;
+    private static Object[] q3_TEST_DATA;
 
 
     @BeforeAll

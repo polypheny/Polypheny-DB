@@ -131,7 +131,7 @@ public class RexImpTable {
     public static final Expression TRUE_EXPR = PolyBoolean.TRUE.asExpression();
     public static final Expression BOXED_FALSE_EXPR = PolyBoolean.FALSE.asExpression();
     public static final Expression BOXED_TRUE_EXPR = PolyBoolean.TRUE.asExpression();
-
+    public static final RexImpTable INSTANCE = new RexImpTable();
     private final Map<Operator, CallImplementor> map = new HashMap<>();
     private final Map<AggFunction, Supplier<? extends AggImplementor>> aggMap = new HashMap<>();
     private final Map<AggFunction, Supplier<? extends WinAggImplementor>> winAggMap = new HashMap<>();
@@ -392,167 +392,6 @@ public class RexImpTable {
     }
 
 
-    private void defineGeoFunctions() {
-        // geo functions
-        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMFROMTEXT ), BuiltInMethod.ST_GEOMFROMTEXT.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMFROMTWKB ), BuiltInMethod.ST_GEOMFROMTWKB.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMFROMGEOJSON ), BuiltInMethod.ST_GEOMFROMGEOJSON.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_ASTEXT ), BuiltInMethod.ST_ASTEXT.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_ASTWKB ), BuiltInMethod.ST_ASTWKB.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_ASGEOJSON ), BuiltInMethod.ST_ASGEOJSON.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_TRANSFORM ), BuiltInMethod.ST_TRANSFORM.method, NullPolicy.STRICT );
-        // Common properties
-        defineMethod( OperatorRegistry.get( OperatorName.ST_ISSIMPLE ), BuiltInMethod.ST_ISSIMPLE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_ISEMPTY ), BuiltInMethod.ST_ISEMPTY.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_NUMPOINTS ), BuiltInMethod.ST_NUMPOINTS.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_DIMENSION ), BuiltInMethod.ST_DIMENSION.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_LENGTH ), BuiltInMethod.ST_LENGTH.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_AREA ), BuiltInMethod.ST_AREA.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_ENVELOPE ), BuiltInMethod.ST_ENVELOPE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_BOUNDARY ), BuiltInMethod.ST_BOUNDARY.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_BOUNDARYDIMENSION ), BuiltInMethod.ST_BOUNDARYDIMENSION.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_CONVEXHULL ), BuiltInMethod.ST_CONVEXHULL.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_CENTROID ), BuiltInMethod.ST_CENTROID.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_REVERSE ), BuiltInMethod.ST_REVERSE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_BUFFER ), BuiltInMethod.ST_BUFFER.method, NullPolicy.STRICT );
-        // Spatial relationships
-        defineMethod( OperatorRegistry.get( OperatorName.ST_EQUALS ), BuiltInMethod.ST_EQUALS.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_DWITHIN ), BuiltInMethod.ST_DWITHIN.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_DISJOINT ), BuiltInMethod.ST_DISJOINT.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_TOUCHES ), BuiltInMethod.ST_TOUCHES.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_INTERSECTS ), BuiltInMethod.ST_INTERSECTS.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_CROSSES ), BuiltInMethod.ST_CROSSES.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_WITHIN ), BuiltInMethod.ST_WITHIN.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_CONTAINS ), BuiltInMethod.ST_CONTAINS.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_OVERLAPS ), BuiltInMethod.ST_OVERLAPS.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_COVERS ), BuiltInMethod.ST_COVERS.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_COVEREDBY ), BuiltInMethod.ST_COVEREDBY.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_RELATE ), BuiltInMethod.ST_RELATE.method, NullPolicy.STRICT );
-        // Yield metric values
-        defineMethod( OperatorRegistry.get( OperatorName.ST_DISTANCE ), BuiltInMethod.ST_DISTANCE.method, NullPolicy.STRICT );
-        // Set operations
-        defineMethod( OperatorRegistry.get( OperatorName.ST_INTERSECTION ), BuiltInMethod.ST_INTERSECTION.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_UNION ), BuiltInMethod.ST_UNION.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_DIFFERENCE ), BuiltInMethod.ST_DIFFERENCE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_SYMDIFFERENCE ), BuiltInMethod.ST_SYMDIFFERENCE.method, NullPolicy.STRICT );
-        // on Points
-        defineMethod( OperatorRegistry.get( OperatorName.ST_X ), BuiltInMethod.ST_X.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_Y ), BuiltInMethod.ST_Y.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_Z ), BuiltInMethod.ST_Z.method, NullPolicy.STRICT );
-        // on LineStrings
-        defineMethod( OperatorRegistry.get( OperatorName.ST_ISCLOSED ), BuiltInMethod.ST_ISCLOSED.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_ISRING ), BuiltInMethod.ST_ISRING.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_ISCOORDINATE ), BuiltInMethod.ST_ISCOORDINATE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_STARTPOINT ), BuiltInMethod.ST_STARTPOINT.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_ENDPOINT ), BuiltInMethod.ST_ENDPOINT.method, NullPolicy.STRICT );
-        // on Polygons
-        defineMethod( OperatorRegistry.get( OperatorName.ST_ISRECTANGLE ), BuiltInMethod.ST_ISRECTANGLE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_EXTERIORRING ), BuiltInMethod.ST_EXTERIORRING.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_NUMINTERIORRING ), BuiltInMethod.ST_NUMINTERIORRING.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_INTERIORRINGN ), BuiltInMethod.ST_INTERIORRINGN.method, NullPolicy.STRICT );
-        // on GeometryCollection
-        defineMethod( OperatorRegistry.get( OperatorName.ST_NUMGEOMETRIES ), BuiltInMethod.ST_NUMGEOMETRIES.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMETRYN ), BuiltInMethod.ST_GEOMETRYN.method, NullPolicy.STRICT );
-    }
-
-
-    private void defineCypherMethods() {
-        CypherImplementor implementor = new CypherImplementor();
-        QueryLanguage cypher = QueryLanguage.from( "cypher" );
-        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_ALL_MATCH ), implementor );
-        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_ANY_MATCH ), implementor );
-        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_SINGLE_MATCH ), implementor );
-        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_NONE_MATCH ), implementor );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LIKE ), BuiltInMethod.CYPHER_LIKE.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_PATH_MATCH ), BuiltInMethod.CYPHER_PATH_MATCH.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NODE_EXTRACT ), BuiltInMethod.CYPHER_NODE_EXTRACT.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_FROM_PATH ), BuiltInMethod.CYPHER_EXTRACT_FROM_PATH.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NODE_MATCH ), BuiltInMethod.CYPHER_NODE_MATCH.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_HAS_LABEL ), BuiltInMethod.CYPHER_HAS_LABEL.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_HAS_PROPERTY ), BuiltInMethod.CYPHER_HAS_PROPERTY.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_PROPERTY ), BuiltInMethod.CYPHER_EXTRACT_PROPERTY.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_PROPERTIES ), BuiltInMethod.CYPHER_EXTRACT_PROPERTIES.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_ID ), BuiltInMethod.CYPHER_EXTRACT_ID.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_LABELS ), BuiltInMethod.CYPHER_EXTRACT_LABELS.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_LABEL ), BuiltInMethod.CYPHER_EXTRACT_LABEL.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_TO_LIST ), BuiltInMethod.CYPHER_TO_LIST.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_ADJUST_EDGE ), BuiltInMethod.CYPHER_ADJUST_EDGE.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SET_PROPERTY ), BuiltInMethod.CYPHER_SET_PROPERTY.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SET_PROPERTIES ), BuiltInMethod.CYPHER_SET_PROPERTIES.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SET_LABELS ), BuiltInMethod.CYPHER_SET_LABELS.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_REMOVE_LABELS ), BuiltInMethod.CYPHER_REMOVE_LABELS.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_REMOVE_PROPERTY ), BuiltInMethod.CYPHER_REMOVE_PROPERTY.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_POINT ), BuiltInMethod.CYPHER_POINT.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.DISTANCE ), BuiltInMethod.CYPHER_DISTANCE.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.DISTANCE_NEO4J ), BuiltInMethod.CYPHER_DISTANCE_NEO4J.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_WITHIN_BBOX ), BuiltInMethod.CYPHER_WITHIN_BBOX.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_WITHIN_GEOMETRY ), BuiltInMethod.CYPHER_WITHIN_GEOMETRY.method, NullPolicy.NONE );
-    }
-
-
-    private void defineMongoMethods() {
-        QueryLanguage mongo = QueryLanguage.from( "mongo" );
-        defineBinary( OperatorRegistry.get( mongo, OperatorName.MQL_ITEM ), ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
-        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_EQ.method ), false );
-        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GT.method ), false );
-        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GTE.method ), false );
-        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_LT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_LT.method ), false );
-        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_LTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_LTE.method ), false );
-        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_SIZE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_SIZE_MATCH.method ), false );
-        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_REGEX_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_REGEX_MATCH.method ), false );
-        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_JSON_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_JSON_MATCH.method ), false );
-        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_TYPE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_TYPE_MATCH.method ), false );
-        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_SLICE ), BuiltInMethod.MQL_SLICE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_QUERY_VALUE ), BuiltInMethod.MQL_QUERY_VALUE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_ADD_FIELDS ), BuiltInMethod.MQL_ADD_FIELDS.method, NullPolicy.STRICT );
-
-        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_UPDATE_MIN ), BuiltInMethod.MQL_UPDATE_MIN.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_UPDATE_MAX ), BuiltInMethod.MQL_UPDATE_MAX.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_UPDATE_ADD_TO_SET ), BuiltInMethod.MQL_UPDATE_ADD_TO_SET.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_UPDATE_RENAME ), BuiltInMethod.MQL_UPDATE_RENAME.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_UPDATE_REPLACE ), BuiltInMethod.MQL_UPDATE_REPLACE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_REMOVE ), BuiltInMethod.MQL_REMOVE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_EXISTS ), BuiltInMethod.MQL_EXISTS.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_MERGE ), BuiltInMethod.MQL_MERGE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_MERGE_ADD ), BuiltInMethod.MQL_MERGE_ADD.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_PROJECT_INCLUDES ), BuiltInMethod.MQL_PROJECT_INCLUDES.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_REPLACE_ROOT ), BuiltInMethod.MQL_REPLACE_ROOT.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_NOT_UNSET ), BuiltInMethod.MQL_NOT_UNSET.method, NullPolicy.STRICT );
-        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_INTERSECTS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_INTERSECTS.method ), false );
-        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_WITHIN ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_WITHIN.method ), false );
-        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_DISTANCE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_DISTANCE.method ), false );
-        defineMqlMethod( OperatorName.PLUS, "plus", NullPolicy.STRICT );
-        defineMqlMethod( OperatorName.MINUS, "minus", NullPolicy.STRICT );
-        defineMqlMethod( OperatorName.MULTIPLY, "multiply", NullPolicy.STRICT );
-        defineMqlMethod( OperatorName.DIVIDE, "divide", NullPolicy.STRICT );
-
-        map.put( OperatorRegistry.get( mongo, OperatorName.MQL_ELEM_MATCH ), new ElemMatchImplementor() );
-    }
-
-
-    private <T> Supplier<T> constructorSupplier( Class<T> klass ) {
-        final Constructor<T> constructor;
-        try {
-            constructor = klass.getDeclaredConstructor();
-        } catch ( NoSuchMethodException e ) {
-            throw new IllegalArgumentException( klass + " should implement zero arguments constructor" );
-        }
-        return () -> {
-            try {
-                return constructor.newInstance();
-            } catch ( InstantiationException | IllegalAccessException | InvocationTargetException e ) {
-                throw new IllegalStateException( "Error while creating aggregate implementor " + constructor, e );
-            }
-        };
-    }
-
-
-    private void defineImplementor( Operator operator, NullPolicy nullPolicy, NotNullImplementor implementor, boolean harmonize ) {
-        CallImplementor callImplementor = createImplementor( implementor, nullPolicy, harmonize );
-        map.put( operator, callImplementor );
-    }
-
-
     private static RexCall call2( boolean harmonize, RexToLixTranslator translator, RexCall call ) {
         if ( !harmonize ) {
             return call;
@@ -668,75 +507,6 @@ public class RexImpTable {
                 return implementCall( translator, call2, implementor, nullAs );
             };
         };
-    }
-
-
-    private void defineMethod( Operator operator, String functionName, NullPolicy nullPolicy ) {
-        defineImplementor( operator, nullPolicy, new MethodNameImplementor( functionName ), false );
-    }
-
-
-    private void defineMqlMethod( OperatorName operator, String functionName, NullPolicy nullPolicy ) {
-        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), operator ), nullPolicy, new MqlMethodNameImplementor( functionName ), false );
-    }
-
-
-    private void defineMethod( Operator operator, Method method, NullPolicy nullPolicy ) {
-        defineImplementor( operator, nullPolicy, new MethodImplementor( method ), false );
-    }
-
-
-    private void defineMethodReflective( Operator operator, Method method, NullPolicy nullPolicy ) {
-        defineImplementor( operator, nullPolicy, new ReflectiveCallNotNullImplementor( method ), false );
-    }
-
-
-    private void defineUnary( Operator operator, ExpressionType expressionType, NullPolicy nullPolicy ) {
-        defineImplementor( operator, nullPolicy, new UnaryImplementor( expressionType ), false );
-    }
-
-
-    private void defineBinary( Operator operator, ExpressionType expressionType, NullPolicy nullPolicy, String backupMethodName ) {
-        defineImplementor( operator, nullPolicy, new BinaryImplementor( expressionType, backupMethodName ), true );
-    }
-
-
-    public static final RexImpTable INSTANCE = new RexImpTable();
-
-
-    public CallImplementor get( final Operator operator ) {
-        if ( operator instanceof UserDefined ) {
-            Function udf = ((UserDefined) operator).getFunction();
-            if ( !(udf instanceof ImplementableFunction) ) {
-                throw new IllegalStateException( "User defined function " + operator + " must implement ImplementableFunction" );
-            }
-            return ((ImplementableFunction) udf).getImplementor();
-        }
-        return map.get( operator );
-    }
-
-
-    public AggImplementor get( final AggFunction aggregation, boolean forWindowAggregate ) {
-        if ( aggregation instanceof UserDefined udaf ) {
-            if ( !(udaf.getFunction() instanceof ImplementableAggFunction) ) {
-                throw new IllegalStateException( "User defined aggregation " + aggregation + " must implement ImplementableAggFunction" );
-            }
-            return ((ImplementableAggFunction) udaf.getFunction()).getImplementor( forWindowAggregate );
-        }
-        if ( forWindowAggregate ) {
-            Supplier<? extends WinAggImplementor> winAgg = winAggMap.get( aggregation );
-            if ( winAgg != null ) {
-                return winAgg.get();
-            }
-            // Regular aggregates can be used in window context as well
-        }
-
-        Supplier<? extends AggImplementor> aggSupplier = aggMap.get( aggregation );
-        if ( aggSupplier == null ) {
-            return null;
-        }
-
-        return aggSupplier.get();
     }
 
 
@@ -933,6 +703,294 @@ public class RexImpTable {
     }
 
 
+    static Expression getDefaultValue( Type type ) {
+        if ( Primitive.is( type ) ) {
+            Primitive p = Primitive.of( type );
+            assert p != null;
+            return Expressions.constant( p.defaultValue, type );
+        }
+        if ( Types.isAssignableFrom( PolyValue.class, type ) && PolyValue.getInitial( type ) != null ) {
+            return PolyValue.getInitial( type ).asExpression();
+        }
+        return Expressions.constant( null, type );
+    }
+
+
+    /**
+     * Multiplies an expression by a constant and divides by another constant, optimizing appropriately.
+     * <p>
+     * For example, {@code multiplyDivide(e, 10, 1000)} returns {@code e / 100}.
+     */
+    public static Expression multiplyDivide( Expression e, BigDecimal multiplier, BigDecimal divider ) {
+        if ( multiplier.equals( BigDecimal.ONE ) ) {
+            if ( divider.equals( BigDecimal.ONE ) ) {
+                return e;
+            }
+            return Expressions.divide( e, Expressions.constant( divider.intValueExact() ) );
+        }
+        final BigDecimal x = multiplier.divide( divider, RoundingMode.UNNECESSARY );
+        return switch ( x.compareTo( BigDecimal.ONE ) ) {
+            case 0 -> e;
+            case 1 -> EnumUtils.wrapPolyValue( e.type, Expressions.multiply(
+                    EnumUtils.unwrapPolyValue( e, "longValue" ),
+                    Expressions.constant( x.intValueExact() ) ) );
+            case -1 -> multiplyDivide( e, BigDecimal.ONE, x );
+            default -> throw new AssertionError();
+        };
+    }
+
+
+    private static Expression mod( Expression operand, long factor ) {
+        if ( factor == 1L ) {
+            return operand;
+        } else {
+            return Expressions.modulo( operand, Expressions.constant( factor ) );
+        }
+    }
+
+
+    private static long getFactor( TimeUnit unit ) {
+        return switch ( unit ) {
+            case DAY -> 1L;
+            case HOUR -> TimeUnit.DAY.multiplier.longValue();
+            case MINUTE -> TimeUnit.HOUR.multiplier.longValue();
+            case SECOND -> TimeUnit.MINUTE.multiplier.longValue();
+            case MILLISECOND -> TimeUnit.SECOND.multiplier.longValue();
+            case MONTH -> TimeUnit.YEAR.multiplier.longValue();
+            case QUARTER -> TimeUnit.YEAR.multiplier.longValue();
+            case YEAR, DECADE, CENTURY, MILLENNIUM -> 1L;
+            default -> throw Util.unexpected( unit );
+        };
+    }
+
+
+    private void defineGeoFunctions() {
+        // geo functions
+        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMFROMTEXT ), BuiltInMethod.ST_GEOMFROMTEXT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMFROMTWKB ), BuiltInMethod.ST_GEOMFROMTWKB.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMFROMGEOJSON ), BuiltInMethod.ST_GEOMFROMGEOJSON.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ASTEXT ), BuiltInMethod.ST_ASTEXT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ASTWKB ), BuiltInMethod.ST_ASTWKB.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ASGEOJSON ), BuiltInMethod.ST_ASGEOJSON.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_TRANSFORM ), BuiltInMethod.ST_TRANSFORM.method, NullPolicy.STRICT );
+        // Common properties
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISSIMPLE ), BuiltInMethod.ST_ISSIMPLE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISEMPTY ), BuiltInMethod.ST_ISEMPTY.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_NUMPOINTS ), BuiltInMethod.ST_NUMPOINTS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_DIMENSION ), BuiltInMethod.ST_DIMENSION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_LENGTH ), BuiltInMethod.ST_LENGTH.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_AREA ), BuiltInMethod.ST_AREA.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ENVELOPE ), BuiltInMethod.ST_ENVELOPE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_BOUNDARY ), BuiltInMethod.ST_BOUNDARY.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_BOUNDARYDIMENSION ), BuiltInMethod.ST_BOUNDARYDIMENSION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_CONVEXHULL ), BuiltInMethod.ST_CONVEXHULL.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_CENTROID ), BuiltInMethod.ST_CENTROID.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_REVERSE ), BuiltInMethod.ST_REVERSE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_BUFFER ), BuiltInMethod.ST_BUFFER.method, NullPolicy.STRICT );
+        // Spatial relationships
+        defineMethod( OperatorRegistry.get( OperatorName.ST_EQUALS ), BuiltInMethod.ST_EQUALS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_DWITHIN ), BuiltInMethod.ST_DWITHIN.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_DISJOINT ), BuiltInMethod.ST_DISJOINT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_TOUCHES ), BuiltInMethod.ST_TOUCHES.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_INTERSECTS ), BuiltInMethod.ST_INTERSECTS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_CROSSES ), BuiltInMethod.ST_CROSSES.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_WITHIN ), BuiltInMethod.ST_WITHIN.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_CONTAINS ), BuiltInMethod.ST_CONTAINS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_OVERLAPS ), BuiltInMethod.ST_OVERLAPS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_COVERS ), BuiltInMethod.ST_COVERS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_COVEREDBY ), BuiltInMethod.ST_COVEREDBY.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_RELATE ), BuiltInMethod.ST_RELATE.method, NullPolicy.STRICT );
+        // Yield metric values
+        defineMethod( OperatorRegistry.get( OperatorName.ST_DISTANCE ), BuiltInMethod.ST_DISTANCE.method, NullPolicy.STRICT );
+        // Set operations
+        defineMethod( OperatorRegistry.get( OperatorName.ST_INTERSECTION ), BuiltInMethod.ST_INTERSECTION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_UNION ), BuiltInMethod.ST_UNION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_DIFFERENCE ), BuiltInMethod.ST_DIFFERENCE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_SYMDIFFERENCE ), BuiltInMethod.ST_SYMDIFFERENCE.method, NullPolicy.STRICT );
+        // on Points
+        defineMethod( OperatorRegistry.get( OperatorName.ST_X ), BuiltInMethod.ST_X.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_Y ), BuiltInMethod.ST_Y.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_Z ), BuiltInMethod.ST_Z.method, NullPolicy.STRICT );
+        // on LineStrings
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISCLOSED ), BuiltInMethod.ST_ISCLOSED.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISRING ), BuiltInMethod.ST_ISRING.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISCOORDINATE ), BuiltInMethod.ST_ISCOORDINATE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_STARTPOINT ), BuiltInMethod.ST_STARTPOINT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ENDPOINT ), BuiltInMethod.ST_ENDPOINT.method, NullPolicy.STRICT );
+        // on Polygons
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISRECTANGLE ), BuiltInMethod.ST_ISRECTANGLE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_EXTERIORRING ), BuiltInMethod.ST_EXTERIORRING.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_NUMINTERIORRING ), BuiltInMethod.ST_NUMINTERIORRING.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_INTERIORRINGN ), BuiltInMethod.ST_INTERIORRINGN.method, NullPolicy.STRICT );
+        // on GeometryCollection
+        defineMethod( OperatorRegistry.get( OperatorName.ST_NUMGEOMETRIES ), BuiltInMethod.ST_NUMGEOMETRIES.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMETRYN ), BuiltInMethod.ST_GEOMETRYN.method, NullPolicy.STRICT );
+    }
+
+
+    private void defineCypherMethods() {
+        CypherImplementor implementor = new CypherImplementor();
+        QueryLanguage cypher = QueryLanguage.from( "cypher" );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_ALL_MATCH ), implementor );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_ANY_MATCH ), implementor );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_SINGLE_MATCH ), implementor );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_NONE_MATCH ), implementor );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LIKE ), BuiltInMethod.CYPHER_LIKE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_PATH_MATCH ), BuiltInMethod.CYPHER_PATH_MATCH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NODE_EXTRACT ), BuiltInMethod.CYPHER_NODE_EXTRACT.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_FROM_PATH ), BuiltInMethod.CYPHER_EXTRACT_FROM_PATH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NODE_MATCH ), BuiltInMethod.CYPHER_NODE_MATCH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_HAS_LABEL ), BuiltInMethod.CYPHER_HAS_LABEL.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_HAS_PROPERTY ), BuiltInMethod.CYPHER_HAS_PROPERTY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_PROPERTY ), BuiltInMethod.CYPHER_EXTRACT_PROPERTY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_PROPERTIES ), BuiltInMethod.CYPHER_EXTRACT_PROPERTIES.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_ID ), BuiltInMethod.CYPHER_EXTRACT_ID.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_LABELS ), BuiltInMethod.CYPHER_EXTRACT_LABELS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_LABEL ), BuiltInMethod.CYPHER_EXTRACT_LABEL.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_TO_LIST ), BuiltInMethod.CYPHER_TO_LIST.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_ADJUST_EDGE ), BuiltInMethod.CYPHER_ADJUST_EDGE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SET_PROPERTY ), BuiltInMethod.CYPHER_SET_PROPERTY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SET_PROPERTIES ), BuiltInMethod.CYPHER_SET_PROPERTIES.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SET_LABELS ), BuiltInMethod.CYPHER_SET_LABELS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_REMOVE_LABELS ), BuiltInMethod.CYPHER_REMOVE_LABELS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_REMOVE_PROPERTY ), BuiltInMethod.CYPHER_REMOVE_PROPERTY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_POINT ), BuiltInMethod.CYPHER_POINT.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.DISTANCE ), BuiltInMethod.CYPHER_DISTANCE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.DISTANCE_NEO4J ), BuiltInMethod.CYPHER_DISTANCE_NEO4J.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_WITHIN_BBOX ), BuiltInMethod.CYPHER_WITHIN_BBOX.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_WITHIN_GEOMETRY ), BuiltInMethod.CYPHER_WITHIN_GEOMETRY.method, NullPolicy.NONE );
+    }
+
+
+    private void defineMongoMethods() {
+        QueryLanguage mongo = QueryLanguage.from( "mongo" );
+        defineBinary( OperatorRegistry.get( mongo, OperatorName.MQL_ITEM ), ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_EQ.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GT.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GTE.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_LT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_LT.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_LTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_LTE.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_SIZE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_SIZE_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_REGEX_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_REGEX_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_JSON_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_JSON_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_TYPE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_TYPE_MATCH.method ), false );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_SLICE ), BuiltInMethod.MQL_SLICE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_QUERY_VALUE ), BuiltInMethod.MQL_QUERY_VALUE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_ADD_FIELDS ), BuiltInMethod.MQL_ADD_FIELDS.method, NullPolicy.STRICT );
+
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_UPDATE_MIN ), BuiltInMethod.MQL_UPDATE_MIN.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_UPDATE_MAX ), BuiltInMethod.MQL_UPDATE_MAX.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_UPDATE_ADD_TO_SET ), BuiltInMethod.MQL_UPDATE_ADD_TO_SET.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_UPDATE_RENAME ), BuiltInMethod.MQL_UPDATE_RENAME.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_UPDATE_REPLACE ), BuiltInMethod.MQL_UPDATE_REPLACE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_REMOVE ), BuiltInMethod.MQL_REMOVE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_EXISTS ), BuiltInMethod.MQL_EXISTS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_MERGE ), BuiltInMethod.MQL_MERGE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_MERGE_ADD ), BuiltInMethod.MQL_MERGE_ADD.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_PROJECT_INCLUDES ), BuiltInMethod.MQL_PROJECT_INCLUDES.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_REPLACE_ROOT ), BuiltInMethod.MQL_REPLACE_ROOT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_NOT_UNSET ), BuiltInMethod.MQL_NOT_UNSET.method, NullPolicy.STRICT );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_INTERSECTS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_INTERSECTS.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_WITHIN ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_WITHIN.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_DISTANCE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_DISTANCE.method ), false );
+        defineMqlMethod( OperatorName.PLUS, "plus", NullPolicy.STRICT );
+        defineMqlMethod( OperatorName.MINUS, "minus", NullPolicy.STRICT );
+        defineMqlMethod( OperatorName.MULTIPLY, "multiply", NullPolicy.STRICT );
+        defineMqlMethod( OperatorName.DIVIDE, "divide", NullPolicy.STRICT );
+
+        map.put( OperatorRegistry.get( mongo, OperatorName.MQL_ELEM_MATCH ), new ElemMatchImplementor() );
+    }
+
+
+    private <T> Supplier<T> constructorSupplier( Class<T> klass ) {
+        final Constructor<T> constructor;
+        try {
+            constructor = klass.getDeclaredConstructor();
+        } catch ( NoSuchMethodException e ) {
+            throw new IllegalArgumentException( klass + " should implement zero arguments constructor" );
+        }
+        return () -> {
+            try {
+                return constructor.newInstance();
+            } catch ( InstantiationException | IllegalAccessException | InvocationTargetException e ) {
+                throw new IllegalStateException( "Error while creating aggregate implementor " + constructor, e );
+            }
+        };
+    }
+
+
+    private void defineImplementor( Operator operator, NullPolicy nullPolicy, NotNullImplementor implementor, boolean harmonize ) {
+        CallImplementor callImplementor = createImplementor( implementor, nullPolicy, harmonize );
+        map.put( operator, callImplementor );
+    }
+
+
+    private void defineMethod( Operator operator, String functionName, NullPolicy nullPolicy ) {
+        defineImplementor( operator, nullPolicy, new MethodNameImplementor( functionName ), false );
+    }
+
+
+    private void defineMqlMethod( OperatorName operator, String functionName, NullPolicy nullPolicy ) {
+        defineImplementor( OperatorRegistry.get( QueryLanguage.from( "mongo" ), operator ), nullPolicy, new MqlMethodNameImplementor( functionName ), false );
+    }
+
+
+    private void defineMethod( Operator operator, Method method, NullPolicy nullPolicy ) {
+        defineImplementor( operator, nullPolicy, new MethodImplementor( method ), false );
+    }
+
+
+    private void defineMethodReflective( Operator operator, Method method, NullPolicy nullPolicy ) {
+        defineImplementor( operator, nullPolicy, new ReflectiveCallNotNullImplementor( method ), false );
+    }
+
+
+    private void defineUnary( Operator operator, ExpressionType expressionType, NullPolicy nullPolicy ) {
+        defineImplementor( operator, nullPolicy, new UnaryImplementor( expressionType ), false );
+    }
+
+
+    private void defineBinary( Operator operator, ExpressionType expressionType, NullPolicy nullPolicy, String backupMethodName ) {
+        defineImplementor( operator, nullPolicy, new BinaryImplementor( expressionType, backupMethodName ), true );
+    }
+
+
+    public CallImplementor get( final Operator operator ) {
+        if ( operator instanceof UserDefined ) {
+            Function udf = ((UserDefined) operator).getFunction();
+            if ( !(udf instanceof ImplementableFunction) ) {
+                throw new IllegalStateException( "User defined function " + operator + " must implement ImplementableFunction" );
+            }
+            return ((ImplementableFunction) udf).getImplementor();
+        }
+        return map.get( operator );
+    }
+
+
+    public AggImplementor get( final AggFunction aggregation, boolean forWindowAggregate ) {
+        if ( aggregation instanceof UserDefined udaf ) {
+            if ( !(udaf.getFunction() instanceof ImplementableAggFunction) ) {
+                throw new IllegalStateException( "User defined aggregation " + aggregation + " must implement ImplementableAggFunction" );
+            }
+            return ((ImplementableAggFunction) udaf.getFunction()).getImplementor( forWindowAggregate );
+        }
+        if ( forWindowAggregate ) {
+            Supplier<? extends WinAggImplementor> winAgg = winAggMap.get( aggregation );
+            if ( winAgg != null ) {
+                return winAgg.get();
+            }
+            // Regular aggregates can be used in window context as well
+        }
+
+        Supplier<? extends AggImplementor> aggSupplier = aggMap.get( aggregation );
+        if ( aggSupplier == null ) {
+            return null;
+        }
+
+        return aggSupplier.get();
+    }
+
+
     /**
      * Strategy what an operator should return if one of its arguments is null.
      */
@@ -1005,43 +1063,6 @@ public class RexImpTable {
                 case IS_NOT_NULL -> Expressions.new_( PolyBoolean.class, Expressions.equal( PolyValue.isNullExpression( x ), Expressions.constant( false ) ) );
             };
         }
-    }
-
-
-    static Expression getDefaultValue( Type type ) {
-        if ( Primitive.is( type ) ) {
-            Primitive p = Primitive.of( type );
-            assert p != null;
-            return Expressions.constant( p.defaultValue, type );
-        }
-        if ( Types.isAssignableFrom( PolyValue.class, type ) && PolyValue.getInitial( type ) != null ) {
-            return PolyValue.getInitial( type ).asExpression();
-        }
-        return Expressions.constant( null, type );
-    }
-
-
-    /**
-     * Multiplies an expression by a constant and divides by another constant, optimizing appropriately.
-     * <p>
-     * For example, {@code multiplyDivide(e, 10, 1000)} returns {@code e / 100}.
-     */
-    public static Expression multiplyDivide( Expression e, BigDecimal multiplier, BigDecimal divider ) {
-        if ( multiplier.equals( BigDecimal.ONE ) ) {
-            if ( divider.equals( BigDecimal.ONE ) ) {
-                return e;
-            }
-            return Expressions.divide( e, Expressions.constant( divider.intValueExact() ) );
-        }
-        final BigDecimal x = multiplier.divide( divider, RoundingMode.UNNECESSARY );
-        return switch ( x.compareTo( BigDecimal.ONE ) ) {
-            case 0 -> e;
-            case 1 -> EnumUtils.wrapPolyValue( e.type, Expressions.multiply(
-                    EnumUtils.unwrapPolyValue( e, "longValue" ),
-                    Expressions.constant( x.intValueExact() ) ) );
-            case -1 -> multiplyDivide( e, BigDecimal.ONE, x );
-            default -> throw new AssertionError();
-        };
     }
 
 
@@ -2057,18 +2078,17 @@ public class RexImpTable {
      */
     private record BinaryImplementor( ExpressionType expressionType, String backupMethodName ) implements NotNullImplementor {
 
+        public static final String METHOD_POSTFIX_FOR_ANY_TYPE = "Any";
         /**
          * Types that can be arguments to comparison operators such as {@code <}.
          */
         private static final List<Primitive> COMP_OP_TYPES = ImmutableList.of( Primitive.BYTE, Primitive.CHAR, Primitive.SHORT, Primitive.INT, Primitive.LONG, Primitive.FLOAT, Primitive.DOUBLE );
-
         private static final List<BinaryOperator> COMPARISON_OPERATORS =
                 ImmutableList.of(
                         OperatorRegistry.get( OperatorName.LESS_THAN, BinaryOperator.class ),
                         OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL, BinaryOperator.class ),
                         OperatorRegistry.get( OperatorName.GREATER_THAN, BinaryOperator.class ),
                         OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL, BinaryOperator.class ) );
-        public static final String METHOD_POSTFIX_FOR_ANY_TYPE = "Any";
 
 
         @Override
@@ -2246,30 +2266,6 @@ public class RexImpTable {
         }
 
 
-    }
-
-
-    private static Expression mod( Expression operand, long factor ) {
-        if ( factor == 1L ) {
-            return operand;
-        } else {
-            return Expressions.modulo( operand, Expressions.constant( factor ) );
-        }
-    }
-
-
-    private static long getFactor( TimeUnit unit ) {
-        return switch ( unit ) {
-            case DAY -> 1L;
-            case HOUR -> TimeUnit.DAY.multiplier.longValue();
-            case MINUTE -> TimeUnit.HOUR.multiplier.longValue();
-            case SECOND -> TimeUnit.MINUTE.multiplier.longValue();
-            case MILLISECOND -> TimeUnit.SECOND.multiplier.longValue();
-            case MONTH -> TimeUnit.YEAR.multiplier.longValue();
-            case QUARTER -> TimeUnit.YEAR.multiplier.longValue();
-            case YEAR, DECADE, CENTURY, MILLENNIUM -> 1L;
-            default -> throw Util.unexpected( unit );
-        };
     }
 
 

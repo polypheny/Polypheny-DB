@@ -83,12 +83,12 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> implements Relati
     @Delegate(excludes = Excludes.class)
     private final RelationalScanDelegate delegate;
     private final ConnectionMethod connectionMethod;
+    private final int maxStringLength;
+    public String sheetName;
     private URL excelDir;
     @Getter
     private ExcelNamespace currentNamespace;
-    private final int maxStringLength;
     private Map<String, List<ExportedColumn>> exportedColumnCache;
-    public String sheetName;
 
 
     public ExcelSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {

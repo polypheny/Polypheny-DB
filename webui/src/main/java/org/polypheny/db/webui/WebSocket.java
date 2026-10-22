@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,27 +65,14 @@ import org.polypheny.db.webui.models.results.Result;
 @Slf4j
 public class WebSocket implements Consumer<WsConfig> {
 
-    private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     public static final String POLYPHENY_UI = "Polypheny-UI";
+    private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final Crud crud;
     private final ConcurrentHashMap<String, Set<String>> queryAnalyzers = new ConcurrentHashMap<>();
 
 
     WebSocket( Crud crud ) {
         this.crud = crud;
-    }
-
-
-    public void connected( final WsConnectContext ctx ) {
-        log.debug( "UI connected to WebSocket" );
-        sessions.add( ctx.session );
-    }
-
-
-    public void closed( WsCloseContext ctx ) {
-        log.debug( "UI disconnected from WebSocket" );
-        sessions.remove( ctx.session );
-        Crud.cleanupOldSession( queryAnalyzers, ctx.sessionId() );
     }
 
 
@@ -105,6 +92,19 @@ public class WebSocket implements Consumer<WsConfig> {
         } catch ( IOException e ) {
             log.error( "Could not send WebSocket message to UI", e );
         }
+    }
+
+
+    public void connected( final WsConnectContext ctx ) {
+        log.debug( "UI connected to WebSocket" );
+        sessions.add( ctx.session );
+    }
+
+
+    public void closed( WsCloseContext ctx ) {
+        log.debug( "UI disconnected from WebSocket" );
+        sessions.remove( ctx.session );
+        Crud.cleanupOldSession( queryAnalyzers, ctx.sessionId() );
     }
 
 
@@ -210,6 +210,99 @@ public class WebSocket implements Consumer<WsConfig> {
                 RegisterRequest registerRequest = ctx.messageAsClass( RegisterRequest.class );
                 crud.authCrud.register( registerRequest, ctx );
                 break;
+
+            case "RefreshRequest":
+                Result<?, ?> refreshResult;
+                UIRequest refreshRequest = ctx.messageAsClass( UIRequest.class );
+                try {
+                    LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( refreshRequest.namespace ).orElse( null );
+                    refreshResult = switch ( namespace == null ? DataModel.RELATIONAL : namespace.dataModel ) {
+                        case RELATIONAL -> {
+                            String table = Catalog.snapshot().rel().getTable( refreshRequest.entityId ).map( t -> t.name ).orElse( String.valueOf( refreshRequest.entityId ) );
+                            Crud.SourceMaterializationRefreshResult refresh = crud.refreshSourceSchemaIfNeeded( refreshRequest );
+                            if ( refresh.sourceEntityDeleted() ) {
+                                yield RelationalResult.builder()
+                                        .dataModel( DataModel.RELATIONAL )
+                                        .namespace( refreshRequest.namespace )
+                                        .table( table )
+                                        .changeDescriptions( refresh.changeDescriptions().toArray( new String[0] ) )
+                                        .sourceEntityDeleted( true )
+                                        .build();
+                            }
+                            yield crud.getTable( refreshRequest ).toBuilder()
+                                    .changeDescriptions( refresh.changeDescriptions().toArray( new String[0] ) )
+                                    .dataRefreshRowCount( refresh.dataRefreshRowCount() )
+                                    .sourceEntityDeleted( refresh.sourceEntityDeleted() )
+                                    .build();
+                        }
+                        case DOCUMENT -> {
+                            String entity = Catalog.snapshot().doc().getCollection( refreshRequest.entityId ).map( c -> c.name ).orElse( "" );
+                            if ( "synchronizedApplyWithData".equalsIgnoreCase( refreshRequest.refreshTrigger ) ) {
+                                Crud.SourceMaterializationRefreshResult refresh = crud.refreshSynchronizedSourceCollectionMaterializationData( refreshRequest );
+                                if ( refresh.sourceEntityDeleted() ) {
+                                    yield RelationalResult.builder()
+                                            .dataModel( DataModel.DOCUMENT )
+                                            .namespace( namespace.name )
+                                            .table( entity )
+                                            .changeDescriptions( refresh.changeDescriptions().toArray( new String[0] ) )
+                                            .sourceEntityDeleted( true )
+                                            .build();
+                                }
+                                if ( refresh.dataRefreshRowCount() != null ) {
+                                    yield RelationalResult.builder()
+                                            .dataModel( DataModel.DOCUMENT )
+                                            .namespace( namespace.name )
+                                            .table( entity )
+                                            .dataRefreshRowCount( refresh.dataRefreshRowCount() )
+                                            .build();
+                                }
+                            }
+                            Crud.SourceMaterializationRefreshResult refresh = crud.refreshSourceCollectionIfNeeded( refreshRequest );
+                            if ( refresh.sourceEntityDeleted() ) {
+                                yield RelationalResult.builder()
+                                        .dataModel( DataModel.DOCUMENT )
+                                        .namespace( namespace.name )
+                                        .table( entity )
+                                        .changeDescriptions( refresh.changeDescriptions().toArray( new String[0] ) )
+                                        .sourceEntityDeleted( true )
+                                        .build();
+                            }
+                            yield LanguageCrud.anyQueryResult(
+                                    QueryContext.builder()
+                                            .query( String.format( "db.%s.find({})", entity ) )
+                                            .language( QueryLanguage.from( "mongo" ) )
+                                            .origin( POLYPHENY_UI )
+                                            .batch( refreshRequest.noLimit ? -1 : crud.getPageSize() )
+                                            .transactionManager( crud.getTransactionManager() )
+                                            .informationTarget( i -> i.setSession( ctx.session ) )
+                                            .namespaceId( namespace.id )
+                                            .build(), refreshRequest ).get( 0 );
+                        }
+                        case GRAPH -> LanguageCrud.anyQueryResult(
+                                QueryContext.builder()
+                                        .query( "MATCH (n) RETURN n" )
+                                        .language( QueryLanguage.from( "cypher" ) )
+                                        .origin( POLYPHENY_UI )
+                                        .batch( refreshRequest.noLimit ? -1 : crud.getPageSize() )
+                                        .namespaceId( namespace.id )
+                                        .transactionManager( crud.getTransactionManager() )
+                                        .informationTarget( i -> i.setSession( ctx.session ) )
+                                        .build(), refreshRequest ).get( 0 );
+                    };
+                    if ( refreshResult == null ) {
+                        throw new GenericRuntimeException( "Could not refresh data." );
+                    }
+
+                } catch ( Throwable t ) {
+                    ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
+                    return;
+                }
+                if ( refreshResult.xid != null ) {
+                    xIds.add( refreshResult.xid );
+                }
+                ctx.send( refreshResult );
+                break;
+
             case "EntityRequest":
                 Result<?, ?> result;
                 UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );

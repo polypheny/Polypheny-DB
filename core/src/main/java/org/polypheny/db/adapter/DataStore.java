@@ -32,10 +32,9 @@ import org.polypheny.db.catalog.logistic.IndexCategory;
 @Slf4j
 public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> implements Modifiable, ExtensionPoint {
 
+    protected final transient Catalog catalog = Catalog.getInstance();
     @Getter
     private final boolean persistent;
-
-    protected final transient Catalog catalog = Catalog.getInstance();
 
 
     public DataStore( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode, final boolean persistent, S storeCatalog ) {

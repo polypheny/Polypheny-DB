@@ -155,20 +155,6 @@ public class MongoFilter extends Filter implements MongoAlg {
         }
 
 
-        private void translateMatch( RexNode condition, Implementor implementor ) {
-            BsonDocument value = translateFinalOr( condition );
-            if ( !value.isEmpty() ) {
-                if ( !preProjections.isEmpty() ) {
-                    implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$addFields", preProjections ) ) );
-                }
-
-                implementor.filter.add( value );
-                implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$match", getFilter( value ) ) ) );
-            }
-
-        }
-
-
         public static BsonDocument getFilter( BsonDocument filter ) {
             if ( filter.size() != 1 ) {
                 return filter;
@@ -183,6 +169,20 @@ public class MongoFilter extends Filter implements MongoAlg {
                 return filter;
             }
             return getFilter( value.asArray().get( 0 ).asDocument() );
+        }
+
+
+        private void translateMatch( RexNode condition, Implementor implementor ) {
+            BsonDocument value = translateFinalOr( condition );
+            if ( !value.isEmpty() ) {
+                if ( !preProjections.isEmpty() ) {
+                    implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$addFields", preProjections ) ) );
+                }
+
+                implementor.filter.add( value );
+                implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$match", getFilter( value ) ) ) );
+            }
+
         }
 
 

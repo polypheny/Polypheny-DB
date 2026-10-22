@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,17 +40,13 @@ import org.polypheny.db.type.PolySerializable;
 public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog {
 
     public BinarySerializer<DocumentCatalog> serializer = PolySerializable.buildSerializer( DocumentCatalog.class );
-
-    IdBuilder idBuilder = IdBuilder.getInstance();
-
     @Serialize
     @JsonProperty
     public LogicalNamespace logicalNamespace;
-
     @Serialize
     @JsonProperty
     public Map<Long, LogicalCollection> collections;
-
+    IdBuilder idBuilder = IdBuilder.getInstance();
     PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
 
@@ -102,6 +98,20 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
         LogicalCollection newCollection = collection.toBuilder().name( newName ).build();
         collections.put( newCollection.id, newCollection );
         change( CatalogEvent.LOGICAL_DOC_ENTITY_RENAMED, collection, newCollection );
+    }
+
+
+    @Override
+    public void setCollectionModifiable( long collectionId, boolean modifiable ) {
+        collections.put( collectionId, collections.get( collectionId ).toBuilder().modifiable( modifiable ).build() );
+        change( CatalogEvent.LOGICAL_DOC_ENTITY_MODIFIABILITY_CHANGED, collectionId, modifiable );
+    }
+
+
+    @Override
+    public void setSynchronizedSourceEntity( long collectionId, long sourceEntityId ) {
+        collections.put( collectionId, collections.get( collectionId ).toBuilder().synchronizedSourceEntityId( sourceEntityId ).build() );
+        change( CatalogEvent.LOGICAL_DOC_ENTITY_SYNCHRONIZED_SOURCE_CHANGED, collectionId, sourceEntityId );
     }
 
 

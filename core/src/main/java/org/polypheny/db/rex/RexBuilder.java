@@ -162,6 +162,55 @@ public class RexBuilder {
     }
 
 
+    private static List<Integer> nullableArgs( List<Integer> list0, List<AlgDataType> types ) {
+        return Streams.zip( list0.stream(), types.stream(), ( left, right ) -> right.isNullable() ? left : null ).filter( Objects::nonNull ).toList();
+    }
+
+
+    /**
+     * Returns the lowest granularity unit for the given unit.
+     * YEAR and MONTH intervals are stored as months; HOUR, MINUTE, SECOND intervals are stored as milliseconds.
+     */
+    protected static TimeUnit baseUnit( PolyType unit ) {
+        if ( unit.isYearMonth() ) {
+            return TimeUnit.MONTH;
+        } else {
+            return TimeUnit.MILLISECOND;
+        }
+    }
+
+
+    private static Comparable<?> zeroValue( AlgDataType type ) {
+        return switch ( type.getPolyType() ) {
+            case CHAR -> new NlsString( StringUtils.leftPad( "", type.getPrecision() ), null, null );
+            case JSON, VARCHAR -> new NlsString( "", null, null );
+            case BINARY -> new ByteString( new byte[type.getPrecision()] );
+            case VARBINARY -> ByteString.EMPTY;
+            case TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, FLOAT, REAL, DOUBLE -> BigDecimal.ZERO;
+            case BOOLEAN -> false;
+            case TIME, DATE, TIMESTAMP -> DateTimeUtils.ZERO_CALENDAR;
+            default -> throw Util.unexpected( type.getPolyType() );
+        };
+    }
+
+
+    /**
+     * Returns an {@link PolyString} with spaces to make it at least a given length.
+     */
+    private static PolyBinary padRight( PolyBinary s, int length ) {
+        return s.padRight( length );
+    }
+
+
+    /**
+     * Returns a string padded with spaces to make it at least a given length.
+     */
+    @SuppressWarnings("unused")
+    private static String padRight( String s, int length ) {
+        return StringUtils.rightPad( s, length );
+    }
+
+
     /**
      * Creates a list of {@link RexIndexRef} expressions, projecting the fields of a given record type.
      */
@@ -317,11 +366,6 @@ public class RexBuilder {
             aggCallMapping.put( aggCall, rex );
         }
         return rex;
-    }
-
-
-    private static List<Integer> nullableArgs( List<Integer> list0, List<AlgDataType> types ) {
-        return Streams.zip( list0.stream(), types.stream(), ( left, right ) -> right.isNullable() ? left : null ).filter( Objects::nonNull ).toList();
     }
 
 
@@ -496,19 +540,6 @@ public class RexBuilder {
             return makeCastBooleanToExact( type, exp );
         }
         return makeAbstractCast( type, exp );
-    }
-
-
-    /**
-     * Returns the lowest granularity unit for the given unit.
-     * YEAR and MONTH intervals are stored as months; HOUR, MINUTE, SECOND intervals are stored as milliseconds.
-     */
-    protected static TimeUnit baseUnit( PolyType unit ) {
-        if ( unit.isYearMonth() ) {
-            return TimeUnit.MONTH;
-        } else {
-            return TimeUnit.MILLISECOND;
-        }
     }
 
 
@@ -1136,20 +1167,6 @@ public class RexBuilder {
     }
 
 
-    private static Comparable<?> zeroValue( AlgDataType type ) {
-        return switch ( type.getPolyType() ) {
-            case CHAR -> new NlsString( StringUtils.leftPad( "", type.getPrecision() ), null, null );
-            case JSON, VARCHAR -> new NlsString( "", null, null );
-            case BINARY -> new ByteString( new byte[type.getPrecision()] );
-            case VARBINARY -> ByteString.EMPTY;
-            case TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, FLOAT, REAL, DOUBLE -> BigDecimal.ZERO;
-            case BOOLEAN -> false;
-            case TIME, DATE, TIMESTAMP -> DateTimeUtils.ZERO_CALENDAR;
-            default -> throw Util.unexpected( type.getPolyType() );
-        };
-    }
-
-
     /**
      * Creates a literal of a given type. The value is assumed to be compatible with the type.
      *
@@ -1418,23 +1435,6 @@ public class RexBuilder {
             return typeFactory.createPolyType( PolyType.BIGINT );
         }
         throw new AssertionError( "unknown type " + value.getClass() );
-    }
-
-
-    /**
-     * Returns an {@link PolyString} with spaces to make it at least a given length.
-     */
-    private static PolyBinary padRight( PolyBinary s, int length ) {
-        return s.padRight( length );
-    }
-
-
-    /**
-     * Returns a string padded with spaces to make it at least a given length.
-     */
-    @SuppressWarnings("unused")
-    private static String padRight( String s, int length ) {
-        return StringUtils.rightPad( s, length );
     }
 
 

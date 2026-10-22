@@ -87,6 +87,50 @@ public final class JdbcUtils {
 
 
     /**
+     * Builds and adds an new information group, observing the connection pool, to the provided information objects
+     *
+     * @param informationPage The information page used to show information on this jdbc adapter
+     * @param groups The collection of information groups associated with this adapter
+     * @param informationElements The collection of information elements associated with this adapter
+     */
+    public static void addInformationPoolSize( InformationPage informationPage, List<InformationGroup> groups, List<Information> informationElements, ConnectionFactory connectionFactory, String uniqueName ) {
+        InformationGroup group = new InformationGroup( informationPage, "JDBC Connection Pool" );
+
+        InformationGraph connectionPoolSizeGraph = new InformationGraph(
+                group,
+                GraphType.DOUGHNUT,
+                new String[]{ "Active", "Available", "Idle" }
+        );
+        informationElements.add( connectionPoolSizeGraph );
+
+        InformationTable connectionPoolSizeTable = new InformationTable(
+                group,
+                Arrays.asList( "Attribute", "Value" ) );
+        informationElements.add( connectionPoolSizeTable );
+
+        group.setRefreshFunction( () -> {
+            int idle = connectionFactory.getNumIdle();
+            int active = connectionFactory.getNumActive();
+            int max = connectionFactory.getMaxTotal();
+            int available = max - idle - active;
+
+            connectionPoolSizeGraph.updateGraph(
+                    new String[]{ "Active", "Available", "Idle" },
+                    new GraphData<>( uniqueName + "-connection-pool-data", new Integer[]{ active, available, idle } )
+            );
+
+            connectionPoolSizeTable.reset();
+            connectionPoolSizeTable.addRow( "Active", active );
+            connectionPoolSizeTable.addRow( "Idle", idle );
+            connectionPoolSizeTable.addRow( "Max", max );
+        } );
+
+        groups.add( group );
+
+    }
+
+
+    /**
      * Builder that calls {@link ResultSet#getObject(int)} for every column, or {@code getXxx} if the result type
      * is a primitive {@code xxx}, and returns an array of objects for each row.
      */
@@ -117,6 +161,36 @@ public final class JdbcUtils {
                     throw new GenericRuntimeException( e );
                 }
             };
+        }
+
+
+        private static Timestamp shift( Timestamp v ) {
+            if ( v == null ) {
+                return null;
+            }
+            long time = v.getTime();
+            int offset = TimeZone.getDefault().getOffset( time );
+            return new Timestamp( time + offset );
+        }
+
+
+        private static Time shift( Time v ) {
+            if ( v == null ) {
+                return null;
+            }
+            long time = v.getTime();
+            int offset = TimeZone.getDefault().getOffset( time );
+            return new Time( (time + offset) % DateTimeUtils.MILLIS_PER_DAY );
+        }
+
+
+        private static Date shift( Date v ) {
+            if ( v == null ) {
+                return null;
+            }
+            long time = v.getTime();
+            int offset = TimeZone.getDefault().getOffset( time );
+            return new Date( time + offset );
         }
 
 
@@ -183,80 +257,6 @@ public final class JdbcUtils {
                     throw new GenericRuntimeException( "not implemented " + reps[i] + " " + types[i] );
             }
         }
-
-
-        private static Timestamp shift( Timestamp v ) {
-            if ( v == null ) {
-                return null;
-            }
-            long time = v.getTime();
-            int offset = TimeZone.getDefault().getOffset( time );
-            return new Timestamp( time + offset );
-        }
-
-
-        private static Time shift( Time v ) {
-            if ( v == null ) {
-                return null;
-            }
-            long time = v.getTime();
-            int offset = TimeZone.getDefault().getOffset( time );
-            return new Time( (time + offset) % DateTimeUtils.MILLIS_PER_DAY );
-        }
-
-
-        private static Date shift( Date v ) {
-            if ( v == null ) {
-                return null;
-            }
-            long time = v.getTime();
-            int offset = TimeZone.getDefault().getOffset( time );
-            return new Date( time + offset );
-        }
-
-    }
-
-
-    /**
-     * Builds and adds an new information group, observing the connection pool, to the provided information objects
-     *
-     * @param informationPage The information page used to show information on this jdbc adapter
-     * @param groups The collection of information groups associated with this adapter
-     * @param informationElements The collection of information elements associated with this adapter
-     */
-    public static void addInformationPoolSize( InformationPage informationPage, List<InformationGroup> groups, List<Information> informationElements, ConnectionFactory connectionFactory, String uniqueName ) {
-        InformationGroup group = new InformationGroup( informationPage, "JDBC Connection Pool" );
-
-        InformationGraph connectionPoolSizeGraph = new InformationGraph(
-                group,
-                GraphType.DOUGHNUT,
-                new String[]{ "Active", "Available", "Idle" }
-        );
-        informationElements.add( connectionPoolSizeGraph );
-
-        InformationTable connectionPoolSizeTable = new InformationTable(
-                group,
-                Arrays.asList( "Attribute", "Value" ) );
-        informationElements.add( connectionPoolSizeTable );
-
-        group.setRefreshFunction( () -> {
-            int idle = connectionFactory.getNumIdle();
-            int active = connectionFactory.getNumActive();
-            int max = connectionFactory.getMaxTotal();
-            int available = max - idle - active;
-
-            connectionPoolSizeGraph.updateGraph(
-                    new String[]{ "Active", "Available", "Idle" },
-                    new GraphData<>( uniqueName + "-connection-pool-data", new Integer[]{ active, available, idle } )
-            );
-
-            connectionPoolSizeTable.reset();
-            connectionPoolSizeTable.addRow( "Active", active );
-            connectionPoolSizeTable.addRow( "Idle", idle );
-            connectionPoolSizeTable.addRow( "Max", max );
-        } );
-
-        groups.add( group );
 
     }
 

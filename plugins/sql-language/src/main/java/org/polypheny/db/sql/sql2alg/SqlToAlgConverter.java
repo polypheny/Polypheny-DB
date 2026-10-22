@@ -256,40 +256,35 @@ import org.slf4j.Logger;
 public class SqlToAlgConverter implements NodeToAlgConverter {
 
     public static final Logger SQL2REL_LOGGER = PolyphenyDbTrace.getSqlToRelTracer();
-
+    public final Config config;
     protected final SqlValidator validator;
-
     @Getter
     protected final RexBuilder rexBuilder;
     protected final Snapshot snapshot;
     @Getter
     protected final AlgCluster cluster;
-    @Setter
-    private SubQueryConverter subQueryConverter;
     protected final List<AlgNode> leaves = new ArrayList<>();
+    protected final AlgDataTypeFactory typeFactory;
     private final List<SqlDynamicParam> dynamicParamSqlNodes = new ArrayList<>();
     private final OperatorTable opTab;
-    protected final AlgDataTypeFactory typeFactory;
     private final SqlNodeToRexConverter exprConverter;
-    public final Config config;
     private final AlgBuilder algBuilder;
-
     /**
      * Fields used in name resolution for correlated sub-queries.
      */
     private final Map<CorrelationId, DeferredLookup> mapCorrelToDeferred = new HashMap<>();
-
     /**
      * Stack of names of datasets requested by the <code>TABLE(SAMPLE(&lt;datasetName&gt;, &lt;query&gt;))</code> construct.
      */
     private final Deque<String> datasetStack = new ArrayDeque<>();
-
     /**
      * Mapping of non-correlated sub-queries that have been converted to their equivalent constants. Used to avoid
      * re-evaluating the sub-query if it's already been evaluated.
      */
     @Getter
     private final Map<SqlNode, RexNode> mapConvertedNonCorrSubqs = new HashMap<>();
+    @Setter
+    private SubQueryConverter subQueryConverter;
 
 
     /* Creates a converter. */
@@ -307,6 +302,171 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         this.exprConverter = new SqlNodeToRexConverterImpl( convertletTable );
         this.config = new ConfigBuilder().config( config ).build();
         this.algBuilder = config.algBuilderFactory().create( cluster, null );
+    }
+
+
+    private static boolean isStream( SqlNode query ) {
+        return query instanceof SqlSelect && ((SqlSelect) query).isKeywordPresent( SqlSelectKeyword.STREAM );
+    }
+
+
+    public static boolean isOrdered( SqlNode query ) {
+        return switch ( query.getKind() ) {
+            case SELECT -> ((SqlSelect) query).getOrderList() != null && ((SqlSelect) query).getOrderList().size() > 0;
+            case WITH -> isOrdered( ((SqlWith) query).body );
+            case ORDER_BY -> ((SqlOrderBy) query).orderList.size() > 0;
+            default -> false;
+        };
+    }
+
+
+    /**
+     * Returns whether a given node contains a {@link SqlInOperator}.
+     *
+     * @param node a RexNode tree
+     */
+    private static boolean containsInOperator( SqlNode node ) {
+        try {
+            NodeVisitor<Void> visitor =
+                    new BasicNodeVisitor<Void>() {
+                        @Override
+                        public Void visit( Call call ) {
+                            if ( call.getOperator() instanceof SqlInOperator ) {
+                                throw new Util.FoundOne( call );
+                            }
+                            return super.visit( call );
+                        }
+                    };
+            node.accept( visitor );
+            return false;
+        } catch ( Util.FoundOne e ) {
+            Util.swallow( e, null );
+            return true;
+        }
+    }
+
+
+    /**
+     * Push down all the NOT logical operators into any IN/NOT IN operators.
+     *
+     * @param scope Scope where {@code sqlNode} occurs
+     * @param sqlNode the root node from which to look for NOT operators
+     * @return the transformed SqlNode representation with NOT pushed down.
+     */
+    private static SqlNode pushDownNotForIn( SqlValidatorScope scope, SqlNode sqlNode ) {
+        if ( !(sqlNode instanceof SqlCall sqlCall) || !containsInOperator( sqlNode ) ) {
+            return sqlNode;
+        }
+        switch ( sqlCall.getKind() ) {
+            case AND:
+            case OR:
+                final List<SqlNode> operands = new ArrayList<>();
+                for ( Node operand : sqlCall.getOperandList() ) {
+                    operands.add( pushDownNotForIn( scope, (SqlNode) operand ) );
+                }
+                final SqlCall newCall = (SqlCall) sqlCall.getOperator().createCall( sqlCall.getPos(), operands );
+                return reg( scope, newCall );
+
+            case NOT:
+                assert sqlCall.operand( 0 ) instanceof SqlCall;
+                final SqlCall call = sqlCall.operand( 0 );
+                switch ( sqlCall.operand( 0 ).getKind() ) {
+                    case CASE:
+                        final SqlCase caseNode = (SqlCase) call;
+                        final SqlNodeList thenOperands = new SqlNodeList( ParserPos.ZERO );
+
+                        for ( SqlNode thenOperand : caseNode.getThenOperands().getSqlList() ) {
+                            final SqlCall not = (SqlCall) OperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, thenOperand );
+                            thenOperands.add( pushDownNotForIn( scope, reg( scope, not ) ) );
+                        }
+                        SqlNode elseOperand = caseNode.getElseOperand();
+                        if ( !SqlUtil.isNull( elseOperand ) ) {
+                            // "not(unknown)" is "unknown", so no need to simplify
+                            final SqlCall not = (SqlCall) OperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, elseOperand );
+                            elseOperand = pushDownNotForIn( scope, reg( scope, not ) );
+                        }
+
+                        return reg(
+                                scope,
+                                (SqlNode) OperatorRegistry.get( OperatorName.CASE ).createCall(
+                                        ParserPos.ZERO,
+                                        caseNode.getValueOperand(),
+                                        caseNode.getWhenOperands(),
+                                        thenOperands,
+                                        elseOperand ) );
+
+                    case AND:
+                        final List<SqlNode> orOperands = new ArrayList<>();
+                        for ( Node operand : call.getOperandList() ) {
+                            orOperands.add(
+                                    pushDownNotForIn(
+                                            scope,
+                                            reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, operand ) ) ) );
+                        }
+                        return reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.OR ).createCall( ParserPos.ZERO, orOperands ) );
+
+                    case OR:
+                        final List<Node> andOperands = new ArrayList<>();
+                        for ( Node operand : call.getOperandList() ) {
+                            andOperands.add(
+                                    pushDownNotForIn(
+                                            scope,
+                                            reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, operand ) ) ) );
+                        }
+                        return reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.AND ).createCall( ParserPos.ZERO, andOperands ) );
+
+                    case NOT:
+                        assert call.operandCount() == 1;
+                        return pushDownNotForIn( scope, call.operand( 0 ) );
+
+                    case NOT_IN:
+                        return reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.IN ).createCall( ParserPos.ZERO, call.getOperandList() ) );
+
+                    case IN:
+                        return reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.NOT_IN ).createCall( ParserPos.ZERO, call.getOperandList() ) );
+                }
+        }
+        return sqlNode;
+    }
+
+
+    /**
+     * Registers with the validator a {@link SqlNode} that has been created during the Sql-to-Rel process.
+     */
+    private static SqlNode reg( SqlValidatorScope scope, SqlNode e ) {
+        scope.getValidator().deriveType( scope, e );
+        return e;
+    }
+
+
+    private static boolean containsNullLiteral( SqlNodeList valueList ) {
+        for ( SqlNode node : valueList.getSqlList() ) {
+            if ( node instanceof SqlLiteral lit ) {
+                if ( lit.getValue() == null ) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+
+    private static JoinAlgType convertJoinType( JoinType joinType ) {
+        return switch ( joinType ) {
+            case COMMA, INNER, CROSS -> JoinAlgType.INNER;
+            case FULL -> JoinAlgType.FULL;
+            case LEFT -> JoinAlgType.LEFT;
+            case RIGHT -> JoinAlgType.RIGHT;
+            default -> throw Util.unexpected( joinType );
+        };
+    }
+
+
+    private static boolean desc( AlgFieldCollation.Direction direction ) {
+        return switch ( direction ) {
+            case DESCENDING, STRICTLY_DESCENDING -> true;
+            default -> false;
+        };
     }
 
 
@@ -483,21 +643,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final AlgDataType validatedRowType = validator.getValidatedNodeType( query );
 
         return AlgRoot.of( result, validatedRowType, query.getKind() ).withCollation( collation );
-    }
-
-
-    private static boolean isStream( SqlNode query ) {
-        return query instanceof SqlSelect && ((SqlSelect) query).isKeywordPresent( SqlSelectKeyword.STREAM );
-    }
-
-
-    public static boolean isOrdered( SqlNode query ) {
-        return switch ( query.getKind() ) {
-            case SELECT -> ((SqlSelect) query).getOrderList() != null && ((SqlSelect) query).getOrderList().size() > 0;
-            case WITH -> isOrdered( ((SqlWith) query).body );
-            case ORDER_BY -> ((SqlOrderBy) query).orderList.size() > 0;
-            default -> false;
-        };
     }
 
 
@@ -682,125 +827,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     LogicalRelProject.create( bb.root, exprs, rowType.getFieldNames().subList( 0, fieldCount ) ),
                     false );
         }
-    }
-
-
-    /**
-     * Returns whether a given node contains a {@link SqlInOperator}.
-     *
-     * @param node a RexNode tree
-     */
-    private static boolean containsInOperator( SqlNode node ) {
-        try {
-            NodeVisitor<Void> visitor =
-                    new BasicNodeVisitor<Void>() {
-                        @Override
-                        public Void visit( Call call ) {
-                            if ( call.getOperator() instanceof SqlInOperator ) {
-                                throw new Util.FoundOne( call );
-                            }
-                            return super.visit( call );
-                        }
-                    };
-            node.accept( visitor );
-            return false;
-        } catch ( Util.FoundOne e ) {
-            Util.swallow( e, null );
-            return true;
-        }
-    }
-
-
-    /**
-     * Push down all the NOT logical operators into any IN/NOT IN operators.
-     *
-     * @param scope Scope where {@code sqlNode} occurs
-     * @param sqlNode the root node from which to look for NOT operators
-     * @return the transformed SqlNode representation with NOT pushed down.
-     */
-    private static SqlNode pushDownNotForIn( SqlValidatorScope scope, SqlNode sqlNode ) {
-        if ( !(sqlNode instanceof SqlCall sqlCall) || !containsInOperator( sqlNode ) ) {
-            return sqlNode;
-        }
-        switch ( sqlCall.getKind() ) {
-            case AND:
-            case OR:
-                final List<SqlNode> operands = new ArrayList<>();
-                for ( Node operand : sqlCall.getOperandList() ) {
-                    operands.add( pushDownNotForIn( scope, (SqlNode) operand ) );
-                }
-                final SqlCall newCall = (SqlCall) sqlCall.getOperator().createCall( sqlCall.getPos(), operands );
-                return reg( scope, newCall );
-
-            case NOT:
-                assert sqlCall.operand( 0 ) instanceof SqlCall;
-                final SqlCall call = sqlCall.operand( 0 );
-                switch ( sqlCall.operand( 0 ).getKind() ) {
-                    case CASE:
-                        final SqlCase caseNode = (SqlCase) call;
-                        final SqlNodeList thenOperands = new SqlNodeList( ParserPos.ZERO );
-
-                        for ( SqlNode thenOperand : caseNode.getThenOperands().getSqlList() ) {
-                            final SqlCall not = (SqlCall) OperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, thenOperand );
-                            thenOperands.add( pushDownNotForIn( scope, reg( scope, not ) ) );
-                        }
-                        SqlNode elseOperand = caseNode.getElseOperand();
-                        if ( !SqlUtil.isNull( elseOperand ) ) {
-                            // "not(unknown)" is "unknown", so no need to simplify
-                            final SqlCall not = (SqlCall) OperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, elseOperand );
-                            elseOperand = pushDownNotForIn( scope, reg( scope, not ) );
-                        }
-
-                        return reg(
-                                scope,
-                                (SqlNode) OperatorRegistry.get( OperatorName.CASE ).createCall(
-                                        ParserPos.ZERO,
-                                        caseNode.getValueOperand(),
-                                        caseNode.getWhenOperands(),
-                                        thenOperands,
-                                        elseOperand ) );
-
-                    case AND:
-                        final List<SqlNode> orOperands = new ArrayList<>();
-                        for ( Node operand : call.getOperandList() ) {
-                            orOperands.add(
-                                    pushDownNotForIn(
-                                            scope,
-                                            reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, operand ) ) ) );
-                        }
-                        return reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.OR ).createCall( ParserPos.ZERO, orOperands ) );
-
-                    case OR:
-                        final List<Node> andOperands = new ArrayList<>();
-                        for ( Node operand : call.getOperandList() ) {
-                            andOperands.add(
-                                    pushDownNotForIn(
-                                            scope,
-                                            reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, operand ) ) ) );
-                        }
-                        return reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.AND ).createCall( ParserPos.ZERO, andOperands ) );
-
-                    case NOT:
-                        assert call.operandCount() == 1;
-                        return pushDownNotForIn( scope, call.operand( 0 ) );
-
-                    case NOT_IN:
-                        return reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.IN ).createCall( ParserPos.ZERO, call.getOperandList() ) );
-
-                    case IN:
-                        return reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.NOT_IN ).createCall( ParserPos.ZERO, call.getOperandList() ) );
-                }
-        }
-        return sqlNode;
-    }
-
-
-    /**
-     * Registers with the validator a {@link SqlNode} that has been created during the Sql-to-Rel process.
-     */
-    private static SqlNode reg( SqlValidatorScope scope, SqlNode e ) {
-        scope.getValidator().deriveType( scope, e );
-        return e;
     }
 
 
@@ -1142,18 +1168,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             default:
                 throw new AssertionError( logic );
         }
-    }
-
-
-    private static boolean containsNullLiteral( SqlNodeList valueList ) {
-        for ( SqlNode node : valueList.getSqlList() ) {
-            if ( node instanceof SqlLiteral lit ) {
-                if ( lit.getValue() == null ) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
 
@@ -2292,17 +2306,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     }
 
 
-    private static JoinAlgType convertJoinType( JoinType joinType ) {
-        return switch ( joinType ) {
-            case COMMA, INNER, CROSS -> JoinAlgType.INNER;
-            case FULL -> JoinAlgType.FULL;
-            case LEFT -> JoinAlgType.LEFT;
-            case RIGHT -> JoinAlgType.RIGHT;
-            default -> throw Util.unexpected( joinType );
-        };
-    }
-
-
     /**
      * Converts the SELECT, GROUP BY and HAVING clauses of an aggregate query.
      * <p>
@@ -2613,14 +2616,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         extraExprs.add( converted );
         return new AlgFieldCollation( ordinal + 1, direction, nullDirection );
-    }
-
-
-    private static boolean desc( AlgFieldCollation.Direction direction ) {
-        return switch ( direction ) {
-            case DESCENDING, STRICTLY_DESCENDING -> true;
-            default -> false;
-        };
     }
 
 
@@ -3432,6 +3427,169 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     }
 
 
+    private SqlQuantifyOperator negate( SqlQuantifyOperator operator ) {
+        assert operator.kind == Kind.ALL;
+        return SqlStdOperatorTable.some( operator.comparisonKind.negateNullSafe() );
+    }
+
+
+    /**
+     * Deferred lookup.
+     */
+    private static class DeferredLookup {
+
+        Blackboard bb;
+        @Getter
+        String originalRelName;
+
+
+        DeferredLookup( Blackboard bb, String originalRelName ) {
+            this.bb = bb;
+            this.originalRelName = originalRelName;
+        }
+
+
+        public RexFieldAccess getFieldAccess( CorrelationId name ) {
+            return bb.mapCorrelateToRex.get( name );
+        }
+
+
+    }
+
+
+    /**
+     * A default implementation of SubQueryConverter that does no conversion.
+     */
+    private static class NoOpSubQueryConverter implements SubQueryConverter {
+
+        @Override
+        public boolean canConvertSubQuery() {
+            return false;
+        }
+
+
+        @Override
+        public RexNode convertSubQuery( SqlCall subQuery, SqlToAlgConverter parentConverter, boolean isExists, boolean isExplain ) {
+            throw new IllegalArgumentException();
+        }
+
+    }
+
+
+    /**
+     * Context to find a relational expression to a field offset.
+     */
+    private static class LookupContext {
+
+        private final List<Pair<AlgNode, Integer>> algOffsetList = new ArrayList<>();
+
+
+        /**
+         * Creates a LookupContext with multiple input relational expressions.
+         *
+         * @param bb Context for translating this sub-query
+         * @param algs Relational expressions
+         * @param systemFieldCount Number of system fields
+         */
+        LookupContext( Blackboard bb, List<AlgNode> algs, int systemFieldCount ) {
+            bb.flatten( algs, systemFieldCount, new int[]{ 0 }, algOffsetList );
+        }
+
+
+        /**
+         * Returns the relational expression with a given offset, and the ordinal in the combined row of its first field.
+         * <p>
+         * For example, in {@code Emp JOIN Dept}, findRel(1) returns the relational expression for {@code Dept} and offset 6 (because {@code Emp} has 6 fields, therefore the first field of {@code Dept} is field 6.
+         *
+         * @param offset Offset of relational expression in FROM clause
+         * @return Relational expression and the ordinal of its first field
+         */
+        Pair<AlgNode, Integer> findAlg( int offset ) {
+            return algOffsetList.get( offset );
+        }
+
+    }
+
+
+    /**
+     * A sub-query, whether it needs to be translated using 2- or 3-valued logic.
+     */
+    private static class SubQuery {
+
+        final SqlNode node;
+        final AlgOptUtil.Logic logic;
+        RexNode expr;
+
+
+        private SubQuery( SqlNode node, AlgOptUtil.Logic logic ) {
+            this.node = node;
+            this.logic = logic;
+        }
+
+    }
+
+
+    /**
+     * Visitor that collects all aggregate functions in a {@link SqlNode} tree.
+     */
+    private static class AggregateFinder extends BasicNodeVisitor<Void> {
+
+        final SqlNodeList list = new SqlNodeList( ParserPos.ZERO );
+        final SqlNodeList filterList = new SqlNodeList( ParserPos.ZERO );
+        final SqlNodeList orderList = new SqlNodeList( ParserPos.ZERO );
+
+
+        @Override
+        public Void visit( Call call ) {
+            // ignore window aggregates and ranking functions (associated with OVER operator)
+            if ( call.getOperator().getKind() == Kind.OVER ) {
+                return null;
+            }
+
+            if ( call.getOperator().getKind() == Kind.FILTER ) {
+                // the WHERE in a FILTER must be tracked too so we can call replaceSubQueries on it.
+                final Node aggCall = call.getOperandList().get( 0 );
+                final Node whereCall = call.getOperandList().get( 1 );
+                list.add( aggCall );
+                filterList.add( whereCall );
+                return null;
+            }
+
+            if ( call.getOperator().getKind() == Kind.WITHIN_GROUP ) {
+                // the WHERE in a WITHIN_GROUP must be tracked too so we can call replaceSubQueries on it.
+                final Node aggCall = call.getOperandList().get( 0 );
+                final SqlNodeList orderList = (SqlNodeList) call.getOperandList().get( 1 );
+                list.add( aggCall );
+                orderList.getList().forEach( this.orderList::add );
+                return null;
+            }
+
+            if ( call.getOperator().isAggregator() ) {
+                list.add( call );
+                return null;
+            }
+
+            // Don't traverse into sub-queries, even if they contain aggregate functions.
+            if ( call instanceof SqlSelect ) {
+                return null;
+            }
+
+            return call.getOperator().acceptCall( this, call );
+        }
+
+    }
+
+
+    /**
+     * Use of a row as a correlating variable by a given relational expression.
+     *
+     * @param r The relational expression that uses the variable.
+     */
+    private record CorrelationUse( CorrelationId id, ImmutableBitSet requiredColumns, AlgNode r ) {
+
+    }
+
+
     /**
      * Workspace for translating an individual SELECT statement (or sub-SELECT).
      */
@@ -3441,43 +3599,34 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
          * Collection of {@link AlgNode} objects which correspond to a SELECT statement.
          */
         public final SqlValidatorScope scope;
-        private final Map<String, RexNode> nameToNodeMap;
-        public AlgNode root;
-        private List<AlgNode> inputs;
-        private final Map<CorrelationId, RexFieldAccess> mapCorrelateToRex = new HashMap<>();
-
-        private boolean isPatternVarRef = false;
-
         final List<AlgNode> cursors = new ArrayList<>();
-
+        final boolean top;
+        private final Map<String, RexNode> nameToNodeMap;
+        private final Map<CorrelationId, RexFieldAccess> mapCorrelateToRex = new HashMap<>();
         /**
          * List of <code>IN</code> and <code>EXISTS</code> nodes inside this <code>SELECT</code> statement (but not inside sub-queries).
          */
         private final Set<SubQuery> subQueryList = new LinkedHashSet<>();
-
-        /**
-         * Workspace for building aggregates.
-         */
-        AggConverter agg;
-
-        /**
-         * When converting window aggregate, we need to know if the window is guaranteed to be non-empty.
-         */
-        SqlWindow window;
-
         /**
          * Project the groupby expressions out of the root of this sub-select.
          * Sub-queries can reference group by expressions projected from the "right" to the sub-query.
          */
         private final Map<AlgNode, Map<Integer, Integer>> mapRootRelToFieldProjection = new HashMap<>();
-
         @Getter
         private final List<Monotonicity> columnMonotonicities = new ArrayList<>();
-
         private final List<AlgDataTypeField> systemFieldList = new ArrayList<>();
-        final boolean top;
-
         private final InitializerExpressionFactory initializerExpressionFactory = new NullInitializerExpressionFactory();
+        public AlgNode root;
+        /**
+         * Workspace for building aggregates.
+         */
+        AggConverter agg;
+        /**
+         * When converting window aggregate, we need to know if the window is guaranteed to be non-empty.
+         */
+        SqlWindow window;
+        private List<AlgNode> inputs;
+        private boolean isPatternVarRef = false;
 
 
         /**
@@ -4109,55 +4258,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     }
 
 
-    private SqlQuantifyOperator negate( SqlQuantifyOperator operator ) {
-        assert operator.kind == Kind.ALL;
-        return SqlStdOperatorTable.some( operator.comparisonKind.negateNullSafe() );
-    }
-
-
-    /**
-     * Deferred lookup.
-     */
-    private static class DeferredLookup {
-
-        Blackboard bb;
-        @Getter
-        String originalRelName;
-
-
-        DeferredLookup( Blackboard bb, String originalRelName ) {
-            this.bb = bb;
-            this.originalRelName = originalRelName;
-        }
-
-
-        public RexFieldAccess getFieldAccess( CorrelationId name ) {
-            return bb.mapCorrelateToRex.get( name );
-        }
-
-
-    }
-
-
-    /**
-     * A default implementation of SubQueryConverter that does no conversion.
-     */
-    private static class NoOpSubQueryConverter implements SubQueryConverter {
-
-        @Override
-        public boolean canConvertSubQuery() {
-            return false;
-        }
-
-
-        @Override
-        public RexNode convertSubQuery( SqlCall subQuery, SqlToAlgConverter parentConverter, boolean isExists, boolean isExplain ) {
-            throw new IllegalArgumentException();
-        }
-
-    }
-
-
     /**
      * Converts expressions to aggregates.
      * <p>
@@ -4178,9 +4278,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      */
     protected class AggConverter implements NodeVisitor<Void> {
 
-        private final Blackboard bb;
         public final AggregatingSelectScope aggregatingSelectScope;
-
+        private final Blackboard bb;
         private final Map<String, String> nameMap = new HashMap<>();
 
         /**
@@ -4563,41 +4662,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     /**
-     * Context to find a relational expression to a field offset.
-     */
-    private static class LookupContext {
-
-        private final List<Pair<AlgNode, Integer>> algOffsetList = new ArrayList<>();
-
-
-        /**
-         * Creates a LookupContext with multiple input relational expressions.
-         *
-         * @param bb Context for translating this sub-query
-         * @param algs Relational expressions
-         * @param systemFieldCount Number of system fields
-         */
-        LookupContext( Blackboard bb, List<AlgNode> algs, int systemFieldCount ) {
-            bb.flatten( algs, systemFieldCount, new int[]{ 0 }, algOffsetList );
-        }
-
-
-        /**
-         * Returns the relational expression with a given offset, and the ordinal in the combined row of its first field.
-         * <p>
-         * For example, in {@code Emp JOIN Dept}, findRel(1) returns the relational expression for {@code Dept} and offset 6 (because {@code Emp} has 6 fields, therefore the first field of {@code Dept} is field 6.
-         *
-         * @param offset Offset of relational expression in FROM clause
-         * @return Relational expression and the ordinal of its first field
-         */
-        Pair<AlgNode, Integer> findAlg( int offset ) {
-            return algOffsetList.get( offset );
-        }
-
-    }
-
-
-    /**
      * Shuttle which walks over a tree of {@link RexNode}s and applies 'over' to all agg functions.
      * <p>
      * This is necessary because the returned expression is not necessarily a call to an agg function. For example,
@@ -4772,85 +4836,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 return type;
             }
         }
-
-    }
-
-
-    /**
-     * A sub-query, whether it needs to be translated using 2- or 3-valued logic.
-     */
-    private static class SubQuery {
-
-        final SqlNode node;
-        final AlgOptUtil.Logic logic;
-        RexNode expr;
-
-
-        private SubQuery( SqlNode node, AlgOptUtil.Logic logic ) {
-            this.node = node;
-            this.logic = logic;
-        }
-
-    }
-
-
-    /**
-     * Visitor that collects all aggregate functions in a {@link SqlNode} tree.
-     */
-    private static class AggregateFinder extends BasicNodeVisitor<Void> {
-
-        final SqlNodeList list = new SqlNodeList( ParserPos.ZERO );
-        final SqlNodeList filterList = new SqlNodeList( ParserPos.ZERO );
-        final SqlNodeList orderList = new SqlNodeList( ParserPos.ZERO );
-
-
-        @Override
-        public Void visit( Call call ) {
-            // ignore window aggregates and ranking functions (associated with OVER operator)
-            if ( call.getOperator().getKind() == Kind.OVER ) {
-                return null;
-            }
-
-            if ( call.getOperator().getKind() == Kind.FILTER ) {
-                // the WHERE in a FILTER must be tracked too so we can call replaceSubQueries on it.
-                final Node aggCall = call.getOperandList().get( 0 );
-                final Node whereCall = call.getOperandList().get( 1 );
-                list.add( aggCall );
-                filterList.add( whereCall );
-                return null;
-            }
-
-            if ( call.getOperator().getKind() == Kind.WITHIN_GROUP ) {
-                // the WHERE in a WITHIN_GROUP must be tracked too so we can call replaceSubQueries on it.
-                final Node aggCall = call.getOperandList().get( 0 );
-                final SqlNodeList orderList = (SqlNodeList) call.getOperandList().get( 1 );
-                list.add( aggCall );
-                orderList.getList().forEach( this.orderList::add );
-                return null;
-            }
-
-            if ( call.getOperator().isAggregator() ) {
-                list.add( call );
-                return null;
-            }
-
-            // Don't traverse into sub-queries, even if they contain aggregate functions.
-            if ( call instanceof SqlSelect ) {
-                return null;
-            }
-
-            return call.getOperator().acceptCall( this, call );
-        }
-
-    }
-
-
-    /**
-     * Use of a row as a correlating variable by a given relational expression.
-     *
-     * @param r The relational expression that uses the variable.
-     */
-    private record CorrelationUse( CorrelationId id, ImmutableBitSet requiredColumns, AlgNode r ) {
 
     }
 

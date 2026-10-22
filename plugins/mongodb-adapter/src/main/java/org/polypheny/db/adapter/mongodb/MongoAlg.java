@@ -46,7 +46,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
-import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
+import org.polypheny.db.adapter.mongodb.store.MongoStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
@@ -63,12 +63,12 @@ import org.polypheny.db.util.Pair;
  */
 public interface MongoAlg extends AlgNode {
 
-    void implement( Implementor implementor );
-
     /**
      * Calling convention for algebra operations that occur in MongoDB.
      */
     Convention CONVENTION = MongoConvention.INSTANCE;//new Convention.Impl( "MONGO", MongoAlg.class );
+
+    void implement( Implementor implementor );
 
 
     /**
@@ -77,39 +77,6 @@ public interface MongoAlg extends AlgNode {
     class Implementor extends AlgShuttleImpl implements Serializable {
 
         public final List<Pair<String, String>> list = new ArrayList<>();
-        public List<BsonDocument> operations = new ArrayList<>();
-
-        public BsonArray filter = new BsonArray();
-        @Getter
-        @Setter
-        public GridFSBucket bucket;
-        public List<BsonDocument> preProjections = new ArrayList<>();
-
-        // holds the logical names which where used in a DQL
-        // and need to be projected beforehand from their physical names
-        public Set<String> physicalMapper = new TreeSet<>();
-        public boolean onlyOne = false;
-        public boolean isDocumentUpdate = false;
-
-        @Getter
-        private MongoEntity entity;
-
-        @Getter
-        @Setter
-        private AlgDataType tupleType;
-
-        @Setter
-        @Getter
-        public boolean hasProject = false;
-
-        @Setter
-        @Getter
-        private boolean isDML;
-
-        @Getter
-        @Setter
-        private Operation operation;
-
         /**
          * This list will be used to create necessary indexes when performing $near,
          * $nearSphere or a $geoNear query. It contains the index and index type,
@@ -120,6 +87,31 @@ public interface MongoAlg extends AlgNode {
          * to serialize.
          */
         public final List<String> indexAndIndexType = new ArrayList<>();
+        public List<BsonDocument> operations = new ArrayList<>();
+        public BsonArray filter = new BsonArray();
+        @Getter
+        @Setter
+        public GridFSBucket bucket;
+        public List<BsonDocument> preProjections = new ArrayList<>();
+        // holds the logical names which where used in a DQL
+        // and need to be projected beforehand from their physical names
+        public Set<String> physicalMapper = new TreeSet<>();
+        public boolean onlyOne = false;
+        public boolean isDocumentUpdate = false;
+        @Setter
+        @Getter
+        public boolean hasProject = false;
+        @Getter
+        private MongoEntity entity;
+        @Getter
+        @Setter
+        private AlgDataType tupleType;
+        @Setter
+        @Getter
+        private boolean isDML;
+        @Getter
+        @Setter
+        private Operation operation;
 
 
         public Implementor() {
@@ -129,6 +121,11 @@ public interface MongoAlg extends AlgNode {
 
         public Implementor( boolean isDML ) {
             this.isDML = isDML;
+        }
+
+
+        public static String toJson( BsonDocument doc ) {
+            return doc.toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() );
         }
 
 
@@ -185,11 +182,6 @@ public interface MongoAlg extends AlgNode {
 
         public List<String> getOperations() {
             return operations.stream().map( Implementor::toJson ).toList();
-        }
-
-
-        public static String toJson( BsonDocument doc ) {
-            return doc.toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() );
         }
 
 

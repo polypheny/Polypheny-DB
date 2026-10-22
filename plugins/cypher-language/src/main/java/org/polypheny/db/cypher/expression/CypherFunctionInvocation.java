@@ -42,12 +42,11 @@ import org.polypheny.db.util.Pair;
 @Getter
 public class CypherFunctionInvocation extends CypherExpression {
 
+    private static final List<String> operatorNames = Arrays.stream( OperatorName.values() ).map( Enum::name ).toList();
     private final ParserPos namePos;
     private final List<String> namespace;
     private final boolean distinct;
     private final List<CypherExpression> arguments;
-
-    private static final List<String> operatorNames = Arrays.stream( OperatorName.values() ).map( Enum::name ).toList();
     private final OperatorName op;
 
 

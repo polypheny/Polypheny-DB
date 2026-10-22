@@ -49,6 +49,15 @@ public class PostgresqlVectorHelperTest {
     // ---- float vectors ----------------------------------------------------------------
 
 
+    private static void assertFloatValues( List<PolyValue> result, float... expected ) {
+        assertEquals( expected.length, result.size() );
+        for ( int i = 0; i < expected.length; i++ ) {
+            assertInstanceOf( PolyFloat.class, result.get( i ) );
+            assertEquals( expected[i], ((PolyFloat) result.get( i )).floatValue() );
+        }
+    }
+
+
     @Test
     void parsesVectorCorrectly() {
         List<PolyValue> result = PostgresqlVectorHelper.parseVector( new PGvector( new float[]{ 1f, 2.5f, 3f } ) );
@@ -74,6 +83,8 @@ public class PostgresqlVectorHelperTest {
         assertFloatValues( result, -1f );
     }
 
+    // ---- halfvec ----------------------------------------------------------------
+
 
     @Test
     void parsesEmptyFloatVectorReturnsEmptyList() {
@@ -81,8 +92,6 @@ public class PostgresqlVectorHelperTest {
         assertNotNull( result );
         assertEquals( 0, result.size() );
     }
-
-    // ---- halfvec ----------------------------------------------------------------
 
 
     @Test
@@ -92,6 +101,8 @@ public class PostgresqlVectorHelperTest {
         assertFloatValues( result, 1f, 2.5f, 3f );
     }
 
+    // ---- sparsevec ----------------------------------------------------------------
+
 
     @Test
     void parsesNegativeHalfvecCorrectly() {
@@ -100,7 +111,7 @@ public class PostgresqlVectorHelperTest {
         assertFloatValues( result, -1f, -2.5f, -3f );
     }
 
-    // ---- sparsevec ----------------------------------------------------------------
+    // ---- bitvector ----------------------------------------------------------------
 
 
     @Test
@@ -110,8 +121,6 @@ public class PostgresqlVectorHelperTest {
         assertEquals( 3, result.size() );
         assertFloatValues( result, 1f, 0f, 2.5f );
     }
-
-    // ---- bitvector ----------------------------------------------------------------
 
 
     @Test
@@ -160,21 +169,12 @@ public class PostgresqlVectorHelperTest {
         assertNull( PostgresqlVectorHelper.parseVector( (Object) null ) );
     }
 
+    // ---- helpers ----------------------------------------------------------------
+
 
     @Test
     void unknownObjectTypeReturnsNull() throws SQLException {
         assertNull( PostgresqlVectorHelper.parseVector( new PgArray( null, 0, "" ) ) );
-    }
-
-    // ---- helpers ----------------------------------------------------------------
-
-
-    private static void assertFloatValues( List<PolyValue> result, float... expected ) {
-        assertEquals( expected.length, result.size() );
-        for ( int i = 0; i < expected.length; i++ ) {
-            assertInstanceOf( PolyFloat.class, result.get( i ) );
-            assertEquals( expected[i], ((PolyFloat) result.get( i )).floatValue() );
-        }
     }
 
 }

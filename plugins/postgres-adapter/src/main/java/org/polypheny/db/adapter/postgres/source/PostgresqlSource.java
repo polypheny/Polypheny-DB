@@ -17,6 +17,19 @@
 package org.polypheny.db.adapter.postgres.source;
 
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalDataSource;
@@ -32,8 +45,6 @@ import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
-import java.sql.*;
-import java.util.*;
 
 
 @Slf4j
@@ -56,7 +67,7 @@ import java.util.*;
         description = "Maximum number of concurrent JDBC connections.")
 @AdapterSettingList(name = "transactionIsolation", options = { "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" }, defaultValue = "SERIALIZABLE",
         description = "Which level of transaction isolation should be used.")
-@AdapterSettingString(name = "tables", defaultValue = "foo,bar",
+@AdapterSettingString(name = "tables", defaultValue = "",
         description = "List of tables which should be imported. The names must to be separated by a comma.")
 public class PostgresqlSource extends AbstractJdbcSource {
 
@@ -80,6 +91,25 @@ public class PostgresqlSource extends AbstractJdbcSource {
         } catch ( SQLException | ConnectionHandlerException e ) {
             log.error( "Could not query feature information.", e );
         }
+    }
+
+
+    public static Set<SqlDbFeature> detectFeatures( Connection conn ) throws SQLException {
+        Set<PostgresqlFeature> found = EnumSet.noneOf( PostgresqlFeature.class );
+        PreparedStatement ps = conn.prepareStatement( PostgresqlCatalogQueries.SQL_INSTALLED_EXTENSIONS );
+        String[] featureNames = Arrays.stream( PostgresqlFeature.values() )
+                .map( PostgresqlFeature::featureName )
+                .toArray( String[]::new );
+        ps.setArray( 1, conn.createArrayOf( "text", featureNames ) );
+        ResultSet rs = ps.executeQuery();
+        while ( rs.next() ) {
+            String name = rs.getString( 1 );
+            Arrays.stream( PostgresqlFeature.values() )
+                    .filter( f -> f.featureName().equals( name ) )
+                    .findFirst()
+                    .ifPresent( found::add );
+        }
+        return Collections.unmodifiableSet( found );
     }
 
 
@@ -108,6 +138,12 @@ public class PostgresqlSource extends AbstractJdbcSource {
 
     @Override
     protected boolean requiresSchema() {
+        return true;
+    }
+
+
+    @Override
+    public boolean supportsDynamicTableDiscovery() {
         return true;
     }
 
@@ -194,25 +230,6 @@ public class PostgresqlSource extends AbstractJdbcSource {
             }
         }
         return result;
-    }
-
-
-    public static Set<SqlDbFeature> detectFeatures( Connection conn ) throws SQLException {
-        Set<PostgresqlFeature> found = EnumSet.noneOf( PostgresqlFeature.class );
-        PreparedStatement ps = conn.prepareStatement( PostgresqlCatalogQueries.SQL_INSTALLED_EXTENSIONS );
-        String[] featureNames = Arrays.stream( PostgresqlFeature.values() )
-                .map( PostgresqlFeature::featureName )
-                .toArray( String[]::new );
-        ps.setArray( 1, conn.createArrayOf( "text", featureNames ) );
-        ResultSet rs = ps.executeQuery();
-        while ( rs.next() ) {
-            String name = rs.getString( 1 );
-            Arrays.stream( PostgresqlFeature.values() )
-                    .filter( f -> f.featureName().equals( name ) )
-                    .findFirst()
-                    .ifPresent( found::add );
-        }
-        return Collections.unmodifiableSet( found );
     }
 
 }

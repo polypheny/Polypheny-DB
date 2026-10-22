@@ -77,31 +77,13 @@ public interface Scannable {
         return scannable.getCatalog().getPhysicalsFromAllocs( allocSubTable.id ).get( 0 );
     }
 
-
-    AdapterCatalog getCatalog();
-
-
     static void restoreGraphSubstitute( Scannable scannable, AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
         throw new GenericRuntimeException( "todo restore" );
     }
 
-
     static void restoreCollectionSubstitute( Scannable scannable, AllocationCollection alloc, List<PhysicalEntity> entities, Context context ) {
         throw new GenericRuntimeException( "todo restore" );
     }
-
-
-    default AlgNode getRelScan( long allocId, AlgBuilder builder ) {
-        PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
-        return builder.relScan( entity ).build();
-    }
-
-
-    default AlgNode getGraphScan( long allocId, AlgBuilder builder ) {
-        PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
-        return builder.lpgScan( entity ).build();
-    }
-
 
     static AlgNode getGraphScanSubstitute( Scannable scannable, long allocId, AlgBuilder builder ) {
         builder.clear();
@@ -119,22 +101,6 @@ public interface Scannable {
         return builder.build();
     }
 
-
-    default AlgNode getDocumentScan( long allocId, AlgBuilder builder ) {
-        PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
-        return builder.documentScan( entity ).build();
-    }
-
-
-    default List<List<PhysicalEntity>> createTable( Context context, LogicalTableWrapper logical, List<AllocationTableWrapper> allocations ) {
-        List<List<PhysicalEntity>> entities = new ArrayList<>();
-        for ( AllocationTableWrapper allocation : allocations ) {
-            entities.add( createTable( context, logical, allocation ) );
-        }
-        return entities;
-    }
-
-
     static AlgNode getDocumentScanSubstitute( Scannable scannable, long allocId, AlgBuilder builder ) {
         builder.clear();
         PhysicalEntity table = scannable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrapOrThrow( PhysicalEntity.class );
@@ -143,30 +109,6 @@ public interface Scannable {
         builder.transform( ModelTrait.DOCUMENT, rowType, false, null );
         return builder.build();
     }
-
-
-    List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
-
-
-    void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context );
-
-
-    void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context );
-
-
-    void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context );
-
-
-    void dropTable( Context context, long allocId );
-
-
-    /**
-     * Default method for creating a new graph on the {@link DataStore}.
-     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
-     * support the LPG data model.
-     */
-    List<PhysicalEntity> createGraph( Context context, LogicalGraph logical, AllocationGraph allocation );
-
 
     static List<PhysicalEntity> createGraphSubstitute( Scannable scannable, Context context, LogicalGraph logical, AllocationGraph allocation ) {
         PhysicalEntity node = createSubstitutionEntity( scannable, context, logical, allocation, "_node_", List.of(
@@ -193,15 +135,6 @@ public interface Scannable {
         return List.of( node, nProperties, edge, eProperties );
     }
 
-
-    /**
-     * Default method for dropping an existing graph on the {@link DataStore}.
-     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
-     * support the LPG data model natively.
-     */
-    void dropGraph( Context context, AllocationGraph allocation );
-
-
     static void dropGraphSubstitute( Scannable scannable, Context context, AllocationGraph allocation ) {
         List<PhysicalEntity> physicals = scannable.getCatalog().getPhysicalsFromAllocs( allocation.id );
 
@@ -210,15 +143,6 @@ public interface Scannable {
         }
         scannable.getCatalog().removeAllocAndPhysical( allocation.id );
     }
-
-
-    /**
-     * Default method for creating a new collection on the {@link DataStore}.
-     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
-     * support the document data model natively.
-     */
-    List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation );
-
 
     static List<PhysicalEntity> createCollectionSubstitute( Scannable scannable, Context context, LogicalCollection logical, AllocationCollection allocation ) {
         PhysicalEntity doc = createSubstitutionEntity( scannable, context, logical, allocation, "_doc_", List.of(
@@ -229,15 +153,6 @@ public interface Scannable {
         return List.of( doc );
     }
 
-
-    /**
-     * Default method for dropping an existing collection on the {@link DataStore}.
-     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
-     * support the document data model natively.
-     */
-    void dropCollection( Context context, AllocationCollection allocation );
-
-
     static void dropCollectionSubstitute( Scannable scannable, Context context, AllocationCollection allocation ) {
         List<PhysicalEntity> entities = scannable.getCatalog().getPhysicalsFromAllocs( allocation.id );
         for ( PhysicalEntity entity : entities ) {
@@ -246,6 +161,68 @@ public interface Scannable {
         scannable.getCatalog().removeAllocAndPhysical( allocation.id );
     }
 
+    AdapterCatalog getCatalog();
+
+    default AlgNode getRelScan( long allocId, AlgBuilder builder ) {
+        PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
+        return builder.relScan( entity ).build();
+    }
+
+    default AlgNode getGraphScan( long allocId, AlgBuilder builder ) {
+        PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
+        return builder.lpgScan( entity ).build();
+    }
+
+    default AlgNode getDocumentScan( long allocId, AlgBuilder builder ) {
+        PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
+        return builder.documentScan( entity ).build();
+    }
+
+    default List<List<PhysicalEntity>> createTable( Context context, LogicalTableWrapper logical, List<AllocationTableWrapper> allocations ) {
+        List<List<PhysicalEntity>> entities = new ArrayList<>();
+        for ( AllocationTableWrapper allocation : allocations ) {
+            entities.add( createTable( context, logical, allocation ) );
+        }
+        return entities;
+    }
+
+    List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
+
+    void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context );
+
+    void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context );
+
+    void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context );
+
+    void dropTable( Context context, long allocId );
+
+    /**
+     * Default method for creating a new graph on the {@link DataStore}.
+     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
+     * support the LPG data model.
+     */
+    List<PhysicalEntity> createGraph( Context context, LogicalGraph logical, AllocationGraph allocation );
+
+    /**
+     * Default method for dropping an existing graph on the {@link DataStore}.
+     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
+     * support the LPG data model natively.
+     */
+    void dropGraph( Context context, AllocationGraph allocation );
+
+    /**
+     * Default method for creating a new collection on the {@link DataStore}.
+     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
+     * support the document data model natively.
+     */
+    List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation );
+
+    /**
+     * Default method for dropping an existing collection on the {@link DataStore}.
+     * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
+     * support the document data model natively.
+     */
+    void dropCollection( Context context, AllocationCollection allocation );
 
     void renameLogicalColumn( long id, String newColumnName );
 

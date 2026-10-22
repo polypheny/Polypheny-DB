@@ -162,6 +162,19 @@ import org.polypheny.db.util.ByteString;
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
     @JsonIgnore
+    public static final ObjectMapper JSON_WRAPPER = JsonMapper.builder()
+            .configure( MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES, true )
+            .configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false )
+            .configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false )
+            .configure( MapperFeature.USE_STATIC_TYPING, true )
+            .addModule( new SimpleModule()
+                    .addSerializer( ByteString.class, new ByteStringSerializer() )
+                    .addDeserializer( ByteString.class, new ByteStringDeserializer() )
+                    .addSerializer( PolyGeometry.class, new PolyGeometrySerializer() )
+                    .addDeserializer( PolyGeometry.class, new PolyGeometryDeserializer() )
+            )
+            .build();
+    @JsonIgnore
     // used internally to serialize into binary format
     public static BinarySerializer<PolyValue> serializer = SerializerFactory.builder()
             .with( PolyInteger.class, ctx -> new PolyIntegerSerializerDef() )
@@ -182,20 +195,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyLong.class, ctx -> new PolyLongSerializerDef() )
             .with( PolyGeometry.class, ctx -> new PolyGeometrySerializerDef() )
             .build().create( CLASS_LOADER, PolyValue.class );
-
-    @JsonIgnore
-    public static final ObjectMapper JSON_WRAPPER = JsonMapper.builder()
-            .configure( MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES, true )
-            .configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false )
-            .configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false )
-            .configure( MapperFeature.USE_STATIC_TYPING, true )
-            .addModule( new SimpleModule()
-                    .addSerializer( ByteString.class, new ByteStringSerializer() )
-                    .addDeserializer( ByteString.class, new ByteStringDeserializer() )
-                    .addSerializer( PolyGeometry.class, new PolyGeometrySerializer() )
-                    .addDeserializer( PolyGeometry.class, new PolyGeometryDeserializer() )
-            )
-            .build();
 
 
     static {
@@ -331,17 +330,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NotNull
-    public String toTypedJson() {
-        try {
-            return JSON_WRAPPER.writeValueAsString( this );
-        } catch ( JsonProcessingException e ) {
-            log.warn( "Error on serializing typed JSON." );
-            return PolyNull.NULL.toTypedJson();
-        }
-    }
-
-
     @Nullable
     public static <E extends PolyValue> E fromTypedJson( String value, Class<E> clazz ) {
         try {
@@ -353,41 +341,10 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    public String toJson() {
-        // fallback serializer
-        try {
-            return JSON_WRAPPER.writeValueAsString( this );
-        } catch ( JsonProcessingException e ) {
-            log.warn( "Error on serialize JSON." );
-            return null;
-        }
-    }
-
-
-    // used by code generation
-    @SuppressWarnings("unused")
-    public PolyString toPolyJson() {
-        return PolyString.of( toJson() );
-    }
-
-
-    @NotNull
-    public Optional<Long> getByteSize() {
-        if ( byteSize == null ) {
-            byteSize = deriveByteSize();
-        }
-        return Optional.ofNullable( byteSize );
-    }
-
-
     @NotNull
     protected static String getConvertError( @NotNull Object object, Class<? extends PolyValue> clazz ) {
         return "Could not convert " + object + " to " + clazz.getSimpleName();
     }
-
-
-    @Nullable
-    public abstract Long deriveByteSize();
 
 
     public static Expression getInitialExpression( Type type ) {
@@ -495,6 +452,114 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public static PolyValue deserialize( String json ) {
         return PolySerializable.deserialize( json, serializer );
     }
+
+
+    public static PolyValue convert( PolyValue value, PolyType type ) {
+
+        switch ( type ) {
+            case INTEGER:
+                return PolyInteger.convert( value );
+            case DOCUMENT, GEOMETRY:
+                // docs accept all
+                return value;
+            case BIGINT:
+                return PolyLong.convert( value );
+            case VARCHAR:
+                return PolyString.convert( value );
+        }
+        if ( type.getFamily() == value.getType().getFamily() ) {
+            return value;
+        }
+
+        throw new GenericRuntimeException( "%s does not support conversion to %s.", value, type );
+    }
+
+
+    public static PolyValue fromType( Object object, PolyType type ) {
+        return switch ( type ) {
+            case BOOLEAN -> PolyBoolean.of( (Boolean) object );
+            case TINYINT, SMALLINT, INTEGER -> PolyInteger.of( (Number) object );
+            case BIGINT -> PolyLong.of( (Number) object );
+            case DECIMAL -> PolyBigDecimal.of( object.toString() );
+            case FLOAT, REAL -> PolyFloat.of( (Number) object );
+            case DOUBLE -> PolyDouble.of( (Number) object );
+            case DATE -> {
+                if ( object instanceof Number number ) {
+                    yield PolyDate.of( number );
+                }
+                if ( object instanceof Calendar calendar ) {
+                    yield PolyDate.of( calendar.getTimeInMillis() );
+                }
+                throw new NotImplementedException();
+            }
+            case TIME -> {
+                if ( object instanceof Number number ) {
+                    yield PolyTime.of( number );
+                } else if ( object instanceof Calendar calendar ) {
+                    yield PolyTime.of( calendar.getTimeInMillis() );
+                }
+                throw new NotImplementedException();
+            }
+            case TIMESTAMP -> {
+                if ( object instanceof Timestamp timestamp ) {
+                    yield PolyTimestamp.of( timestamp );
+                } else if ( object instanceof Calendar calendar ) {
+                    yield PolyTimestamp.of( calendar.getTimeInMillis() );
+                }
+                throw new NotImplementedException();
+            }
+            case CHAR, VARCHAR -> PolyString.of( (String) object );
+            case BINARY, VARBINARY -> {
+                if ( object instanceof byte[] bytes ) {
+                    yield PolyBinary.of( bytes );
+                }
+                yield PolyBinary.of( (ByteString) object );
+            }
+            default -> throw new NotImplementedException();
+        };
+    }
+
+
+    @NotNull
+    public String toTypedJson() {
+        try {
+            return JSON_WRAPPER.writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            log.warn( "Error on serializing typed JSON." );
+            return PolyNull.NULL.toTypedJson();
+        }
+    }
+
+
+    public String toJson() {
+        // fallback serializer
+        try {
+            return JSON_WRAPPER.writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            log.warn( "Error on serialize JSON." );
+            return null;
+        }
+    }
+
+
+    // used by code generation
+    @SuppressWarnings("unused")
+    public PolyString toPolyJson() {
+        return PolyString.of( toJson() );
+    }
+
+
+    @NotNull
+    public Optional<Long> getByteSize() {
+        if ( byteSize == null ) {
+            byteSize = deriveByteSize();
+        }
+        return Optional.ofNullable( byteSize );
+    }
+
+
+    @Nullable
+    public abstract Long deriveByteSize();
 
 
     @Override
@@ -919,72 +984,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return (PolyUserDefinedValue) this;
         }
         throw cannotParse( this, PolyUserDefinedValue.class );
-    }
-
-
-    public static PolyValue convert( PolyValue value, PolyType type ) {
-
-        switch ( type ) {
-            case INTEGER:
-                return PolyInteger.convert( value );
-            case DOCUMENT, GEOMETRY:
-                // docs accept all
-                return value;
-            case BIGINT:
-                return PolyLong.convert( value );
-            case VARCHAR:
-                return PolyString.convert( value );
-        }
-        if ( type.getFamily() == value.getType().getFamily() ) {
-            return value;
-        }
-
-        throw new GenericRuntimeException( "%s does not support conversion to %s.", value, type );
-    }
-
-
-    public static PolyValue fromType( Object object, PolyType type ) {
-        return switch ( type ) {
-            case BOOLEAN -> PolyBoolean.of( (Boolean) object );
-            case TINYINT, SMALLINT, INTEGER -> PolyInteger.of( (Number) object );
-            case BIGINT -> PolyLong.of( (Number) object );
-            case DECIMAL -> PolyBigDecimal.of( object.toString() );
-            case FLOAT, REAL -> PolyFloat.of( (Number) object );
-            case DOUBLE -> PolyDouble.of( (Number) object );
-            case DATE -> {
-                if ( object instanceof Number number ) {
-                    yield PolyDate.of( number );
-                }
-                if ( object instanceof Calendar calendar ) {
-                    yield PolyDate.of( calendar.getTimeInMillis() );
-                }
-                throw new NotImplementedException();
-            }
-            case TIME -> {
-                if ( object instanceof Number number ) {
-                    yield PolyTime.of( number );
-                } else if ( object instanceof Calendar calendar ) {
-                    yield PolyTime.of( calendar.getTimeInMillis() );
-                }
-                throw new NotImplementedException();
-            }
-            case TIMESTAMP -> {
-                if ( object instanceof Timestamp timestamp ) {
-                    yield PolyTimestamp.of( timestamp );
-                } else if ( object instanceof Calendar calendar ) {
-                    yield PolyTimestamp.of( calendar.getTimeInMillis() );
-                }
-                throw new NotImplementedException();
-            }
-            case CHAR, VARCHAR -> PolyString.of( (String) object );
-            case BINARY, VARBINARY -> {
-                if ( object instanceof byte[] bytes ) {
-                    yield PolyBinary.of( bytes );
-                }
-                yield PolyBinary.of( (ByteString) object );
-            }
-            default -> throw new NotImplementedException();
-        };
     }
 
 

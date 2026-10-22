@@ -95,57 +95,43 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             .configure( MapperFeature.AUTO_DETECT_SETTERS, false )
             .configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false )
             .build();
-
-    @Getter
-    private final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
-
-    // indicates if the state has advanced and the snapshot has to be recreated or can be reused // trx without ddl
-    private long lastCommitSnapshotId = 0;
-
     @Serialize
     @JsonProperty
     public final Map<Long, LogicalCatalog> logicalCatalogs;
-
     @Serialize
     @JsonProperty
     public final Map<Long, AllocationCatalog> allocationCatalogs;
-
     @Serialize
     @JsonProperty
     @Getter
     public final Map<Long, LogicalUser> users;
-
     @Serialize
     @JsonProperty
     @Getter
     public final Map<Long, LogicalAdapter> adapters;
-
     @Serialize
     @JsonProperty
     @Getter
     public final Map<Long, LogicalQueryInterface> interfaces;
-
     @Getter
     public final Map<Long, AdapterCatalog> adapterCatalogs;
-
     @Serialize
     @JsonProperty
     public final Map<Long, AdapterRestore> adapterRestore;
-
     @Serialize
     @JsonProperty
     public final IdBuilder idBuilder;
-
+    @Getter
+    private final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
     private final Persister persister;
-
+    private final AtomicBoolean dirty = new AtomicBoolean( false );
+    @Getter
+    PropertyChangeListener changeListener = evt -> dirty.set( true );
+    // indicates if the state has advanced and the snapshot has to be recreated or can be reused // trx without ddl
+    private long lastCommitSnapshotId = 0;
     @Getter
     private Snapshot snapshot;
     private String backup;
-
-    private final AtomicBoolean dirty = new AtomicBoolean( false );
-
-    @Getter
-    PropertyChangeListener changeListener = evt -> dirty.set( true );
 
 
     public PolyCatalog() {

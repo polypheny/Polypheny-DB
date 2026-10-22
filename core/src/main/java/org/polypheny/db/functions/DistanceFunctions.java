@@ -17,11 +17,11 @@
 package org.polypheny.db.functions;
 
 
+import java.util.List;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
-import java.util.List;
 
 
 public class DistanceFunctions {

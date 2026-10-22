@@ -390,19 +390,19 @@ public class CypherToAlgConverter {
     }
 
 
+    public enum RexType {
+        PROJECT,
+        FILTER
+    }
+
+
     public static class CypherContext {
 
         public final AlgCluster cluster;
         public final AlgBuilder algBuilder;
         public final RexBuilder rexBuilder;
-
-        private final Stack<AlgNode> stack = new Stack<>();
-        // named projects, null if no name provided
-        private final Queue<Pair<PolyString, RexNode>> rexQueue = new LinkedList<>();
-        private final Queue<Pair<String, AggregateCall>> rexAggQueue = new LinkedList<>();
         public final CypherNode original;
         public final LogicalEntity graph;
-
         public final AlgDataType graphType;
         public final AlgDataType booleanType;
         public final AlgDataType geometryType;
@@ -412,9 +412,13 @@ public class CypherToAlgConverter {
         public final AlgDataType numberType;
         public final Snapshot snapshot;
         public final AlgDataTypeFactory typeFactory;
+        private final Stack<AlgNode> stack = new Stack<>();
+        // named projects, null if no name provided
+        private final Queue<Pair<PolyString, RexNode>> rexQueue = new LinkedList<>();
+        private final Queue<Pair<String, AggregateCall>> rexAggQueue = new LinkedList<>();
+        private final Map<PolyString, PolyNode> nodes = new HashMap<>();
         public CypherNode active;
         public Kind kind;
-        private final Map<PolyString, PolyNode> nodes = new HashMap<>();
         private List<Pair<PolyString, EdgeVariableHolder>> edges = new LinkedList<>();
 
 
@@ -849,12 +853,6 @@ public class CypherToAlgConverter {
             clearVariables();
         }
 
-    }
-
-
-    public enum RexType {
-        PROJECT,
-        FILTER
     }
 
 

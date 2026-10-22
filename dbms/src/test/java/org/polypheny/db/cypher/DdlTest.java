@@ -47,6 +47,14 @@ public class DdlTest extends CypherTestTemplate {
     final static String graphName = "product";
 
 
+    private static void checkAllocationsSize( int size ) {
+        PolyCatalog catalog = (PolyCatalog) Catalog.getInstance();
+        LogicalAdapter store = catalog.getSnapshot().getAdapter( "storeCypherDdl" ).orElseThrow();
+        List<AllocationEntity> entities = catalog.getSnapshot().alloc().getEntitiesOnAdapter( store.id ).orElseThrow();
+        assertEquals( size, entities.size() );
+    }
+
+
     @Test
     public void addGraphTest() {
         execute( "CREATE DATABASE " + graphName + " IF NOT EXISTS" );
@@ -199,14 +207,6 @@ public class DdlTest extends CypherTestTemplate {
             removeStore( "storeCypherDdl" );
         }
 
-    }
-
-
-    private static void checkAllocationsSize( int size ) {
-        PolyCatalog catalog = (PolyCatalog) Catalog.getInstance();
-        LogicalAdapter store = catalog.getSnapshot().getAdapter( "storeCypherDdl" ).orElseThrow();
-        List<AllocationEntity> entities = catalog.getSnapshot().alloc().getEntitiesOnAdapter( store.id ).orElseThrow();
-        assertEquals( size, entities.size() );
     }
 
 

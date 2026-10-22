@@ -99,6 +99,7 @@ licensee {
     allow('MIT')
     allowUrl('https://opensource.org/licenses/MIT') { because 'is MIT' }
     allowUrl('https://opensource.org/license/mit') { because 'is MIT' }
+    allowUrl('https://www.bouncycastle.org/licence.html') { because 'is MIT' }
     allow('BSD-2-Clause')
     allow('BSD-3-Clause')
 

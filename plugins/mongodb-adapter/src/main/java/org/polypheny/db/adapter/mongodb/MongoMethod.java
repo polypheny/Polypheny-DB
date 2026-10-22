@@ -50,8 +50,6 @@ public enum MongoMethod {
     MONGO_QUERYABLE_AGGREGATE( MongoEntity.MongoQueryable.class, "aggregate", MongoTupleType.class, List.class, List.class, List.class, List.class ),
     HANDLE_DIRECT_DML( MongoEntity.MongoQueryable.class, "handleDirectDML", Operation.class, String.class, List.class, boolean.class, boolean.class );
 
-    public final Method method;
-
     public static final ImmutableMap<Method, MongoMethod> MAP;
 
 
@@ -62,6 +60,9 @@ public enum MongoMethod {
         }
         MAP = builder.build();
     }
+
+
+    public final Method method;
 
 
     MongoMethod( Class<?> clazz, String methodName, Class<?>... argumentTypes ) {

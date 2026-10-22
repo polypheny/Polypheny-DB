@@ -79,6 +79,7 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.Crud;
+import org.polypheny.db.webui.SourceQueryReferenceDetector;
 import org.polypheny.db.webui.TemporalFileManager;
 import org.polypheny.db.webui.models.IndexModel;
 import org.polypheny.db.webui.models.PlacementModel;
@@ -102,9 +103,8 @@ import org.polypheny.db.webui.models.results.Result.ResultBuilder;
 public class LanguageCrud {
 
 
-    public static Crud crud;
-
     protected final static Map<QueryLanguage, TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>>> REGISTER = new HashMap<>();
+    public static Crud crud;
 
 
     public LanguageCrud( Crud crud ) {
@@ -150,6 +150,11 @@ public class LanguageCrud {
 
 
     public static List<? extends Result<?, ?>> anyQueryResult( QueryContext context, UIRequest request ) {
+        Optional<RelationalResult> rejectedSynchronizedSourceQuery = rejectSynchronizedSourceQuery( context, request );
+        if ( rejectedSynchronizedSourceQuery.isPresent() ) {
+            return List.of( rejectedSynchronizedSourceQuery.get() );
+        }
+
         context = context.getLanguage().limitRemover().apply( context );
         Transaction transaction;
         QueryAnalyzer queryAnalyzer = null;
@@ -186,6 +191,103 @@ public class LanguageCrud {
         commitAndFinish( executedContexts, queryAnalyzer, results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElse( -1L ) );
 
         return results;
+    }
+
+
+    private static Optional<RelationalResult> rejectSynchronizedSourceQuery( QueryContext context, UIRequest request ) {
+        boolean isQueryRequest = request instanceof QueryRequest;
+        boolean isEntityRequest = request.entityId != null;
+        if ( !isQueryRequest && !isEntityRequest ) {
+            return Optional.empty();
+        }
+
+        Optional<LogicalTable> referencedSource = getReferencedSynchronizedSource( context.getQuery(), context.getLanguage().serializedName(), context.getNamespaceId(), request.entityId );
+        if ( referencedSource.isEmpty() ) {
+            return rejectSynchronizedSourceCollectionQuery( context, request );
+        }
+
+        LogicalTable source = referencedSource.get();
+        String sourceName = getFullTableName( source );
+        String synchronizedName = Catalog.snapshot().rel().getTables( (org.polypheny.db.catalog.logistic.Pattern) null, null ).stream()
+                .filter( table -> Objects.equals( table.synchronizedSourceEntityId, source.id ) )
+                .findFirst()
+                .map( LanguageCrud::getFullTableName )
+                .orElse( "its synchronized materialization" );
+
+        return Optional.of( RelationalResult.builder()
+                .error( "Queries against source table " + sourceName + " are disabled because it is materialized as " + synchronizedName + ". Query the synchronized materialization instead." )
+                .query( context.getQuery() )
+                .build() );
+    }
+
+
+    private static Optional<RelationalResult> rejectSynchronizedSourceCollectionQuery( QueryContext context, UIRequest request ) {
+        Optional<LogicalCollection> referencedSource = getReferencedSynchronizedSourceCollection( context.getQuery(), context.getLanguage().serializedName(), context.getNamespaceId(), request.entityId );
+        if ( referencedSource.isEmpty() ) {
+            return Optional.empty();
+        }
+
+        LogicalCollection source = referencedSource.get();
+        String sourceName = getFullCollectionName( source );
+        String synchronizedName = Catalog.snapshot().doc().getCollections( source.namespaceId, null ).stream()
+                .filter( collection -> isSynchronizedMaterializationForSourceCollection( source, collection ) )
+                .findFirst()
+                .map( LanguageCrud::getFullCollectionName )
+                .orElse( "its synchronized materialization" );
+
+        return Optional.of( RelationalResult.builder()
+                .error( "Queries against source collection " + sourceName + " are disabled because it is materialized as " + synchronizedName + ". Query the synchronized materialization instead." )
+                .query( context.getQuery() )
+                .build() );
+    }
+
+
+    private static Optional<LogicalCollection> getReferencedSynchronizedSourceCollection( String query, String language, long namespaceId, Long entityId ) {
+        List<LogicalCollection> collections = Catalog.snapshot().doc().getCollections( (org.polypheny.db.catalog.logistic.Pattern) null, null );
+        Set<Long> synchronizedSourceIds = collections.stream()
+                .map( collection -> collection.synchronizedSourceEntityId )
+                .filter( Objects::nonNull )
+                .collect( Collectors.toSet() );
+
+        return collections.stream()
+                .filter( collection -> collection.entityType == EntityType.SOURCE )
+                .filter( collection -> synchronizedSourceIds.contains( collection.id ) )
+                .filter( collection -> Objects.equals( entityId, collection.id ) || SourceQueryReferenceDetector.referencesCollection( query, language, collection, namespaceId, Catalog.snapshot() ) )
+                .findFirst();
+    }
+
+
+    private static boolean isSynchronizedMaterializationForSourceCollection( LogicalCollection source, LogicalCollection collection ) {
+        return Objects.equals( collection.synchronizedSourceEntityId, source.id );
+    }
+
+
+    private static Optional<LogicalTable> getReferencedSynchronizedSource( String query, String language, long namespaceId, Long entityId ) {
+        List<LogicalTable> tables = Catalog.snapshot().rel().getTables( (org.polypheny.db.catalog.logistic.Pattern) null, null );
+        Set<Long> synchronizedSourceIds = tables.stream()
+                .map( table -> table.synchronizedSourceEntityId )
+                .filter( Objects::nonNull )
+                .collect( Collectors.toSet() );
+
+        return tables.stream()
+                .filter( table -> table.entityType == EntityType.SOURCE )
+                .filter( table -> synchronizedSourceIds.contains( table.id ) )
+                .filter( table -> Objects.equals( entityId, table.id ) || SourceQueryReferenceDetector.referencesTable( query, language, table, namespaceId, Catalog.snapshot() ) )
+                .findFirst();
+    }
+
+
+    private static String getFullTableName( LogicalTable table ) {
+        return Catalog.snapshot().getNamespace( table.namespaceId )
+                .map( namespace -> namespace.name + "." + table.name )
+                .orElse( table.name );
+    }
+
+
+    private static String getFullCollectionName( LogicalCollection collection ) {
+        return Catalog.snapshot().getNamespace( collection.namespaceId )
+                .map( namespace -> namespace.name + "." + collection.name )
+                .orElse( collection.name );
     }
 
 

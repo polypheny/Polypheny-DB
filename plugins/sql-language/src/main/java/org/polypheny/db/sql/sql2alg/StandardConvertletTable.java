@@ -329,31 +329,6 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     }
 
 
-    private RexNode or( RexBuilder rexBuilder, RexNode a0, RexNode a1 ) {
-        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.OR ), a0, a1 );
-    }
-
-
-    private RexNode eq( RexBuilder rexBuilder, RexNode a0, RexNode a1 ) {
-        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), a0, a1 );
-    }
-
-
-    private RexNode ge( RexBuilder rexBuilder, RexNode a0, RexNode a1 ) {
-        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), a0, a1 );
-    }
-
-
-    private RexNode le( RexBuilder rexBuilder, RexNode a0, RexNode a1 ) {
-        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), a0, a1 );
-    }
-
-
-    private RexNode and( RexBuilder rexBuilder, RexNode a0, RexNode a1 ) {
-        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ), a0, a1 );
-    }
-
-
     private static RexNode divideInt( RexBuilder rexBuilder, RexNode a0, RexNode a1 ) {
         return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.DIVIDE_INTEGER ), a0, a1 );
     }
@@ -396,6 +371,161 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     }
 
 
+    private static RexNode multiply( RexBuilder rexBuilder, RexNode a0, RexNode a1 ) {
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.MULTIPLY ), a0, a1 );
+    }
+
+
+    private static RexNode divide( RexBuilder rexBuilder, RexNode res, BigDecimal val ) {
+        if ( val.equals( BigDecimal.ONE ) ) {
+            return res;
+        }
+        // If val is between 0 and 1, rather than divide by val, multiply by its reciprocal. For example, rather than divide by 0.001 multiply by 1000.
+        if ( val.compareTo( BigDecimal.ONE ) < 0 && val.signum() == 1 ) {
+            try {
+                final BigDecimal reciprocal = BigDecimal.ONE.divide( val, RoundingMode.UNNECESSARY );
+                return multiply( rexBuilder, res, rexBuilder.makeExactLiteral( reciprocal ) );
+            } catch ( ArithmeticException e ) {
+                // ignore - reciprocal is not an integer
+            }
+        }
+        return divideInt( rexBuilder, res, rexBuilder.makeExactLiteral( val ) );
+    }
+
+
+    private static RexNode makeConstructorCall( SqlRexContext cx, SqlFunction constructor, List<RexNode> exprs ) {
+        final RexBuilder rexBuilder = cx.getRexBuilder();
+        AlgDataType type = rexBuilder.deriveReturnType( constructor, exprs );
+
+        int n = type.getFieldCount();
+        ImmutableList.Builder<RexNode> initializationExprs = ImmutableList.builder();
+        final InitializerContext initializerContext = new InitializerContext() {
+            @Override
+            public RexBuilder getRexBuilder() {
+                return rexBuilder;
+            }
+
+
+            @Override
+            public RexNode convertExpression( Node e ) {
+                throw new UnsupportedOperationException();
+            }
+        };
+        for ( int i = 0; i < n; ++i ) {
+            initializationExprs.add(
+                    cx.getInitializerExpressionFactory().newAttributeInitializer(
+                            type,
+                            constructor,
+                            i,
+                            exprs,
+                            initializerContext ) );
+        }
+
+        List<RexNode> defaultCasts =
+                RexUtil.generateCastExpressions(
+                        rexBuilder,
+                        type,
+                        initializationExprs.build() );
+
+        return rexBuilder.makeNewInvocation( type, defaultCasts );
+    }
+
+
+    private static List<RexNode> convertExpressionList( SqlRexContext cx, List<SqlNode> nodes, PolyOperandTypeChecker.Consistency consistency ) {
+        final List<RexNode> exprs = new ArrayList<>();
+        for ( SqlNode node : nodes ) {
+            exprs.add( cx.convertExpression( node ) );
+        }
+        if ( exprs.size() > 1 ) {
+            final AlgDataType type = consistentType( cx, consistency, RexUtil.types( exprs ) );
+            if ( type != null ) {
+                final List<RexNode> oldExprs = Lists.newArrayList( exprs );
+                exprs.clear();
+                for ( RexNode expr : oldExprs ) {
+                    exprs.add( cx.getRexBuilder().ensureType( type, expr, true ) );
+                }
+            }
+        }
+        return exprs;
+    }
+
+
+    private static AlgDataType consistentType( SqlRexContext cx, PolyOperandTypeChecker.Consistency consistency, List<AlgDataType> types ) {
+        switch ( consistency ) {
+            case COMPARE:
+                if ( PolyTypeUtil.areSameFamily( types ) ) {
+                    // All arguments are of same family. No need for explicit casts.
+                    return null;
+                }
+                final List<AlgDataType> nonCharacterTypes = new ArrayList<>();
+                for ( AlgDataType type : types ) {
+                    if ( type.getFamily() != PolyTypeFamily.CHARACTER ) {
+                        nonCharacterTypes.add( type );
+                    }
+                }
+                if ( !nonCharacterTypes.isEmpty() ) {
+                    final int typeCount = types.size();
+                    types = nonCharacterTypes;
+                    if ( nonCharacterTypes.size() < typeCount ) {
+                        final AlgDataTypeFamily family = nonCharacterTypes.get( 0 ).getFamily();
+                        if ( family instanceof PolyTypeFamily ) {
+                            // The character arguments might be larger than the numeric argument. Give ourselves some headroom.
+                            switch ( (PolyTypeFamily) family ) {
+                                case INTEGER:
+                                case NUMERIC:
+                                    nonCharacterTypes.add( cx.getTypeFactory().createPolyType( PolyType.BIGINT ) );
+                            }
+                        }
+                    }
+                }
+                // fall through
+            case LEAST_RESTRICTIVE:
+                return cx.getTypeFactory().leastRestrictive( types );
+            default:
+                return null;
+        }
+    }
+
+
+    /**
+     * Casts a RexNode value to the validated type of a SqlCall. If the value was already of the validated type, then the value is returned without an additional cast.
+     */
+    public static RexNode castToValidatedType( SqlNode node, RexNode e, SqlValidator validator, RexBuilder rexBuilder ) {
+        final AlgDataType type = validator.getValidatedNodeType( node );
+        if ( e.getType() == type ) {
+            return e;
+        }
+        return rexBuilder.makeCast( type, e );
+    }
+
+
+    private RexNode or( RexBuilder rexBuilder, RexNode a0, RexNode a1 ) {
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.OR ), a0, a1 );
+    }
+
+
+    private RexNode eq( RexBuilder rexBuilder, RexNode a0, RexNode a1 ) {
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), a0, a1 );
+    }
+
+
+    private RexNode ge( RexBuilder rexBuilder, RexNode a0, RexNode a1 ) {
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), a0, a1 );
+    }
+
+    // SqlNode helpers
+
+
+    private RexNode le( RexBuilder rexBuilder, RexNode a0, RexNode a1 ) {
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), a0, a1 );
+    }
+
+
+    private RexNode and( RexBuilder rexBuilder, RexNode a0, RexNode a1 ) {
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ), a0, a1 );
+    }
+
+
     private RexNode plus( RexBuilder rexBuilder, RexNode a0, RexNode a1 ) {
         return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.PLUS ), a0, a1 );
     }
@@ -406,16 +536,9 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     }
 
 
-    private static RexNode multiply( RexBuilder rexBuilder, RexNode a0, RexNode a1 ) {
-        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.MULTIPLY ), a0, a1 );
-    }
-
-
     private RexNode case_( RexBuilder rexBuilder, RexNode... args ) {
         return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.CASE ), args );
     }
-
-    // SqlNode helpers
 
 
     private SqlCall plus( ParserPos pos, SqlNode a0, SqlNode a1 ) {
@@ -615,23 +738,6 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     }
 
 
-    private static RexNode divide( RexBuilder rexBuilder, RexNode res, BigDecimal val ) {
-        if ( val.equals( BigDecimal.ONE ) ) {
-            return res;
-        }
-        // If val is between 0 and 1, rather than divide by val, multiply by its reciprocal. For example, rather than divide by 0.001 multiply by 1000.
-        if ( val.compareTo( BigDecimal.ONE ) < 0 && val.signum() == 1 ) {
-            try {
-                final BigDecimal reciprocal = BigDecimal.ONE.divide( val, RoundingMode.UNNECESSARY );
-                return multiply( rexBuilder, res, rexBuilder.makeExactLiteral( reciprocal ) );
-            } catch ( ArithmeticException e ) {
-                // ignore - reciprocal is not an integer
-            }
-        }
-        return divideInt( rexBuilder, res, rexBuilder.makeExactLiteral( val ) );
-    }
-
-
     public RexNode convertDatetimeMinus( SqlRexContext cx, SqlDatetimeSubtractionOperator op, SqlCall call ) {
         // Rewrite datetime minus
         final RexBuilder rexBuilder = cx.getRexBuilder();
@@ -692,44 +798,6 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             returnType = fun.inferReturnType( binding );
         }
         return cx.getRexBuilder().makeCall( returnType, fun, exprs );
-    }
-
-
-    private static RexNode makeConstructorCall( SqlRexContext cx, SqlFunction constructor, List<RexNode> exprs ) {
-        final RexBuilder rexBuilder = cx.getRexBuilder();
-        AlgDataType type = rexBuilder.deriveReturnType( constructor, exprs );
-
-        int n = type.getFieldCount();
-        ImmutableList.Builder<RexNode> initializationExprs = ImmutableList.builder();
-        final InitializerContext initializerContext = new InitializerContext() {
-            @Override
-            public RexBuilder getRexBuilder() {
-                return rexBuilder;
-            }
-
-
-            @Override
-            public RexNode convertExpression( Node e ) {
-                throw new UnsupportedOperationException();
-            }
-        };
-        for ( int i = 0; i < n; ++i ) {
-            initializationExprs.add(
-                    cx.getInitializerExpressionFactory().newAttributeInitializer(
-                            type,
-                            constructor,
-                            i,
-                            exprs,
-                            initializerContext ) );
-        }
-
-        List<RexNode> defaultCasts =
-                RexUtil.generateCastExpressions(
-                        rexBuilder,
-                        type,
-                        initializationExprs.build() );
-
-        return rexBuilder.makeNewInvocation( type, defaultCasts );
     }
 
 
@@ -823,62 +891,6 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             }
         }
         return list;
-    }
-
-
-    private static List<RexNode> convertExpressionList( SqlRexContext cx, List<SqlNode> nodes, PolyOperandTypeChecker.Consistency consistency ) {
-        final List<RexNode> exprs = new ArrayList<>();
-        for ( SqlNode node : nodes ) {
-            exprs.add( cx.convertExpression( node ) );
-        }
-        if ( exprs.size() > 1 ) {
-            final AlgDataType type = consistentType( cx, consistency, RexUtil.types( exprs ) );
-            if ( type != null ) {
-                final List<RexNode> oldExprs = Lists.newArrayList( exprs );
-                exprs.clear();
-                for ( RexNode expr : oldExprs ) {
-                    exprs.add( cx.getRexBuilder().ensureType( type, expr, true ) );
-                }
-            }
-        }
-        return exprs;
-    }
-
-
-    private static AlgDataType consistentType( SqlRexContext cx, PolyOperandTypeChecker.Consistency consistency, List<AlgDataType> types ) {
-        switch ( consistency ) {
-            case COMPARE:
-                if ( PolyTypeUtil.areSameFamily( types ) ) {
-                    // All arguments are of same family. No need for explicit casts.
-                    return null;
-                }
-                final List<AlgDataType> nonCharacterTypes = new ArrayList<>();
-                for ( AlgDataType type : types ) {
-                    if ( type.getFamily() != PolyTypeFamily.CHARACTER ) {
-                        nonCharacterTypes.add( type );
-                    }
-                }
-                if ( !nonCharacterTypes.isEmpty() ) {
-                    final int typeCount = types.size();
-                    types = nonCharacterTypes;
-                    if ( nonCharacterTypes.size() < typeCount ) {
-                        final AlgDataTypeFamily family = nonCharacterTypes.get( 0 ).getFamily();
-                        if ( family instanceof PolyTypeFamily ) {
-                            // The character arguments might be larger than the numeric argument. Give ourselves some headroom.
-                            switch ( (PolyTypeFamily) family ) {
-                                case INTEGER:
-                                case NUMERIC:
-                                    nonCharacterTypes.add( cx.getTypeFactory().createPolyType( PolyType.BIGINT ) );
-                            }
-                        }
-                    }
-                }
-                // fall through
-            case LEAST_RESTRICTIVE:
-                return cx.getTypeFactory().leastRestrictive( types );
-            default:
-                return null;
-        }
     }
 
 
@@ -1074,18 +1086,6 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
      */
     public RexNode castToValidatedType( SqlRexContext cx, SqlCall call, RexNode value ) {
         return castToValidatedType( call, value, cx.getValidator(), cx.getRexBuilder() );
-    }
-
-
-    /**
-     * Casts a RexNode value to the validated type of a SqlCall. If the value was already of the validated type, then the value is returned without an additional cast.
-     */
-    public static RexNode castToValidatedType( SqlNode node, RexNode e, SqlValidator validator, RexBuilder rexBuilder ) {
-        final AlgDataType type = validator.getValidatedNodeType( node );
-        if ( e.getType() == type ) {
-            return e;
-        }
-        return rexBuilder.makeCast( type, e );
     }
 
 
@@ -1427,19 +1427,6 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
 
     /**
-     * Convertlet that handles {@code FLOOR} and {@code CEIL} functions.
-     */
-    private class FloorCeilConvertlet implements SqlRexConvertlet {
-
-        @Override
-        public RexNode convertCall( SqlRexContext cx, SqlCall call ) {
-            return convertFloorCeil( cx, call );
-        }
-
-    }
-
-
-    /**
      * Convertlet that handles the {@code TIMESTAMPADD} function.
      */
     private static class TimestampAddConvertlet implements SqlRexConvertlet {
@@ -1534,6 +1521,19 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                             PolyTypeUtil.containsNullable( rexCall.getType() ) );
             RexNode e = rexBuilder.makeCast( intType, rexCall );
             return rexBuilder.multiplyDivide( e, multiplier, divider );
+        }
+
+    }
+
+
+    /**
+     * Convertlet that handles {@code FLOOR} and {@code CEIL} functions.
+     */
+    private class FloorCeilConvertlet implements SqlRexConvertlet {
+
+        @Override
+        public RexNode convertCall( SqlRexContext cx, SqlCall call ) {
+            return convertFloorCeil( cx, call );
         }
 
     }

@@ -80,11 +80,10 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
     @Delegate(excludes = Excludes.class)
     private final RelationalScanDelegate delegate;
     private final ConnectionMethod connectionMethod;
-
+    private final int maxStringLength;
     private URL csvDir;
     @Getter
     private CsvSchema currentNamespace;
-    private final int maxStringLength;
     private Map<String, List<ExportedColumn>> exportedColumnCache;
 
 
@@ -107,6 +106,31 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
         enableInformationPage();
 
         this.delegate = new RelationalScanDelegate( this, adapterCatalog );
+    }
+
+
+    private static String computePhysicalEntityName( String fileName ) {
+        // Compute physical table name
+        String physicalTableName = fileName.toLowerCase();
+        // remove gz
+        if ( physicalTableName.endsWith( ".gz" ) ) {
+            physicalTableName = physicalTableName.substring( 0, physicalTableName.length() - ".gz".length() );
+        }
+        // use only filename
+        if ( physicalTableName.contains( "/" ) ) {
+            String[] splits = physicalTableName.split( "/" );
+            physicalTableName = splits[splits.length - 2];
+        }
+
+        if ( physicalTableName.contains( "\\" ) ) {
+            String[] splits = physicalTableName.split( "\\\\" );
+            physicalTableName = splits[splits.length - 2];
+        }
+
+        return physicalTableName
+                .substring( 0, physicalTableName.length() - ".csv".length() )
+                .trim()
+                .replaceAll( "[^a-z0-9_]+", "" );
     }
 
 
@@ -278,31 +302,6 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
         }
         this.exportedColumnCache = exportedColumnCache;
         return exportedColumnCache;
-    }
-
-
-    private static String computePhysicalEntityName( String fileName ) {
-        // Compute physical table name
-        String physicalTableName = fileName.toLowerCase();
-        // remove gz
-        if ( physicalTableName.endsWith( ".gz" ) ) {
-            physicalTableName = physicalTableName.substring( 0, physicalTableName.length() - ".gz".length() );
-        }
-        // use only filename
-        if ( physicalTableName.contains( "/" ) ) {
-            String[] splits = physicalTableName.split( "/" );
-            physicalTableName = splits[splits.length - 2];
-        }
-
-        if ( physicalTableName.contains( "\\" ) ) {
-            String[] splits = physicalTableName.split( "\\\\" );
-            physicalTableName = splits[splits.length - 2];
-        }
-
-        return physicalTableName
-                .substring( 0, physicalTableName.length() - ".csv".length() )
-                .trim()
-                .replaceAll( "[^a-z0-9_]+", "" );
     }
 
 

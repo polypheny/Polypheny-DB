@@ -29,12 +29,12 @@ import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 @Accessors(chain = true)
 public class AbstractAdapterSettingDirectory extends AbstractAdapterSetting {
 
+    public transient final Map<String, InputStream> inputStreams;
     @Setter
     public String directory;
     //This field is necessary for the UI and needs to be initialized to be serialized to JSON.
     @Setter
     public String[] fileNames = new String[]{ "" };
-    public transient final Map<String, InputStream> inputStreams;
 
 
     public AbstractAdapterSettingDirectory( String name, String defaultValue, boolean canBeNull, String subOf, boolean required, boolean modifiable, List<DeploySetting> modes, int position, String description ) {

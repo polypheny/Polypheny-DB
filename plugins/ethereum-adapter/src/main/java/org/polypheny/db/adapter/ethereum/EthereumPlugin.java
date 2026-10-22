@@ -84,6 +84,18 @@ public class EthereumPlugin extends PolyPlugin {
     }
 
 
+    @SuppressWarnings("unused")
+    private interface Excludes {
+
+        void renameLogicalColumn( long id, String newColumnName );
+
+        void refreshTable( long allocId );
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
+
+    }
+
+
     @Slf4j
     @Extension
     @AdapterProperties(
@@ -301,18 +313,6 @@ public class EthereumPlugin extends PolyPlugin {
         public RelationalDataSource asRelationalDataSource() {
             return this;
         }
-
-    }
-
-
-    @SuppressWarnings("unused")
-    private interface Excludes {
-
-        void renameLogicalColumn( long id, String newColumnName );
-
-        void refreshTable( long allocId );
-
-        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
     }
 

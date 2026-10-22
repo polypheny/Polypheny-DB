@@ -84,16 +84,6 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
     // a one hour shift, as we lose this timezone information on retrieval
     // therefore we use the offset if needed
     public final static int OFFSET = Calendar.getInstance().getTimeZone().getRawOffset();
-
-    private final ConnectionHandler connectionHandler;
-    private final String sql;
-    private final Function1<ResultSet, Function0<PolyValue[]>> rowBuilderFactory;
-    private final PreparedStatementEnricher preparedStatementEnricher;
-
-    private Long queryStart;
-    private long timeout;
-    private boolean timeoutSetFailed;
-
     private static final Function1<ResultSet, Function0<PolyValue[]>> AUTO_ROW_BUILDER_FACTORY =
             resultSet -> {
                 final ResultSetMetaData metaData;
@@ -136,6 +126,13 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                     };
                 }
             };
+    private final ConnectionHandler connectionHandler;
+    private final String sql;
+    private final Function1<ResultSet, Function0<PolyValue[]>> rowBuilderFactory;
+    private final PreparedStatementEnricher preparedStatementEnricher;
+    private Long queryStart;
+    private long timeout;
+    private boolean timeoutSetFailed;
 
 
     private ResultSetEnumerable(
@@ -203,22 +200,6 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
             Function1<ResultSet, Function0<PolyValue[]>> rowBuilderFactory,
             PreparedStatementEnricher consumer ) {
         return new ResultSetEnumerable( connectionHandler, sql, rowBuilderFactory, consumer );
-    }
-
-
-    public void setTimeout( DataContext context ) {
-        this.queryStart = (Long) context.get( DataContext.Variable.UTC_TIMESTAMP.camelName );
-        Object timeout = context.get( DataContext.Variable.TIMEOUT.camelName );
-        if ( timeout instanceof Long ) {
-            this.timeout = (Long) timeout;
-        } else {
-            if ( timeout != null ) {
-                if ( log.isDebugEnabled() ) {
-                    log.debug( "Variable.TIMEOUT should be `long`. Given value was {}", timeout );
-                }
-            }
-            this.timeout = 0;
-        }
     }
 
 
@@ -400,6 +381,54 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
     }
 
 
+    private static Function1<ResultSet, Function0<PolyValue[]>> primitiveRowBuilderFactory( final Primitive[] primitives ) {
+        return resultSet -> {
+            final ResultSetMetaData metaData;
+            final int columnCount;
+            try {
+                metaData = resultSet.getMetaData();
+                columnCount = metaData.getColumnCount();
+            } catch ( SQLException e ) {
+                throw new GenericRuntimeException( e );
+            }
+            assert columnCount == primitives.length;
+            if ( columnCount == 1 ) {
+                return () -> {
+                    throw new NotImplementedException();
+                };
+            }
+            //noinspection unchecked
+            return (Function0) () -> {
+                try {
+                    final List<Object> list = new ArrayList<>();
+                    for ( int i = 0; i < columnCount; i++ ) {
+                        list.add( primitives[i].jdbcGet( resultSet, i + 1 ) );
+                    }
+                    return list.toArray();
+                } catch ( SQLException e ) {
+                    throw new GenericRuntimeException( e );
+                }
+            };
+        };
+    }
+
+
+    public void setTimeout( DataContext context ) {
+        this.queryStart = (Long) context.get( DataContext.Variable.UTC_TIMESTAMP.camelName );
+        Object timeout = context.get( DataContext.Variable.TIMEOUT.camelName );
+        if ( timeout instanceof Long ) {
+            this.timeout = (Long) timeout;
+        } else {
+            if ( timeout != null ) {
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Variable.TIMEOUT should be `long`. Given value was {}", timeout );
+                }
+            }
+            this.timeout = 0;
+        }
+    }
+
+
     @Override
     public Enumerator<PolyValue[]> enumerator() {
         if ( preparedStatementEnricher == null ) {
@@ -424,6 +453,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 return Linq4j.singletonEnumerator( new PolyValue[]{ PolyLong.of( updateCount ) } );
             }
         } catch ( Throwable e ) {
+            log.error( "Error while executing JDBC SQL: {}", sql, e );
             throw Static.RESOURCE.exceptionWhilePerformingQueryOnJdbcSubSchema( sql ).ex( e );
         } finally {
             closeIfPossible( statement );
@@ -452,6 +482,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 }
             }
         } catch ( Throwable e ) {
+            log.error( "Error while executing JDBC prepared SQL: {}", sql, e );
             throw Static.RESOURCE.exceptionWhilePerformingQueryOnJdbcSubSchema( sql ).ex( e );
         } finally {
             closeIfPossible( preparedStatement );
@@ -492,6 +523,17 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 // ignore
             }
         }
+    }
+
+
+    /**
+     * Consumer for decorating a {@link PreparedStatement}, that is, setting its parameters.
+     */
+    public interface PreparedStatementEnricher {
+
+        // returns true if this needs to be executed as batch
+        boolean enrich( PreparedStatement statement, ConnectionHandler connectionHandler ) throws SQLException;
+
     }
 
 
@@ -552,49 +594,6 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 }
             }
         }
-
-    }
-
-
-    private static Function1<ResultSet, Function0<PolyValue[]>> primitiveRowBuilderFactory( final Primitive[] primitives ) {
-        return resultSet -> {
-            final ResultSetMetaData metaData;
-            final int columnCount;
-            try {
-                metaData = resultSet.getMetaData();
-                columnCount = metaData.getColumnCount();
-            } catch ( SQLException e ) {
-                throw new GenericRuntimeException( e );
-            }
-            assert columnCount == primitives.length;
-            if ( columnCount == 1 ) {
-                return () -> {
-                    throw new NotImplementedException();
-                };
-            }
-            //noinspection unchecked
-            return (Function0) () -> {
-                try {
-                    final List<Object> list = new ArrayList<>();
-                    for ( int i = 0; i < columnCount; i++ ) {
-                        list.add( primitives[i].jdbcGet( resultSet, i + 1 ) );
-                    }
-                    return list.toArray();
-                } catch ( SQLException e ) {
-                    throw new GenericRuntimeException( e );
-                }
-            };
-        };
-    }
-
-
-    /**
-     * Consumer for decorating a {@link PreparedStatement}, that is, setting its parameters.
-     */
-    public interface PreparedStatementEnricher {
-
-        // returns true if this needs to be executed as batch
-        boolean enrich( PreparedStatement statement, ConnectionHandler connectionHandler ) throws SQLException;
 
     }
 

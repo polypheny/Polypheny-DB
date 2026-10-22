@@ -75,9 +75,6 @@ import org.polypheny.db.transaction.locking.LockablesRegistry;
 @Getter
 public class VolcanoQueryProcessor extends AbstractQueryProcessor {
 
-    private final VolcanoPlanner planner;
-
-
     public static final List<AlgOptRule> ENUMERABLE_RULES =
             ImmutableList.of(
                     EnumerableRules.ENUMERABLE_JOIN_RULE,
@@ -122,7 +119,6 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_UNWIND_RULE,
                     EnumerableRules.ENUMERABLE_DOCUMENT_UNWIND_RULE,
                     EnumerableRules.ENUMERABLE_GRAPH_TRANSFORMER_RULE );
-
     public static final List<AlgOptRule> PRE_PROCESS_RULES =
             ImmutableList.of(
                     AllocationToPhysicalScanRule.REL_INSTANCE,
@@ -133,8 +129,6 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     AllocationToPhysicalModifyRule.GRAPH_INSTANCE,
                     ScanRule.INSTANCE
             );
-
-
     public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
@@ -158,7 +152,6 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     SortJoinTransposeRule.INSTANCE,
                     SortRemoveConstantKeysRule.INSTANCE,
                     SortUnionTransposeRule.INSTANCE );
-
     public static final List<AlgOptRule> CONSTANT_REDUCTION_RULES =
             ImmutableList.of(
                     ReduceExpressionsRules.PROJECT_INSTANCE,
@@ -169,6 +162,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     ValuesReduceRule.PROJECT_FILTER_INSTANCE,
                     ValuesReduceRule.PROJECT_INSTANCE,
                     AggregateValuesRule.INSTANCE );
+    private final VolcanoPlanner planner;
 
 
     public VolcanoQueryProcessor( Statement statement ) {

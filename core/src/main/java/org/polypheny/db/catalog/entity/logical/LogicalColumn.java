@@ -141,11 +141,6 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
     }
 
 
-    public AlgDataType getAlgDataType( final AlgDataTypeFactory typeFactory ) {
-        return getAlgDataType( typeFactory, this.length, this.scale, this.type, collectionsType, cardinality, dimension, nullable, elementsNullable );
-    }
-
-
     public static AlgDataType getAlgDataType( AlgDataTypeFactory typeFactory, Integer length, Integer scale, PolyType type, PolyType collectionsType, Integer cardinality, Integer dimension, boolean nullable, boolean elementsNullable ) {
         AlgDataType elementType;
         if ( length != null && scale != null && type.allowsPrecScale( true, true ) ) {
@@ -172,6 +167,11 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
         }
 
         return typeFactory.createTypeWithNullability( elementType, nullable );
+    }
+
+
+    public AlgDataType getAlgDataType( final AlgDataTypeFactory typeFactory ) {
+        return getAlgDataType( typeFactory, this.length, this.scale, this.type, collectionsType, cardinality, dimension, nullable, elementsNullable );
     }
 
 
