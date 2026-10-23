@@ -34,19 +34,29 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
 public class DocumentStore extends DemoStore {
-    private final String[] files;
-    private final static String[] localFiles = new String[]{ "/document/artists.json" };
-    private final static String[] remoteFiles = new String[]{ "/home/mathieu/Documents/Unibas/Hiwi/Polypheny-DB/plugins/demo/artists.json" };
+    public static class FileCollectionPair {
+        public String path;
+        public String collection;
+
+        FileCollectionPair(String path, String collection ) {
+            this.path = path;
+            this.collection = collection;
+        }
+    }
+
+    private final static FileCollectionPair ARTISTS = new FileCollectionPair( "artists.jsonl", "artist" );
+    private final static FileCollectionPair LABELS = new FileCollectionPair( "labels.jsonl", "label" );
+    private final static FileCollectionPair MASTERS = new FileCollectionPair( "masters.jsonl", "master" );
+    private final static FileCollectionPair RELEASES = new FileCollectionPair( "releases.jsonl", "release" );
+
+    private final FileCollectionPair[] files;
+    private final FileCollectionPair[] local_files = new FileCollectionPair[]{ARTISTS, LABELS, MASTERS, RELEASES};
     private final Function<String, Stream<String>> fileLoader;
 
     private final TransactionManager transactionManager;
@@ -57,11 +67,11 @@ public class DocumentStore extends DemoStore {
         this.transactionManager = transactionManager;
 
         if (local) {
-            this.files = localFiles;
+            this.files = local_files;
             this.fileLoader = this::getJarFileAsStream;
         }
         else {
-            this.files = remoteFiles;
+            this.files = new FileCollectionPair[]{};
             this.fileLoader = this::getLocalFileAsStream;
         }
     }
@@ -72,26 +82,18 @@ public class DocumentStore extends DemoStore {
 
         if ( this.dataStore.isPresent() ) {
             List<DataStore<?>> stores = List.of( this.dataStore.get() );
-            ddlManager.createCollection( this.namespaceId, "artist", true, stores, PlacementType.AUTOMATIC, statement );
-            ddlManager.createCollection( this.namespaceId, "recordings", true, stores, PlacementType.AUTOMATIC, statement );
-            ddlManager.createCollection( this.namespaceId, "masters", true, stores, PlacementType.AUTOMATIC, statement );
-            ddlManager.createCollection( this.namespaceId, "releases", true, stores, PlacementType.AUTOMATIC, statement );
+            for ( FileCollectionPair group: this.files) {
+                ddlManager.createCollection( this.namespaceId, group.collection, true, stores, PlacementType.AUTOMATIC, statement );
+            }
         } else {
             log.warn( "No datastore present in {}. Unable to create collections", this.name );
         }
     }
 
     // Helper method to build and execute the batched command
-    private void executeBatch( PolyStatement statement, List<String> jsonNodes) {
+    private void executeBatch( PolyStatement statement, String collection, List<String> jsonNodes) {
         String jsonArrayContent = String.join(",", jsonNodes);
-        String query = String.format("db.artist.insertMany([%s])", jsonArrayContent);
-        query = query
-                .replace( "@", "" )
-                .replace( "#", "" )
-                .replace( "-", "" )
-                .replace( "*", "" )
-                .replace( "+", "" )
-                .replace( ";", "" );
+        String query = String.format("db.%s.insertMany([%s])", collection, jsonArrayContent);
         try {
             statement.execute(this.name, "mongo", query);
         } catch (PrismInterfaceServiceException e) {
@@ -116,8 +118,9 @@ public class DocumentStore extends DemoStore {
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }
-        for (String file_path : this.files) {
-
+        for ( FileCollectionPair group : this.files) {
+            String file_path = group.path;
+            String collection = group.collection;
             try (InputStream is = Files.newInputStream(Path.of(file_path))) {
 
                 try (MappingIterator<JsonNode> it = objectMapper.readerFor(JsonNode.class).readValues(is)) {
@@ -130,14 +133,14 @@ public class DocumentStore extends DemoStore {
                         batchBuffer.add(node.toString().replace("\n", "").replace("\r", ""));
 
                         if (batchBuffer.size() >= batchSize) {
-                            executeBatch( polyStatement, batchBuffer);
+                            executeBatch( polyStatement, collection, batchBuffer);
                             batchBuffer.clear();
                         }
                     }
 
                     // Flush remaining documents in the batch buffer
                     if (!batchBuffer.isEmpty()) {
-                        executeBatch( polyStatement, batchBuffer);
+                        executeBatch( polyStatement, collection, batchBuffer);
                     }
 
                 } catch (Exception e) {

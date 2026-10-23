@@ -7,12 +7,9 @@ import tarfile
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from gzip import GzipFile
-from telnetlib import DO
 from typing import Any
 
 import xmltodict
-
-
 
 """
 To rebuild the dataset follow the steps described below:
@@ -42,6 +39,11 @@ python utils.py --src <path>/polypheny_demo --dst <output_path>
 ```
 """
 
+
+def clean_str(s: str) -> str:
+    mappings = str.maketrans({"*": "", "+": "", "@": "", ";": "", "#": "", "-": ""})
+    return s.translate(mappings)
+
 class Dataset(ABC):
     src_dir: str
     dst_dir: str
@@ -58,7 +60,7 @@ class Dataset(ABC):
 
         self.artists = set()
 
-    def _iterate_file(self, file_name: str, key: str, f: Callable[[dict], Any]):
+    def _iterate_file(self, file_name: str, f: Callable[[dict], Any]):
         path = f"{self.src_dir}/{file_name}"
         print(f"Loading file {path}")
 
@@ -110,6 +112,12 @@ class Dataset(ABC):
 
 
 class Chinook(Dataset):
+    ALBUM: str = "Album.json"
+    ARTIST: str = "Artist.json"
+    GENRE: str = "Genre.json"
+    MEDIATYPE: str = "MediaType.json"
+    TRACK: str = "Track.json"
+
     def __init__(self, src_dir: str, dst_dir: str):
         src_dir = f"{src_dir}/relational"
         dst_dir = f"{dst_dir}/relational"
@@ -119,7 +127,9 @@ class Chinook(Dataset):
     def load_artists(self) -> set[str]:
         def handle(j: dict):
             self.artists.add(j["Name"])
-        super()._iterate_file("Artist.json", "Name", handle)
+
+        super()._iterate_file(self.ARTIST, handle)
+
         return self.artists
 
     def create_metafile(self):
@@ -133,6 +143,18 @@ class Chinook(Dataset):
         self.mv_files(files)
 
 class Musicbrainz(Dataset):
+    AREA: str = "area.tar.xz"
+    ARTIST: str = "artist.tar.xz"
+    EVENT: str = "event.tar.xz"
+    INSTRUMENT: str = "instrument.tar.xz"
+    LABEL: str = "label.tar.xz"
+    PLACE: str = "place.tar.xz"
+    RECORDING: str = "recording.tar.xz"
+    RELEASE: str = "release.tar.xz"
+    RELEASE_GROUP: str = "release-group.tar.xz"
+    SERIES: str = "series.tar.xz"
+    WORK: str = "work.tar.xz"
+
     def __init__(self, src_dir: str, dst_dir: str):
         src_dir = f"{src_dir}/graph"
         dst_dir = f"{dst_dir}/graph"
@@ -147,9 +169,7 @@ class Musicbrainz(Dataset):
                 if j["rating"]["votes-count"] > 20:
                     self.top_artists.add(name)
 
-        for file_name in os.listdir(self.src_dir):
-            if "artist" in file_name:
-                super()._iterate_file(file_name, "name", handle)
+        super()._iterate_file(self.ARTIST, handle)
 
         return self.artists
 
@@ -161,17 +181,31 @@ class Musicbrainz(Dataset):
         return self.artists
 
     def create_reduced_files(self):
-        for file_name in os.listdir(self.src_dir):
-            if "artist" in file_name:
-                artists = []
-                def reduce_top_artists(j: dict, artists=artists):
-                    if j["name"] in self.artists:
-                        artists.append(f"{json.dumps(j)}\n")
-                super()._iterate_file(file_name, "name", reduce_top_artists)
-                with open(f"{self.dst_dir}/artist.jsonl", "w") as file:
-                    file.writelines(artists)
+        # Reduction of ARTIST file
+        artists = []
+        def reduce_top_artists(j: dict, artists=artists):
+            if j["name"] in self.artists:
+                artists.append(f"{clean_str(json.dumps(j))}\n")
+        super()._iterate_file(self.ARTIST, reduce_top_artists)
+        with open(f"{self.dst_dir}/artists.jsonl", "w") as file:
+            file.writelines(artists)
+
+        # Reduction of RELEASE file
+        releases = []
+        def reduce_releases(j: dict, artists=artists, releases=releases):
+            if j["artist-credit"][0]["name"] in artists:
+                releases.append(f"{clean_str(json.dumps(j))}\n")
+        super()._iterate_file(self.RELEASE, reduce_releases)
+        with open(f"{self.dst_dir}/releases.jsonl", "w") as file:
+            file.writelines(releases)
+
 
 class Discogs(Dataset):
+    ARTIST: str = "discogs_20260801_artists.xml.gz"
+    LABELS: str = "discogs_20260801_labels.xml.gz"
+    MASTERS: str = "discogs_20260801_masters.xml.gz"
+    RELEASES: str = "discogs_20260801_releases.xml.gz"
+
     def __init__(self, src_dir: str, dst_dir: str):
         src_dir = f"{src_dir}/document"
         dst_dir = f"{dst_dir}/document"
@@ -182,9 +216,7 @@ class Discogs(Dataset):
             if "name" in j:
                 self.artists.add(j["name"])
 
-        for file_name in os.listdir(self.src_dir):
-            if "artist" in file_name:
-                super()._iterate_file(file_name, "name", handle)
+        super()._iterate_file(self.ARTIST, handle)
 
         return self.artists
 
@@ -197,34 +229,50 @@ class Discogs(Dataset):
         return self.artists
 
     def create_reduced_files(self):
-        for file_name in os.listdir(self.src_dir):
-            if "artist" in file_name:
-                artists = []
-                def handle(j: dict, artists=artists):
-                    if j["name"] in self.artists:
-                        artists.append(f"{json.dumps(j)}\n")
-                with open(f"{self.dst_dir}/artist.jsonl", "w") as file:
-                    file.writelines(artists)
+        artists = []
+        def reduce_top_artists(j: dict, artists=artists):
+            if "name" in j and j["name"] in self.artists:
+                artists.append(f"{clean_str(json.dumps(j))}\n")
+        super()._iterate_file(self.ARTIST, reduce_top_artists)
+        with open(f"{self.dst_dir}/artists.jsonl", "w") as file:
+            file.writelines(artists)
 
-def parse_musicbrainz(src: str, dst: str):
-        top_artists = []
-        relations = []
-        with open(src, "r") as json_file:
-            for line in json_file:
-                data = json.loads(line)
-                if data["rating"]["votes-count"] > 20:
-                    data.pop("aliases")
-                    data.pop("disambiguation")
-                    data.pop("sort-name")
-                    for relation in data.pop("relations"):
-                        relations.append(f"{json.dumps(relation)}\n")
-                    top_artists.append(f"{json.dumps(data)}\n")
+        masters = []
+        def reduce_masters(j: dict, artists=artists):
+            artists = j["artists"]["artist"]
+            artists = artists if type(artists) is list else [artists]
+            for artist in artists:
+                if artist["name"] in self.artists:
+                    masters.append(f"{clean_str(json.dumps(j))}\n")
+                    break
+        super()._iterate_file(self.MASTERS, reduce_masters)
+        with open(f"{self.dst_dir}/masters.jsonl", "w") as file:
+            file.writelines(masters)
 
-        with open(dst, "w") as json_file:
-            json_file.writelines(top_artists)
+        label_names = []
+        releases = []
+        def reduce_releases(j: dict, artists=artists, label_names=label_names):
+            artists = j["artists"]["artist"]
+            artists = artists if type(artists) is list else [artists]
+            for artist in artists:
+                if artist["name"] in self.artists:
+                    releases.append(f"{clean_str(json.dumps(j))}\n")
+                    break
+            labels = j["labels"]["label"]
+            labels = labels if type(labels) is list else [labels]
+            for label in labels:
+                label_names.append(label["@name"])
+        super()._iterate_file(self.RELEASES, reduce_releases)
+        with open(f"{self.dst_dir}/releases.jsonl", "w") as file:
+            file.writelines(releases)
 
-        with open("relations.json", "w") as json_file:
-            json_file.writelines(relations)
+        labels = []
+        def reduce_labels(j: dict, label_names=label_names):
+            if "name" in j and j["name"] in label_names:
+                labels.append(f"{clean_str(json.dumps(j))}\n")
+        super()._iterate_file(self.LABELS, reduce_labels)
+        with open(f"{self.dst_dir}/labels.jsonl", "w") as file:
+            file.writelines(labels)
 
 
 def create_checkpoint(name: str, *datasets: Dataset):
@@ -272,8 +320,8 @@ def parse_datasets(src_dir: str, dst_dir: str):
         print(f"Total artists (Relational: {len(relational_artists)}, Graph: {len(graph_artists)}, Document: {len(document_artists)})")
         create_checkpoint("checkpoint_artists", RELATIONAL, GRAPH, DOCUMENT)
 
-    RELATIONAL.create_reduced_files()
-    GRAPH.create_reduced_files()
+    #RELATIONAL.create_reduced_files()
+    #GRAPH.create_reduced_files()
     DOCUMENT.create_reduced_files()
 
     RELATIONAL.create_metafile()
@@ -283,7 +331,7 @@ def parse_datasets(src_dir: str, dst_dir: str):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--src-dir", type=str, required=False)
-    parser.add_argument("--dst-dir", type=str, required=False)
+    parser.add_argument("--dst-dir", type=str, required=False, default="./src/main/resources")
 
     args = parser.parse_args()
 
