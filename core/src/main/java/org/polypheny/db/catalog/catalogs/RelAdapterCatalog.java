@@ -63,6 +63,28 @@ public class RelAdapterCatalog extends AdapterCatalog {
         super( adapterId, Map.of(), physicals, allocations, allocToPhysicals, fields );
     }
 
+    /*
+    Finds the registered PhysicalTable records,
+    removes old column-index entries for that allocation,
+    and adds entries for their current columns.
+    That keeps column lookup in sync whether the table was created, replaced, or restored.
+     */
+    @Override
+    protected void onPhysicalRegistered( AllocationEntity allocation, List<? extends PhysicalEntity> physicalEntities ) {
+        List<PhysicalTable> tables = physicalEntities.stream()
+                .filter( PhysicalTable.class::isInstance )
+                .map( PhysicalTable.class::cast )
+                .toList();
+        if ( tables.isEmpty() ) {
+            return;
+        }
+
+        // Mapping functionality
+        // Read PhysicalColumn records from registered tables and rebuild the adapter's in-memory column index.
+        fields.keySet().removeIf( key -> key.getKey() == allocation.id );
+        tables.stream().flatMap( table -> table.columns.stream() ).forEach( this::addColumn );
+    }
+
 
     @Override
     public void renameLogicalColumn( long id, String newFieldName ) {

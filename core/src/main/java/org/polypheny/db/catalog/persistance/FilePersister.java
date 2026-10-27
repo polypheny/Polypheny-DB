@@ -20,24 +20,28 @@ import com.drew.lang.Charsets;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 public class FilePersister implements Persister {
 
-    private final ExecutorService service = Executors.newSingleThreadExecutor();
-
-
     private final File backup;
 
 
     public FilePersister() {
-        this.backup = initBackupFile();
+        this( initBackupFile() );
+    }
+
+
+    FilePersister( File backup ) {
+        this.backup = backup;
     }
 
 
@@ -53,18 +57,38 @@ public class FilePersister implements Persister {
     }
 
 
+    /**
+     * Writes synchronously, so failures propagate to the committing transaction.
+     * Writes to a separate file and forces its contents to disk.
+     * Atomically replaces the previous catalog file, protecting it from a partially completed write.
+     * This lets PolyCatalog.commit() persist first, then publish the snapshot and advance the rollback checkpoint.
+     * It protects the whole catalog, including mapping rules and their associated logical names.
+     */
     @Override
     public synchronized void write( String data ) {
-        service.execute( () -> {
-            try {
-                FileWriter writer = new FileWriter( backup, Charsets.ISO_8859_1 );
-                writer.write( data );
-                writer.flush();
-                writer.close();
-            } catch ( IOException e ) {
-                throw new GenericRuntimeException( e );
+        // mapping update is reported as successful
+        // only after the catalog has been written successfully
+        Path temporary = null;
+        try {
+            Path target = backup.toPath();
+            temporary = Files.createTempFile( target.getParent(), "catalog-", ".tmp" );
+            Files.writeString( temporary, data, Charsets.ISO_8859_1 );
+            try ( FileChannel channel = FileChannel.open( temporary, StandardOpenOption.WRITE ) ) {
+                channel.force( true );
             }
-        } );
+            // Fail rather than truncate the previous catalog if atomic replacement is unavailable.
+            Files.move( temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING );
+        } catch ( IOException e ) {
+            throw new GenericRuntimeException( "Could not persist the catalog.", e );
+        } finally {
+            if ( temporary != null ) {
+                try {
+                    Files.deleteIfExists( temporary );
+                } catch ( IOException ignored ) {
+                    // The previous catalog remains intact; a temporary file can be cleaned up later.
+                }
+            }
+        }
     }
 
 

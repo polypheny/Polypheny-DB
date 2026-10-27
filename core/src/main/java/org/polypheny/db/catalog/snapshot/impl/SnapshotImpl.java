@@ -40,6 +40,7 @@ import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
+import org.polypheny.db.catalog.snapshot.MappingSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
 @Value
@@ -55,6 +56,8 @@ public class SnapshotImpl implements Snapshot {
     LogicalGraphSnapshot graph;
     @NotNull
     AllocSnapshot alloc;
+    @NotNull
+    MappingSnapshot mappings;
 
     @Getter
     long id;
@@ -72,7 +75,7 @@ public class SnapshotImpl implements Snapshot {
     ImmutableMap<String, LogicalNamespace> namespaceNames;
 
 
-    public SnapshotImpl( long id, Catalog catalog, Map<Long, LogicalNamespace> namespaces, LogicalRelSnapshot rel, LogicalDocSnapshot doc, LogicalGraphSnapshot graph, AllocSnapshot alloc ) {
+    public SnapshotImpl( long id, Catalog catalog, Map<Long, LogicalNamespace> namespaces, LogicalRelSnapshot rel, LogicalDocSnapshot doc, LogicalGraphSnapshot graph, AllocSnapshot alloc, MappingSnapshot mappings ) {
         this.id = id;
         this.rel = rel;
         this.doc = doc;
@@ -83,6 +86,8 @@ public class SnapshotImpl implements Snapshot {
         this.namespaceNames = ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.name.toLowerCase(), n -> n ) ) );
 
         this.alloc = alloc;
+        // Mapping functionality
+        this.mappings = mappings;
 
         this.users = ImmutableMap.copyOf( catalog.getUsers() );
         this.userNames = ImmutableMap.copyOf( users.values().stream().collect( Collectors.toMap( u -> u.name.toLowerCase(), u -> u ) ) );

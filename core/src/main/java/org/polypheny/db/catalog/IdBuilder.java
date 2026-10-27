@@ -154,6 +154,11 @@ public class IdBuilder {
         return entityId.getAndIncrement();
     }
 
+    // Mapping functionality
+    public long getNewMappingId() {
+        return entityId.getAndIncrement();
+    }
+
 
     public long getNewFieldId() {
         return fieldId.getAndIncrement();

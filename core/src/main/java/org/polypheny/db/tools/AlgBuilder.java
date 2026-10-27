@@ -98,8 +98,10 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMappingTransform;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.mapping.PhysicalMappingBinding;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -111,6 +113,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -2484,6 +2487,14 @@ public class AlgBuilder {
         final AlgNode r2 = AlgOptUtil.createCastAlg( r, castRowType, rename, projectFactory );
         push( r2 );
         return this;
+    }
+
+
+    /**
+     * Applies a schema mapping even when the input and output have the same data model.
+     */
+    public AlgBuilder transform( SchemaMapping mapping, PhysicalMappingBinding binding, AlgDataType rowType ) {
+        return push( LogicalRelMappingTransform.create( build(), mapping, binding, rowType ) );
     }
 
 

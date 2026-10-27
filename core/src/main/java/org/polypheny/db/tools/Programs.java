@@ -70,6 +70,7 @@ import org.polypheny.db.algebra.rules.FilterToCalcRule;
 import org.polypheny.db.algebra.rules.JoinAssociateRule;
 import org.polypheny.db.algebra.rules.JoinCommuteRule;
 import org.polypheny.db.algebra.rules.JoinPushThroughJoinRule;
+import org.polypheny.db.algebra.rules.MappingTransformRule;
 import org.polypheny.db.algebra.rules.JoinToMultiJoinRule;
 import org.polypheny.db.algebra.rules.LoptOptimizeJoinRule;
 import org.polypheny.db.algebra.rules.MultiJoin;
@@ -175,6 +176,7 @@ public class Programs {
                     AllocationToPhysicalScanRule.REL_INSTANCE,
                     AllocationToPhysicalScanRule.DOC_INSTANCE,
                     AllocationToPhysicalScanRule.GRAPH_INSTANCE,
+                    MappingTransformRule.REL_INSTANCE,
                     AllocationToPhysicalModifyRule.REL_INSTANCE,
                     AllocationToPhysicalModifyRule.DOC_INSTANCE,
                     AllocationToPhysicalModifyRule.GRAPH_INSTANCE,

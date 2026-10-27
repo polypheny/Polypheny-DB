@@ -58,7 +58,6 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,9 +141,14 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
 
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        // keep the physical CSV source name separate from the logical table name
+        String physicalTableName = allocation.physicalTableName;
+        if ( physicalTableName == null || physicalTableName.isBlank() ) {
+            throw new GenericRuntimeException( "A physical table name is required to register a CSV source." );
+        }
         PhysicalTable table = adapterCatalog.createTable(
                 logical.table.getNamespaceName(),
-                logical.table.name,
+                physicalTableName,
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                 logical.table,
                 logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
@@ -226,9 +230,7 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
 
             List<ExportedColumn> list = new ArrayList<>();
             int position = 1;
-            try {
-                Source source = Sources.of( new URL( csvDir, fileName ) );
-                BufferedReader reader = new BufferedReader( source.reader() );
+            try ( BufferedReader reader = new BufferedReader( Sources.of( new URL( csvDir, fileName ) ).reader() ) ) {
                 String firstLine = reader.readLine();
                 for ( String col : firstLine.split( "," ) ) {
                     String[] colSplit = col.split( ":" );
@@ -298,6 +300,7 @@ public class CsvSource extends DataSource<RelAdapterCatalog> implements Relation
                 throw new GenericRuntimeException( e );
             }
 
+            // TODO: Reject or distinguish filenames that normalize to the same map key before one overwrites the other.
             exportedColumnCache.put( physicalTableName, list );
         }
         this.exportedColumnCache = exportedColumnCache;

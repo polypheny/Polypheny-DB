@@ -26,9 +26,11 @@ import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.mapping.PhysicalMappingBinding;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexNode;
@@ -91,7 +93,14 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
 
 
     private AlgNode handleRelationalEntity( AlgOptRuleCall call, Scan<?> scan, AllocationEntity alloc ) {
-        AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).orElseThrow().getRelScan( alloc.id, call.builder() );
+        var adapter = AdapterManager.getInstance().getAdapter( alloc.adapterId ).orElseThrow();
+        AlgNode alg = adapter.getRelScan( alloc.id, call.builder() );
+        // Attach the mapping to the query plan
+        Optional<SchemaMapping> mapping = scan.getCluster().getSnapshot().mappings().getMappingForLogicalEntity( alloc.logicalId );
+        if ( mapping.isPresent() ) {
+            alg = call.builder().push( alg ).transform( mapping.get(),
+                    PhysicalMappingBinding.create( mapping.get(), alloc, adapter.getCatalog() ), alloc.getTupleType() ).build();
+        }
         if ( scan.getModel() == scan.entity.dataModel ) {
             if ( scan.getTupleType().getFieldCount() != alg.getTupleType().getFieldCount() ) {
                 alg = reduce( alg, scan, call.builder() );

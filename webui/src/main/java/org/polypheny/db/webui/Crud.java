@@ -58,6 +58,8 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -169,6 +171,7 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.webui.auth.AuthCrud;
 import org.polypheny.db.webui.crud.CatalogCrud;
+import org.polypheny.db.webui.crud.MappingCrud;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.crud.LanguageCrud.TriFunction;
 import org.polypheny.db.webui.crud.StatisticCrud;
@@ -230,6 +233,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     public final LanguageCrud languageCrud;
     public final StatisticCrud statisticCrud;
     public final CatalogCrud catalogCrud;
+    public final MappingCrud mappingCrud;
     public final AuthCrud authCrud;
     private final TransactionManager transactionManager;
 
@@ -244,6 +248,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         this.languageCrud = new LanguageCrud( this );
         this.statisticCrud = new StatisticCrud( this );
         this.catalogCrud = new CatalogCrud( this );
+        this.mappingCrud = new MappingCrud( this );
         this.authCrud = new AuthCrud( this );
 
         Catalog.afterInit( () -> Catalog.getInstance().addObserver( this ) );
@@ -614,31 +619,35 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     public SourceMaterializationRefreshResult refreshSourceSchemaIfNeeded( UIRequest request ) {
         Transaction transaction = getTransaction();
         boolean refreshSynchronizedData = "synchronizedApplyWithData".equalsIgnoreCase( request.refreshTrigger );
-        LogicalTable synchronizedMaterialization = null;
         boolean committed = false;
         try {
             Statement ddlStatement = transaction.createStatement();
-            LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElse( null );
-            List<String> changeDescriptions;
-            boolean sourceEntityDeleted = false;
-            if ( table != null && table.synchronizedSourceEntityId != null ) {
-                synchronizedMaterialization = table;
-                List<String> previewChangeDescriptions = DdlManager.getInstance().previewSynchronizedSourceMaterializationRefresh( request.entityId );
-                sourceEntityDeleted = hasSourceDeletedChange( previewChangeDescriptions );
-                if ( sourceEntityDeleted ) {
-                    changeDescriptions = previewChangeDescriptions;
-                } else if ( "synchronizedApply".equalsIgnoreCase( request.refreshTrigger ) || (refreshSynchronizedData && request.confirmedDataRefresh) ) {
-                    DdlManager.getInstance().refreshSourceSchemaIfNeeded( table.synchronizedSourceEntityId, ddlStatement );
-                    changeDescriptions = DdlManager.getInstance().refreshSynchronizedSourceMaterializationColumns( request.entityId, ddlStatement );
+            SourceMaterializationRefreshResult refresh = updateSourceCatalog( transaction, ddlStatement, () -> {
+                LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElse( null );
+                List<String> changeDescriptions;
+                boolean sourceEntityDeleted = false;
+                if ( table != null && table.synchronizedSourceEntityId != null ) {
+                    List<String> previewChangeDescriptions = DdlManager.getInstance().previewSynchronizedSourceMaterializationRefresh( request.entityId );
+                    sourceEntityDeleted = hasSourceDeletedChange( previewChangeDescriptions );
+                    if ( sourceEntityDeleted ) {
+                        changeDescriptions = previewChangeDescriptions;
+                    } else if ( "synchronizedApply".equalsIgnoreCase( request.refreshTrigger ) || (refreshSynchronizedData && request.confirmedDataRefresh) ) {
+                        DdlManager.getInstance().refreshSourceSchemaIfNeeded( table.synchronizedSourceEntityId, ddlStatement );
+                        changeDescriptions = DdlManager.getInstance().refreshSynchronizedSourceMaterializationColumns( request.entityId, ddlStatement );
+                    } else {
+                        changeDescriptions = previewChangeDescriptions;
+                    }
                 } else {
-                    changeDescriptions = previewChangeDescriptions;
+                    changeDescriptions = DdlManager.getInstance().refreshSourceSchemaIfNeeded( request.entityId, ddlStatement );
+                    sourceEntityDeleted = hasSourceDeletedChange( changeDescriptions );
                 }
-            } else {
-                changeDescriptions = DdlManager.getInstance().refreshSourceSchemaIfNeeded( request.entityId, ddlStatement );
-                sourceEntityDeleted = hasSourceDeletedChange( changeDescriptions );
-            }
-            transaction.commit();
+                return new SourceMaterializationRefreshResult( changeDescriptions, null, sourceEntityDeleted );
+            } );
             committed = true;
+            List<String> changeDescriptions = refresh.changeDescriptions();
+            boolean sourceEntityDeleted = refresh.sourceEntityDeleted();
+            LogicalTable synchronizedMaterialization = Catalog.snapshot().rel().getTable( request.entityId )
+                    .filter( table -> table.synchronizedSourceEntityId != null ).orElse( null );
             if ( refreshSynchronizedData && synchronizedMaterialization != null && !sourceEntityDeleted ) {
                 long rowCount = countSynchronizedSourceMaterializationRows( synchronizedMaterialization.id );
                 if ( !request.confirmedDataRefresh ) {
@@ -762,21 +771,22 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         Transaction transaction = getTransaction();
         try {
             Statement ddlStatement = transaction.createStatement();
-            List<SourceRefreshSummary> summaries = new ArrayList<>();
-            for ( LogicalTable table : referencedTables ) {
-                List<String> changeDescriptions = DdlManager.getInstance().refreshSourceSchemaIfNeeded( table.id, ddlStatement );
-                if ( !changeDescriptions.isEmpty() ) {
-                    summaries.add( new SourceRefreshSummary( getSourceNameForEntity( table.id, snapshot ), table.name, DataModel.RELATIONAL, changeDescriptions ) );
+            return updateSourceCatalog( transaction, ddlStatement, () -> {
+                List<SourceRefreshSummary> summaries = new ArrayList<>();
+                for ( LogicalTable table : referencedTables ) {
+                    List<String> changeDescriptions = DdlManager.getInstance().refreshSourceSchemaIfNeeded( table.id, ddlStatement );
+                    if ( !changeDescriptions.isEmpty() ) {
+                        summaries.add( new SourceRefreshSummary( getSourceNameForEntity( table.id, snapshot ), table.name, DataModel.RELATIONAL, changeDescriptions ) );
+                    }
                 }
-            }
-            for ( LogicalCollection collection : referencedCollections ) {
-                List<String> changeDescriptions = DdlManager.getInstance().refreshSourceCollectionIfNeeded( collection.id, ddlStatement );
-                if ( !changeDescriptions.isEmpty() ) {
-                    summaries.add( new SourceRefreshSummary( getSourceNameForEntity( collection.id, snapshot ), collection.name, DataModel.DOCUMENT, changeDescriptions ) );
+                for ( LogicalCollection collection : referencedCollections ) {
+                    List<String> changeDescriptions = DdlManager.getInstance().refreshSourceCollectionIfNeeded( collection.id, ddlStatement );
+                    if ( !changeDescriptions.isEmpty() ) {
+                        summaries.add( new SourceRefreshSummary( getSourceNameForEntity( collection.id, snapshot ), collection.name, DataModel.DOCUMENT, changeDescriptions ) );
+                    }
                 }
-            }
-            transaction.commit();
-            return summaries;
+                return summaries;
+            } );
         } catch ( Exception e ) {
             try {
                 transaction.rollback( "Error while refreshing sources for query: " + e.getMessage() );
@@ -806,10 +816,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         Transaction transaction = getTransaction();
         try {
             Statement ddlStatement = transaction.createStatement();
-            SourceRefreshDetails refreshDetails = DdlManager.getInstance().refreshSelectedSourcesWithDetails( sourceIds, ddlStatement );
-
-            transaction.commit();
-            return refreshDetails;
+            return updateSourceCatalog( transaction, ddlStatement,
+                    () -> DdlManager.getInstance().refreshSelectedSourcesWithDetails( sourceIds, ddlStatement ) );
         } catch ( Exception e ) {
             try {
                 transaction.rollback( "Error while refreshing selected sources: " + e.getMessage() );
@@ -818,6 +826,24 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
             throw new GenericRuntimeException( "Could not refresh selected sources", e );
         }
+    }
+
+
+    /**
+     * Prevents partially completed source-refresh changes from becoming visible
+     */
+    private <T> T updateSourceCatalog( Transaction transaction, Statement statement, Supplier<T> update ) {
+        statement.getQueryProcessor().lock( statement );
+        AtomicReference<T> result = new AtomicReference<>();
+        Catalog.getInstance().runCatalogUpdate( () -> {
+            result.set( update.get() );
+            try {
+                transaction.commit();
+            } catch ( Exception e ) {
+                throw new GenericRuntimeException( "Could not commit the source catalog update.", e );
+            }
+        } );
+        return result.get();
     }
 
 

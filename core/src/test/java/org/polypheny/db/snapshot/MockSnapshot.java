@@ -39,6 +39,7 @@ import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
+import org.polypheny.db.catalog.snapshot.MappingSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.type.PolyType;
 
@@ -148,6 +149,12 @@ public class MockSnapshot implements Snapshot {
 
     @Override
     public AllocSnapshot alloc() {
+        throw new UnsupportedOperationException();
+    }
+
+    // Mapping functionality
+    @Override
+    public MappingSnapshot mappings() {
         throw new UnsupportedOperationException();
     }
 

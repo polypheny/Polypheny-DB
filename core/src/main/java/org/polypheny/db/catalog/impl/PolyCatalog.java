@@ -26,10 +26,13 @@ import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -56,6 +59,8 @@ import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
+import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
+import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocDocCatalog;
@@ -120,22 +125,36 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public final Map<Long, AdapterRestore> adapterRestore;
     @Serialize
     @JsonProperty
+    public final Map<Long, SchemaMapping> schemaMappings;
+
+    @Serialize
+    @JsonProperty
     public final IdBuilder idBuilder;
     @Getter
     private final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
     private final Persister persister;
+
+    // Runtime adapter objects cannot be reconstructed from their normalized persistence records.
+    private Runnable runtimeRollback = () -> {
+    };
+    private Snapshot committedSnapshot;
+    private boolean catalogUpdateActive;
+    private boolean catalogUpdateCommitted;
+    private Thread catalogUpdateThread;
+    private Snapshot catalogUpdateSnapshot;
+
     private final AtomicBoolean dirty = new AtomicBoolean( false );
     @Getter
     PropertyChangeListener changeListener = evt -> dirty.set( true );
     // indicates if the state has advanced and the snapshot has to be recreated or can be reused // trx without ddl
     private long lastCommitSnapshotId = 0;
-    @Getter
-    private Snapshot snapshot;
+    private volatile Snapshot snapshot;
     private String backup;
 
 
     public PolyCatalog() {
         this(
+                Map.of(),
                 Map.of(),
                 Map.of(),
                 Map.of(),
@@ -153,6 +172,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             @Deserialize("adapterRestore") Map<Long, AdapterRestore> adapterRestore,
             @Deserialize("adapters") Map<Long, LogicalAdapter> adapters,
             @Deserialize("interfaces") Map<Long, LogicalQueryInterface> interfaces,
+            @Deserialize("schemaMappings") Map<Long, SchemaMapping> schemaMappings,
             @Deserialize("idBuilder") IdBuilder idBuilder ) {
         // persistent data
         this.idBuilder = idBuilder;
@@ -162,6 +182,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         this.adapters = new ConcurrentHashMap<>( adapters );
         this.interfaces = new ConcurrentHashMap<>( interfaces );
         this.adapterRestore = new ConcurrentHashMap<>( adapterRestore );
+        this.schemaMappings = new ConcurrentHashMap<>( schemaMappings );
 
         // temporary data
         this.adapterCatalogs = new ConcurrentHashMap<>();
@@ -174,14 +195,35 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Override
     public void init() {
         updateSnapshot();
+        backup = serialize();
+        committedSnapshot = snapshot;
+        runtimeRollback = createRuntimeRollback();
 
         Catalog.afterInit.forEach( Runnable::run );
     }
 
 
     @Override
-    public void updateSnapshot() {
-        this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs );
+    public Snapshot getSnapshot() {
+        if ( Thread.currentThread() == catalogUpdateThread && catalogUpdateSnapshot != null ) {
+            return catalogUpdateSnapshot;
+        }
+        return snapshot;
+    }
+
+
+    @Override
+    public synchronized void updateSnapshot() {
+        // separate building a snapshot from publishing it
+        // Outside a grouped update: rebuild and publish the snapshot as before.
+        // Inside a grouped update: rebuild a private working snapshot without publishing it or notifying observers.
+
+        Snapshot updated = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs, schemaMappings );
+        if ( catalogUpdateActive ) {
+            catalogUpdateSnapshot = updated;
+            return;
+        }
+        this.snapshot = updated;
 
         this.listeners.firePropertyChange( "snapshot", null, this.snapshot );
     }
@@ -192,6 +234,121 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         // empty for now
         this.dirty.set( true );
         updateSnapshot();
+    }
+
+    //region Mapping functionality
+    @Override
+    public Map<Long, SchemaMapping> getSchemaMappings() {
+        return Map.copyOf( schemaMappings );
+    }
+
+
+    @Override
+    public synchronized void addSchemaMapping( SchemaMapping mapping ) {
+        Objects.requireNonNull( mapping, "mapping" );
+        if ( schemaMappings.containsKey( mapping.id() ) ) {
+            throw new GenericRuntimeException( "Mapping ID %d already exists.", mapping.id() );
+        }
+        Map<Long, SchemaMapping> candidate = new ConcurrentHashMap<>( schemaMappings );
+        candidate.put( mapping.id(), mapping );
+        SnapshotBuilder.createSnapshot( snapshot == null ? 0 : snapshot.id(), this, logicalCatalogs, allocationCatalogs, candidate );
+        schemaMappings.put( mapping.id(), mapping );
+        change();
+    }
+
+
+    @Override
+    public synchronized void removeSchemaMapping( long mappingId ) {
+        if ( schemaMappings.remove( mappingId ) != null ) {
+            change();
+        }
+    }
+
+
+    @Override
+    public synchronized void removeSchemaMappingsForEntity( long logicalEntityId ) {
+        List<Long> mappingIds = SchemaMappingManager.getMappingIdsForEntities( schemaMappings.values(), Set.of( logicalEntityId ) );
+        if ( schemaMappings.keySet().removeAll( mappingIds ) ) {
+            change();
+        }
+    }
+
+
+    @Override
+    public synchronized void updateSchemaMapping( SchemaMapping mapping ) {
+        SchemaMapping previous = schemaMappings.get( mapping.id() );
+        if ( previous == null || previous.targetEntityId() != mapping.targetEntityId() ) {
+            throw new GenericRuntimeException( "An existing mapping with the same logical owner is required." );
+        }
+        Map<Long, SchemaMapping> candidate = new ConcurrentHashMap<>( schemaMappings );
+        candidate.put( mapping.id(), mapping );
+        SnapshotBuilder.createSnapshot( snapshot.id(), this, logicalCatalogs, allocationCatalogs, candidate );
+        schemaMappings.put( mapping.id(), mapping );
+        change();
+    }
+
+
+    //endregion
+
+
+    /**
+     * Groups catalog mutations and the owning transaction's commit into one publication.
+     * All failures before a successful commit use the ordinary catalog rollback checkpoint.
+     */
+    @Override
+    public synchronized void runCatalogUpdate( Runnable updateAndCommit ) {
+        if ( catalogUpdateActive || dirty.get() ) {
+            throw new GenericRuntimeException( "Finish pending catalog changes before starting a catalog update." );
+        }
+        catalogUpdateActive = true;
+        catalogUpdateCommitted = false;
+        catalogUpdateThread = Thread.currentThread();
+        catalogUpdateSnapshot = snapshot;
+        try {
+            updateAndCommit.run();
+            if ( !catalogUpdateCommitted ) {
+                throw new IllegalStateException( "A catalog update must commit its owning transaction." );
+            }
+        } catch ( RuntimeException | Error failure ) {
+            if ( !catalogUpdateCommitted ) {
+                try {
+                    rollback();
+                } catch ( RuntimeException | Error rollbackFailure ) {
+                    failure.addSuppressed( rollbackFailure );
+                }
+            }
+            throw failure;
+        } finally {
+            catalogUpdateSnapshot = null;
+            catalogUpdateThread = null;
+            catalogUpdateActive = false;
+        }
+    }
+
+
+    private Runnable createRuntimeRollback() {
+        Map<Long, AdapterCatalog> committedAdapters = Map.copyOf( adapterCatalogs );
+        List<Runnable> restores = new ArrayList<>();
+        committedAdapters.values().forEach( adapter -> restores.add( adapter.createRollbackAction() ) );
+        // View plans and collations are runtime metadata omitted by the catalog serializer.
+        logicalCatalogs.forEach( ( id, logical ) -> {
+            if ( logical instanceof RelationalCatalog relational ) {
+                var nodes = Map.copyOf( relational.nodes );
+                var collations = Map.copyOf( relational.collations );
+                var flaggedTables = Set.copyOf( relational.getTablesFlaggedForDeletion() );
+                restores.add( () -> {
+                    RelationalCatalog restored = (RelationalCatalog) logicalCatalogs.get( id );
+                    restored.nodes.putAll( nodes );
+                    restored.collations.putAll( collations );
+                    restored.getTablesFlaggedForDeletion().addAll( flaggedTables );
+                } );
+            }
+        } );
+        return () -> {
+            restores.forEach( Runnable::run );
+            adapterCatalogs.clear();
+            adapterCatalogs.putAll( committedAdapters );
+        };
     }
 
 
@@ -207,6 +364,9 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     public synchronized void commit() {
         if ( !this.dirty.get() ) {
+            if ( catalogUpdateActive ) {
+                catalogUpdateCommitted = true;
+            }
             log.debug( "Nothing changed" );
             return;
         }
@@ -219,32 +379,49 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             this.adapterRestore.put( id, new AdapterRestore( id, restore, catalog.allocations ) );
         } );
 
-        this.backup = serialize();
-
-        updateSnapshot();
-        persister.write( backup );
+        Snapshot candidate = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs, schemaMappings );
+        String candidateImage = serialize();
+        Runnable candidateRuntimeRollback = createRuntimeRollback();
+        // Do not replace the last known-good backup or publish names until persistence succeeds.
+        persister.write( candidateImage );
+        this.backup = candidateImage;
+        this.snapshot = candidate;
+        this.catalogUpdateSnapshot = null;
+        this.committedSnapshot = candidate;
+        this.runtimeRollback = candidateRuntimeRollback;
         this.dirty.set( false );
 
-        this.lastCommitSnapshotId = snapshot.id();
+        if ( catalogUpdateActive ) {
+            catalogUpdateCommitted = true;
+        }
+        try {
+            this.listeners.firePropertyChange( "snapshot", null, this.snapshot );
+        } catch ( RuntimeException e ) {
+            log.error( "Catalog committed, but a snapshot observer failed", e );
+        }
     }
 
 
-    public void rollback() {
-
+    public synchronized void rollback() {
+        if ( catalogUpdateActive && catalogUpdateCommitted ) {
+            return;
+        }
+        Snapshot previous = snapshot;
         restoreLastState();
+        runtimeRollback.run();
+        snapshot = committedSnapshot;
+        catalogUpdateSnapshot = null;
+        dirty.set( false );
 
         log.debug( "rollback" );
-
-        if ( lastCommitSnapshotId != snapshot.id() ) {
-            updateSnapshot();
-
-            lastCommitSnapshotId = snapshot.id();
+        if ( previous != snapshot ) {
+            this.listeners.firePropertyChange( "snapshot", null, snapshot );
         }
     }
 
 
     private void restoreLastState() {
-        PolyCatalog old = PolySerializable.deserialize( backup, getSerializer() );
+        PolyCatalog old = PolySerializable.deserialize( backup, PolyCatalog.class );
 
         users.clear();
         users.putAll( old.users );
@@ -258,6 +435,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         interfaces.putAll( old.interfaces );
         adapterRestore.clear();
         adapterRestore.putAll( old.adapterRestore );
+        schemaMappings.clear();
+        schemaMappings.putAll( old.schemaMappings );
         idBuilder.restore( old.idBuilder );
     }
 
@@ -363,7 +542,10 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public void dropNamespace( long id ) {
+    public synchronized void dropNamespace( long id ) {
+        if ( logicalCatalogs.get( id ) instanceof LogicalRelationalCatalog rel ) {
+            SchemaMappingManager.getMappingIdsForEntities( schemaMappings.values(), rel.getTables().keySet() ).forEach( schemaMappings.keySet()::remove );
+        }
         logicalCatalogs.remove( id );
         allocationCatalogs.remove( id );
 
@@ -424,15 +606,16 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Override
     public void restore( Transaction transaction ) {
-        this.backup = persister.read();
-        if ( this.backup == null || this.backup.isEmpty() ) {
+        String persisted = persister.read();
+        if ( persisted == null || persisted.isEmpty() ) {
             log.warn( "No file found to restore" );
             return;
         }
+        this.backup = persisted;
         // set old state;
         restoreLastState();
         // only for templates
-        this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, Map.of(), Map.of() );
+        this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, Map.of(), Map.of(), Map.of() );
         AdapterManager.getInstance().restoreAdapters( List.copyOf( adapters.values() ) );
 
         adapterRestore.forEach( ( id, restore ) -> {
@@ -445,6 +628,9 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         restoreViews( transaction );
 
         updateSnapshot();
+        committedSnapshot = snapshot;
+        runtimeRollback = createRuntimeRollback();
+        dirty.set( false );
     }
 
 

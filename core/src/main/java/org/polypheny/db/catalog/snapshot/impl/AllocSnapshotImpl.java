@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -113,6 +114,14 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     public AllocSnapshotImpl( Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, LogicalAdapter> adapters ) {
+        this( allocationCatalogs, adapters, Set.of() );
+    }
+
+
+    /**
+     * Constructor accepts excludedColumns, allowing AllocSnapshotImpl to omit those columns from the published allocation snapshot.
+     */
+    public AllocSnapshotImpl( Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, LogicalAdapter> adapters, Set<Long> excludedColumns ) {
         this.tables = buildTables( allocationCatalogs
                 .values()
                 .stream()
@@ -140,6 +149,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
                 .map( c -> (AllocationRelationalCatalog) c )
                 .map( AllocationRelationalCatalog::getColumns )
                 .flatMap( c -> c.values().stream() )
+                .filter( c -> !excludedColumns.contains( c.columnId ) )
                 .toList() );
 
         this.groups = buildPartitionGroups( allocationCatalogs );

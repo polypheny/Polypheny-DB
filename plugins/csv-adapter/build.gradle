@@ -11,6 +11,7 @@ dependencies {
 
 
     // --- Test Compile ---
+    testImplementation project(":dbms")
     testImplementation project(path: ":dbms", configuration: "test")
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")

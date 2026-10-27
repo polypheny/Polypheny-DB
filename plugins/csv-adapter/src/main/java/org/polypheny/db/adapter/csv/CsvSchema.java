@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
@@ -92,15 +93,26 @@ public class CsvSchema extends Namespace {
         List<ExportedColumn> columns = csvSource.getExportedColumns().get( table.name );
         if ( columns == null ) {
             /*
-            TODO:   The source determines table names by file name. The DdlManager enumerates duplicates like name0, name1 and so forth.
-                    This remains unnoticed by the source. 'getExportedColumns' thus returns the columns under a wrong name. A way must be found to sync the of the logical in the
-                    DdlManager with the name in the source. Currently we just fail the creation of sources with duplicate file names.
+            The physical table keeps the discovered CSV source name even when its logical name is enumerated.
+            A previously registered source can also be absent here if its file was removed or renamed.
              */
-
-            String unenumeratedEntityName = table.name.replaceAll( "\\d+$", "" );
-            throw new GenericRuntimeException( "A logical relational entity with name '" + unenumeratedEntityName + "' already exists." );
+            throw new GenericRuntimeException( "CSV source '%s' is not available.", table.name );
         }
+        if ( columns.size() != table.columns.size() ) {
+            throw new GenericRuntimeException( "CSV source '%s' no longer matches its registered columns.", table.name );
+        }
+        // PhysicalColumn column - Registered physical table metadata
+        // ExportedColumn exported - Metadata returned by the CSV source
         for ( PhysicalColumn column : table.getColumns() ) {
+            // validation before constructing the native CSV table
+            if ( column.position < 0 || column.position >= columns.size() ) {
+                throw new GenericRuntimeException( "CSV source '%s' has no registered position %d.", table.name, column.position );
+            }
+            ExportedColumn exported = columns.get( column.position );
+            if ( !column.name.equals( exported.physicalColumnName() ) || column.type != exported.type()
+                    || !Objects.equals( column.length, exported.length() ) ) {
+                throw new GenericRuntimeException( "CSV source '%s' no longer matches registered column '%s'.", table.name, column.name );
+            }
             AlgDataType sqlType = sqlType( typeFactory, column.type, column.length, column.scale, null );
             fieldInfo.add( column.id, column.name, columns.get( column.position ).physicalColumnName(), sqlType ).nullable( column.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( column.type ) );

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -86,6 +87,31 @@ public abstract class AdapterCatalog {
     }
 
 
+    /**
+     * Captures metadata for rollback while retaining adapter-native entities and namespace objects.
+     */
+    public Runnable createRollbackAction() {
+        var savedNamespaces = Map.copyOf( namespaces );
+        var savedPhysicals = Map.copyOf( physicals );
+        var savedAllocations = Map.copyOf( allocations );
+        var savedFields = Map.copyOf( fields );
+        Map<Long, SortedSet<Long>> savedIndexes = new HashMap<>();
+        allocToPhysicals.forEach( ( id, physicalIds ) -> savedIndexes.put( id, new TreeSet<>( physicalIds ) ) );
+        return () -> {
+            namespaces.clear();
+            namespaces.putAll( savedNamespaces );
+            physicals.clear();
+            physicals.putAll( savedPhysicals );
+            allocations.clear();
+            allocations.putAll( savedAllocations );
+            fields.clear();
+            fields.putAll( savedFields );
+            allocToPhysicals.clear();
+            savedIndexes.forEach( ( id, physicalIds ) -> allocToPhysicals.put( id, new TreeSet<>( physicalIds ) ) );
+        };
+    }
+
+
     public Expression asExpression() {
         return Catalog.PHYSICAL_EXPRESSION.apply( adapterId );
     }
@@ -124,7 +150,9 @@ public abstract class AdapterCatalog {
         return entities.stream().map( physicals::get ).toList();
     }
 
-
+    /*
+    Registers the allocation and physical entities
+     */
     @SafeVarargs
     public final <E extends AllocationEntity, P extends PhysicalEntity> void addPhysical( E allocation, P... physicalEntities ) {
         SortedSet<Long> physicals = Arrays.stream( physicalEntities ).sorted().map( p -> p.id ).collect( Collectors.toCollection( TreeSet::new ) );
@@ -132,6 +160,12 @@ public abstract class AdapterCatalog {
         allocToPhysicals.put( allocation.id, physicals );
         allocations.put( allocation.id, allocation );
         List.of( physicalEntities ).forEach( p -> this.physicals.put( p.id, p ) );
+
+        onPhysicalRegistered( allocation, List.of( physicalEntities ) );
+    }
+
+
+    protected void onPhysicalRegistered( AllocationEntity allocation, List<? extends PhysicalEntity> physicalEntities ) {
     }
 
 

@@ -212,6 +212,11 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Override
     public void deleteTable( long tableId ) {
+        // Mapping cleanup
+        // Before deleteTable removes the table and its columns,
+        // it finds mappings whose targetEntityId matches the table ID and removes each one.
+        // This prevents mappings from referencing a deleted table.
+        Catalog.getInstance().removeSchemaMappingsForEntity( tableId );
         tables.get( tableId ).getColumnIds().forEach( columns::remove );
         tables.remove( tableId );
         change( CatalogEvent.LOGICAL_REL_ENTITY_DROPPED, tableId, null );

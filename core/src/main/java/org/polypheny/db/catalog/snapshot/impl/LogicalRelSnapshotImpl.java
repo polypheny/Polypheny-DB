@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
@@ -108,17 +109,35 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     public LogicalRelSnapshotImpl( Map<Long, LogicalRelationalCatalog> catalogs ) {
+        this( catalogs, Set.of() );
+    }
+
+
+    public LogicalRelSnapshotImpl( Map<Long, LogicalRelationalCatalog> catalogs, Set<Long> excludedColumns ) {
         this.namespaces = ImmutableMap.copyOf( catalogs.values().stream().map( LogicalRelationalCatalog::getLogicalNamespace ).collect( Collectors.toMap( n -> n.id, n -> n, getDuplicateError() ) ) );
         this.namespaceNames = ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.name, n -> n, getDuplicateError() ) ) );
         this.namespaceCaseSensitive = buildNamespaceCasing();
 
-        this.tables = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getTables().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
+        // Hide mapping-excluded columns from the published logical schema:
+        // filter excluded columns and their name-lookup entries
+        // filter keys containing excluded columns
+        // filter indexes and constraints associated with those keys
+        Set<Long> excludedKeys = catalogs.values().stream().flatMap( c -> c.getKeys().values().stream() )
+                .filter( key -> key.fieldIds.stream().anyMatch( excludedColumns::contains ) ).map( key -> key.id )
+                .collect( Collectors.toSet() );
+
+        this.tables = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getTables().values().stream() )
+                .map( table -> excludedKeys.contains( table.primaryKey ) ? table.toBuilder().primaryKey( null ).build() : table )
+                .collect( Collectors.toMap( table -> table.id, table -> table, getDuplicateError() ) ) );
+
         this.tableNames = ImmutableMap.copyOf( tables.entrySet().stream().collect( Collectors.toMap( e -> Pair.of( e.getValue().namespaceId, getAdjustedName( e.getValue().namespaceId, e.getValue().name ) ), Entry::getValue, getDuplicateError() ) ) );
         this.tablesNamespace = buildTablesNamespace();
 
-        this.columns = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getColumns().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
-        this.columnNames = ImmutableMap.copyOf(
-                columns.entrySet().stream().collect( Collectors.toMap( e -> Pair.of( e.getValue().tableId, getAdjustedName( e.getValue().namespaceId, e.getValue().name ) ), Entry::getValue, getDuplicateError() ) ) );
+        this.columns = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getColumns().entrySet().stream() )
+                .filter( e -> !excludedColumns.contains( e.getKey() ) )
+                .collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
+
+        this.columnNames = ImmutableMap.copyOf(columns.entrySet().stream().collect( Collectors.toMap( e -> Pair.of( e.getValue().tableId, getAdjustedName( e.getValue().namespaceId, e.getValue().name ) ), Entry::getValue, getDuplicateError() ) ) );
 
         //// TABLES
 
@@ -130,13 +149,17 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         //// KEYS
 
-        this.keys = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getKeys().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
+        this.keys = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getKeys().entrySet().stream() )
+                .filter( e -> !excludedKeys.contains( e.getKey() ) )
+                .collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
 
         this.tableKeys = buildTableKeys();
 
         this.columnsKeys = buildColumnsKey();
 
-        this.index = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getIndexes().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
+        this.index = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getIndexes().entrySet().stream() )
+                .filter( e -> !excludedKeys.contains( e.getValue().keyId ) )
+                .collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
 
         this.keyToIndexes = buildKeyToIndexes();
 
@@ -148,7 +171,9 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         //// CONSTRAINTS
 
-        this.constraints = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getConstraints().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
+        this.constraints = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getConstraints().entrySet().stream() )
+                .filter( e -> !excludedKeys.contains( e.getValue().keyId ) )
+                .collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
 
         this.tableConstraints = buildTableConstraints();
 

@@ -45,6 +45,7 @@ import org.polypheny.db.algebra.rules.JoinAssociateRule;
 import org.polypheny.db.algebra.rules.JoinCommuteRule;
 import org.polypheny.db.algebra.rules.JoinPushExpressionsRule;
 import org.polypheny.db.algebra.rules.JoinPushThroughJoinRule;
+import org.polypheny.db.algebra.rules.MappingTransformRule;
 import org.polypheny.db.algebra.rules.ProjectFilterTransposeRule;
 import org.polypheny.db.algebra.rules.ProjectMergeRule;
 import org.polypheny.db.algebra.rules.ProjectWindowTransposeRule;
@@ -124,6 +125,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     AllocationToPhysicalScanRule.REL_INSTANCE,
                     AllocationToPhysicalScanRule.DOC_INSTANCE,
                     AllocationToPhysicalScanRule.GRAPH_INSTANCE,
+                    MappingTransformRule.REL_INSTANCE,
                     AllocationToPhysicalModifyRule.REL_INSTANCE,
                     AllocationToPhysicalModifyRule.DOC_INSTANCE,
                     AllocationToPhysicalModifyRule.GRAPH_INSTANCE,

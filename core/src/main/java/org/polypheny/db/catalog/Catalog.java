@@ -40,6 +40,7 @@ import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
+import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -112,6 +113,44 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void rollback();
 
+    /**
+     * Executes catalog mutations and their owning transaction's commit while delaying snapshot publication.
+     * The caller must hold exclusive schema protection. Failed updates restore catalog and adapter metadata.
+     */
+    public void runCatalogUpdate( Runnable updateAndCommit ) {
+        throw new UnsupportedOperationException( "Atomic catalog updates are not supported by this catalog." );
+    }
+
+    //region Mapping functionality
+    public Map<Long, SchemaMapping> getSchemaMappings() {
+        return Map.of();
+    }
+
+
+    public void addSchemaMapping( SchemaMapping mapping ) {
+        throw new UnsupportedOperationException( "Schema mappings are not supported by this catalog." );
+    }
+
+
+    public void removeSchemaMapping( long mappingId ) {
+        throw new UnsupportedOperationException( "Schema mappings are not supported by this catalog." );
+    }
+
+
+    /**
+     * Removes an entity's mappings before its allocation or logical metadata is deleted.
+     */
+    public void removeSchemaMappingsForEntity( long logicalEntityId ) {
+        throw new UnsupportedOperationException( "Schema mappings are not supported by this catalog." );
+    }
+
+
+    public void updateSchemaMapping( SchemaMapping mapping ) {
+        throw new UnsupportedOperationException( "Schema mapping updates are not supported by this catalog." );
+    }
+
+
+    //endregion
 
     public abstract LogicalRelationalCatalog getLogicalRel( long namespaceId );
 
