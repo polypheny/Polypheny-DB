@@ -78,6 +78,13 @@ class MappingMetadataTest {
 
 
     @Test
+    void preservesThePhysicalSourceAllocationInSerialization() {
+        var bound = mapping( List.of( NAME_RULE, ID_RULE ) ).withSourceAllocation( 777L );
+        assertEquals( bound, roundTrip( bound, SchemaMapping.class ) );
+        assertEquals( 777L, bound.sourceAllocationId() );
+    }
+
+    @Test
     void mappingDefensivelyCopiesItsRules() {
         List<MappingRule> input = new ArrayList<>( List.of( NAME_RULE, ID_RULE ) );
         SchemaMapping mapping = mapping( input );
@@ -94,15 +101,15 @@ class MappingMetadataTest {
     @Test
     void rejectsMissingRequiredMetadata() {
         assertThrows( NullPointerException.class, () -> new SchemaMapping( 101, null, MappingKind.PHYSICAL_TO_LOGICAL, null, 201,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( NAME_RULE ) ) );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( NAME_RULE ), null ) );
         assertThrows( NullPointerException.class, () -> mapping( null ) );
         assertThrows( NullPointerException.class, () -> mapping( Arrays.asList( NAME_RULE, null ) ) );
         assertThrows( NullPointerException.class, () -> new SchemaMapping( 101, "mapping", null, null, 201,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of() ) );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of(), null ) );
         assertThrows( NullPointerException.class, () -> new SchemaMapping( 101, "mapping", MappingKind.PHYSICAL_TO_LOGICAL, null, 201,
-                null, DataModel.RELATIONAL, List.of() ) );
+                null, DataModel.RELATIONAL, List.of(), null ) );
         assertThrows( NullPointerException.class, () -> new SchemaMapping( 101, "mapping", MappingKind.PHYSICAL_TO_LOGICAL, null, 201,
-                DataModel.RELATIONAL, null, List.of() ) );
+                DataModel.RELATIONAL, null, List.of(), null ) );
     }
 
 
@@ -110,9 +117,9 @@ class MappingMetadataTest {
     void preservesExplicitSourcesAndIndependentModelsForLogicalMappings() {
         for ( SchemaMapping mapping : List.of(
                 new SchemaMapping( 101, "logical", MappingKind.LOGICAL_TO_LOGICAL, 200L, 201,
-                        DataModel.RELATIONAL, DataModel.DOCUMENT, List.of() ),
+                        DataModel.RELATIONAL, DataModel.DOCUMENT, List.of(), null ),
                 new SchemaMapping( 102, "exposed", MappingKind.LOGICAL_TO_EXPOSED, 201L, 202,
-                        DataModel.DOCUMENT, DataModel.GRAPH, List.of() ) ) ) {
+                        DataModel.DOCUMENT, DataModel.GRAPH, List.of(), null ) ) ) {
             assertEquals( mapping, roundTrip( mapping, SchemaMapping.class ) );
         }
     }
@@ -138,16 +145,16 @@ class MappingMetadataTest {
     void requiresASourceOnlyForLogicalMappings() {
         for ( MappingKind kind : List.of( MappingKind.LOGICAL_TO_LOGICAL, MappingKind.LOGICAL_TO_EXPOSED ) ) {
             assertThrows( NullPointerException.class, () -> new SchemaMapping( 101, "mapping", kind, null, 201,
-                    DataModel.RELATIONAL, DataModel.RELATIONAL, List.of() ) );
+                    DataModel.RELATIONAL, DataModel.RELATIONAL, List.of(), null ) );
         }
         assertThrows( IllegalArgumentException.class, () -> new SchemaMapping( 101, "mapping", MappingKind.PHYSICAL_TO_LOGICAL, 200L, 201,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of() ) );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of(), null ) );
     }
 
 
     private static SchemaMapping mapping( List<MappingRule> rules ) {
         return new SchemaMapping( 101, "mapping_101", MappingKind.PHYSICAL_TO_LOGICAL, null, 201,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, rules );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, rules, null );
     }
 
 

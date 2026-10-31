@@ -21,9 +21,7 @@ import java.util.List;
 
 
 /**
- * Names-only edit of an existing mapping.
- * Also supports selecting which accepted source columns are included.
- * IDs and physical bindings cannot be changed.
+ * Backend command object carrying the user’s requested mapping changes.
  * */
 public record MappingUpdate(
         long adapterId,
@@ -31,7 +29,19 @@ public record MappingUpdate(
         String expectedRevision,
         String mappingName,
         String logicalTableName,
-        List<ColumnName> columns ) {
+        List<ColumnName> columns,
+        Long targetNamespaceId,
+        Long existingTargetEntityId,
+        Long sourceAllocationId ) {
+
+    public MappingUpdate( long adapterId, long mappingId, String expectedRevision, String mappingName, String logicalTableName,
+            List<ColumnName> columns, Long targetNamespaceId ) {
+        this( adapterId, mappingId, expectedRevision, mappingName, logicalTableName, columns, targetNamespaceId, null, null );
+    }
+
+    public MappingUpdate( long adapterId, long mappingId, String expectedRevision, String mappingName, String logicalTableName, List<ColumnName> columns ) {
+        this( adapterId, mappingId, expectedRevision, mappingName, logicalTableName, columns, null );
+    }
 
     public record ColumnName( @JsonProperty(value = "logicalColumnId", required = true) long logicalColumnId,
                               @JsonProperty(value = "logicalName", required = true) String logicalName,

@@ -43,12 +43,15 @@ public final class MappingModel {
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
     public record Summary( long mappingId, long adapterId, String adapterName, String mappingName,
                            String namespaceName, String logicalTableName, boolean editable, String readOnlyReason,
-                           MappingKind kind, Long sourceEntityId, long targetEntityId, DataModel sourceModel, DataModel targetModel ) {
+                           MappingKind kind, Long sourceEntityId, long targetEntityId, DataModel sourceModel, DataModel targetModel,
+                           List<PhysicalSource> physicalSources, String revision, boolean removable, String removalBlockedReason, boolean removesTarget ) {
 
         public static Summary from( MappingState state ) {
             return new Summary( state.mapping().id(), state.adapter().id, state.adapter().uniqueName, state.mapping().name(),
                     state.namespace().name, state.table().name, state.editable(), state.readOnlyReason(),
-                    state.mapping().kind(), state.mapping().sourceEntityId(), state.mapping().targetEntityId(), state.mapping().sourceModel(), state.mapping().targetModel() );
+                    state.mapping().kind(), state.mapping().sourceEntityId(), state.mapping().targetEntityId(), state.mapping().sourceModel(), state.mapping().targetModel(),
+                    state.physicalTables().stream().map( p -> new PhysicalSource( p.allocationId, p.id, p.namespaceName, p.name ) ).toList(), state.revision(),
+                    state.removable(), state.removalBlockedReason(), state.fixedTargetEntityId() == null );
         }
 
     }
@@ -61,6 +64,27 @@ public final class MappingModel {
 
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
     public record ListResponse( List<AdapterMappings> adapters ) {
+    }
+
+
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+    public record OverviewResponse( List<Summary> mappings ) {
+    }
+
+
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+    public record Source( long adapterId, String adapterName, long targetEntityId, String namespaceName, String logicalTableName, MappingKind kind, long sourceAllocationId ) {
+
+        public static Source from( MappingState state ) {
+            var physical = state.physicalTables().get( 0 );
+            return new Source( state.adapter().id, state.adapter().uniqueName, state.table().id, physical.namespaceName, physical.name, state.mapping().kind(), physical.allocationId );
+        }
+
+    }
+
+
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+    public record SourcesResponse( List<Source> sources ) {
     }
 
 
@@ -114,7 +138,8 @@ public final class MappingModel {
                           String namespaceName, String logicalTableName, boolean editable, String readOnlyReason,
                           String revision, long namespaceId, boolean namespaceCaseSensitive, List<Column> columns,
                           List<PhysicalSource> physicalSources, MappingKind kind, Long sourceEntityId, long targetEntityId,
-                          DataModel sourceModel, DataModel targetModel, List<Rule> rules, Validation validation, List<RuleOption> availableRules ) {
+                          DataModel sourceModel, DataModel targetModel, List<Rule> rules, Validation validation, List<RuleOption> availableRules,
+                          boolean removable, String removalBlockedReason, boolean removesTarget, Long fixedTargetEntityId, List<Column> targetColumns ) {
 
         public static Detail from( MappingState state ) {
             List<Column> columns = state.columns().stream().map( column -> new Column(
@@ -130,7 +155,11 @@ public final class MappingModel {
                     state.physicalTables().stream().map( p -> new PhysicalSource( p.allocationId, p.id, p.namespaceName, p.name ) ).toList(),
                     state.mapping().kind(), state.mapping().sourceEntityId(), state.mapping().targetEntityId(), state.mapping().sourceModel(), state.mapping().targetModel(),
                     state.mapping().rules().stream().map( Rule::from ).toList(), Validation.current(),
-                    List.of( new RuleOption( "DIRECT_COLUMN", "Copy source value" ) ) );
+                    List.of( new RuleOption( "DIRECT_COLUMN", "Copy source value" ) ), state.removable(), state.removalBlockedReason(),
+                    state.fixedTargetEntityId() == null, state.fixedTargetEntityId(),
+                    state.targetColumns().stream().map( column -> new Column(
+                            column.id, column.name, column.position, AlgDataTypeFactory.DEFAULT.createTypeWithNullability( column.getAlgDataType( AlgDataTypeFactory.DEFAULT ), true ).getFullTypeString(),
+                            column.nullable, List.of(), true ) ).toList() );
         }
 
     }

@@ -31,6 +31,39 @@ public final class MappingRequest {
     }
 
 
+    public record OverviewRequest( Long adapterId, Long targetEntityId ) {
+    }
+
+
+    public record MappingIdRequest( @JsonProperty(value = "mappingId", required = true) long mappingId ) {
+    }
+
+
+    public record SourceRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
+                                 @JsonProperty(value = "targetEntityId", required = true) long targetEntityId, Long existingTargetEntityId, Long sourceAllocationId ) {
+    }
+
+
+    public record RemoveRequest( @JsonProperty(value = "mappingId", required = true) long mappingId,
+                                 @JsonProperty(value = "expectedRevision", required = true) String expectedRevision ) {
+    }
+
+
+    public record CreateRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
+                                 @JsonProperty(value = "targetEntityId", required = true) long targetEntityId,
+                                 @JsonProperty(value = "expectedRevision", required = true) String expectedRevision,
+                                 @JsonProperty(value = "mappingName", required = true) String mappingName,
+                                 @JsonProperty(value = "logicalTableName", required = true) String logicalTableName,
+                                 @JsonProperty(value = "columns", required = true) List<MappingUpdate.ColumnName> columns,
+                                 Long targetNamespaceId, Long existingTargetEntityId, Long sourceAllocationId ) {
+
+        public MappingUpdate toCommand() {
+            return new MappingUpdate( adapterId, -1, expectedRevision, mappingName, logicalTableName, columns, targetNamespaceId, existingTargetEntityId, sourceAllocationId );
+        }
+
+    }
+
+
     public record DetailRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
                                  @JsonProperty(value = "mappingId", required = true) long mappingId ) {
     }
@@ -41,10 +74,11 @@ public final class MappingRequest {
                                  @JsonProperty(value = "expectedRevision", required = true) String expectedRevision,
                                  @JsonProperty(value = "mappingName", required = true) String mappingName,
                                  @JsonProperty(value = "logicalTableName", required = true) String logicalTableName,
-                                 @JsonProperty(value = "columns", required = true) List<MappingUpdate.ColumnName> columns ) {
+                                 @JsonProperty(value = "columns", required = true) List<MappingUpdate.ColumnName> columns,
+                                 Long targetNamespaceId ) {
 
         public MappingUpdate toCommand() {
-            return new MappingUpdate( adapterId, mappingId, expectedRevision, mappingName, logicalTableName, columns );
+            return new MappingUpdate( adapterId, mappingId, expectedRevision, mappingName, logicalTableName, columns, targetNamespaceId );
         }
 
     }

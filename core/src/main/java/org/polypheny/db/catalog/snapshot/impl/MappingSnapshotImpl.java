@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.snapshot.impl;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,7 +40,7 @@ public final class MappingSnapshotImpl implements MappingSnapshot {
 
     private final List<SchemaMapping> mappings;
     private final Map<Long, SchemaMapping> mappingsById;
-    private final Map<Long, SchemaMapping> mappingsByLogicalEntity;
+    private final Map<Long, List<SchemaMapping>> mappingsByLogicalEntity;
 
 
     /**
@@ -54,7 +55,7 @@ public final class MappingSnapshotImpl implements MappingSnapshot {
         Objects.requireNonNull( mappings, "mappings" );
 
         Map<Long, SchemaMapping> byId = new HashMap<>();
-        Map<Long, SchemaMapping> byLogicalEntity = new HashMap<>();
+        Map<Long, List<SchemaMapping>> byLogicalEntity = new HashMap<>();
         for ( SchemaMapping mapping : mappings ) {
             Objects.requireNonNull( mapping, "mappings element" );
             Set<Long> ruleColumnIds = new HashSet<>();
@@ -72,16 +73,12 @@ public final class MappingSnapshotImpl implements MappingSnapshot {
             if ( byId.putIfAbsent( mapping.id(), mapping ) != null ) {
                 throw new GenericRuntimeException( "Duplicate mapping ID %d.", mapping.id() );
             }
-            SchemaMapping previous = byLogicalEntity.putIfAbsent( mapping.targetEntityId(), mapping );
-            if ( previous != null ) {
-                throw new GenericRuntimeException(
-                        "Duplicate logical entity ID %d in mappings %d and %d.",
-                        mapping.targetEntityId(), previous.id(), mapping.id() );
-            }
+            byLogicalEntity.computeIfAbsent( mapping.targetEntityId(), ignored -> new ArrayList<>() ).add( mapping );
         }
 
         this.mappings = List.copyOf( mappings );
         this.mappingsById = Map.copyOf( byId );
+        byLogicalEntity.replaceAll( ( id, values ) -> List.copyOf( values ) );
         this.mappingsByLogicalEntity = Map.copyOf( byLogicalEntity );
     }
 
@@ -93,10 +90,9 @@ public final class MappingSnapshotImpl implements MappingSnapshot {
 
 
     @Override
-    public @NotNull Optional<SchemaMapping> getMappingForLogicalEntity( long logicalEntityId ) {
-        return Optional.ofNullable( mappingsByLogicalEntity.get( logicalEntityId ) );
+    public @NotNull List<SchemaMapping> getMappingsForLogicalEntity( long logicalEntityId ) {
+        return mappingsByLogicalEntity.getOrDefault( logicalEntityId, List.of() );
     }
-
 
     @Override
     public @NotNull List<SchemaMapping> getMappings() {

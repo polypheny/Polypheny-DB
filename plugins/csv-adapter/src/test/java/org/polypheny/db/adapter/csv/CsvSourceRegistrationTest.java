@@ -29,10 +29,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.algebra.mapping.PhysicalMappingBinding;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
@@ -44,6 +47,8 @@ import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManagerImpl;
+import org.polypheny.db.ddl.MappingUpdate;
+import org.polypheny.db.catalog.mapping.MappingState;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -89,6 +94,7 @@ class CsvSourceRegistrationTest {
         Path csvFile = directory.resolve( "employees.csv" );
         String contents = "id:long,name:string\n1,Ada\n";
         Files.writeString( csvFile, contents );
+        Files.writeString( directory.resolve( "employees_extra.csv" ), contents );
 
         PolyCatalog catalog = newCatalog();
         long namespaceId = catalog.createNamespace( "csv_registration", DataModel.RELATIONAL, false, false );
@@ -115,11 +121,14 @@ class CsvSourceRegistrationTest {
             register.setAccessible( true );
             register.invoke( new DdlManagerImpl( catalog ), transaction, source, namespaceId );
 
-            assertEquals( 1, commitActions.size() );
+            assertEquals( 2, commitActions.size() );
             assertTrue( catalog.getSchemaMappings().isEmpty() );
-            commitActions.get( 0 ).run();
+            commitActions.forEach( Runnable::run );
 
-            SchemaMapping mapping = catalog.getSchemaMappings().values().iterator().next();
+            SchemaMapping mapping = catalog.getSchemaMappings().values().stream().filter( candidate ->
+                    catalog.getSnapshot().rel().getTable( candidate.targetEntityId() ).orElseThrow().name.equals( "employees0" ) ).findFirst().orElseThrow();
+            var extraMapping = catalog.getSchemaMappings().values().stream().filter( candidate -> candidate.id() != mapping.id() ).findFirst().orElseThrow();
+            long extraAllocationId = catalog.getSnapshot().alloc().getFromLogical( extraMapping.targetEntityId() ).get( 0 ).id;
             assertEquals( "employees0", catalog.getSnapshot().rel().getTable( mapping.targetEntityId() ).orElseThrow().name );
             long allocationId = catalog.getSnapshot().alloc().getFromLogical( mapping.targetEntityId() ).get( 0 ).id;
             assertEquals( "employees", source.adapterCatalog.fromAllocation( allocationId ).name );
@@ -128,7 +137,7 @@ class CsvSourceRegistrationTest {
             assertEquals( logicalColumns.stream().map( column -> new DirectColumnMappingRule( column.id ) ).toList(), mapping.rules() );
 
             catalog.commit();
-            assertEquals( mapping, catalog.getSnapshot().mappings().getMappingForLogicalEntity( mapping.targetEntityId() ).orElseThrow() );
+            assertEquals( mapping, catalog.getSnapshot().mappings().getMappingsForLogicalEntity( mapping.targetEntityId() ).get( 0 ) );
 
             AllocationTable allocation = catalog.getSnapshot().alloc().getFromLogical( mapping.targetEntityId() ).get( 0 ).unwrapOrThrow( AllocationTable.class );
             var savedPhysical = source.adapterCatalog.fromAllocation( allocation.id ).normalize();
@@ -143,12 +152,79 @@ class CsvSourceRegistrationTest {
 
             QueryProcessor processor = (QueryProcessor) Proxy.newProxyInstance( QueryProcessor.class.getClassLoader(),
                     new Class[]{ QueryProcessor.class }, ( proxy, method, args ) -> null );
+            Transaction mappingTransaction = (Transaction) Proxy.newProxyInstance( Transaction.class.getClassLoader(),
+                    new Class[]{ Transaction.class }, ( proxy, method, args ) -> {
+                        if ( method.getName().equals( "commit" ) ) {
+                            catalog.commit();
+                        }
+                        return method.getReturnType() == boolean.class ? false : null;
+                    } );
             Statement statement = (Statement) Proxy.newProxyInstance( Statement.class.getClassLoader(),
-                    new Class[]{ Statement.class }, ( proxy, method, args ) -> method.getName().equals( "getQueryProcessor" ) ? processor : null );
-            new DdlManagerImpl( catalog ).dropAdapter( "csv_registration_test", statement );
+                    new Class[]{ Statement.class }, ( proxy, method, args ) -> switch ( method.getName() ) {
+                        case "getQueryProcessor" -> processor;
+                        case "getTransaction" -> mappingTransaction;
+                        case "isAnalyze" -> false;
+                        default -> null;
+                    } );
+            var ddl = new DdlManagerImpl( catalog );
+            var draft = MappingState.draft( catalog, adapterId, mapping.targetEntityId() );
+            var names = draft.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id,
+                    "target_" + column.name, column.name.equals( "name" ) ) ).toList();
+            var created = ddl.createMapping( mapping.targetEntityId(), new MappingUpdate( adapterId, -1, draft.revision(),
+                    "Employee names", "employee_names", names ), statement );
+            var targetAllocation = catalog.getSnapshot().alloc().getFromLogical( created.table().id ).get( 0 ).unwrapOrThrow( AllocationTable.class );
+            PhysicalMappingBinding binding = PhysicalMappingBinding.create( created.mapping(), targetAllocation, source.adapterCatalog );
+            assertEquals( 2, binding.columns().size() );
+            assertEquals( List.of( "target_name" ), catalog.getSnapshot().rel().getColumns( created.table().id ).stream().map( column -> column.name ).toList() );
+            assertEquals( mapping, catalog.getSnapshot().mappings().getMappingsForLogicalEntity( mapping.targetEntityId() ).get( 0 ) );
 
-            assertTrue( catalog.getSnapshot().mappings().getMappingForLogicalEntity( mapping.targetEntityId() ).isEmpty() );
+            var targetPhysical = source.adapterCatalog.fromAllocation( targetAllocation.id ).normalize();
+            source.adapterCatalog.removeAllocAndPhysical( targetAllocation.id );
+            source.restoreTable( targetAllocation, List.of( targetPhysical ), null );
+            ddl.removeMapping( mapping.id(), MappingState.load( catalog, mapping.id() ).revision(), statement );
             assertTrue( catalog.getSnapshot().rel().getTable( mapping.targetEntityId() ).isEmpty() );
+            assertTrue( source.adapterCatalog.getPhysicalsFromAllocs( allocation.id ) == null );
+            assertTrue( !MappingState.load( catalog, created.mapping().id() ).removable() );
+            DataContext context = (DataContext) Proxy.newProxyInstance( DataContext.class.getClassLoader(), new Class[]{ DataContext.class },
+                    ( proxy, method, args ) -> method.getName().equals( "getStatement" ) ? statement : new AtomicBoolean( false ) );
+            var scan = (CsvFilterableTable) source.adapterCatalog.fromAllocation( targetAllocation.id );
+            try ( var rows = scan.scan( context, new ArrayList<>() ).enumerator() ) {
+                assertTrue( rows.moveNext() );
+                var rule = (DirectColumnMappingRule) created.mapping().rules().get( 0 );
+                int sourcePosition = binding.columns().get( rule.targetLogicalColumnId() ).position;
+                assertEquals( "Ada", rows.current()[sourcePosition].asString().value );
+                assertTrue( !rows.moveNext() );
+            }
+            assertEquals( contents, Files.readString( csvFile ) );
+            assertThrows( MappingState.EditException.class, () -> MappingState.draft( catalog, adapterId, created.table().id, created.table().id, targetAllocation.id ) );
+            var incoming = MappingState.draft( catalog, adapterId, extraMapping.targetEntityId(), created.table().id, extraAllocationId );
+            var incomingNames = incoming.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id,
+                    column.name.equals( "name" ) ? "target_name" : column.name, column.name.equals( "name" ) ) ).toList();
+            var attached = ddl.createMapping( extraMapping.targetEntityId(), new MappingUpdate( adapterId, -1, incoming.revision(),
+                    incoming.mapping().name(), created.table().name, incomingNames, created.namespace().id, created.table().id, extraAllocationId ), statement );
+            assertEquals( created.table().id, attached.table().id );
+            assertEquals( 2, catalog.getSnapshot().mappings().getMappingsForLogicalEntity( created.table().id ).size() );
+            var incomingPhysical = (CsvFilterableTable) source.adapterCatalog.fromAllocation( attached.mapping().sourceAllocationId() );
+            assertEquals( 2, incomingPhysical.columns.size() );
+            assertAppendedRows( catalog, targetAllocation, context );
+            try ( var rows = incomingPhysical.scan( context, new ArrayList<>() ).enumerator() ) {
+                assertTrue( rows.moveNext() );
+                assertEquals( "Ada", rows.current()[1].asString().value );
+                assertTrue( !rows.moveNext() );
+            }
+            ddl.removeMapping( attached.mapping().id(), attached.revision(), statement );
+            assertTrue( catalog.getSnapshot().rel().getTable( created.table().id ).isPresent() );
+            assertEquals( 1, catalog.getSnapshot().mappings().getMappingsForLogicalEntity( created.table().id ).size() );
+            assertTrue( !MappingState.load( catalog, created.mapping().id() ).removable() );
+            // Keep two contributions to exercise adapter cleanup for a shared target as well.
+            incoming = MappingState.draft( catalog, adapterId, extraMapping.targetEntityId(), created.table().id, extraAllocationId );
+            ddl.createMapping( extraMapping.targetEntityId(), new MappingUpdate( adapterId, -1, incoming.revision(),
+                    incoming.mapping().name(), created.table().name, incomingNames, created.namespace().id, created.table().id, extraAllocationId ), statement );
+            ddl.dropAdapter( "csv_registration_test", statement );
+
+            assertTrue( catalog.getSnapshot().mappings().getMappingsForLogicalEntity( mapping.targetEntityId() ).isEmpty() );
+            assertTrue( catalog.getSnapshot().rel().getTable( mapping.targetEntityId() ).isEmpty() );
+            assertTrue( catalog.getSnapshot().rel().getTable( created.table().id ).isEmpty() );
             assertTrue( catalog.getSnapshot().getAdapter( adapterId ).isEmpty() );
             assertEquals( contents, Files.readString( csvFile ) );
         } finally {
@@ -160,6 +236,29 @@ class CsvSourceRegistrationTest {
         }
     }
 
+
+    private static void assertAppendedRows( PolyCatalog catalog, AllocationTable allocation, DataContext context ) {
+        if ( !org.polypheny.db.sql.SqlLanguagePlugin.isInit() ) {
+            org.polypheny.db.sql.SqlLanguagePlugin.startup();
+        }
+        var planner = new org.polypheny.db.plan.hep.HepPlanner( new org.polypheny.db.plan.hep.HepProgramBuilder()
+                .addRuleInstance( org.polypheny.db.algebra.rules.AllocationToPhysicalScanRule.REL_INSTANCE )
+                .addRuleInstance( org.polypheny.db.algebra.rules.MappingTransformRule.REL_INSTANCE ).build() );
+        planner.addAlgTraitDef( org.polypheny.db.plan.ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( org.polypheny.db.schema.trait.ModelTraitDef.INSTANCE );
+        var cluster = org.polypheny.db.plan.AlgCluster.create( planner,
+                new org.polypheny.db.rex.RexBuilder( org.polypheny.db.algebra.type.AlgDataTypeFactory.DEFAULT ), null, catalog.getSnapshot() );
+        planner.setRoot( org.polypheny.db.algebra.logical.relational.LogicalRelScan.create( cluster, allocation ) );
+        var plan = planner.findBestExp();
+        var names = new ArrayList<String>();
+        try ( var interpreter = new org.polypheny.db.interpreter.Interpreter( context, plan ); var rows = interpreter.enumerator() ) {
+            while ( rows.moveNext() ) {
+                assertEquals( 1, rows.current().length );
+                names.add( rows.current()[0].asString().value );
+            }
+        }
+        assertEquals( List.of( "Ada", "Ada" ), names );
+    }
 
     private static PolyCatalog newCatalog() {
         if ( PolyphenyHomeDirManager.getMode() == null ) {

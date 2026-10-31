@@ -100,7 +100,7 @@ class RelationalSourceRegistrationTest {
         assertEquals( 2, catalog.getSnapshot().mappings().getMappings().size() );
         for ( String tableName : List.of( "employees", "departments" ) ) {
             var table = catalog.getSnapshot().rel().getTable( namespaceId, tableName ).orElseThrow();
-            var mapping = catalog.getSnapshot().mappings().getMappingForLogicalEntity( table.id ).orElseThrow();
+            var mapping = catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id ).get( 0 );
             var logicalColumns = catalog.getSnapshot().rel().getColumns( table.id );
             assertEquals( "exported_source_" + tableName + "_mapping", mapping.name() );
             assertEquals( 2, logicalColumns.size() );

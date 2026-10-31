@@ -164,11 +164,23 @@ public class HttpServer implements Runnable {
 
 
     private static void attachCatalogMetaRoutes( Javalin webuiServer, Crud crud ) {
+        webuiServer.post( "/getMappings", crud.mappingCrud::getMappings );
+
+        webuiServer.post( "/getMapping", crud.mappingCrud::getMapping );
+
+        webuiServer.post( "/getMappingSources", crud.mappingCrud::getMappingSources );
+
+        webuiServer.post( "/getMappingDraft", crud.mappingCrud::getMappingDraft );
+
+        webuiServer.post( "/createMapping", crud.mappingCrud::createMapping );
+
+        webuiServer.post( "/updateMapping", crud.mappingCrud::updateMapping );
+
+        webuiServer.post( "/removeMapping", crud.mappingCrud::removeMapping );
+
         webuiServer.post( "/getAdapterMappings", crud.mappingCrud::getAdapterMappings );
 
         webuiServer.post( "/getAdapterMapping", crud.mappingCrud::getAdapterMapping );
-
-        webuiServer.post( "/updateAdapterMapping", crud.mappingCrud::updateAdapterMapping );
 
         webuiServer.post( "/getSchemaTree", crud.catalogCrud::getSchemaTree );
 

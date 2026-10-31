@@ -73,9 +73,9 @@ class MappingSnapshotTest {
         mappings.remove( MAPPING_A );
         MappingSnapshot after = new MappingSnapshotImpl( mappings );
 
-        assertEquals( Optional.of( MAPPING_A ), before.getMappingForLogicalEntity( MAPPING_A.targetEntityId() ) );
+        assertEquals( List.of( MAPPING_A ), before.getMappingsForLogicalEntity( MAPPING_A.targetEntityId() ) );
         assertEquals( List.of( MAPPING_A, MAPPING_B ), before.getMappings() );
-        assertEquals( Optional.empty(), after.getMappingForLogicalEntity( MAPPING_A.targetEntityId() ) );
+        assertEquals( List.of(), after.getMappingsForLogicalEntity( MAPPING_A.targetEntityId() ) );
         assertEquals( List.of( MAPPING_B ), after.getMappings() );
     }
 
@@ -116,18 +116,19 @@ class MappingSnapshotTest {
 
 
     @Test
-    void rejectsDuplicateLogicalEntityIds() {
+    void indexesMultipleMappingsForTheSameTarget() {
         SchemaMapping duplicate = mapping( MAPPING_B.id(), MAPPING_A.targetEntityId() );
 
-        assertInvalid( () -> new MappingSnapshotImpl( List.of( MAPPING_A, duplicate ) ),
-                "logical entity ID", Long.toString( MAPPING_A.targetEntityId() ) );
+        var snapshot = new MappingSnapshotImpl( List.of( MAPPING_A, duplicate ) );
+        assertEquals( List.of( MAPPING_A, duplicate ), snapshot.getMappingsForLogicalEntity( MAPPING_A.targetEntityId() ) );
+        assertThrows( UnsupportedOperationException.class, () -> snapshot.getMappingsForLogicalEntity( MAPPING_A.targetEntityId() ).clear() );
     }
 
 
     @Test
     void rejectsDuplicateDirectRulesForOneLogicalColumn() {
         SchemaMapping mapping = new SchemaMapping( 101, "mapping_101", MappingKind.PHYSICAL_TO_LOGICAL, null, 201,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( FIRST_RULE, new DirectColumnMappingRule( FIRST_RULE.targetLogicalColumnId() ) ) );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( FIRST_RULE, new DirectColumnMappingRule( FIRST_RULE.targetLogicalColumnId() ) ), null );
 
         assertInvalid( () -> new MappingSnapshotImpl( List.of( mapping ) ),
                 "duplicate logical column ID", Long.toString( FIRST_RULE.targetLogicalColumnId() ) );
@@ -139,7 +140,7 @@ class MappingSnapshotTest {
         MappingRule unknownRule = new MappingRule() {
         };
         SchemaMapping mapping = new SchemaMapping( 101, "mapping_101", MappingKind.PHYSICAL_TO_LOGICAL, null, 201,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( unknownRule ) );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( unknownRule ), null );
 
         assertInvalid( () -> new MappingSnapshotImpl( List.of( mapping ) ), "rule type" );
     }
@@ -164,7 +165,7 @@ class MappingSnapshotTest {
 
     private static SchemaMapping mapping( long mappingId, long targetEntityId ) {
         return new SchemaMapping( mappingId, "mapping_" + mappingId, MappingKind.PHYSICAL_TO_LOGICAL, null, targetEntityId,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( SECOND_RULE, FIRST_RULE ) );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( SECOND_RULE, FIRST_RULE ), null );
     }
 
 
@@ -172,7 +173,7 @@ class MappingSnapshotTest {
         assertEquals( MAPPINGS, snapshot.getMappings() );
         for ( SchemaMapping mapping : MAPPINGS ) {
             assertEquals( Optional.of( mapping ), snapshot.getMapping( mapping.id() ) );
-            assertEquals( Optional.of( mapping ), snapshot.getMappingForLogicalEntity( mapping.targetEntityId() ) );
+            assertEquals( List.of( mapping ), snapshot.getMappingsForLogicalEntity( mapping.targetEntityId() ) );
         }
         assertMissing( snapshot );
     }
@@ -180,7 +181,7 @@ class MappingSnapshotTest {
 
     private static void assertMissing( MappingSnapshot snapshot ) {
         assertEquals( Optional.empty(), snapshot.getMapping( 999 ) );
-        assertEquals( Optional.empty(), snapshot.getMappingForLogicalEntity( 999 ) );
+        assertEquals( List.of(), snapshot.getMappingsForLogicalEntity( 999 ) );
     }
 
 

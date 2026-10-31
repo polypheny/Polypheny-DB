@@ -38,7 +38,12 @@ public record SchemaMapping(
         @JsonProperty long targetEntityId,
         @JsonProperty DataModel sourceModel,
         @JsonProperty DataModel targetModel,
-        @JsonProperty List<MappingRule> rules ) {
+        @JsonProperty List<MappingRule> rules,
+        @JsonProperty @SerializeNullable Long sourceAllocationId ) {
+
+    public SchemaMapping withSourceAllocation( long allocationId ) {
+        return new SchemaMapping( id, name, kind, sourceEntityId, targetEntityId, sourceModel, targetModel, rules, allocationId );
+    }
 
     public SchemaMapping {
         Objects.requireNonNull( name, "name" );

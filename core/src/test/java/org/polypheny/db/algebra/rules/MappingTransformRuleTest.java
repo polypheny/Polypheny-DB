@@ -199,11 +199,11 @@ class MappingTransformRuleTest {
         AlgDataType requested = logicalType( FIRST_ID, SECOND_ID );
         for ( SchemaMapping incompatible : List.of(
                 new SchemaMapping( original.id(), original.name(), MappingKind.LOGICAL_TO_LOGICAL, 19L, LOGICAL_ID,
-                        DataModel.RELATIONAL, DataModel.RELATIONAL, original.rules() ),
+                        DataModel.RELATIONAL, DataModel.RELATIONAL, original.rules(), null ),
                 new SchemaMapping( original.id(), original.name(), MappingKind.PHYSICAL_TO_LOGICAL, null, LOGICAL_ID,
-                        DataModel.DOCUMENT, DataModel.RELATIONAL, original.rules() ),
+                        DataModel.DOCUMENT, DataModel.RELATIONAL, original.rules(), null ),
                 new SchemaMapping( original.id(), original.name(), MappingKind.PHYSICAL_TO_LOGICAL, null, LOGICAL_ID,
-                        DataModel.RELATIONAL, DataModel.GRAPH, original.rules() ) ) ) {
+                        DataModel.RELATIONAL, DataModel.GRAPH, original.rules(), null ) ) ) {
             assertThrows( GenericRuntimeException.class, () -> resolve( fixture, requested, incompatible ) );
         }
     }
@@ -429,7 +429,7 @@ class MappingTransformRuleTest {
                     LogicalRelValues.createEmpty( cluster(), invalid ), logicalType( FIRST_ID ), mapping( FIRST_ID ) ) ) );
         }
         SchemaMapping wrongEntity = new SchemaMapping( 1, "wrong", MappingKind.PHYSICAL_TO_LOGICAL, null, LOGICAL_ID + 1,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, mapping( FIRST_ID ).rules() );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, mapping( FIRST_ID ).rules(), null );
         assertThrows( GenericRuntimeException.class, () -> PhysicalMappingBinding.create( wrongEntity, fixture.allocation, fixture.catalog ) );
     }
 
@@ -476,13 +476,13 @@ class MappingTransformRuleTest {
 
     private static SchemaMapping mapping( List<MappingRule> rules ) {
         return new SchemaMapping( 1, "direct", MappingKind.PHYSICAL_TO_LOGICAL, null, LOGICAL_ID,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, rules );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, rules, null );
     }
 
 
     private static SchemaMapping mapping( long... columnIds ) {
         return new SchemaMapping( 1, "direct", MappingKind.PHYSICAL_TO_LOGICAL, null, LOGICAL_ID,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, java.util.Arrays.stream( columnIds ).mapToObj( id -> (MappingRule) new DirectColumnMappingRule( id ) ).toList() );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, java.util.Arrays.stream( columnIds ).mapToObj( id -> (MappingRule) new DirectColumnMappingRule( id ) ).toList(), null );
     }
 
 

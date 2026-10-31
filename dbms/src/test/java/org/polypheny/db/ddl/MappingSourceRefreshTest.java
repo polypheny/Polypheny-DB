@@ -50,6 +50,13 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
@@ -119,7 +126,7 @@ class MappingSourceRefreshTest {
         commitActions.forEach( Runnable::run );
         catalog.commit();
         table = catalog.getSnapshot().rel().getTable( namespaceId, "customers" ).orElseThrow();
-        original = catalog.getSnapshot().mappings().getMappingForLogicalEntity( table.id ).orElseThrow();
+        original = catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id ).get( 0 );
     }
 
     @AfterEach
@@ -171,7 +178,7 @@ class MappingSourceRefreshTest {
     @Test
     void sourceDeletionPublishesOnceAfterCommitAndCleansExcludedFields() {
         catalog.updateSchemaMapping( new SchemaMapping( original.id(), original.name(), original.kind(), original.sourceEntityId(),
-                original.targetEntityId(), original.sourceModel(), original.targetModel(), original.rules().subList( 0, 1 ) ) );
+                original.targetEntityId(), original.sourceModel(), original.targetModel(), original.rules().subList( 0, 1 ), null ) );
         catalog.commit();
         var before = catalog.getSnapshot();
         assertEquals( 1, before.rel().getColumns( table.id ).size() );
@@ -219,6 +226,117 @@ class MappingSourceRefreshTest {
         assertSame( physicalTable, physicalCatalog.fromAllocation( allocation.id ) );
         assertEquals( columns.size(), physicalCatalog.getColumns( allocation.id ).size() );
         assertEquals( 0, notifications.get() );
+    }
+
+
+    @Test
+    void refreshesSharedTargetUsingPhysicalNamesAfterLogicalRenames() {
+        addSharedSource();
+        var id = catalog.getSnapshot().rel().getColumn( table.id, "id" ).orElseThrow();
+        catalog.getLogicalRel( table.namespaceId ).renameTable( table.id, "customers_target" );
+        catalog.getLogicalRel( table.namespaceId ).renameColumn( id.id, "customer_id" );
+        catalog.getAdapterCatalog( source.adapterId ).orElseThrow().renameLogicalColumn( id.id, "customer_id" );
+        catalog.commit();
+        var columns = catalog.getSnapshot().rel().getColumns( table.id );
+        var mappings = catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id );
+
+        assertTrue( ddl.refreshSourceSchemaIfNeeded( table.id, statement ).isEmpty() );
+        catalog.commit();
+
+        assertEquals( "customers_target", catalog.getSnapshot().rel().getTable( table.id ).orElseThrow().name );
+        assertEquals( columns, catalog.getSnapshot().rel().getColumns( table.id ) );
+        assertEquals( mappings, catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id ) );
+    }
+
+
+    @Test
+    void refreshesReorderedAndAdditionalPhysicalFieldsWithoutChangingSharedTarget() {
+        addSharedSource();
+        var columns = catalog.getSnapshot().rel().getColumns( table.id );
+        var mappings = catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id );
+        export( List.of( column( "name", PolyType.VARCHAR, 40, 1 ), column( "age", PolyType.INTEGER, null, 2 ), column( "id", PolyType.INTEGER, null, 3 ) ) );
+
+        assertEquals( 2, ddl.refreshSourceSchemaIfNeeded( table.id, statement ).size() );
+        catalog.commit();
+
+        assertEquals( columns, catalog.getSnapshot().rel().getColumns( table.id ) );
+        assertEquals( mappings, catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id ) );
+        var adapterCatalog = (RelAdapterCatalog) catalog.getAdapterCatalog( source.adapterId ).orElseThrow();
+        for ( var allocation : catalog.getSnapshot().alloc().getFromLogical( table.id ) ) {
+            var physical = adapterCatalog.fromAllocation( allocation.id );
+            assertEquals( List.of( "name", "age", "id" ), physical.getColumnNames() );
+            assertEquals( List.of( 0, 1, 2 ), physical.columns.stream().map( column -> column.position ).toList() );
+            assertEquals( columns.stream().map( column -> column.id ).collect( Collectors.toSet() ),
+                    physical.columns.stream().filter( column -> !column.name.equals( "age" ) ).map( column -> column.id ).collect( Collectors.toSet() ) );
+        }
+        assertTrue( ddl.refreshSourceSchemaIfNeeded( table.id, statement ).isEmpty() );
+        export( List.of( column( "id", PolyType.INTEGER, null, 1 ), column( "name", PolyType.VARCHAR, 40, 2 ) ) );
+        assertEquals( 2, ddl.refreshSourceSchemaIfNeeded( table.id, statement ).size() );
+        catalog.commit();
+        for ( var allocation : catalog.getSnapshot().alloc().getFromLogical( table.id ) ) {
+            assertEquals( 2, adapterCatalog.getColumns( allocation.id ).size() );
+        }
+        assertEquals( mappings, catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id ) );
+    }
+
+
+    @Test
+    void rejectsIncompatibleMappedFieldsWithoutChangingEitherSourceOrTarget() {
+        addSharedSource();
+        var before = catalog.getSnapshot();
+        var adapterCatalog = (RelAdapterCatalog) catalog.getAdapterCatalog( source.adapterId ).orElseThrow();
+        var physicals = before.alloc().getFromLogical( table.id ).stream().map( allocation -> adapterCatalog.fromAllocation( allocation.id ) ).toList();
+        export( List.of( column( "id", PolyType.BIGINT, null, 1 ), column( "name", PolyType.VARCHAR, 40, 2 ) ) );
+
+        var error = assertThrows( GenericRuntimeException.class, () -> ddl.refreshSourceSchemaIfNeeded( table.id, statement ) );
+
+        assertTrue( error.getMessage().contains( "incompatible" ) );
+        assertSame( before, catalog.getSnapshot() );
+        assertEquals( physicals, before.alloc().getFromLogical( table.id ).stream().map( allocation -> adapterCatalog.fromAllocation( allocation.id ) ).toList() );
+        assertEquals( before.mappings().getMappingsForLogicalEntity( table.id ), catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id ) );
+    }
+
+
+    @Test
+    void rejectsMissingSourceWithoutDeletingTheSharedTarget() {
+        addSharedSource();
+        var before = catalog.getSnapshot();
+        when( source.getExportedColumns() ).thenReturn( Map.of() );
+
+        var error = assertThrows( GenericRuntimeException.class, () -> ddl.refreshSourceSchemaIfNeeded( table.id, statement ) );
+
+        assertTrue( error.getMessage().contains( "no longer available" ) );
+        assertSame( before, catalog.getSnapshot() );
+        assertTrue( catalog.getSnapshot().rel().getTable( table.id ).isPresent() );
+        assertEquals( 2, catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id ).size() );
+    }
+
+
+    private void addSharedSource() {
+        var snapshot = catalog.getSnapshot();
+        var first = snapshot.alloc().getFromLogical( table.id ).get( 0 );
+        var allocations = catalog.getAllocRel( table.namespaceId );
+        var placement = allocations.addPlacement( table.id, table.namespaceId, source.adapterId );
+        var second = allocations.addAllocation( source.adapterId, placement.id, first.partitionId, table.id );
+        var adapterCatalog = (RelAdapterCatalog) catalog.getAdapterCatalog( source.adapterId ).orElseThrow();
+        var physical = adapterCatalog.fromAllocation( first.id );
+        for ( var column : snapshot.rel().getColumns( table.id ) ) {
+            allocations.addColumn( placement.id, table.id, column.id, source.adapterId, PlacementType.STATIC, column.position );
+        }
+        var physicalColumns = physical.columns.stream().map( column -> new PhysicalColumn( column.name, table.id, second.id,
+                source.adapterId, column.position, snapshot.rel().getColumn( column.id ).orElseThrow() ) ).toList();
+        adapterCatalog.addPhysical( second, new PhysicalTable( IdBuilder.getInstance().getNewPhysicalId(), second.id, table.id,
+                physical.name, physicalColumns, physical.namespaceId, physical.namespaceName, List.of(), source.adapterId ) );
+        catalog.updateSchemaMapping( original.withSourceAllocation( first.id ) );
+        catalog.addSchemaMapping( new SchemaMapping( IdBuilder.getInstance().getNewMappingId(), "Additional source", original.kind(), null,
+                table.id, original.sourceModel(), original.targetModel(), original.rules(), second.id ) );
+        doAnswer( invocation -> {
+            AllocationTable allocation = invocation.getArgument( 0 );
+            List<PhysicalEntity> entities = invocation.getArgument( 1 );
+            adapterCatalog.addPhysical( allocation, entities.toArray( PhysicalEntity[]::new ) );
+            return null;
+        } ).when( source ).restoreTable( any( AllocationTable.class ), any(), any() );
+        catalog.commit();
     }
 
 

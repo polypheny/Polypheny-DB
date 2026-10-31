@@ -145,6 +145,10 @@ public abstract class Catalog implements ExtensionPoint {
     }
 
 
+    public void removeSchemaMappingsForAllocation( long allocationId ) {
+        throw new UnsupportedOperationException( "Schema mappings are not supported by this catalog." );
+    }
+
     public void updateSchemaMapping( SchemaMapping mapping ) {
         throw new UnsupportedOperationException( "Schema mapping updates are not supported by this catalog." );
     }

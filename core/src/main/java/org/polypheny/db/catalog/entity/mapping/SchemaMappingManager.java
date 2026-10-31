@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -51,6 +52,8 @@ import org.polypheny.db.util.Pair;
  */
 public final class SchemaMappingManager {
 
+    public static final String LAST_SOURCE_MAPPING_REASON = "An imported source table must always have a mapping. Remove the source table or adapter instead.";
+
     private SchemaMappingManager() {
     }
 
@@ -58,13 +61,71 @@ public final class SchemaMappingManager {
     /**
      * Creates a direct mapping object. The caller registers it after the adapter has registered its physical columns.
      */
-    public static SchemaMapping createDefaultMapping( String adapterName, String sourceTableName, long logicalEntityId, DataModel dataModel, List<Long> columnIds ) {
+    public static SchemaMapping createDefaultMapping( String adapterName, String sourceTableName, LogicalTable table, List<Long> columnIds ) {
+        return createDefaultMapping( adapterName, sourceTableName, table.id, table.dataModel, columnIds );
+    }
 
+
+    public static SchemaMapping createDefaultMapping( String adapterName, String sourceTableName, long logicalEntityId, DataModel dataModel, List<Long> columnIds ) {
+        return createMapping( defaultMappingName( adapterName, sourceTableName ), logicalEntityId, dataModel, columnIds );
+    }
+
+
+    public static boolean isMappingNameTaken( Collection<SchemaMapping> mappings, String name, long mappingId ) {
+        String key = mappingNameKey( name );
+        return mappings.stream().anyMatch( other -> other.id() != mappingId && mappingNameKey( other.name() ).equals( key ) );
+    }
+
+
+    public record PhysicalSource( long adapterId, String namespaceName, String tableName ) {
+    }
+
+
+    public static List<AllocationEntity> sourceAllocations( Catalog catalog, SchemaMapping mapping ) {
+        return catalog.getSnapshot().alloc().getFromLogical( mapping.targetEntityId() ).stream()
+                .filter( allocation -> mapping.sourceAllocationId() == null || mapping.sourceAllocationId() == allocation.id ).toList();
+    }
+
+    public static Set<PhysicalSource> physicalSources( Catalog catalog, SchemaMapping mapping ) {
+        return sourceAllocations( catalog, mapping ).stream()
+                .flatMap( allocation -> catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow()
+                        .getPhysicalsFromAllocs( allocation.id ).stream() )
+                .map( physical -> new PhysicalSource( physical.adapterId, physical.namespaceName, physical.name ) ).collect( Collectors.toSet() );
+    }
+
+
+    public static boolean isPhysicalSourceMappedToTarget( Catalog catalog, SchemaMapping source, long targetEntityId ) {
+        Set<PhysicalSource> sources = physicalSources( catalog, source );
+        return catalog.getSnapshot().mappings().getMappingsForLogicalEntity( targetEntityId ).stream()
+                .flatMap( mapping -> physicalSources( catalog, mapping ).stream() ).anyMatch( sources::contains );
+    }
+
+    public static String removalBlockedReason( Catalog catalog, Collection<SchemaMapping> mappings, SchemaMapping mapping, LogicalTable table ) {
+        if ( mappings.stream().anyMatch( other -> other.sourceEntityId() != null && other.sourceEntityId() == mapping.targetEntityId() ) ) {
+            return "The target table is used as a source by another mapping.";
+        }
+        if ( table != null && table.entityType == EntityType.SOURCE && mapping.kind() == MappingKind.PHYSICAL_TO_LOGICAL ) {
+            Set<PhysicalSource> remainingSources = mappings.stream()
+                    .filter( other -> other.id() != mapping.id() && other.kind() == MappingKind.PHYSICAL_TO_LOGICAL )
+                    .flatMap( other -> physicalSources( catalog, other ).stream() ).collect( Collectors.toSet() );
+            if ( !remainingSources.containsAll( physicalSources( catalog, mapping ) ) ) {
+                return LAST_SOURCE_MAPPING_REASON;
+            }
+        }
+        return null;
+    }
+
+
+    private static String mappingNameKey( String name ) {
+        return name.trim().toLowerCase( Locale.ROOT );
+    }
+
+
+    public static SchemaMapping createMapping( String name, long logicalEntityId, DataModel dataModel, List<Long> columnIds ) {
         long id = IdBuilder.getInstance().getNewMappingId();
-        String name = defaultMappingName( adapterName, sourceTableName );
         List<MappingRule> rules = columnIds.stream().<MappingRule>map( DirectColumnMappingRule::new ).toList();
 
-        return new SchemaMapping( id, name, MappingKind.PHYSICAL_TO_LOGICAL, null, logicalEntityId, dataModel, dataModel, rules );
+        return new SchemaMapping( id, name, MappingKind.PHYSICAL_TO_LOGICAL, null, logicalEntityId, dataModel, dataModel, rules, null );
     }
 
 
@@ -78,7 +139,7 @@ public final class SchemaMappingManager {
      */
     public static SchemaMapping renameMapping( SchemaMapping mapping, String name ) {
         return new SchemaMapping( mapping.id(), name, mapping.kind(), mapping.sourceEntityId(),
-                mapping.targetEntityId(), mapping.sourceModel(), mapping.targetModel(), mapping.rules() );
+                mapping.targetEntityId(), mapping.sourceModel(), mapping.targetModel(), mapping.rules(), mapping.sourceAllocationId() );
     }
 
 
@@ -137,6 +198,17 @@ public final class SchemaMappingManager {
      */
     public static void validateMappings( MappingSnapshot mappings, LogicalRelSnapshot rels, AllocSnapshot alloc, Catalog catalog ) {
         for ( SchemaMapping mapping : mappings.getMappings() ) {
+            var siblings = mappings.getMappingsForLogicalEntity( mapping.targetEntityId() );
+            if ( siblings.size() > 1 && (mapping.sourceAllocationId() == null || siblings.stream().anyMatch( other -> other.id() != mapping.id()
+                    && Objects.equals( other.sourceAllocationId(), mapping.sourceAllocationId() ) )) ) {
+                throw new GenericRuntimeException( "Mappings sharing a target require distinct physical source allocations." );
+            }
+            if ( siblings.size() > 1 && siblings.stream().anyMatch( other -> !new HashSet<>( other.rules() ).equals( new HashSet<>( mapping.rules() ) ) ) ) {
+                throw new GenericRuntimeException( "Mappings sharing a target must cover the same logical columns." );
+            }
+            if ( siblings.size() > 1 && alloc.getFromLogical( mapping.targetEntityId() ).stream().map( allocation -> allocation.partitionId ).distinct().count() != 1 ) {
+                throw new GenericRuntimeException( "Mappings sharing a target require a single target partition." );
+            }
             validateMappingKind( mapping );
             LogicalTable logicalTable = validateTargetTable( mapping, rels );
             List<AllocationEntity> allocations = validateAllocationPresence( mapping, alloc );
@@ -170,7 +242,8 @@ public final class SchemaMappingManager {
 
 
     private static List<AllocationEntity> validateAllocationPresence( SchemaMapping mapping, AllocSnapshot alloc ) {
-        List<AllocationEntity> allocations = alloc.getFromLogical( mapping.targetEntityId() );
+        List<AllocationEntity> allocations = alloc.getFromLogical( mapping.targetEntityId() ).stream()
+                .filter( allocation -> mapping.sourceAllocationId() == null || mapping.sourceAllocationId() == allocation.id ).toList();
         if ( allocations.isEmpty() ) {
             throw new GenericRuntimeException( "Mapping %d requires an allocation for logical entity %d.", mapping.id(), mapping.targetEntityId() );
         }
@@ -325,6 +398,7 @@ public final class SchemaMappingManager {
                 && Objects.equals( logical.scale, physical.scale )
                 && Objects.equals( logical.dimension, physical.dimension )
                 && Objects.equals( logical.cardinality, physical.cardinality )
+                && logical.elementsNullable == physical.elementsNullable
                 && logical.nullable == physical.nullable
                 && logical.collation == physical.collation;
     }

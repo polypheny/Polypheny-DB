@@ -86,7 +86,9 @@ public record PhysicalMappingBinding(
                 || mapping.sourceModel() != DataModel.RELATIONAL || mapping.targetModel() != DataModel.RELATIONAL ) {
             throw new GenericRuntimeException( "Mapping %d is not a relational physical-to-logical mapping.", mapping.id() );
         }
-        if ( mapping.targetEntityId() != logicalEntityId ) {
+        // check that the binding uses the mapping’s specified source allocation
+        // allocation should be checked for multiple source to single target mapping
+        if ( mapping.targetEntityId() != logicalEntityId || (mapping.sourceAllocationId() != null && mapping.sourceAllocationId() != allocationId) ) {
             throw new GenericRuntimeException( "Mapping %d does not match allocation %d.", mapping.id(), allocationId );
         }
     }

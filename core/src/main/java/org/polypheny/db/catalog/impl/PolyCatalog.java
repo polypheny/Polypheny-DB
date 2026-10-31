@@ -146,8 +146,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     private final AtomicBoolean dirty = new AtomicBoolean( false );
     @Getter
     PropertyChangeListener changeListener = evt -> dirty.set( true );
-    // indicates if the state has advanced and the snapshot has to be recreated or can be reused // trx without ddl
-    private long lastCommitSnapshotId = 0;
     private volatile Snapshot snapshot;
     private String backup;
 
@@ -249,6 +247,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         if ( schemaMappings.containsKey( mapping.id() ) ) {
             throw new GenericRuntimeException( "Mapping ID %d already exists.", mapping.id() );
         }
+        validateMappingName( mapping );
         Map<Long, SchemaMapping> candidate = new ConcurrentHashMap<>( schemaMappings );
         candidate.put( mapping.id(), mapping );
         SnapshotBuilder.createSnapshot( snapshot == null ? 0 : snapshot.id(), this, logicalCatalogs, allocationCatalogs, candidate );
@@ -259,7 +258,13 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Override
     public synchronized void removeSchemaMapping( long mappingId ) {
-        if ( schemaMappings.remove( mappingId ) != null ) {
+        SchemaMapping mapping = schemaMappings.get( mappingId );
+        if ( mapping != null ) {
+            String reason = SchemaMappingManager.removalBlockedReason( this, schemaMappings.values(), mapping, snapshot.rel().getTable( mapping.targetEntityId() ).orElse( null ) );
+            if ( reason != null ) {
+                throw new GenericRuntimeException( reason );
+            }
+            schemaMappings.remove( mappingId );
             change();
         }
     }
@@ -275,16 +280,31 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
+    public synchronized void removeSchemaMappingsForAllocation( long allocationId ) {
+        if ( schemaMappings.values().removeIf( mapping -> Objects.equals( mapping.sourceAllocationId(), allocationId ) ) ) {
+            change();
+        }
+    }
+
+    @Override
     public synchronized void updateSchemaMapping( SchemaMapping mapping ) {
         SchemaMapping previous = schemaMappings.get( mapping.id() );
         if ( previous == null || previous.targetEntityId() != mapping.targetEntityId() ) {
             throw new GenericRuntimeException( "An existing mapping with the same logical owner is required." );
         }
+        validateMappingName( mapping );
         Map<Long, SchemaMapping> candidate = new ConcurrentHashMap<>( schemaMappings );
         candidate.put( mapping.id(), mapping );
         SnapshotBuilder.createSnapshot( snapshot.id(), this, logicalCatalogs, allocationCatalogs, candidate );
         schemaMappings.put( mapping.id(), mapping );
         change();
+    }
+
+
+    private void validateMappingName( SchemaMapping mapping ) {
+        if ( SchemaMappingManager.isMappingNameTaken( schemaMappings.values(), mapping.name(), mapping.id() ) ) {
+            throw new GenericRuntimeException( "A mapping with this name already exists: %s", mapping.name() );
+        }
     }
 
 

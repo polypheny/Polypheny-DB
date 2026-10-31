@@ -20,21 +20,32 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.http.Context;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.MappingKind;
-import org.polypheny.db.catalog.mapping.MappingState;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.mapping.MappingState.EditException;
+import org.polypheny.db.catalog.mapping.MappingState;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.mapping.MappingModel;
+import org.polypheny.db.webui.models.requests.MappingRequest.CreateRequest;
 import org.polypheny.db.webui.models.requests.MappingRequest.DetailRequest;
 import org.polypheny.db.webui.models.requests.MappingRequest.ListRequest;
+import org.polypheny.db.webui.models.requests.MappingRequest.MappingIdRequest;
+import org.polypheny.db.webui.models.requests.MappingRequest.OverviewRequest;
+import org.polypheny.db.webui.models.requests.MappingRequest.RemoveRequest;
+import org.polypheny.db.webui.models.requests.MappingRequest.SourceRequest;
 import org.polypheny.db.webui.models.requests.MappingRequest.UpdateRequest;
 
 /**
@@ -55,7 +66,125 @@ public class MappingCrud {
         this.crud = crud;
     }
 
+    /**
+     * Returns existing, saved mappings for the mapping-list screens
+     */
+    public void getMappings( Context context ) {
+        respond( context, () -> {
+            OverviewRequest request = read( context, OverviewRequest.class );
+            Catalog catalog = Catalog.getInstance();
+            synchronized ( catalog ) {
+                validateAdapterFilter( catalog, request.adapterId() );
+                var snapshot = catalog.getSnapshot();
+                return new MappingModel.OverviewResponse( snapshot.mappings().getMappings().stream()
+                        .filter( mapping -> request.targetEntityId() == null || mapping.targetEntityId() == request.targetEntityId() )
+                        .filter( mapping -> request.adapterId() == null || SchemaMappingManager.sourceAllocations( catalog, mapping ).stream()
+                                .anyMatch( allocation -> allocation.adapterId == request.adapterId() ) )
+                        .map( mapping -> MappingModel.Summary.from( MappingState.load( catalog, mapping.id() ) ) )
+                        .sorted( Comparator.comparing( MappingModel.Summary::mappingName ).thenComparingLong( MappingModel.Summary::mappingId ) ).toList() );
+            }
+        } );
+    }
 
+    /**
+     * Loads an existing mapping by its ID and returns its full details for the view or edit screen
+     */
+    public void getMapping( Context context ) {
+        respond( context, () -> {
+            var request = read( context, MappingIdRequest.class );
+            Catalog catalog = Catalog.getInstance();
+            synchronized ( catalog ) {
+                return MappingModel.Detail.from( MappingState.load( catalog, request.mappingId() ) );
+            }
+        } );
+    }
+
+    /**
+     * Returns the available sources for creating a mapping, optionally filtering by adapter and excluding sources already mapped to a specified target.
+     */
+    public void getMappingSources( Context context ) {
+        respond( context, () -> {
+            var request = read( context, OverviewRequest.class );
+            Catalog catalog = Catalog.getInstance();
+            synchronized ( catalog ) {
+                validateAdapterFilter( catalog, request.adapterId() );
+                var snapshot = catalog.getSnapshot();
+                var seenSources = new HashSet<>();
+                var sources = snapshot.rel().getTables( (Pattern) null, null ).stream()
+                        .filter( table -> table.entityType == EntityType.SOURCE && !table.modifiable )
+                        .sorted( Comparator.comparingLong( table -> table.id ) )
+                        .flatMap( table -> snapshot.alloc().getFromLogical( table.id ).stream()
+                        .filter( allocation -> request.adapterId() == null || allocation.adapterId == request.adapterId() ) )
+                        .distinct().map( source -> MappingState.draft( catalog, source.adapterId, source.logicalId, null, source.id ) )
+                        .filter( MappingState::editable )
+                        .filter( state -> request.targetEntityId() == null || !SchemaMappingManager.isPhysicalSourceMappedToTarget( catalog, state.mapping(), request.targetEntityId() ) )
+                        .filter( state -> seenSources.add( SchemaMappingManager.physicalSources( catalog, state.mapping() ) ) )
+                        .map( MappingModel.Source::from ).toList();
+                return new MappingModel.SourcesResponse( sources );
+            }
+        } );
+    }
+
+
+    /**
+     * Prepares a proposed mapping for the Create Mapping screen
+     */
+    public void getMappingDraft( Context context ) {
+        respond( context, () -> {
+            var request = read( context, SourceRequest.class );
+            Catalog catalog = Catalog.getInstance();
+            synchronized ( catalog ) {
+                var state = MappingState.draft( catalog, request.adapterId(), request.targetEntityId(), request.existingTargetEntityId(), request.sourceAllocationId() );
+                if ( !state.editable() ) {
+                    throw new EditException( "UNSUPPORTED_MAPPING", state.readOnlyReason() );
+                }
+                return MappingModel.Detail.from( state );
+            }
+        } );
+    }
+
+
+    /**
+     * Validates the submitted mapping draft and creates a saved mapping,
+     * either creating a new target table or connecting the selected source to an existing target
+     */
+    public void createMapping( Context context ) {
+        respond( context, () -> {
+            var request = read( context, CreateRequest.class );
+            return transact( transaction -> MappingModel.Detail.from( DdlManager.getInstance()
+                    .createMapping( request.targetEntityId(), request.toCommand(), transaction.createStatement() ) ) );
+        } );
+    }
+
+
+    /**
+     * Remove existing mapping
+     */
+    public void removeMapping( Context context ) {
+        respond( context, () -> {
+            var request = read( context, RemoveRequest.class );
+            return transact( transaction -> {
+                DdlManager.getInstance().removeMapping( request.mappingId(), request.expectedRevision(), transaction.createStatement() );
+                return Map.of( "removed", true );
+            } );
+        } );
+    }
+
+
+    /**
+     * Checks that an optional adapter ID is non negative and exists in the catalog
+     */
+    private static void validateAdapterFilter( Catalog catalog, Long adapterId ) {
+        if ( adapterId != null && (adapterId < 0 || catalog.getSnapshot().getAdapter( adapterId ).isEmpty()) ) {
+            throw MappingState.notFound();
+        }
+    }
+
+
+    /**
+     * Supplies the list of mappings for each adapter.
+     * Mappings appear in the left sidebar under the adapter name
+     */
     public void getAdapterMappings( Context context ) {
         respond( context, () -> {
             ListRequest request = read( context, ListRequest.class );
@@ -72,7 +201,7 @@ public class MappingCrud {
                     }
                     var summaries = snapshot.mappings().getMappings().stream()
                             .filter( mapping -> mapping.kind() == MappingKind.PHYSICAL_TO_LOGICAL )
-                            .filter( mapping -> snapshot.alloc().getFromLogical( mapping.targetEntityId() ).stream().anyMatch( a -> a.adapterId == adapterId ) )
+                            .filter( mapping -> SchemaMappingManager.sourceAllocations( catalog, mapping ).stream().anyMatch( a -> a.adapterId == adapterId ) )
                             .map( mapping -> MappingModel.Summary.from( MappingState.load( catalog, adapterId, mapping.id() ) ) ).toList();
                     return new MappingModel.AdapterMappings( adapterId, adapter.uniqueName, summaries );
                 } ).toList() );
@@ -81,6 +210,9 @@ public class MappingCrud {
     }
 
 
+    /**
+     * Loads a saved mapping belonging to the specified adapter and returns its full details for the view or edit screen
+     */
     public void getAdapterMapping( Context context ) {
         respond( context, () -> {
             DetailRequest request = read( context, DetailRequest.class );
@@ -92,24 +224,32 @@ public class MappingCrud {
     }
 
 
-    public void updateAdapterMapping( Context context ) {
+    /**
+     * Update adapter mapping
+     */
+    public void updateMapping( Context context ) {
         respond( context, () -> {
             UpdateRequest request = read( context, UpdateRequest.class );
-            Transaction transaction = crud.getTransaction();
-            try {
-                var saved = DdlManager.getInstance().updateMapping( request.toCommand(), transaction.createStatement() );
-                return MappingModel.Detail.from( saved );
-            } catch ( Exception e ) {
-                if ( transaction.isActive() ) {
-                    try {
-                        transaction.rollback( "Mapping edit failed" );
-                    } catch ( Exception rollbackError ) {
-                        e.addSuppressed( rollbackError );
-                    }
-                }
-                throw e;
-            }
+            return transact( transaction -> MappingModel.Detail.from( DdlManager.getInstance()
+                    .updateMapping( request.toCommand(), transaction.createStatement() ) ) );
         } );
+    }
+
+
+    private <T> T transact( Function<Transaction, T> action ) {
+        Transaction transaction = crud.getTransaction();
+        try {
+            return action.apply( transaction );
+        } catch ( Exception e ) {
+            if ( transaction.isActive() ) {
+                try {
+                    transaction.rollback( "Mapping edit failed" );
+                } catch ( Exception rollbackError ) {
+                    e.addSuppressed( rollbackError );
+                }
+            }
+            throw e;
+        }
     }
 
 

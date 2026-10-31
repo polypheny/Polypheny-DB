@@ -34,10 +34,10 @@ public interface MappingSnapshot {
     Optional<SchemaMapping> getMapping( long mappingId );
 
     /**
-     * Returns the definition targeting the given logical entity ID, or an empty optional if it is absent.
+     * Returns the definitions targeting the given logical entity ID, or an empty list if none are present.
      */
     @NonNull
-    Optional<SchemaMapping> getMappingForLogicalEntity( long logicalEntityId );
+    List<SchemaMapping> getMappingsForLogicalEntity( long logicalEntityId );
 
     /**
      * Returns every definition exactly once in an immutable list in input iteration order.

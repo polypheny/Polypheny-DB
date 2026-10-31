@@ -77,7 +77,7 @@ class CatalogRestoreRollbackTest {
         savedAdapter.addPhysical( allocation, new PhysicalTable( saved.idBuilder.getNewPhysicalId(), allocation.id, table.id,
                 table.name, List.of( physicalColumn ), namespaceId, "source", List.of(), adapterId ) );
         var mapping = new SchemaMapping( saved.idBuilder.getNewMappingId(), savedName, MappingKind.PHYSICAL_TO_LOGICAL,
-                null, table.id, DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new DirectColumnMappingRule( column.id ) ) );
+                null, table.id, DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new DirectColumnMappingRule( column.id ) ), null );
         saved.addSchemaMapping( mapping );
         saved.commit();
         String image = saved.serialize();

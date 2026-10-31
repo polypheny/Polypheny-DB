@@ -518,8 +518,11 @@ public abstract class DdlManager {
      */
     public abstract void renameTable( LogicalTable table, String newTableName, Statement statement );
 
-    /** Applies a names-only mapping edit and commits the owning transaction once. */
     public abstract MappingState updateMapping( MappingUpdate update, Statement statement );
+
+    public abstract MappingState createMapping( long targetEntityId, MappingUpdate draft, Statement statement );
+
+    public abstract void removeMapping( long mappingId, String expectedRevision, Statement statement );
 
     public abstract void renameCollection( LogicalCollection collection, String newName, Statement statement );
 

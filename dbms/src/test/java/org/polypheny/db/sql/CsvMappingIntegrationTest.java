@@ -36,6 +36,8 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
+import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.mapping.MappingState;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.MappingUpdate;
@@ -74,7 +76,7 @@ class CsvMappingIntegrationTest {
                     + "{\"method\":\"link\",\"directoryName\":\"" + escapedDirectory + "\",\"directory\":\"" + escapedDirectory + "\",\"maxStringLength\":\"40\"}'" );
             long adapterId = Catalog.snapshot().getAdapter( adapterName ).orElseThrow().id;
             var table = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, sourceName ).orElseThrow();
-            var mapping = Catalog.snapshot().mappings().getMappingForLogicalEntity( table.id ).orElseThrow();
+            var mapping = Catalog.snapshot().mappings().getMappingsForLogicalEntity( table.id ).get( 0 );
             var state = MappingState.load( Catalog.getInstance(), adapterId, mapping.id() );
             assertEquals( 2, Catalog.snapshot().mappings().getMappings().stream().filter( m ->
                     Catalog.snapshot().alloc().getFromLogical( m.targetEntityId() ).stream().anyMatch( a -> a.adapterId == adapterId ) ).count() );
@@ -120,7 +122,7 @@ class CsvMappingIntegrationTest {
 
 
     @Test
-    void queriesMappedCsvAndDirectFallbackThenDropsAdapterWithoutDeletingFile( @TempDir Path directory ) throws Exception {
+    void protectsLastCsvMappingAndDropsAdapterWithoutDeletingFile( @TempDir Path directory ) throws Exception {
         String suffix = UUID.randomUUID().toString().replace( "-", "" ).substring( 0, 8 );
         String adapterName = "task3_csv_" + suffix;
         String tableName = "task3_file_" + suffix;
@@ -134,19 +136,20 @@ class CsvMappingIntegrationTest {
         try {
             execute( addAdapter );
             var table = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, tableName ).orElseThrow();
-            SchemaMapping mapping = Catalog.snapshot().mappings().getMappingForLogicalEntity( table.id ).orElseThrow();
+            SchemaMapping mapping = Catalog.snapshot().mappings().getMappingsForLogicalEntity( table.id ).get( 0 );
             assertEquals( 2, mapping.rules().size() );
+            assertEquals( adapterName + "_" + tableName + "_mapping", mapping.name() );
 
             assertEquals( List.of( "1:Ada", "2:Bob" ), query( "SELECT id, name FROM " + tableName + " ORDER BY id" ) );
 
-            Catalog.getInstance().removeSchemaMapping( mapping.id() );
-            assertTrue( Catalog.snapshot().mappings().getMappingForLogicalEntity( table.id ).isEmpty() );
+            var error = assertThrows( GenericRuntimeException.class, () -> Catalog.getInstance().removeSchemaMapping( mapping.id() ) );
+            assertEquals( SchemaMappingManager.LAST_SOURCE_MAPPING_REASON, error.getMessage() );
+            assertEquals( mapping, Catalog.snapshot().mappings().getMappingsForLogicalEntity( table.id ).get( 0 ) );
             assertEquals( List.of( "Ada:1", "Bob:2" ), query( "SELECT name, id FROM " + tableName + " ORDER BY id" ) );
 
-            Catalog.getInstance().addSchemaMapping( mapping );
             execute( "ALTER ADAPTERS DROP \"" + adapterName + "\"" );
 
-            assertTrue( Catalog.snapshot().mappings().getMappingForLogicalEntity( table.id ).isEmpty() );
+            assertTrue( Catalog.snapshot().mappings().getMappingsForLogicalEntity( table.id ).isEmpty() );
             assertTrue( Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, tableName ).isEmpty() );
             assertEquals( contents, Files.readString( file ) );
         } finally {
@@ -179,7 +182,7 @@ class CsvMappingIntegrationTest {
                     + "{\"method\":\"link\",\"directoryName\":\"" + escapedDirectory + "\",\"directory\":\"" + escapedDirectory + "\",\"maxStringLength\":\"40\"}'" );
             long adapterId = Catalog.snapshot().getAdapter( adapterName ).orElseThrow().id;
             var table = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, tableName ).orElseThrow();
-            var mapping = Catalog.snapshot().mappings().getMappingForLogicalEntity( table.id ).orElseThrow();
+            var mapping = Catalog.snapshot().mappings().getMappingsForLogicalEntity( table.id ).get( 0 );
             var state = MappingState.load( Catalog.getInstance(), adapterId, mapping.id() );
             var selected = state.columns().stream().map( c -> new MappingUpdate.ColumnName( c.id, c.name, !c.name.equals( "id" ) ) ).toList();
             state = update( new MappingUpdate( adapterId, mapping.id(), state.revision(), mapping.name(), tableName, selected ) );
@@ -194,6 +197,55 @@ class CsvMappingIntegrationTest {
             execute( "ALTER ADAPTERS DROP \"" + adapterName + "\"" );
             assertTrue( Catalog.getInstance().getLogicalRel( table.namespaceId ).getColumns().values().stream().noneMatch( c -> c.tableId == table.id ) );
             assertEquals( contents, Files.readString( file ) );
+        } finally {
+            if ( Catalog.snapshot().getAdapter( adapterName ).isPresent() ) {
+                execute( "ALTER ADAPTERS DROP \"" + adapterName + "\"" );
+            }
+        }
+    }
+
+
+    @Test
+    void queriesBothSourcesOnceAndKeepsTheTargetAfterRemovingOneMapping( @TempDir Path directory ) throws Exception {
+        String suffix = UUID.randomUUID().toString().replace( "-", "" ).substring( 0, 8 );
+        String adapterName = "sharedcsv" + suffix;
+        String targetName = "targetfile" + suffix;
+        String incomingName = "incomingfile" + suffix;
+        Files.writeString( directory.resolve( targetName + ".csv" ), "id:long,name:string\n1,Ada\n2,Bob\n" );
+        Files.writeString( directory.resolve( incomingName + ".csv" ), "id:long,name:string\n3,Cyd\n4,Dan\n" );
+        String escapedDirectory = directory.toString().replace( "\\", "\\\\" );
+        try {
+            execute( "ALTER ADAPTERS ADD \"" + adapterName + "\" USING 'CSV' AS 'Source' WITH '"
+                    + "{\"method\":\"link\",\"directoryName\":\"" + escapedDirectory + "\",\"directory\":\"" + escapedDirectory + "\",\"maxStringLength\":\"40\"}'" );
+            long adapterId = Catalog.snapshot().getAdapter( adapterName ).orElseThrow().id;
+            var target = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, targetName ).orElseThrow();
+            var incoming = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, incomingName ).orElseThrow();
+            var draft = MappingState.draft( Catalog.getInstance(), adapterId, incoming.id, target.id, null );
+            var names = draft.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+            var request = new MappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), target.name,
+                    names, target.namespaceId, target.id, draft.mapping().sourceAllocationId() );
+            var transaction = TestHelper.getInstance().getTransaction();
+            MappingState created;
+            try {
+                created = DdlManager.getInstance().createMapping( incoming.id, request, transaction.createStatement() );
+            } finally {
+                if ( transaction.isActive() ) {
+                    transaction.rollback( "Mapping creation test cleanup" );
+                }
+            }
+            assertEquals( List.of( "1:Ada", "2:Bob", "3:Cyd", "4:Dan" ), query( "SELECT id, name FROM " + targetName + " ORDER BY id" ) );
+            assertEquals( List.of( "3:Cyd", "4:Dan" ), query( "SELECT id, name FROM " + incomingName + " ORDER BY id" ) );
+            assertEquals( List.of( "4" ), query( "SELECT COUNT(*) FROM " + targetName ) );
+            transaction = TestHelper.getInstance().getTransaction();
+            try {
+                DdlManager.getInstance().removeMapping( created.mapping().id(), created.revision(), transaction.createStatement() );
+            } finally {
+                if ( transaction.isActive() ) {
+                    transaction.rollback( "Mapping removal test cleanup" );
+                }
+            }
+            assertEquals( List.of( "1:Ada", "2:Bob" ), query( "SELECT id, name FROM " + targetName + " ORDER BY id" ) );
+            assertEquals( target.id, Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, targetName ).orElseThrow().id );
         } finally {
             if ( Catalog.snapshot().getAdapter( adapterName ).isPresent() ) {
                 execute( "ALTER ADAPTERS DROP \"" + adapterName + "\"" );

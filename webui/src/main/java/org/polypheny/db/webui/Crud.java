@@ -25,6 +25,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
+import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
 import jakarta.servlet.MultipartConfigElement;
@@ -536,18 +537,32 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static String handleUploadFiles( Map<String, InputStream> inputStreams, List<String> fileNames, AbstractAdapterSettingDirectory setting, AdapterModel a ) {
-        if ( fileNames.isEmpty() ) {
-            throw new GenericRuntimeException( "No file or directory specified for upload!" );
+    private static String handleUploadFiles( Map<String, InputStream> inputStreams, List<String> fileNames, AdapterModel adapter ) {
+        // Use streams from the current request instead of retaining them in shared adapter settings.
+        // Create a separate upload folder so old files aren’t imported again
+        // Validate that every selected file was received
+        if ( fileNames == null || fileNames.isEmpty() ) {
+            throw new BadRequestResponse( "No file or directory specified for upload!" );
         }
+        Map<String, InputStream> uploads = new LinkedHashMap<>();
         for ( String fileName : fileNames ) {
-            setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
+            if ( fileName == null || fileName.isBlank() || !fileName.equals( new File( fileName ).getName() ) ) {
+                throw new BadRequestResponse( "Invalid uploaded file name." );
+            }
+            InputStream stream = inputStreams.get( fileName );
+            if ( stream == null ) {
+                throw new BadRequestResponse( "Missing uploaded file: " + fileName );
+            }
+            if ( uploads.putIfAbsent( fileName, stream ) != null ) {
+                throw new BadRequestResponse( "Duplicate uploaded file: " + fileName );
+            }
         }
-        File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + a.name );
-        for ( Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
+        // Keep each upload separate when an adapter name is reused after deletion.
+        File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + adapter.name + "/" + UUID.randomUUID() );
+        for ( Entry<String, InputStream> upload : uploads.entrySet() ) {
             try {
-                File file = new File( path, is.getKey() );
-                FileUtils.copyInputStreamToFile( is.getValue(), file );
+                File file = new File( path, upload.getKey() );
+                FileUtils.copyInputStreamToFile( upload.getValue(), file );
             } catch ( IOException e ) {
                 throw new GenericRuntimeException( e );
             }
@@ -2364,7 +2379,9 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         UiColumnDefinition oldColumn = request.oldColumn;
         UiColumnDefinition newColumn = request.newColumn;
-        String elementsNullable = newColumn.elementsNullable ? "" : " NOT NULL";
+        // Fix column rename problem
+        // newColumn.elementsNullable is null, so conversion throws a NullPointerException
+        // String elementsNullable = newColumn.elementsNullable ? "" : " NOT NULL";
         List<String> queries = new ArrayList<>();
         StringBuilder sBuilder = new StringBuilder();
 
@@ -2403,6 +2420,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 }
                 //collectionType
                 if ( newColumn.collectionsType != null && !newColumn.collectionsType.isEmpty() ) {
+                    // Fix column rename problem
+                    String elementsNullable = newColumn.elementsNullable ? "" : " NOT NULL";
                     query = query + elementsNullable;
                     query = query + " " + request.newColumn.collectionsType;
                     int dimension = newColumn.dimension == null ? -1 : newColumn.dimension;
@@ -3311,10 +3330,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             adapterSettings.put( entry.getKey(), entry.getValue() );
             AbstractAdapterSetting set = defaultSettings.get( entry.getKey() );
             // handle upload
-            if ( (set instanceof AbstractAdapterSettingDirectory settingDirectory) && method == ConnectionMethod.UPLOAD ) {
+            if ( (set instanceof AbstractAdapterSettingDirectory) && method == ConnectionMethod.UPLOAD ) {
                 List<String> fileNames = HttpServer.mapper.readValue( entry.getValue(), new TypeReference<>() {
                 } );
-                String directory = handleUploadFiles( inputStreams, fileNames, settingDirectory, adapterModel );
+                // handleUploadFiles() uses only the current request’s streams
+                String directory = handleUploadFiles( inputStreams, fileNames, adapterModel );
                 adapterSettings.put( entry.getKey(), directory );
                 continue;
             }
