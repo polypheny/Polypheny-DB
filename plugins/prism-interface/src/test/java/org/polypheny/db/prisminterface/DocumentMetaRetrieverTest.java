@@ -26,11 +26,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.util.PolyphenyHomeDirManager;
-import org.polypheny.db.util.RunMode;
 import org.polypheny.prism.Document;
 import org.polypheny.prism.DocumentField;
 
@@ -38,9 +37,10 @@ class DocumentMetaRetrieverTest {
 
     @BeforeAll
     static void initializeValueSerialization() {
-        if ( PolyphenyHomeDirManager.getMode() == null ) {
-            PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
-        }
+        // Initialize the same database fixture as the other Prism tests before
+        // PolyValue loads its plugin serializer. Pre-initializing only the home
+        // directory would prevent TestHelper from subsequently starting the DB.
+        TestHelper.getInstance();
     }
 
     private static PolyDocument document( String json ) {
