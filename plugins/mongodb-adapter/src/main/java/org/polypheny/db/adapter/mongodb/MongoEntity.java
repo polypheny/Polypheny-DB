@@ -71,6 +71,7 @@ import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.DocumentIndexProvider;
 import org.polypheny.db.adapter.mongodb.rules.MongoScan;
 import org.polypheny.db.adapter.mongodb.util.MongoDynamic;
 import org.polypheny.db.adapter.mongodb.util.MongoTupleType;
@@ -117,7 +118,7 @@ import org.polypheny.db.util.Util;
 @Slf4j
 @Value
 @SuperBuilder(toBuilder = true)
-public class MongoEntity extends PhysicalEntity implements TranslatableEntity, ModifiableTable, ModifiableCollection, QueryableEntity {
+public class MongoEntity extends PhysicalEntity implements TranslatableEntity, ModifiableTable, ModifiableCollection, QueryableEntity, DocumentIndexProvider {
 
     @Getter
     public MongoNamespace mongoNamespace;
@@ -130,6 +131,65 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
     @Getter
     public MongoCollection<Document> collection;
     public List<? extends PhysicalField> fields;
+
+
+    @Override
+    public List<DocumentIndexMetadata> getDocumentIndexes() {
+        if ( dataModel != DataModel.DOCUMENT ) {
+            return List.of();
+        }
+        List<DocumentIndexMetadata> indexes = new ArrayList<>();
+        try ( var cursor = collection.listIndexes().iterator() ) {
+            while ( cursor.hasNext() ) {
+                indexes.addAll( describeDocumentIndex( cursor.next() ) );
+            }
+        }
+        return indexes;
+    }
+
+
+    static List<DocumentIndexMetadata> describeDocumentIndex( Document index ) {
+        Document keys = index.get( "key", Document.class );
+        if ( keys == null ) {
+            return List.of();
+        }
+        // The protocol reports individual fields without compound-index grouping.
+        // Never imply that a component of a unique compound index is itself unique.
+        boolean unique = keys.size() == 1 && (Boolean.TRUE.equals( index.getBoolean( "unique" ) ) || "_id_".equals( index.getString( "name" ) ));
+        List<DocumentIndexMetadata> indexes = new ArrayList<>();
+        keys.forEach( (path, method) -> {
+            // MongoDB represents text indexes using internal _fts/_ftsx keys.
+            // The public document paths are stored in the weights document.
+            if ( "text".equals( method ) && "_fts".equals( path ) ) {
+                Document weights = index.get( "weights", Document.class );
+                if ( weights != null ) {
+                    weights.keySet().forEach( field -> indexes.add( new DocumentIndexMetadata( escapeDocumentIndexPath( field ), "text", unique ) ) );
+                }
+                return;
+            }
+            if ( "_ftsx".equals( path ) && keys.containsKey( "_fts" ) ) {
+                return;
+            }
+            String type;
+            if ( path.equals( "$**" ) || path.endsWith( ".$**" ) ) {
+                type = "wildcard";
+            } else if ( method instanceof Number ) {
+                type = "btree";
+            } else {
+                type = "hashed".equals( method ) ? "hash" : method.toString();
+            }
+            indexes.add( new DocumentIndexMetadata( escapeDocumentIndexPath( path ), type, unique ) );
+        } );
+        return indexes;
+    }
+
+
+    private static String escapeDocumentIndexPath( String path ) {
+        // MongoDB index paths already use dots as nested-field separators and cannot
+        // target literal-dot field names. Preserve those separators, escaping only
+        // literal backslashes to match the document metadata path representation.
+        return path.replace( "\\", "\\\\" );
+    }
 
 
     /**
