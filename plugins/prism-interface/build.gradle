@@ -9,6 +9,7 @@ apply plugin: "com.google.protobuf"
 group "org.polypheny"
 
 configurations {
+    prismProtocolSource
     tests {
         extendsFrom testRuntimeOnly
     }
@@ -16,6 +17,38 @@ configurations {
 
 repositories {
     mavenCentral()
+    ivy {
+        url 'https://github.com/polypheny/Polypheny-Prism-API/archive'
+        patternLayout { artifact '[revision].[ext]' }
+        metadataSources { artifact() }
+        content { includeModule('org.polypheny', 'prism-source') }
+    }
+}
+
+// Pin the companion protocol change until its next Maven release. The source
+// archive is immutable; local protocol development can use -PprismApiDirectory.
+def prismApiRevision = 'ac57da2459071234c4cacc6836e3f4ca6f13f101'
+def prismApiDirectory = providers.gradleProperty('prismApiDirectory')
+def protocolSources = layout.buildDirectory.dir('prism-protocol')
+
+tasks.register('preparePrismProtocol', Sync) {
+    dependsOn tasks.named('extractIncludeProto')
+    // Keep the released wire representation of values/frames. The API main
+    // branch also contains unrelated protocol changes; overlay only this RPC.
+    from('build/extracted-include-protos/main') {
+        include 'org/polypheny/prism/*.proto'
+        exclude 'org/polypheny/prism/namespace_meta_responses.proto'
+    }
+    if (prismApiDirectory.isPresent()) {
+        from(prismApiDirectory.get()) { include 'org/polypheny/prism/namespace_meta_responses.proto' }
+    } else {
+        from({ zipTree(configurations.prismProtocolSource.singleFile) }) {
+            include '*/org/polypheny/prism/namespace_meta_responses.proto'
+            eachFile { path = path.substring(path.indexOf('/') + 1) }
+            includeEmptyDirs = false
+        }
+    }
+    into protocolSources
 }
 
 dependencies {
@@ -26,6 +59,7 @@ dependencies {
 
     // Prism API files (protobuf files), needs to be implementation due to the prism-api-version.properties
     implementation group: 'org.polypheny', name: 'prism', version: prism_api_version
+    prismProtocolSource "org.polypheny:prism-source:${prismApiRevision}@zip"
 
     // Protobuf
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobuf_version
@@ -48,6 +82,7 @@ compileTestJava.mustRunAfter(javadoc)
 compileTestJava.mustRunAfter(jar)
 compileTestJava.mustRunAfter(plugin)
 processResources.dependsOn(extractIncludeProto)
+processResources.dependsOn(preparePrismProtocol)
 
 test.dependsOn(":dbms:shadowJar")
 
@@ -58,6 +93,7 @@ protobuf {
 
     generateProtoTasks {
         all().each { task ->
+            task.dependsOn tasks.named('preparePrismProtocol')
             task.builtins {
                 java {}
             }
@@ -71,7 +107,7 @@ sourceSets {
             srcDirs = ["src/main/java", "build/generated/source/proto/main/java"]
         }
         proto {
-            srcDirs = ["build/extracted-include-protos/main"]
+            srcDirs = [protocolSources.get().asFile]
         }
         resources {
             srcDirs = ["src/main/resources"]

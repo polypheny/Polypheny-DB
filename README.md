@@ -18,6 +18,32 @@ The easiest way to setup Polypheny-DB is to use a [release](https://github.com/p
 ## Roadmap ##
 See the [open issues](https://github.com/polypheny/Polypheny-DB/issues) for a list of proposed features (and known issues).
 
+## Prism document metadata
+
+`EntitiesRequest` returns document collections through `Entity.document`, including
+their namespace and collection names, observed field paths, types, optionality,
+an optional JSON sample, and available document indexes. Field inference reads at
+most 100 documents and descends at most 32 object levels. Arrays are reported as
+fields without inspecting their elements. Literal dots and backslashes in key
+segments are escaped with a backslash to distinguish them from nested paths. A
+field is optional when it is missing
+or null in that sample; this observation is not a schema constraint. Empty
+collections have no inferred fields or sample. Reading metadata preserves an
+existing connection transaction and otherwise completes a separate read transaction.
+
+MongoDB reports its actual document indexes. Adapters without document index
+introspection return an empty list. Compound indexes report each indexed path,
+with `unique` false because uniqueness of the combination does not imply uniqueness
+of an individual path. For sparse or partial indexes, declared uniqueness applies
+only to the documents covered by the index.
+
+Until the companion Prism API change is released, the build overlays its pinned
+`namespace_meta_responses.proto` onto the released Prism 1.9 definitions. Other
+protocol messages and version negotiation retain the released wire format. To
+work on both repositories locally, use `-PprismApiDirectory=/path/to/Polypheny-Prism-API`.
+Python clients need the extended metadata bindings; the companion connector's
+`scripts/test_document_metadata.py` generates them and runs the live regression suites.
+
 ## Contributing ##
 We highly welcome your contributions to Polypheny-DB. If you would like to contribute, please fork the repository and submit your changes as a pull request. Please consult our [Admin Repository](https://github.com/polypheny/Admin) for guidelines and additional information.
 
