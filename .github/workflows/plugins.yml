@@ -8,8 +8,7 @@ on:
 jobs:
     build:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-        # Keep Linux test fixtures on a MongoDB-compatible host kernel.
-        runs-on: ${{ matrix.os == 'ubuntu-latest' && 'ubuntu-24.04' || matrix.os }}
+        runs-on: ${{ matrix.os }}
         strategy:
             fail-fast: false
             matrix:

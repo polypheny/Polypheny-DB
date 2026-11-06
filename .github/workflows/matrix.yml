@@ -8,9 +8,7 @@ on:
 jobs:
     build:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-        # MongoDB 8.0 cannot start on the newer Ubuntu 26.04 host kernels.
-        # Keep the matrix/check names while using its supported Linux runner.
-        runs-on: ${{ matrix.os == 'ubuntu-latest' && 'ubuntu-24.04' || matrix.os }}
+        runs-on: ${{ matrix.os }}
         strategy:
             fail-fast: false
             matrix:

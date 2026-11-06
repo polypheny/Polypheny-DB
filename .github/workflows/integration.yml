@@ -8,9 +8,7 @@ on:
 jobs:
     build:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
-        # MongoDB 8.0 is incompatible with Ubuntu 26.04's newer host kernel
-        # (https://jira.mongodb.org/browse/SERVER-121912).
-        runs-on: ubuntu-24.04
+        runs-on: ubuntu-latest
         strategy:
             fail-fast: false
             matrix:

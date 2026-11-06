@@ -1519,7 +1519,10 @@ public class TestHelper {
                     .getInstanceById( 0 )
                     .orElseThrow( () -> new IllegalStateException( "No docker instance with id 0" ) );
 
-            DockerContainer container = instance.newBuilder( "mongo:8.0", containerName )
+            // MongoDB 7.0 supports the kernels used by hosted CI runners. MongoDB
+            // 8.0's per-CPU allocator rejects some of those kernels, including on
+            // Ubuntu 24.04: https://jira.mongodb.org/browse/SERVER-125742
+            DockerContainer container = instance.newBuilder( "mongo:7.0", containerName )
                     .createAndStart();
 
             try {
