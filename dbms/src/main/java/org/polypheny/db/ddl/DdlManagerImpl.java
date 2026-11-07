@@ -423,8 +423,10 @@ public class DdlManagerImpl extends DdlManager {
             // register the physical table metadata for the existing source
             adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns, physicalSchema, physicalTable, sourcePhysicalColumnNames ) );
             // Create and register default mapping
-            SchemaMapping mapping = SchemaMappingManager.createDefaultMapping( adapter.getUniqueName(), physicalTable, logical.id, logical.dataModel, columns.stream().map( column -> column.id ).toList() );
-            catalog.addSchemaMapping( mapping );
+            synchronized ( catalog ) {
+                String mappingName = SchemaMappingManager.availableDefaultMappingName( catalog.getSchemaMappings().values(), adapter.getUniqueName(), physicalTable );
+                catalog.addSchemaMapping( SchemaMappingManager.createMapping( mappingName, logical.id, logical.dataModel, columns.stream().map( column -> column.id ).toList() ) );
+            }
         } );
         catalog.updateSnapshot();
         return logical;
@@ -4014,7 +4016,7 @@ public class DdlManagerImpl extends DdlManager {
             MappingUpdate validated = state.validate( update, catalog.getSnapshot() );
             runMappingChange( statement, () -> {
                 applyMappingNames( state, validated );
-                moveMappingTarget( state, validated.targetNamespaceId() );
+                moveMappingTarget( state, validated.targetNamespaceId(), statement );
                 SchemaMapping mapping = SchemaMappingManager.renameMapping( state.mapping(), validated.mappingName() );
                 Set<Long> included = validated.columns().stream().filter( MappingUpdate.ColumnName::included )
                         .map( MappingUpdate.ColumnName::logicalColumnId ).collect( Collectors.toSet() );
@@ -4186,7 +4188,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void moveMappingTarget( MappingState state, long namespaceId ) {
+    private void moveMappingTarget( MappingState state, long namespaceId, Statement statement ) {
         if ( state.namespace().id == namespaceId ) {
             return;
         }
@@ -4231,9 +4233,11 @@ public class DdlManagerImpl extends DdlManager {
             targetAlloc.getTables().put( allocation.id, moved );
             var adapterCatalog = catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow();
             var physicals = state.physicalTables().stream().filter( physical -> physical.allocationId == allocation.id )
-                    .map( physical -> adapterCatalog.getPhysical( physical.id ).unwrapOrThrow( PhysicalTable.class )
+                    .<PhysicalEntity>map( physical -> adapterCatalog.getPhysical( physical.id ).unwrapOrThrow( PhysicalTable.class )
                             .toBuilder().namespaceId( namespaceId ).build() ).toList();
-            adapterCatalog.addPhysical( moved, physicals.toArray( PhysicalEntity[]::new ) );
+            // register table through the adapter
+            AdapterManager.getInstance().getAdapter( allocation.adapterId ).orElseThrow()
+                    .restoreTable( moved, physicals, statement.getPrepareContext() );
         }
         for ( var placement : sourceAlloc.getPlacements().values().stream().filter( placement -> placement.logicalEntityId == table.id ).toList() ) {
             sourceAlloc.getPlacements().remove( placement.id );

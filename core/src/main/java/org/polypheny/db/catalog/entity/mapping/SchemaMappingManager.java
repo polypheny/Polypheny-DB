@@ -134,6 +134,16 @@ public final class SchemaMappingManager {
     }
 
 
+    public static String availableDefaultMappingName( Collection<SchemaMapping> mappings, String adapterName, String sourceTableName ) {
+        String baseName = defaultMappingName( adapterName, sourceTableName );
+        String name = baseName;
+        for ( int suffix = 1; isMappingNameTaken( mappings, name, -1 ); suffix++ ) {
+            name = baseName + "_" + suffix;
+        }
+        return name;
+    }
+
+
     /**
      * Returns a copy with the new label, preserving the mapping's identity, endpoints, models, and rules.
      */

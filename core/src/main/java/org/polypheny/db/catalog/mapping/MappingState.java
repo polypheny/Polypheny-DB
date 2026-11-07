@@ -173,11 +173,7 @@ public record MappingState(
             throw new EditException( "UNSUPPORTED_MAPPING", "Creating mappings currently requires a single physical source table." );
         }
         String sourceName = source.physicalTables().get( 0 ).name;
-        String baseName = source.adapter().uniqueName + "_" + sourceName + "_mapping";
-        String name = baseName;
-        for ( int suffix = 1; SchemaMappingManager.isMappingNameTaken( snapshot.mappings().getMappings(), name, -1 ); suffix++ ) {
-            name = baseName + "_" + suffix;
-        }
+        String name = SchemaMappingManager.availableDefaultMappingName( snapshot.mappings().getMappings(), source.adapter().uniqueName, sourceName );
         String targetBase = sourceName.replaceAll( "[^a-zA-Z0-9_]", "_" );
         if ( targetBase.isEmpty() || Character.isDigit( targetBase.charAt( 0 ) ) ) {
             targetBase = "source_" + targetBase;

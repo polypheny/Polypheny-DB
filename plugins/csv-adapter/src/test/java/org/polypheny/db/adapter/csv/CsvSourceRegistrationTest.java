@@ -170,17 +170,28 @@ class CsvSourceRegistrationTest {
             var draft = MappingState.draft( catalog, adapterId, mapping.targetEntityId() );
             var names = draft.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id,
                     "target_" + column.name, column.name.equals( "name" ) ) ).toList();
-            var created = ddl.createMapping( mapping.targetEntityId(), new MappingUpdate( adapterId, -1, draft.revision(),
+            var initialTarget = ddl.createMapping( mapping.targetEntityId(), new MappingUpdate( adapterId, -1, draft.revision(),
                     "Employee names", "employee_names", names ), statement );
-            var targetAllocation = catalog.getSnapshot().alloc().getFromLogical( created.table().id ).get( 0 ).unwrapOrThrow( AllocationTable.class );
-            PhysicalMappingBinding binding = PhysicalMappingBinding.create( created.mapping(), targetAllocation, source.adapterCatalog );
+            var initialAllocation = catalog.getSnapshot().alloc().getFromLogical( initialTarget.table().id ).get( 0 ).unwrapOrThrow( AllocationTable.class );
+            PhysicalMappingBinding binding = PhysicalMappingBinding.create( initialTarget.mapping(), initialAllocation, source.adapterCatalog );
             assertEquals( 2, binding.columns().size() );
-            assertEquals( List.of( "target_name" ), catalog.getSnapshot().rel().getColumns( created.table().id ).stream().map( column -> column.name ).toList() );
+            assertEquals( List.of( "target_name" ), catalog.getSnapshot().rel().getColumns( initialTarget.table().id ).stream().map( column -> column.name ).toList() );
             assertEquals( mapping, catalog.getSnapshot().mappings().getMappingsForLogicalEntity( mapping.targetEntityId() ).get( 0 ) );
 
-            var targetPhysical = source.adapterCatalog.fromAllocation( targetAllocation.id ).normalize();
-            source.adapterCatalog.removeAllocAndPhysical( targetAllocation.id );
-            source.restoreTable( targetAllocation, List.of( targetPhysical ), null );
+            var targetPhysical = source.adapterCatalog.fromAllocation( initialAllocation.id ).normalize();
+            source.adapterCatalog.removeAllocAndPhysical( initialAllocation.id );
+            source.restoreTable( initialAllocation, List.of( targetPhysical ), null );
+
+            long reportingNamespace = catalog.createNamespace( "csv_reporting", DataModel.RELATIONAL, false, false );
+            catalog.commit();
+            var movedColumns = initialTarget.columns().stream().map( column -> new MappingUpdate.ColumnName(
+                    column.id, column.name, initialTarget.isIncluded( column.id ) ) ).toList();
+            var created = ddl.updateMapping( new MappingUpdate( adapterId, initialTarget.mapping().id(), initialTarget.revision(),
+                    initialTarget.mapping().name(), initialTarget.table().name, movedColumns, reportingNamespace ), statement );
+            var targetAllocation = catalog.getSnapshot().alloc().getFromLogical( created.table().id ).get( 0 ).unwrapOrThrow( AllocationTable.class );
+            assertEquals( reportingNamespace, targetAllocation.namespaceId );
+            assertEquals( initialAllocation.id, targetAllocation.id );
+
             ddl.removeMapping( mapping.id(), MappingState.load( catalog, mapping.id() ).revision(), statement );
             assertTrue( catalog.getSnapshot().rel().getTable( mapping.targetEntityId() ).isEmpty() );
             assertTrue( source.adapterCatalog.getPhysicalsFromAllocs( allocation.id ) == null );

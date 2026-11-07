@@ -42,6 +42,7 @@ import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
 import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -55,47 +56,11 @@ class RelationalSourceRegistrationTest {
 
     @Test
     void createsDefaultMappingsForEveryExportedTableInTheSamePhysicalSchema() throws Exception {
-        if ( PolyphenyHomeDirManager.getMode() == null ) {
-            PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
-        }
-        Catalog.mode = RunMode.TEST;
-        Catalog.memoryCatalog = true;
-        var catalog = new PolyCatalog();
-        Catalog.setAndGetInstance( catalog );
-        catalog.init();
+        var catalog = newCatalog();
         long namespaceId = catalog.createNamespace( "exported_sources", DataModel.RELATIONAL, false, false );
-        long adapterId = catalog.createAdapter( "exported_source", "ExportedColumns", AdapterType.SOURCE, Map.of(), DeployMode.EMBEDDED );
-        var physicalCatalog = new RelAdapterCatalog( adapterId );
-        var source = mock( ExportedColumnSource.class, withSettings()
-                .useConstructor( adapterId, physicalCatalog ).defaultAnswer( CALLS_REAL_METHODS ) );
-        when( source.getExportedColumns() ).thenReturn( Map.of(
+        var physicalCatalog = registerSource( catalog, namespaceId, "exported_source", Map.of(
                 "employees", columns( "employees" ),
                 "departments", columns( "departments" ) ) );
-        doAnswer( invocation -> {
-            LogicalTableWrapper logical = invocation.getArgument( 1 );
-            AllocationTableWrapper allocation = invocation.getArgument( 2 );
-            return List.of( physicalCatalog.createTable( allocation.physicalSchema, logical.table.name,
-                    logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ), logical.table,
-                    logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ), logical.pkIds, allocation ) );
-        } ).when( source ).createTable( any(), any(), any( AllocationTableWrapper.class ) );
-        Transaction transaction = mock( Transaction.class );
-        var statement = mock( org.polypheny.db.transaction.Statement.class );
-        when( transaction.createStatement() ).thenReturn( statement );
-        when( statement.getTransaction() ).thenReturn( transaction );
-        List<Runnable> commitActions = new ArrayList<>();
-        doAnswer( invocation -> {
-            commitActions.add( invocation.getArgument( 0 ) );
-            return null;
-        } ).when( transaction ).attachCommitAction( any() );
-
-        Method register = DdlManagerImpl.class.getDeclaredMethod( "createRelationalSource", Transaction.class, DataSource.class, long.class );
-        register.setAccessible( true );
-        register.invoke( new DdlManagerImpl( catalog ), transaction, source, namespaceId );
-
-        assertEquals( 2, commitActions.size() );
-        assertTrue( catalog.getSchemaMappings().isEmpty() );
-        commitActions.forEach( Runnable::run );
-        catalog.commit();
 
         assertEquals( 2, catalog.getSnapshot().mappings().getMappings().size() );
         for ( String tableName : List.of( "employees", "departments" ) ) {
@@ -117,6 +82,76 @@ class RelationalSourceRegistrationTest {
     }
 
 
+    @Test
+    void deploysSourceWhenItsDefaultMappingNameIsTaken() throws Exception {
+        var catalog = newCatalog();
+        long namespaceId = catalog.createNamespace( "exported_sources", DataModel.RELATIONAL, false, false );
+        var exported = Map.of( "customers", columns( "customers" ) );
+        registerSource( catalog, namespaceId, "csv1", exported );
+        var original = catalog.getSnapshot().mappings().getMappings().get( 0 );
+        var renamed = SchemaMappingManager.renameMapping( original, "csv3_customers_mapping" );
+        catalog.updateSchemaMapping( renamed );
+        catalog.commit();
+
+        registerSource( catalog, namespaceId, "csv3", exported );
+
+        var snapshot = catalog.getSnapshot();
+        assertEquals( renamed, snapshot.mappings().getMapping( original.id() ).orElseThrow() );
+        var newTable = snapshot.rel().getTable( namespaceId, "customers0" ).orElseThrow();
+        var newMapping = snapshot.mappings().getMappingsForLogicalEntity( newTable.id ).get( 0 );
+        assertEquals( "csv3_customers_mapping_1", newMapping.name() );
+    }
+
+
+    private static PolyCatalog newCatalog() {
+        if ( PolyphenyHomeDirManager.getMode() == null ) {
+            PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
+        }
+        Catalog.mode = RunMode.TEST;
+        Catalog.memoryCatalog = true;
+        var catalog = new PolyCatalog();
+        Catalog.setAndGetInstance( catalog );
+        catalog.init();
+        return catalog;
+    }
+
+
+    private static RelAdapterCatalog registerSource( PolyCatalog catalog, long namespaceId, String name, Map<String, List<ExportedColumn>> exported ) throws Exception {
+        long adapterId = catalog.createAdapter( name, "ExportedColumns", AdapterType.SOURCE, Map.of(), DeployMode.EMBEDDED );
+        var physicalCatalog = new RelAdapterCatalog( adapterId );
+        var source = mock( ExportedColumnSource.class, withSettings()
+                .useConstructor( adapterId, name, physicalCatalog ).defaultAnswer( CALLS_REAL_METHODS ) );
+        when( source.getExportedColumns() ).thenReturn( exported );
+        doAnswer( invocation -> {
+            LogicalTableWrapper logical = invocation.getArgument( 1 );
+            AllocationTableWrapper allocation = invocation.getArgument( 2 );
+            return List.of( physicalCatalog.createTable( allocation.physicalSchema, allocation.physicalTableName,
+                    logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ), logical.table,
+                    logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ), logical.pkIds, allocation ) );
+        } ).when( source ).createTable( any(), any(), any( AllocationTableWrapper.class ) );
+        Transaction transaction = mock( Transaction.class );
+        var statement = mock( org.polypheny.db.transaction.Statement.class );
+        when( transaction.createStatement() ).thenReturn( statement );
+        when( statement.getTransaction() ).thenReturn( transaction );
+        List<Runnable> commitActions = new ArrayList<>();
+        doAnswer( invocation -> {
+            commitActions.add( invocation.getArgument( 0 ) );
+            return null;
+        } ).when( transaction ).attachCommitAction( any() );
+
+        var previousMappings = catalog.getSchemaMappings();
+        Method register = DdlManagerImpl.class.getDeclaredMethod( "createRelationalSource", Transaction.class, DataSource.class, long.class );
+        register.setAccessible( true );
+        register.invoke( new DdlManagerImpl( catalog ), transaction, source, namespaceId );
+
+        assertEquals( exported.size(), commitActions.size() );
+        assertEquals( previousMappings, catalog.getSchemaMappings() );
+        commitActions.forEach( Runnable::run );
+        catalog.commit();
+        return physicalCatalog;
+    }
+
+
     private static List<ExportedColumn> columns( String tableName ) {
         return List.of(
                 new ExportedColumn( "id", PolyType.INTEGER, null, null, null, null, null, false, false, "public", tableName, "id", 1, false ),
@@ -127,8 +162,8 @@ class RelationalSourceRegistrationTest {
     @AdapterProperties(name = "ExportedColumns", description = "Relational source registration test", usedModes = DeployMode.EMBEDDED, defaultMode = DeployMode.EMBEDDED)
     public abstract static class ExportedColumnSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
-        public ExportedColumnSource( long adapterId, RelAdapterCatalog catalog ) {
-            super( adapterId, "exported_source", Map.of(), DeployMode.EMBEDDED, true, catalog, Set.of( DataModel.RELATIONAL ) );
+        public ExportedColumnSource( long adapterId, String name, RelAdapterCatalog catalog ) {
+            super( adapterId, name, Map.of(), DeployMode.EMBEDDED, true, catalog, Set.of( DataModel.RELATIONAL ) );
         }
 
 
