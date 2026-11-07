@@ -496,6 +496,16 @@ public class DdlManagerImpl extends DdlManager {
                 if ( table == null ) {
                     continue;
                 }
+                // Check if the logical table will survive the adapter removal:
+                // if more than one mapping points to the table
+                // and at least one allocation belongs to a different adapter
+                // then skip foreign-key cleanup for that table
+                boolean sharedTargetSurvives = table.entityType == EntityType.SOURCE
+                        && snapshot.mappings().getMappingsForLogicalEntity( table.id ).size() > 1
+                        && snapshot.alloc().getFromLogical( table.id ).stream().anyMatch( other -> other.adapterId != adapter.id );
+                if ( sharedTargetSurvives ) {
+                    continue;
+                }
                 List<LogicalForeignKey> foreignKeys = new ArrayList<>( snapshot.rel().getForeignKeys( table.id ) );
                 foreignKeys.addAll( snapshot.rel().getExportedKeys( table.id ) );
                 for ( LogicalForeignKey foreignKey : foreignKeys ) {
@@ -5508,6 +5518,15 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         LogicalNamespace logicalNamespace = optionalNamespace.get();
+        // Move an existing rejection earlier to prevent partial changes
+        // and give a clear error.
+        List<LogicalTable> tables = catalog.getSnapshot().rel().getTables( Pattern.of( namespaceName ), null );
+        for ( LogicalTable table : tables ) {
+            if ( table.entityType == EntityType.SOURCE ) {
+                throw new GenericRuntimeException( "Cannot drop namespace '%s' because it would drop source-backed table '%s'. Remove or move the mapping target, or remove the source adapter first.",
+                        logicalNamespace.name, table.name );
+            }
+        }
 
         // Drop all collections in this namespace
         List<LogicalCollection> collections = catalog.getSnapshot().doc().getCollections( logicalNamespace.id, null );
@@ -5516,7 +5535,6 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Drop all tables in this schema
-        List<LogicalTable> tables = catalog.getSnapshot().rel().getTables( Pattern.of( namespaceName ), null );
         for ( LogicalTable table : tables ) {
             dropTable( table, statement );
         }

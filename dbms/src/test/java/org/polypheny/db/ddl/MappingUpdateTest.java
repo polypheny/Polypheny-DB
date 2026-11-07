@@ -62,8 +62,10 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.PolyCatalog;
+import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.MappingKind;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.mapping.MappingState;
@@ -198,6 +200,22 @@ class MappingUpdateTest {
         assertEquals( original.mapping(), catalog.getSchemaMappings().get( original.mapping().id() ) );
         assertSame( physical, physicalCatalog.fromAllocation( allocationId ) );
         verify( transaction, never() ).commit();
+    }
+
+
+    @Test
+    void rejectsDroppingNamespaceWithSourceTableBeforeChangingCatalog() {
+        var namespace = original.namespace();
+        catalog.getLogicalRel( namespace.id ).addTable( "managed_table", EntityType.ENTITY, true );
+        catalog.commit();
+        String before = catalog.serialize();
+
+        var error = assertThrows( GenericRuntimeException.class,
+                () -> new DdlManagerImpl( catalog ).dropNamespace( namespace.name, false, statement ) );
+
+        assertTrue( error.getMessage().startsWith( "Cannot drop namespace '" + namespace.name + "' because it would drop source-backed table '" + table.name + "'." ) );
+        assertEquals( before, catalog.serialize() );
+        verify( transaction, never() ).attachCommitAction( any() );
     }
 
 
@@ -701,6 +719,46 @@ class MappingUpdateTest {
     }
 
     @Test
+    void droppingSourceAdapterPreservesForeignKeysBetweenSurvivingTables() {
+        long remainingAdapterId = catalog.createAdapter( "remaining_csv", "CSV", AdapterType.SOURCE, Map.of(), DeployMode.EMBEDDED );
+        catalog.addStoreSnapshot( new RelAdapterCatalog( remainingAdapterId ) );
+        var remaining = addIncomingSource( remainingAdapterId );
+        long targetId = remaining.table().id;
+        var ddl = new DdlManagerImpl( catalog );
+        var draft = MappingState.draft( catalog, adapterId, table.id, targetId, allocationId );
+        var names = draft.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+        ddl.createMapping( table.id, new MappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(),
+                remaining.table().name, names, table.namespaceId, targetId, allocationId ), statement );
+
+        var relational = catalog.getLogicalRel( table.namespaceId );
+        var parent = relational.addTable( "parent", EntityType.ENTITY, true );
+        var parentId = relational.addColumn( "id", parent.id, 1, PolyType.BIGINT, null, null, null, null, null, false, false, null );
+        long keptKey = relational.addForeignKeyRefresh( targetId, List.of( remaining.columns().get( 0 ).id ), parent.id,
+                List.of( parentId.id ), "kept_fk", ForeignKeyOption.NONE, ForeignKeyOption.NONE );
+        long keptConstraint = relational.addConstraint( targetId, "kept_fk", keptKey, ConstraintType.FOREIGN, statement );
+        long droppedKey = relational.addForeignKeyRefresh( targetId, List.of( remaining.columns().get( 1 ).id ), table.id,
+                List.of( columns.get( 1 ).id ), "dropped_fk", ForeignKeyOption.NONE, ForeignKeyOption.NONE );
+        relational.addConstraint( targetId, "dropped_fk", droppedKey, ConstraintType.FOREIGN, statement );
+        catalog.commit();
+
+        var manager = AdapterManager.getInstance();
+        doAnswer( invocation -> {
+            catalog.dropAdapter( adapterId );
+            return null;
+        } ).when( manager ).removeAdapter( catalog, adapterId );
+        ddl.dropAdapter( original.adapter().uniqueName, statement );
+        catalog.commit();
+
+        var snapshot = catalog.getSnapshot();
+        assertTrue( snapshot.rel().getTable( table.id ).isEmpty() );
+        assertTrue( snapshot.rel().getTable( targetId ).isPresent() );
+        assertEquals( List.of( remaining.mapping().id() ), snapshot.mappings().getMappingsForLogicalEntity( targetId ).stream().map( SchemaMapping::id ).toList() );
+        assertEquals( List.of( keptKey ), snapshot.rel().getForeignKeys( targetId ).stream().map( key -> key.id ).toList() );
+        assertEquals( List.of( keptConstraint ), snapshot.rel().getConstraints( targetId ).stream().map( constraint -> constraint.id ).toList() );
+    }
+
+
+    @Test
     void rejectsIncompatibleIncomingSchemaWithoutChangingTheTarget() {
         var incoming = addIncomingSource();
         long incomingAllocationId = incoming.physicalTables().get( 0 ).allocationId;
@@ -736,18 +794,24 @@ class MappingUpdateTest {
     }
 
     private MappingState addIncomingSource() {
+        return addIncomingSource( adapterId );
+    }
+
+
+    private MappingState addIncomingSource( long sourceAdapterId ) {
         var relational = catalog.getLogicalRel( table.namespaceId );
         var incoming = relational.addTable( "incoming_file", EntityType.SOURCE, false );
         var incomingColumns = columns.stream().map( column -> relational.addColumn( column.name, incoming.id, column.position,
                 column.type, column.collectionsType, column.length, column.scale, column.dimension, column.cardinality,
                 column.nullable, column.elementsNullable, column.collation ) ).toList();
         var allocations = catalog.getAllocRel( table.namespaceId );
-        var placement = allocations.addPlacement( incoming.id, table.namespaceId, adapterId );
-        var allocation = allocations.addAllocation( adapterId, placement.id, 1, incoming.id );
-        incomingColumns.forEach( column -> allocations.addColumn( placement.id, incoming.id, column.id, adapterId, PlacementType.STATIC, column.position ) );
-        physicalCatalog.addPhysical( allocation, new PhysicalTable( catalog.idBuilder.getNewPhysicalId(), allocation.id, incoming.id,
-                "incoming_file", incomingColumns.stream().map( column -> new PhysicalColumn( column.name, incoming.id, allocation.id, adapterId, column.position - 1, column ) ).toList(),
-                table.namespaceId, "files", List.of(), adapterId ) );
+        var placement = allocations.addPlacement( incoming.id, table.namespaceId, sourceAdapterId );
+        var allocation = allocations.addAllocation( sourceAdapterId, placement.id, 1, incoming.id );
+        incomingColumns.forEach( column -> allocations.addColumn( placement.id, incoming.id, column.id, sourceAdapterId, PlacementType.STATIC, column.position ) );
+        catalog.getAdapterCatalog( sourceAdapterId ).orElseThrow().addPhysical( allocation,
+                new PhysicalTable( catalog.idBuilder.getNewPhysicalId(), allocation.id, incoming.id,
+                        "incoming_file", incomingColumns.stream().map( column -> new PhysicalColumn( column.name, incoming.id, allocation.id, sourceAdapterId, column.position - 1, column ) ).toList(),
+                        table.namespaceId, "files", List.of(), sourceAdapterId ) );
         var mapping = SchemaMappingManager.createMapping( "Incoming import", incoming.id, DataModel.RELATIONAL,
                 incomingColumns.stream().map( column -> column.id ).toList() );
         catalog.addSchemaMapping( mapping );

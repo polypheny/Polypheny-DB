@@ -72,7 +72,12 @@ public class SqlDropTable extends SqlDropObject {
         }
         LogicalTable table = optionalTable.get();
 
-        if ( table.entityType != EntityType.ENTITY && table.entityType != EntityType.SOURCE ) {
+        // Explicitly reject SOURCE tables before touching the catalog
+        // Otherwise DROP TABLE can start removing mapping metadata before it fails
+        if ( table.entityType == EntityType.SOURCE ) {
+            throw new GenericRuntimeException( "Cannot drop source-backed table '%s' with DROP TABLE. Use Drop Mapping for mapping-backed targets or remove the source adapter.", name );
+        }
+        if ( table.entityType != EntityType.ENTITY ) {
             throw new GenericRuntimeException( "The entity with the name %s is of %s use the appropriate query.", name, table.entityType );
         }
 

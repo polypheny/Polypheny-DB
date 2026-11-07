@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
@@ -141,6 +142,11 @@ class CsvMappingIntegrationTest {
             assertEquals( adapterName + "_" + tableName + "_mapping", mapping.name() );
 
             assertEquals( List.of( "1:Ada", "2:Bob" ), query( "SELECT id, name FROM " + tableName + " ORDER BY id" ) );
+
+            var dropError = assertThrows( SQLException.class, () -> execute( "DROP TABLE " + Catalog.DEFAULT_NAMESPACE_NAME + "." + tableName ) );
+            assertTrue( dropError.getMessage().contains( "Cannot drop source-backed table" ), dropError::getMessage );
+            assertEquals( table.id, Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, tableName ).orElseThrow().id );
+            assertEquals( List.of( mapping ), Catalog.snapshot().mappings().getMappingsForLogicalEntity( table.id ) );
 
             var error = assertThrows( GenericRuntimeException.class, () -> Catalog.getInstance().removeSchemaMapping( mapping.id() ) );
             assertEquals( SchemaMappingManager.LAST_SOURCE_MAPPING_REASON, error.getMessage() );
