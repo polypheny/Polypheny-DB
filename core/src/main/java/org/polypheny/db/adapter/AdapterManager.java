@@ -17,8 +17,6 @@
 package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableMap;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,30 +88,6 @@ public class AdapterManager {
         return AdapterManager.getInstance().adapterTemplates.values().stream()
                 .filter( t -> t.adapterName.equalsIgnoreCase( name ) && t.adapterType == adapterType )
                 .findFirst().orElseThrow( () -> new GenericRuntimeException( "No adapter template found for name: " + name + " of type: " + adapterType ) );
-    }
-
-
-    public List<AdapterInformation> getAdapterTemplates( AdapterType adapterType ) {
-        List<AdapterTemplate> templates = adapterTemplates.values().stream().filter( t -> t.adapterType == adapterType ).toList();
-
-        List<AdapterInformation> result = new ArrayList<>();
-
-        for ( AdapterTemplate adapterTemplate : templates ) {
-            // Exclude abstract classes
-            if ( !Modifier.isAbstract( adapterTemplate.getClazz().getModifiers() ) ) {
-
-                AdapterProperties properties = adapterTemplate.getClazz().getAnnotation( AdapterProperties.class );
-                if ( properties == null ) {
-                    throw new GenericRuntimeException( adapterTemplate.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
-                }
-                // Merge annotated AdapterSettings into settings
-                List<AbstractAdapterSetting> settings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations() );
-
-                result.add( new AdapterInformation( properties.name(), properties.description(), adapterType, settings, List.of( properties.usedModes() ) ) );
-            }
-        }
-
-        return result;
     }
 
 
@@ -259,11 +233,6 @@ public class AdapterManager {
     public interface DeployFn {
 
         Adapter<?> get( Long adapterId, String uniqueName, Map<String, String> settings, DeployMode deployMode );
-
-    }
-
-
-    public record AdapterInformation( String name, String description, AdapterType type, List<AbstractAdapterSetting> settings, List<DeployMode> modes ) {
 
     }
 
