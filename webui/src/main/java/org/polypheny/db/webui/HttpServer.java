@@ -399,16 +399,10 @@ public class HttpServer implements Runnable {
         webuiServer.get( "/getStores", crud::getStores );
 
         webuiServer.get( "/getSources", crud::getSources );
-
-        webuiServer.post( "/getAvailableStoresForIndexes", crud::getAvailableStoresForIndexes );
-
+        
         webuiServer.post( "/removeAdapter", crud::removeAdapter );
 
         webuiServer.post( "/updateAdapterSettings", crud::updateAdapterSettings );
-
-        webuiServer.get( "/getAvailableStores", crud::getAvailableStores );
-
-        webuiServer.get( "/getAvailableSources", crud::getAvailableSources );
 
         webuiServer.post( "/createAdapter", crud::createAdapter );
 
