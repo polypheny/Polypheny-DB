@@ -55,6 +55,7 @@ delombok {
  */
 test {
     include "**/MongoAdapterTest.class"
+    include "**/MongoIndexMetadataTest.class"
     maxHeapSize = "2g" // Increase heap size (default is 512MB)
 }
 

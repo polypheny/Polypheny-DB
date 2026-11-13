@@ -357,7 +357,7 @@ class PIService {
 
     private Response searchEntities( EntitiesRequest request, ResponseMaker<EntitiesResponse> responseObserver ) {
         String entityPattern = request.hasEntityPattern() ? request.getEntityPattern() : null;
-        return responseObserver.makeResponse( DbMetaRetriever.searchEntities( request.getNamespaceName(), entityPattern ) );
+        return responseObserver.makeResponse( DbMetaRetriever.searchEntities( request.getNamespaceName(), entityPattern, getClient() ) );
     }
 
 

@@ -26,10 +26,17 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.ServerAddress;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -1495,6 +1502,7 @@ public class TestHelper {
         @Getter
         private final int port;
         private final String database;
+        private RuntimeException lastStartupFailure;
 
 
         private DockerMongo( DockerContainer container, String host, int port, String database ) {
@@ -1511,7 +1519,8 @@ public class TestHelper {
                     .getInstanceById( 0 )
                     .orElseThrow( () -> new IllegalStateException( "No docker instance with id 0" ) );
 
-            DockerContainer container = instance.newBuilder( "mongo:8.0", containerName )
+            // Use a patch release with the Ubuntu kernel detection fix (SERVER-131779).
+            DockerContainer container = instance.newBuilder( "mongo:8.0.38", containerName )
                     .createAndStart();
 
             try {
@@ -1520,7 +1529,8 @@ public class TestHelper {
                 int port = connection.port();
                 DockerMongo mongo = new DockerMongo( container, host, port, database );
                 if ( !container.waitTillStarted( mongo::testConnection, STARTUP_TIMEOUT_MS ) ) {
-                    throw new IllegalStateException( "MongoDB container did not become ready in time" );
+                    throw new IllegalStateException( "MongoDB container did not become ready in time. Container logs:\n"
+                            + readContainerLogs( container ), mongo.lastStartupFailure );
                 }
                 return mongo;
             } catch ( Exception e ) {
@@ -1554,17 +1564,58 @@ public class TestHelper {
 
 
         private boolean testConnection() {
-            try {
-                return container.execute( List.of(
-                        "mongosh",
-                        "--quiet",
-                        "mongodb://127.0.0.1:" + MONGO_PORT + "/" + database,
-                        "--eval",
-                        "db.runCommand({ ping: 1 })" ) ) == 0;
-            } catch ( IOException e ) {
-                // Ignore during startup polling.
+            MongoClientSettings settings = MongoClientSettings.builder()
+                    .applyToClusterSettings( builder -> builder
+                            .hosts( List.of( new ServerAddress( host, port ) ) )
+                            .serverSelectionTimeout( 1, TimeUnit.SECONDS ) )
+                    .applyToSocketSettings( builder -> builder
+                            .connectTimeout( 1, TimeUnit.SECONDS )
+                            .readTimeout( 1, TimeUnit.SECONDS ) )
+                    .build();
+            // Probe the same endpoint used by the source adapter, without depending
+            // on a shell process inside the container to determine service readiness.
+            try ( MongoClient client = MongoClients.create( settings ) ) {
+                client.getDatabase( database ).runCommand( new org.bson.Document( "ping", 1 ) );
+                return true;
+            } catch ( RuntimeException e ) {
+                lastStartupFailure = e;
             }
             return false;
+        }
+
+
+        private static String readContainerLogs( DockerContainer container ) {
+            Path output = null;
+            Process process = null;
+            try {
+                output = Files.createTempFile( "polypheny-mongo-startup-", ".log" );
+                process = new ProcessBuilder( "docker", "logs", "--tail", "30", container.getContainerId() )
+                        .redirectErrorStream( true )
+                        .redirectOutput( output.toFile() )
+                        .start();
+                if ( !process.waitFor( 5, TimeUnit.SECONDS ) ) {
+                    return "Docker log retrieval timed out";
+                }
+                try ( var input = Files.newInputStream( output ) ) {
+                    return new String( input.readNBytes( 16 * 1024 ), StandardCharsets.UTF_8 );
+                }
+            } catch ( IOException e ) {
+                return "Docker logs unavailable: " + e.getMessage();
+            } catch ( InterruptedException e ) {
+                Thread.currentThread().interrupt();
+                return "Docker log retrieval interrupted";
+            } finally {
+                if ( process != null && process.isAlive() ) {
+                    process.destroyForcibly();
+                }
+                if ( output != null ) {
+                    try {
+                        Files.deleteIfExists( output );
+                    } catch ( IOException ignored ) {
+                        // Diagnostics must not mask the original startup failure.
+                    }
+                }
+            }
         }
 
     }
