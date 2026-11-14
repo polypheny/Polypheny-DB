@@ -71,6 +71,17 @@ allprojects {
     repositories {
         mavenLocal()
         mavenCentral()
+        exclusiveContent {
+            forRepository {
+                ivy {
+                    // Integration tests need the JDBC release that supports Prism 2.x.
+                    url = 'https://github.com/polypheny/Polypheny-JDBC-Driver/releases/download'
+                    patternLayout { artifact 'v[revision]/[artifact]-[revision].[ext]' }
+                    metadataSources { artifact() }
+                }
+            }
+            filter { includeVersion('org.polypheny', 'polypheny-jdbc-driver', polypheny_jdbc_driver_version) }
+        }
         maven {
             url "https://clojars.org/repo/"
         }
