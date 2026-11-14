@@ -28,11 +28,9 @@ import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
@@ -56,7 +54,6 @@ import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocDocCatalog;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocGraphCatalog;
@@ -214,10 +211,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         log.debug( "commit" );
 
         this.adapterRestore.clear();
-        adapterCatalogs.forEach( ( id, catalog ) -> {
-            Map<Long, List<PhysicalEntity>> restore = catalog.allocToPhysicals.entrySet().stream().collect( Collectors.toMap( Entry::getKey, a -> a.getValue().stream().map( key -> catalog.physicals.get( key ).normalize() ).toList() ) );
-            this.adapterRestore.put( id, new AdapterRestore( id, restore, catalog.allocations ) );
-        } );
+        adapterCatalogs.forEach( ( id, catalog ) -> this.adapterRestore.put( id, catalog.createRestoreSnapshot() ) );
 
         this.backup = serialize();
 

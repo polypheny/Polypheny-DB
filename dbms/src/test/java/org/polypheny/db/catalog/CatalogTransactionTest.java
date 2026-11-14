@@ -16,12 +16,24 @@
 
 package org.polypheny.db.catalog;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.impl.AdapterRestore;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -87,6 +99,56 @@ public class CatalogTransactionTest {
         catalog.rollback();
 
         assert (catalog.getSnapshot().rel().getColumn( id.id ).isEmpty());
+    }
+
+
+    @Test
+    void commitCapturesAllocationBeforeConcurrentRemoval() throws Exception {
+        PolyCatalog catalog = new PolyCatalog();
+        long namespaceId = catalog.createNamespace( "adapter_snapshot", DataModel.RELATIONAL, false, false );
+        RelAdapterCatalog adapter = new RelAdapterCatalog( 1 );
+        AllocationTable allocation = new AllocationTable( 2, 3, 4, 5, namespaceId, adapter.adapterId );
+        CountDownLatch normalizing = new CountDownLatch( 1 );
+        CountDownLatch removed = new CountDownLatch( 1 );
+        PhysicalTable first = new PhysicalTable( 6, allocation.id, allocation.logicalId, "tab6", List.of(),
+                namespaceId, "public", List.of(), adapter.adapterId ) {
+            @Override
+            public PhysicalEntity normalize() {
+                normalizing.countDown();
+                try {
+                    assertTrue( removed.await( 10, TimeUnit.SECONDS ), "Allocation removal did not finish" );
+                } catch ( InterruptedException e ) {
+                    Thread.currentThread().interrupt();
+                    throw new AssertionError( e );
+                }
+                return super.normalize();
+            }
+        };
+        PhysicalTable second = new PhysicalTable( 7, allocation.id, allocation.logicalId, "tab7", List.of(),
+                namespaceId, "public", List.of(), adapter.adapterId );
+        adapter.addPhysical( allocation, first, second );
+        catalog.addStoreSnapshot( adapter );
+
+        var executor = Executors.newSingleThreadExecutor();
+        try {
+            var commit = executor.submit( catalog::commit );
+            assertTrue( normalizing.await( 10, TimeUnit.SECONDS ), "Commit did not start normalizing the snapshot" );
+            adapter.removeAllocAndPhysical( allocation.id );
+            removed.countDown();
+            commit.get( 10, TimeUnit.SECONDS );
+
+            AdapterRestore snapshot = catalog.adapterRestore.get( adapter.adapterId );
+            assertEquals( allocation, snapshot.allocations().get( allocation.id ) );
+            assertEquals( List.of( first.id, second.id ), snapshot.physicals().get( allocation.id ).stream().map( entity -> entity.id ).toList() );
+            catalog.change();
+            catalog.commit();
+            AdapterRestore nextSnapshot = catalog.adapterRestore.get( adapter.adapterId );
+            assertTrue( nextSnapshot.physicals().isEmpty() );
+            assertTrue( nextSnapshot.allocations().isEmpty() );
+        } finally {
+            removed.countDown();
+            executor.shutdownNow();
+        }
     }
 
 }

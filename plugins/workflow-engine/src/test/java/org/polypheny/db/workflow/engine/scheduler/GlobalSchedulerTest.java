@@ -16,6 +16,7 @@
 
 package org.polypheny.db.workflow.engine.scheduler;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
@@ -49,6 +51,7 @@ class GlobalSchedulerTest {
     private static StorageManager sm;
     private static TestHelper testHelper;
     private static GlobalScheduler scheduler;
+    private final List<StorageManager> storageManagers = new ArrayList<>();
 
 
     @BeforeAll
@@ -64,18 +67,32 @@ class GlobalSchedulerTest {
     @BeforeEach
     public void init() {
         sessionId = UUID.randomUUID();
-        sm = new StorageManagerImpl( testHelper.getTransactionManager(), sessionId, StorageUtils.getDefaultStoreMap( "locks" ) );
+        sm = createStorageManager( sessionId );
     }
 
 
     @AfterEach
     public void cleanup() {
-        try {
-            sm.close();
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
+        List<Executable> cleanup = new ArrayList<>();
+        for ( StorageManager storageManager : storageManagers ) {
+            cleanup.add( () -> {
+                UUID id = storageManager.getSessionId();
+                if ( !scheduler.awaitExecutionFinish( id, 5 ) ) {
+                    scheduler.interruptExecution( id );
+                    assertTrue( scheduler.awaitExecutionFinish( id, 5 ), "Workflow did not stop before storage cleanup" );
+                }
+                storageManager.close();
+            } );
         }
-        testHelper.checkAllTrxClosed();
+        cleanup.add( testHelper::checkAllTrxClosed );
+        assertAll( cleanup );
+    }
+
+
+    private StorageManager createStorageManager( UUID id ) {
+        StorageManager storageManager = new StorageManagerImpl( testHelper.getTransactionManager(), id, StorageUtils.getDefaultStoreMap( "locks" ) );
+        storageManagers.add( storageManager );
+        return storageManager;
     }
 
 
@@ -344,21 +361,22 @@ class GlobalSchedulerTest {
         int delay = 500;
 
         List<Workflow> workflows = new ArrayList<>();
-        List<StorageManager> storageManagers = new ArrayList<>();
+        List<StorageManager> workflowStorage = new ArrayList<>();
         for ( int i = 0; i < nWorkflows; i++ ) {
-            StorageManager storageManager = new StorageManagerImpl( testHelper.getTransactionManager(), UUID.randomUUID(), StorageUtils.getDefaultStoreMap( "locks" ) );
+            StorageManager storageManager = createStorageManager( UUID.randomUUID() );
             Workflow workflow = WorkflowUtils.getLongRunningPipe( delay );
             workflows.add( workflow );
-            storageManagers.add( storageManager );
+            workflowStorage.add( storageManager );
             scheduler.startExecution( workflow, storageManager, null );
         }
         scheduler.awaitResultProcessor( nWorkflows * delay * 4 / 5 ); // not enough time if not executed concurrently
 
-        for ( Pair<Workflow, StorageManager> entry : Pair.zip( workflows, storageManagers ) ) { // also checks initial activity
+        for ( Pair<Workflow, StorageManager> entry : Pair.zip( workflows, workflowStorage ) ) {
             List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( entry.left );
+            UUID last = ids.get( ids.size() - 1 );
             assertEquals( WorkflowState.IDLE, entry.left.getState(), "Workflow did not finish its execution" );
-            assertTrue( entry.right.hasCheckpoint( ids.get( ids.size() - 1 ), 0 ) );
-            entry.right.close();
+            assertTrue( entry.right.hasCheckpoint( last, 0 ),
+                    () -> "Missing final checkpoint: " + entry.left.getActivity( last ).getVariables().getError() );
         }
     }
 

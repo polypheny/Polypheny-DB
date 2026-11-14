@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -40,6 +41,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.impl.AdapterRestore;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.util.Pair;
 
@@ -116,7 +118,7 @@ public abstract class AdapterCatalog {
     }
 
 
-    public List<PhysicalEntity> getPhysicalsFromAllocs( long allocId ) {
+    public synchronized List<PhysicalEntity> getPhysicalsFromAllocs( long allocId ) {
         Set<Long> entities = allocToPhysicals.get( allocId );
         if ( entities == null ) {
             return null;
@@ -125,8 +127,21 @@ public abstract class AdapterCatalog {
     }
 
 
+    public AdapterRestore createRestoreSnapshot() {
+        Map<Long, List<PhysicalEntity>> restore = new HashMap<>();
+        Map<Long, AllocationEntity> allocationSnapshot;
+        synchronized ( this ) {
+            // Copy the allocation and physical maps together before normalizing adapter entities.
+            allocToPhysicals.forEach( (id, physicalIds) -> restore.put( id, physicalIds.stream().map( physicals::get ).toList() ) );
+            allocationSnapshot = Map.copyOf( allocations );
+        }
+        restore.replaceAll( (id, entities) -> entities.stream().map( PhysicalEntity::normalize ).toList() );
+        return new AdapterRestore( adapterId, restore, allocationSnapshot );
+    }
+
+
     @SafeVarargs
-    public final <E extends AllocationEntity, P extends PhysicalEntity> void addPhysical( E allocation, P... physicalEntities ) {
+    public final synchronized <E extends AllocationEntity, P extends PhysicalEntity> void addPhysical( E allocation, P... physicalEntities ) {
         SortedSet<Long> physicals = Arrays.stream( physicalEntities ).sorted().map( p -> p.id ).collect( Collectors.toCollection( TreeSet::new ) );
 
         allocToPhysicals.put( allocation.id, physicals );
@@ -136,7 +151,7 @@ public abstract class AdapterCatalog {
 
 
     @SafeVarargs
-    public final <P extends PhysicalEntity> void replacePhysical( P... physicalEntities ) {
+    public final synchronized <P extends PhysicalEntity> void replacePhysical( P... physicalEntities ) {
         AllocationEntity alloc = getAlloc( physicalEntities[0].allocationId );
         if ( alloc == null ) {
             throw new GenericRuntimeException( "Error on handling store" );
@@ -145,13 +160,12 @@ public abstract class AdapterCatalog {
     }
 
 
-    public void removeAllocAndPhysical( long allocId ) {
+    public synchronized void removeAllocAndPhysical( long allocId ) {
         allocations.remove( allocId );
-        if ( !allocToPhysicals.containsKey( allocId ) ) {
+        Set<Long> physicals = allocToPhysicals.remove( allocId );
+        if ( physicals == null ) {
             return;
         }
-        Set<Long> physicals = allocToPhysicals.get( allocId );
-        allocToPhysicals.remove( allocId );
         for ( long physicalId : physicals ) {
             PhysicalEntity physical = this.physicals.get( physicalId );
             // we might have created substitution allocations, which we want to remove as well
