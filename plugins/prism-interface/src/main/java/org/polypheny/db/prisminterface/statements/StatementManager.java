@@ -31,6 +31,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.PrepareStatementRequest;
 
@@ -201,6 +202,30 @@ public class StatementManager {
             throw new PIServiceException( "A statement with id " + statementId + " does not exist for that client" );
         }
         return statement;
+    }
+
+
+    public void checkAutocommitExecution( boolean graphStatement ) {
+        // A graph statement can end the shared transaction, as can another statement while a graph result is open.
+        if ( client.isAutoCommit() && hasOpenResult( !graphStatement ) ) {
+            throw new PIServiceException( "Close or finish the open result before executing another statement in autocommit mode" );
+        }
+    }
+
+
+    public boolean hasOpenResult( boolean graphOnly ) {
+        Transaction transaction = client.getCurrentTransaction();
+        return transaction != null && transaction.isActive() && openStatements.values().stream()
+                .filter( statement -> statement.getIterator() != null && statement.getTransaction() == transaction )
+                .filter( statement -> statement.getLanguage().dataModel() == DataModel.GRAPH || !graphOnly )
+                .filter( statement -> !isBatchMember( statement ) )
+                .anyMatch( statement -> statement.getIterator().hasMoreRows() );
+    }
+
+
+    private boolean isBatchMember( PIStatement statement ) {
+        // Batch responses expose only the batch ID and update counts, so members cannot be fetched.
+        return openUnparameterizedBatches.values().stream().anyMatch( batch -> batch.getStatements().contains( statement ) );
     }
 
 

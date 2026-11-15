@@ -21,7 +21,9 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.transaction.Statement;
@@ -51,9 +53,10 @@ public class PIUnparameterizedStatement extends PIStatement {
 
 
     public StatementResult execute( int fetchSize ) {
+        Node parsedStatement = language.dataModel() == DataModel.GRAPH ? StatementProcessor.parseGraphStatement( this ) : null;
         statement = client.getOrCreateNewTransaction().createStatement();
 
-        StatementProcessor.implement( this );
+        StatementProcessor.implement( this, parsedStatement );
         return StatementProcessor.executeAndGetResult( this, fetchSize );
     }
 
