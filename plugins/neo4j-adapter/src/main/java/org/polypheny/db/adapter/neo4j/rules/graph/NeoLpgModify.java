@@ -169,9 +169,6 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
         List<NeoStatement> statements = new ArrayList<>();
         int nextBinding = 0;
         for ( PolyNode node : nodes ) {
-            if ( uuidNameMapping.containsKey( node.id ) ) {
-                continue;
-            }
             PolyString name = node.getVariableName();
             if ( name == null || name.getValue() == null || name.getValue().isEmpty() ) {
                 // Bind anonymous nodes so edge patterns reuse them instead of creating new endpoints.
