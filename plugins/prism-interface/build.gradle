@@ -20,55 +20,13 @@ repositories {
     mavenCentral()
 }
 
-def prismApiPreviewRevision = providers.gradleProperty('prism_api_preview_revision')
-if (prismApiPreviewRevision.isPresent()) {
-    configurations {
-        prismApiPreview
-    }
-    repositories {
-        exclusiveContent {
-            forRepository {
-                ivy {
-                    url = 'https://codeload.github.com/polypheny/Polypheny-Prism-API/zip'
-                    patternLayout { artifact '[revision]' }
-                    metadataSources { artifact() }
-                }
-            }
-            filter { includeModule('org.polypheny', 'prism-api-source') }
-        }
-    }
-    def versionParts = prism_api_version.tokenize('.')
-    def previewVersion = tasks.register('writePrismApiPreviewVersion', WriteProperties) {
-        destinationFile = layout.buildDirectory.file('prism-api-preview/prism-api-version.properties').get().asFile
-        property 'version', prism_api_version
-        property 'majorVersion', versionParts[0]
-        property 'minorVersion', versionParts[1]
-    }
-    def previewJar = tasks.register('packagePrismApiPreview', Jar) {
-        archiveFileName = "prism-${prism_api_version}-preview.jar"
-        destinationDirectory = layout.buildDirectory.dir('prism-api-preview')
-        from({ zipTree(configurations.prismApiPreview.singleFile) }) {
-            include '*/org/polypheny/prism/*.proto'
-            eachFile { path = path.substring(path.indexOf('/') + 1) }
-            includeEmptyDirs = false
-        }
-        from(previewVersion)
-    }
-    dependencies {
-        prismApiPreview "org.polypheny:prism-api-source:${prismApiPreviewRevision.get()}@zip"
-        prismApi files(previewJar)
-    }
-} else {
-    dependencies {
-        prismApi group: 'org.polypheny', name: 'prism', version: prism_api_version
-    }
-}
-
 dependencies {
     compileOnly project(path: ':core')
     compileOnly project(path: ':dbms')
     compileOnly project(path: ':plugins:sql-language')
     compileOnly project(path: ':plugins:mql-language')
+
+    prismApi group: 'org.polypheny', name: 'prism', version: prism_api_version
 
     // Protobuf
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobuf_version
@@ -92,7 +50,6 @@ compileTestJava.mustRunAfter(jar)
 compileTestJava.mustRunAfter(plugin)
 
 processResources {
-    dependsOn configurations.prismApi
     // The JDBC test driver also embeds a version file with this name.
     from({ zipTree(configurations.prismApi.singleFile) }) {
         include 'prism-api-version.properties'
