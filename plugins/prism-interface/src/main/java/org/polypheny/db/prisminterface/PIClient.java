@@ -37,6 +37,7 @@ public class PIClient {
     @Setter
     private Transaction currentTransaction;
     private final TransactionManager transactionManager;
+    private final int prismMinorVersion;
     @Getter
     private final StatementManager statementManager;
     @Getter
@@ -58,6 +59,19 @@ public class PIClient {
             LogicalNamespace namespace,
             MonitoringPage monitoringPage,
             boolean isAutoCommit ) {
+        this( clientUUID, catalogUser, transactionManager, namespace, monitoringPage, isAutoCommit, 2 );
+    }
+
+
+    PIClient(
+            String clientUUID,
+            LogicalUser catalogUser,
+            TransactionManager transactionManager,
+            LogicalNamespace namespace,
+            MonitoringPage monitoringPage,
+            boolean isAutoCommit,
+            int prismMinorVersion ) {
+        this.prismMinorVersion = prismMinorVersion;
         this.statementManager = new StatementManager( this );
         this.PIClientInfoProperties = new PIClientInfoProperties();
         this.namespace = namespace;
@@ -67,6 +81,11 @@ public class PIClient {
         this.isAutoCommit = isAutoCommit;
         this.monitoringPage = monitoringPage;
         monitoringPage.addStatementManager( statementManager );
+    }
+
+
+    public boolean supportsGraphValues() {
+        return prismMinorVersion >= 3;
     }
 
 

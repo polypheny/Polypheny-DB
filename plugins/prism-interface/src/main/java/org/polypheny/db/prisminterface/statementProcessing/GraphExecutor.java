@@ -72,7 +72,7 @@ final class GraphExecutor extends Executor {
             return executeAndGetResult( statement );
         }
         try {
-            boolean graphFrame = usesGraphFrame( implementation.tupleType );
+            boolean graphFrame = usesGraphFrame( implementation.tupleType, statement.getClient() );
             statement.setIterator( implementation.execute( statement.getStatement(), fetchSize ) );
             return StatementResult.newBuilder().setFrame( fetchFrame( statement, fetchSize, graphFrame ) ).build();
         } catch ( RuntimeException e ) {
@@ -88,7 +88,7 @@ final class GraphExecutor extends Executor {
             throw new PIServiceException( "No open Cypher result exists for this statement" );
         }
         try {
-            return fetchFrame( statement, fetchSize, usesGraphFrame( statement.getImplementation().tupleType ) );
+            return fetchFrame( statement, fetchSize, usesGraphFrame( statement.getImplementation().tupleType, statement.getClient() ) );
         } catch ( RuntimeException e ) {
             discardFailedResult( statement, e );
             throw e;
@@ -102,9 +102,10 @@ final class GraphExecutor extends Executor {
         ResultIterator iterator = statement.getIterator();
         List<List<PolyValue>> rows = iterator.getNextBatch( fetchSize );
         boolean last = !iterator.hasMoreRows();
+        boolean supportsGraphValues = statement.getClient().supportsGraphValues();
         Frame frame = graphFrame
-                ? PrismUtils.buildGraphFrame( last, rows )
-                : PrismUtils.buildRelationalFrame( last, rows, RelationalMetaRetriever.retrieveColumnMetas( statement.getImplementation() ) );
+                ? PrismUtils.buildGraphFrame( last, rows, supportsGraphValues )
+                : PrismUtils.buildRelationalFrame( last, rows, RelationalMetaRetriever.retrieveColumnMetas( statement.getImplementation() ), supportsGraphValues );
         stopwatch.suspend();
         if ( last ) {
             stopwatch.stop();
@@ -115,7 +116,7 @@ final class GraphExecutor extends Executor {
     }
 
 
-    private static boolean usesGraphFrame( AlgDataType rowType ) {
+    private static boolean usesGraphFrame( AlgDataType rowType, PIClient client ) {
         if ( isGraphType( rowType.getPolyType() ) ) {
             return true;
         }
@@ -123,10 +124,13 @@ final class GraphExecutor extends Executor {
         if ( graphColumns == 0 ) {
             return false;
         }
-        if ( graphColumns != rowType.getFieldCount() ) {
-            throw new PIServiceException( "Prism cannot encode a Cypher result that mixes graph values and scalar columns. Return them in separate queries." );
+        if ( graphColumns == rowType.getFieldCount() ) {
+            return true;
         }
-        return true;
+        if ( !client.supportsGraphValues() ) {
+            throw new PIServiceException( "Cypher results mixing graph and scalar columns require Prism 2.3 or later." );
+        }
+        return false;
     }
 
 
